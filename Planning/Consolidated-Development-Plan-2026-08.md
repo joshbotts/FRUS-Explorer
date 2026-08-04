@@ -787,7 +787,9 @@ instruction, the difference between a request being fillable and being bounced).
 **Sequence behind N-2**, whose RG 256 range parser and curation discipline this inherits.
 The bundle is ~4,800 rows / <100 KB and committable — but its generator inputs
 (`rg_256.json` 170 MB, `rg_59.json` 3.3 GB) are gitignored, so the regeneration path must
-be documented or the resource becomes unmaintainable.
+be documented or the resource becomes unmaintainable. **[2026-08-04] Documented: the harvest is
+unpacked at `/Users/jbotts/Development/nara-record-group-catalog/` (22 shards, 4.5 GB) — see
+runbook §2b-1. Both this session and N-2(c) read it directly; neither needs the tarball.**
 
 **Parked:** #405 (creator-org similarity dimension) — **[2026-08-02] measured and it does
 not clear the bar.** Creator information reaches only **8,976 of 316,839 corpus documents
@@ -929,14 +931,19 @@ multi-hour reindex, so any Q session contemplating one should say so up front.
 
 **[2026-08-04] N-0 is complete** — the keyed regen and the export re-baseline both ran on
 2026-07-29 (verified against the shipped bundle; see N-0). **No owner-executed step gates
-any session in this table.** The one owner wall-clock item left in the lane is
+any session in this table**, and the harvest slots 6 and 8 need is unpacked at
+`/Users/jbotts/Development/nara-record-group-catalog/` (runbook §2b-1). The one owner wall-clock item left in the lane is
 *downstream*: **N-1 changes `SourceNoteParser` output, so it must bump
 `currentDateIndexVersion` (now 22) in the same commit**, and that forces a multi-hour full
 reindex of the 6.3 GB store — schedule it for a night after the PR lands, not before the
 session starts.
 
-**R-2b remains out of this table** — it waits for the R-2a build to have been in the field
-and carries its own Production schema deploy through the #488 gate.
+**[2026-08-04] R-2b's time gate has opened.** R-2a landed 2026-07-26 (#517, woken by #518)
+and shipped in **build 37**, which is in TestFlight — so the migration has had a build in the
+field and can now read the rows it converts. R-2b is schedulable; it still carries its own
+Production schema deploy through the #488 gate (removing `ResearchSession`/`SessionEvent`
+takes `frusModelTypes` from 19 record types to 17), so it needs the R-7 checklist, not just
+a slot. **Build 39 has not shipped; nothing in this table waits on it.**
 
 ---
 

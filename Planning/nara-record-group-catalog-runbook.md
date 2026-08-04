@@ -637,6 +637,22 @@ Both were mine, both are fixed, and the second one did real damage before it was
    stores, and re-running consolidation restored everything with **zero API calls**, because the raw
    stores are the recovery path the design promises they are.
 
+### 2b-1. Where the extract lives (2026-08-04)
+
+The harvest is unpacked at **`/Users/jbotts/Development/nara-record-group-catalog/`** —
+22 shards, 4.5 GB, `generated: 2026-07-30`, 20,188 series + 731,692 file units, matching
+`manifest.json` exactly. The two shards downstream work needs are
+`series/rg_256.json` (170 MB, Paris Peace — N-2c/#354) and `series/rg_59.json` (3.3 GB,
+the decimal-file digitisation — N-7/#663).
+
+`series/*.json` is **gitignored** and always will be: 4.5 GB cannot live in the repo. So
+this path is the contract. A generator that reads it should take it from an env var
+defaulting here, and anything derived from it must be committed as a small artifact — the
+index the app ships, never the shard. The source tarball
+(`nara-record-group-catalog-full-2026-07-30.tar.gz`) remains alongside it; re-extracting
+`rg_59.json` alone streams the whole archive and takes several minutes, which is the cost
+this note exists to avoid paying twice.
+
 ### 2c. What the harvest was used for, and what it proved (2026-08-02)
 
 The full `seriesAndFileUnits` harvest (**751,880 records** = 20,188 series + 731,692 file
