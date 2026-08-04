@@ -562,6 +562,35 @@ app's uncertainty policy. Keeping it leaves ~11 lots / ~70 documents. (ii) `57D2
 carries 48 of the 149 documents and is a **one-of-two pick** (naId 1422076 Torquay 1950 vs
 1422086 Special Session 1951), not a clean hit.
 
+**[2026-08-03] The owner curated the top six lots and the app now renders them — N-3's first
+increment is shipped.** 2,943 documents, 46% of the unresolved mass. The curation did not
+fit the binary the app had, so the outcome model widened to three kinds:
+
+| lot | docs | outcome |
+|---|---|---|
+| 54D270 Marshall Mission Files | 1,063 | **candidate list** — 10 RG 59 series under creator 10481258, entries A1-1095…A1-1106, all bundled (no API key) |
+| M88 CFM Files | 697 | **archivist referral** — NARA arranged the CFM by conference session × document type, ~170 series across A1 310–A1 675, against one flat FRUS lot; no mechanical mapping exists |
+| 60D627 / 59D95 / 64D560 / 62D181 | 1,183 | **possible match** — Conference Files, naId 602875, by collection name rather than control number |
+
+Three decisions worth keeping. (i) **Curated rows live in their own bundle**
+(`curated-lot-resolutions.json`), because three generator paths rewrite
+`central-files-index.json` wholesale and a curated row kept there survives only until the
+next harvest. (ii) **Confidence attaches to the (lot → NAID) edge, never the NAID** — 602875
+is a *control-number* resolution for nine other lots, so the #351 `untrustworthyNAIDs`
+denylist could not have carried this and would have suppressed nine certain resolutions.
+(iii) **Curated rows are kept out of `volume-sources-index` and `collection-authority`**,
+whose consumers (an icon-only link, a two-field PDF export row, a "resolved offline from the
+bundled index" caption) cannot express doubt; confining them to the two Source Explorer
+views leaves every other surface honestly saying "unresolved". Tests pin all three.
+
+Incidental fix in the same PR: `SourceNoteParser` defaults every non-`F` lot to RG 59, so
+the panel labelled M88's RG 43 collection "RG 59" and issued an RG-59-scoped fallback
+search for it. Curation now overrides the parser on both platforms.
+
+**Remaining N-3 work:** the ranked tail below `62D181` in
+`Planning/source-explorer-export/missed-lots-ranked.tsv`, curated the same way. The bundle
+and both render surfaces now exist, so each further lot is a JSON row, not a code change.
+
 **Curate `Conference Files → naId 602875` first: ~1,425 documents, 22% of the gap, one
 row.** 17 unresolved lot norms (59D95, 60D627, 60D629, 62D181, 63D123, 64D559, 64D560,
 65D366, 65D533 + 8 OCR variants) are one continuing series. The proof needs **no harvest**:
