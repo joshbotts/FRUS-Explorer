@@ -460,13 +460,17 @@ grammar work). N-2 sheds two of its five items and keeps one, promoted. N-5's fi
 detaches from the harvest and can ship immediately. **N-7 (#663) is new and should be
 scheduled behind N-2's RG 256 parser, which it inherits.**
 
-**N-0 — Keyed data runs (owner-executed, ~10 min total, any time):**
-- **#376** — keyed `VolumeSourcesIndexGenerator` regen: drops the 9 remaining fileUnit
-  lot entries (58D528 … 92D252), reads the warm `.cache/volume-sources/rgs` cache (0 new
-  RG queries). Confirm record-groups stays at **31** afterward. Then optional offline
-  `CollectionAuthorityGenerator` re-run + export re-baseline.
-- No other keyed run is currently actionable (#375's keyed pass was already tried and
-  resolved 2 of 573 — that route is closed; see N-3).
+**N-0 — Keyed data runs — [2026-08-04] COMPLETE. Nothing here is owed.**
+- **#376** ran on **2026-07-29**. Verified against the shipped bundle:
+  `volume-sources-index.json` is stamped `generated: 2026-07-29`, its `lots` map holds
+  **751 series-level entries and zero `fileUnit`**, the nine targets (58D528 … 92D252) are
+  gone, and `recordGroups` is **31** — the confirmation criterion this entry asked for.
+  The export re-baseline ran with it: `missed-lots-ranked.tsv` is 581 rows / 6,230
+  documents, matching N-3's own post-regen figure below.
+- This entry contradicted N-3, which has recorded the re-baseline as done since 2026-07-29,
+  and it was still being read as a live owner prerequisite for N-3's curation a week later.
+  **There is no keyed run left in this workstream**, and #375's keyed route is closed (2 of
+  573), so `CATALOG_API_KEY` is not needed by any planned N session.
 
 **N-1 — #353 SourceNoteParser session** *(Effort L; the biggest coverage lever)*
 **[2026-08-02] No harvest dependency. Do not budget a harvest-lexicon sub-session.** The
@@ -923,9 +927,13 @@ are spent: O-1's corpus generator pass ran, and the Mac index is now effectively
 corpus. What replaces it is the opposite constraint — an index-version bump is now a
 multi-hour reindex, so any Q session contemplating one should say so up front.
 
-**N-0 (owner, ~10 min) can run any time** and should precede N-3: the keyed
-`VolumeSourcesIndexGenerator` regen, then **run-book Step 5 to re-baseline the export**,
-without which N-3 curates from a stale ranking that omits its own #3 entry.
+**[2026-08-04] N-0 is complete** — the keyed regen and the export re-baseline both ran on
+2026-07-29 (verified against the shipped bundle; see N-0). **No owner-executed step gates
+any session in this table.** The one owner wall-clock item left in the lane is
+*downstream*: **N-1 changes `SourceNoteParser` output, so it must bump
+`currentDateIndexVersion` (now 22) in the same commit**, and that forces a multi-hour full
+reindex of the 6.3 GB store — schedule it for a night after the PR lands, not before the
+session starts.
 
 **R-2b remains out of this table** — it waits for the R-2a build to have been in the field
 and carries its own Production schema deploy through the #488 gate.
