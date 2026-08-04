@@ -1976,3 +1976,35 @@ slate (N lane, R-2b, Q discovery tail, held owner decisions) ships or is refuted
   reindex), dead-code decisions, the unticked export-verification checklist, #270 as trailing
   hygiene. Non-targets reaffirmed: cross-platform port (post-1.0; spike only), CloudKit sharing,
   ANN infra, and every measured refutation.
+
+### Session 2026-08-04 — Research Trip Packet: scope against NARA's pre-visit guidance
+
+Assessment only — no code changes. New `Planning/Research-Trip-Packet-Scope.md` scopes the
+§5a.2 trip-packet idea against NARA's own guidance, anchored on the research-visit FAQ ("How
+can I make my visit more successful?"), whose verbatim text is deposited at
+`Planning/reference/nara-research-visit-faqs-2026-08-04.md` so the traceability oracle has a
+primary source in-repo.
+
+- **The FAQ reads like a requirements memo for this app.** Its effective-inquiry spec asks for
+  records identified by record group, entry number, series title, and NAID links — the four
+  fields of the bundled lot and volume-sources indexes; it names State Department "Lot File"
+  numbers as identifiers that "do not always carry over" (making #375's unresolved lots NARA's
+  *predicted* case, with a prescribed remedy: name them in the advance inquiry); and it puts
+  State and post-1960 records on the extra-lead-time list, so nearly every packet carries the
+  write-early flag on NARA's own criteria.
+- **Traceability table A1–A14**: each advisory (appointments, the 4-week/one-address/10-business-
+  day inquiry mechanics, the six-element inquiry spec, extra-notice criteria, the
+  no-ad-hoc-resolution warning, mandatory use of online/microfilm substitutes, Catalog/Explorer/
+  History Hub entry points, pull times, registration, restrictions, the RDT2 foreign-affairs
+  specialist, presidential-library write-ahead, citation practice, room rules) mapped to the
+  packet section that satisfies it.
+- **Shape**: per-repository PDF chapters — checklist with A4-escalated countdown, per-agency-
+  cluster inquiry drafts (structure resolved from the FAQ's one-address/one-agency rules),
+  pull worksheet (blank Box column — never fabricated), mandatory-substitutes, restriction
+  triage, citation crib, visit-day card. Sessions T-0 (data audit + ~16-row repository table) →
+  T-1 (aggregation/flag engine on `archivalSourceRows`) → T-2 (exporter, ships before N-7) →
+  T-3 (N-7 riders: accessRestriction, digitised series, numberingNote, series date-checks) —
+  the standing reason N-7's bundle should carry those rider fields from its first cut.
+- Five honesty rules (no box fabrication, unresolved-as-predicted, dated volatile facts,
+  range-grain scans, availability never promised); five owner decisions queued, one already
+  resolved from source.

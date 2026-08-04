@@ -271,7 +271,8 @@ item was checked against the tree and the tracker before being called unplanned 
    pull-list export grouped repository → record group → entry/box, with restriction status and a
    citation checklist — the actual College Park paperwork, generated from the documents the
    researcher has already collected. Small: it is an exporter over resolutions the app already
-   computes.
+   computes. **Now scoped against NARA's own pre-visit guidance —
+   `Planning/Research-Trip-Packet-Scope.md` (2026-08-04).**
 3. **Previously-published outbound resolver.** The `previouslyPublished` provenance panel is
    currently a dead end — it prints the citation and says "Consult the cited publication"
    (`SourceExplorerView.swift:978`). But the cited publications are overwhelmingly free online:
