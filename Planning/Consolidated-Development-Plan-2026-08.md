@@ -317,9 +317,8 @@ surface, on both platforms. Price this before scheduling.
    cloud during indexing, which Q-2 should not re-litigate.
 4. **Corpus prerequisite — [2026-07-28] MET.** The Mac index is effectively the whole
    corpus (552 volumes, ~314k documents, a 6.3 GB store); this is no longer owner wall-clock
-   to schedule. Two consequences replace it: (a) a future `currentDateIndexVersion` bump now
-   costs a multi-hour full reindex, so an index migration inside Q is a scheduling event in
-   its own right; (b) base query latency at that scale is **measured and material** — a
+   to schedule. One consequence replaces it: base query latency at that scale is
+   **measured and material** — a
    common term is 6–12 s in SQLite before any snippet work (#548). Q-2's inspector and R-1's
    facets both sit on that, and the 7,500-row macOS fetch is an architectural pagination
    issue. **[2026-07-29] The exporter is the other half of this.** `HistoryPaneSnapshot` already
@@ -926,17 +925,26 @@ premise re-verification turned up, and reordering is the cheapest way to close i
 
 **Owner wall-clock is no longer on the critical path.** Both of the slots that carried it
 are spent: O-1's corpus generator pass ran, and the Mac index is now effectively the whole
-corpus. What replaces it is the opposite constraint — an index-version bump is now a
-multi-hour reindex, so any Q session contemplating one should say so up front.
+corpus.
+
+**[2026-08-04] And the thing that was said to replace it does not.** This plan asserted
+from 2026-07-28 that a `currentDateIndexVersion` bump "costs a multi-hour full reindex", so
+any index migration was "a scheduling event in its own right". **Owner-measured: a full
+552-volume reindex takes ~10 minutes.** The claim was never measured — the app records no
+indexing duration anywhere, so nothing in the repo could have grounded it — and it spread
+into the feature-priorities review, where it became the stated reason to batch every
+index-shape change into one event. A session that needs a bump should still say so, but it
+is a coffee break, not a scheduling constraint, and no work should be deferred or bundled
+to avoid paying it twice.
 
 **[2026-08-04] N-0 is complete** — the keyed regen and the export re-baseline both ran on
 2026-07-29 (verified against the shipped bundle; see N-0). **No owner-executed step gates
 any session in this table**, and the harvest slots 6 and 8 need is unpacked at
 `/Users/jbotts/Development/nara-record-group-catalog/` (runbook §2b-1). The one owner wall-clock item left in the lane is
 *downstream*: **N-1 changes `SourceNoteParser` output, so it must bump
-`currentDateIndexVersion` (now 22) in the same commit**, and that forces a multi-hour full
-reindex of the 6.3 GB store — schedule it for a night after the PR lands, not before the
-session starts.
+`currentDateIndexVersion` (now 22) in the same commit**, which triggers a full reindex —
+**~10 minutes, owner-measured 2026-08-04**, not the multi-hour figure this document carried
+until then. It runs after the PR lands and gates nothing.
 
 **[2026-08-04] R-2b's time gate has opened.** R-2a landed 2026-07-26 (#517, woken by #518)
 and shipped in **build 37**, which is in TestFlight — so the migration has had a build in the
