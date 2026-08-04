@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 2,
+  "generated": "2026-08-04",
+  "note": "Hand-curated outcomes for State Department collections that NARA's catalogue does not resolve by control number (#375). No generator writes this file: every row is human archival judgement, so a re-harvest must never overwrite it. Rows are deliberately NOT written into central-files-index.json, volume-sources-index.json, or collection-authority.json — those bundles feed surfaces that cannot express doubt (an icon-only link, a PDF export row, a prose 'resolved offline' caption), and a non-deterministic outcome must not reach them. CuratedLotResolutionsTests enforces that. Rows sharing one NARA series reference it through `series` rather than repeating it, so a rationale is edited once. A row may also claim `seriesNames`, which routes citations that name the collection without a lot number.",
+  "series": {
+    "conferenceFiles": {
+      "naId": "602875",
+      "title": "Conference Files",
+      "catalogURL": "https://catalog.archives.gov/id/602875",
+      "hmsMlrEntryNumbers": ["A1 3051B"],
+      "dateRange": "1949–1972",
+      "recordGroup": "RG-59",
+      "rationale": "Matched by collection name, not by control number. NARA's Conference Files series carries nine other lot numbers from this run of accessions but not this one, and its 1949–1972 span covers the citation."
+    }
+  },
+  "lots": [
+    {
+      "lotNumber": "54D270",
+      "kind": "candidates",
+      "displayName": "Marshall Mission Files",
+      "recordGroup": "RG-59",
+      "creatorName": "President (1945-1953 : Truman). Office of the Special Envoy to China.",
+      "creatorNaId": "10481258",
+      "rationale": "NARA did not accession this lot as one series. It arranged the Marshall Mission's records under the mission's own creator record, as ten series split by record type. Any of them may hold the cited document.",
+      "seeAllURL": "https://catalog.archives.gov/search?maskedQ=record.creators.naId:10481258",
+      "candidates": [
+        {
+          "naId": "871815",
+          "title": "Background Materials",
+          "catalogURL": "https://catalog.archives.gov/id/871815",
+          "entryNumber": "A1-1095",
+          "dateRange": "1944–1946"
+        },
+        {
+          "naId": "872082",
+          "title": "Top Secret Documents",
+          "catalogURL": "https://catalog.archives.gov/id/872082",
+          "entryNumber": "A1-1096",
+          "dateRange": "1946–1947"
+        },
+        {
+          "naId": "872083",
+          "title": "Reference Subject Files",
+          "catalogURL": "https://catalog.archives.gov/id/872083",
+          "entryNumber": "A1-1097",
+          "dateRange": "1945–1947"
+        },
+        {
+          "naId": "872084",
+          "title": "Cables Sent",
+          "catalogURL": "https://catalog.archives.gov/id/872084",
+          "entryNumber": "A1-1098",
+          "dateRange": "1946–1947"
+        },
+        {
+          "naId": "872088",
+          "title": "Cables Received",
+          "catalogURL": "https://catalog.archives.gov/id/872088",
+          "entryNumber": "A1-1099",
+          "dateRange": "1946–1947"
+        },
+        {
+          "naId": "872089",
+          "title": "Drafts of Telegrams, Letters, and Memorandums",
+          "catalogURL": "https://catalog.archives.gov/id/872089",
+          "entryNumber": "A1-1100",
+          "dateRange": "1946–1947"
+        },
+        {
+          "naId": "872090",
+          "title": "General George C. Marshall's Report on His Mission to China",
+          "catalogURL": "https://catalog.archives.gov/id/872090",
+          "entryNumber": "A1-1101",
+          "dateRange": "1946–1947"
+        },
+        {
+          "naId": "872091",
+          "title": "Records Relating to Political Affairs",
+          "catalogURL": "https://catalog.archives.gov/id/872091",
+          "entryNumber": "A1-1102",
+          "dateRange": "1946–1947"
+        },
+        {
+          "naId": "872099",
+          "title": "Records Relating to Military Affairs",
+          "catalogURL": "https://catalog.archives.gov/id/872099",
+          "entryNumber": "A1-1103",
+          "dateRange": "1945–1948"
+        },
+        {
+          "naId": "872132",
+          "title": "Ribbon Copy of General George C. Marshall's Report on His Mission to China",
+          "catalogURL": "https://catalog.archives.gov/id/872132",
+          "entryNumber": "A1-1106",
+          "dateRange": "1946–1947"
+        }
+      ]
+    },
+    {
+      "lotNumber": "M88",
+      "kind": "referral",
+      "displayName": "CFM Files",
+      "recordGroup": "RG-43",
+      "seriesNames": ["CFM Files", "Council of Foreign Ministers Files"],
+      "rationale": "FRUS cites the Council of Foreign Ministers records as one flat lot. NARA arranged them by conference session and document type instead — about 170 series across 1945–1954, with titles such as \"Numbered Documents\" and \"Minutes of Meetings\" recurring once per session.",
+      "guidance": "No mechanical lot-to-series mapping exists. Matching a citation means knowing which session and which date it belongs to. Contact the National Archives reference staff for Record Group 43 with the conference, the date, and the document number from the citation; they will identify the entry number to request.",
+      "seriesCount": 170,
+      "entryNumberRange": "A1 310 – A1 675",
+      "browseURL": "https://catalog.archives.gov/search?creators=council%20foreign%20ministers&levelOfDescription=series&page=1&recordGroupNumber=43"
+    },
+
+    { "lotNumber": "60D627", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "59D95",  "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "64D560", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "62D181", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "64D559", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "63D123", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "65D533", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "65D366", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "64D599", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "65D336", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "64D350", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "65D81",  "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "66D305", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "62D627", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "60D629", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "60D27",  "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    { "lotNumber": "59D05",  "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files" },
+    {
+      "lotNumber": "6SD366",
+      "kind": "possible",
+      "seriesRef": "conferenceFiles",
+      "displayName": "Conference Files",
+      "rationale": "Matched by collection name, not by control number. The citation reads \"Lot 6s D 366\", an OCR corruption of Conference Files lot 65 D 366, which falls inside NARA's 1949–1972 Conference Files series."
+    }
+  ]
+}

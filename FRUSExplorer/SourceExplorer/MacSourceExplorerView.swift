@@ -274,6 +274,13 @@ struct MacSourceExplorerView: View {
                        let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
                         bundledLotBox(entry)
                     }
+                    // Hand-curated outcome for a collection NARA's catalogue does not resolve
+                    // by control number (#375). Mirrors iOS `curatedLotSection`. Reached both
+                    // by lot number and — for a citation that names the collection without one
+                    // — by series name.
+                    if let outcome = curatedOutcome(for: parsed) {
+                        curatedLotBox(outcome)
+                    }
                     if let parsed {
                         naraBox(for: parsed)
                     } else {
@@ -378,7 +385,11 @@ struct MacSourceExplorerView: View {
                                                defaultValue: "Type"),
                                   value: String(localized: "source.explorer.lotFile.typeValue",
                                                defaultValue: "State Dept. Lot File"))
-                    if let r = rg {
+                    // Curation is authoritative over the parser's record group, which defaults
+                    // every non-`F` lot to RG 59 and so mislabels at least one curated
+                    // collection that NARA holds in RG 43 (#375). Mirrors the iOS
+                    // `lotFilePanel` override — keep in sync.
+                    if let r = CuratedLotResolutionsStore.shared?.recordGroup(forRawLot: lot) ?? rg {
                         // `rg` already carries the "RG-" prefix (e.g. "RG-59"); normalise to
                         // "RG 59" so the row doesn't read "RG RG-59".
                         provenanceRow(label: "Record Group",
@@ -460,6 +471,13 @@ struct MacSourceExplorerView: View {
                     provenanceRow(label: String(localized: "source.explorer.namedSeries.series",
                                                defaultValue: "File Series"),
                                   value: series)
+                    // A collection cited by name alone carries no record group; curation
+                    // supplies it when the same collection is curated under its lot number.
+                    // Mirrors the iOS `namedFileSeriesPanel` — keep in sync.
+                    if let rg = CuratedLotResolutionsStore.shared?.recordGroup(forSeriesName: series) {
+                        provenanceRow(label: "Record Group",
+                                      value: rg.replacingOccurrences(of: "RG-", with: "RG "))
+                    }
                     if let fileId {
                         provenanceRow(label: String(localized: "source.explorer.namedSeries.file",
                                                    defaultValue: "File"),
@@ -685,6 +703,177 @@ struct MacSourceExplorerView: View {
         }
     }
 
+    /// The curated outcome for a parsed note, by lot number or — when the citation names the
+    /// collection without one — by series name. `nil` for every other parse.
+    private func curatedOutcome(for parsed: ParsedSourceNote?) -> CuratedLotOutcome? {
+        switch parsed {
+        case .lotFile(_, let lot, _):
+            return CuratedLotResolutionsStore.shared?.outcome(forRawLot: lot)
+        case .namedFileSeries(let series, _):
+            return CuratedLotResolutionsStore.shared?.outcome(forSeriesName: series)
+        default:
+            return nil
+        }
+    }
+
+    // MARK: - Curated Lot Box
+
+    /// The hand-curated outcome for a lot NARA's catalogue does not resolve by control
+    /// number (#375 / N-3), in the confidence grammar the pre-1906 country-series box
+    /// established: a `ConfidenceChip` beside each candidate and a rationale beneath it.
+    ///
+    /// Mirrors `SourceExplorerView.curatedLotSection` — keep in sync. Every branch is
+    /// deliberately hedged: a curated match was reached by collection name or by creator,
+    /// never by a control number, so none of them may borrow `bundledLotBox`'s
+    /// "Resolved from the bundled index" caption.
+    @ViewBuilder
+    private func curatedLotBox(_ outcome: CuratedLotOutcome) -> some View {
+        switch outcome {
+        case .possible(let series, let rationale):
+            GroupBox(String(localized: "source.explorer.curatedLot.possible.header",
+                            defaultValue: "Possible NARA Catalog Record")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Text(series.title).font(.callout)
+                        ConfidenceChip(confidence: .medium)
+                    }
+                    if let entry = series.entryNumber {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.hmsMlr",
+                                   defaultValue: "HMS/MLR Entry"),
+                            value: entry
+                        )
+                        .font(.callout)
+                    }
+                    if let dateRange = series.dateRange {
+                        LabeledContent(
+                            String(localized: "source.explorer.curatedLot.dateRange",
+                                   defaultValue: "Series Dates"),
+                            value: dateRange
+                        )
+                        .font(.callout)
+                    }
+                    Text(rationale)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        if let url = series.url { openURL(url) }
+                    } label: {
+                        Label(String(localized: "source.explorer.curatedLot.open",
+                                     defaultValue: "Open Series in NARA Catalog"),
+                              systemImage: "arrow.up.right.square")
+                    }
+                    .buttonStyle(.link)
+                    Text(String(localized: "source.explorer.curatedLot.possible.note",
+                                defaultValue: "This match was made by collection name, not by a catalog control number. Confirm the lot number against the series before citing it."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+        case .candidates(let series, let rationale, let creatorName, let seeAllURL):
+            GroupBox(String(localized: "source.explorer.curatedLot.candidates.header",
+                            defaultValue: "Candidate NARA Series")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(rationale)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let creatorName {
+                        LabeledContent(
+                            String(localized: "source.explorer.curatedLot.creator",
+                                   defaultValue: "NARA Creator"),
+                            value: creatorName
+                        )
+                        .font(.callout)
+                    }
+                    ForEach(series) { candidate in
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Button {
+                                    if let url = candidate.url { openURL(url) }
+                                } label: {
+                                    Text(candidate.title).font(.callout)
+                                }
+                                .buttonStyle(.link)
+                                ConfidenceChip(confidence: .medium)
+                            }
+                            if let detail = curatedSeriesSubtitle(candidate) {
+                                Text(detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if let seeAllURL {
+                        Button {
+                            openURL(seeAllURL)
+                        } label: {
+                            Label(String(localized: "source.explorer.curatedLot.seeAll",
+                                         defaultValue: "See all series by this creator"),
+                                  systemImage: "arrow.up.right.square")
+                        }
+                        .buttonStyle(.link)
+                    }
+                    Text(String(localized: "source.explorer.curatedLot.candidates.note",
+                                defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document's date and type."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+        case .referral(let referral):
+            GroupBox(String(localized: "source.explorer.curatedLot.referral.header",
+                            defaultValue: "Ask a NARA Archivist")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(referral.rationale)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let count = referral.seriesCount {
+                        LabeledContent(
+                            String(localized: "source.explorer.curatedLot.referral.seriesCount",
+                                   defaultValue: "Series in the collection"),
+                            value: "\(count)"
+                        )
+                        .font(.callout)
+                    }
+                    if let range = referral.entryNumberRange {
+                        LabeledContent(
+                            String(localized: "source.explorer.curatedLot.referral.entryRange",
+                                   defaultValue: "HMS/MLR Entry Range"),
+                            value: range
+                        )
+                        .font(.callout)
+                    }
+                    Text(referral.guidance)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let url = referral.url {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Label(String(localized: "source.explorer.curatedLot.referral.browse",
+                                         defaultValue: "Browse the collection's series"),
+                                  systemImage: "arrow.up.right.square")
+                        }
+                        .buttonStyle(.link)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    /// One-line "entry number · dates" subtitle for a candidate row, or `nil` when neither
+    /// is known. Mirrors `SourceExplorerView.curatedSeriesSubtitle`.
+    private func curatedSeriesSubtitle(_ series: CuratedSeries) -> String? {
+        let parts = [series.entryNumber, series.dateRange].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     // MARK: - No API Key View
 
     private var noAPIKeyView: some View {
@@ -796,12 +985,7 @@ struct MacSourceExplorerView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Text(c.category.displayName).font(.callout.weight(.semibold))
-                            Text(c.confidence.label)
-                                .font(.caption2)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(c.confidence == .high ? Color.green.opacity(0.18)
-                                                                  : Color.orange.opacity(0.18),
-                                            in: Capsule())
+                            ConfidenceChip(confidence: c.confidence)
                         }
                         Text(c.rationale).font(.caption).foregroundStyle(.secondary)
                         ForEach(resolution.rolls) { roll in
