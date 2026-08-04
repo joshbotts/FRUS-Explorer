@@ -541,12 +541,7 @@ struct SourceExplorerView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Text(c.category.displayName).font(.callout.weight(.semibold))
-                        Text(c.confidence.label)
-                            .font(.caption2)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(c.confidence == .high ? Color.green.opacity(0.18)
-                                                              : Color.orange.opacity(0.18),
-                                        in: Capsule())
+                        ConfidenceChip(confidence: c.confidence)
                     }
                     Text(c.rationale).font(.caption).foregroundStyle(.secondary)
                     ForEach(resolution.rolls) { roll in
@@ -793,12 +788,18 @@ struct SourceExplorerView: View {
 
     @ViewBuilder
     private func lotFilePanel(recordGroup: String?, lotNumber: String, fileIdentifier: String?) -> some View {
+        // Curation is authoritative over the parser's record group, which defaults every
+        // non-`F` lot to RG 59 — so a curated RG-43 collection would otherwise be labelled
+        // RG 59 here *and* searched under RG 59 in the fallback URL below (#375).
+        let curated = CuratedLotResolutionsStore.shared?.record(forRawLot: lotNumber)
+        let effectiveRG = curated?.recordGroup ?? recordGroup
+
         Section(String(localized: "source.explorer.provenance.header",
                        defaultValue: "Provenance")) {
             LabeledContent(
                 String(localized: "source.explorer.lotFile.type", defaultValue: "Type"),
                 value: {
-                    let rg = recordGroup ?? "RG-59"
+                    let rg = effectiveRG ?? "RG-59"
                     if rg == "RG-84" {
                         return String(localized: "source.explorer.lotFile.typeValueRG84",
                                       defaultValue: "State Dept. Post Records Lot File (RG 84)")
@@ -807,7 +808,7 @@ struct SourceExplorerView: View {
                                   defaultValue: "State Dept. Lot File")
                 }()
             )
-            if let rg = recordGroup {
+            if let rg = effectiveRG {
                 LabeledContent(
                     String(localized: "source.explorer.lotFile.rg", defaultValue: "Record Group"),
                     value: rg.replacingOccurrences(of: "RG-", with: "RG ")
@@ -833,16 +834,165 @@ struct SourceExplorerView: View {
             bundledLotSection(entry)
         }
 
+        // Hand-curated outcome for a lot NARA's catalogue does not resolve by control
+        // number (#375). Never a confident card: each kind states its own uncertainty.
+        if let outcome = curated?.outcome {
+            curatedLotSection(outcome)
+        }
+
         // Fallback: pre-scoped NARA Catalog search for the lot number.
         // Use RG 84 fallback URL for F-designator (post record) lot files.
         let fb: URL = {
-            let rg = recordGroup ?? "RG-59"
+            let rg = effectiveRG ?? "RG-59"
             if rg == "RG-84" {
                 return client.resolveRG84LotFile(lotNumber: lotNumber)
             }
             return client.resolveRG59CentralFiles(fileIdentifier: "Lot \(lotNumber)")
         }()
         naraResultSection(requiresKey: true, fallbackURL: fb)
+    }
+
+    /// The hand-curated outcome for a lot NARA's catalogue does not resolve by control
+    /// number (#375 / N-3), in the confidence grammar the pre-1906 country-series section
+    /// established: a `ConfidenceChip` beside each candidate and a rationale beneath it.
+    ///
+    /// Every branch is deliberately hedged. A curated match was reached by collection name
+    /// or by creator, not by a control number, so none of them may borrow
+    /// `bundledLotSection`'s "Resolved from the bundled index" caption.
+    ///
+    /// Mirrored by `MacSourceExplorerView.curatedLotBox` — keep in sync.
+    @ViewBuilder
+    private func curatedLotSection(_ outcome: CuratedLotOutcome) -> some View {
+        switch outcome {
+        case .possible(let series, let rationale):
+            Section(String(localized: "source.explorer.curatedLot.possible.header",
+                           defaultValue: "Possible NARA Catalog Record")) {
+                HStack(spacing: 6) {
+                    Text(series.title).font(.callout)
+                    ConfidenceChip(confidence: .medium)
+                }
+                curatedSeriesDetail(series)
+                Text(rationale)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button {
+                    if let url = series.url { openURL(url) }
+                } label: {
+                    Label(String(localized: "source.explorer.curatedLot.open",
+                                 defaultValue: "Open Series in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                }
+                Text(String(localized: "source.explorer.curatedLot.possible.note",
+                            defaultValue: "This match was made by collection name, not by a catalog control number. Confirm the lot number against the series before citing it."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .candidates(let series, let rationale, let creatorName, let seeAllURL):
+            Section(String(localized: "source.explorer.curatedLot.candidates.header",
+                           defaultValue: "Candidate NARA Series")) {
+                Text(rationale)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let creatorName {
+                    LabeledContent(
+                        String(localized: "source.explorer.curatedLot.creator",
+                               defaultValue: "NARA Creator"),
+                        value: creatorName
+                    )
+                }
+                ForEach(series) { candidate in
+                    Button {
+                        if let url = candidate.url { openURL(url) }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 6) {
+                                Text(candidate.title).font(.callout)
+                                ConfidenceChip(confidence: .medium)
+                            }
+                            if let detail = curatedSeriesSubtitle(candidate) {
+                                Text(detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .contentShape(Rectangle())
+                }
+                if let seeAllURL {
+                    Button {
+                        openURL(seeAllURL)
+                    } label: {
+                        Label(String(localized: "source.explorer.curatedLot.seeAll",
+                                     defaultValue: "See all series by this creator"),
+                              systemImage: "arrow.up.right.square")
+                    }
+                }
+                Text(String(localized: "source.explorer.curatedLot.candidates.note",
+                            defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document's date and type."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+        case .referral(let referral):
+            Section(String(localized: "source.explorer.curatedLot.referral.header",
+                           defaultValue: "Ask a NARA Archivist")) {
+                Text(referral.rationale)
+                    .font(.callout)
+                if let count = referral.seriesCount {
+                    LabeledContent(
+                        String(localized: "source.explorer.curatedLot.referral.seriesCount",
+                               defaultValue: "Series in the collection"),
+                        value: "\(count)"
+                    )
+                }
+                if let range = referral.entryNumberRange {
+                    LabeledContent(
+                        String(localized: "source.explorer.curatedLot.referral.entryRange",
+                               defaultValue: "HMS/MLR Entry Range"),
+                        value: range
+                    )
+                }
+                Text(referral.guidance)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let url = referral.url {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label(String(localized: "source.explorer.curatedLot.referral.browse",
+                                     defaultValue: "Browse the collection's series"),
+                              systemImage: "arrow.up.right.square")
+                    }
+                }
+            }
+        }
+    }
+
+    /// The identifier rows shared by the curated `possible` card — the entry number a
+    /// researcher quotes to NARA staff, and the series' own coverage span.
+    @ViewBuilder
+    private func curatedSeriesDetail(_ series: CuratedSeries) -> some View {
+        if let entry = series.entryNumber {
+            LabeledContent(
+                String(localized: "source.explorer.lotFile.hmsMlr", defaultValue: "HMS/MLR Entry"),
+                value: entry
+            )
+        }
+        if let dateRange = series.dateRange {
+            LabeledContent(
+                String(localized: "source.explorer.curatedLot.dateRange", defaultValue: "Series Dates"),
+                value: dateRange
+            )
+        }
+    }
+
+    /// One-line "entry number · dates" subtitle for a candidate row, or `nil` when neither
+    /// is known.
+    private func curatedSeriesSubtitle(_ series: CuratedSeries) -> String? {
+        let parts = [series.entryNumber, series.dateRange].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// A bundled, key-less link to a lot file's resolved NARA Catalog series record —
