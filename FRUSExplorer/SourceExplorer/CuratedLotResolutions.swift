@@ -83,6 +83,38 @@ struct CuratedReferral: Codable, Sendable, Equatable {
     var url: URL? { browseURL.flatMap(URL.init(string:)) }
 }
 
+// MARK: - CuratedSeriesDefinition
+
+/// A NARA series several curated lots share, defined once in `curated-lot-resolutions.json`'s
+/// `series` map and referenced by `seriesRef`.
+///
+/// Eighteen of the curated lots resolve to the same Conference Files series. Repeating its
+/// title, NAID, entry number, span and rationale on every row would mean editing eighteen
+/// places to reword one sentence, and would leave the "these are the same answer" relationship
+/// implied by copy-paste rather than stated in the data.
+struct CuratedSeriesDefinition: Codable, Sendable, Equatable {
+    /// NARA unique identifier.
+    let naId: String
+    /// The series title as NARA describes it.
+    let title: String
+    /// Deep link to the catalogue record.
+    let catalogURL: String
+    /// HMS/MLR entry numbers — the identifiers NARA staff use to pull records.
+    let hmsMlrEntryNumbers: [String]?
+    /// Coverage span as NARA states it.
+    let dateRange: String?
+    /// The record group NARA holds it in, in the parser's `RG-59` form.
+    let recordGroup: String?
+    /// Why a lot referencing this series is only a *possible* match. A row may override it.
+    let rationale: String?
+
+    /// The shared definition as a renderable series.
+    var series: CuratedSeries {
+        CuratedSeries(naId: naId, title: title, catalogURL: catalogURL,
+                      entryNumber: hmsMlrEntryNumbers?.first, dateRange: dateRange)
+    }
+}
+
 // MARK: - CuratedLotRecord
 
 /// One curated lot as stored in `curated-lot-resolutions.json`.
@@ -103,6 +135,13 @@ struct CuratedLotRecord: Codable, Sendable, Equatable {
     /// Why this outcome, in one or two sentences. Rendered beneath the chip.
     let rationale: String?
 
+    /// Key into the index's `series` map, when this row shares a series with others.
+    /// A row's own inline fields win over the referenced definition.
+    let seriesRef: String?
+    /// Collection names that route to this row even when the citation carries no lot number
+    /// (the `namedFileSeries` parse). Matched case- and punctuation-insensitively.
+    let seriesNames: [String]?
+
     // `possible`
     let naId: String?
     let title: String?
@@ -122,15 +161,19 @@ struct CuratedLotRecord: Codable, Sendable, Equatable {
     let entryNumberRange: String?
     let browseURL: String?
 
-    /// The typed outcome, or `nil` when the row does not carry what its `kind` requires.
-    var outcome: CuratedLotOutcome? {
+    /// The typed outcome, or `nil` when the row does not carry what its `kind` requires —
+    /// resolving `seriesRef` against `series` and letting the row's own fields win.
+    ///
+    /// A dangling `seriesRef` yields `nil` rather than a half-built card, and
+    /// `CuratedLotResolutionsTests` fails the build if the shipped file contains one.
+    func outcome(resolving series: [String: CuratedSeriesDefinition]) -> CuratedLotOutcome? {
+        let shared = seriesRef.flatMap { series[$0] }
+        if seriesRef != nil && shared == nil { return nil }
         switch kind {
         case "possible":
-            guard let naId, let title, let catalogURL, let rationale else { return nil }
-            return .possible(
-                CuratedSeries(naId: naId, title: title, catalogURL: catalogURL,
-                              entryNumber: hmsMlrEntryNumbers?.first, dateRange: dateRange),
-                rationale: rationale)
+            guard let resolved = resolvedSeries(shared),
+                  let why = rationale ?? shared?.rationale else { return nil }
+            return .possible(resolved, rationale: why)
         case "candidates":
             guard let candidates, !candidates.isEmpty, let rationale else { return nil }
             return .candidates(candidates, rationale: rationale, creatorName: creatorName,
@@ -144,6 +187,21 @@ struct CuratedLotRecord: Codable, Sendable, Equatable {
         default:
             return nil
         }
+    }
+
+    /// This row's series: its own inline fields when present, otherwise the shared definition.
+    private func resolvedSeries(_ shared: CuratedSeriesDefinition?) -> CuratedSeries? {
+        if let naId, let title, let catalogURL {
+            return CuratedSeries(naId: naId, title: title, catalogURL: catalogURL,
+                                 entryNumber: hmsMlrEntryNumbers?.first, dateRange: dateRange)
+        }
+        return shared?.series
+    }
+
+    /// The record group this row establishes — its own, or the shared series' — in the
+    /// parser's `RG-59` form.
+    func effectiveRecordGroup(resolving series: [String: CuratedSeriesDefinition]) -> String? {
+        recordGroup ?? seriesRef.flatMap { series[$0] }?.recordGroup
     }
 }
 
@@ -178,8 +236,13 @@ struct CuratedLotResolutions: Codable, Sendable {
     let generated: String
     /// Why the file exists, for whoever opens it next.
     let note: String?
-    /// One row per curated lot.
+    /// NARA series shared by more than one row, keyed by `seriesRef`.
+    let series: [String: CuratedSeriesDefinition]?
+    /// One row per curated collection.
     let lots: [CuratedLotRecord]
+
+    /// The shared series definitions, or an empty map when the file declares none.
+    private var seriesMap: [String: CuratedSeriesDefinition] { series ?? [:] }
 
     /// The curated record for `raw`, matched on the same normalized key
     /// `CentralFilesIndex.lotFile(forRawLot:)` uses, or `nil` when the lot is not curated.
@@ -192,14 +255,45 @@ struct CuratedLotResolutions: Codable, Sendable {
     /// malformed — a bad row is treated as absent, so the app falls back to today's honest
     /// "no matching record" rather than rendering half a card).
     func outcome(forRawLot raw: String) -> CuratedLotOutcome? {
-        record(forRawLot: raw)?.outcome
+        record(forRawLot: raw)?.outcome(resolving: seriesMap)
     }
 
     /// The record group curation established for `raw`, in the parser's `RG-59` form.
     /// Callers must prefer this over `SourceNoteParser`'s guess, which defaults every
     /// non-`F` lot to RG 59 and is wrong for at least one curated collection.
     func recordGroup(forRawLot raw: String) -> String? {
-        record(forRawLot: raw)?.recordGroup
+        record(forRawLot: raw)?.effectiveRecordGroup(resolving: seriesMap)
+    }
+
+    /// The curated record a `namedFileSeries` citation belongs to — one that names the
+    /// collection but carries no lot number, so it never reaches the lot path at all.
+    ///
+    /// "CFM Files" is cited both ways: 697 documents carry lot M-88 and a further 376 name
+    /// the collection alone. The archival answer is the same for both, and before this
+    /// lookup existed the second group saw nothing.
+    func record(forSeriesName name: String) -> CuratedLotRecord? {
+        let key = CuratedLotResolutions.normalizeSeriesName(name)
+        guard !key.isEmpty else { return nil }
+        return lots.first { record in
+            (record.seriesNames ?? []).contains { CuratedLotResolutions.normalizeSeriesName($0) == key }
+        }
+    }
+
+    /// The curated outcome for a named file series, or `nil` when it is not curated.
+    func outcome(forSeriesName name: String) -> CuratedLotOutcome? {
+        record(forSeriesName: name)?.outcome(resolving: seriesMap)
+    }
+
+    /// The record group curation established for a named file series.
+    func recordGroup(forSeriesName name: String) -> String? {
+        record(forSeriesName: name)?.effectiveRecordGroup(resolving: seriesMap)
+    }
+
+    /// Case- and punctuation-insensitive series key. FRUS spells the same collection many
+    /// ways — `J. C. S. Files` has nine distinct spellings in the corpus — so an exact match
+    /// would resolve one spelling and silently miss the rest.
+    static func normalizeSeriesName(_ raw: String) -> String {
+        raw.lowercased().filter { $0.isLetter || $0.isNumber }
     }
 }
 

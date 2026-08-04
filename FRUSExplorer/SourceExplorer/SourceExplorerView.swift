@@ -302,21 +302,38 @@ struct SourceExplorerView: View {
     /// yet for this case.
     @ViewBuilder
     private func namedFileSeriesPanel(seriesName: String, fileIdentifier: String?) -> some View {
+        // A collection cited by name alone still has whatever archival answer curation
+        // established for it under its lot number — "CFM Files" is cited both ways, and
+        // before this lookup the 376 name-only citations saw nothing (#375).
+        let curated = CuratedLotResolutionsStore.shared?.record(forSeriesName: seriesName)
+
         Section(String(localized: "source.explorer.provenance.header", defaultValue: "Provenance")) {
             LabeledContent(
                 String(localized: "source.explorer.namedSeries.series", defaultValue: "File Series"),
                 value: seriesName
             )
+            if let rg = CuratedLotResolutionsStore.shared?.recordGroup(forSeriesName: seriesName) {
+                LabeledContent(
+                    String(localized: "source.explorer.lotFile.rg", defaultValue: "Record Group"),
+                    value: rg.replacingOccurrences(of: "RG-", with: "RG ")
+                )
+            }
             if let fileIdentifier {
                 LabeledContent(
                     String(localized: "source.explorer.namedSeries.file", defaultValue: "File"),
                     value: fileIdentifier
                 )
             }
-            Text(String(localized: "source.explorer.namedSeries.explainer",
-                        defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if curated == nil {
+                Text(String(localized: "source.explorer.namedSeries.explainer",
+                            defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        if let outcome = CuratedLotResolutionsStore.shared?.outcome(forSeriesName: seriesName) {
+            curatedLotSection(outcome)
         }
     }
 
@@ -791,8 +808,8 @@ struct SourceExplorerView: View {
         // Curation is authoritative over the parser's record group, which defaults every
         // non-`F` lot to RG 59 — so a curated RG-43 collection would otherwise be labelled
         // RG 59 here *and* searched under RG 59 in the fallback URL below (#375).
-        let curated = CuratedLotResolutionsStore.shared?.record(forRawLot: lotNumber)
-        let effectiveRG = curated?.recordGroup ?? recordGroup
+        let effectiveRG = CuratedLotResolutionsStore.shared?.recordGroup(forRawLot: lotNumber)
+            ?? recordGroup
 
         Section(String(localized: "source.explorer.provenance.header",
                        defaultValue: "Provenance")) {
@@ -836,7 +853,7 @@ struct SourceExplorerView: View {
 
         // Hand-curated outcome for a lot NARA's catalogue does not resolve by control
         // number (#375). Never a confident card: each kind states its own uncertainty.
-        if let outcome = curated?.outcome {
+        if let outcome = CuratedLotResolutionsStore.shared?.outcome(forRawLot: lotNumber) {
             curatedLotSection(outcome)
         }
 
