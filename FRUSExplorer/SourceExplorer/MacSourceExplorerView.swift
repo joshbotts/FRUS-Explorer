@@ -274,10 +274,11 @@ struct MacSourceExplorerView: View {
                        let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
                         bundledLotBox(entry)
                     }
-                    // Hand-curated outcome for a lot NARA's catalogue does not resolve by
-                    // control number (#375). Mirrors iOS `curatedLotSection`.
-                    if case .lotFile(_, let lot, _) = parsed,
-                       let outcome = CuratedLotResolutionsStore.shared?.outcome(forRawLot: lot) {
+                    // Hand-curated outcome for a collection NARA's catalogue does not resolve
+                    // by control number (#375). Mirrors iOS `curatedLotSection`. Reached both
+                    // by lot number and — for a citation that names the collection without one
+                    // — by series name.
+                    if let outcome = curatedOutcome(for: parsed) {
                         curatedLotBox(outcome)
                     }
                     if let parsed {
@@ -470,6 +471,13 @@ struct MacSourceExplorerView: View {
                     provenanceRow(label: String(localized: "source.explorer.namedSeries.series",
                                                defaultValue: "File Series"),
                                   value: series)
+                    // A collection cited by name alone carries no record group; curation
+                    // supplies it when the same collection is curated under its lot number.
+                    // Mirrors the iOS `namedFileSeriesPanel` — keep in sync.
+                    if let rg = CuratedLotResolutionsStore.shared?.recordGroup(forSeriesName: series) {
+                        provenanceRow(label: "Record Group",
+                                      value: rg.replacingOccurrences(of: "RG-", with: "RG "))
+                    }
                     if let fileId {
                         provenanceRow(label: String(localized: "source.explorer.namedSeries.file",
                                                    defaultValue: "File"),
@@ -692,6 +700,19 @@ struct MacSourceExplorerView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The curated outcome for a parsed note, by lot number or — when the citation names the
+    /// collection without one — by series name. `nil` for every other parse.
+    private func curatedOutcome(for parsed: ParsedSourceNote?) -> CuratedLotOutcome? {
+        switch parsed {
+        case .lotFile(_, let lot, _):
+            return CuratedLotResolutionsStore.shared?.outcome(forRawLot: lot)
+        case .namedFileSeries(let series, _):
+            return CuratedLotResolutionsStore.shared?.outcome(forSeriesName: series)
+        default:
+            return nil
         }
     }
 

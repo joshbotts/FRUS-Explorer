@@ -46,10 +46,10 @@ struct CuratedLotResolutionsTests {
     @Test("The shipped artifact decodes and every row yields a typed outcome")
     func everyRowIsWellFormed() throws {
         let curated = try loadCurated()
-        #expect(curated.schemaVersion == 1)
+        #expect(curated.schemaVersion == 2)
         #expect(!curated.lots.isEmpty)
         for lot in curated.lots {
-            #expect(lot.outcome != nil,
+            #expect(curated.outcome(forRawLot: lot.lotNumber) != nil,
                     "\(lot.lotNumber) has kind '\(lot.kind)' but not the fields that kind requires — a malformed row is silently treated as uncurated, so this must never ship")
             #expect(lot.lotNumber == CentralFilesIndex.normalizeLot(lot.lotNumber),
                     "\(lot.lotNumber) is not in normalizeLot form, so no lookup will ever match it")
@@ -64,8 +64,9 @@ struct CuratedLotResolutionsTests {
 
     @Test("Every stored URL parses")
     func urlsParse() throws {
-        for lot in try loadCurated().lots {
-            switch lot.outcome {
+        let curated = try loadCurated()
+        for lot in curated.lots {
+            switch curated.outcome(forRawLot: lot.lotNumber) {
             case .possible(let series, _):
                 #expect(series.url != nil, "\(lot.lotNumber): catalogURL does not parse")
             case .candidates(let series, _, _, let seeAll):
@@ -105,6 +106,12 @@ struct CuratedLotResolutionsTests {
         #expect(curated.lots.contains { $0.recordGroup != nil })
         for lot in curated.lots where lot.recordGroup != nil {
             #expect(curated.recordGroup(forRawLot: lot.lotNumber) == lot.recordGroup)
+        }
+        // Every row must end up with a record group, inline or through its shared series —
+        // a row without one silently falls back to the parser's wrong RG-59 default.
+        for lot in curated.lots {
+            #expect(curated.recordGroup(forRawLot: lot.lotNumber) != nil,
+                    "\(lot.lotNumber) resolves no record group, so the parser's RG-59 default wins")
         }
     }
 
@@ -150,6 +157,62 @@ struct CuratedLotResolutionsTests {
         }
     }
 
+    // MARK: Shared series and named-series routing
+
+    @Test("Every seriesRef resolves — a dangling one would yield a silently uncurated lot")
+    func seriesRefsResolve() throws {
+        let curated = try loadCurated()
+        let defined = Set((curated.series ?? [:]).keys)
+        let referenced = curated.lots.compactMap(\.seriesRef)
+        #expect(!referenced.isEmpty, "guard is vacuous if no row uses the shared series map")
+        for ref in referenced {
+            #expect(defined.contains(ref),
+                    "seriesRef '\(ref)' is not in the series map; its row would resolve to no outcome at all")
+        }
+    }
+
+    @Test("A row referencing a shared series inherits its series, rationale and record group")
+    func sharedSeriesIsInherited() throws {
+        let curated = try loadCurated()
+        let row = try #require(curated.lots.first { $0.seriesRef != nil && $0.naId == nil },
+                               "expected at least one row with no inline series of its own")
+        let outcome = try #require(curated.outcome(forRawLot: row.lotNumber))
+        guard case .possible(let series, let rationale) = outcome else {
+            Issue.record("\(row.lotNumber) did not resolve to a possible match"); return
+        }
+        let shared = try #require((curated.series ?? [:])[row.seriesRef!])
+        #expect(series.naId == shared.naId)
+        #expect(series.title == shared.title)
+        #expect(!rationale.isEmpty)
+        #expect(curated.recordGroup(forRawLot: row.lotNumber) == shared.recordGroup)
+    }
+
+    @Test("An inline rationale overrides the shared one")
+    func inlineRationaleWins() throws {
+        let curated = try loadCurated()
+        guard let row = curated.lots.first(where: { $0.seriesRef != nil && $0.rationale != nil }),
+              case .possible(_, let rationale)? = curated.outcome(forRawLot: row.lotNumber)
+        else { return }
+        #expect(rationale == row.rationale)
+    }
+
+    @Test("Named-series lookup is case- and punctuation-insensitive")
+    func namedSeriesLookupNormalizes() throws {
+        let curated = try loadCurated()
+        let row = try #require(curated.lots.first { !($0.seriesNames ?? []).isEmpty },
+                               "at least one row must claim a series name, or the named-series route is dead")
+        let name = try #require(row.seriesNames?.first)
+        #expect(curated.record(forSeriesName: name)?.lotNumber == row.lotNumber)
+        #expect(curated.record(forSeriesName: name.lowercased())?.lotNumber == row.lotNumber)
+        #expect(curated.record(forSeriesName: name.replacingOccurrences(of: " ", with: ". "))?.lotNumber
+                == row.lotNumber)
+        #expect(curated.record(forSeriesName: "No Such Files") == nil)
+        #expect(curated.record(forSeriesName: "") == nil)
+        // The named-series route must reach a real outcome, not just a record.
+        #expect(curated.outcome(forSeriesName: name) != nil)
+        #expect(curated.recordGroup(forSeriesName: name) == curated.recordGroup(forRawLot: row.lotNumber))
+    }
+
     @Test("A curated NAID may still be a CONFIDENT resolution for a different lot")
     func confidenceBelongsToTheEdgeNotTheNAID() throws {
         let curated = try loadCurated()
@@ -162,7 +225,9 @@ struct CuratedLotResolutionsTests {
         // suppress those nine certain resolutions too. This test states why that shape is wrong.
         var curatedNAIDs: Set<String> = []
         for lot in curated.lots {
-            if case .possible(let series, _)? = lot.outcome { curatedNAIDs.insert(series.naId) }
+            if case .possible(let series, _)? = curated.outcome(forRawLot: lot.lotNumber) {
+                curatedNAIDs.insert(series.naId)
+            }
         }
         guard !curatedNAIDs.isEmpty else { return }
         let sharedWithConfident = lotFiles
@@ -254,10 +319,26 @@ struct CuratedLotWiringAuditTests {
         let mac = Self.code(try Self.source("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"))
         // Without this, a curated RG-43 collection is labelled "RG 59" from the parser's
         // conservative default — and searched under RG 59 in the fallback URL.
-        #expect(ios.contains("curated?.recordGroup"),
+        #expect(ios.contains("CuratedLotResolutionsStore.shared?.recordGroup(forRawLot:"),
                 "SourceExplorerView shows the parser's record group for curated lots")
         #expect(mac.contains("CuratedLotResolutionsStore.shared?.recordGroup(forRawLot:"),
                 "MacSourceExplorerView shows the parser's record group for curated lots")
+    }
+
+    @Test("Both views route a named-series citation through curation")
+    func bothPlatformsRouteNamedSeries() throws {
+        let ios = Self.code(try Self.source("FRUSExplorer/SourceExplorer/SourceExplorerView.swift"))
+        let mac = Self.code(try Self.source("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"))
+        // "CFM Files" is cited 697 times with lot M-88 and 376 times by name alone. Without
+        // this route the second group sees nothing, on either platform.
+        #expect(ios.contains("outcome(forSeriesName:"),
+                "SourceExplorerView never resolves a curated outcome by series name")
+        #expect(ios.contains("recordGroup(forSeriesName:"),
+                "SourceExplorerView shows no record group for a curated named series")
+        #expect(mac.contains("outcome(forSeriesName:"),
+                "MacSourceExplorerView never resolves a curated outcome by series name")
+        #expect(mac.contains("recordGroup(forSeriesName:"),
+                "MacSourceExplorerView shows no record group for a curated named series")
     }
 
     @Test("No curated branch borrows the confident card's 'resolved from the bundled index' caption")
