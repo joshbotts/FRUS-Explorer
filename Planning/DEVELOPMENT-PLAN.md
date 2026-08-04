@@ -1972,7 +1972,7 @@ slate (N lane, R-2b, Q discovery tail, held owner decisions) ships or is refuted
   absence), then a 1.0-readiness wave (#106, metadata, accessibility closeout, localization
   posture).
 - **P5 — scheduled perf/debt**: the measured two-phase fetch session (~10.5 s → ~0.6 s), one
-  batched index-migration event (collect all index-shape wants behind a single multi-hour
-  reindex), dead-code decisions, the unticked export-verification checklist, #270 as trailing
+  batched index-migration event (collect index-shape wants behind a single version bump —
+  for tidiness, not cost: the reindex is ~10 minutes, owner-measured 2026-08-04), dead-code decisions, the unticked export-verification checklist, #270 as trailing
   hygiene. Non-targets reaffirmed: cross-platform port (post-1.0; spike only), CloudKit sharing,
   ANN infra, and every measured refutation.

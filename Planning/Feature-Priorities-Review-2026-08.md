@@ -188,13 +188,17 @@ Worth scheduling as named sessions, in order of measured value:
 1. **The two-phase fetch** — already measured: the 7,500-row macOS fetch drops ~10.5 s → ~0.6 s,
    byte-identical output. The plan calls it "the largest remaining latency win… its own session."
    Do it as the app's next pure-performance session.
-2. **One batched index-migration event.** An index-version bump is now a multi-hour, 552-volume
-   reindex — the plan calls any bump "a scheduling event in its own right." Several wants each
-   imply index-shape changes: `place_mentions`/country attention (BigPicture Analytics #10),
+2. **One batched index-migration event.** **[2026-08-04] Re-graded: the premise was wrong.**
+   This item was ranked on the plan's claim that a bump costs "a multi-hour, 552-volume reindex"
+   and is "a scheduling event in its own right." Owner-measured, a full reindex is **~10
+   minutes**, and the app records no indexing duration, so the original figure rested on
+   nothing. Batching remains mildly worth doing — one migration is easier to reason about than
+   four — but it is **no longer a reason to defer any feature**, and it does not belong in a
+   priority list ordered by measured value. Several wants each imply index-shape changes: `place_mentions`/country attention (BigPicture Analytics #10),
    Spotlight `textContent` (Priority 2.3 — if it needs indexed text rather than re-donation),
    any vector rowid alignment, and residual #645-class fixes. Collect them, land them behind one
-   version bump, and pair the reindex with the shipped free-space reclaim (#648). Never pay the
-   multi-hour cost twice in a season.
+   version bump, and pair the reindex with the shipped free-space reclaim (#648) — but land
+   each on its own schedule if that is simpler, because the cost of paying twice is ten minutes.
 3. **Dead-code and inert-UI decisions** — cheap, and each is called "the worst option" to leave:
    `GlobalContextViewModel`'s unreachable reading analytics (wire or delete);
    `Project.defaultSubjectTagIds` shown in the editor while inert (remove, or reactivate with
