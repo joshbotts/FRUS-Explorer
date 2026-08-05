@@ -27,11 +27,16 @@ import SourceNoteKit
 ///   2. the repository-scoped text key (`"txt:" + repoNorm + "|" + segmentNorm`);
 ///   3. the guarded unattributed bucket (`"txt:|" + segmentNorm`) — only for a non-generic
 ///      segment that exactly one text record carries;
-///   4. an unambiguous alias (plural-folded `segmentNorm` matching exactly one record).
+///   4. an unambiguous alias (plural-folded `segmentNorm` matching exactly one record),
+///      refused when the citing repository and the record's repository are **different
+///      manuscript repositories** (`CollectionKeying.manuscriptRepositoriesConflict`).
 /// If either copy drifts, the fixture table in `AuthorityLookupParityTests` fails.
 ///
 /// Version history:
 ///   1.0 — #335: initial implementation (CrossRefKit parity-mirror pattern)
+///   1.1 — Session 2026-08-05 (N-4 step 1): step 4's cross-repository guard. The parity
+///          fixture table gained the seven corpus notes that bridged, because a parity
+///          suite only proves parity for behaviour some fixture actually reaches.
 public struct AuthorityLookup: Sendable {
 
     /// All authority records, as decoded from the bundled artifact.
@@ -102,7 +107,14 @@ public struct AuthorityLookup: Sendable {
            collections[hits[0]].id == "txt:|" + segNorm {
             return collections[hits[0]]
         }
-        return uniqueRecord(forAliasNorm: segNorm)
+        // Step 4, repository-guarded (N-4 step 1): the alias map is global, so an
+        // unambiguous alias owned by one manuscript repository is reachable from a
+        // citation naming a different one. Mirrors the app's same guard.
+        let alias = uniqueRecord(forAliasNorm: segNorm)
+        if CollectionKeying.manuscriptRepositoriesConflict(repository, alias?.repository) {
+            return nil
+        }
+        return alias
     }
 
     /// The document-source-note entry point: the shared `CollectionKeying.identity` produces

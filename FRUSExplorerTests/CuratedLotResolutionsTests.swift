@@ -354,6 +354,30 @@ struct CuratedLotWiringAuditTests {
         }
     }
 
+    /// The capsule token this audit watches for.
+    ///
+    /// It is a **style** token, not a semantic one, and the first version of this test
+    /// simply asserted the file never contained it. #680 then added an unrelated
+    /// "Unverified" chip to `MacSourceExplorerView.unverifiedResultBanner` that styles
+    /// itself the same way, and the audit went red on `v2` over a view that has nothing
+    /// to do with confidence. Anchoring the check to the *enclosing member* is what makes
+    /// it an audit of the confidence renderer rather than of a colour.
+    private static let capsuleToken = "Color.orange.opacity(0.18)"
+
+    /// The name of the `var`/`func` each occurrence of `token` sits inside.
+    private static func enclosingMembers(of token: String, in text: String) -> [String] {
+        var current = "<file scope>"
+        var found: [String] = []
+        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if let range = trimmed.range(of: #"(?:var|func)\s+(\w+)"#, options: .regularExpression) {
+                current = String(trimmed[range]).split(separator: " ").last.map(String.init) ?? current
+            }
+            if line.contains(token) { found.append(current) }
+        }
+        return found
+    }
+
     @Test("The shared confidence chip is used, not a third copy of the capsule")
     func confidenceChipIsShared() throws {
         for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
@@ -361,8 +385,10 @@ struct CuratedLotWiringAuditTests {
             let text = Self.code(try Self.source(path))
             #expect(text.contains("ConfidenceChip(confidence:"),
                     "\(path) does not use the shared ConfidenceChip")
-            #expect(!text.contains("Color.orange.opacity(0.18)"),
-                    "\(path) still inlines the confidence capsule — that duplication is what ConfidenceChip replaced")
+            let inConfidenceRenderer = Self.enclosingMembers(of: Self.capsuleToken, in: text)
+                .filter { $0.localizedCaseInsensitiveContains("confidence") }
+            #expect(inConfidenceRenderer.isEmpty,
+                    "\(path) re-inlines the confidence capsule in \(inConfidenceRenderer) — that duplication is what ConfidenceChip replaced")
         }
     }
 }

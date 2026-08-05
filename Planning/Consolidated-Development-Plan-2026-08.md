@@ -611,6 +611,28 @@ strategy-steal work rather than a missing class.
 `SourceNoteEval`-guarded, with one `currentDateIndexVersion` bump for the set (~10 minutes).
 `File No.` alone is 21,960 documents.
 
+**[2026-08-05] N-1a and N-1b shipped; the remaining tail is PARKED, to be resumed
+opportunistically (owner call).** #687 landed the three named rules, #688 and #689 the two
+defects the owner found on `frus1952-54v13p1/d416` that the aggregate measurements missed
+(the space-separated `751G.5 MSP` form, and `relatedByDecimal` matching `series_name`, where
+`location(from:)` trims a space the stored value keeps). #690 closed three residual families —
+the dotless top-level classes (`032`, 1,565 docs), a space after the class dot (`501. BC`,
+891), and the dash-and-space suffix (796) — for **3,333 newly classed, 1 corrected, 0 lost**
+against 181,702 rows. Index version now 25.
+
+**What is parked, and why parking is the right call.** The decimal residual is down from
+71,644 to **8,642 rows (4.5%)**, and what remains is no longer coverage: the three
+strategy-steal classes (~939 docs), the ~1,758 unrecognized-note recoveries, the 275-document
+Central-Files-primary parse class, and 21 punctuation-variant named-series families (2,130
+docs). Each is worth a few thousand documents at most, against **N-4's 28,772** — and every
+further slice costs a full reindex. `Paris Peace Conf.` (1,351 docs) is *not* parked; it is
+RG 256 and N-2 owns it. Resume the tail when a reindex is already being paid for by
+something else.
+
+**Owed before the tail resumes:** `eval-baseline.txt` is stale by 16,770 notes and needs a
+deliberate refresh pass — not folded into a feature slice, where a baseline adopted alongside
+a behaviour change proves nothing.
+
 **[2026-08-02] No harvest dependency. Do not budget a harvest-lexicon sub-session.** The
 939-document steal fix and the ~1,758 recoverable unrecognized notes reproduce exactly and
 land identically with the harvest deleted from disk. The harvest's honest contribution is
@@ -815,6 +837,54 @@ curated entries repository-first and make lookup repository-aware for library pa
 *before* seeding; (ii) keep neighbor-key normalization ("NSF" variants, "Dulles papers"
 casing) off the repository-blind alias step. Unguarded but lower risk, for the record:
 `namedFileSeries` carries no repository at all and can reach a `lot:` cluster.
+
+---
+
+**[2026-08-05] N-4 step 1 SHIPPED — condition (i)'s lookup half is closed, and the seeding
+target is now measured at the grain the curation actually attaches to.**
+
+*The guard.* Step 4 now refuses an alias hit whose repository is a **different manuscript
+repository** from the citing note's (`CollectionKeying.manuscriptRepositoriesConflict`,
+mirrored into `AuthorityLookup` with its own parity fixture). Measured over all 266,513
+`document_sources` rows through the shipped parser, keying and artifact: **seven citations
+were bridging, over 10 documents** — an Eisenhower Library citation landing on the *Carter*
+Library's staff-secretary cluster, both Reagan's and Johnson's "President's Daily Diary"
+landing on the Library of Congress. Corpus resolution moves 74,692 → 74,682 and **every one
+of the ten goes from a wrong answer to no answer**; no correct resolution is lost.
+
+*Two boundaries that had to be measured, not chosen.* A **symmetric** guard — any repository
+disagreement refuses — costs **179 correct resolutions**, because `National Archives`,
+`Department of State`, `Washington National Records Center` and `Department of Defense` are
+custody, creator and accession names for the *same* federal records and the corpus mixes them
+freely. And **equality** is too strict for agreement: `canonicalRepository` falls through to
+the raw string outside its keyword list, so one institution arrives as both
+`Princeton University` and `Princeton University Library`. Containment is the rule.
+Separately, `isLibraryRepositoryName` was **not** sufficient to identify a library: Nixon's
+canonical form is the bare keyword `"Nixon"`, carrying no marker at all, which would have left
+the corpus's **largest** library bucket (7,056 documents) unguarded.
+
+*Sizing, re-measured — supersedes the 2026-08-02 figures above.* Counting **resolved**
+documents at the **authority-record** grain (which is what a curated NAID attaches to) rather
+than raw (repository, collection) string pairs: **28,772 documents over 309 records, none
+carrying a NAID today.** The curve is much better than the plan assumed —
+
+| curated entries | documents | share |
+|---|---|---|
+| 6 | 20,176 | **70.1%** |
+| 10 | 22,765 | 79.1% |
+| **20** | **24,846** | **86.4%** |
+| 46 | 26,807 | 93.2% |
+
+Top six: Nixon NSC Files (7,056), Johnson NSF (4,016), Carter National Security Affairs
+(3,591), Eisenhower Whitman File (2,036), Kennedy NSF (1,993), Ford National Security Adviser
+(1,484). **Stop at 20** still holds. Worklist for the owner's curation:
+`Planning/source-explorer-export/library-collections-ranked.tsv` (309 rows, cumulative
+shares, authority ids) — the N-3 `missed-lots-ranked.tsv` pattern.
+
+*Still open in N-4:* the other half of condition (i) — the curated artifact must be **keyed
+(repository, collection)**, not by collection alone — plus condition (ii), and the seeding
+itself. A further 964 documents over 427 pairs do not resolve at all (Reagan-heavy: Perina,
+Guhin, Farrar, Pipes files); that tail is separate from seeding.
 
 **N-5 — #372 lot-map consolidation** *(Effort M, architectural — now split into two PRs)*
 

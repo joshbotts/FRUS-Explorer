@@ -84,6 +84,38 @@ struct AuthorityLookupParityTests {
         #expect(lookup.uniqueRecord(forAliasNorm: CollectionKeying.segmentNorm("Shared Name")) == nil)
     }
 
+    /// N-4 step 1 parity: step 4's alias map is global, so an unambiguous alias owned by
+    /// one manuscript repository is reachable from a citation naming a different one.
+    /// Measured on the shipped artifact, seven corpus citations did exactly that.
+    @Test("step 4 guard: an alias never bridges between two manuscript repositories")
+    func crossRepositoryAliasGuard() {
+        let lookup = AuthorityLookup(collections: [
+            AuthorityCollection(id: "txt:carter library|records of the office of the staff secretary",
+                                name: "Records of the Office of the Staff Secretary",
+                                repository: "Carter Library", naId: "3000"),
+            AuthorityCollection(id: "txt:department of state|bandow file",
+                                name: "Bandow Files", repository: "Department of State"),
+        ])
+        // Precondition: the raw alias hit exists, so the guard is what refuses it.
+        #expect(lookup.uniqueRecord(forAliasNorm: CollectionKeying
+            .segmentNorm("Records of the Office of the Staff Secretary"))?.naId == "3000")
+        #expect(lookup.record(repository: "Eisenhower Library",
+                              leadingSegment: "Records of the Office of the Staff Secretary") == nil,
+                "an Eisenhower citation must not reach the Carter Library's cluster")
+        // The owning repository still resolves.
+        #expect(lookup.record(repository: "Carter Library",
+                              leadingSegment: "Records of the Office of the Staff Secretary")?
+            .naId == "3000")
+        // A creating-agency record is not a rival building — deliberately untouched.
+        #expect(lookup.record(repository: "Reagan Library",
+                              leadingSegment: "Bandow Files")?.id
+                == "txt:department of state|bandow file")
+        // A citation naming no repository still resolves through the alias step.
+        #expect(lookup.record(repository: nil,
+                              leadingSegment: "Records of the Office of the Staff Secretary")?
+            .naId == "3000")
+    }
+
     @Test("no identity → no record (foreign archives, previously published, unrecognized)")
     func noIdentityCases() {
         let lookup = fixtureLookup()
