@@ -852,7 +852,13 @@ struct SourceExplorerView: View {
         // Bundle-first: a pre-resolved lot file links straight to its NARA Catalog series
         // record with no API key. Shown above the live lookup; the live path remains as a
         // fallback for lots not in the bundle.
-        if let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lotNumber) {
+        // #675 / N-8b: where NARA divided the lot across several series, show them all rather
+        // than naming one. Takes precedence over the single bundled card, which would assert a
+        // choice the data does not support.
+        if let divided = LotClaimantsIndex.candidatesOutcome(
+            forRawLot: lotNumber, in: LotClaimantsIndexStore.shared) {
+            curatedLotSection(divided)
+        } else if let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lotNumber) {
             bundledLotSection(entry)
         }
 

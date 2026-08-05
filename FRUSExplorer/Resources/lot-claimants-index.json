@@ -1,0 +1,4639 @@
+{
+  "generated" : "2026-08-05",
+  "harvestGenerated" : "2026-07-30",
+  "lots" : [
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1952–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1500"
+          ],
+          "naId" : "2163544",
+          "recordGroup" : "59",
+          "title" : "Supplemental Decimal Files"
+        },
+        {
+          "dateRange" : "1952–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1502"
+          ],
+          "naId" : "2165745",
+          "recordGroup" : "59",
+          "title" : "Committee Files"
+        },
+        {
+          "dateRange" : "1946–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1507"
+          ],
+          "naId" : "2165748",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Visas"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1503"
+          ],
+          "naId" : "2363829",
+          "recordGroup" : "59",
+          "title" : "Reading Files of Samuel D. Boykin"
+        },
+        {
+          "dateRange" : "1946–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1504"
+          ],
+          "naId" : "2363830",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Protective Services"
+        },
+        {
+          "dateRange" : "1944–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1505"
+          ],
+          "naId" : "2363831",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Passports"
+        },
+        {
+          "dateRange" : "1947–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1506"
+          ],
+          "naId" : "2363832",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Munitions Control"
+        },
+        {
+          "dateRange" : "1946–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1508"
+          ],
+          "naId" : "2363833",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Security"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1494A"
+          ],
+          "naId" : "2504761",
+          "recordGroup" : "59",
+          "title" : "General Records"
+        }
+      ],
+      "lotNumber" : "53D223"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1187"
+          ],
+          "naId" : "2168405",
+          "recordGroup" : "59",
+          "title" : "Memorandums for the President"
+        },
+        {
+          "dateRange" : "1949–1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1188"
+          ],
+          "naId" : "2168413",
+          "recordGroup" : "59",
+          "title" : "Secretary's Memorandums"
+        },
+        {
+          "dateRange" : "1947–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1189"
+          ],
+          "naId" : "2168424",
+          "recordGroup" : "59",
+          "title" : "Memorandums of Conversation"
+        },
+        {
+          "dateRange" : "1947–1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1190"
+          ],
+          "naId" : "2168433",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Secretary's Press Conferences"
+        },
+        {
+          "dateRange" : "1948–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1191"
+          ],
+          "naId" : "2168444",
+          "recordGroup" : "59",
+          "title" : "Records Relating to White House Press Conferences"
+        },
+        {
+          "dateRange" : "1947–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1192"
+          ],
+          "naId" : "2168452",
+          "recordGroup" : "59",
+          "title" : "Records Pertaining to Appointments and Staff Meetings"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1193"
+          ],
+          "naId" : "2168460",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1194"
+          ],
+          "naId" : "2168497",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files with State Department Personnel"
+        },
+        {
+          "dateRange" : "1949–1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1195"
+          ],
+          "naId" : "2168505",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files with Non-State Department Personnel"
+        },
+        {
+          "dateRange" : "1948–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1196"
+          ],
+          "naId" : "2168511",
+          "recordGroup" : "59",
+          "title" : "General Correspondence Files"
+        },
+        {
+          "dateRange" : "1949–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1197"
+          ],
+          "naId" : "2168520",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings and Visits of Foreign Dignitaries"
+        }
+      ],
+      "lotNumber" : "53D444"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1944–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1530"
+          ],
+          "naId" : "2255744",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1950–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1531"
+          ],
+          "naId" : "2255745",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Public Relations Working Group"
+        },
+        {
+          "dateRange" : "1949–1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1532"
+          ],
+          "naId" : "2521214",
+          "recordGroup" : "59",
+          "title" : "Records Pertaining to Departmental Consultative Meetings"
+        }
+      ],
+      "lotNumber" : "54D202"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1443"
+          ],
+          "naId" : "2240958",
+          "recordGroup" : "59",
+          "title" : "Subject Files Relating to South Asian Regional Affairs"
+        },
+        {
+          "dateRange" : "1949–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1444"
+          ],
+          "naId" : "2240959",
+          "recordGroup" : "59",
+          "title" : "Subject Files Relating to Afghan Affairs"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1445"
+          ],
+          "naId" : "2240960",
+          "recordGroup" : "59",
+          "title" : "Subject Files Relating to Ceylonese Affairs"
+        },
+        {
+          "dateRange" : "1949–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1446"
+          ],
+          "naId" : "2240961",
+          "recordGroup" : "59",
+          "title" : "Subject Files Relating to Indian Affairs"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1447"
+          ],
+          "naId" : "2240962",
+          "recordGroup" : "59",
+          "title" : "Subject Files Relating to Pakistan"
+        }
+      ],
+      "lotNumber" : "54D341"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1950–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1252"
+          ],
+          "naId" : "2127213",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1950–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1253"
+          ],
+          "naId" : "2127215",
+          "recordGroup" : "59",
+          "title" : "Cable Files"
+        },
+        {
+          "dateRange" : "1951–1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1254"
+          ],
+          "naId" : "2127216",
+          "recordGroup" : "59",
+          "title" : "Japanese Comments on the Peace Treaty and Related Matters"
+        },
+        {
+          "dateRange" : "1951–1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1255"
+          ],
+          "naId" : "2127217",
+          "recordGroup" : "59",
+          "title" : "Japanese Petitions"
+        }
+      ],
+      "lotNumber" : "54D423"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1222"
+          ],
+          "naId" : "2092768",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1223"
+          ],
+          "naId" : "2092769",
+          "recordGroup" : "59",
+          "title" : "General Correspondence"
+        }
+      ],
+      "lotNumber" : "56D424"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1222"
+          ],
+          "naId" : "2092768",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1223"
+          ],
+          "naId" : "2092769",
+          "recordGroup" : "59",
+          "title" : "General Correspondence"
+        },
+        {
+          "dateRange" : "1945–1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1230"
+          ],
+          "naId" : "2092776",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Treaty of Peace with Japan"
+        }
+      ],
+      "lotNumber" : "56D527"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1205"
+          ],
+          "naId" : "2092757",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        },
+        {
+          "dateRange" : "1951–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1206"
+          ],
+          "naId" : "2092758",
+          "recordGroup" : "59",
+          "title" : "Economic (E) Files"
+        },
+        {
+          "dateRange" : "1948–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1207"
+          ],
+          "naId" : "2092759",
+          "recordGroup" : "59",
+          "title" : "Political (P) Files"
+        },
+        {
+          "dateRange" : "1949–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1208"
+          ],
+          "naId" : "2092760",
+          "recordGroup" : "59",
+          "title" : "Numerical Files"
+        },
+        {
+          "dateRange" : "1953–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1209"
+          ],
+          "naId" : "2092761",
+          "recordGroup" : "59",
+          "title" : "Air Force Project (AP) Files"
+        },
+        {
+          "dateRange" : "1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1210"
+          ],
+          "naId" : "2092762",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "56D625"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1132"
+          ],
+          "naId" : "2108776",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1133"
+          ],
+          "naId" : "2108777",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1134"
+          ],
+          "naId" : "2108778",
+          "recordGroup" : "59",
+          "title" : "Reviews of Foreign Operations Missions"
+        }
+      ],
+      "lotNumber" : "57D295"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1393"
+          ],
+          "naId" : "2143758",
+          "recordGroup" : "59",
+          "title" : "Far East Country Files"
+        },
+        {
+          "dateRange" : "1952–1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1394"
+          ],
+          "naId" : "2143818",
+          "recordGroup" : "59",
+          "title" : "Far East Subject Files"
+        },
+        {
+          "dateRange" : "1950–1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1397"
+          ],
+          "naId" : "2143852",
+          "recordGroup" : "59",
+          "title" : "Office Files"
+        }
+      ],
+      "lotNumber" : "57D472"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1956–1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1308"
+          ],
+          "naId" : "2143395",
+          "recordGroup" : "59",
+          "title" : "Country Files Prepared for the Richards Mission to the Middle East"
+        },
+        {
+          "dateRange" : "1956–1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1309"
+          ],
+          "naId" : "2143396",
+          "recordGroup" : "59",
+          "title" : "Briefing Materials Prepared for the Richards Mission to the Middle East"
+        }
+      ],
+      "lotNumber" : "57D616"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1144"
+          ],
+          "naId" : "2108790",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1950–1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1145"
+          ],
+          "naId" : "2108791",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1148"
+          ],
+          "naId" : "2113319",
+          "recordGroup" : "59",
+          "title" : "Briefing Books for the Meeting of Presidents of the American Republics"
+        }
+      ],
+      "lotNumber" : "57D95"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1945–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 3269",
+            "UD 3269A",
+            "UD 3269B"
+          ],
+          "naId" : "1768057",
+          "recordGroup" : "84",
+          "title" : "Classified General Records"
+        },
+        {
+          "dateRange" : "1953–1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 3270"
+          ],
+          "naId" : "2102942",
+          "recordGroup" : "84",
+          "title" : "Classified Chronological Files"
+        }
+      ],
+      "lotNumber" : "57F139"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1211"
+          ],
+          "naId" : "2103057",
+          "recordGroup" : "59",
+          "title" : "Records Relating to International Conferences, Talks, and Meetings"
+        },
+        {
+          "dateRange" : "1949–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1212"
+          ],
+          "naId" : "2103058",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        },
+        {
+          "dateRange" : "1950–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1213"
+          ],
+          "naId" : "2103059",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        }
+      ],
+      "lotNumber" : "58D207"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1211"
+          ],
+          "naId" : "2103057",
+          "recordGroup" : "59",
+          "title" : "Records Relating to International Conferences, Talks, and Meetings"
+        },
+        {
+          "dateRange" : "1949–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1212"
+          ],
+          "naId" : "2103058",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        },
+        {
+          "dateRange" : "1950–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1213"
+          ],
+          "naId" : "2103059",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        }
+      ],
+      "lotNumber" : "58D339"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1205"
+          ],
+          "naId" : "2092757",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        },
+        {
+          "dateRange" : "1951–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1206"
+          ],
+          "naId" : "2092758",
+          "recordGroup" : "59",
+          "title" : "Economic (E) Files"
+        },
+        {
+          "dateRange" : "1948–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1207"
+          ],
+          "naId" : "2092759",
+          "recordGroup" : "59",
+          "title" : "Political (P) Files"
+        },
+        {
+          "dateRange" : "1949–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1208"
+          ],
+          "naId" : "2092760",
+          "recordGroup" : "59",
+          "title" : "Numerical Files"
+        },
+        {
+          "dateRange" : "1953–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1209"
+          ],
+          "naId" : "2092761",
+          "recordGroup" : "59",
+          "title" : "Air Force Project (AP) Files"
+        },
+        {
+          "dateRange" : "1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1210"
+          ],
+          "naId" : "2092762",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "58D395"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1139"
+          ],
+          "naId" : "2108785",
+          "recordGroup" : "59",
+          "title" : "Reading Files"
+        },
+        {
+          "dateRange" : "1954–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1140"
+          ],
+          "naId" : "2108786",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 36",
+            "UD-WX 50-H"
+          ],
+          "naId" : "2602726",
+          "recordGroup" : "43",
+          "title" : "Maritime Session Reports"
+        }
+      ],
+      "lotNumber" : "58D42"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1222"
+          ],
+          "naId" : "2092768",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1949–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1223"
+          ],
+          "naId" : "2092769",
+          "recordGroup" : "59",
+          "title" : "General Correspondence"
+        }
+      ],
+      "lotNumber" : "58D529"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1944–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1141"
+          ],
+          "naId" : "2108787",
+          "recordGroup" : "59",
+          "title" : "Alphabetical Subject Files"
+        },
+        {
+          "dateRange" : "1948–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 224"
+          ],
+          "naId" : "4314536",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Venezuela"
+        }
+      ],
+      "lotNumber" : "58D564"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1205"
+          ],
+          "naId" : "2092757",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        },
+        {
+          "dateRange" : "1951–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1206"
+          ],
+          "naId" : "2092758",
+          "recordGroup" : "59",
+          "title" : "Economic (E) Files"
+        },
+        {
+          "dateRange" : "1948–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1207"
+          ],
+          "naId" : "2092759",
+          "recordGroup" : "59",
+          "title" : "Political (P) Files"
+        },
+        {
+          "dateRange" : "1949–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1208"
+          ],
+          "naId" : "2092760",
+          "recordGroup" : "59",
+          "title" : "Numerical Files"
+        },
+        {
+          "dateRange" : "1953–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1209"
+          ],
+          "naId" : "2092761",
+          "recordGroup" : "59",
+          "title" : "Air Force Project (AP) Files"
+        },
+        {
+          "dateRange" : "1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1210"
+          ],
+          "naId" : "2092762",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "59D110"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1205"
+          ],
+          "naId" : "2092757",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        },
+        {
+          "dateRange" : "1951–1952",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1206"
+          ],
+          "naId" : "2092758",
+          "recordGroup" : "59",
+          "title" : "Economic (E) Files"
+        },
+        {
+          "dateRange" : "1948–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1207"
+          ],
+          "naId" : "2092759",
+          "recordGroup" : "59",
+          "title" : "Political (P) Files"
+        },
+        {
+          "dateRange" : "1949–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1208"
+          ],
+          "naId" : "2092760",
+          "recordGroup" : "59",
+          "title" : "Numerical Files"
+        },
+        {
+          "dateRange" : "1953–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1209"
+          ],
+          "naId" : "2092761",
+          "recordGroup" : "59",
+          "title" : "Air Force Project (AP) Files"
+        },
+        {
+          "dateRange" : "1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1210"
+          ],
+          "naId" : "2092762",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "59D228"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1395"
+          ],
+          "naId" : "2194823",
+          "recordGroup" : "59",
+          "title" : "East Asian Country Files"
+        },
+        {
+          "dateRange" : "1952–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1396"
+          ],
+          "naId" : "2255070",
+          "recordGroup" : "59",
+          "title" : "Western European Country Files"
+        }
+      ],
+      "lotNumber" : "59D448"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1224"
+          ],
+          "naId" : "2092770",
+          "recordGroup" : "59",
+          "title" : "Briefing Books and Reference Material Relating to Japan"
+        },
+        {
+          "dateRange" : "1947–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1225"
+          ],
+          "naId" : "2092771",
+          "recordGroup" : "59",
+          "title" : "Briefing Books and Reference Material Relating to Korea"
+        },
+        {
+          "dateRange" : "1944–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1226"
+          ],
+          "naId" : "2092772",
+          "recordGroup" : "59",
+          "title" : "Briefing Books and Reference Material Relating to International Conferences"
+        },
+        {
+          "dateRange" : "1950–1955",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1227"
+          ],
+          "naId" : "2092773",
+          "recordGroup" : "59",
+          "title" : "Briefing Books and Reference Material"
+        }
+      ],
+      "lotNumber" : "60D330"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1944–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396H"
+          ],
+          "naId" : "602119",
+          "recordGroup" : "59",
+          "title" : "Daily Summaries"
+        },
+        {
+          "dateRange" : "1944–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396I"
+          ],
+          "naId" : "602131",
+          "recordGroup" : "59",
+          "title" : "Daily Staff Summaries"
+        }
+      ],
+      "lotNumber" : "60D530"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5474A"
+          ],
+          "naId" : "2660902",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Inter-American Cultural Council and the Committee for Cultural Action"
+        },
+        {
+          "dateRange" : "1949–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5464-A",
+            "A1 5464-B"
+          ],
+          "naId" : "27022903",
+          "recordGroup" : "59",
+          "title" : "Committee and Council Files Relating to the Inter-American Economic and Social Council (ECOSOC) and the Economic Commission for Latin America (ECLA)"
+        },
+        {
+          "dateRange" : "1949–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5467 A",
+            "A1 5467-B"
+          ],
+          "naId" : "27022904",
+          "recordGroup" : "59",
+          "title" : "Conference and Commission Files"
+        }
+      ],
+      "lotNumber" : "60D665"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1937–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 2666"
+          ],
+          "naId" : "1729125",
+          "recordGroup" : "84",
+          "title" : "Classified General Records"
+        },
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 2665A"
+          ],
+          "naId" : "1729128",
+          "recordGroup" : "84",
+          "title" : "Classified and Unclassified General Records"
+        }
+      ],
+      "lotNumber" : "60F65"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1943–1946",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 684"
+          ],
+          "naId" : "732401",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1944",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 685"
+          ],
+          "naId" : "732405",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Dumbarton Oaks Conversations"
+        },
+        {
+          "dateRange" : "1945",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 686"
+          ],
+          "naId" : "733708",
+          "recordGroup" : "59",
+          "title" : "United Nations Conference on International Organization (UNCIO) Subject Files of Alger Hiss"
+        },
+        {
+          "dateRange" : "1945",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 687"
+          ],
+          "naId" : "733710",
+          "recordGroup" : "59",
+          "title" : "United Nations Conference on International Organization (UNCIO) Planning Files of John C. Ross"
+        },
+        {
+          "dateRange" : "1945",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 688"
+          ],
+          "naId" : "733711",
+          "recordGroup" : "59",
+          "title" : "United Nations Conference on International Organization (UNCIO) Subject Files of John C. Ross"
+        },
+        {
+          "dateRange" : "1945",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 689"
+          ],
+          "naId" : "733712",
+          "recordGroup" : "59",
+          "title" : "United Nations Conference on International Organization (UNCIO) Subject Files of Cabot Colville"
+        },
+        {
+          "dateRange" : "1945",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 690"
+          ],
+          "naId" : "733713",
+          "recordGroup" : "59",
+          "title" : "United Nations Conference on International Organization (UNCIO) Subject Files of C. Easton Rothwell"
+        },
+        {
+          "dateRange" : "1945",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 691"
+          ],
+          "naId" : "733714",
+          "recordGroup" : "59",
+          "title" : "Report on the Activities of the Army-Navy Coordination Group"
+        },
+        {
+          "dateRange" : "1945–1946",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 692"
+          ],
+          "naId" : "733715",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the United Nations Preparatory Commission"
+        },
+        {
+          "dateRange" : "1945–1946",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 693"
+          ],
+          "naId" : "733716",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the First Session of the United Nations General Assembly"
+        },
+        {
+          "dateRange" : "1937–1944",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 694"
+          ],
+          "naId" : "733717",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Far East"
+        },
+        {
+          "dateRange" : "1943–1944",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 695"
+          ],
+          "naId" : "733718",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Postwar Reparations and Property Rights"
+        },
+        {
+          "dateRange" : "1943–1946",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 696"
+          ],
+          "naId" : "733719",
+          "recordGroup" : "59",
+          "title" : "Administrative and Organizational Files"
+        }
+      ],
+      "lotNumber" : "61D146"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1956–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1402"
+          ],
+          "naId" : "2255659",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1955–1959",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1403"
+          ],
+          "naId" : "2255669",
+          "recordGroup" : "59",
+          "title" : "Correspondence Files"
+        }
+      ],
+      "lotNumber" : "61D252"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1958–1959",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1168"
+          ],
+          "naId" : "2113335",
+          "recordGroup" : "59",
+          "title" : "Supplemental Subject Files Relating to Venezuela"
+        },
+        {
+          "dateRange" : "1948–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 224"
+          ],
+          "naId" : "4314536",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Venezuela"
+        }
+      ],
+      "lotNumber" : "61D319"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1956–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3176"
+          ],
+          "naId" : "1803678",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Peru"
+        },
+        {
+          "dateRange" : "1958–1959",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1322"
+          ],
+          "naId" : "2124204",
+          "recordGroup" : "59",
+          "title" : "Office Files Relating to Middle Eastern Affairs"
+        }
+      ],
+      "lotNumber" : "61D43"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1954–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3130"
+          ],
+          "naId" : "2068429",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Israel and Lebanon"
+        },
+        {
+          "dateRange" : "1960–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3135"
+          ],
+          "naId" : "2068452",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Greece"
+        }
+      ],
+      "lotNumber" : "61D456"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1948–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1583A",
+            "A1 1583B"
+          ],
+          "naId" : "2198167",
+          "recordGroup" : "59",
+          "title" : "Alphabetical Files"
+        },
+        {
+          "dateRange" : "1947–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1583C",
+            "A1 1583D"
+          ],
+          "naId" : "2838991",
+          "recordGroup" : "59",
+          "title" : "Numerical Files"
+        },
+        {
+          "dateRange" : "1948–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1583E",
+            "A1 1583F"
+          ],
+          "naId" : "2838992",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Activities with the National Security Council"
+        }
+      ],
+      "lotNumber" : "62D1"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1509A",
+            "A1 1509B"
+          ],
+          "naId" : "2165755",
+          "recordGroup" : "59",
+          "title" : "Decimal Files"
+        },
+        {
+          "dateRange" : "1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1512"
+          ],
+          "naId" : "27023192",
+          "recordGroup" : "59",
+          "title" : "Name Files"
+        }
+      ],
+      "lotNumber" : "62D146"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1956–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3178"
+          ],
+          "naId" : "2321376",
+          "recordGroup" : "59",
+          "title" : "Country and Subject Files"
+        },
+        {
+          "dateRange" : "1953–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 433"
+          ],
+          "naId" : "56918821",
+          "recordGroup" : "306",
+          "title" : "Regional Correspondence Files"
+        }
+      ],
+      "lotNumber" : "62D302"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1959–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 100A"
+          ],
+          "naId" : "2555653",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1951–1978",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 908"
+          ],
+          "naId" : "2555657",
+          "recordGroup" : "59",
+          "title" : "Agendas and Minutes"
+        },
+        {
+          "dateRange" : "1947–1978",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 909"
+          ],
+          "naId" : "2555807",
+          "recordGroup" : "59",
+          "title" : "Minutes of Bi-National Educational Commissions and Foundations"
+        },
+        {
+          "dateRange" : "1950–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 100J"
+          ],
+          "naId" : "2570258",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Committees"
+        },
+        {
+          "dateRange" : "1950–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WW 222"
+          ],
+          "naId" : "2570347",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Organizations and Conferences"
+        },
+        {
+          "dateRange" : "1951–1978",
+          "evidence" : "controlNumber",
+          "naId" : "2570381",
+          "recordGroup" : "59",
+          "title" : "Cooperating Agency Reports and Related Records"
+        },
+        {
+          "dateRange" : "1956–1976",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 919"
+          ],
+          "naId" : "2570406",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Cooperating Agencies"
+        },
+        {
+          "dateRange" : "1956–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 910"
+          ],
+          "naId" : "2570412",
+          "recordGroup" : "59",
+          "title" : "Correspondence and Memoranda"
+        }
+      ],
+      "lotNumber" : "62D340"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1586A"
+          ],
+          "naId" : "2386675",
+          "recordGroup" : "59",
+          "title" : "Administrative and Chronological Files"
+        },
+        {
+          "dateRange" : "1953–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1586B"
+          ],
+          "naId" : "2839190",
+          "recordGroup" : "59",
+          "title" : "Regional and Country Operations Files"
+        },
+        {
+          "dateRange" : "1953–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1586C"
+          ],
+          "naId" : "2839191",
+          "recordGroup" : "59",
+          "title" : "Subject and Special Files"
+        },
+        {
+          "dateRange" : "1958–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1586D"
+          ],
+          "naId" : "2842737",
+          "recordGroup" : "59",
+          "title" : "Indexes Relating to the Receipt and Distribution of Records from the White House to the Operations Coordination Board (OCB)"
+        }
+      ],
+      "lotNumber" : "62D430"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1954–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3130"
+          ],
+          "naId" : "2068429",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Israel and Lebanon"
+        },
+        {
+          "dateRange" : "1960–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3135"
+          ],
+          "naId" : "2068452",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Greece"
+        }
+      ],
+      "lotNumber" : "63D52"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1959–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3050"
+          ],
+          "naId" : "2125471",
+          "recordGroup" : "59",
+          "title" : "Daily Staff Summary Supplements"
+        },
+        {
+          "dateRange" : "1944–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396H"
+          ],
+          "naId" : "602119",
+          "recordGroup" : "59",
+          "title" : "Daily Summaries"
+        },
+        {
+          "dateRange" : "1944–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396I"
+          ],
+          "naId" : "602131",
+          "recordGroup" : "59",
+          "title" : "Daily Staff Summaries"
+        }
+      ],
+      "lotNumber" : "64D187"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-07D 83",
+            "UD-07D 83-A"
+          ],
+          "naId" : "26309340",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1944–1973",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-UP 287",
+            "UD-UP 288",
+            "UD-UP 289",
+            "UD-UP 290-A"
+          ],
+          "naId" : "27022913",
+          "recordGroup" : "59",
+          "title" : "Subject Files and Session Documents Relating to Various Committees and Conferences"
+        },
+        {
+          "dateRange" : "1950–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 1170"
+          ],
+          "naId" : "27022926",
+          "recordGroup" : "59",
+          "title" : "Subject Files on Korea"
+        }
+      ],
+      "lotNumber" : "64D197"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1949–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1404"
+          ],
+          "naId" : "2124222",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1929–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1-5564"
+          ],
+          "naId" : "588865",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Soviet and American Leadership and Diplomatic Personnel"
+        }
+      ],
+      "lotNumber" : "64D291"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-D"
+          ],
+          "naId" : "1136548",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1949",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-A"
+          ],
+          "naId" : "1151288",
+          "recordGroup" : "59",
+          "title" : "Numbered Staff Studies"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-B"
+          ],
+          "naId" : "1151314",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CA"
+          ],
+          "naId" : "1151315",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-E"
+          ],
+          "naId" : "1151881",
+          "recordGroup" : "59",
+          "title" : "Record Copies Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-F"
+          ],
+          "naId" : "1154560",
+          "recordGroup" : "59",
+          "title" : "Member Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-G"
+          ],
+          "naId" : "1154562",
+          "recordGroup" : "59",
+          "title" : "Working Papers"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-H"
+          ],
+          "naId" : "1154583",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CB"
+          ],
+          "naId" : "7432703",
+          "recordGroup" : "59",
+          "title" : "Area Files"
+        },
+        {
+          "dateRange" : "1947–1953",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-I"
+          ],
+          "naId" : "7433609",
+          "recordGroup" : "59",
+          "title" : "Notes of Meetings"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-J"
+          ],
+          "naId" : "7433611",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-L"
+          ],
+          "naId" : "7433905",
+          "recordGroup" : "59",
+          "title" : "Speeches and Articles"
+        }
+      ],
+      "lotNumber" : "64D563"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1958–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3112B"
+          ],
+          "naId" : "2922399",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Guinea"
+        },
+        {
+          "dateRange" : "1953–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "HS1-323498413",
+            "P 447",
+            "UD-2010 40"
+          ],
+          "naId" : "48349732",
+          "recordGroup" : "306",
+          "title" : "Regional Subject Files"
+        }
+      ],
+      "lotNumber" : "64D93"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 2783"
+          ],
+          "naId" : "1702485",
+          "recordGroup" : "84",
+          "title" : "Classified Records of Ambassador Clare Boothe Luce"
+        },
+        {
+          "dateRange" : "1953–1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 2783A"
+          ],
+          "naId" : "1703220",
+          "recordGroup" : "84",
+          "title" : "General Records of Ambassador Clare Boothe Luce"
+        }
+      ],
+      "lotNumber" : "64F26"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-D"
+          ],
+          "naId" : "1136548",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-B"
+          ],
+          "naId" : "1151314",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CA"
+          ],
+          "naId" : "1151315",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-E"
+          ],
+          "naId" : "1151881",
+          "recordGroup" : "59",
+          "title" : "Record Copies Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-F"
+          ],
+          "naId" : "1154560",
+          "recordGroup" : "59",
+          "title" : "Member Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-G"
+          ],
+          "naId" : "1154562",
+          "recordGroup" : "59",
+          "title" : "Working Papers"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-H"
+          ],
+          "naId" : "1154583",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CB"
+          ],
+          "naId" : "7432703",
+          "recordGroup" : "59",
+          "title" : "Area Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-J"
+          ],
+          "naId" : "7433611",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff"
+        },
+        {
+          "dateRange" : "1954",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-K"
+          ],
+          "naId" : "7433613",
+          "recordGroup" : "59",
+          "title" : "Papers"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-L"
+          ],
+          "naId" : "7433905",
+          "recordGroup" : "59",
+          "title" : "Speeches and Articles"
+        },
+        {
+          "dateRange" : "1954–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-M"
+          ],
+          "naId" : "7433935",
+          "recordGroup" : "59",
+          "title" : "Research Files"
+        }
+      ],
+      "lotNumber" : "65D101"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1944–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396H"
+          ],
+          "naId" : "602119",
+          "recordGroup" : "59",
+          "title" : "Daily Summaries"
+        },
+        {
+          "dateRange" : "1944–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396I"
+          ],
+          "naId" : "602131",
+          "recordGroup" : "59",
+          "title" : "Daily Staff Summaries"
+        }
+      ],
+      "lotNumber" : "65D142"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1954–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3130"
+          ],
+          "naId" : "2068429",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Israel and Lebanon"
+        },
+        {
+          "dateRange" : "1960–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3135"
+          ],
+          "naId" : "2068452",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Greece"
+        }
+      ],
+      "lotNumber" : "65D185"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1959–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 81"
+          ],
+          "naId" : "2658540",
+          "recordGroup" : "59",
+          "title" : "Central Files"
+        },
+        {
+          "dateRange" : "1951–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 82"
+          ],
+          "naId" : "2674653",
+          "recordGroup" : "59",
+          "title" : "Correspondence"
+        },
+        {
+          "dateRange" : "1951–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 83"
+          ],
+          "naId" : "2675001",
+          "recordGroup" : "59",
+          "title" : "Science Attache Files"
+        },
+        {
+          "dateRange" : "1951–1968",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 84"
+          ],
+          "naId" : "2678699",
+          "recordGroup" : "59",
+          "title" : "Correspondence"
+        },
+        {
+          "dateRange" : "1951–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 117"
+          ],
+          "naId" : "2679376",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Scientific Programs"
+        }
+      ],
+      "lotNumber" : "65D473"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1955–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3115"
+          ],
+          "naId" : "1966048",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1957–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3116"
+          ],
+          "naId" : "1966203",
+          "recordGroup" : "59",
+          "title" : "Top Secret Files"
+        }
+      ],
+      "lotNumber" : "65D497"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1954–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3130"
+          ],
+          "naId" : "2068429",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Israel and Lebanon"
+        },
+        {
+          "dateRange" : "1960–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3135"
+          ],
+          "naId" : "2068452",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Greece"
+        }
+      ],
+      "lotNumber" : "65D5"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1963–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5263"
+          ],
+          "naId" : "625215",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Syria"
+        },
+        {
+          "dateRange" : "1955–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5265"
+          ],
+          "naId" : "630872",
+          "recordGroup" : "59",
+          "title" : "Records Relating to United Arab Republic Affairs"
+        }
+      ],
+      "lotNumber" : "66D218"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1005-A"
+          ],
+          "naId" : "23342826",
+          "recordGroup" : "353",
+          "title" : "General Records"
+        },
+        {
+          "dateRange" : "1958–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3118A",
+            "A1 3118B"
+          ],
+          "naId" : "2363845",
+          "recordGroup" : "59",
+          "title" : "Central Files"
+        }
+      ],
+      "lotNumber" : "66D224"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1954–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3130"
+          ],
+          "naId" : "2068429",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Israel and Lebanon"
+        },
+        {
+          "dateRange" : "1960–1963",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3135"
+          ],
+          "naId" : "2068452",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Greece"
+        }
+      ],
+      "lotNumber" : "66D232"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1542"
+          ],
+          "naId" : "2504962",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Laws and Regulations of Various Countries"
+        },
+        {
+          "dateRange" : "1947–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-07D 7"
+          ],
+          "naId" : "2629357",
+          "recordGroup" : "59",
+          "title" : "Records Pertaining to the Near East Arms Coordinating Committee"
+        },
+        {
+          "dateRange" : "1959–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5444-B"
+          ],
+          "naId" : "27022651",
+          "recordGroup" : "59",
+          "title" : "Export Files, Telegrams, and Airgrams"
+        }
+      ],
+      "lotNumber" : "66D428"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-D"
+          ],
+          "naId" : "1136548",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-B"
+          ],
+          "naId" : "1151314",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CA"
+          ],
+          "naId" : "1151315",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-E"
+          ],
+          "naId" : "1151881",
+          "recordGroup" : "59",
+          "title" : "Record Copies Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-F"
+          ],
+          "naId" : "1154560",
+          "recordGroup" : "59",
+          "title" : "Member Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-G"
+          ],
+          "naId" : "1154562",
+          "recordGroup" : "59",
+          "title" : "Working Papers"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-H"
+          ],
+          "naId" : "1154583",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes"
+        },
+        {
+          "dateRange" : "1956",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1272"
+          ],
+          "naId" : "2123960",
+          "recordGroup" : "59",
+          "title" : "Office Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CB"
+          ],
+          "naId" : "7432703",
+          "recordGroup" : "59",
+          "title" : "Area Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-J"
+          ],
+          "naId" : "7433611",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-L"
+          ],
+          "naId" : "7433905",
+          "recordGroup" : "59",
+          "title" : "Speeches and Articles"
+        },
+        {
+          "dateRange" : "1954–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-M"
+          ],
+          "naId" : "7433935",
+          "recordGroup" : "59",
+          "title" : "Research Files"
+        }
+      ],
+      "lotNumber" : "66D487"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-D"
+          ],
+          "naId" : "1136548",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-B"
+          ],
+          "naId" : "1151314",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CA"
+          ],
+          "naId" : "1151315",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-E"
+          ],
+          "naId" : "1151881",
+          "recordGroup" : "59",
+          "title" : "Record Copies Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-F"
+          ],
+          "naId" : "1154560",
+          "recordGroup" : "59",
+          "title" : "Member Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-G"
+          ],
+          "naId" : "1154562",
+          "recordGroup" : "59",
+          "title" : "Working Papers"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-H"
+          ],
+          "naId" : "1154583",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CB"
+          ],
+          "naId" : "7432703",
+          "recordGroup" : "59",
+          "title" : "Area Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-J"
+          ],
+          "naId" : "7433611",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-L"
+          ],
+          "naId" : "7433905",
+          "recordGroup" : "59",
+          "title" : "Speeches and Articles"
+        },
+        {
+          "dateRange" : "1954–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-M"
+          ],
+          "naId" : "7433935",
+          "recordGroup" : "59",
+          "title" : "Research Files"
+        }
+      ],
+      "lotNumber" : "66D70"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1961–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5199"
+          ],
+          "naId" : "622656",
+          "recordGroup" : "59",
+          "title" : "Daily Economic Summaries"
+        },
+        {
+          "dateRange" : "1960–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5200"
+          ],
+          "naId" : "622726",
+          "recordGroup" : "59",
+          "title" : "Minutes of Economic Staff Meetings"
+        }
+      ],
+      "lotNumber" : "66D75"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1957–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5732"
+          ],
+          "naId" : "2602882",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Honduras"
+        },
+        {
+          "dateRange" : "1989–1993",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WW 8"
+          ],
+          "naId" : "2611117",
+          "recordGroup" : "59",
+          "title" : "Press Materials for the Secretary's Trips"
+        }
+      ],
+      "lotNumber" : "66D94"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1979",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1586E"
+          ],
+          "naId" : "2839192",
+          "recordGroup" : "59",
+          "title" : "Records Relating to National Security Council Policy Papers"
+        },
+        {
+          "dateRange" : "1947–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1586F"
+          ],
+          "naId" : "2839193",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        }
+      ],
+      "lotNumber" : "66D95"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-D"
+          ],
+          "naId" : "1136548",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-B"
+          ],
+          "naId" : "1151314",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CA"
+          ],
+          "naId" : "1151315",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-E"
+          ],
+          "naId" : "1151881",
+          "recordGroup" : "59",
+          "title" : "Record Copies Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-F"
+          ],
+          "naId" : "1154560",
+          "recordGroup" : "59",
+          "title" : "Member Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-G"
+          ],
+          "naId" : "1154562",
+          "recordGroup" : "59",
+          "title" : "Working Papers"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-H"
+          ],
+          "naId" : "1154583",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CB"
+          ],
+          "naId" : "7432703",
+          "recordGroup" : "59",
+          "title" : "Area Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-J"
+          ],
+          "naId" : "7433611",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-L"
+          ],
+          "naId" : "7433905",
+          "recordGroup" : "59",
+          "title" : "Speeches and Articles"
+        },
+        {
+          "dateRange" : "1954–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-M"
+          ],
+          "naId" : "7433935",
+          "recordGroup" : "59",
+          "title" : "Research Files"
+        }
+      ],
+      "lotNumber" : "67D548"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 630"
+          ],
+          "naId" : "26309368",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Arab Peninsula Affairs"
+        },
+        {
+          "dateRange" : "1954–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5267"
+          ],
+          "naId" : "631062",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Arabian Peninsula Affairs"
+        }
+      ],
+      "lotNumber" : "67D619"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1964–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 789"
+          ],
+          "naId" : "4497880",
+          "recordGroup" : "84",
+          "title" : "Unclassified Central Subject Files"
+        },
+        {
+          "dateRange" : "1955–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 788"
+          ],
+          "naId" : "6038952",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "67F26"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1961–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 638"
+          ],
+          "naId" : "26309374",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings and Negotiations with the United Kingdom, Canada, and Spain"
+        },
+        {
+          "dateRange" : "1963–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5181"
+          ],
+          "naId" : "619592",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Special Assistant for Atomic Energy and Aerospace"
+        }
+      ],
+      "lotNumber" : "68D349"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-D"
+          ],
+          "naId" : "1136548",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-B"
+          ],
+          "naId" : "1151314",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CA"
+          ],
+          "naId" : "1151315",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-E"
+          ],
+          "naId" : "1151881",
+          "recordGroup" : "59",
+          "title" : "Record Copies Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-F"
+          ],
+          "naId" : "1154560",
+          "recordGroup" : "59",
+          "title" : "Member Chronological Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-H"
+          ],
+          "naId" : "1154583",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes"
+        },
+        {
+          "dateRange" : "1944–1973",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-UP 287",
+            "UD-UP 288",
+            "UD-UP 289",
+            "UD-UP 290-A"
+          ],
+          "naId" : "27022913",
+          "recordGroup" : "59",
+          "title" : "Subject Files and Session Documents Relating to Various Committees and Conferences"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-CB"
+          ],
+          "naId" : "7432703",
+          "recordGroup" : "59",
+          "title" : "Area Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-J"
+          ],
+          "naId" : "7433611",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-L"
+          ],
+          "naId" : "7433905",
+          "recordGroup" : "59",
+          "title" : "Speeches and Articles"
+        },
+        {
+          "dateRange" : "1954–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 558-M"
+          ],
+          "naId" : "7433935",
+          "recordGroup" : "59",
+          "title" : "Research Files"
+        }
+      ],
+      "lotNumber" : "69D121"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1952–1972",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 191",
+            "UD-WX 817",
+            "UD-WX 909"
+          ],
+          "naId" : "27022945",
+          "recordGroup" : "59",
+          "title" : "Domestic Physical Security Files"
+        },
+        {
+          "dateRange" : "1963–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5255"
+          ],
+          "naId" : "625077",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Political Affairs of India"
+        },
+        {
+          "dateRange" : "1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5275"
+          ],
+          "naId" : "631119",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Political Affairs of India"
+        }
+      ],
+      "lotNumber" : "69D52"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1963–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5734"
+          ],
+          "naId" : "2642156",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Nicaragua"
+        },
+        {
+          "dateRange" : "1966–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5735B"
+          ],
+          "naId" : "4488918",
+          "recordGroup" : "59",
+          "title" : "Records Relating to British Honduras"
+        }
+      ],
+      "lotNumber" : "69D528"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1964–1968",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 338"
+          ],
+          "naId" : "3955392",
+          "recordGroup" : "84",
+          "title" : "Unclassified Central Subject Files"
+        },
+        {
+          "dateRange" : "1963–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 339"
+          ],
+          "naId" : "75325908",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "69F42"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1963–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 923"
+          ],
+          "naId" : "170106783",
+          "recordGroup" : "84",
+          "title" : "Program Files of Ambassador John M. Steeves"
+        },
+        {
+          "dateRange" : "1964–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 2"
+          ],
+          "naId" : "2641456",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1966–1973",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 1"
+          ],
+          "naId" : "2663083",
+          "recordGroup" : "84",
+          "title" : "Unclassified Central Subject Files"
+        },
+        {
+          "dateRange" : "1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 246"
+          ],
+          "naId" : "364680357",
+          "recordGroup" : "84",
+          "title" : "U.S. Mission to the Organization for Economic Cooperation and Development (USOECD) Subject Files"
+        },
+        {
+          "dateRange" : "1962–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 794"
+          ],
+          "naId" : "4706948",
+          "recordGroup" : "84",
+          "title" : "Classified Political-Military Files Relating to Herbicide"
+        },
+        {
+          "dateRange" : "1953–1979",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 442",
+            "P 442-D"
+          ],
+          "naId" : "4708079",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1968–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 848"
+          ],
+          "naId" : "6210317",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1966–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 303"
+          ],
+          "naId" : "86029759",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "69F92"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1959–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 631-A"
+          ],
+          "naId" : "26309369",
+          "recordGroup" : "59",
+          "title" : "Records Relating to United States Relations with India, Pakistan, and Nepal"
+        },
+        {
+          "dateRange" : "1963–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5255"
+          ],
+          "naId" : "625077",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Political Affairs of India"
+        }
+      ],
+      "lotNumber" : "70D316"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1945–1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1579"
+          ],
+          "naId" : "2173131",
+          "recordGroup" : "59",
+          "title" : "Master Files of \"Current Economic Developments\""
+        },
+        {
+          "dateRange" : "1961–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5199"
+          ],
+          "naId" : "622656",
+          "recordGroup" : "59",
+          "title" : "Daily Economic Summaries"
+        },
+        {
+          "dateRange" : "1960–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5200"
+          ],
+          "naId" : "622726",
+          "recordGroup" : "59",
+          "title" : "Minutes of Economic Staff Meetings"
+        }
+      ],
+      "lotNumber" : "70D467"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1940–1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5283"
+          ],
+          "naId" : "631272",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Baltic States"
+        },
+        {
+          "dateRange" : "1957–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5284"
+          ],
+          "naId" : "631281",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Poland"
+        }
+      ],
+      "lotNumber" : "71D158"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1935–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1583G"
+          ],
+          "naId" : "2839011",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1947–1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1583H"
+          ],
+          "naId" : "2839013",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "71D293"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5414"
+          ],
+          "naId" : "2637638",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5305",
+            "A1 5414"
+          ],
+          "naId" : "631403",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Vietnam Working Group"
+        }
+      ],
+      "lotNumber" : "71D31"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1962–1967",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5570"
+          ],
+          "naId" : "1746754",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Baltic States"
+        },
+        {
+          "dateRange" : "1941–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5577"
+          ],
+          "naId" : "1746766",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Hungary"
+        }
+      ],
+      "lotNumber" : "71D313"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1960–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 636"
+          ],
+          "naId" : "26309372",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Iran Military Analysis"
+        },
+        {
+          "dateRange" : "1962",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5276"
+          ],
+          "naId" : "631121",
+          "recordGroup" : "59",
+          "title" : "Top Secret Files on Final Report MU I 62"
+        }
+      ],
+      "lotNumber" : "71D429"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1945–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3039E"
+          ],
+          "naId" : "2125425",
+          "recordGroup" : "59",
+          "title" : "Position Papers and Background Books"
+        },
+        {
+          "dateRange" : "1945–1964",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1605"
+          ],
+          "naId" : "26309422",
+          "recordGroup" : "59",
+          "title" : "Records Relating to United Nations Affairs"
+        }
+      ],
+      "lotNumber" : "71D440"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1957–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5732"
+          ],
+          "naId" : "2602882",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Honduras"
+        },
+        {
+          "dateRange" : "1963–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5734"
+          ],
+          "naId" : "2642156",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Nicaragua"
+        }
+      ],
+      "lotNumber" : "71D513"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5414"
+          ],
+          "naId" : "2637638",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5305",
+            "A1 5414"
+          ],
+          "naId" : "631403",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Vietnam Working Group"
+        }
+      ],
+      "lotNumber" : "71D87"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5414"
+          ],
+          "naId" : "2637638",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5305",
+            "A1 5414"
+          ],
+          "naId" : "631403",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Vietnam Working Group"
+        }
+      ],
+      "lotNumber" : "71D88"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-UP 267"
+          ],
+          "naId" : "27022928",
+          "recordGroup" : "59",
+          "title" : "Subject Files and Committee Records for Multiple Offices"
+        },
+        {
+          "dateRange" : "1962–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 106"
+          ],
+          "naId" : "27022931",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        }
+      ],
+      "lotNumber" : "72D144"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1961–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5376",
+            "A1 5376A"
+          ],
+          "naId" : "631695",
+          "recordGroup" : "59",
+          "title" : "Speeches and Statements"
+        },
+        {
+          "dateRange" : "1961–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5377"
+          ],
+          "naId" : "631704",
+          "recordGroup" : "59",
+          "title" : "White House Correspondence Files"
+        },
+        {
+          "dateRange" : "1961–1968",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5378"
+          ],
+          "naId" : "631705",
+          "recordGroup" : "59",
+          "title" : "General Correspondence of Dean Rusk"
+        },
+        {
+          "dateRange" : "1961–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5379"
+          ],
+          "naId" : "631706",
+          "recordGroup" : "59",
+          "title" : "Transcripts of Telephone Calls"
+        },
+        {
+          "dateRange" : "1961–1968",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5380"
+          ],
+          "naId" : "631707",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1961",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5381"
+          ],
+          "naId" : "631709",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "72D192"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5414"
+          ],
+          "naId" : "2637638",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5305",
+            "A1 5414"
+          ],
+          "naId" : "631403",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Vietnam Working Group"
+        }
+      ],
+      "lotNumber" : "72D207"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1963–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1-5619"
+          ],
+          "naId" : "624816",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Kennedy Round Trade Negotiations"
+        },
+        {
+          "dateRange" : "1961–1973",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5679"
+          ],
+          "naId" : "634111",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Tunisia"
+        }
+      ],
+      "lotNumber" : "72D230"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5414"
+          ],
+          "naId" : "2637638",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5305",
+            "A1 5414"
+          ],
+          "naId" : "631403",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Vietnam Working Group"
+        }
+      ],
+      "lotNumber" : "73D141"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1944–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 396I"
+          ],
+          "naId" : "602131",
+          "recordGroup" : "59",
+          "title" : "Daily Staff Summaries"
+        },
+        {
+          "dateRange" : "1971–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5184"
+          ],
+          "naId" : "620873",
+          "recordGroup" : "59",
+          "title" : "Morning Summaries and Related Records"
+        },
+        {
+          "dateRange" : "1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5185"
+          ],
+          "naId" : "621628",
+          "recordGroup" : "59",
+          "title" : "Special Summaries"
+        }
+      ],
+      "lotNumber" : "73D153"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1965–1972",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5558"
+          ],
+          "naId" : "2168573",
+          "recordGroup" : "59",
+          "title" : "Logs of Personnel Assigned to the National Military Command Center"
+        },
+        {
+          "dateRange" : "1959–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3051A"
+          ],
+          "naId" : "602830",
+          "recordGroup" : "59",
+          "title" : "Afternoon Summaries"
+        },
+        {
+          "dateRange" : "1961–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5033"
+          ],
+          "naId" : "604398",
+          "recordGroup" : "59",
+          "title" : "Operations Center Watch Logs"
+        },
+        {
+          "dateRange" : "1958–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5037",
+            "UD-15D 16"
+          ],
+          "naId" : "604773",
+          "recordGroup" : "59",
+          "title" : "Briefing Books"
+        }
+      ],
+      "lotNumber" : "73D154"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1956–1957",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 7"
+          ],
+          "naId" : "12349291",
+          "recordGroup" : "353",
+          "title" : "General Records"
+        },
+        {
+          "dateRange" : "1958–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 290"
+          ],
+          "naId" : "12386530",
+          "recordGroup" : "43",
+          "title" : "Records Relating to the Conference on the Problem of Surprise Attack"
+        },
+        {
+          "dateRange" : "1959",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 157"
+          ],
+          "naId" : "2842789",
+          "recordGroup" : "43",
+          "title" : "Program Records"
+        },
+        {
+          "dateRange" : "1958–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 189",
+            "P 189A"
+          ],
+          "naId" : "2990130",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Meetings of Consultation of Ministers of Foreign Affairs"
+        }
+      ],
+      "lotNumber" : "73D227"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1964–1967",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5425"
+          ],
+          "naId" : "2521234",
+          "recordGroup" : "59",
+          "title" : "Reading Files"
+        },
+        {
+          "dateRange" : "1964–1968",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5426"
+          ],
+          "naId" : "2521235",
+          "recordGroup" : "59",
+          "title" : "Canal Negotiations Subject Files"
+        },
+        {
+          "dateRange" : "1964–1967",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5427"
+          ],
+          "naId" : "2694616",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Negotiations about the Panama Canal"
+        }
+      ],
+      "lotNumber" : "73D286"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1976",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 100003",
+            "UD-WX 1507"
+          ],
+          "naId" : "27022982",
+          "recordGroup" : "59",
+          "title" : "Briefing Books and Background Papers"
+        },
+        {
+          "dateRange" : "1949–1972",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3051B"
+          ],
+          "naId" : "602875",
+          "recordGroup" : "59",
+          "title" : "Conference Files"
+        }
+      ],
+      "lotNumber" : "73D323"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1970–1972",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5046"
+          ],
+          "naId" : "609681",
+          "recordGroup" : "59",
+          "title" : "Summaries of the Under Secretary's Meetings with the National Security Advisor"
+        },
+        {
+          "dateRange" : "1964–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5047"
+          ],
+          "naId" : "609749",
+          "recordGroup" : "59",
+          "title" : "Agenda For Secretary of State Dean Rusk's Meetings with President Lyndon Johnson"
+        },
+        {
+          "dateRange" : "1964–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5049"
+          ],
+          "naId" : "621879",
+          "recordGroup" : "59",
+          "title" : "President's Evening Reading Reports"
+        },
+        {
+          "dateRange" : "1965–1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5050"
+          ],
+          "naId" : "622104",
+          "recordGroup" : "59",
+          "title" : "Press Contacts Reports From Principals"
+        }
+      ],
+      "lotNumber" : "74D164"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1959–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5571"
+          ],
+          "naId" : "1746755",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Poland"
+        },
+        {
+          "dateRange" : "1964–1972",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5572"
+          ],
+          "naId" : "1746756",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Radio Free Europe and Radio Liberty"
+        }
+      ],
+      "lotNumber" : "74D440"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5414"
+          ],
+          "naId" : "2637638",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1963–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5305",
+            "A1 5414"
+          ],
+          "naId" : "631403",
+          "recordGroup" : "59",
+          "title" : "Subject Files of the Vietnam Working Group"
+        }
+      ],
+      "lotNumber" : "75D303"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1960–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 3152"
+          ],
+          "naId" : "2068469",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Haiti"
+        },
+        {
+          "dateRange" : "1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 246"
+          ],
+          "naId" : "6277091",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Dominican Republic"
+        }
+      ],
+      "lotNumber" : "75D474"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1962–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5763"
+          ],
+          "naId" : "1074073",
+          "recordGroup" : "59",
+          "title" : "Subject and Country Files"
+        },
+        {
+          "dateRange" : "1972–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-15D 1"
+          ],
+          "naId" : "27022906",
+          "recordGroup" : "59",
+          "title" : "Subject and Country Files Relating to Latin America"
+        }
+      ],
+      "lotNumber" : "75D476"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1951–1978",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5412"
+          ],
+          "naId" : "2143331",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1962–1973",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-14D 7"
+          ],
+          "naId" : "27499849",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the Republic of China"
+        }
+      ],
+      "lotNumber" : "75D76"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1972",
+          "evidence" : "controlNumber",
+          "naId" : "1512284",
+          "recordGroup" : "84",
+          "title" : "Recording of Cardinal Josef Mindszenty"
+        },
+        {
+          "dateRange" : "1956–1972",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 2691B"
+          ],
+          "naId" : "600980",
+          "recordGroup" : "84",
+          "title" : "Subject Files Relating to Cardinal Jozsef Mindszenty"
+        }
+      ],
+      "lotNumber" : "75F163"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1972–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 841"
+          ],
+          "naId" : "4707049",
+          "recordGroup" : "84",
+          "title" : "Classified Chronological Files"
+        },
+        {
+          "dateRange" : "1955–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 788"
+          ],
+          "naId" : "6038952",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1973–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 842"
+          ],
+          "naId" : "6125491",
+          "recordGroup" : "84",
+          "title" : "Classified Communication Files"
+        }
+      ],
+      "lotNumber" : "75F193"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1966–1976",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD 100003",
+            "UD-WX 1507"
+          ],
+          "naId" : "27022982",
+          "recordGroup" : "59",
+          "title" : "Briefing Books and Background Papers"
+        },
+        {
+          "dateRange" : "1958–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5037",
+            "UD-15D 16"
+          ],
+          "naId" : "604773",
+          "recordGroup" : "59",
+          "title" : "Briefing Books"
+        }
+      ],
+      "lotNumber" : "76D284"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1962–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5731"
+          ],
+          "naId" : "2629831",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Regional Matters"
+        },
+        {
+          "dateRange" : "1963–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5744"
+          ],
+          "naId" : "2642191",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Costa Rica"
+        }
+      ],
+      "lotNumber" : "76D290"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1959–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 79"
+          ],
+          "naId" : "1039947",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Jamaica"
+        },
+        {
+          "dateRange" : "1965–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5644"
+          ],
+          "naId" : "2602428",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Iran"
+        }
+      ],
+      "lotNumber" : "76D482"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1971–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 43"
+          ],
+          "naId" : "3686362",
+          "recordGroup" : "84",
+          "title" : "Unclassified Central Subject Files"
+        },
+        {
+          "dateRange" : "1963–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 44"
+          ],
+          "naId" : "4076550",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "76F62"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1973–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-16D 69"
+          ],
+          "naId" : "226245264",
+          "recordGroup" : "59",
+          "title" : "Program Files Related to Counterterrorism"
+        },
+        {
+          "dateRange" : "1928–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 65"
+          ],
+          "naId" : "2618873",
+          "recordGroup" : "59",
+          "title" : "Records Relating to Official and State Functions Handled by the Ceremonial Office"
+        },
+        {
+          "dateRange" : "1928–1967",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 66"
+          ],
+          "naId" : "2618975",
+          "recordGroup" : "59",
+          "title" : "Funeral Files"
+        },
+        {
+          "dateRange" : "1948–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-UP 254"
+          ],
+          "naId" : "26309347",
+          "recordGroup" : "59",
+          "title" : "Subject and Country Files Related to Terrorism and Antarctica Conference Files"
+        }
+      ],
+      "lotNumber" : "77D30"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1963–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 335 A"
+          ],
+          "naId" : "3931111",
+          "recordGroup" : "84",
+          "title" : "Unclassified Central Subject Files"
+        },
+        {
+          "dateRange" : "1964–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 335 B"
+          ],
+          "naId" : "3941014",
+          "recordGroup" : "84",
+          "title" : "Unclassified Subject Files"
+        }
+      ],
+      "lotNumber" : "77F97"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1964–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 428"
+          ],
+          "naId" : "4138382",
+          "recordGroup" : "84",
+          "title" : "Unclassified Central Subject Files"
+        },
+        {
+          "dateRange" : "1964–1976",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 429"
+          ],
+          "naId" : "4486661",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "78F173"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1975–1985",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 885",
+            "UD-06D 25",
+            "UD-06D 27",
+            "UD-06D 28",
+            "UD-06D 29",
+            "UD-10D 1",
+            "UD-10D 3",
+            "UD-10D 4",
+            "UD-10D 6"
+          ],
+          "naId" : "109272536",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1976–1979",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 534"
+          ],
+          "naId" : "111879278",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1977–1978",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-16D 45"
+          ],
+          "naId" : "472814483",
+          "recordGroup" : "59",
+          "title" : "Subject Files Concerning Human Rights"
+        }
+      ],
+      "lotNumber" : "80D177"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1967–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 200"
+          ],
+          "naId" : "2990007",
+          "recordGroup" : "59",
+          "title" : "National Security Council National Security Study Memorandums"
+        },
+        {
+          "dateRange" : "1969–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 201"
+          ],
+          "naId" : "2990363",
+          "recordGroup" : "59",
+          "title" : "Files on Select National Security Study Memorandums"
+        },
+        {
+          "dateRange" : "1969–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 202"
+          ],
+          "naId" : "2990390",
+          "recordGroup" : "59",
+          "title" : "Records of the National Security Council Contingency Planning Working Group"
+        },
+        {
+          "dateRange" : "1969",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 203"
+          ],
+          "naId" : "2990408",
+          "recordGroup" : "59",
+          "title" : "Records of the Rockefeller Report on South America"
+        }
+      ],
+      "lotNumber" : "80D212"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1977–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-04D 21",
+            "UD-04D 22"
+          ],
+          "naId" : "26309177",
+          "recordGroup" : "59",
+          "title" : "Subject Files of Richard N. Cooper"
+        },
+        {
+          "dateRange" : "1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-16D 48"
+          ],
+          "naId" : "594320960",
+          "recordGroup" : "59",
+          "title" : "Chronological Files of Richard Cooper, Under Secretary for Economic, Business, and Agricultural Affairs"
+        }
+      ],
+      "lotNumber" : "81D134"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1975–1985",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 885",
+            "UD-06D 25",
+            "UD-06D 27",
+            "UD-06D 28",
+            "UD-06D 29",
+            "UD-10D 1",
+            "UD-10D 3",
+            "UD-10D 4",
+            "UD-10D 6"
+          ],
+          "naId" : "109272536",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1980–1981",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-06D 30"
+          ],
+          "naId" : "27499754",
+          "recordGroup" : "59",
+          "title" : "Human Rights Country Files"
+        }
+      ],
+      "lotNumber" : "81D208"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1960–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5339"
+          ],
+          "naId" : "3475539",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        },
+        {
+          "dateRange" : "1973–1976",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5339A"
+          ],
+          "naId" : "3493168",
+          "recordGroup" : "59",
+          "title" : "Country and Subject Files"
+        },
+        {
+          "dateRange" : "1974–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5339B"
+          ],
+          "naId" : "3535527",
+          "recordGroup" : "59",
+          "title" : "Subject Files"
+        },
+        {
+          "dateRange" : "1956–1966",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5339D"
+          ],
+          "naId" : "3593654",
+          "recordGroup" : "59",
+          "title" : "Correspondence, Memorandums, and Reports"
+        }
+      ],
+      "lotNumber" : "81D286"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1969–1976",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 155"
+          ],
+          "naId" : "2848307",
+          "recordGroup" : "59",
+          "title" : "National Security Council Under Secretaries Committee Study Memorandums"
+        },
+        {
+          "dateRange" : "1972–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 156"
+          ],
+          "naId" : "2848308",
+          "recordGroup" : "59",
+          "title" : "Records Relating to the National Security Council Under Secretaries Committee"
+        }
+      ],
+      "lotNumber" : "81D309"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1977–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 543"
+          ],
+          "naId" : "119564673",
+          "recordGroup" : "59",
+          "title" : "Security Assistance Country and Subject Files"
+        },
+        {
+          "dateRange" : "1977–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 542"
+          ],
+          "naId" : "26309196",
+          "recordGroup" : "59",
+          "title" : "Files of Lucy W. Benson and Mathew Nimetz"
+        }
+      ],
+      "lotNumber" : "81D321"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1975–1985",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 885",
+            "UD-06D 25",
+            "UD-06D 27",
+            "UD-06D 28",
+            "UD-06D 29",
+            "UD-10D 1",
+            "UD-10D 3",
+            "UD-10D 4",
+            "UD-10D 6"
+          ],
+          "naId" : "109272536",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1980–1981",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-06D 25"
+          ],
+          "naId" : "12559545",
+          "recordGroup" : "59",
+          "title" : "Human Rights Country Files"
+        }
+      ],
+      "lotNumber" : "82D177"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1965–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-UP 19"
+          ],
+          "naId" : "28794119",
+          "recordGroup" : "59",
+          "title" : "Position Papers for United States Delegations to the United Nations"
+        },
+        {
+          "dateRange" : "1953–1965",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 5203"
+          ],
+          "naId" : "622804",
+          "recordGroup" : "59",
+          "title" : "Position Papers for United States Delegations to the United Nations"
+        },
+        {
+          "dateRange" : "1946–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 1238"
+          ],
+          "naId" : "632433",
+          "recordGroup" : "59",
+          "title" : "Position Papers Maintained by the Executive Director"
+        }
+      ],
+      "lotNumber" : "82D211"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1977–1982",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-13W 35",
+            "UD-14W 39",
+            "UD-14W 56"
+          ],
+          "naId" : "27022981",
+          "recordGroup" : "59",
+          "title" : "Briefing Books of High Level Officials"
+        },
+        {
+          "dateRange" : "1967–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-14D 63"
+          ],
+          "naId" : "27022993",
+          "recordGroup" : "59",
+          "title" : "Presidential Review Memorandum"
+        }
+      ],
+      "lotNumber" : "83D113"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1976–1982",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-09D 1",
+            "UD-09D 10",
+            "UD-09D 7",
+            "UD-13W 37",
+            "UD-15D 31"
+          ],
+          "naId" : "27499776",
+          "recordGroup" : "59",
+          "title" : "Terrorism Incidents Files"
+        },
+        {
+          "dateRange" : "1980–1981",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-09D 8"
+          ],
+          "naId" : "27499783",
+          "recordGroup" : "59",
+          "title" : "Chronological Files"
+        }
+      ],
+      "lotNumber" : "83D135"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1969–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 100021",
+            "UD-WX 100022-C",
+            "UD-WX 1510-D"
+          ],
+          "naId" : "27022985",
+          "recordGroup" : "59",
+          "title" : "National Security Decision Memoranda (NSDD)"
+        },
+        {
+          "dateRange" : "1972–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 216"
+          ],
+          "naId" : "3281798",
+          "recordGroup" : "59",
+          "title" : "Memorandums of the National Security Council Undersecretaries Committee"
+        }
+      ],
+      "lotNumber" : "83D290"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1969–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-WX 100021",
+            "UD-WX 100022-C",
+            "UD-WX 1510-D"
+          ],
+          "naId" : "27022985",
+          "recordGroup" : "59",
+          "title" : "National Security Decision Memoranda (NSDD)"
+        },
+        {
+          "dateRange" : "1969–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 212"
+          ],
+          "naId" : "3083597",
+          "recordGroup" : "59",
+          "title" : "National Security Council National Security Decision Memorandums"
+        }
+      ],
+      "lotNumber" : "83D305"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1977–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-14D 64"
+          ],
+          "naId" : "26309214",
+          "recordGroup" : "59",
+          "title" : "Chronological Files of Secretary Cyrus R. Vance"
+        },
+        {
+          "dateRange" : "1977–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-14D 68"
+          ],
+          "naId" : "26309215",
+          "recordGroup" : "59",
+          "title" : "Meeting Minutes of Secretary Cyrus R. Vance"
+        },
+        {
+          "dateRange" : "1978",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-14D 69"
+          ],
+          "naId" : "26309216",
+          "recordGroup" : "59",
+          "title" : "Briefing Books of Cyrus R. Vance"
+        }
+      ],
+      "lotNumber" : "84D241"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1975–1985",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 885",
+            "UD-06D 25",
+            "UD-06D 27",
+            "UD-06D 28",
+            "UD-06D 29",
+            "UD-10D 1",
+            "UD-10D 3",
+            "UD-10D 4",
+            "UD-10D 6"
+          ],
+          "naId" : "109272536",
+          "recordGroup" : "59",
+          "title" : "Country Files"
+        },
+        {
+          "dateRange" : "1977–1980",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "UD-10D 9"
+          ],
+          "naId" : "27499768",
+          "recordGroup" : "59",
+          "title" : "Central Subject Files"
+        }
+      ],
+      "lotNumber" : "85D366"
+    }
+  ],
+  "note" : "NARA series that claim a FRUS lot number, for the lots where more than one does. NARA divides lot files across series and consolidates several into one, so a lot with several claimants has several correct answers; Source Explorer shows them as candidates rather than picking. Built offline from the record-group harvest with the app's own LotResolutionAcceptance rule.",
+  "schemaVersion" : 1
+}

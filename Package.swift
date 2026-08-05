@@ -144,6 +144,29 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Builds `lot-claimants-index.json` — every NARA series claiming a FRUS lot, for the
+        /// lots where more than one does (#675 / N-8b). Entirely offline: reads the
+        /// record-group harvest, and matches with the app's own
+        /// `LotResolutionAcceptance.foldControlNumber` so the artifact cannot diverge from the
+        /// rule Source Explorer applies.
+        .target(
+            name: "LotClaimantsIndexGeneratorCore",
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "SourceNoteKit"),
+            ],
+            path: "LotClaimantsIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls LotClaimantsIndexRunner.run() and exits.
+        .executableTarget(
+            name: "LotClaimantsIndexGenerator",
+            dependencies: [.target(name: "LotClaimantsIndexGeneratorCore")],
+            path: "LotClaimantsIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Thin entry point — calls CentralFilesIndexGeneratorRunner.run() and exits.
         .executableTarget(
             name: "CentralFilesIndexGenerator",
