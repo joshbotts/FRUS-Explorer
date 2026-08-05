@@ -92,7 +92,7 @@ struct DocumentWindowID: Codable, Hashable {
 /// main window, or a specific standalone document window (`MacDocumentWindowView`). Used so a
 /// document selected in a tool window (search, cross-reference graph, corpus browser, …) opens in
 /// the window the user launched the tool from — its **provenance host** — instead of whichever
-/// window happened to be active (`Planning/Window-Routing-Provenance.md`).
+/// window happened to be active (`Planning/Completed/Window-Routing-Provenance.md`).
 ///
 /// Every ⌘N main window mints its own per-instance token (session-scoped `@State` UUID — owner
 /// decision D4), so two main windows are distinct routing targets; the pre-provenance design's

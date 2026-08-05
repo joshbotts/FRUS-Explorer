@@ -725,7 +725,7 @@ final class AppState {
     /// windows; the macOS demotion targets `.macLegacyBrowse`, which `routeLegacyPendingBrowse` drains.
     var pendingBrowseDocument: Handoff<DocumentBrowserEntry>? = nil
 
-    // MARK: Window routing — provenance model (macOS; Planning/Window-Routing-Provenance.md)
+    // MARK: Window routing — provenance model (macOS; Planning/Completed/Window-Routing-Provenance.md)
 
     /// The live document hosts, each with a monotonic "last became key" stamp. Registration and
     /// liveness — not focus sampling — decide where a provenance-routed open lands; the stamp is

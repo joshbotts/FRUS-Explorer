@@ -191,7 +191,7 @@ Only step 3 is outside the repo, and only step 3 cannot be verified by a test.
 
 - `Planning/FRUS-Explorer-Specification.md` — complete design spec (1800+ lines); consult before adding features.
 - `Planning/DEVELOPMENT-PLAN.md` — session-by-session task log; update after each work session.
-- `Planning/` contains per-task markdown files (e.g., `02-Manifest-Generator.md`) with detailed requirements.
+- `Planning/` holds live plans, runbooks, and open designs only; completed or closed plans (including the per-task session files, e.g. `02-Manifest-Generator.md`) are archived in `Planning/Completed/` — see its README for the index.
 
 ## Bundle IDs & Entitlements
 

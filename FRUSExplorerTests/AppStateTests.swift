@@ -87,7 +87,7 @@ struct AppStateTests {
         #expect(state.downloadQueue.isEmpty)
     }
 
-    // MARK: - Per-window provenance routing (Planning/Window-Routing-Provenance.md)
+    // MARK: - Per-window provenance routing (Planning/Completed/Window-Routing-Provenance.md)
 
     private func entry(_ d: String = "d", _ v: String = "v") -> DocumentBrowserEntry {
         DocumentBrowserEntry(documentId: d, volumeId: v, header: "H")

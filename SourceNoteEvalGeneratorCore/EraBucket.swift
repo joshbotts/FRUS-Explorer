@@ -11,7 +11,7 @@ import Foundation
 /// The FRUS era buckets used by the parser eval report.
 ///
 /// Mirrors the buckets of the Source Explorer audit's coverage table
-/// (`Planning/Source-Explorer-Audit-2026-07-03.md` §2.1) so eval numbers line up
+/// (`Planning/Completed/Source-Explorer-Audit-2026-07-03.md` §2.1) so eval numbers line up
 /// directly with the audit's per-era analysis and the Phase 2 verification targets
 /// (unrecognized <10% for 1906–1963, <15% overall).
 ///

@@ -56,7 +56,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// Recounted from this file's scene body, 2026-07-18 (provenance PR 2). **Keep this table in
 /// sync when adding a scene** — it drifted before (six scenes missing at the 2026-07-15 #241
 /// count, then `relatedDocumentsScene` omitted again by #308), and
-/// `Planning/241-iPad-Windowing-Investigation.md` depends on it being true.
+/// `Planning/Completed/241-iPad-Windowing-Investigation.md` depends on it being true.
 ///
 /// **Shared:** the default `WindowGroup` main window (onboarding → `MainTabView` on iOS,
 /// `MainWindowView` on macOS), plus `archivalNeighborsScene` and `relatedDocumentsScene`,

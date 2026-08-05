@@ -2008,3 +2008,28 @@ primary source in-repo.
 - Five honesty rules (no box fabrication, unresolved-as-predicted, dated volatile facts,
   range-grain scans, availability never promised); five owner decisions queued, one already
   resolved from source.
+
+### Session 2026-08-05 — Planning-folder cleanup: archive completed plans under Completed/
+
+Housekeeping — no code behaviour changes. 57 completed/closed planning documents moved to
+`Planning/Completed/` (with an index README stating the criterion and mapping the clusters),
+leaving 22 live documents plus the four artifact directories at the root.
+
+- **Moved**: all delivered numbered session plans (01…406), the completed workstream plans
+  (Onboarding, Analytics, Research Rail, Projects #377, Docs pass, the Collections trilogy,
+  Corpus Browser rework, Source Explorer provenance, Window-Routing-Provenance, the QCA design
+  brief), closed issue-wave plans (207–219, 233–243, 188–189), point-in-time audits/evals
+  (UI, People Browser, Source Explorer 07-03, Settings parity), delivered BigPicture programs
+  (WordCloud, VolumeFrontMatter, iPadMacParity, ZoteroExport), the superseded 75 backlog, and
+  the shipped PDF/DOCX-highlight one-off.
+- **Kept live**: the consolidated plan, this log, the spec, open designs/assessments (vector,
+  OS-27, lexical, cross-platform, PreIndex, #308, Analytics-CorpusVsSeries postponed items,
+  Pre1910 pair), live runbooks (NARA RG catalog, lot resolution), the QCA assessments binding
+  the Q tail, Wave R (R-2b), the Eight-Issue plan (held decisions), Dynamic-Type worklist, the
+  priorities review, and the trip-packet scope.
+- Classification was verified against shipped code where status lines were stale
+  (Collections-Authoring says "no implementation started"; `titleOverride`/prose exporters say
+  shipped). Twelve code doc-comment paths updated to the new locations (verified: no stale
+  `Planning/<moved-file>` references remain in Swift sources); `CLAUDE.md` and
+  `Docs/screenshots/README.md` pointers updated. Generator OUTPUT_DIR defaults
+  (`cross-ref-validation/`, `nara-record-group-catalog/`, `source-explorer-export/`) untouched.

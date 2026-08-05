@@ -16,7 +16,7 @@ import SwiftData
 /// recording how much of it has been promoted to the **Production** schema (Wave R-7).
 ///
 /// ## Why this exists
-/// `Planning/188-189-Tester-Feedback-Build28-Plan.md:158` specified "a startup log line if the
+/// `Planning/Completed/188-189-Tester-Feedback-Build28-Plan.md:158` specified "a startup log line if the
 /// installed model set is newer than a known-deployed marker, so a future undeployed-schema
 /// regression is caught before shipping." It was never built. Issue #488 **is** that regression:
 /// build 35 added four CloudKit identifiers — `CD_ProjectLeadEntry`,

@@ -287,7 +287,7 @@ struct ExportRecordTests {
         // this SYNTHETIC shape. NOTE (2026-07-17 audit): the corpus-wide export shows ZERO
         // real records with this exact shape — the corpus's prefixed decimal citations are
         // mid-note abstract styles that DO parse centralDecimalFile — so this is a grammar
-        // edge, not a live corpus defect (Planning/335-Source-Explorer-Audit.md).
+        // edge, not a live corpus defect (Planning/Completed/335-Source-Explorer-Audit.md).
         let record = try makeRecord(
             note: "Department of State, Central Files, 611.61/2–1548.", year: 1948)
         #expect(record.strategy == "namedFileSeries")
