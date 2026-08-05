@@ -426,8 +426,15 @@ public struct SourceNoteParser {
 
     /// Dotted decimal class-leaf shape (`711.11`, `611.61`, `500.A15A4`): the central
     /// decimal file classification, anchored to the whole candidate.
+    ///
+    /// The optional trailing `-ALPHA` group admits the dash-suffixed classes the decimal file
+    /// uses for programmes and country pairs — `751G.5-MSP` (Mutual Security Program),
+    /// `396.1-GE` (Geneva), `711.11-EI` (Eisenhower). Measured: **1,165 documents across 162
+    /// such classes** were refused without it, because the suffix survives the `/` cut and then
+    /// fails the anchored shape (#353 / N-1). By the time this runs, `decimalClassKey` has
+    /// already mapped en/em dashes to the ASCII hyphen, so only `-` needs matching.
     private static let dottedDecimalClassRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+$"#,
+        pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+(?:-[A-Z]{1,6})?$"#,
         options: [])
 
     /// Validates and canonicalizes one decimal / subject-numeric class-leaf candidate.
@@ -507,13 +514,49 @@ public struct SourceNoteParser {
             if let slash = candidate.firstIndex(of: "/") {
                 candidate = String(candidate[..<slash])
             }
+            // The early volumes label the class rather than leading with it: "File No.
+            // 861.00/1234" is 21,960 documents over 1,064 classes, every one refused because
+            // the label rides in the segment and `File No. 861.00` is not class-shaped.
+            candidate = strippingFileNumberLabel(candidate)
             if let key = decimalClassKey(candidate) { return key }
             if let tail = candidate.range(of: ". "),
                let key = decimalClassKey(String(candidate[..<tail.lowerBound])) {
                 return key
             }
+            // A class followed by prose inside one segment: "740.0011 European War 1939/12345"
+            // (2,837 documents). The `/` cut leaves "740.0011 European War 1939", which the
+            // whole-candidate gate rejects, and there is no ". " to cut at.
+            if let key = leadingClassKey(candidate) { return key }
         }
         return nil
+    }
+
+    /// Strips an early-volume `File No.` label from a class candidate.
+    ///
+    /// The 1906–1930s volumes cite the decimal file as `File No. 861.00/1234` rather than
+    /// naming the central files, so the citation-sentence anchor falls through to sentence 1
+    /// and the segment still carries the label. Matching is anchored and tolerant of the
+    /// missing period and of case (`File No`, `file no.`), and returns the input unchanged
+    /// when the label is absent.
+    static func strippingFileNumberLabel(_ candidate: String) -> String {
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+        let lowered = trimmed.lowercased()
+        for label in ["file no.", "file no", "file number"] where lowered.hasPrefix(label) {
+            return String(trimmed.dropFirst(label.count)).trimmingCharacters(in: .whitespaces)
+        }
+        return candidate
+    }
+
+    /// The class when a candidate **begins** with one and continues into prose.
+    ///
+    /// Only the first whitespace-separated token is offered to the gate, so this cannot reach
+    /// past a leading class into the rest of the segment — `Central Files` yields `Central`,
+    /// which the gate rejects, and `File No. 861.00` yields `File`, which is why the label
+    /// strip above has to run first.
+    static func leadingClassKey(_ candidate: String) -> String? {
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+        guard let firstSpace = trimmed.firstIndex(where: \.isWhitespace) else { return nil }
+        return decimalClassKey(String(trimmed[..<firstSpace]))
     }
 
     /// Central-files anchor phrases that mark a sentence as the archival citation
