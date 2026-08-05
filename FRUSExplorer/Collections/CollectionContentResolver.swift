@@ -1270,10 +1270,14 @@ class CollectionContentResolver {
             }
         }
 
+        // #372/N-5: central-files first, volume-sources second. This block's rows are the
+        // only `document_sources` consumer of the archival resolution, and 733 documents —
+        // 375 of its `(repository, recordGroup, lotFile, seriesName)` group rows — cite a lot
+        // that only central-files resolves. See `ArchivalResolver` for why it layers rather
+        // than replaces.
         func archivalResolution(recordGroup: String?, lotFile: String?)
             -> CollectionGeneratedBlocks.ArchivalLink? {
-            VolumeSourcesIndexStore.shared?
-                .resolution(recordGroup: recordGroup, lotFile: lotFile)
+            ArchivalResolver.resolution(recordGroup: recordGroup, lotFile: lotFile)
                 .map { CollectionGeneratedBlocks.ArchivalLink(title: $0.title,
                                                               urlString: $0.catalogURL) }
         }

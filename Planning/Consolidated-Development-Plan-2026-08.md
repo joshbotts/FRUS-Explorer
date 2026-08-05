@@ -936,6 +936,65 @@ After N-0's regen: fold volume-sources' surviving lots into central-files at gen
 `CentralFilesIndexStore.lotFile(forRawLot:)`, drop the `lots` map from the volume-sources
 artifact — **keeping** `resolution()`'s record-group arm.
 
+---
+
+**[2026-08-05] PR 1 SHIPPED. Six of the section's figures were re-derived; four were right, two
+were misdescribed; and one much larger adjacent defect surfaced that this PR deliberately does
+not touch.** Measured by compiling the **shipped** readers and driving them over the owner's
+501-volume index — then independently re-derived by four adversarial agents, every headline
+number reproducing to the document.
+
+*Shape.* Not a swap — `ArchivalResolver` puts central-files **first** and volume-sources
+**second**. Two measured reasons the fallback has to stay: the **7 volume-sources-only lots**
+(`64D171`, `67D317`, `67D333`, `68D393`, `70D449` in RG 306; `74D267`, `78D26` in RG 59), and,
+far larger, **central-files has no record-group map at all** — `resolution()`'s second branch
+serves **14,187 document rows and 6,373 front-matter nodes** from volume-sources' 31 record-group
+headers, twenty times the lot path's gain.
+
+*Value, corrected.* **733 documents and 98 front-matter nodes gain a resolution; 0 lose one; 0
+NAIDs change.** The plan's **728** and **+91** are *net* figures over a row set joined on
+`document_sources.lot_file_norm` — which is **not the key either call site passes**. That column
+is empty on 2,494 of 17,834 lot-bearing rows (2,407 `structured`, and **87 `footnote`** rows the
+footnote insert path builds without a `lotFileNorm`, `IndexingPipeline.swift:3710`). Joining on
+the raw `lot_file` the app actually uses gives 733/98 gross. The plan's own 8,974 / 8,246 reach
+and 3,024 / 2,933 node figures reproduce exactly under its join, so the discrepancy is one cause,
+not four.
+
+*Confirmed as written.* 971 central-files lot keys, all `series`-level and unflagged — so
+`untrustworthyNAIDs` **is** empty and the #351 render guard is inert (dormant, not dead). Zero
+`fileUnit` entries in volume-sources `lots`. Seven volume-sources-only lots, with `64D171` →
+40967113 and `78D26` → 824653 exactly as named. **Zero naId disagreements on the 751 shared
+keys** — they differ only in `matchType` (`control` vs `lot`), which nothing renders.
+
+*Corrected.* The 7 volume-sources-only front-matter nodes sit in **2 volumes**
+(`frus1961-63v25` ×5, `frus1969-76ve10` ×2), not seven.
+
+**Two findings this PR does NOT act on, both needing an owner call:**
+
+1. **The `RG-` key-form defect — 192,130 documents.** `document_sources.record_group` stores
+   **both** `RG-59` (206,088 rows) and bare `59` (12,375), plus `RG-256` (1,547); the
+   `recordGroups` map is keyed by bare number, so the `RG-<n>` rows miss the record-group branch
+   entirely. `CollectionKeying.bareRG` already exists. It is 260× the repoint's gain — but the
+   effect is to stamp a generic "General Records of the Department of State" link on a very large
+   number of Collections export rows, which is *exactly* the outcome the lot-only rule exists to
+   avoid. **Product call, not a bug fix.** Note stripping `RG-` also exposes `RG-256` → `256`,
+   which is not in the map and would still miss.
+2. **Agreement is not correctness for divided lots.** `lot-claimants-index.json` (#675) records
+   118 lots NARA divided across several series. **84 of the 751 keys both bundles agree on are
+   divided lots, and 1,855 of the 8,322 "both resolve" documents (22%) ride one** — so on those
+   the two bundles agree on a single naId that the repo's own newest artifact says is one
+   claimant of up to 13. Not a regression, but it caps what "resolved" means here.
+
+*Also recorded:* the app now runs **two** lot normalisers — `CentralFilesIndex.normalizeLot` and
+`LotResolutionAcceptance.foldControlNumber` — which **diverge on 18 raw forms / 29 documents**
+(`59 D 05` → `59D05` vs `59D5`; `03D012` → `03D012` vs `03D12`). And `normalizeLot`'s
+`replacingOccurrences(of: "LOT ", with: "")` removes **every** occurrence, not a prefix, so a lot
+string carrying prose (`"55D323 Two lot files containing…"`) is mangled mid-string. 3 stored
+`lot_file_norm` values already diverge from it. None of this changes a resolution today; all of it
+is a trap for the next measurement taken on `lot_file_norm`.
+
+**PR 2 (the fold) is unchanged in scope** and still worth 2 documents on its own.
+
 **[2026-07-28] Anchors corrected and the reader list completed.** The app sites are
 `VolumeSourcesView.swift:291` (the plan said :282, which is a closing brace and never was
 the call site) and `CollectionContentResolver.swift:1275–1276` (correct as written). Two
