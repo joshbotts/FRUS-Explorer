@@ -43,6 +43,15 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// Catalog series record. Empty for an index that predates Phase 3.
     var lotFiles: [LotFileEntry]
 
+    /// `lotFiles` keyed by its already-normalized `lotNumber`, built once at decode.
+    ///
+    /// `lotFile(forRawLot:)` used to scan all 971 entries. That was fine while Source Explorer
+    /// was the only caller — once per opened document — but the #372/N-5 repoint put it on the
+    /// corpus browser's Sources outline, which calls it **once per row**, and a volume like
+    /// `frus1964-68v06` has 755. Not part of the encoded shape: `CodingKeys` omits it, so a
+    /// re-encode round-trips unchanged.
+    private let lotFilesByNumber: [String: LotFileEntry]
+
     // The generator defaults newer fields; tolerate their absence for forward safety.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -51,6 +60,10 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
         numericalFile = try container.decode(NumericalFileIndex.self, forKey: .numericalFile)
         countrySeries = try container.decodeIfPresent([CountrySeriesIndex].self, forKey: .countrySeries) ?? []
         lotFiles = try container.decodeIfPresent([LotFileEntry].self, forKey: .lotFiles) ?? []
+        // First wins, matching the `first(where:)` this replaced. The shipped bundle has no
+        // duplicate lot numbers, so the tie-break is a formality rather than a policy.
+        lotFilesByNumber = Dictionary(lotFiles.map { ($0.lotNumber, $0) },
+                                      uniquingKeysWith: { first, _ in first })
     }
 
     /// Returns the country series for `category`, if present.
@@ -80,7 +93,7 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// guard; the generator also rejects fileUnit hits at harvest time going forward.
     func lotFile(forRawLot raw: String) -> LotFileEntry? {
         let key = CentralFilesIndex.normalizeLot(raw)
-        guard let entry = lotFiles.first(where: { $0.lotNumber == key }),
+        guard let entry = lotFilesByNumber[key],
               entry.ancestryLacksRecordGroup != true,
               !entry.isFileUnitLevel else { return nil }
         return entry
