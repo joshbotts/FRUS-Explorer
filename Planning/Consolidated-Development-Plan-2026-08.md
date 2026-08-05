@@ -499,36 +499,71 @@ results, and the top hit for a lot string is often a giant wrong-RG series
 blindly the #1 result." The generator was hardened; the app was not. **6,230 documents fall
 through to this path** (`lotFile|liveRouteOnly`).
 
-**#675 — the bundled errors are a different mechanism: lot-number collision across
-bureaus.** State assigned lot numbers per accession, so two offices each held a "66 D 50"
-and NARA catalogued both. Every current guard — RG matches, level is `series`, the record
-carries the control number — passes for *both* candidates. Swept all **2,667** associations
-across the three bundles (622 distinct NAIDs, all found in the harvest):
-- **5 confirmed wrong, 11 documents.** Sharpest is `76D482`: FRUS cites *ARA/CAR … Bauxite,
-  Jamaica 1974*, **two** series claim the lot (Iran 2602428, Jamaica 1039947), and the
-  generator picked Iran. Also `74D476` Cyprus Desk → Jamaica, `66D50` ARA/CCA Cuba → Kenya,
-  `61D67` ARA/OAP Panama → INR (unbacked by any control number), plus 90D234.
-- **28 lots are claimed by more than one harvested series, riding 725 documents** — the
-  pick is currently unrecorded and unreviewable. `64D563` alone is 245 documents.
-- Only **3 of 971** central-files rows lack control-number backing, so the bundle is sound
-  overall; the exposure is concentrated in the ambiguous band.
+**#675 — [2026-08-05] the sweep was re-derived under an owner ruling, and most of it reversed.**
+
+**The archival principle, which governs everything in this lane** *(owner, 2026-08-05)*: NARA
+makes archival choices about records **after** they leave the originating agency — consolidating
+several lot files into one series, and dividing one lot file across several series. **When NARA
+lists a FRUS lot identifier as a `variantControlNumber` on a series, the app must assume the series
+is a match.** Possession of the control number *is* the assertion of correspondence; a bureau
+disagreement between citation and record is the expected consequence of rearrangement, never a
+refutation.
+
+Corrected sweep over all 20,188 harvested series (four independent re-derivations):
+
+| | rows | documents | |
+|---|---|---|---|
+| **A** one claimant, and it is the bundle's naId | 859 | 7,255 | authoritative |
+| **B** 2–13 claimants; the bundle silently picks one | **109** | **1,710** | NARA divided the lot |
+| **C** no claimant | 3 | 9 | only **1 document** is a real error |
+
+The earlier "5 confirmed wrong, 11 documents" was wrong: `74D476`, `66D50`, `74D430` and `61D67`
+are all NARA's own assertions, and `76D482` is ambiguous rather than wrong. `61D67`/`62D42` are the
+sharpest case — NARA states the consolidation *in prose*, in a field nothing reads: naId 596518's
+control-number entry carries `"note": "This lot file is a consolidation of material found in lots
+53D500, 58D159, 58D776, 60D644, 61D67, and 62D42 after screening."` The one residual error,
+`72A6248`, is a **FRUS-side parse defect** (275 documents / 81 lots take a lot from a trailing
+parenthetical of a Central Files citation) and belongs to #353, not here.
+
+**The bureau/creator conjunct is CANCELLED, not deferred.** Measured: yield **2 rows / 2 documents**,
+and under the principle above those two are not errors — true yield **zero**. Cost: 438 of 579
+document-bearing A rows, **5,748 of 7,255 documents (79%)**, share no content word between the
+citation's office label and any NARA creator heading, because FRUS names lots by department symbol
+(`S/P Files`) or officer surname (`Miller files`) while NARA names creators in prose. It also cannot
+break ties — on 46 of the 109 B rows every claimant carries an *identical* creator heading — and it
+would have passed a genuine error (`62D42` cites INR; the record is INR). Conjunct 3 strictly
+dominates it.
+
+**Three defects in the shipped #677 code came out of this** and are filed separately: the control-
+number fold misses NARA's own zero-padded and four-digit-year forms (**#679** — `1984D241` ≡
+`84D241`, 8 rows, largest 164 documents), the `note` channel is unread (same issue; a re-harvest
+today *drops* the `61D67`/`62D42` rows), and `rows=5` cannot see a 13-claimant lot. **#680** is a
+one-click bypass: the macOS Refresh button re-runs an unguarded v1 query over the same results.
+**#681** sizes what #677 does *not* cover — 26.8% of live catalog lookups.
 
 **Scope:**
-1. **A bureau/creator conjunct in `isAcceptableLotResolution`.** The FRUS citation names the
-   office (`ARA/CAR`, `Cyprus Desk`, `OES/OA`); the NARA record names its creator. Disagree
-   at bureau level → refuse. This is the guard RG-and-level structurally cannot be, and it
-   catches all four bundled errors.
-2. **Share that test with the app's live path**, scan a page instead of `maxResults: 1`, and
-   consider dropping the free-text fallback for lot files entirely — it fires only when the
-   precise query found nothing, so its hit rate on *correct* answers is near zero while its
-   hit rate on plausible-looking wrong ones is high. "No matching record found" plus the
-   manual `search-within/388` link is already the app's honest outcome elsewhere.
-3. **Record ambiguous picks** as `candidates: [naId…]`. N-3 already built the render for
-   this — #669's `.candidates` outcome shows several series, each chipped "Possible" — so
-   this is a data change, not a UI one.
-4. **Correct the five** through `curated-lot-resolutions.json`, which N-3 shipped: `76D482`
-   → Jamaica (1039947) is a straight repoint; the other four have no correct NAID in the
-   harvest and become referrals or withdrawals.
+**N-8a — SHIPPED (#677).** The live path now shares `LotResolutionAcceptance` with the generator
+via `SourceNoteKit`, scans 20 rows instead of 1, and holds the free-text fallback to the same
+standard rather than deleting it. Owner-verified against `90 D 234` and `64 D 199`.
+**#678** followed it: the macOS Source Explorer is a persistent `Window`, so a bare `.task` pinned
+every derived value to the first document opened — one document's note above another's provenance.
+
+**N-8b — the remaining work, re-scoped 2026-08-05:**
+1. **Change the data shape, not the filter.** `claimants: [naId]` on each `LotFileEntry`, populated
+   offline from the harvest, replacing the single `naId`. **109 rows / 1,710 documents** stop
+   asserting one series where NARA divided the lot into as many as thirteen. Render through the
+   `.candidates` grammar #669 already ships. *This is the whole defect; everything else is hygiene.*
+   Note six bundle rows currently collapse to one naId (1136548) — those citations are
+   indistinguishable in the UI today.
+2. **#679** — widen the fold (four-digit year, leading zeros), read the `variantControlNumbers[].note`
+   channel as its own labelled evidence kind, raise `rows` above the observed 13-claimant maximum.
+   Explicitly do **not** admit `recordsCenterTransferNumbers`: those reach 57 claimants, and
+   `72A6248` is the proof.
+3. **#680** — close the macOS Refresh bypass.
+4. **Regenerate and re-verify.** The bundle is already stale against its own cache
+   (`.cache/central-files/unresolved-lots.txt` lists rows the bundle still carries), so whatever
+   lands must be a re-harvest, not a patch.
+5. **Not in N-8b:** #681 (the 73.2% of live routes with no test) and #353's 275-document parse class.
 
 **Why first.** Every other N item adds coverage. This one stops the resolver asserting a
 wrong archive with a working catalogue link and no visible doubt — strictly worse than the
@@ -1059,7 +1094,9 @@ it.
 |---|---|
 | #368 design pass (doc/analytics/settings) | **Closed 2026-07-28.** Settings → superseded by the North Star handoff (Workstream S). Analytics → delivered by Waves A–C + D1 + D3 (#466–#479). Document view → `ResearchStripView` no longer exists; the rail is collapsible via the C2 titlebar toggle, so the minimum-width complaint is structurally addressed (owner sanity-check on a narrow window before closing). |
 | #376 / #353 / #354 / #375 / #355 / #372 / #235 | Scheduled as N-0 … N-6 above. **[2026-08-02] All re-measured against the complete harvest — see the N-wave header. #354 loses two of its five items; #353, #355 and #372's first half lose their harvest dependency entirely.** |
-| #674 lot 90 D 234 → Census series · #675 association sweep | **New 2026-08-04.** Scheduled as **N-8** and pulled to the front of the lane: one missing acceptance test on two sides of the resolver (live free-text fallback, and bureau-level lot-number collisions in the bundle). 5 confirmed wrong associations, 28 ambiguous picks over 725 documents, 6,230 documents exposed to the live fallback. |
+| #679 fold / note channel / rows cap · #680 Refresh bypass | **New 2026-08-05.** Defects in the code #677 shipped, all causing **false refusals**. Folded into **N-8b**. |
+| #681 unguarded presidential-library and NARA-collection routes | **New 2026-08-05.** #677 covers 26.8% of live catalog lookups; 29,093 + 10,429 notes have no acceptance test, and 1,947 name institutions absent from the NARA catalog entirely. Larger than N-8b; unscheduled. |
+| #674 lot 90 D 234 → Census series · #675 association sweep | **New 2026-08-04.** Scheduled as **N-8** and pulled to the front of the lane: one missing acceptance test on two sides of the resolver (live free-text fallback, and bureau-level lot-number collisions in the bundle). **[2026-08-05 corrected]** N-8a shipped as #677 + #678. The sweep re-derived under the owner's archival principle: 1 real error (a FRUS-side parse defect), and **109 lots / 1,710 documents** where NARA divided the lot and the app names one of up to thirteen series. The bureau conjunct is cancelled — measured yield zero, cost 79% of correct resolutions. |
 | #663 digitised-scan links | **New 2026-08-02.** Scheduled as **N-7** — the highest-value item in the workstream (~7,000–9,000 documents, and it delivers an actual page image rather than a NAID). Sequenced behind N-2. |
 | #405 | **[2026-08-02] Measured: creator information reaches 2.8% of the corpus, too thin for a Related-Documents axis.** Stays parked; see N-parked. |
 | #306 in-chart scrubber | **Not mooted** by the analytics redesign — still a valid enhancement; unscheduled. |
