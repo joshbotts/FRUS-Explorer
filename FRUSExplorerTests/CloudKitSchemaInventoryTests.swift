@@ -16,7 +16,7 @@ import Testing
 /// The schema-deploy release gate (Wave R-7).
 ///
 /// ## Why this suite exists
-/// `Planning/188-189-Tester-Feedback-Build28-Plan.md:158` specified a startup warning "if the
+/// `Planning/Completed/188-189-Tester-Feedback-Build28-Plan.md:158` specified a startup warning "if the
 /// installed model set is newer than a known-deployed marker, so a future undeployed-schema
 /// regression is caught before shipping". It was never built, and #488 is that regression: build
 /// 35 added four CloudKit identifiers with no gate, the Production schema was never promoted, and

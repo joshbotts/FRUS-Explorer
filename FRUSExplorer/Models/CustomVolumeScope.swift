@@ -13,7 +13,7 @@ import SwiftData
 
 /// A user-defined, named set of volumes usable as a search/analytics scope (#258).
 ///
-/// Design per the reviewed sketch (`Planning/258-Custom-Volume-Scopes-Design.md`, PR #327):
+/// Design per the reviewed sketch (`Planning/Completed/258-Custom-Volume-Scopes-Design.md`, PR #327):
 /// a **flat, all-defaulted record whose membership is a `[String]` of manifest `volumeId`s** —
 /// the `Collection.projectIds` value-array pattern. No child `@Model`, no relationship, no
 /// non-optional custom enum (the #297 trap). Membership is a **static snapshot** (§8-Q2(a));

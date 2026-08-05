@@ -140,7 +140,7 @@ look like.
 
 The macOS Settings window has no search field (iOS only), and macOS has no live sync status inside
 Settings (it is in the main window's status bar). Both are real gaps, recorded in
-`Planning/Settings-Parity-Audit-2026-07-25.md`, not things to shoot.
+`Planning/Completed/Settings-Parity-Audit-2026-07-25.md`, not things to shoot.
 
 ## New since build 26 (build-27 tier — partly captured)
 

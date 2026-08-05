@@ -25,7 +25,7 @@ import SwiftUI
 /// Footnote bodies (`FRUSDocumentRenderModel.footnotes`) are excluded from the
 /// body offset space.
 ///
-/// See `Planning/102-DocumentHighlight-Architecture.md` for the complete
+/// See `Planning/Completed/102-DocumentHighlight-Architecture.md` for the complete
 /// traversal specification, offset unit definition, and determinism analysis.
 ///
 /// ## renderingVersion
@@ -44,7 +44,7 @@ import SwiftUI
 /// ## Conflict Resolution
 /// Each highlight has a unique `id` — inserts from multiple devices are additive.
 /// Concurrent edits to `colorTag` or `noteId` resolve by last-write-wins (CloudKit
-/// default). See `Planning/102-DocumentHighlight-Architecture.md §3` for details.
+/// default). See `Planning/Completed/102-DocumentHighlight-Architecture.md §3` for details.
 ///
 /// ## Color Tags
 /// Valid values for `colorTag`: `"yellow"`, `"green"`, `"blue"`, `"pink"`.

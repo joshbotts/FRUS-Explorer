@@ -221,7 +221,7 @@ public struct FRUSDocumentRenderModel: Sendable {
 // MARK: - Flat-text extraction
 
 /// Builds the flat-text string from `model.bodyNodes` using the deterministic DFS
-/// defined in `Planning/102-DocumentHighlight-Architecture.md §1`.
+/// defined in `Planning/Completed/102-DocumentHighlight-Architecture.md §1`.
 ///
 /// Only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes contribute
 /// characters. All container nodes recurse in array order. `.pageBreak`,

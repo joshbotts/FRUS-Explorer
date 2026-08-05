@@ -142,7 +142,7 @@ struct BrowserView: View {
                 //
                 // `splitLayout` / `SubseriesListView` are retained (currently unreferenced) so
                 // this change can be reverted by restoring the `sizeClass == .regular` branch.
-                // See Planning/Issues-233-243-Plan.md Session 1 and BigPicture-iPadMacParity.md.
+                // See Planning/Completed/Issues-233-243-Plan.md Session 1 and Planning/Completed/BigPicture-iPadMacParity.md.
                 stackLayout(vm: vm)
             } else {
                 ProgressView()
