@@ -218,6 +218,7 @@
 		3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F862248B58178F5619CFDC6 /* AppState.swift */; };
 		3B2DD1D26F85DCEC359DAAE0 /* OpenAPIValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD989B380917D47B136A279E /* OpenAPIValidationTests.swift */; };
 		3B306EAD5FD1EECD26B77636 /* CrossReferenceGraphWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D1347278F03F8E67FE3984 /* CrossReferenceGraphWindowView.swift */; };
+		3B4B51808E83DD5A39F450B5 /* LotResolutionAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5398170C2499845B1FC5D1E3 /* LotResolutionAcceptance.swift */; };
 		3B6A04600391E3971B50329F /* KeynessCloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3408BA94FB94A46022560B21 /* KeynessCloud.swift */; };
 		3BA472BCF073A16C6A7D4643 /* ResearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C28092808E6B978DB482326 /* ResearchView.swift */; };
 		3C28D03BED369D6610344C34 /* CorpusDispersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FFA3E6D609E3788A3D0D09A /* CorpusDispersion.swift */; };
@@ -489,6 +490,7 @@
 		8C47420FFC33679A8FC77255 /* ProjectFocusSubjectsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85918CBC65CFE5DAFB117542 /* ProjectFocusSubjectsEditor.swift */; };
 		8C7485682362B982A3D9BC51 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */; };
 		8C77F49346B1F25379457AAD /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
+		8CF602D696D83050CDBBEFE0 /* LotResolutionAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5398170C2499845B1FC5D1E3 /* LotResolutionAcceptance.swift */; };
 		8D568E2B137438B543F5B4B2 /* CollectionAuthority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B014C2967533C3DAEC54D /* CollectionAuthority.swift */; };
 		8D6C1BAA56FF7CB2FD697240 /* WorkingCorpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75611D891C39B761AB3548C /* WorkingCorpus.swift */; };
 		8D7866F2C8D6154A6D91AD5C /* frus-print.css in Resources */ = {isa = PBXBuildFile; fileRef = 39BF8068D53FC3128464360F /* frus-print.css */; };
@@ -573,6 +575,7 @@
 		A0657C60BC4A42D5C7D7486A /* RealTEICoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BD609D0467D3679F7C327A /* RealTEICoverageTests.swift */; };
 		A06B6C722AD32F76F15CF97D /* KWICLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */; };
 		A0A03094C376596EF89943D4 /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B574AF4FE49E9A08617B014 /* UserTag.swift */; };
+		A0C7E626BF78F426D7A4C5FE /* LotResolutionAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */; };
 		A14EBA2B619CFED32EA1D770 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2914FB296F951A74A8E2CE5 /* PromptEditorView.swift */; };
 		A1BE3C1D2975DADA7A568388 /* cloud-vectors-core.json in Resources */ = {isa = PBXBuildFile; fileRef = DCA3FAB89C7BB20D082B2E3E /* cloud-vectors-core.json */; };
 		A1D6D547B67EA1C2BD8AF5B2 /* PageRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B54FC01FB64921E1AF6D746 /* PageRangeStore.swift */; };
@@ -1146,6 +1149,7 @@
 		5175DA5DB0C781AF94092EFC /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		522924485B8BCC275CFB229A /* ZoteroAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroAPIModels.swift; sourceTree = "<group>"; };
 		536A71597B7315E933F81136 /* frus-selection.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "frus-selection.js"; sourceTree = "<group>"; };
+		5398170C2499845B1FC5D1E3 /* LotResolutionAcceptance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotResolutionAcceptance.swift; sourceTree = "<group>"; };
 		53C1E215AA6C01CF6ED2EECC /* CompilationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompilationView.swift; sourceTree = "<group>"; };
 		53E67200AABF180F90E6DBC1 /* SummaryProvenanceExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryProvenanceExportTests.swift; sourceTree = "<group>"; };
 		5406F8DCBEBBCF7C89E59DC9 /* KeynessWiringAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeynessWiringAuditTests.swift; sourceTree = "<group>"; };
@@ -1467,6 +1471,7 @@
 		DC673FAD7AA434B997E13A3F /* ResearchTrailMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchTrailMigrationTests.swift; sourceTree = "<group>"; };
 		DC6E67AA63034BBFBF7B7098 /* PersonCoMentionGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonCoMentionGraphView.swift; sourceTree = "<group>"; };
 		DCA3FAB89C7BB20D082B2E3E /* cloud-vectors-core.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cloud-vectors-core.json"; sourceTree = "<group>"; };
+		DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotResolutionAcceptanceTests.swift; sourceTree = "<group>"; };
 		DD727A4DE975FFA7F692C32D /* ExcerptVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExcerptVerifier.swift; sourceTree = "<group>"; };
 		DD78F8E282DB8E257A3895F6 /* IndexingQueueBannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingQueueBannerTests.swift; sourceTree = "<group>"; };
 		DD8875ABB021AA6AA1FE9B5A /* GeoKeyNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoKeyNormalizer.swift; sourceTree = "<group>"; };
@@ -1956,6 +1961,7 @@
 				8CFB0FD0357ED14BB6C8C69A /* KeynessTests.swift */,
 				5406F8DCBEBBCF7C89E59DC9 /* KeynessWiringAuditTests.swift */,
 				0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */,
+				DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */,
 				7F55CBFB1680DD882C3B9C21 /* MacSettingsViewTests.swift */,
 				8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */,
 				260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */,
@@ -2118,6 +2124,7 @@
 			isa = PBXGroup;
 			children = (
 				D498F562E475FF5CF7981134 /* CollectionKeying.swift */,
+				5398170C2499845B1FC5D1E3 /* LotResolutionAcceptance.swift */,
 				7054B9A8AF2304B2C17F34BF /* SourceNoteParser.swift */,
 			);
 			path = SourceNoteKit;
@@ -2847,6 +2854,7 @@
 				1B5AC32D7C6F5388B2D3996C /* Keyness.swift in Sources */,
 				3B6A04600391E3971B50329F /* KeynessCloud.swift in Sources */,
 				A520280B884239A8EFFE8AEC /* LaunchSplashView.swift in Sources */,
+				3B4B51808E83DD5A39F450B5 /* LotResolutionAcceptance.swift in Sources */,
 				BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */,
 				0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */,
 				3A0E32C338CA487E86C9D86B /* MacDocumentView.swift in Sources */,
@@ -3207,6 +3215,7 @@
 				7E571CF62848726B51298DC1 /* Keyness.swift in Sources */,
 				E25099F75FB776E5D7D692BA /* KeynessCloud.swift in Sources */,
 				5F400B93F91B949CFEE78EE3 /* LaunchSplashView.swift in Sources */,
+				8CF602D696D83050CDBBEFE0 /* LotResolutionAcceptance.swift in Sources */,
 				19A2E99993AE1FB57687B79B /* MacCollectionManagerView.swift in Sources */,
 				4E3992CD09A928945B2AC08C /* MacCorpusBrowserWindow.swift in Sources */,
 				3F3F38656DA23D95673B117D /* MacDocumentView.swift in Sources */,
@@ -3490,6 +3499,7 @@
 				6EBCA39D43A269FF41981881 /* KeynessCloudTests.swift in Sources */,
 				05E9291EB0EE48B65C621EBA /* KeynessTests.swift in Sources */,
 				AA1B12C1933328C18E348716 /* KeynessWiringAuditTests.swift in Sources */,
+				A0C7E626BF78F426D7A4C5FE /* LotResolutionAcceptanceTests.swift in Sources */,
 				14533B37DD02A330F098DE0A /* MacSettingsViewTests.swift in Sources */,
 				FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */,
 				64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */,
