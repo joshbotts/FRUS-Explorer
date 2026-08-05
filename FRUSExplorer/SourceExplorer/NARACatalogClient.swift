@@ -30,6 +30,29 @@ public struct NARACatalogResult: Sendable {
     public let seriesTitle: String?
     /// Date range of the records (e.g. "1963–1966").
     public let dateRange: String?
+    /// NARA's `levelOfDescription` (`series`, `fileUnit`, …). Needed by
+    /// `LotResolutionAcceptance`; `nil` when the response omitted it, which the test
+    /// treats as a failure rather than a pass (#674).
+    public let levelOfDescription: String?
+    /// The record's own control numbers, used to verify it really carries the queried lot.
+    public let variantControlNumbers: [String]
+
+    /// Memberwise init. The two acceptance fields default so existing construction sites
+    /// keep compiling — but note that a default of "unknown" makes `isAcceptable` return
+    /// `false`, so a caller that forgets them gets refusal, not a silent pass.
+    public init(naId: String, title: String, catalogURL: URL, scopeNote: String?,
+                recordGroupNumber: String?, seriesTitle: String?, dateRange: String?,
+                levelOfDescription: String? = nil, variantControlNumbers: [String] = []) {
+        self.naId = naId
+        self.title = title
+        self.catalogURL = catalogURL
+        self.scopeNote = scopeNote
+        self.recordGroupNumber = recordGroupNumber
+        self.seriesTitle = seriesTitle
+        self.dateRange = dateRange
+        self.levelOfDescription = levelOfDescription
+        self.variantControlNumbers = variantControlNumbers
+    }
 }
 
 // MARK: - NARACatalogError
@@ -408,14 +431,19 @@ public actor NARACatalogClient {
     ///   - recordGroup: Typically `"59"` for State Dept. lot files.
     ///   - lotNumber: e.g. `"64 D 199"`, `"72D415"`.
     /// - Returns: The best-matching series description, or `nil` if not found.
+    /// How many free-text results to scan before giving up. The generator uses 20 for the
+    /// same query and for the same reason: one result cannot be filtered, and the acceptable
+    /// record is frequently not the top hit.
+    public static let fallbackScanRows = 20
+
     public func searchByLotFile(
         recordGroup: String,
-        lotNumber: String
-    ) async throws -> NARACatalogResult? {
+        lotNumber: String,
+        maxResults: Int = fallbackScanRows
+    ) async throws -> [NARACatalogResult] {
         // Quote the lot number to encourage phrase matching.
         let keywords = "\"\(lotNumber)\""
-        let results = try await searchByRecordGroup(recordGroup, keywords: keywords, maxResults: 1)
-        return results.first
+        return try await searchByRecordGroup(recordGroup, keywords: keywords, maxResults: maxResults)
     }
 
     /// Queries the NARA Catalog for a State Dept. lot file series record.
@@ -423,7 +451,8 @@ public actor NARACatalogClient {
     ///
     /// - Parameter lotNumber: e.g. `"61-D 146"`.
     public func resolveLotFile(lotNumber: String) async throws -> NARACatalogResult? {
-        try await searchByLotFile(recordGroup: "59", lotNumber: lotNumber)
+        let page = try await searchByLotFile(recordGroup: "59", lotNumber: lotNumber)
+        return Self.firstAcceptable(page, recordGroup: "59", lotNumber: lotNumber)
     }
 
     /// Resolves a State Dept. lot file using the `variantControlNumber_is` field
@@ -455,7 +484,13 @@ public actor NARACatalogClient {
         let variants = Self.lotNumberVariants(from: lotNumber)
 
         for variant in variants {
-            let results = try await searchByVariantControlNumber(variant, recordGroup: recordGroup)
+            let page = try await searchByVariantControlNumber(variant, recordGroup: recordGroup)
+            // #674: scan the page and keep only records that pass the acceptance test. The
+            // exact-field query can still return a wrong-RG or file-unit record, and before
+            // this the app took whatever came back.
+            let results = page.filter {
+                Self.firstAcceptable([$0], recordGroup: recordGroup, lotNumber: variant) != nil
+            }
             if !results.isEmpty {
                 #if DEBUG
                 print("[SourceExplorer] Lot file '\(variant)' (RG \(recordGroup)) matched \(results.count) result(s)")
@@ -469,8 +504,18 @@ public actor NARACatalogClient {
         print("[SourceExplorer] variantControlNumber_is found nothing for '\(lotNumber)' "
               + "(RG \(recordGroup)); falling back to phrase query")
         #endif
-        if let fallback = try? await searchByLotFile(recordGroup: recordGroup, lotNumber: lotNumber) {
-            return [fallback]
+        // #674: the fallback is a FREE-TEXT phrase query, and NARA's record-group filter does
+        // not constrain free-text results — the top hit for a lot string is often a large
+        // wrong-RG series (this is how `90 D 234` reached a Census Bureau record). It is kept
+        // rather than deleted because it can still find a record the exact query missed: NARA
+        // indexes some lots as `"Lot File 74D476"`, which `variantControlNumber_is` cannot
+        // match but `foldControlNumber` can. It is only useful *with* the acceptance test —
+        // the fallback now has to prove the record carries the lot, like any other route.
+        let page = (try? await searchByLotFile(recordGroup: recordGroup,
+                                               lotNumber: lotNumber,
+                                               maxResults: Self.fallbackScanRows)) ?? []
+        if let accepted = Self.firstAcceptable(page, recordGroup: recordGroup, lotNumber: lotNumber) {
+            return [accepted]
         }
         return []
     }
@@ -645,10 +690,53 @@ public actor NARACatalogClient {
             return []
         }
 
-        return records.compactMap { buildResult(from: $0) }
+        return records.compactMap { Self.buildResult(from: $0) }
     }
 
-    private func buildResult(from record: [String: Any]) -> NARACatalogResult? {
+    /// Every control number on a decoded record, across the v1/v2 nestings NARA uses.
+    /// Returns `[]` when the field is absent — which makes the acceptance test refuse,
+    /// since it cannot verify what it cannot see.
+    nonisolated static func variantControlNumbers(in record: [String: Any]) -> [String] {
+        let container = (record["variantControlNumbers"] as? [Any])
+            ?? ((record["description"] as? [String: Any])?["variantControlNumbers"] as? [Any])
+            ?? []
+        return container.compactMap { entry in
+            if let s = entry as? String { return s }
+            if let d = entry as? [String: Any] {
+                return d["number"] as? String ?? d["variantControlNumber"] as? String
+            }
+            return nil
+        }
+    }
+
+    /// The first result that passes `LotResolutionAcceptance` — the app-side equivalent of
+    /// the generator's harvest-time filter (#674).
+    ///
+    /// Separated from the network call so the decision is unit-testable without a round
+    /// trip, which is the only way to prove the filter is applied at all: an integration
+    /// test would need a key, and a key-less run exercises none of this.
+    nonisolated static func firstAcceptable(
+        _ results: [NARACatalogResult],
+        recordGroup: String,
+        lotNumber: String
+    ) -> NARACatalogResult? {
+        results.first {
+            LotResolutionAcceptance.isAcceptable(
+                recordGroup: recordGroup,
+                normalizedLot: lotNumber,
+                candidateRecordGroup: $0.recordGroupNumber,
+                levelOfDescription: $0.levelOfDescription,
+                variantControlNumbers: $0.variantControlNumbers)
+        }
+    }
+
+    /// Decodes one search-response record.
+    ///
+    /// `nonisolated static` and internal so it is directly testable: a mutation that stops
+    /// this from parsing `variantControlNumbers` starves `LotResolutionAcceptance` and makes
+    /// the app resolve *nothing*, and that regression survived a first round of tests which
+    /// exercised the extractor but never its caller.
+    nonisolated static func buildResult(from record: [String: Any]) -> NARACatalogResult? {
         // Field names vary between v1 and v2 responses
         let naId: String
         if let id = record["naId"] as? String, !id.isEmpty {
@@ -685,13 +773,19 @@ public actor NARACatalogClient {
             dateRange = nil
         }
 
+        let level = record["levelOfDescription"] as? String
+            ?? (record["description"] as? [String: Any])?["levelOfDescription"] as? String
+
+        let variants = Self.variantControlNumbers(in: record)
+
         let catalogURL = URL(string: "\(Self.catalogBase)/id/\(naId)")
             ?? URL(string: Self.catalogBase)!
 
         return NARACatalogResult(
             naId: naId, title: title, catalogURL: catalogURL,
             scopeNote: scopeNote, recordGroupNumber: rgNumber,
-            seriesTitle: seriesTitle, dateRange: dateRange
+            seriesTitle: seriesTitle, dateRange: dateRange,
+            levelOfDescription: level, variantControlNumbers: variants
         )
     }
 
