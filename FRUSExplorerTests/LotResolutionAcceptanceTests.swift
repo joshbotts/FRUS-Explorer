@@ -290,3 +290,150 @@ struct CatalogResultDecodingTests {
                                                  lotNumber: "90D234") == nil)
     }
 }
+
+// MARK: - LotFoldAndNoteChannelTests
+
+/// The two spelling expansions and the consolidation-note channel added by #679.
+///
+/// All three defects here caused **false refusals** — the failure mode the bureau conjunct was
+/// dropped to avoid, arriving through the conjunct that was kept.
+///
+/// Version history:
+///   1.0 — Session 2026-08-05: #679
+@Suite("Lot fold and note channel")
+struct LotFoldAndNoteChannelTests {
+
+    // MARK: Four-digit year
+
+    @Test("A four-digit year folds to the two-digit form NARA also publishes")
+    func fourDigitYearFolds() {
+        // NARA's own data proves the equivalence: nine values literally read
+        // "82D309 or 1982D0309" and "1978D0412 or 78D412".
+        #expect(LotResolutionAcceptance.foldControlNumber("1984D241") == "84D241")
+        #expect(LotResolutionAcceptance.foldControlNumber("1982D0129") == "82D129")
+        #expect(LotResolutionAcceptance.foldControlNumber("1978D0412") == "78D412")
+        #expect(LotResolutionAcceptance.carriesLotControlNumber(
+            "84D241", variantControlNumbers: ["1984D241"]))
+    }
+
+    @Test("A 20xx accession number is NOT folded into an impossible lot")
+    func twentyFirstCenturyIsLeftAlone() {
+        // 2015D0755 is a 2015 accession. Folding it would produce 15D755 — a 1915 State
+        // Department lot file, which cannot exist; lots run from the 1940s to the 1990s.
+        #expect(LotResolutionAcceptance.foldControlNumber("2015D0755") != "15D755")
+        #expect(!LotResolutionAcceptance.carriesLotControlNumber(
+            "15D755", variantControlNumbers: ["2015D0755"]))
+    }
+
+    // MARK: Zero padding
+
+    @Test("A zero-padded sequence folds to the unpadded form")
+    func zeroPaddingFolds() {
+        #expect(LotResolutionAcceptance.foldControlNumber("75D076") == "75D76")
+        #expect(LotResolutionAcceptance.foldControlNumber("84D068") == "84D68")
+        #expect(LotResolutionAcceptance.foldControlNumber("74F026") == "74F26")
+        #expect(LotResolutionAcceptance.carriesLotControlNumber(
+            "75D76", variantControlNumbers: ["75D076"]))
+    }
+
+    @Test("Non-lot identifiers pass through untouched")
+    func nonLotIdentifiersSurvive() {
+        // Entry numbers, declassification project numbers and agency disposition numbers share
+        // the field. Rewriting them would manufacture matches out of unrelated identifiers.
+        for id in ["A1 3051B", "NND 959367", "P 79", "DAL-0059-2012-0003-0001", "UD-16D 71"] {
+            let folded = LotResolutionAcceptance.foldControlNumber(id)
+            #expect(!folded.isEmpty)
+            #expect(!LotResolutionAcceptance.carriesLotControlNumber(
+                "84D241", variantControlNumbers: [id]))
+        }
+    }
+
+    @Test("A trailing period is stripped")
+    func trailingPeriodStripped() {
+        #expect(LotResolutionAcceptance.carriesLotControlNumber(
+            "64D199", variantControlNumbers: ["64D199."]))
+    }
+
+    // MARK: The consolidation note
+
+    /// NARA's actual note on naId 596518, verbatim.
+    private let consolidationNote = "This lot file is a consolidation of material found in lots "
+        + "53D500, 58D159, 58D776, 60D644, 61D67, and 62D42 after screening."
+
+    @Test("Lots named in a consolidation note are found")
+    func noteNamesAreExtracted() {
+        let found = LotResolutionAcceptance.lotsNamedInNote(consolidationNote)
+        for lot in ["53D500", "58D159", "58D776", "60D644", "61D67", "62D42"] {
+            #expect(found.contains(lot), "\(lot) not extracted from NARA's consolidation note")
+        }
+    }
+
+    @Test("A record whose note names the lot is accepted, and labelled as such")
+    func noteChannelAccepts() {
+        // naId 596518 carries control numbers 58D776 and A1 1561 only, so 61D67 and 62D42 are
+        // established by the note alone — 8 documents that were being refused.
+        let e = LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "61D67",
+            candidateRecordGroup: "59", levelOfDescription: "series",
+            variantControlNumbers: ["58D776", "A1 1561"],
+            controlNumberNotes: [consolidationNote])
+        #expect(e == .consolidationNote)
+    }
+
+    @Test("A direct control number outranks the note")
+    func controlNumberWins() {
+        let e = LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "58D776",
+            candidateRecordGroup: "59", levelOfDescription: "series",
+            variantControlNumbers: ["58D776"],
+            controlNumberNotes: [consolidationNote])
+        #expect(e == .controlNumber)
+    }
+
+    @Test("Boilerplate notes name nothing — the measured false-positive rate is zero")
+    func boilerplateNotesAreInert() {
+        // These are the five most common note shapes in the harvest (1,706 + 981 + 753 + 665 +
+        // 433 occurrences) plus the entry-provenance form. Exactly one note in all 8,897
+        // contains lot-shaped tokens; if any of these did, prose scanning would be unsafe.
+        for note in ["This is the Department of State Lot File Number.",
+                     "This is a Department of State lot file number.",
+                     "This is a Department of State LOT file number.",
+                     "This is a State Department lot file number.",
+                     "This is the Department of State Lot File number.",
+                     "The portion of this series formerly identified as UD-11W 12 was formerly "
+                     + "described under National Archives Identifier 6862111.",
+                     "Entry UD-15D 37 was part of RG 59.",
+                     "Transfer W286-68S3602, Boxes 89-93"] {
+            #expect(LotResolutionAcceptance.lotsNamedInNote(note).isEmpty,
+                    "boilerplate note yielded lot tokens: \(note)")
+        }
+    }
+
+    @Test("The note channel still respects record group and level")
+    func noteChannelIsNotAnEscapeHatch() {
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "61D67",
+            candidateRecordGroup: "29", levelOfDescription: "series",
+            variantControlNumbers: [], controlNumberNotes: [consolidationNote]) == nil)
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "61D67",
+            candidateRecordGroup: "59", levelOfDescription: "fileUnit",
+            variantControlNumbers: [], controlNumberNotes: [consolidationNote]) == nil)
+    }
+
+    @Test("Notes decode off the wire and reach the filter")
+    func notesDecodeFromTheResponse() throws {
+        let record: [String: Any] = [
+            "naId": "596518", "title": "Subject Files",
+            "recordGroupNumber": "59", "levelOfDescription": "series",
+            "variantControlNumbers": [
+                ["number": "58D776", "note": consolidationNote],
+                ["number": "A1 1561"],
+            ],
+        ]
+        let result = try #require(NARACatalogClient.buildResult(from: record))
+        #expect(result.controlNumberNotes == [consolidationNote])
+        #expect(NARACatalogClient.firstAcceptable([result], recordGroup: "59",
+                                                 lotNumber: "61D67")?.naId == "596518")
+    }
+}

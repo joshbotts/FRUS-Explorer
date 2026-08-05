@@ -36,13 +36,17 @@ public struct NARACatalogResult: Sendable {
     public let levelOfDescription: String?
     /// The record's own control numbers, used to verify it really carries the queried lot.
     public let variantControlNumbers: [String]
+    /// Prose notes attached to those control numbers. NARA states some consolidations only
+    /// here, so the acceptance test reads them as a second evidence channel (#679).
+    public let controlNumberNotes: [String]
 
     /// Memberwise init. The two acceptance fields default so existing construction sites
     /// keep compiling — but note that a default of "unknown" makes `isAcceptable` return
     /// `false`, so a caller that forgets them gets refusal, not a silent pass.
     public init(naId: String, title: String, catalogURL: URL, scopeNote: String?,
                 recordGroupNumber: String?, seriesTitle: String?, dateRange: String?,
-                levelOfDescription: String? = nil, variantControlNumbers: [String] = []) {
+                levelOfDescription: String? = nil, variantControlNumbers: [String] = [],
+                controlNumberNotes: [String] = []) {
         self.naId = naId
         self.title = title
         self.catalogURL = catalogURL
@@ -52,6 +56,7 @@ public struct NARACatalogResult: Sendable {
         self.dateRange = dateRange
         self.levelOfDescription = levelOfDescription
         self.variantControlNumbers = variantControlNumbers
+        self.controlNumberNotes = controlNumberNotes
     }
 }
 
@@ -431,6 +436,14 @@ public actor NARACatalogClient {
     ///   - recordGroup: Typically `"59"` for State Dept. lot files.
     ///   - lotNumber: e.g. `"64 D 199"`, `"72D415"`.
     /// - Returns: The best-matching series description, or `nil` if not found.
+    /// How many results to request when a lot may be claimed by several series.
+    ///
+    /// The observed maximum is **13** claimants on one lot (`61D146`), and `64D563` has 12 —
+    /// so the previous `rows=5` made seven of its twelve series structurally unreachable
+    /// (#679). NARA divides a lot across series routinely; the query has to be able to see
+    /// that before anything downstream can present it.
+    public static let claimantScanRows = 20
+
     /// How many free-text results to scan before giving up. The generator uses 20 for the
     /// same query and for the same reason: one result cannot be filtered, and the acceptable
     /// record is frequently not the top hit.
@@ -567,7 +580,7 @@ public actor NARACatalogClient {
             URLQueryItem(name: "variantControlNumber_is",        value: lotNumber),
             URLQueryItem(name: "description.recordGroupNumber",  value: recordGroup),
             URLQueryItem(name: "resultType",                     value: "description"),
-            URLQueryItem(name: "rows",                           value: "5"),
+            URLQueryItem(name: "rows",                           value: "\(Self.claimantScanRows)"),
         ]
         guard let url = components.url else { throw NARACatalogError.decodingError }
         return try await executeSearch(url: url, apiKey: apiKey)
@@ -709,6 +722,18 @@ public actor NARACatalogClient {
         }
     }
 
+    /// Every prose `note` attached to a decoded record's control numbers.
+    ///
+    /// NARA records some consolidations only here — see
+    /// `LotResolutionAcceptance.lotsNamedInNote`. Reading only `number` refused naId 596518
+    /// for five of the six lots its own note names (#679).
+    nonisolated static func controlNumberNotes(in record: [String: Any]) -> [String] {
+        let container = (record["variantControlNumbers"] as? [Any])
+            ?? ((record["description"] as? [String: Any])?["variantControlNumbers"] as? [Any])
+            ?? []
+        return container.compactMap { ($0 as? [String: Any])?["note"] as? String }
+    }
+
     /// The first result that passes `LotResolutionAcceptance` — the app-side equivalent of
     /// the generator's harvest-time filter (#674).
     ///
@@ -726,7 +751,8 @@ public actor NARACatalogClient {
                 normalizedLot: lotNumber,
                 candidateRecordGroup: $0.recordGroupNumber,
                 levelOfDescription: $0.levelOfDescription,
-                variantControlNumbers: $0.variantControlNumbers)
+                variantControlNumbers: $0.variantControlNumbers,
+                controlNumberNotes: $0.controlNumberNotes)
         }
     }
 
@@ -777,6 +803,7 @@ public actor NARACatalogClient {
             ?? (record["description"] as? [String: Any])?["levelOfDescription"] as? String
 
         let variants = Self.variantControlNumbers(in: record)
+        let notes = Self.controlNumberNotes(in: record)
 
         let catalogURL = URL(string: "\(Self.catalogBase)/id/\(naId)")
             ?? URL(string: Self.catalogBase)!
@@ -785,7 +812,8 @@ public actor NARACatalogClient {
             naId: naId, title: title, catalogURL: catalogURL,
             scopeNote: scopeNote, recordGroupNumber: rgNumber,
             seriesTitle: seriesTitle, dateRange: dateRange,
-            levelOfDescription: level, variantControlNumbers: variants
+            levelOfDescription: level, variantControlNumbers: variants,
+            controlNumberNotes: notes
         )
     }
 
