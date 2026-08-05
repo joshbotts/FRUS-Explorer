@@ -6764,7 +6764,18 @@ public actor IndexingPipeline {
         let location = DecimalFileSegment.location(from: ref)
         guard !location.isEmpty else { return ([], 0) }
         let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear)
+        // Two prefixes, because `location(from:)` trims the whitespace a citation may leave
+        // before the item slash while `series_name` stores the file number verbatim. A note
+        // reading `751G.5 MSP /10–553` is stored with that space, so the trimmed
+        // `751G.5 MSP/%` matched none of its 41 siblings and the document showed no archival
+        // neighbours at all (reported on frus1952-54v13p1/d416).
+        //
+        // 2,224 decimal rows (1.2%) carry the space — `501. BC` (183), `740.00119 EW` (87),
+        // `357. AC` (59), `751G.5 MSP` (42), `774.5 MSP` (42) among them. Matching it here
+        // rather than normalising `series_name` at index time keeps the fix out of the stored
+        // data, so it needs no reindex and cannot corrupt a file number that means something.
         let likePrefix = location + "/%"
+        let spacedPrefix = location + " /%"
         let ex = exclusion(excluding)
 
         let sql = """
@@ -6777,13 +6788,13 @@ public actor IndexingPipeline {
             LEFT JOIN document_dates dd
                 ON dd.volume_id = ds.volume_id AND dd.document_id = ds.document_id
             WHERE ds.citation_era = 'decimal'
-                AND (ds.series_name = ? OR ds.series_name LIKE ?)\(ex.clause)
+                AND (ds.series_name = ? OR ds.series_name LIKE ? OR ds.series_name LIKE ?)\(ex.clause)
             ORDER BY ds.volume_id, ds.document_id
             LIMIT ?
             """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        let params = [location, likePrefix] + ex.params
+        let params = [location, likePrefix, spacedPrefix] + ex.params
         for (i, p) in params.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
         }
