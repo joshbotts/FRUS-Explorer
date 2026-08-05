@@ -467,11 +467,49 @@ public struct SourceNoteParser {
         while s.hasSuffix(".") { s = String(s.dropLast()) }
         s = s.trimmingCharacters(in: .whitespaces)
         guard s.count >= 3, s.count <= 60 else { return nil }
+        s = unifyingSpacedClassSuffix(s)
         let ns = NSRange(s.startIndex..., in: s)
         let isSubjectNumeric = subjectNumericClassRegex?.firstMatch(in: s, range: ns) != nil
         let isDottedDecimal = dottedDecimalClassRegex?.firstMatch(in: s, range: ns) != nil
         guard isSubjectNumeric || isDottedDecimal else { return nil }
         return s
+    }
+
+    /// Rewrites a **space**-separated class suffix to the dash form, so `751G.5 MSP` and
+    /// `751G.5–MSP` reduce to the same stored key.
+    ///
+    /// The decimal file writes programme and country suffixes both ways, and the space form is
+    /// the more common: **4,851 notes across 277 classes**, against 2,029 across 260 for the
+    /// dash. **126 classes appear in both spellings**, so leaving them unreconciled splits those
+    /// classes in two — and, worse, the space form used to fall through to the leading-token
+    /// rule and be stored as the *bare* class, silently merging `751G.5 MSP` with the unrelated
+    /// unsuffixed `751G.5`. Reported on `frus1952-54v13p1/d416`
+    /// (`751G.5 MSP /10–553: Telegram`), which is why this is narrow rather than clever.
+    ///
+    /// The suffix must be **the entire remainder** and short all-caps. That is what keeps
+    /// `740.00119 EW (39)`, `740.00119 EW (Peace)` and `740.00119 European War 1939` out of it:
+    /// each carries its own qualifier, they are distinct subdivisions of one decimal class, and
+    /// deciding whether `EW` and `European War` are the same file is an archival judgement this
+    /// parser is not equipped to make. They keep falling to the bare class — identically for
+    /// both spellings, which is the property that actually matters.
+    static func unifyingSpacedClassSuffix(_ candidate: String) -> String {
+        guard let space = candidate.firstIndex(of: " ") else { return candidate }
+        let head = String(candidate[..<space])
+        let tail = String(candidate[candidate.index(after: space)...])
+        // The head must be a **dotted decimal**. That is the whole guard, and it is genuinely
+        // load-bearing: the subject-numeric classes are legitimately space-separated
+        // (`POL 27 ARAB-ISR`), and rewriting one to `POL-27 ARAB-ISR` fails the subject-numeric
+        // shape outright — a valid class would be lost, not merely mis-keyed.
+        //
+        // Deliberately no shape test on `tail`. `decimalClassKey` re-gates the joined string
+        // through `dottedDecimalClassRegex`, whose `-[A-Z]{1,6}` group already decides what a
+        // suffix may be; a duplicate test here was unobservable under mutation. One definition
+        // of the shape, in the regex.
+        guard !tail.isEmpty,
+              dottedDecimalClassRegex?.firstMatch(
+                in: head, range: NSRange(head.startIndex..., in: head)) != nil
+        else { return candidate }
+        return head + "-" + tail
     }
 
     /// Extracts the decimal / subject-numeric class **location** from a central-files
@@ -554,9 +592,21 @@ public struct SourceNoteParser {
     /// which the gate rejects, and `File No. 861.00` yields `File`, which is why the label
     /// strip above has to run first.
     static func leadingClassKey(_ candidate: String) -> String? {
-        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
-        guard let firstSpace = trimmed.firstIndex(where: \.isWhitespace) else { return nil }
-        return decimalClassKey(String(trimmed[..<firstSpace]))
+        let tokens = candidate.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard tokens.count > 1, let head = decimalClassKey(tokens[0]) else { return nil }
+        // Carry a short all-caps second token as the suffix, so the space spelling reaches the
+        // same key as the dash spelling when a qualifier follows: `740.00119 EW (39)` and
+        // `740.00119–EW (39)` both give `740.00119-EW`. Without this the dash form absorbed
+        // the suffix (it rides in token 0) while the space form dropped it — the same
+        // split-key defect as #687's, in mirror image.
+        // No shape test on `tokens[1]` here on purpose: `decimalClassKey` re-gates the joined
+        // string, and mutation testing showed a duplicate test is unobservable — every
+        // candidate it would reject (`740.00119-European`, `740.00119-EUROPEANLONG`,
+        // `740.00119-Msp`) the gate already returns nil for. One place decides the shape.
+        if !head.contains("-"), let suffixed = decimalClassKey(head + "-" + tokens[1]) {
+            return suffixed
+        }
+        return head
     }
 
     /// Central-files anchor phrases that mark a sentence as the archival citation

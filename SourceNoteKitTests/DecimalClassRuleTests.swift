@@ -95,6 +95,66 @@ struct DecimalClassRuleTests {
         #expect(en == em)
     }
 
+    // MARK: Rule 3b — the space spelling of the same suffix (5,204 documents)
+
+    @Test("The space spelling keys identically to the dash spelling")
+    func spaceSuffixUnifiesWithDash() {
+        // frus1952-54v13p1/d416, reported against #687: the note is space-separated, so it
+        // fell through to the leading-token rule and was stored as the BARE class `751G.5` —
+        // silently merged with the unrelated unsuffixed file, and absent from the MSP
+        // neighbours. The space form is the more common of the two (4,851 notes vs 2,029).
+        let spaced = SourceNoteParser.decimalClassLocation(inCitation: "751G.5 MSP /10–553: Telegram")
+        let dashed = SourceNoteParser.decimalClassLocation(inCitation: "751G.5–MSP/10–553: Telegram")
+        #expect(spaced == "751G.5-MSP")
+        #expect(spaced == dashed, "the same class must key the same way in both spellings")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, 396.1 GE/6–2355. Top Secret.")
+                == "396.1-GE")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "033.1100 CO/4–1053-Telegram") == "033.1100-CO")
+    }
+
+    @Test("A qualified subdivision keys the same way in both spellings")
+    func qualifiedSubdivisionsAgree() {
+        // `740.00119 EW (39)` and `740.00119 EW (Peace)` are subdivisions of one suffixed
+        // class; `740.00119 European War 1939` is a different subdivision of the bare class.
+        // Whether `EW` and `European War` name the same file is an archival judgement this
+        // parser must not make — so it keeps them apart, as NARA wrote them.
+        // Both spellings must agree. The dash form absorbs the suffix because it rides in the
+        // first token; the space form has to be taught to, or the two split apart again — the
+        // same defect this PR fixes, in mirror image. My first draft of the fix had exactly
+        // that asymmetry and this test is what caught it.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "740.00119 EW (39)/2645") == "740.00119-EW")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "740.00119–EW (39)/2645") == "740.00119-EW")
+        // `European War` is prose, not a code, so it is never absorbed — and the two EW
+        // spellings above stay distinct from it, which is NARA's own distinction, not ours.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "740.00119 European War 1939/1007: Telegram") == "740.00119")
+    }
+
+    @Test("Space-separated subject-numeric classes survive the rewrite unchanged")
+    func subjectNumericClassesAreUntouched() {
+        // The subject-numeric vocabulary is legitimately space-separated, and the rewrite is
+        // scoped to dotted-decimal heads so it cannot reach them. (A first draft of this test
+        // asserted `DEF ISR` and `POL ISR` round-trip; they do not — they were never valid
+        // classes, because the subject-numeric shape requires a digit component. Checking
+        // fabricated inputs proves nothing.)
+        #expect(SourceNoteParser.decimalClassKey("POL 27 ARAB-ISR") == "POL 27 ARAB-ISR")
+        #expect(SourceNoteParser.decimalClassKey("POL 27-14 ARAB-ISR") == "POL 27-14 ARAB-ISR")
+        #expect(SourceNoteParser.decimalClassKey("POL 1 US") == "POL 1 US")
+    }
+
+    @Test("Only a short all-caps remainder becomes a suffix")
+    func suffixShapeIsNarrow() {
+        // Prose must never be absorbed into the class key.
+        #expect(SourceNoteParser.decimalClassKey("740.0011 European") == nil)
+        #expect(SourceNoteParser.decimalClassKey("751G.5 Msp") == nil)
+        #expect(SourceNoteParser.decimalClassKey("751G.5 TOOLONGX") == nil)
+        #expect(SourceNoteParser.decimalClassKey("751G.5 MSP") == "751G.5-MSP")
+    }
+
     // MARK: The bound these rules must not break
 
     @Test("A class in a remark sentence is still never taken")

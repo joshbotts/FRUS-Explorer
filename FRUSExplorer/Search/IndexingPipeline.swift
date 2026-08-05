@@ -582,7 +582,15 @@ public actor IndexingPipeline {
     ///   `relatedByDecimalClass`, so those documents were absent from the Archival Neighbors
     ///   axis entirely. Verified additive: over all 122,033 rows that already had a class, the
     ///   new parser returns the identical value for every one — 0 changed, 0 lost.
-    public static let currentDateIndexVersion: Int = 23
+    /// - v24 — #353 / N-1a follow-up: the decimal file writes a class suffix with a space as
+    ///   readily as with a dash (`751G.5 MSP` vs `751G.5–MSP`), and the space form is the more
+    ///   common — 4,851 notes to 2,029. v23's leading-token rule stored those as the *bare*
+    ///   class, merging them with the unrelated unsuffixed file. **5,204 documents** are keyed
+    ///   correctly by the fix. Symmetry costs a little more: the dash form absorbed a suffix
+///   even when a qualifier followed (`740.00119–EW (39)`) while the space form dropped it, so
+///   teaching the space form to match takes the total to **7,419 documents**. Measured against
+///   the v23 index: 7,419 corrected, 0 changed otherwise, 0 lost.
+    public static let currentDateIndexVersion: Int = 24
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
