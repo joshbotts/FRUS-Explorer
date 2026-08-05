@@ -575,7 +575,14 @@ public actor IndexingPipeline {
     ///   13 broken cross-volume page records whose page number exists in the source volume.
     ///   The bump forces the reindex that rebuilds `cross_references` cleanly; the broken-ref
     ///   marking then re-applies via `markBrokenCrossReferences` during the reindex.
-    public static let currentDateIndexVersion: Int = 22
+    /// - v23 — #353 / N-1a: three anchored rules in `decimalClassLocation(inCitation:)` give a
+    ///   `decimal_class` to **59,669 of the 71,644** decimal rows that had none — the `File No.`
+    ///   label the early volumes use, a class followed by prose inside one segment, and the
+    ///   dash-alpha suffix (`751G.5-MSP`, `396.1-GE`). `decimal_class` feeds
+    ///   `relatedByDecimalClass`, so those documents were absent from the Archival Neighbors
+    ///   axis entirely. Verified additive: over all 122,033 rows that already had a class, the
+    ///   new parser returns the identical value for every one — 0 changed, 0 lost.
+    public static let currentDateIndexVersion: Int = 23
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
