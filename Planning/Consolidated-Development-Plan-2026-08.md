@@ -417,6 +417,7 @@ change the shape of this workstream more than any single session would have.
 | N-3 / #375 lot curation | 6,366 | **~101 clean + 48 ambiguous** |
 | N-4 / #355 presidential libraries | 20,451 | **0** (structural) |
 | N-5 / #372 lot-map consolidation | 15,340 | **7–20** (the 728 needs no harvest) |
+| **N-8 / #674+#675 acceptance test** *(added 2026-08-04)* | 6,230 exposed | **5 wrong found, 28 ambiguous picks over 725 docs** |
 
 **But the harvest carries a capability nobody planned for.** 17,985 records hold
 `digitalObjects` arrays — **10,115,572 individual objects**, each with a live
@@ -459,6 +460,13 @@ grammar work). N-2 sheds two of its five items and keeps one, promoted. N-5's fi
 detaches from the harvest and can ship immediately. **N-7 (#663) is new and should be
 scheduled behind N-2's RG 256 parser, which it inherits.**
 
+**[2026-08-04] The harvest also turned out to be an audit instrument, not only a data
+source.** Checking the app's own 2,667 shipped lot→NAID associations against it found five
+that are wrong and 28 whose pick between rival candidates is unrecorded — see **N-8**, now
+the first item in the lane. That use was not anticipated when the harvest was assessed: the
+question then was what it could *add*, and the answer above is "not much". What it can
+*check* is a different and, on this evidence, more valuable thing.
+
 **N-0 — Keyed data runs — [2026-08-04] COMPLETE. Nothing here is owed.**
 - **#376** ran on **2026-07-29**. Verified against the shipped bundle:
   `volume-sources-index.json` is stamped `generated: 2026-07-29`, its `lots` map holds
@@ -470,6 +478,62 @@ scheduled behind N-2's RG 256 parser, which it inherits.**
   and it was still being read as a live owner prerequisite for N-3's curation a week later.
   **There is no keyed run left in this workstream**, and #375's keyed route is closed (2 of
   573), so `CATALOG_API_KEY` is not needed by any planned N session.
+
+**N-8 — #674 + #675 lot-resolution acceptance test** *(Effort M; NEW 2026-08-04. **Do this
+first** — it is the only correctness defect in the lane, and everything else adds coverage
+on top of a resolver that can currently assert a wrong archive.)*
+
+Two issues, one missing check, on the two sides of the same resolver. Filed after the owner
+reported lot **90 D 234** (OES/OA Antarctic files) resolving to a **Census Bureau** series.
+
+**#674 — the live path has no acceptance test at all.** `resolveLotFileVariants`
+(`NARACatalogClient.swift:451`) tries three `variantControlNumber_is` forms; when all three
+correctly return nothing, it falls back to `searchByLotFile` (:411–419) — a **free-text
+phrase query with `maxResults: 1`, returning `results.first`**. `buildResult` (:651–696)
+never reads `levelOfDescription` and never compares the parsed `recordGroupNumber` against
+the record group that was *requested*, so the `recordGroup: "59"` argument is decorative on
+this path. This repo already documented the failure, in the generator:
+`NARACatalogHarvestClient.swift:413-416` says NARA's RG filter "does not constrain free-text
+results, and the top hit for a lot string is often a giant wrong-RG series
+(**census**/military/court) — so we scan the page and take the first RG-59/84 record, not
+blindly the #1 result." The generator was hardened; the app was not. **6,230 documents fall
+through to this path** (`lotFile|liveRouteOnly`).
+
+**#675 — the bundled errors are a different mechanism: lot-number collision across
+bureaus.** State assigned lot numbers per accession, so two offices each held a "66 D 50"
+and NARA catalogued both. Every current guard — RG matches, level is `series`, the record
+carries the control number — passes for *both* candidates. Swept all **2,667** associations
+across the three bundles (622 distinct NAIDs, all found in the harvest):
+- **5 confirmed wrong, 11 documents.** Sharpest is `76D482`: FRUS cites *ARA/CAR … Bauxite,
+  Jamaica 1974*, **two** series claim the lot (Iran 2602428, Jamaica 1039947), and the
+  generator picked Iran. Also `74D476` Cyprus Desk → Jamaica, `66D50` ARA/CCA Cuba → Kenya,
+  `61D67` ARA/OAP Panama → INR (unbacked by any control number), plus 90D234.
+- **28 lots are claimed by more than one harvested series, riding 725 documents** — the
+  pick is currently unrecorded and unreviewable. `64D563` alone is 245 documents.
+- Only **3 of 971** central-files rows lack control-number backing, so the bundle is sound
+  overall; the exposure is concentrated in the ambiguous band.
+
+**Scope:**
+1. **A bureau/creator conjunct in `isAcceptableLotResolution`.** The FRUS citation names the
+   office (`ARA/CAR`, `Cyprus Desk`, `OES/OA`); the NARA record names its creator. Disagree
+   at bureau level → refuse. This is the guard RG-and-level structurally cannot be, and it
+   catches all four bundled errors.
+2. **Share that test with the app's live path**, scan a page instead of `maxResults: 1`, and
+   consider dropping the free-text fallback for lot files entirely — it fires only when the
+   precise query found nothing, so its hit rate on *correct* answers is near zero while its
+   hit rate on plausible-looking wrong ones is high. "No matching record found" plus the
+   manual `search-within/388` link is already the app's honest outcome elsewhere.
+3. **Record ambiguous picks** as `candidates: [naId…]`. N-3 already built the render for
+   this — #669's `.candidates` outcome shows several series, each chipped "Possible" — so
+   this is a data change, not a UI one.
+4. **Correct the five** through `curated-lot-resolutions.json`, which N-3 shipped: `76D482`
+   → Jamaica (1039947) is a straight repoint; the other four have no correct NAID in the
+   harvest and become referrals or withdrawals.
+
+**Why first.** Every other N item adds coverage. This one stops the resolver asserting a
+wrong archive with a working catalogue link and no visible doubt — strictly worse than the
+"No matching record found" it would otherwise show, and the failure the #351/#352 guards
+were installed to prevent on the bundle side while the live side was never given them.
 
 **N-1 — #353 SourceNoteParser session** *(Effort L; the biggest coverage lever)*
 **[2026-08-02] No harvest dependency. Do not budget a harvest-lexicon sub-session.** The
@@ -901,7 +965,8 @@ this table. One implementer, so the constraint remains review-and-verify bandwid
 |---|---|---|
 | 1 | Q | **Q-3** fts5vocab + exact-word — *promoted ahead of Q-2, see note* |
 | 2 | Q | **Q-1** NEAR |
-| 3 | N | **N-1** #353 parser session *(the biggest coverage lever)* |
+| 3 | N | **N-8** #674+#675 lot-resolution acceptance test — *jumped the queue: the lane's only correctness defect* |
+| 3b | N | **N-1** #353 parser session *(the biggest coverage lever)* |
 | 4 | Q | **Q-2** Query Inspector *(consumes Q-3's vocab table for the stem line)* |
 | 5 | Q | **R-1** facets — *carrying the pagination prerequisite* |
 | 6 | N | **N-2** #354 routing — *now three items, not five* (+ **N-3** curation riding along, after the export re-baseline) |
@@ -994,6 +1059,7 @@ it.
 |---|---|
 | #368 design pass (doc/analytics/settings) | **Closed 2026-07-28.** Settings → superseded by the North Star handoff (Workstream S). Analytics → delivered by Waves A–C + D1 + D3 (#466–#479). Document view → `ResearchStripView` no longer exists; the rail is collapsible via the C2 titlebar toggle, so the minimum-width complaint is structurally addressed (owner sanity-check on a narrow window before closing). |
 | #376 / #353 / #354 / #375 / #355 / #372 / #235 | Scheduled as N-0 … N-6 above. **[2026-08-02] All re-measured against the complete harvest — see the N-wave header. #354 loses two of its five items; #353, #355 and #372's first half lose their harvest dependency entirely.** |
+| #674 lot 90 D 234 → Census series · #675 association sweep | **New 2026-08-04.** Scheduled as **N-8** and pulled to the front of the lane: one missing acceptance test on two sides of the resolver (live free-text fallback, and bureau-level lot-number collisions in the bundle). 5 confirmed wrong associations, 28 ambiguous picks over 725 documents, 6,230 documents exposed to the live fallback. |
 | #663 digitised-scan links | **New 2026-08-02.** Scheduled as **N-7** — the highest-value item in the workstream (~7,000–9,000 documents, and it delivers an actual page image rather than a NAID). Sequenced behind N-2. |
 | #405 | **[2026-08-02] Measured: creator information reaches 2.8% of the corpus, too thin for a Related-Documents axis.** Stays parked; see N-parked. |
 | #306 in-chart scrubber | **Not mooted** by the analytics redesign — still a valid enhancement; unscheduled. |
