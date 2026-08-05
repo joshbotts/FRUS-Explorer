@@ -479,9 +479,13 @@ question then was what it could *add*, and the answer above is "not much". What 
   **There is no keyed run left in this workstream**, and #375's keyed route is closed (2 of
   573), so `CATALOG_API_KEY` is not needed by any planned N session.
 
-**N-8 — #674 + #675 lot-resolution acceptance test** *(Effort M; NEW 2026-08-04. **Do this
-first** — it is the only correctness defect in the lane, and everything else adds coverage
-on top of a resolver that can currently assert a wrong archive.)*
+**N-8 — #674 + #675 lot-resolution acceptance test — [2026-08-05] COMPLETE.**
+Shipped as **#677** (live acceptance test, shared through `SourceNoteKit`), **#678** (the
+persistent-window stale state found while verifying it), **#683** (#680, the Refresh bypass
+that undid #677 in one click), **#684** (#679 — NARA's own `1984D241` ≡ `84D241` spellings,
+the consolidation-note channel, and `rows` 5 → 20) and **#685** (the divided-lot claimants
+index: 118 lots, up to 13 series on one). The bureau/creator conjunct was **cancelled**, not
+deferred — see the corrected finding below. Retained for the record:
 
 Two issues, one missing check, on the two sides of the same resolver. Filed after the owner
 reported lot **90 D 234** (OES/OA Antarctic files) resolving to a **Census Bureau** series.
@@ -570,7 +574,43 @@ wrong archive with a working catalogue link and no visible doubt — strictly wo
 "No matching record found" it would otherwise show, and the failure the #351/#352 guards
 were installed to prevent on the bundle side while the live side was never given them.
 
-**N-1 — #353 SourceNoteParser session** *(Effort L; the biggest coverage lever)*
+**N-1 — #353 SourceNoteParser session** *(Effort L; the biggest coverage lever — and after
+2026-08-05 the biggest reachable win left in the workstream)*
+
+**[2026-08-05] Scoped against the live index with the shipped parser. The `decimalClass` item
+is real and roughly the size claimed, but the mechanism the issue names would reintroduce a
+defect this parser already fixed.**
+
+`decimal_class` feeds `relatedByDecimalClass`, the Archival Neighbors axis, so it is reachable
+rather than bookkeeping. Of the **71,644** `citation_era='decimal'` rows with a null class,
+**59,132 (82.5%) would gain at least one archival neighbour** — 39,783 joining an existing
+class, 19,349 forming new multi-member ones.
+
+**But not by "a leading-prefix regex".** Scanning the whole `raw_text` finds a class-shaped
+token in 59,588 of them, and that is exactly the unbounded scan
+`decimalClassLocation(inCitation:)` deliberately abandoned — its doc comment records that such
+a scan stored numbered issuances from remark sentences as the row's class. Reintroducing it
+would create 59,132 documents of *wrong* neighbours. Compiled and run over all 71,644, the
+shipped parser extracts a class from **zero**: the nulls are its decision, not a gap.
+
+The work is three anchored rules, each inside the citation sentence, with measured populations:
+
+| shape | documents | classes | why it fails |
+|---|---|---|---|
+| `File No. 861.00/1234` | **21,960** | 1,064 | the `File No. ` prefix rides in the segment, so the gate sees `File No. 861.00` |
+| `740.0011 European War 1939/12345` | **2,837** | 3 | leading class followed by prose the gate does not cut |
+| `751G.5–MSP/1–1055`, `396.1-GE` | **1,165** | 162 | the dash-alpha suffix is not in the dotted-decimal shape |
+| | **25,962 (36.2%)** | | |
+
+The residual 45,682 needs its own pass; visible in a sample are an **em-dash variant** of the
+dash-suffix shape (`751G.5—MSP`), **`032/1–2855`** (a three-digit class with no dot), and rows
+that are not decimal citations at all (`INR – NIE Files` classified `decimal`), the last being
+strategy-steal work rather than a missing class.
+
+**Slice:** the three named rules as their own PR ahead of the steal and unrecognized-note work,
+`SourceNoteEval`-guarded, with one `currentDateIndexVersion` bump for the set (~10 minutes).
+`File No.` alone is 21,960 documents.
+
 **[2026-08-02] No harvest dependency. Do not budget a harvest-lexicon sub-session.** The
 939-document steal fix and the ~1,758 recoverable unrecognized notes reproduce exactly and
 land identically with the harvest deleted from disk. The harvest's honest contribution is
@@ -1000,7 +1040,7 @@ this table. One implementer, so the constraint remains review-and-verify bandwid
 |---|---|---|
 | 1 | Q | **Q-3** fts5vocab + exact-word — *promoted ahead of Q-2, see note* |
 | 2 | Q | **Q-1** NEAR |
-| 3 | N | **N-8** #674+#675 lot-resolution acceptance test — *jumped the queue: the lane's only correctness defect* |
+| ~~3~~ | N | ~~**N-8** #674+#675~~ — **COMPLETE 2026-08-05** (#677, #678, #683, #684, #685) |
 | 3b | N | **N-1** #353 parser session *(the biggest coverage lever)* |
 | 4 | Q | **Q-2** Query Inspector *(consumes Q-3's vocab table for the stem line)* |
 | 5 | Q | **R-1** facets — *carrying the pagination prerequisite* |
