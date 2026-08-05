@@ -282,8 +282,14 @@ struct MacSourceExplorerView: View {
                     if showsManualSearch {
                         manualSearchField
                     }
+                    // #675 / N-8b: a lot NARA divided across several series shows all of them,
+                    // in place of the single bundled card. Mirrors iOS `lotFilePanel`.
                     if case .lotFile(_, let lot, _) = parsed,
-                       let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
+                       let divided = LotClaimantsIndex.candidatesOutcome(
+                        forRawLot: lot, in: LotClaimantsIndexStore.shared) {
+                        curatedLotBox(divided)
+                    } else if case .lotFile(_, let lot, _) = parsed,
+                              let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
                         bundledLotBox(entry)
                     }
                     // Hand-curated outcome for a collection NARA's catalogue does not resolve
