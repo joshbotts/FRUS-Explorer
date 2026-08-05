@@ -87,6 +87,10 @@ public struct CollectionIdentity: Sendable, Equatable {
 ///          repository override is provenance-independent
 ///          (`centralFilesOverrideApplies(to:)` — never under a presidential
 ///          library, matching the `.presidentialLibrary` note identity)
+///   1.3 — Session 2026-08-05 (N-4 step 1): `manuscriptRepositoriesConflict(_:_:)` —
+///          the repository test the authority lookup's alias step needs so a citation
+///          naming one manuscript repository can never resolve to a collection held
+///          by a different one
 public enum CollectionKeying {
 
     // MARK: - Normal form
@@ -209,6 +213,55 @@ public enum CollectionKeying {
             "presidential materials",
         ]
         return markers.contains { lower.contains($0) }
+    }
+
+    /// The canonical forms ``canonicalRepository(_:)`` produces for presidential
+    /// libraries, in ``normalized(_:)`` form.
+    ///
+    /// All but one are `"<Surname> Library"`, which ``isLibraryRepositoryName(_:)``
+    /// already recognizes by its `"librar"` marker. **Nixon is the exception**: its
+    /// canonical form is the bare keyword `"Nixon"`, which carries no marker at all —
+    /// so a Nixon citation would be invisible to any check written on
+    /// `isLibraryRepositoryName` alone. That bucket is the corpus's largest (7,056
+    /// documents), which is exactly the wrong one to leave unguarded. Derived from
+    /// ``presidentialSurnames`` so the two lists cannot drift apart.
+    private static let presidentialLibraryCanonicalForms: Set<String> = Set(
+        presidentialSurnames.map { normalized($0 == "Nixon" ? "Nixon" : "\($0) Library") })
+
+    /// Whether a repository string names a manuscript repository — a physical building
+    /// holding papers — in either raw or canonical form.
+    public static func isManuscriptRepository(_ repository: String) -> Bool {
+        isLibraryRepositoryName(repository)
+            || presidentialLibraryCanonicalForms.contains(normalized(repository))
+    }
+
+    /// Whether two repository strings name **different** manuscript repositories.
+    ///
+    /// This is the test the authority lookup's alias step applies before returning a
+    /// record (see `CollectionAuthorityIndex.record(repository:leadingSegment:)`). It is
+    /// deliberately narrow in two ways, both measured against the corpus:
+    ///
+    /// - **Only manuscript repositories conflict.** `"National Archives"`,
+    ///   `"Department of State"`, `"Washington National Records Center"` and
+    ///   `"Department of Defense"` are custody, creator and accession descriptions of
+    ///   *the same* federal records, and the corpus mixes them freely — a citation
+    ///   reading "Washington National Records Center, RG 286, AID Administrator Files"
+    ///   legitimately resolves to a record the artifact attributes to WNRC while the
+    ///   note's own identity canonicalizes to National Archives. Treating those as
+    ///   conflicts refuses 179 correct resolutions. Two presidential libraries are
+    ///   different buildings in different states and can never mean each other.
+    /// - **Containment counts as agreement.** ``canonicalRepository(_:)`` falls through
+    ///   to the raw string for repositories outside ``repositoryKeywords``, so the same
+    ///   institution appears as both `"Princeton University"` and `"Princeton University
+    ///   Library"`. Requiring equality would refuse that pair, which is one repository.
+    public static func manuscriptRepositoriesConflict(_ a: String?, _ b: String?) -> Bool {
+        guard let a, let b,
+              let left = canonicalRepository(a), let right = canonicalRepository(b),
+              isManuscriptRepository(left), isManuscriptRepository(right)
+        else { return false }
+        let x = normalized(left), y = normalized(right)
+        guard !x.isEmpty, !y.isEmpty else { return false }
+        return !(x == y || x.contains(y) || y.contains(x))
     }
 
     // MARK: - Segment tokenization & gating

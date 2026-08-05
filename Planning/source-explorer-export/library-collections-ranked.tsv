@@ -1,0 +1,310 @@
+rank	docs	cumulative	share	hasNaId	repository	collection	authorityId
+1	7056	7056	24.5%		Nixon	NSC Files	txt:nixon|nsc file
+2	4016	11072	38.5%		Johnson Library	National Security File	txt:johnson library|national security file
+3	3591	14663	51.0%		Carter Library	National Security Affairs	txt:carter library|national security affair
+4	2036	16699	58.1%		Eisenhower Library	Whitman File	txt:eisenhower library|whitman file
+5	1993	18692	65.0%		Kennedy Library	National Security Files	txt:kennedy library|national security file
+6	1484	20176	70.1%		Ford Library	National Security Adviser	txt:ford library|national security adviser
+7	958	21134	73.5%		Library of Congress	Manuscript Division	txt:library of congress|manuscript division
+8	649	21783	75.7%		Eisenhower Library	Dulles Papers	txt:eisenhower library|dulles paper
+9	572	22355	77.7%		Reagan Library	Executive Secretariat, National Security Council	txt:reagan library|executive secretariat
+10	410	22765	79.1%		Eisenhower Library	Eisenhower papers	txt:eisenhower library|eisenhower paper
+11	393	23158	80.5%		Carter Library	National Security Council	txt:carter library|national security council
+12	303	23461	81.6%		Nixon	White House Tapes	txt:nixon|white house tape
+13	209	23670	82.3%		National Defense University	Taylor Papers	txt:national defense university|taylor paper
+14	207	23877	83.0%		Johnson Library	Recordings and Transcripts	txt:johnson library|recordings and transcript
+15	182	24059	83.6%		Nixon	Kissinger Telephone Conversations	txt:nixon|kissinger telephone conversation
+16	170	24229	84.2%		Kennedy Library	President’s Office Files	txt:kennedy library|president’s office file
+17	161	24390	84.8%		Carter Library	Plains File	txt:carter library|plains file
+18	156	24546	85.3%		Nixon	White House Special Files	txt:nixon|white house special file
+19	149	24695	85.9%		Carter Library	Brzezinski Donated Material	txt:carter library|brzezinski donated material
+20	149	24844	86.4%		Ford Library	NSC Institutional Files (H-Files)	txt:ford library|nsc institutional files (h-files)
+21	145	24989	86.9%		Reagan Library	George Shultz Papers	txt:reagan library|george shultz paper
+22	143	25132	87.4%		Eisenhower Library	White House Office Files	txt:eisenhower library|white house office file
+23	127	25259	87.8%		Roosevelt Library	Hyde Park	txt:roosevelt library|hyde park
+24	124	25383	88.3%		Reagan Library	Jack Matlock Files	txt:reagan library|jack matlock file
+25	113	25496	88.6%		Nixon	NSC Institutional Files	txt:nixon|nsc institutional file
+26	94	25590	89.0%		Johnson Library	White House Central Files	txt:johnson library|white house central file
+27	93	25683	89.3%		Ford Library	National Security Council	txt:ford library|national security council
+28	84	25767	89.6%		Nixon	Henry Kissinger Telephone Conversation Transcripts	txt:nixon|henry kissinger telephone conversation transcript
+29	83	25850	89.9%		Eisenhower Library	Herter Papers	txt:eisenhower library|herter paper
+30	81	25931	90.2%		Johnson Library	Tom Johnson ’s Notes of Meetings	txt:johnson library|tom johnson ’s notes of meeting
+31	80	26011	90.4%			Paula J. Dobriansky Files	txt:|paula j. dobriansky file
+32	79	26090	90.7%			Bush Presidential Records	txt:|bush presidential record
+33	73	26163	91.0%		Johnson Library	Bator Papers	txt:johnson library|bator paper
+34	62	26225	91.2%		Eisenhower Library	Staff Secretary Records	txt:eisenhower library|staff secretary record
+35	62	26287	91.4%		Eisenhower Library	Project Clean Up	txt:eisenhower library|project clean up
+36	57	26344	91.6%		Johnson Library	Meeting Notes File	txt:johnson library|meeting notes file
+37	53	26397	91.8%		Kennedy Library	Hilsman Papers	txt:kennedy library|hilsman paper
+38	52	26449	92.0%		Carter Library	Staff Office Files	txt:carter library|staff office file
+39	49	26498	92.1%		Carter Library	White House Central Files	txt:carter library|white house central file
+40	48	26546	92.3%		Johnson Library	Tom Johnson’s Notes of Meetings	txt:johnson library|tom johnson’s notes of meeting
+41	45	26591	92.5%		Reagan Library	Douglas McMinn Files	txt:reagan library|douglas mcminn file
+42	44	26635	92.6%		Kennedy Library	Herter Papers	txt:kennedy library|herter paper
+43	44	26679	92.8%		Kennedy Library	Ball Papers	txt:kennedy library|ball paper
+44	43	26722	92.9%		Truman Library	Papers of Harry S. Truman	txt:truman library|papers of harry s. truman
+45	41	26763	93.0%		Carter Library	Donated Historical Material	txt:carter library|donated historical material
+46	40	26803	93.2%		Carter Library	Donated Material	txt:carter library|donated material
+47	38	26841	93.3%		Naval Historical	Area Files	txt:naval historical|area file
+48	38	26879	93.5%		Nixon	White House Central Files	txt:nixon|white house central file
+49	38	26917	93.6%		Center of Military History	Williams Papers	txt:center of military history|williams paper
+50	36	26953	93.7%		Eisenhower Library	White House Central Files	txt:eisenhower library|white house central file
+51	35	26988	93.8%		Ford Library	NSC Institutional Files	txt:ford library|nsc institutional file
+52	35	27023	94.0%		Eisenhower Library	CFEP Records	txt:eisenhower library|cfep record
+53	34	27057	94.1%		Truman Library	Truman Papers, President’s Secretary’s File (PSF)	txt:truman library|truman paper
+54	33	27090	94.2%		Johnson Library	Ball Papers	txt:johnson library|ball paper
+55	32	27122	94.3%		Reagan Library	Linhard Files	txt:reagan library|linhard file
+56	31	27153	94.4%		Carter Library	Office of the Chief of Staff	txt:carter library|office of the chief of staff
+57	27	27180	94.5%		Ford Library	Laird Papers	txt:ford library|laird paper
+58	27	27207	94.6%		Center of Military History	Westmoreland Papers	txt:center of military history|westmoreland paper
+59	27	27234	94.7%		Carter Library	Records of the Office of the Staff Secretary, Presidential File	txt:carter library|records of the office of the staff secretary
+60	26	27260	94.8%		Reagan Library	Robert McFarlane Files	txt:reagan library|robert mcfarlane file
+61	26	27286	94.9%		Ford Library	President’s Handwriting File	txt:ford library|president’s handwriting file
+62	25	27311	95.0%		Ford Library	L. William Seidman Papers	txt:ford library|l. william seidman paper
+63	25	27336	95.0%		Reagan Library	European and Soviet Affairs Directorate	txt:reagan library|european and soviet affairs directorate
+64	25	27361	95.1%		Kennedy Library	Schlesinger Papers	txt:kennedy library|schlesinger paper
+65	24	27385	95.2%		Kennedy Library	Presidentʼs Office Files	txt:kennedy library|presidentʼs office file
+66	24	27409	95.3%		Reagan Library	Shultz Papers	txt:reagan library|shultz paper
+67	23	27432	95.4%		Reagan Library	Sven Kraemer Files	txt:reagan library|sven kraemer file
+68	22	27454	95.5%		Reagan Library	Roger Robinson Files	txt:reagan library|roger robinson file
+69	22	27476	95.5%		Eisenhower Library	White House Office, Office of the Staff Secretary Records, 1952–1961	txt:eisenhower library|white house office
+70	22	27498	95.6%		Eisenhower Library	CFEP Chairman Records	txt:eisenhower library|cfep chairman record
+71	22	27520	95.7%		Eisenhower Library	Hagerty Papers	txt:eisenhower library|hagerty paper
+72	21	27541	95.8%		Reagan Library	Donald Fortier Files	txt:reagan library|donald fortier file
+73	21	27562	95.8%		Reagan Library	Ermarth Files	txt:reagan library|ermarth file
+74	21	27583	95.9%		Library of Congress	Harriman Papers	txt:library of congress|harriman paper
+75	20	27603	96.0%		Reagan Library	Stephen Danzansky Files	txt:reagan library|stephen danzansky file
+76	19	27622	96.0%		Eisenhower Library	James C. Hagerty Papers	txt:eisenhower library|james c. hagerty paper
+77	19	27641	96.1%		Reagan Library	Matlock Files	txt:reagan library|matlock file
+78	19	27660	96.2%		Reagan Library	System IV Intelligence Files	txt:reagan library|system iv intelligence file
+79	19	27679	96.2%		Reagan Library	Carlucci Files	txt:reagan library|carlucci file
+80	19	27698	96.3%		Carter Library	National Security Council Institutional Files	txt:carter library|national security council institutional file
+81	18	27716	96.4%		Eisenhower Library	Project “Clean Up” Records	txt:eisenhower library|project “clean up” record
+82	18	27734	96.4%		Reagan Library	Robert Linhard Files	txt:reagan library|robert linhard file
+83	17	27751	96.5%		Nixon	Kissinger Office Files	txt:nixon|kissinger office file
+84	17	27768	96.5%		Reagan Library	Ronald Lehman Files	txt:reagan library|ronald lehman file
+85	17	27785	96.6%		Ford Library	White House Central Files	txt:ford library|white house central file
+86	16	27801	96.7%		Reagan Library	Frank Carlucci Files	txt:reagan library|frank carlucci file
+87	16	27817	96.7%		Johnson Library	Fowler Papers	txt:johnson library|fowler paper
+88	15	27832	96.8%		Carter Library	Papers of Walter F. Mondale	txt:carter library|papers of walter f. mondale
+89	15	27847	96.8%		Ford Library	National Security Adviser Files	txt:ford library|national security adviser file
+90	15	27862	96.9%		Johnson Library	Vice Presidential Security File	txt:johnson library|vice presidential security file
+91	14	27876	96.9%		Eisenhower Library	McCone Papers	txt:eisenhower library|mccone paper
+92	14	27890	97.0%		Ford Library	Arthur Burns Papers	txt:ford library|arthur burns paper
+93	14	27904	97.0%		National Defense University	Lemnitzer Papers	txt:national defense university|lemnitzer paper
+94	13	27917	97.1%		Reagan Library	William Clark Files	txt:reagan library|william clark file
+95	13	27930	97.1%		Johnson Library	Clifford Papers	txt:johnson library|clifford paper
+96	13	27943	97.2%		Kennedy Library	Cleveland Papers	txt:kennedy library|cleveland paper
+97	12	27955	97.2%		Kennedy Library	Dillon Papers	txt:kennedy library|dillon paper
+98	12	27967	97.2%		Ford Library	National Security Advisor	txt:ford library|national security advisor
+99	12	27979	97.3%		Reagan Library	African Affairs Directorate	txt:reagan library|african affairs directorate
+100	12	27991	97.3%		Kennedy Library	Sorensen Papers	txt:kennedy library|sorensen paper
+101	11	28002	97.4%		Bush Library	Bush Vice Presidential Records	txt:bush library|bush vice presidential record
+102	11	28013	97.4%		Carter Library	Office of the Staff Secretary	txt:carter library|office of the staff secretary
+103	11	28024	97.4%		Reagan Library	Meese Files	txt:reagan library|meese file
+104	11	28035	97.5%		Carter Library	NSC Institutional Files	txt:carter library|nsc institutional file
+105	11	28046	97.5%		Library of Congress	Kissinger Papers	txt:library of congress|kissinger paper
+106	11	28057	97.5%		National Archives	Papers of George P. Shultz	txt:national archives|papers of george p. shultz
+107	11	28068	97.6%		Johnson Library	Transcripts of Meetings in the Cabinet Room	txt:johnson library|transcripts of meetings in the cabinet room
+108	10	28078	97.6%		Johnson Library	John McCone Memoranda of Meetings with the President	txt:johnson library|john mccone memoranda of meetings with the president
+109	10	28088	97.7%		Johnson Library	Mann Papers	txt:johnson library|mann paper
+110	10	28098	97.7%		Library of Congress	Henry Kissinger Papers	txt:library of congress|henry kissinger paper
+111	10	28108	97.7%		Reagan Library	Charles Hill Papers	txt:reagan library|charles hill paper
+112	9	28117	97.8%		National Defense University	National Security Files	txt:national defense university|national security file
+113	9	28126	97.8%		Eisenhower Library	Harlow Records	txt:eisenhower library|harlow record
+114	9	28135	97.8%		Johnson Library	Confidential File	txt:johnson library|confidential file
+115	9	28144	97.9%		Johnson Library	Office of the President File	txt:johnson library|office of the president file
+116	9	28153	97.9%		Eisenhower Library	NSC Staff Records	txt:eisenhower library|nsc staff record
+117	9	28162	97.9%		Library of Congress	National Security Adviser	txt:library of congress|national security adviser
+118	8	28170	97.9%		Carter Library	Presidential Materials	txt:carter library|presidential material
+119	8	28178	98.0%		Reagan Library	John Lenczowski Files	txt:reagan library|john lenczowski file
+120	8	28186	98.0%		Naval Historical	Radford Papers	txt:naval historical|radford paper
+121	8	28194	98.0%		Carter Library	Anthony Solomon Collection	txt:carter library|anthony solomon collection
+122	8	28202	98.1%		Reagan Library	Stephen Sestanovich Files	txt:reagan library|stephen sestanovich file
+123	8	28210	98.1%		Eisenhower Library	John Foster Dulles papers	txt:eisenhower library|john foster dulles paper
+124	8	28218	98.1%		Truman Library	PSF –Subject file	txt:truman library|psf-subject file
+125	7	28225	98.1%		Reagan Library	Fred Ikle Files	txt:reagan library|fred ikle file
+126	7	28232	98.2%		Johnson Library	Papers of Thomas C. Mann	txt:johnson library|papers of thomas c. mann
+127	7	28239	98.2%		University of Montana	Mansfield Papers	txt:university of montana|mansfield paper
+128	7	28246	98.2%		Reagan Library	Alton Keel Files	txt:reagan library|alton keel file
+129	7	28253	98.2%		Ford Library	Presidential Handwriting File	txt:ford library|presidential handwriting file
+130	7	28260	98.3%		Ford Library	Richard B. Cheney Files	txt:ford library|richard b. cheney file
+131	7	28267	98.3%		Ford Library	Staff Secretary’s Office	txt:ford library|staff secretary’s office
+132	7	28274	98.3%		Kennedy Library	Papers of Arthur Schlesinger, Jr.	txt:kennedy library|papers of arthur schlesinger
+133	7	28281	98.3%		Carter Library	Vertical File	txt:carter library|vertical file
+134	7	28288	98.4%		Johnson Library	Papers of George Ball	txt:johnson library|papers of george ball
+135	6	28294	98.4%		Eisenhower Library	Records of the Special Assistant for National Security Affairs	txt:eisenhower library|records of the special assistant for national security affair
+136	6	28300	98.4%		Reagan Library	Tyrus Cobb Files	txt:reagan library|tyrus cobb file
+137	6	28306	98.4%		Johnson Library	Office Files of the White House Aides	txt:johnson library|office files of the white house aide
+138	6	28312	98.4%		Eisenhower Library	C. D. Jackson Papers	txt:eisenhower library|c. d. jackson paper
+139	6	28318	98.5%		Johnson Library	Papers of McGeorge Bundy	txt:johnson library|papers of mcgeorge bundy
+140	6	28324	98.5%		Library of Congress	Harold Brown Papers	txt:library of congress|harold brown paper
+141	6	28330	98.5%		Reagan Library	Nelson Ledsky Files	txt:reagan library|nelson ledsky file
+142	6	28336	98.5%		Eisenhower Library	Norstad Papers	txt:eisenhower library|norstad paper
+143	6	28342	98.5%		Johnson Library	President’s Appointment File	txt:johnson library|president’s appointment file
+144	6	28348	98.6%			William L. Stearman Files	txt:|william l. stearman file
+145	6	28354	98.6%		Department of State	Rosenberg Files	txt:department of state|rosenberg file
+146	6	28360	98.6%		Truman Library	PSF –General file	txt:truman library|psf-general file
+147	6	28366	98.6%		Carter Library	Staff Offices	txt:carter library|staff office
+148	6	28372	98.6%		Johnson Library	Marks Papers	txt:johnson library|marks paper
+149	6	28378	98.7%		Truman Library	President’s Secretary’s Files, Box 180	txt:truman library|president’s secretary’s file
+150	5	28383	98.7%		Carter Library	Brzezinski Donated Historical Material	txt:carter library|brzezinski donated historical material
+151	5	28388	98.7%		Reagan Library	Norman Bailey Files	txt:reagan library|norman bailey file
+152	5	28393	98.7%		Ford Library	National Security Decision Memoranda and Study Memoranda	txt:ford library|national security decision memoranda and study memoranda
+153	5	28398	98.7%		Eisenhower Library	Cabinet Secretariat Records	txt:eisenhower library|cabinet secretariat record
+154	5	28403	98.8%		Carter Library	President’s Files	txt:carter library|president’s file
+155	5	28408	98.8%		Eisenhower Library	Staff Secretary’s Records	txt:eisenhower library|staff secretary’s record
+156	5	28413	98.8%		University of Arkansas Libraries	Special Collections Division	txt:university of arkansas libraries|special collections division
+157	5	28418	98.8%		Eisenhower Library	Project Clean-Up	txt:eisenhower library|project clean-up
+158	5	28423	98.8%		Johnson Library	Papers of Francis M. Bator	txt:johnson library|papers of francis m. bator
+159	5	28428	98.8%		Kennedy Library	Pre-Presidential Papers	txt:kennedy library|pre-presidential paper
+160	5	28433	98.9%		Reagan Library	NSC Intelligence Files	txt:reagan library|nsc intelligence file
+161	5	28438	98.9%		Ford Library	James M. Wilson Papers	txt:ford library|james m. wilson paper
+162	5	28443	98.9%		Minnesota Historical Society	Hubert H. Humphrey Papers	txt:minnesota historical society|hubert h. humphrey paper
+163	5	28448	98.9%		Truman Library	Acheson Papers	txt:truman library|acheson paper
+164	4	28452	98.9%		Carter Library	Office of Congressional Liaison, Beckel	txt:carter library|office of congressional liaison
+165	4	28456	98.9%		Reagan Library	McFarlane Files	txt:reagan library|mcfarlane file
+166	4	28460	99.0%		Department of State	Risque Files	txt:department of state|risque file
+167	4	28464	99.0%		Naval Historical	Burke Papers	txt:naval historical|burke paper
+168	4	28468	99.0%		Library of Congress	Manuscripts Division	txt:library of congress|manuscripts division
+169	4	28472	99.0%		Johnson Library	George Elsey Papers	txt:johnson library|george elsey paper
+170	4	28476	99.0%			Robert H. Lilac Files	txt:|robert h. lilac file
+171	4	28480	99.0%		Johnson Library	Vice President’s Security File	txt:johnson library|vice president’s security file
+172	4	28484	99.0%		Johnson Library	Westmoreland Papers	txt:johnson library|westmoreland paper
+173	4	28488	99.0%		Eisenhower Library	Jackson Papers	txt:eisenhower library|jackson paper
+174	4	28492	99.1%		Eisenhower Library	Fairless Committee Records	txt:eisenhower library|fairless committee record
+175	4	28496	99.1%		Yale University	Bowles Papers	txt:yale university|bowles paper
+176	4	28500	99.1%		Nixon	President’s Office Files	txt:nixon|president’s office file
+177	4	28504	99.1%		Truman Library	Myron C. Taylor Papers	txt:truman library|myron c. taylor paper
+178	4	28508	99.1%		Library of Congress	Papers of Woodrow Wilson	txt:library of congress|papers of woodrow wilson
+179	4	28512	99.1%		Eisenhower Library	Areeda Papers	txt:eisenhower library|areeda paper
+180	4	28516	99.1%		Department of State	Bandow Files	txt:department of state|bandow file
+181	4	28520	99.2%		Nixon	Kissinger Telephone Conversation Transcripts	txt:nixon|kissinger telephone conversation transcript
+182	4	28524	99.2%		Eisenhower Library	Eisenhower Records	txt:eisenhower library|eisenhower record
+183	4	28528	99.2%		Ford Library	Melvin Laird Papers	txt:ford library|melvin laird paper
+184	4	28532	99.2%		Kennedy Library	Thomson Papers	txt:kennedy library|thomson paper
+185	4	28536	99.2%		Reagan Library	Edwin Meese Files	txt:reagan library|edwin meese file
+186	4	28540	99.2%		Reagan Library	Lisa R. Jameson Files	txt:reagan library|lisa r. jameson file
+187	3	28543	99.2%		Reagan Library	John Poindexter Files	txt:reagan library|john poindexter file
+188	3	28546	99.2%		Johnson Library	Tom Johnson Meeting Notes	txt:johnson library|tom johnson meeting note
+189	3	28549	99.3%		Johnson Library	Office Files of Harry McPherson	txt:johnson library|office files of harry mcpherson
+190	3	28552	99.3%		Ford Library	Kissinger-Scowcroft West Wing Office Files	txt:ford library|kissinger-scowcroft west wing office file
+191	3	28555	99.3%		Hoover Institution	Archives	txt:hoover institution|archive
+192	3	28558	99.3%		Reagan Library	David Gergen Files	txt:reagan library|david gergen file
+193	3	28561	99.3%		Kennedy Library	Arthur M. Schlesinger Papers	txt:kennedy library|arthur m. schlesinger paper
+194	3	28564	99.3%		Nixon	Henry Kissinger Telephone Transcripts	txt:nixon|henry kissinger telephone transcript
+195	3	28567	99.3%		Eisenhower Library	Special Assistant for Science and Technology Records	txt:eisenhower library|special assistant for science and technology record
+196	3	28570	99.3%		Johnson Library	Administrative Histories	txt:johnson library|administrative historie
+197	3	28573	99.3%		Center of Military History	Abrams Papers	txt:center of military history|abrams paper
+198	3	28576	99.4%		National Archives	James M. Cannon Files	txt:national archives|james m. cannon file
+199	3	28579	99.4%		Eisenhower Library	Post-Presidential Papers	txt:eisenhower library|post-presidential paper
+200	3	28582	99.4%		Princeton University	Stevenson Papers	txt:princeton university|stevenson paper
+201	3	28585	99.4%		Eisenhower Library	Special Assistant for National Security Affairs Records	txt:eisenhower library|special assistant for national security affairs record
+202	3	28588	99.4%		Eisenhower Library	Randall Commission records	txt:eisenhower library|randall commission record
+203	3	28591	99.4%		Johnson Library	President’s Daily Diary	txt:johnson library|president’s daily diary
+204	3	28594	99.4%		Minnesota Historical Society	Mondale Papers	txt:minnesota historical society|mondale paper
+205	3	28597	99.4%		Eisenhower Library	DDE Diaries	txt:eisenhower library|dde diarie
+206	3	28600	99.4%		Reagan Library	Kenneth deGraffenreid Files	txt:reagan library|kenneth degraffenreid file
+207	3	28603	99.4%		Kennedy Library	Personal Papers of Robert F. Kennedy	txt:kennedy library|personal papers of robert f. kennedy
+208	3	28606	99.5%			Alexander Haig Papers	txt:|alexander haig paper
+209	3	28609	99.5%		Eisenhower Library	Sp. Asst. for Nat. Sec. Affairs Records	txt:eisenhower library|sp. asst. for nat. sec. affairs record
+210	3	28612	99.5%		Nixon	Staff Member and Office Files	txt:nixon|staff member and office file
+211	3	28615	99.5%		Johnson Library	Tom Johnson Notes of Meetings	txt:johnson library|tom johnson notes of meeting
+212	3	28618	99.5%		Kennedy Library	Petersen Papers	txt:kennedy library|petersen paper
+213	3	28621	99.5%		Eisenhower Library	Project Clean Up Records	txt:eisenhower library|project clean up record
+214	3	28624	99.5%		Johnson Library	Meetings Notes File	txt:johnson library|meetings notes file
+215	3	28627	99.5%		Johnson Library	Papers of Paul C. Warnke	txt:johnson library|papers of paul c. warnke
+216	2	28629	99.5%		Kennedy Library	Countries Series	txt:kennedy library|countries serie
+217	2	28631	99.5%		Kennedy Library	Feldman Papers	txt:kennedy library|feldman paper
+218	2	28633	99.6%		Department of State	Clark Clifford Papers	txt:department of state|clark clifford paper
+219	2	28635	99.6%		Johnson Library	National	txt:johnson library|national
+220	2	28637	99.6%		Eisenhower Library	C. D. Jackson records	txt:eisenhower library|c. d. jackson record
+221	2	28639	99.6%		Reagan Library	Nicholas Rostow Files	txt:reagan library|nicholas rostow file
+222	2	28641	99.6%		Eisenhower Library	Papers of John Foster Dulles, 1952–1959.	txt:eisenhower library|papers of john foster dulle
+223	2	28643	99.6%		Yale University Library	Bowles Papers	txt:yale university library|bowles paper
+224	2	28645	99.6%		Johnson Library	VP Security File	txt:johnson library|vp security file
+225	2	28647	99.6%		Johnson Library	Office Files of Bill D. Moyers	txt:johnson library|office files of bill d. moyer
+226	2	28649	99.6%		Reagan Library	Frank Carlucci Papers	txt:reagan library|frank carlucci paper
+227	2	28651	99.6%		Johnson Library	Cabinet Papers	txt:johnson library|cabinet paper
+228	2	28653	99.6%		Johnson Library	Vice President’s Science File	txt:johnson library|vice president’s science file
+229	2	28655	99.6%		Eisenhower Library	Jackson Records	txt:eisenhower library|jackson record
+230	2	28657	99.6%		Johnson Library	Records and Transcripts	txt:johnson library|records and transcript
+231	2	28659	99.6%		Library of Congress	President’s Daily Diary)	txt:library of congress|president’s daily diary)
+232	2	28661	99.6%		Johnson Library	Vice Presidential File	txt:johnson library|vice presidential file
+233	2	28663	99.7%		Reagan Library	Cobb Files	txt:reagan library|cobb file
+234	2	28665	99.7%		Ford Library	James E. Connor Files	txt:ford library|james e. connor file
+235	2	28667	99.7%			W Files	txt:|w file
+236	2	28669	99.7%		University of Montana Library	Mansfield Papers	txt:university of montana library|mansfield paper
+237	2	28671	99.7%		Eisenhower Library	Eisenhower Diaries	txt:eisenhower library|eisenhower diarie
+238	2	28673	99.7%		Reagan Library	George P. Shultz Papers	txt:reagan library|george p. shultz paper
+239	2	28675	99.7%		Eisenhower Library	Disaster File Series	txt:eisenhower library|disaster file serie
+240	2	28677	99.7%		Nixon	National Security Council Institutional Files	txt:nixon|national security council institutional file
+241	2	28679	99.7%		Carter Library	National Security File	txt:carter library|national security file
+242	2	28681	99.7%		Ford Library	F. Lynn May Files	txt:ford library|f. lynn may file
+243	2	28683	99.7%		Johnson Library	Office Files of Bill Moyers	txt:johnson library|office files of bill moyer
+244	2	28685	99.7%		Carter Library	Mondale Donated Material	txt:carter library|mondale donated material
+245	2	28687	99.7%		Nixon	President’s Personal Files	txt:nixon|president’s personal file
+246	2	28689	99.7%		National Archives	Office Files, 1966-1969	txt:national archives|office file
+247	2	28691	99.8%		Reagan Library	Roger Fontaine Files	txt:reagan library|roger fontaine file
+248	2	28693	99.8%		Reagan Library	Donald Tice Files	txt:reagan library|donald tice file
+249	2	28695	99.8%		Reagan Library	Crisis Management Center	txt:reagan library|crisis management center
+250	2	28697	99.8%		Eisenhower Library	C.D. Jackson Papers	txt:eisenhower library|c.d. jackson paper
+251	2	28699	99.8%		Department of State	Robert Johnson Files	txt:department of state|robert johnson file
+252	2	28701	99.8%		Ford Library	William Simon Papers	txt:ford library|william simon paper
+253	2	28703	99.8%		Eisenhower Library	Special Staff Files, Box 4	txt:eisenhower library|special staff file
+254	2	28705	99.8%		Department of State	Guhin Files	txt:department of state|guhin file
+255	2	28707	99.8%		Eisenhower Library	Gordon Gray Papers	txt:eisenhower library|gordon gray paper
+256	2	28709	99.8%		Department of Defense	Official Files, 9155.3 (22 Jan 1965), files for Vietnam	txt:department of defense|official file
+257	1	28710	99.8%		Reagan Library	National Security Council	txt:reagan library|national security council
+258	1	28711	99.8%		Ford Library	Bobbie Greene Kilberg Files	txt:ford library|bobbie greene kilberg file
+259	1	28712	99.8%		Department of State	Sweet Files	txt:department of state|sweet file
+260	1	28713	99.8%		Nixon	White House Staff Files	txt:nixon|white house staff file
+261	1	28714	99.8%		Ford Library	Vice Presidential Papers	txt:ford library|vice presidential paper
+262	1	28715	99.8%			George H.W. Bush Presidential Records	txt:|george h.w. bush presidential record
+263	1	28716	99.8%		Hoover Institution	Lansdale Papers	txt:hoover institution|lansdale paper
+264	1	28717	99.8%		Johnson Library	Papers of Anthony M. Solomon	txt:johnson library|papers of anthony m. solomon
+265	1	28718	99.8%		Kennedy Library	White House Central Files	txt:kennedy library|white house central file
+266	1	28719	99.9%		Johnson Library	Task Force Reports	txt:johnson library|task force report
+267	1	28720	99.9%		Johnson Library	Special Files	txt:johnson library|special file
+268	1	28721	99.9%		Carter Library	Records of Peter Bourne	txt:carter library|records of peter bourne
+269	1	28722	99.9%		Department of State	Paul C. Warnke Papers, John McNaughton Files	txt:department of state|paul c. warnke paper
+270	1	28723	99.9%		Eisenhower Library	NSC Staff Papers	txt:eisenhower library|nsc staff paper
+271	1	28724	99.9%		Carter Library	Institutional Files	txt:carter library|institutional file
+272	1	28725	99.9%		Department of State	Rodman Files	txt:department of state|rodman file
+273	1	28726	99.9%		Library of Congress	James Schlesinger Papers	txt:library of congress|james schlesinger paper
+274	1	28727	99.9%		Carter Library	Staff Material	txt:carter library|staff material
+275	1	28728	99.9%		Kennedy Library	White House Central Subject Files	txt:kennedy library|white house central subject file
+276	1	28729	99.9%		Carter Library	Carter Presidential Papers, Staff Secretary	txt:carter library|carter presidential paper
+277	1	28730	99.9%		Ford Library	Presidential Files of NSC Logged Documents	txt:ford library|presidential files of nsc logged document
+278	1	28731	99.9%			Mudd Manuscript Library, Department of Special Collections	txt:|mudd manuscript library
+279	1	28732	99.9%		Hoover Institution	Williams Papers	txt:hoover institution|williams paper
+280	1	28733	99.9%		Center of Military History	O’Daniel Papers	txt:center of military history|o’daniel paper
+281	1	28734	99.9%		Kennedy Library	Papers of Theodore C. Sorensen	txt:kennedy library|papers of theodore c. sorensen
+282	1	28735	99.9%		Carter Library	Chief of Staff Files	txt:carter library|chief of staff file
+283	1	28736	99.9%		Johnson Library	Halperin Papers	txt:johnson library|halperin paper
+284	1	28737	99.9%		Carter Library	Brzezinski Material	txt:carter library|brzezinski material
+285	1	28738	99.9%		Nixon	Agency Files	txt:nixon|agency file
+286	1	28739	99.9%		Carter Library	Records of the White House Office of Counsel to the President	txt:carter library|records of the white house office of counsel to the president
+287	1	28740	99.9%		Carter Library	Country Files	txt:carter library|country file
+288	1	28741	99.9%		Ford Library	National Security Council Institutional Files	txt:ford library|national security council institutional file
+289	1	28742	99.9%		Ford Library	Memoranda of Conversations, 1973–1977	txt:ford library|memoranda of conversation
+290	1	28743	99.9%		Naval Historical	Anderson Papers	txt:naval historical|anderson paper
+291	1	28744	99.9%			H. Alexander Smith Papers	txt:|h. alexander smith paper
+292	1	28745	99.9%		Johnson Library	Recordings and Transcripts of Telephone Conversations and Meetings	txt:johnson library|recordings and transcripts of telephone conversations and meeting
+293	1	28746	99.9%		Reagan Library	Intelligence Directorate	txt:reagan library|intelligence directorate
+294	1	28747	99.9%		Johnson Library	Office Files of Ernest Goldstein	txt:johnson library|office files of ernest goldstein
+295	1	28748	100.0%		Ford Library	Philip W. Buchen Files	txt:ford library|philip w. buchen file
+296	1	28749	100.0%		Nixon	Country Files	txt:nixon|country file
+297	1	28750	100.0%			President’s Daily Briefing	txt:|president’s daily briefing
+298	1	28751	100.0%		Department of State	WHORM: Subject File PR014–08	txt:department of state|whorm: subject file pr014-08
+299	1	28752	100.0%			Mansfield Library, University of Montana, Missoula, Montana	txt:|mansfield library
+300	1	28753	100.0%		Department of State	NR002 Natural Resources Classified	txt:department of state|nr002 natural resources classified
+301	1	28754	100.0%			Rostow Files	txt:|rostow file
+302	1	28755	100.0%		Ford Library	John O. Marsh Files	txt:ford library|john o. marsh file
+303	1	28756	100.0%		Ford Library	Ron Nessen Files	txt:ford library|ron nessen file
+304	1	28757	100.0%		Ford Library	Papers of Michael Raoul-Duval	txt:ford library|papers of michael raoul-duval
+305	1	28758	100.0%		Eisenhower Library	Rand Records	txt:eisenhower library|rand record
+306	1	28759	100.0%			Dulles, Allen W., Director of Central Intelligence	txt:|dulle
+307	1	28760	100.0%		Truman Library	Charles S. Murphy Files	txt:truman library|charles s. murphy file
+308	1	28761	100.0%		Ford Library	White House Special Files	txt:ford library|white house special file
+309	1	28762	100.0%		Johnson Library	Memos to the President	txt:johnson library|memos to the president

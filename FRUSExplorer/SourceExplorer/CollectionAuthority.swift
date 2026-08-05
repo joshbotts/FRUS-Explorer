@@ -152,7 +152,12 @@ struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable {
 ///    the same segment exist elsewhere).
 /// 4. **Alias** — the plural-folded segment against every record's merged alias forms;
 ///    only an **unambiguous** hit (exactly one record) resolves, so a shared alias
-///    can never route to the wrong collection.
+///    can never route to the wrong collection. Guarded by
+///    `CollectionKeying.manuscriptRepositoriesConflict` (N-4 step 1): unambiguous is
+///    not the same as *correct*, because the alias map is global — a segment owned by
+///    exactly one record still resolves when the citing note names a different
+///    manuscript repository. A citation naming one library never resolves to another
+///    library's collection.
 ///
 /// All keys are produced by `SourceNoteKit.CollectionKeying` — the same functions the
 /// generator clustered with, so lookups agree with the artifact by construction.
@@ -241,7 +246,18 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
            collections[hits[0]].id == "txt:|" + segNorm {
             return collections[hits[0]]
         }
-        return uniqueRecord(forAliasNorm: segNorm)
+        // Step 4, repository-guarded (N-4 step 1): the alias map is global, so an
+        // unambiguous alias owned by one manuscript repository is reachable from a
+        // citation that names a different one. Measured on the shipped artifact, seven
+        // such bridges fire over 10 documents — "Eisenhower Library, Records of the
+        // Office of the Staff Secretary" lands on the *Carter* Library's cluster, and
+        // both Reagan's and Johnson's "President's Daily Diary" land on the Library of
+        // Congress. All seven are wrong, so the guard costs no correct resolution.
+        let alias = uniqueRecord(forAliasNorm: segNorm)
+        if CollectionKeying.manuscriptRepositoriesConflict(repository, alias?.repository) {
+            return nil
+        }
+        return alias
     }
 
     /// The record for a parsed document source note (the document Source Explorer
