@@ -121,7 +121,7 @@ struct MacSourceExplorerView: View {
             rightColumn
                 .frame(minWidth: 340)
         }
-        .task { await load() }
+        .task(id: loadIdentity) { await load() }
         .frame(minWidth: 640, minHeight: 380)
         .toolbar { explorerToolbar }
         .sheet(item: $collectionDetailRecord) { record in
@@ -1044,7 +1044,37 @@ struct MacSourceExplorerView: View {
 
     // MARK: - Load
 
+    /// Identity of the document currently being explained, for `.task(id:)`.
+    ///
+    /// This window is a persistent `Window`, not a sheet: SwiftUI keeps one view instance
+    /// alive and swaps its properties as the user opens documents. A bare `.task` therefore
+    /// fires **once, ever**, and every value `load()` computes stays pinned to whichever
+    /// document happened to be open first — while `rawSourceNote` itself, being read
+    /// directly in `body`, updates. The result was a pane showing one document's source note
+    /// above another's lot number, record group, archival collection and NARA results.
+    ///
+    /// Keyed on the raw note as well as the identifiers because some hosts pass no
+    /// `documentId` at all, and two documents can share a note only if they really are the
+    /// same source citation.
+    var loadIdentity: String {
+        MacSourceExplorerLoadIdentity.make(volumeId: documentVolumeId, documentId: documentId,
+                                           rawSourceNote: rawSourceNote, documentYear: documentYear)
+    }
+
+
     private func load() async {
+        // Clear everything derived from the *previous* document first. Without this the
+        // stale provenance stays on screen for the whole of the async work below — and, if
+        // an early `return` is taken (no API key, or a strategy with no live route), forever.
+        parsed = nil
+        catalogResults = []
+        authorityRecord = nil
+        countryResolutions = []
+        relatedDocs = []
+        relatedTotalCount = 0
+        loadError = nil
+        manualQuery = ""
+
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
 

@@ -184,7 +184,12 @@ struct SourceExplorerView: View {
                     FeatureInfoButton.sourceExplorer
                 }
             }
-            .task {
+            // Keyed, not bare: this view is a sheet on iPhone/iPad and so is rebuilt per
+            // presentation today — but its macOS twin is hosted in a persistent Window,
+            // where a bare `.task` pinned every derived value to the first document ever
+            // opened. Keying here costs nothing and removes the latent version of that bug
+            // for any future host that keeps this view alive across documents.
+            .task(id: loadIdentity) {
                 await load()
             }
         }
@@ -1307,6 +1312,13 @@ struct SourceExplorerView: View {
     }
 
     // MARK: - Load
+
+    /// Identity of the document currently being explained, for `.task(id:)`.
+    /// Mirrors `MacSourceExplorerView.loadIdentity` — keep in sync.
+    var loadIdentity: String {
+        MacSourceExplorerLoadIdentity.make(volumeId: documentVolumeId, documentId: documentId,
+                                           rawSourceNote: rawSourceNote, documentYear: documentYear)
+    }
 
     private func load() async {
         let note = SourceNoteParser().parse(rawSourceNote)
