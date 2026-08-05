@@ -101,6 +101,13 @@ struct MacSourceExplorerView: View {
     @State private var relatedLoading: Bool = false
     /// Pre-1906 country-series classifications + resolved rolls (Phase 2).
     @State private var countryResolutions: [CountrySeriesResolution] = []
+    /// Where the rows in `catalogResults` came from (#680).
+    ///
+    /// The manual field is a free-text query against a different endpoint with no record-group
+    /// filter and no acceptance test, so its results are not the same kind of claim as the
+    /// automatic lookup's. They land in the same array and are read by the same Copy and
+    /// Export actions, so the array has to remember which it is holding.
+    @State private var resultsAreVerified: Bool = true
 
     /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
     /// or `nil` when the note's keys land in no tracked collection.
@@ -136,7 +143,12 @@ struct MacSourceExplorerView: View {
     private var explorerToolbar: some ToolbarContent {
         ToolbarItem {
             Button {
-                Task { await runManualSearch() }
+                // #680: re-run the *automatic* lookup, which applies the acceptance test.
+                // This used to call runManualSearch(), sending the pre-filled lot number
+                // through an unguarded free-text query — so one click on a button whose
+                // tooltip promises to repeat the current search replaced a correctly
+                // refused resolution with whatever the top hit happened to be.
+                Task { await load() }
             } label: {
                 Label(String(localized: "source.explorer.toolbar.refresh",
                              defaultValue: "Refresh"),
@@ -618,6 +630,10 @@ struct MacSourceExplorerView: View {
                             .foregroundStyle(.red)
                             .font(.callout)
                     } else if !catalogResults.isEmpty {
+                        // #680: a free-text manual result is a different kind of claim from an
+                        // automatic one — no record-group filter, no acceptance test — and it
+                        // lands in the same array behind the same "View in NARA Catalog" row.
+                        if !resultsAreVerified { unverifiedResultBanner }
                         // Up to 5 ranked candidates (parity with iOS).
                         ForEach(catalogResults.prefix(5), id: \.naId) { result in
                             catalogResultView(result)
@@ -635,6 +651,26 @@ struct MacSourceExplorerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    /// Marks results that came from the manual free-text field rather than the automatic,
+    /// acceptance-tested lookup (#680).
+    private var unverifiedResultBanner: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(String(localized: "source.explorer.manualSearch.unverified.chip",
+                        defaultValue: "Unverified"))
+                .font(.caption2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.orange.opacity(0.18), in: Capsule())
+            Text(String(localized: "source.explorer.manualSearch.unverified.detail",
+                        defaultValue: "From a manual search. Not checked against the cited lot number or record group."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Bundled Lot File Box
@@ -1164,11 +1200,13 @@ struct MacSourceExplorerView: View {
 
     /// Executes a NARA Catalog API operation and stores up to five ranked candidates
     /// (or an error message). Mirrors the iOS Source Explorer's multi-candidate list.
-    private func fetchResults(_ operation: @Sendable () async throws -> [NARACatalogResult]) async {
+    private func fetchResults(verified: Bool = true,
+                              _ operation: @Sendable () async throws -> [NARACatalogResult]) async {
         isLoading = true
         loadError = nil
         do {
             catalogResults = try await operation()
+            resultsAreVerified = verified
         } catch {
             loadError = error.localizedDescription
         }
@@ -1180,7 +1218,9 @@ struct MacSourceExplorerView: View {
     private func runManualSearch() async {
         let query = manualQuery.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return }
-        await fetchResults { (try await client.searchCatalog(query: query)).map { [$0] } ?? [] }
+        await fetchResults(verified: false) {
+            (try await client.searchCatalog(query: query)).map { [$0] } ?? []
+        }
     }
 
     // MARK: - Copy
@@ -1343,6 +1383,15 @@ struct MacSourceExplorerView: View {
         var lines: [String] = [
             "NARA Catalog Record",
             "===================",
+        ]
+        if !resultsAreVerified {
+            // A durable copy of an unverified result must say so — the chip in the UI does
+            // not travel into a research note (#680).
+            lines.append(String(localized: "source.explorer.manualSearch.exportCaveat",
+                                defaultValue: "NOTE: Result of a manual free-text search. It has not been checked against the cited lot number or record group."))
+            lines.append("")
+        }
+        lines += [
             "NA ID: \(result.naId)",
             "Title: \(result.title)",
         ]
