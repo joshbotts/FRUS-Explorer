@@ -437,6 +437,19 @@ public struct SourceNoteParser {
         pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+(?:-[A-Z]{1,6})?$"#,
         options: [])
 
+    /// A **dotless** three-digit decimal class (`032`, `330`, `362`).
+    ///
+    /// The decimal file's top-level classes are used directly, without an extension — 1,565
+    /// documents across 46 such codes cite one. They cannot join `dottedDecimalClassRegex`,
+    /// which requires a dot precisely so a bare number is never mistaken for a class: the
+    /// pre-1910 **Numerical File** case numbers (`File No. 3767/5`) look identical otherwise.
+    ///
+    /// Safe only under `bareClassCandidate(_:)`'s context test, which is why it is separate
+    /// rather than an alternation inside the shape above. Anything reaching this regex has
+    /// already been shown to sit where a class sits.
+    private static let bareDecimalClassRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^\d{3}$"#, options: [])
+
     /// Validates and canonicalizes one decimal / subject-numeric class-leaf candidate.
     ///
     /// This is the single class-shape gate for **both** citation sides — the
@@ -475,6 +488,62 @@ public struct SourceNoteParser {
         return s
     }
 
+    /// Removes the two spacings FRUS uses inside a class that mean nothing (#353 / N-1b).
+    ///
+    /// - **after the class dot** — `501. BC` is the class stored elsewhere as `501.BC`, whose
+    ///   sibling `501.BB` already carries 1,331 documents, so this joins an established class
+    ///   rather than inventing one. 891 documents.
+    /// - **after a suffix dash** — `751G.5– MSP` is the third spelling of the suffix #688
+    ///   unified, and removing the dash lets the space rule finish the job. 796 documents.
+    ///
+    /// Applied to the whole candidate before any rule runs, so the tokenising rules see the
+    /// same string the whole-candidate gate does — a first draft collapsed only inside
+    /// `decimalClassKey` and `501. BC Indonesia/…` still failed, because `leadingClassKey`
+    /// split the *uncollapsed* text into `501.` / `BC` / `Indonesia`.
+    static func collapsingClassPunctuation(_ raw: String) -> String {
+        var s = raw
+        if let re = classDotSpaceRegex {
+            // Join with `.` when the class has no extension yet (`501. BC` → `501.BC`, the
+            // form its sibling `501.BB` is stored in) and with `-` when it already has one
+            // (`840.50. UNRRA` → `840.50-UNRRA`, matching the 145 notes that spell the same
+            // class `840.50 UNRRA`). A single template gets one of the two wrong, and the
+            // corpus check found it: `840.50.UNRRA` would have been a third key for one class.
+            let ns = s as NSString
+            var out = ""
+            var cursor = 0
+            for m in re.matches(in: s, range: NSRange(location: 0, length: ns.length)) {
+                out += ns.substring(with: NSRange(location: cursor, length: m.range.location - cursor))
+                let headEnd = m.range(at: 1).location + m.range(at: 1).length
+                let alreadyExtended = ns.substring(to: headEnd).contains(".")
+                out += ns.substring(with: m.range(at: 1))
+                out += alreadyExtended ? "-" : "."
+                out += ns.substring(with: m.range(at: 2))
+                cursor = m.range.location + m.range.length
+            }
+            out += ns.substring(from: cursor)
+            s = out
+        }
+        if let dash = s.firstIndex(where: { $0 == "-" || $0 == "–" || $0 == "—" }),
+           s.index(after: dash) < s.endIndex, s[s.index(after: dash)] == " " {
+            s.remove(at: dash)
+        }
+        return s
+    }
+
+    /// A class dot followed by space and a short **all-caps** token — `501. BC`.
+    ///
+    /// Three constraints, each paying for itself:
+    /// - a **digit** before the dot, so ordinary abbreviations (`Dept. of State`) are untouched;
+    /// - **two or more** capitals, and
+    /// - no lowercase after them.
+    ///
+    /// The last two are what keep this off a sentence boundary. A first version matched a
+    /// single capital and rewrote `Central Files, POL 29. Secret` into `POL 29.Secret`,
+    /// destroying the boundary the parse depends on — **158 subject-numeric classes were lost**
+    /// (`POL 29`, `DEF 18-6`, `DEF 18-4`) before the corpus check caught it.
+    private static let classDotSpaceRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(\d)\.\s+([A-Z]{2,6})(?![a-z])"#, options: [])
+
     /// Rewrites a **space**-separated class suffix to the dash form, so `751G.5 MSP` and
     /// `751G.5–MSP` reduce to the same stored key.
     ///
@@ -493,6 +562,7 @@ public struct SourceNoteParser {
     /// parser is not equipped to make. They keep falling to the bare class — identically for
     /// both spellings, which is the property that actually matters.
     static func unifyingSpacedClassSuffix(_ candidate: String) -> String {
+        let candidate = collapsingClassPunctuation(candidate)
         guard let space = candidate.firstIndex(of: " ") else { return candidate }
         let head = String(candidate[..<space])
         let tail = String(candidate[candidate.index(after: space)...])
@@ -546,7 +616,12 @@ public struct SourceNoteParser {
     /// - Parameter text: The raw citation text (wrapper already stripped).
     /// - Returns: The canonical class location, or `nil` when no segment is a class leaf.
     public static func decimalClassLocation(inCitation text: String) -> String? {
-        let citation = citationSentence(of: text)
+        // Collapse `501. BC` **before** the sentence split, not after. The sentence-boundary
+        // regex ends a sentence at a period followed by whitespace and a capital, so
+        // `501. BC Indonesia/1–2045` is cut to the citation sentence `"501. "` and the class
+        // is gone before any rule here runs. Collapsing first is why this is not simply a
+        // segment-level fix — 891 documents.
+        let citation = citationSentence(of: collapsingClassPunctuation(text))
         for segment in citation.components(separatedBy: ",") {
             var candidate = segment
             if let slash = candidate.firstIndex(of: "/") {
@@ -555,7 +630,13 @@ public struct SourceNoteParser {
             // The early volumes label the class rather than leading with it: "File No.
             // 861.00/1234" is 21,960 documents over 1,064 classes, every one refused because
             // the label rides in the segment and `File No. 861.00` is not class-shaped.
-            candidate = strippingFileNumberLabel(candidate)
+            let stripped = strippingFileNumberLabel(candidate)
+            // A labelled segment can never yield a *dotless* class: `File No. 376/5` is a
+            // Numerical File case number, and accepting `376` from it fabricates a class out
+            // of a filing sequence. The dot requirement used to carry this distinction on its
+            // own; now that dotless classes are admitted, the label has to.
+            let wasLabelled = stripped != candidate
+            candidate = collapsingClassPunctuation(stripped)
             if let key = decimalClassKey(candidate) { return key }
             if let tail = candidate.range(of: ". "),
                let key = decimalClassKey(String(candidate[..<tail.lowerBound])) {
@@ -565,8 +646,23 @@ public struct SourceNoteParser {
             // (2,837 documents). The `/` cut leaves "740.0011 European War 1939", which the
             // whole-candidate gate rejects, and there is no ". " to cut at.
             if let key = leadingClassKey(candidate) { return key }
+            if !wasLabelled, let key = bareClassCandidate(candidate) { return key }
         }
         return nil
+    }
+
+    /// A dotless three-digit class, accepted only where a class belongs.
+    ///
+    /// The segment must be **exactly** three digits after the `/` cut — no label, no prose.
+    /// That is what separates `Central Files, 032/1–2855` (a class) from the Numerical File's
+    /// `File No. 3767/5` (a case number, four digits and label-prefixed) and from a bare
+    /// number appearing anywhere else in a citation. The `/` that preceded the cut is itself
+    /// part of the evidence: a class is what stands to the left of the item suffix.
+    static func bareClassCandidate(_ candidate: String) -> String? {
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+        let ns = NSRange(trimmed.startIndex..., in: trimmed)
+        guard bareDecimalClassRegex?.firstMatch(in: trimmed, range: ns) != nil else { return nil }
+        return trimmed
     }
 
     /// Strips an early-volume `File No.` label from a class candidate.

@@ -590,7 +590,15 @@ public actor IndexingPipeline {
 ///   even when a qualifier followed (`740.00119–EW (39)`) while the space form dropped it, so
 ///   teaching the space form to match takes the total to **7,419 documents**. Measured against
 ///   the v23 index: 7,419 corrected, 0 changed otherwise, 0 lost.
-    public static let currentDateIndexVersion: Int = 24
+    /// - v25 — #353 / N-1b: three residual citation families, **2,996 documents** across 328
+    ///   classes. The decimal file's dotless top-level classes (`032`, `320`, `330` — 1,565
+    ///   documents over 46 codes, accepted only where a class belongs so the Numerical File's
+    ///   `File No. 3767/5` case numbers stay refused); a space after the class dot
+    ///   (`501. BC` → `501.BC`, joining the established `501.BB` family); and a dash *and* a
+    ///   space (`751G.5– MSP`), the third spelling of the suffix #688 unified. Measured
+    ///   against the v24 index: 3,333 newly classed, 1 corrected (840.50. UNRRA joins the 145
+///   notes spelling the same class 840.50 UNRRA), 0 lost.
+    public static let currentDateIndexVersion: Int = 25
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

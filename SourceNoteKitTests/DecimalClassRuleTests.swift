@@ -155,6 +155,85 @@ struct DecimalClassRuleTests {
         #expect(SourceNoteParser.decimalClassKey("751G.5 MSP") == "751G.5-MSP")
     }
 
+    // MARK: Residual families (#353 / N-1b)
+
+    @Test("A dotless three-digit class is accepted where a class belongs")
+    func bareThreeDigitClass() {
+        // The decimal file uses its top-level classes directly: 032, 320, 330, 362.
+        // 1,565 documents cite one, and none of the 46 codes existed as a stored class.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, 032/1–2855. Secret.") == "032")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, 330/3–2355. Secret.") == "330")
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "320/6–156: Telegram") == "320")
+    }
+
+    @Test("A Numerical File case number is still refused")
+    func numericalFileCaseNumbersRefused() {
+        // This is the whole reason the dotted shape required a dot. `File No. 3767/5` is a
+        // pre-1910 case number, not a class, and 1,136 residual rows carry that shape — they
+        // must stay unclassed rather than become fabricated classes.
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "File No. 3767/5") == nil)
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "File No. 4567/123.") == nil)
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "File No. 376/5") == nil)
+        // And unlabelled, which the label guard cannot catch: the corpus holds 24 bare
+        // four-digit case numbers (`4197/16`, `5727/165.`) against 1,244 bare three-digit
+        // classes (`032/3–2751`). Only the digit count separates them, so the shape must stay
+        // at exactly three — widening it to four fabricates a class for every one of the 24.
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "4197/16") == nil)
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "5727/165.") == nil)
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "032/3–2751") == "032")
+    }
+
+    @Test("A space after the class dot joins the established class")
+    func spaceAfterDotIsClosed() {
+        // FRUS writes `501. BC`; the sibling `501.BB` already carries 1,331 documents, so this
+        // joins an established class rather than inventing one. 891 documents.
+        #expect(SourceNoteParser.decimalClassKey("501. BC") == "501.BC")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "501. BC Indonesia/1–2045: Telegram") == "501.BC")
+    }
+
+    @Test("A dash AND a space is the third spelling of one suffix")
+    func dashSpaceSuffix() {
+        // `751G.5– MSP`, 796 documents — must land on the same key as `751G.5–MSP` and
+        // `751G.5 MSP`, which #688 already unified with each other.
+        let all = ["751G.5– MSP /1–1055", "751G.5–MSP/1–1055", "751G.5 MSP /1–1055"]
+            .map { SourceNoteParser.decimalClassLocation(inCitation: $0) }
+        #expect(all.allSatisfy { $0 == "751G.5-MSP" }, "three spellings, three keys: \(all)")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, 396.1– ISG/5–1155. Secret.")
+                == "396.1-ISG")
+    }
+
+    @Test("The dot collapse never eats a sentence boundary")
+    func dotCollapseSparesSentenceBoundaries() {
+        // A first version matched a single capital after the dot and rewrote
+        // `Central Files, POL 29. Secret` into `POL 29.Secret`, destroying the boundary the
+        // parse depends on — 158 subject-numeric classes were lost before the corpus check
+        // caught it. Requiring two-plus capitals with no lowercase after is what stops it.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, POL 29. Secret.") == "POL 29")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, DEF 18-6. Secret.") == "DEF 18-6")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Source: Department of State, Central Files, 611.61/1–2355. Secret.") == "611.61")
+    }
+
+    @Test("The join character depends on whether the class already has an extension")
+    func joinCharacterIsContextual() {
+        // `501` has none, so `501. BC` joins with a dot into the stored `501.BC` family.
+        // `840.50` already has one, so `840.50. UNRRA` must join with a dash to land on
+        // `840.50-UNRRA` — the key the 145 notes spelling it `840.50 UNRRA` already produce.
+        // One template gets one of these wrong; that is a third key for a single class.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "501. BC Indonesia/1–2045: Telegram") == "501.BC")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "840.50. UNRRA/9–1045: Telegram") == "840.50-UNRRA")
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "840.50 UNRRA/9–1045: Telegram") == "840.50-UNRRA")
+    }
+
     // MARK: The bound these rules must not break
 
     @Test("A class in a remark sentence is still never taken")
