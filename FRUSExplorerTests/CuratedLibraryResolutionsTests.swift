@@ -35,6 +35,8 @@ import Foundation
 ///   1.0 — Session 2026-08-06: #355 / N-4, Carter + Library of Congress
 ///   1.1 — Session 2026-08-06: #355 / N-4, Ford — the two citation truncations (middle initial,
 ///         comma inside a series name) and one series cited at four different levels
+///   1.2 — Session 2026-08-06: #355 / N-4, Nixon — read sentence 1 rather than the
+///         central-files-anchored sentence, and find the series on either side of the box
 @Suite("Curated library resolutions")
 struct CuratedLibraryResolutionsTests {
 
@@ -66,20 +68,66 @@ struct CuratedLibraryResolutionsTests {
             inNote: loc, afterCollection: "Manuscript Division") == "Kissinger Papers")
     }
 
-    /// A box or folder is a locator, not a sub-collection. Treating `Box 17` as one would key
-    /// every document separately and resolve none of them.
-    @Test("A locator is never mistaken for a sub-collection")
+    /// A box or folder is a locator, not a sub-collection. Returning `Box 17` as one would key
+    /// every document separately and resolve none of them — so the locator itself is refused in
+    /// **either** position, before and after the series.
+    @Test("A locator is never returned as a sub-collection")
     func locatorsAreRefused() {
         for note in ["Source: Carter Library, Plains File, Box 17, Nodis.",
                      "Source: Carter Library, Plains File, Folder 3.",
-                     "Source: Kennedy Library, National Security Files, Reel 12."] {
-            let collection = note.contains("Plains") ? "Plains File" : "National Security Files"
-            #expect(CuratedLibraryResolutions.subCollection(
-                inNote: note, afterCollection: collection) == nil, "leaked a locator from: \(note)")
+                     "Source: Kennedy Library, National Security Files, Reel 12.",
+                     "Source: Nixon Presidential Materials, NSC Files, Box 849, Boxes 1–4."] {
+            let collection = ["Plains File", "National Security Files", "NSC Files"]
+                .first { note.contains($0) } ?? ""
+            let sub = CuratedLibraryResolutions.subCollection(inNote: note,
+                                                              afterCollection: collection)
+            #expect(sub?.range(of: #"^(Box|Boxes|Folder|Reel|Container|Lot)\b"#,
+                               options: [.regularExpression, .caseInsensitive]) == nil,
+                    "leaked the locator \(sub ?? "") from: \(note)")
         }
-        // A citation that stops at the collection has no sub-collection either.
+        // A citation that stops at the collection has no sub-collection at all.
         #expect(CuratedLibraryResolutions.subCollection(
             inNote: "Source: Carter Library, Plains File.", afterCollection: "Plains File") == nil)
+        #expect(CuratedLibraryResolutions.subCollection(
+            inNote: "Source: Carter Library, Plains File, Folder 3.",
+            afterCollection: "Plains File") == nil, "nothing follows the folder")
+    }
+
+    /// The extraction must read **sentence 1**, not `SourceNoteParser.citationSentence(of:)`.
+    ///
+    /// This is a wiring test, and it exists because the obvious version of it is not one:
+    /// `FirstSentenceTests` pins the two parser functions against each other and passes happily
+    /// while `subCollection` calls the wrong one. Mutation-tested — swapping the call back to
+    /// `citationSentence` leaves every other test in this suite green.
+    ///
+    /// The note below is a verbatim corpus shape. Its remarks cross-reference the White House
+    /// Central Files, which is what `citationSentence` anchors on, so it returns the *remarks*
+    /// and the sub-collection is read out of an editor's aside. Measured: 4,605 Nixon documents.
+    @Test("The sub-collection is read from the citation, not from the remarks")
+    func extractionReadsSentenceOne() {
+        let note = "Source: National Archives, Nixon Presidential Materials, NSC Files, "
+            + "Agency Files, Box 193, AID, Volume I 1969. Confidential. On May 23 Haig sent "
+            + "Kissinger a memorandum in which this was the first item for Kissinger to discuss "
+            + "with the President that day. (Ibid., Subject Files, Items to Discuss with the "
+            + "President) Kissinger met with the President at 9:30 a.m. (Ibid., White House "
+            + "Central Files, President\u{2019}s Daily Diary)"
+        #expect(CuratedLibraryResolutions.subCollection(
+            inNote: note, afterCollection: "NSC Files") == "Agency Files",
+                "the remarks name a central file, which is what citationSentence anchors on")
+    }
+
+    /// FRUS puts the box on either side of the series, and the Nixon volumes overwhelmingly put
+    /// it first. Stopping at the locator read 4,605 Nixon documents as having no series.
+    @Test("The series is found on either side of the box")
+    func seriesFoundEitherSideOfTheBox() {
+        let seriesFirst = "Source: National Archives, Nixon Presidential Materials, NSC Files, "
+            + "Kissinger Office Files, Box 1, HAK Administrative and Staff Files. Secret."
+        let boxFirst = "Source: National Archives, Nixon Presidential Materials, NSC Files, "
+            + "Box 849, Country Files, Latin America. Confidential."
+        #expect(CuratedLibraryResolutions.subCollection(
+            inNote: seriesFirst, afterCollection: "NSC Files") == "Kissinger Office Files")
+        #expect(CuratedLibraryResolutions.subCollection(
+            inNote: boxFirst, afterCollection: "NSC Files") == "Country Files")
     }
 
     // MARK: - Lookup
@@ -246,26 +294,89 @@ struct CuratedLibraryResolutionsTests {
     /// repositories use it for three different series. Measured over the corpus, of the
     /// documents whose note names institutional files, **1,206 are Nixon's, 447 are Carter's and
     /// only 331 are Ford's** — so a match on the series name alone would send the majority of
-    /// them to the wrong repository. The lookup is repository-scoped, which is what makes the
-    /// Ford entry safe; this test is what keeps it that way.
-    @Test("The institutional-files aid is reachable only from a Ford citation")
+    /// them to the wrong repository.
+    ///
+    /// Nixon and Ford are both curated now, which makes this sharper than a nil check: the two
+    /// must resolve to **different repositories' aids**, and Carter — which has no entry — must
+    /// still resolve to nothing rather than borrowing either.
+    @Test("The institutional files resolve per repository, never across")
     func institutionalFilesDoNotCrossRepositories() throws {
         let curated = try bundled()
         let ford = curated.resolution(repository: "Ford Library",
                                       collection: "NSC Institutional Files (H-Files)",
                                       subCollection: nil)
-        #expect(ford != nil, "fixture guard: the Ford entry must exist for this test to mean anything")
-        for repository in ["Nixon Presidential Materials", "Nixon", "Carter Library",
-                           "Reagan Library", "Library of Congress"] {
-            for collection in ["NSC Institutional Files (H-Files)", "NSC Institutional Files"] {
-                #expect(curated.resolution(repository: repository, collection: collection,
-                                           subCollection: nil) == nil,
-                        "\(repository)/\(collection) reached a Ford finding aid")
-            }
+        let nixon = curated.resolution(repository: "Nixon Presidential Materials",
+                                       collection: "NSC Files",
+                                       subCollection: "NSC Institutional Files (H-Files)")
+        #expect(ford != nil)
+        #expect(nixon != nil)
+        #expect(ford?.url.contains("fordlibrarymuseum.gov") == true)
+        #expect(nixon?.url.contains("nixonlibrary.gov") == true)
+        #expect(ford?.url != nixon?.url, "the same name must not reach the same aid")
+
+        // Nixon cited at its own level-1 reaches the Nixon aid, not Ford's.
+        for collection in ["NSC Institutional Files (H-Files)", "NSC Institutional Files"] {
+            let hit = curated.resolution(repository: "Nixon Presidential Materials",
+                                         collection: collection, subCollection: nil)
+            #expect(hit?.url == nixon?.url, "\(collection) must reach the Nixon H-Files aid")
+        }
+        // Repositories with no entry stay unresolved rather than borrowing a neighbour's.
+        for repository in ["Carter Library", "Reagan Library", "Library of Congress"] {
+            #expect(curated.resolution(repository: repository,
+                                       collection: "NSC Institutional Files (H-Files)",
+                                       subCollection: nil) == nil,
+                    "\(repository) borrowed another repository's institutional-files aid")
             #expect(curated.resolution(repository: repository,
                                        collection: "National Security Council",
                                        subCollection: "Institutional Files") == nil,
                     "\(repository) reached Ford's institutional files through the NSC level")
+        }
+    }
+
+    // MARK: - Nixon
+
+    /// The Nixon Library itemises 28 NSC Files series but not all of them, so the collection
+    /// page is the answer for the rest — and that is most of the mass, not a rounding error:
+    /// `Country Files` (1,697 documents) is split by region in the archive but cited without
+    /// one, and `Agency Files` (506, boxes 193–306) has no list of its own.
+    @Test("An un-itemised Nixon series falls back to the collection page")
+    func nixonCollectionPageAnswersForUnitemisedSeries() throws {
+        let curated = try bundled()
+        let hub = curated.resolution(repository: "Nixon", collection: "NSC Files",
+                                     subCollection: nil)
+        #expect(hub != nil)
+        for series in ["Country Files", "Agency Files", "Backchannel Files"] {
+            #expect(curated.resolution(repository: "Nixon", collection: "NSC Files",
+                                       subCollection: series) == hub,
+                    "\(series) has no list of its own and must reach the collection page")
+        }
+        // …while an itemised series reaches its own box list instead.
+        let subjects = curated.resolution(repository: "Nixon", collection: "NSC Files",
+                                          subCollection: "Subject Files")
+        #expect(subjects != nil)
+        #expect(subjects != hub, "Subject Files has its own box list")
+        #expect(subjects?.url.hasSuffix(".pdf") == true)
+    }
+
+    /// Two Nixon series have confusable names — `For the President's Files (Winston Lord) –
+    /// China Trip/Vietnam` (boxes 846–872) and `For the President's Files – China/Vietnam
+    /// Negotiations` (1031–1041). The corpus also writes several short forms that name neither
+    /// unambiguously, and those deliberately get the collection page rather than a guess.
+    @Test("Confusable Nixon China series are not guessed at")
+    func confusableChinaSeriesFallBack() throws {
+        let curated = try bundled()
+        let hub = curated.resolution(repository: "Nixon", collection: "NSC Files",
+                                     subCollection: nil)
+        let lord = curated.resolution(
+            repository: "Nixon", collection: "NSC Files",
+            subCollection: "For the President\u{2019}s Files ( Winston Lord )—China Trip/Vietnam")
+        #expect(lord != nil)
+        #expect(lord?.url.contains("winston_lord") == true)
+        for ambiguous in ["President\u{2019}s File—China Trip", "Files for the President—China Material",
+                         "Files for the President"] {
+            #expect(curated.resolution(repository: "Nixon", collection: "NSC Files",
+                                       subCollection: ambiguous) == hub,
+                    "\(ambiguous) names neither series unambiguously and must not be guessed")
         }
     }
 
