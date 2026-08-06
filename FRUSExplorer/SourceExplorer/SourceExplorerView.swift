@@ -1120,9 +1120,53 @@ struct SourceExplorerView: View {
             }
         }
 
+        // #355/N-4: a hand-curated finding aid for this collection — or, where the collection
+        // is really a container, for the sub-collection this citation names. The libraries
+        // publish no NARA catalogue record for these (all 438 library clusters carry a null
+        // naId, structurally: they sit outside every record group), so a finding aid IS the
+        // resolution rather than a consolation for missing one.
+        if let curated = CuratedLibraryResolutionsStore.shared?.resolution(
+            repository: library, collection: collection,
+            subCollection: CuratedLibraryResolutions.subCollection(
+                inNote: rawSourceNote, afterCollection: collection)) {
+            curatedLibrarySection(curated)
+        }
+
         // Fallback: institution-specific finding-aid URL when API returns zero results
         let fallback = client.libraryFallbackURL(libraryName: library)
         naraResultSection(requiresKey: true, fallbackURL: fallback)
+    }
+
+    /// The curated finding aid for a library collection.
+    ///
+    /// Shows the repository's **own** title for the collection, not the FRUS shorthand, so a
+    /// researcher can confirm the destination rather than trust it — `Matlock Files` is the
+    /// citation; `Matlock, Jack F., JR.: Files, 1983-1986` is the aid. The curator's rationale
+    /// rides along for the same reason.
+    @ViewBuilder
+    private func curatedLibrarySection(_ curated: CuratedLibraryResolution) -> some View {
+        Section(String(localized: "source.explorer.curatedLibrary.header",
+                       defaultValue: "Finding Aid")) {
+            if let url = curated.findingAid {
+                Link(destination: url) {
+                    Label(curated.title, systemImage: "doc.text.magnifyingglass")
+                }
+            } else {
+                Text(curated.title)
+            }
+            if let catalog = curated.catalogURL {
+                Link(destination: catalog) {
+                    Label(String(localized: "source.explorer.curatedLibrary.catalog",
+                                 defaultValue: "NARA Catalog Record"),
+                          systemImage: "building.columns")
+                }
+            }
+            if let rationale = curated.rationale, !rationale.isEmpty {
+                Text(rationale)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     // MARK: - Foreign Archive Panel
