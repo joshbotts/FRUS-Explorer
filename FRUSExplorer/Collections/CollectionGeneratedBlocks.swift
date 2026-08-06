@@ -507,7 +507,14 @@ enum CollectionGeneratedBlocks {
             parts.append(String(localized: "collection.generated.sources.lot",
                                 defaultValue: "Lot \(lot)"))
         }
-        if let rg = record.recordGroup, !rg.isEmpty {
+        // `document_sources.record_group` stores TWO forms, and the difference is provenance,
+        // not meaning: where a citation names its record group the parser captures a bare
+        // "59"; where it names none (a decimal file number does not) the parser infers one and
+        // writes the literal "RG-59". Interpolating the latter after "RG " printed
+        // "…, RG RG-59, Department of State". Source Explorer hit this exact bug and patched it
+        // (`SourceExplorerView.swift:466`); this surface never got the fix, and 93% of the
+        // corpus's export groups carry the prefixed form.
+        if let rg = CollectionKeying.bareRG(record.recordGroup), !rg.isEmpty {
             parts.append(String(localized: "collection.generated.sources.recordGroup",
                                 defaultValue: "RG \(rg)"))
         }

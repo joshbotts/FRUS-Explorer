@@ -103,6 +103,13 @@ public enum VolumeSourcesIndexRunner {
             apiRGHits = rgMap.count
         }
 
+        let prior = (try? JSONDecoder().decode(
+            PriorIndex.self, from: Data(contentsOf: URL(fileURLWithPath: outputPath))))?.recordGroups
+        let decided = try recordGroupsToWrite(resolved: rgMap, headingCount: rgHeadings.count,
+                                              prior: prior ?? [:], outputPath: outputPath)
+        rgMap = decided.map
+        if let note = decided.note { log(note) }
+
         // MARK: Phase D — apply resolutions to the (transient) trees to fold the cross-volume
         // authority and count coverage. The resolved trees themselves are not serialized —
         // only the `recordGroups` / `lots` resolution maps and the authority ship.
@@ -248,11 +255,61 @@ public enum VolumeSourcesIndexRunner {
         FileHandle.standardError.write(Data((message + "\n").utf8))
     }
 
+    /// Just enough of the previous artifact to carry its record-group map forward.
+    struct PriorIndex: Decodable {
+        let recordGroups: [String: ResolvedNAID]
+    }
+
+    /// The record-group map to write, given what this run resolved and what the previous
+    /// artifact holds.
+    ///
+    /// ## Why this exists
+    /// `recordGroups` can **only** be built by the API pass — `resolveRecordGroup` has no
+    /// offline route, and `apiClient` is `nil` whenever `CATALOG_API_KEY` is absent. So the
+    /// keyless invocation this file's own header calls an "offline pass", and which
+    /// `CLAUDE.md` documents *first*, wrote `recordGroups: {}` over the shipped bundle and
+    /// silently deleted every record-group resolution in it. Nothing downstream would have
+    /// failed: the volume-Sources outline's header links — **6,373 front-matter nodes** —
+    /// would simply have stopped appearing, with no error anywhere.
+    ///
+    /// A "refuse to write empty" guard alone would have been wrong, because it would make the
+    /// documented offline invocation fail every time. Carrying the previous map forward is what
+    /// makes that invocation *safe* rather than merely loud — the same shape as
+    /// `ManifestGenerator`'s offline overlay mode, which preserves the fields it cannot
+    /// re-derive. The throw is kept for the one case nothing can rescue: no API pass **and** no
+    /// usable prior artifact.
+    ///
+    /// - Returns: the map to write, and a line to log when it was inherited.
+    static func recordGroupsToWrite(resolved: [String: ResolvedNAID],
+                                    headingCount: Int,
+                                    prior: [String: ResolvedNAID],
+                                    outputPath: String)
+        throws -> (map: [String: ResolvedNAID], note: String?) {
+        // A run that resolved anything, or a corpus with no record-group headers at all, is
+        // self-consistent and writes what it has.
+        guard resolved.isEmpty, headingCount > 0 else { return (resolved, nil) }
+        guard !prior.isEmpty else {
+            throw RunError.emptyRecordGroups(headings: headingCount, output: outputPath)
+        }
+        return (prior, "Preserved \(prior.count) record-group resolutions from the existing "
+                + "\(outputPath) — this run had no CATALOG_API_KEY and cannot re-derive them.")
+    }
+
     public enum RunError: Error, CustomStringConvertible {
         case noVolumes(String)
+        case emptyRecordGroups(headings: Int, output: String)
         public var description: String {
             switch self {
             case .noVolumes(let dir): return "No .xml volumes found in \(dir)"
+            case .emptyRecordGroups(let headings, let output):
+                return """
+                    Refusing to write \(output) with an EMPTY recordGroups map.
+                    The corpus names \(headings) record-group headers, but this run resolved none \
+                    and there is no usable existing artifact to carry forward.
+                    resolveRecordGroup has no offline route, so a keyless run can only preserve \
+                    the previous map — not rebuild it. Either set CATALOG_API_KEY, or restore the \
+                    committed volume-sources-index.json before re-running.
+                    """
             }
         }
     }

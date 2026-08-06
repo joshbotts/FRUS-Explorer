@@ -4290,6 +4290,54 @@ struct CollectionTests {
         #expect(block.rows[3].url == nil)
     }
 
+    /// `document_sources.record_group` stores two forms, and the fixture above uses the rarer
+    /// one. Where a citation *names* its record group the parser captures a bare `"59"`; where
+    /// it names none — a decimal file number does not — the parser **infers** one and writes
+    /// the literal `"RG-59"`. Measured on the owner's index, the prefixed form is 93% of the
+    /// corpus's export groups, so this is the shape the block almost always renders.
+    ///
+    /// Interpolating it after the label's literal `"RG "` printed **"RG RG-59"**. Source
+    /// Explorer hit the identical bug and patched it (`SourceExplorerView.swift:466`); this
+    /// surface never got the fix.
+    @Test("Archival Sources block: the parser's RG- prefix is not doubled in the row label")
+    @MainActor
+    func generatedArchivalSourcesRecordGroupPrefix() async {
+        typealias Record = CollectionGeneratedBlocks.SourceRecord
+        var fixture = FixtureBlockDataSource()
+        fixture.sources = [
+            // The inferred form, as a lot-less decimal citation stores it.
+            Record(volumeId: "v1", documentId: "d1", repository: "Department of State",
+                   recordGroup: "RG-59", lotFile: nil,
+                   seriesName: "740.00119 (Potsdam)/5-2446", rawText: "raw a"),
+            // The captured form, for the same record group — both must render identically.
+            Record(volumeId: "v1", documentId: "d2", repository: "Department of State",
+                   recordGroup: "59", lotFile: nil,
+                   seriesName: "740.00119 (Potsdam)/5-2446", rawText: "raw b"),
+            // RG-256 exercises a second group number, so the fix cannot be a "59" special case.
+            Record(volumeId: "v1", documentId: "d3", repository: nil,
+                   recordGroup: "RG-256", lotFile: nil, seriesName: "Paris Peace Conf. 180.03101",
+                   rawText: "raw c"),
+        ]
+        let documents: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v1", "d3")]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources, documents: documents, dataSource: fixture)
+
+        let labels = block.rows.filter { $0.indentLevel == 0 }.map(\.text)
+        #expect(!labels.contains { $0.contains("RG RG-") },
+                "the doubled prefix is back: \(labels)")
+        #expect(labels.contains("740.00119 (Potsdam)/5-2446, RG 59, Department of State"))
+        #expect(labels.contains("Paris Peace Conf. 180.03101, RG 256"))
+        // The two spellings of RG 59 still group separately — `groupKey` keys on the stored
+        // value, which this change deliberately does not touch — but they now READ the same.
+        #expect(labels.filter { $0.hasPrefix("740.00119") }.count == 2)
+        #expect(Set(labels.filter { $0.hasPrefix("740.00119") }).count == 1,
+                "both spellings must render to one identical label")
+        // And no row carries a record-group catalog link any more (N-5 follow-up, decision C).
+        #expect(block.rows.allSatisfy { $0.url == nil },
+                "a document citation must not link to its whole record group")
+    }
+
     @Test("Persons Index block: reuses the rollup identities, applies the >=2-of->=4 threshold (>=1 for small collections), alphabetical with document-number reference lists")
     @MainActor
     func generatedPersonsIndexThreshold() async {

@@ -995,6 +995,61 @@ is a trap for the next measurement taken on `lot_file_norm`.
 
 **PR 2 (the fold) is unchanged in scope** and still worth 2 documents on its own.
 
+---
+
+**[2026-08-05] The `RG-` question, investigated and CLOSED by owner decision.** The finding
+above sized it at 192,130 documents and called it a product call. Investigated properly, it was
+three separate things, and the headline number was the least important of them.
+
+*Root cause — not two populations, one value with two provenances.* Where a citation **names**
+its record group, `SourceNoteParser.extractRG`'s regex captures it with the `RG ` literal
+**outside** the capture group, so it structurally cannot return a prefix → bare `"59"`. Where a
+citation names **none** — a decimal file number like `740.00119 (Potsdam)/5-2446` does not — the
+parser **infers** the record group and writes a hand-authored literal `"RG-59"`. Measured: only
+**256 of 193,677** decimal rows contain "RG" anywhere in their text, yet all 193,677 store the
+prefix; **9,904 of 10,433** structured rows do contain it, and all store bare. The split is clean
+across all five `citation_era` values. Git dates the seam: `"RG-59"` entered 2026-05-15 as a
+**display label** when nothing keyed off it; `extractRG` arrived 2026-06-01 in the commit that
+added `.naraCollection`. Two weeks, never reconciled.
+
+*The larger half was a live render bug, not a missing link.*
+`CollectionGeneratedBlocks.label(for:)` builds `"RG \(rg)"`, so the prefixed form printed
+**"RG RG-59"** — on **93% of the corpus's export groups**. Source Explorer hit the identical bug
+and patched it (`SourceExplorerView.swift:466`); this surface never got the fix. The localization
+key is absent from `Localizable.strings`, so the interpolated default ships.
+
+*Owner decision (2026-08-05): drop the record-group branch for DOCUMENT citations; keep it for
+front matter.* The case for it: of the 14,230 bare lot-less rows resolving today, **11,495 (81%)
+already land on the same naId 388 "General Records of the Department of State"** — so the app was
+not resolving 14k citations and failing 192k, it was applying one generic category link to an
+arbitrary 6% of the RG-59 population, decided by whether a FRUS editor spelled out "RG 59".
+Normalizing would have extended that to 206,317 rows, 82% of them single-document groups all
+pointing at one URL. Removing it answers the question instead of scaling it.
+
+Measured effect on the Collections export block: **23,244 → 9,057** resolved document rows;
+**14,187 record-group links withdrawn, 9,057 lot links kept**. The corpus browser's Sources
+outline is **unchanged at 9,404** — `volume_sources` is 100% bare form (0 of 7,374 prefixed), so
+that surface never had the defect and keeps the branch, where a node genuinely *is* a collection.
+`ArchivalResolver` now has two entry points and `documentResolution` **has no `recordGroup`
+parameter at all**, so no call site can reintroduce the branch by passing one.
+
+*A separate latent hazard found on the way, fixed here.* `VolumeSourcesIndexRunner` populated
+`rgMap` only inside `if let apiClient`, with no guard before writing — so
+`swift run VolumeSourcesIndexGenerator` **without** `CATALOG_API_KEY`, the invocation CLAUDE.md
+documents *first* and the runner calls a benign "offline pass", wrote `recordGroups: {}` and
+silently deleted every record-group resolution in the shipped bundle. No error, no failing test;
+the outline's header links on 6,373 nodes would simply have stopped appearing. `resolveRecordGroup`
+has no offline route, so "refuse to write empty" alone would have broken the documented
+invocation — the runner now **carries the previous map forward** (the `ManifestGenerator` overlay
+pattern) and throws only when there is also nothing to inherit.
+
+**Still open, and now clearly owned:** **RG 256** (1,547 rows across 13 `frus1919*` volumes, the
+Paris Peace Conference) is absent from the 31-entry map entirely and the app has no route to it.
+The map is exactly the set of record groups some volume's front matter names — and **243 of 501
+indexed volumes have no front matter at all**, holding 66% of all rows. RG 256 belongs to **N-2**,
+which already owns #354; the `Paris Peace Conf.` decimal family parked in N-1's tail is the same
+gap seen from the parser side. Ten further groups (43 rows) are unmapped and negligible.
+
 **[2026-07-28] Anchors corrected and the reader list completed.** The app sites are
 `VolumeSourcesView.swift:291` (the plan said :282, which is a closing brace and never was
 the call site) and `CollectionContentResolver.swift:1275–1276` (correct as written). Two

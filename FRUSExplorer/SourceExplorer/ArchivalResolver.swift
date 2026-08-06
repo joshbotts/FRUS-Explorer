@@ -65,36 +65,89 @@ import Foundation
 ///   1.0 — Session 2026-08-05: #372 / N-5 PR 1 (the repoint)
 enum ArchivalResolver {
 
-    /// The resolved NARA Catalog record for an archival citation, or `nil`.
+    /// The resolution for a **volume front-matter Sources node**: its lot, else its
+    /// record-group header.
+    ///
+    /// The record-group branch belongs here and only here. A front-matter node *is* a
+    /// collection — "General Records of the Department of State" is a fair answer to a row
+    /// that names nothing more specific — and this is the surface volume-sources' 31 headers
+    /// were harvested from in the first place.
     ///
     /// - Parameters:
-    ///   - recordGroup: The citation's record group, in whatever form the row stores it.
-    ///     Consulted **only** when no lot file is present.
+    ///   - recordGroup: The node's record group. `volume_sources` stores these bare (measured:
+    ///     0 of 7,374 rows carry the parser's `"RG-"` prefix), which is the form the map is
+    ///     keyed by; `bareRG` normalizes anyway so the entry point cannot be form-sensitive.
     ///   - lotFile: The raw lot citation (`"63 D 135"`, `"Lot 61–D 146"`); normalized by the
     ///     indexes themselves.
     ///   - centralFiles: The central-files index. Injected so tests drive the real precedence.
     ///   - volumeSources: The volume-sources index, supplying both the lot fallback and the
     ///     record-group branch.
-    static func resolution(recordGroup: String?,
-                           lotFile: String?,
-                           centralFiles: CentralFilesIndex?,
-                           volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
-        let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !lot.isEmpty {
-            if let entry = centralFiles?.lotFile(forRawLot: lot) {
-                return ArchivalResolution(lotFileEntry: entry)
-            }
-            // `recordGroup: nil` on purpose — see the note on the lot-only rule above.
-            return volumeSources?.resolution(recordGroup: nil, lotFile: lot)
+    static func frontMatterResolution(recordGroup: String?,
+                                      lotFile: String?,
+                                      centralFiles: CentralFilesIndex?,
+                                      volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
+        if let lotHit = lotResolution(lotFile, centralFiles, volumeSources) { return lotHit }
+        guard (lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty else {
+            return nil   // the lot-only rule
         }
-        return volumeSources?.resolution(recordGroup: recordGroup, lotFile: nil)
+        return volumeSources?.resolution(recordGroup: CollectionKeying.bareRG(recordGroup),
+                                         lotFile: nil)
     }
 
-    /// The same resolution against the app's bundled indexes.
-    static func resolution(recordGroup: String?, lotFile: String?) -> ArchivalResolution? {
-        resolution(recordGroup: recordGroup, lotFile: lotFile,
-                   centralFiles: CentralFilesIndexStore.shared,
-                   volumeSources: VolumeSourcesIndexStore.shared)
+    /// The resolution for a **document's own source citation**: its lot, and nothing else.
+    ///
+    /// There is deliberately no `recordGroup` parameter (#372/N-5 follow-up). A document
+    /// citation names something far more specific than a record group — a decimal file number,
+    /// a lot, a named series — and answering it with "General Records of the Department of
+    /// State" is not a resolution, it is a category. The app already refuses that move for an
+    /// unresolved *lot*; it had been making it for lot-less citations only because they happen
+    /// to arrive through a different branch.
+    ///
+    /// ## Why the parameter is absent rather than ignored
+    /// `document_sources.record_group` carries two forms — a bare `"59"` where the citation
+    /// named its record group, the literal `"RG-59"` where the parser *inferred* one — and the
+    /// header map is keyed bare. So 192,130 lot-less rows missed the branch while 11,495
+    /// otherwise-identical ones hit it, purely on whether a FRUS editor spelled out "RG 59".
+    /// Normalizing the form would have made that generic link apply to all 206,317; removing
+    /// the branch makes it apply to none. Either is coherent; the arbitrary middle was the
+    /// defect. Taking the parameter away means no call site can reintroduce it by passing one.
+    ///
+    /// The record group is still *shown* — `CollectionGeneratedBlocks.label(for:)` prints
+    /// "RG 59" in the row label. It is the hyperlink that is withheld, not the fact.
+    static func documentResolution(lotFile: String?,
+                                   centralFiles: CentralFilesIndex?,
+                                   volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
+        lotResolution(lotFile, centralFiles, volumeSources)
+    }
+
+    /// Central-files first, volume-sources second — the shared lot half of both entry points.
+    private static func lotResolution(_ lotFile: String?,
+                                      _ centralFiles: CentralFilesIndex?,
+                                      _ volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
+        let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !lot.isEmpty else { return nil }
+        if let entry = centralFiles?.lotFile(forRawLot: lot) {
+            return ArchivalResolution(lotFileEntry: entry)
+        }
+        // `recordGroup: nil` on purpose — see the note on the lot-only rule above.
+        return volumeSources?.resolution(recordGroup: nil, lotFile: lot)
+    }
+
+    /// ``frontMatterResolution(recordGroup:lotFile:centralFiles:volumeSources:)`` against the
+    /// app's bundled indexes.
+    static func frontMatterResolution(recordGroup: String?,
+                                      lotFile: String?) -> ArchivalResolution? {
+        frontMatterResolution(recordGroup: recordGroup, lotFile: lotFile,
+                              centralFiles: CentralFilesIndexStore.shared,
+                              volumeSources: VolumeSourcesIndexStore.shared)
+    }
+
+    /// ``documentResolution(lotFile:centralFiles:volumeSources:)`` against the app's bundled
+    /// indexes.
+    static func documentResolution(lotFile: String?) -> ArchivalResolution? {
+        documentResolution(lotFile: lotFile,
+                           centralFiles: CentralFilesIndexStore.shared,
+                           volumeSources: VolumeSourcesIndexStore.shared)
     }
 }
 
