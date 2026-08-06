@@ -95,12 +95,39 @@ public enum CollectionKeying {
 
     // MARK: - Normal form
 
+    /// Apostrophe codepoints the corpus mixes for the same mark, all folded to ASCII `'`.
+    ///
+    /// The corpus writes `President’s Office Files` (U+2019) and `Presidentʼs Office Files`
+    /// (U+02BC, MODIFIER LETTER APOSTROPHE) for one collection. Those were two authority
+    /// records, and neither was wrong — they simply never compared equal.
+    private static let apostropheVariants: Set<Character> = [
+        "\u{2019}",   // RIGHT SINGLE QUOTATION MARK
+        "\u{02BC}",   // MODIFIER LETTER APOSTROPHE
+        "\u{2018}",   // LEFT SINGLE QUOTATION MARK
+        "\u{0060}",   // GRAVE ACCENT
+        "\u{00B4}",   // ACUTE ACCENT
+    ]
+
+    /// Quotation marks the corpus wraps a collection's own name in — `Project “Clean Up”
+    /// Records` beside `Project Clean Up Records`. Dropped rather than folded to `"`,
+    /// because the quoted and unquoted spellings are the same name.
+    private static let quoteMarks: Set<Character> = ["\u{201C}", "\u{201D}", "\u{201E}", "\""]
+
     /// Normal form for merge keys: lowercased, whitespace collapsed, Unicode dashes →
-    /// ASCII hyphen with adjacent spaces removed (`"1967- 69"` ≡ `"1967–69"`), trailing
-    /// `.`/`,`/`;`/`:` stripped. Applied to repository names and citation segments;
-    /// **merging requires equality of this form** (conservative).
+    /// ASCII hyphen with adjacent spaces removed (`"1967- 69"` ≡ `"1967–69"`), apostrophe
+    /// variants folded to `'`, quotation marks dropped, trailing `.`/`,`/`;`/`:` stripped.
+    /// Applied to repository names and citation segments; **merging requires equality of
+    /// this form** (conservative).
+    ///
+    /// The apostrophe and quote folds are purely **orthographic** — two spellings of one
+    /// character. Lexical variants (`adviser`/`advisor`, `President's`/`Presidential`) are
+    /// folded one level up, in ``segmentNorm(_:)``, because they are claims about
+    /// collection *names* and have no business normalizing a repository.
     public static func normalized(_ text: String) -> String {
-        var s = text
+        var s = String(text.map { c -> Character in
+                apostropheVariants.contains(c) ? "'" : c
+            })
+            .filter { !quoteMarks.contains($0) }
             .replacingOccurrences(of: "–", with: "-")
             .replacingOccurrences(of: "—", with: "-")
             .split(whereSeparator: \.isWhitespace)
@@ -119,7 +146,29 @@ public enum CollectionKeying {
     /// letter runs — `"aides’ files"`), and does not end in `ss` (`"Congress"`,
     /// `"Press"` keep theirs). Repository names keep the plain ``normalized(_:)`` form.
     public static func segmentNorm(_ text: String) -> String {
-        pluralFolded(normalized(text))
+        pluralFolded(lexicalFolded(normalized(text)))
+    }
+
+    /// Folds the two lexical variants the corpus writes for one collection name.
+    ///
+    /// Both are attested across the shipped authority and were splitting real collections:
+    /// - **adviser / advisor** — Ford's `National Security Adviser` is the library's own
+    ///   spelling; FRUS writes both.
+    /// - **President's / Presidential** — `President's Handwriting File` beside
+    ///   `Presidential Handwriting File`, `Vice President's Security File` beside `Vice
+    ///   Presidential Security File`.
+    ///
+    /// Runs **after** ``normalized(_:)`` so the possessive has already been folded to an
+    /// ASCII apostrophe; on its own the possessive rule matches nothing, because the corpus
+    /// writes the curly form. Deliberately narrow: this is a fixed pair of spelling
+    /// variants, not a stemmer. Name-prefix (`Matlock` ⊂ `Jack Matlock`), inversion
+    /// (`Papers of George Ball` / `Ball Papers`) and abbreviation (`Sp. Asst. for Nat.
+    /// Sec.`) are **not** folded here — those are curation judgements, and one of them
+    /// would be wrong: DDEL genuinely holds both `C. D. Jackson Papers` and
+    /// `C. D. Jackson Records`.
+    static func lexicalFolded(_ norm: String) -> String {
+        norm.replacingOccurrences(of: "adviser", with: "advisor")
+            .replacingOccurrences(of: "president's ", with: "presidential ")
     }
 
     /// Folds a trailing plural of the last word of a normal-form string — see
@@ -185,6 +234,29 @@ public enum CollectionKeying {
             for surname in presidentialSurnames
             where trimmed.range(of: surname, options: .caseInsensitive) != nil {
                 return surname == "Nixon" ? "Nixon" : "\(surname) Library"
+            }
+        }
+        // A university's library is the university. Outside `repositoryKeywords` this
+        // function falls through to the raw string, so `Yale University` and `Yale
+        // University Library` were separate buckets — while
+        // `manuscriptRepositoriesConflict` already treats that exact containment as
+        // *agreement*. The two now say the same thing. Narrow on purpose: only a trailing
+        // "Library"/"Libraries" comes off, and only when what remains still names the
+        // institution, so `Library of Congress` (a keyword, resolved above) and
+        // `Truman Library` (likewise) are untouched.
+        if let range = trimmed.range(of: #"\s+Librar(y|ies)$"#,
+                                     options: [.regularExpression, .caseInsensitive]) {
+            let institution = String(trimmed[..<range.lowerBound])
+                .trimmingCharacters(in: .whitespaces)
+            // The remainder must NAME a university, not merely be the word. Stripping
+            // "University Libraries" down to a bare "University" invented a repository
+            // called "University" and moved a real collection under it — caught by
+            // regenerating the authority and diffing, not by reading.
+            let bare = normalized(institution)
+            if institution.range(of: "Universit", options: .caseInsensitive) != nil,
+               bare != "university", bare != "universities",
+               institution.split(whereSeparator: \.isWhitespace).count > 1 {
+                return institution
             }
         }
         return trimmed

@@ -886,6 +886,41 @@ shares, authority ids) — the N-3 `missed-lots-ranked.tsv` pattern.
 itself. A further 964 documents over 427 pairs do not resolve at all (Reagan-heavy: Perina,
 Guhin, Farrar, Pipes files); that tail is separate from seeding.
 
+**[2026-08-06] N-4 curation groundwork — the normalizer folds (shipped).** The owner's curation
+pass over `library-collections-ranked.tsv` exposed that **125 of the 309 rows (14,919 documents,
+51.9%) were near-duplicates** — one collection split across several authority records because FRUS
+spelled its name two ways. Measured across all 4,431 records, the share a *normalizer* can fix is
+much smaller than that headline: **10 real merges, 4,431 → 4,423 records.** The rest
+(`Matlock` ⊂ `Jack Matlock`, `Papers of George Ball` / `Ball Papers`, `Sp. Asst. for Nat. Sec.`)
+are curation judgements, not normalization — and one of them would be *wrong*, because the
+Eisenhower Library genuinely holds both `C. D. Jackson Papers` and `C. D. Jackson Records`.
+
+What shipped, in `CollectionKeying`: apostrophe variants (U+2019/U+02BC/U+2018/grave/acute) and
+quotation marks folded in `normalized`, because they are orthography; `adviser`/`advisor` and
+`President's`/`Presidential` folded in `segmentNorm`, because they are claims about collection
+*names* and have no business normalizing a repository. Plus `canonicalRepository` now treats a
+university's library as the university — `Yale University Library` → `Yale University` — which is
+what `manuscriptRepositoriesConflict` already asserted for the conflict test while the keying
+disagreed.
+
+**The artifact and the keying ship together, and that is now a test.** Regenerating
+`collection-authority.json` is not optional here: measured, the new code against the *stale*
+artifact resolves **74,405** documents against the baseline's 74,682 — a silent loss of 290,
+because every runtime lookup computes the new key and misses records filed under the old one.
+Shipped as a pair it is **74,682 → 74,695 (+13), 0 lost, 0 NAIDs changed**;
+`CollectionAuthorityStoreTests.artifactIsKeyedWithTheCurrentNormalizer` fails if the two ever
+drift again.
+
+*A second, unlooked-for improvement.* The #351 alias bridge — Carter's "Presidential Files" note
+landing on State's `lot:66D204` — is now blocked one step **earlier** than the domain guard: the
+possessive fold makes the lot's alias share a normal form with Carter's own record, so step 4's
+uniqueness rule refuses both. The #351/#373 guards are consequently exercised against a synthetic
+index, since the shipped artifact no longer offers the bridge for them to block.
+
+*One defect caught by regenerating rather than by reading.* The first cut of the university rule
+stripped `University Libraries` down to a bare `University`, inventing a repository of that name
+and moving a real collection under it. Only the before/after artifact diff showed it.
+
 **N-5 — #372 lot-map consolidation** *(Effort M, architectural — now split into two PRs)*
 
 **[2026-08-02] Split it. The repoint is worth 728 documents, needs no harvest and no
