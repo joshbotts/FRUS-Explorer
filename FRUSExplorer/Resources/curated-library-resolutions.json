@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generated": "2026-08-06",
-  "note": "Hand-curated finding aids for archival collections that have no NARA catalog record. All 438 presidential-library clusters in collection-authority.json carry a null naId, and that is structural: the libraries sit outside every NARA record group, so the record-group-filtered catalogue harvest cannot reach them. What the repositories publish instead is a finding aid, which is what a researcher needs. Seeded (#355 / N-4) with the two rows measurement showed are containers rather than collections: Carter's National Security Affairs (3,591 documents splitting 57.5% Brzezinski Material / 40.2% Staff Material) and the Library of Congress Manuscript Division (958 documents naming 12 distinct personal-papers collections). Every URL was fetched before it was written here.",
+  "note": "Hand-curated finding aids for archival collections that have no NARA catalog record. All 438 presidential-library clusters in collection-authority.json carry a null naId, and that is structural: the libraries sit outside every NARA record group, so the record-group-filtered catalogue harvest cannot reach them. What the repositories publish instead is a finding aid, which is what a researcher needs. Seeded (#355 / N-4) with the two rows measurement showed are containers rather than collections: Carter's National Security Affairs (3,591 documents splitting 57.5% Brzezinski Material / 40.2% Staff Material) and the Library of Congress Manuscript Division (958 documents naming 12 distinct personal-papers collections). Every URL was fetched before it was written here. Extended with Reagan's Executive Secretariat NSC series (10 targets, 501 of 572 documents) and Nixon's White House Special Files (4 targets, 90 of 156). Nixon's 'Staff Member and Office Files' is deliberately absent: it is a LEVEL containing per-person aids, not a unit with an aid of its own, so no single URL is honest for it.",
   "entries": [
     {
       "repository": "Carter Library",
@@ -19,7 +19,11 @@
       "repository": "Carter Library",
       "collection": "National Security Affairs",
       "subCollection": "Brzezinski Material",
-      "subCollectionAliases": ["Brzezinski Materials", "Brzezinksi Material", "Brzezinsky Material"],
+      "subCollectionAliases": [
+        "Brzezinski Materials",
+        "Brzezinksi Material",
+        "Brzezinsky Material"
+      ],
       "resolution": {
         "title": "National Security Advisor (Brzezinski and Staff Material)",
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
@@ -31,7 +35,9 @@
       "repository": "Carter Library",
       "collection": "National Security Affairs",
       "subCollection": "Staff Material",
-      "subCollectionAliases": ["Staff Material."],
+      "subCollectionAliases": [
+        "Staff Material."
+      ],
       "resolution": {
         "title": "National Security Advisor (Brzezinski and Staff Material)",
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
@@ -75,12 +81,13 @@
         "rationale": "A DIFFERENT collection from the NSA Brzezinski Material despite the similar name: accession 92-03 under Brzezinski's own 1992 instrument of gift, against the NSA collection's accession 80-1 under Carter's 1981 gift. The NSA finding aid lists it separately as related material held in the same repository."
       }
     },
-
     {
       "repository": "Library of Congress",
       "collection": "Manuscript Division",
       "subCollection": "Kissinger Papers",
-      "subCollectionAliases": ["Henry Kissinger Papers"],
+      "subCollectionAliases": [
+        "Henry Kissinger Papers"
+      ],
       "resolution": {
         "title": "Henry A. Kissinger Papers, Part I",
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms016034",
@@ -104,7 +111,9 @@
       "repository": "Library of Congress",
       "collection": "Manuscript Division",
       "subCollection": "Haig Papers",
-      "subCollectionAliases": ["Alexander Haig Papers"],
+      "subCollectionAliases": [
+        "Alexander Haig Papers"
+      ],
       "resolution": {
         "title": "Alexander Meigs Haig Papers",
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms011082",
@@ -116,7 +125,9 @@
       "repository": "Library of Congress",
       "collection": "Manuscript Division",
       "subCollection": "Schlesinger Papers",
-      "subCollectionAliases": ["James Schlesinger Papers"],
+      "subCollectionAliases": [
+        "James Schlesinger Papers"
+      ],
       "resolution": {
         "title": "James R. Schlesinger Papers",
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms013143",
@@ -170,6 +181,217 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms008125",
         "naId": null,
         "rationale": "Sol M. Linowitz, Panama Canal treaty negotiator and Middle East envoy."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Country File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Country File: Records, 1981-1985",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-country-file-records-1981-1985",
+        "naId": null,
+        "rationale": "A subseries of the NSC Executive Secretariat's Presidential Acquisitions series, arranged in five geographical regions."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Head of State File",
+      "subCollectionAliases": [
+        "Head of State File"
+      ],
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Head of State File: Records, 1981-1989",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-head-state-file-records-1981-1989",
+        "naId": null,
+        "rationale": "Correspondence between the President and world leaders, arranged by country then chronologically."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Cable File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Cable File: Records, 1982-1985",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-cable-file-records-1982-1985",
+        "naId": null,
+        "rationale": "The aid's span (1982–1985) is narrower than the volumes' coverage; some box inventories show only a range of material."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Subject File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Subject File: Records, 1981-1985",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-subject-file-records-1981-1985",
+        "naId": null,
+        "rationale": "Three series: Memorandum File, Correspondence File, and Cabinet/Cabinet Council Meeting File."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Agency File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Agency File: Records, 1981-1985",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-agency-file-records-1981-1985",
+        "naId": null,
+        "rationale": "Records on specific Executive-branch agencies, including the Secretary of State's evening reports and the Secretary of Defense's weekly briefings."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Trip File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Trip Files: Records, 1981-1989",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-trip-files-records-1981-1989",
+        "naId": null,
+        "rationale": "Two series: Chronological Trip File and Summit File. The aid titles it plural; the citations write it singular."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC National Security Decision Directives",
+      "subCollectionAliases": [
+        "NSC National Security Decision Directives ( NSDD ) Records",
+        "NSC National Security Decision Directives ( NSDD ) Files",
+        "NSC National Security Decision Directives ( NSDD )",
+        "NSC National Security Decision Directives (NSDD) Records",
+        "NSC National Security Decision Directives (NSDD) Files",
+        "NSC NSDD Records"
+      ],
+      "resolution": {
+        "title": "Executive Secretariat, NSC: National Security Decision Directives (NSDD): Records, 1981-1987",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-decision-directives-nsdd-records",
+        "naId": null,
+        "rationale": "The Executive Secretariat's centralized NSDD material — drafts, action plans and background memoranda as well as the directives."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC Meeting Files",
+      "subCollectionAliases": [
+        "NSC NSC Meeting File Records",
+        "NSC NSC Meeting File: Records",
+        "NSC NSC Meeting File",
+        "NSC Meeting File: Records"
+      ],
+      "resolution": {
+        "title": "Executive Secretariat, NSC: NSC Meeting Files: Records, 1981-1988",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-nsc-meeting-files-records-1981-1988",
+        "naId": null,
+        "rationale": "Copies of material the NSC retained in Washington."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC National Security Planning Group (NSPG) Records",
+      "subCollectionAliases": [
+        "NSC National Security Planning Group ( NSPG ) Records",
+        "NSC National Security Planning Group ( NSPG )"
+      ],
+      "resolution": {
+        "title": "Executive Secretariat, NSC: National Security Planning Group (NSPG): Records, 1981-1987",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-planning-group-nspg-records-1981",
+        "naId": null,
+        "rationale": "Duplicates of originals that remained at the White House; the Library expects the originals in due course."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat",
+      "subCollection": "NSC NSSD File",
+      "subCollectionAliases": [
+        "NSC National Security Study Directives ( NSSD ): Records"
+      ],
+      "resolution": {
+        "title": "Executive Secretariat, NSC: National Security Study Directives (NSSD): Records, 1981-1987",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-study-directives-nssd-records",
+        "naId": null,
+        "rationale": "National Security Study Directives — the policy studies commissioned by Senior Interagency Groups, the NSC staff or the National Security Adviser."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "White House Special Files",
+      "subCollection": "President’s Office Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "President's Office Files (White House Special Files: Staff Member and Office Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/presidents-office-files-white-house-special-files-staff-member-and-office-files",
+        "naId": "876218",
+        "rationale": "NARA series 876218. Not the Returned Materials Collection, whose own 'White House Special Files' pages describe personal material returned to the Nixon estate — a different body of records from the one these citations name."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "White House Special Files",
+      "subCollection": "President’s Personal Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "President's Personal File (White House Special Files: Staff Member and Office Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/presidents-personal-file-white-house-special-files-staff-member-and-office-files",
+        "naId": "595291",
+        "rationale": "NARA series 595291, whose own title is the plural 'President's Personal Files' the citations use; the library titles the aid singular. 18 sub-series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "White House Special Files",
+      "subCollection": "Subject Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Subject Files (White House Special Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/subject-files-white-house-special-files",
+        "naId": null,
+        "rationale": "No NARA series record corresponds to this unit — searched at series level several ways — so the absence of an identifier here is a finding, not an omission."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "White House Special Files",
+      "subCollection": "Staff Secretary’s Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Staff Secretary (White House Special Files: Staff Member and Office Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/staff-secretary-white-house-special-files-staff-member-and-office-files",
+        "naId": "6004162",
+        "rationale": "NARA series 6004162, titled 'Staff Secretary's Files' as the citations write it; the library titles the aid simply 'Staff Secretary'. Its five series match the aid's."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat: National Security Planning Group (NSPG) Records",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: National Security Planning Group (NSPG): Records, 1981-1987",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-planning-group-nspg-records-1981",
+        "naId": null,
+        "rationale": "Same series as the NSPG sub-collection entry. The citation punctuates the level-1 segment differently, so it keys separately in the authority."
+      }
+    },
+    {
+      "repository": "Reagan Library",
+      "collection": "Executive Secretariat: NSC",
+      "subCollection": "Head of State File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Executive Secretariat, NSC: Head of State File: Records, 1981-1989",
+        "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-head-state-file-records-1981-1989",
+        "naId": null,
+        "rationale": "Same series as the NSC Head of State File entry, reached through a differently punctuated level-1 segment."
       }
     }
   ]

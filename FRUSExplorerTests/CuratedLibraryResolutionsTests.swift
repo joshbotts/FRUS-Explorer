@@ -121,6 +121,41 @@ struct CuratedLibraryResolutionsTests {
         }
     }
 
+    /// The Reagan citations write one series both ways — `NSC Country File` and
+    /// `NSC : Country File` — 76 documents turning on a punctuation mark. The fold is local to
+    /// this artifact so it cannot leak into the authority keying, where a colon IS meaningful.
+    @Test("A colon is a separator when matching a sub-collection")
+    func colonIsASeparator() throws {
+        let curated = try bundled()
+        let plain = curated.resolution(repository: "Reagan Library",
+                                       collection: "Executive Secretariat",
+                                       subCollection: "NSC Country File")
+        #expect(plain != nil, "the Reagan Country File must resolve")
+        for variant in ["NSC : Country File", "NSC:Country File", "NSC Country Files"] {
+            #expect(curated.resolution(repository: "Reagan Library",
+                                       collection: "Executive Secretariat",
+                                       subCollection: variant) == plain,
+                    "\(variant) must reach the same aid")
+        }
+        // …and the fold must not merge genuinely different series.
+        #expect(curated.resolution(repository: "Reagan Library",
+                                   collection: "Executive Secretariat",
+                                   subCollection: "NSC Head of State File") != plain)
+    }
+
+    /// Nixon writes the same level with `and` and with `&`.
+    @Test("Ampersand and 'and' reach the same Nixon sub-series")
+    func ampersandFolds() throws {
+        let curated = try bundled()
+        let spelled = curated.resolution(repository: "Nixon", collection: "White House Special Files",
+                                         subCollection: "Staff Member and Office Files")
+        let amp = curated.resolution(repository: "Nixon", collection: "White House Special Files",
+                                     subCollection: "Staff Member & Office Files")
+        #expect(spelled != nil || amp == nil,
+                "if the spelled form is curated the ampersand must reach it too")
+        if spelled != nil { #expect(amp == spelled) }
+    }
+
     /// The Library of Congress row has no honest whole-row answer — it is a division, not a
     /// collection — so an unrecognized sub-collection must resolve to **nothing** rather than
     /// falling back to a repository-level link. That fallback is the defect this work removes.
@@ -179,7 +214,7 @@ struct CuratedLibraryResolutionsTests {
         var seen = Set<String>()
         for entry in try bundled().entries {
             let key = CuratedLibraryResolutions.collectionKey(entry.repository, entry.collection)
-                + "|" + (entry.subCollection.map { CollectionKeying.segmentNorm($0) } ?? "")
+                + "|" + (entry.subCollection.map { CuratedLibraryResolutions.subCollectionKey($0) } ?? "")
             #expect(seen.insert(key).inserted, "duplicate curated key: \(key)")
         }
     }

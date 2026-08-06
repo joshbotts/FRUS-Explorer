@@ -118,15 +118,33 @@ struct CuratedLibraryResolutions: Codable, Sendable {
         let candidates = byCollection[Self.collectionKey(repository, collection)] ?? []
         guard !candidates.isEmpty else { return nil }
         if let sub = subCollection?.trimmingCharacters(in: .whitespacesAndNewlines), !sub.isEmpty {
-            let norm = CollectionKeying.segmentNorm(sub)
+            let norm = Self.subCollectionKey(sub)
             if let hit = candidates.first(where: { entry in
                 guard let entrySub = entry.subCollection else { return false }
-                if CollectionKeying.segmentNorm(entrySub) == norm { return true }
+                if Self.subCollectionKey(entrySub) == norm { return true }
                 return (entry.subCollectionAliases ?? [])
-                    .contains { CollectionKeying.segmentNorm($0) == norm }
+                    .contains { Self.subCollectionKey($0) == norm }
             }) { return hit.resolution }
         }
         return candidates.first { $0.subCollection == nil }?.resolution
+    }
+
+    /// The match key for a sub-collection segment: `CollectionKeying.segmentNorm` with **colons
+    /// treated as separators**.
+    ///
+    /// The Reagan citations write one series both ways — `NSC Country File` (166 documents) and
+    /// `NSC : Country File` (37) — and likewise for Head of State, Cable, Subject and Agency
+    /// files. That is 76 documents turning on a punctuation mark. The fold is deliberately
+    /// **local to this artifact's matching** rather than added to `segmentNorm`, because a colon
+    /// is meaningful in the authority keying: `President's Office Files: China` is a distinct
+    /// level-2 series there, and collapsing colons corpus-wide would merge things that are not
+    /// the same collection. Here both sides of the comparison come from this one function, so
+    /// the fold cannot leak.
+    static func subCollectionKey(_ segment: String) -> String {
+        CollectionKeying.segmentNorm(
+            segment.replacingOccurrences(of: ":", with: " ")
+                .split(whereSeparator: \.isWhitespace)
+                .joined(separator: " "))
     }
 
     /// The lookup key for a `(repository, collection)` pair, through the shared normalizers so
