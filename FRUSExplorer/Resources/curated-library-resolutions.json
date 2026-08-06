@@ -1932,6 +1932,474 @@
         "naId": "566962",
         "rationale": "The Confidential File and the Subject Files are both described here, and the library publishes the collection's NARA identifier."
       }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "EISENHOWER, DWIGHT D.: Papers as President, 1953-61 (Ann Whitman File)",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
+        "naId": null,
+        "rationale": "The collection page listing all eighteen series. The library's own name for it is \"Papers as President of the United States, 1953-61 (Ann Whitman File)\" — NOT the one-foot ANN C. WHITMAN: PAPERS, which is her personal papers and a different collection."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "NSC Records",
+      "subCollectionAliases": [
+        "NSC Series",
+        "NSC Record"
+      ],
+      "resolution": {
+        "title": "NSC Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/nsc-series.pdf",
+        "naId": null,
+        "rationale": "Confirmed from the container list, which opens \"Record of Actions by NSC 1953\" — this is the series FRUS cites as the NSC Records."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Eisenhower Diaries",
+      "subCollectionAliases": [
+        "DDE Diaries",
+        "DDE Diary Series",
+        "Eisenhower Diary Series"
+      ],
+      "resolution": {
+        "title": "DDE Diary Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/dde-diary-series.pdf",
+        "naId": null,
+        "rationale": "The library uses both names for the one series: the scope note calls it \"The Dwight D. Eisenhower Diaries series\" while the series is titled DDE Diary."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "International File",
+      "subCollectionAliases": [
+        "International Series"
+      ],
+      "resolution": {
+        "title": "International Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/international-series.pdf",
+        "naId": null,
+        "rationale": "FRUS writes \"International File\", the library \"International Series\"; the container list is arranged by country from Afghanistan, which is what the citations point into."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Dulles-Herter Series",
+      "subCollectionAliases": [
+        "Dulles – Herter Series",
+        "Dulles Herter Series"
+      ],
+      "resolution": {
+        "title": "Dulles-Herter Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/dulles-herter-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Administration Series",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Administration Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/administration-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Cabinet Series",
+      "subCollectionAliases": [
+        "Cabinet Meetings"
+      ],
+      "resolution": {
+        "title": "Cabinet Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/cabinet-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Legislative Meetings",
+      "subCollectionAliases": [
+        "Legislative Meetings Series"
+      ],
+      "resolution": {
+        "title": "Legislative Meetings Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/legislative-meetings-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Miscellaneous Series",
+      "subCollectionAliases": [
+        "Miscellaneous Material"
+      ],
+      "resolution": {
+        "title": "Miscellaneous Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/miscellaneous-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "International Meetings",
+      "subCollectionAliases": [
+        "International Meetings Series"
+      ],
+      "resolution": {
+        "title": "International Meetings Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/international-meetings-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Name Series",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Name Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/name-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Ann Whitman Diary Series",
+      "subCollectionAliases": [
+        "Ann Whitman Diary"
+      ],
+      "resolution": {
+        "title": "Ann Whitman Diary Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/ann-whitman-diary-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Press Conference Series",
+      "subCollectionAliases": [
+        "Press Conferences Series"
+      ],
+      "resolution": {
+        "title": "Press Conferences Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/press-conferences-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Whitman File",
+      "subCollection": "Speech Series",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Speech Series (Ann Whitman File) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/speech-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Eisenhower papers",
+      "subCollection": "Whitman file",
+      "subCollectionAliases": [
+        "Whitman File",
+        "Ann Whitman File"
+      ],
+      "resolution": {
+        "title": "EISENHOWER, DWIGHT D.: Papers as President, 1953-61 (Ann Whitman File)",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
+        "naId": null,
+        "rationale": "Cited through the papers rather than as the file itself. The series is a third level the citation keeps but this artifact does not, so the collection page is the answer."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "papers as President",
+      "subCollection": "Whitman file",
+      "subCollectionAliases": [
+        "Whitman File"
+      ],
+      "resolution": {
+        "title": "EISENHOWER, DWIGHT D.: Papers as President, 1953-61 (Ann Whitman File)",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
+        "naId": null,
+        "rationale": "As above."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Dulles Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "DULLES, JOHN FOSTER: Papers, 1951-59",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/dulles-john-foster",
+        "naId": null,
+        "rationale": "The collection page listing all twelve series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Dulles Papers",
+      "subCollection": "General Telephone Conversations",
+      "subCollectionAliases": [
+        "White House Telephone Conversations",
+        "Telephone Conversations",
+        "Telephone Conversations Series",
+        "Telephone Calls"
+      ],
+      "resolution": {
+        "title": "Telephone Conversations Series (John Foster Dulles Papers) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/telephone-conversations-series.pdf",
+        "naId": null,
+        "rationale": "One series of over 13,000 pages; General and White House are its subseries, and FRUS cites both by subseries name."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Dulles Papers",
+      "subCollection": "Meetings with the President",
+      "subCollectionAliases": [
+        "White House Memoranda",
+        "White House Memoranda Series",
+        "Meeting with the President"
+      ],
+      "resolution": {
+        "title": "White House Memoranda Series (John Foster Dulles Papers) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/white-house-memoranda-series.pdf",
+        "naId": null,
+        "rationale": "Confirmed from the container list, which carries \"Meetings with the President 1954\" and \"Meeting with the President 1953\" folders."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Dulles Papers",
+      "subCollection": "General Memoranda of Conversation",
+      "subCollectionAliases": [
+        "Memoranda of Conversation",
+        "General Correspondence and Memoranda Series"
+      ],
+      "resolution": {
+        "title": "General Correspondence and Memoranda Series (John Foster Dulles Papers) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/general-correspondence-series.pdf",
+        "naId": null,
+        "rationale": "The container list's MEMORANDA OF CONVERSATIONS SUBSERIES opens \"Memos of Conversation - General - A Through D\", which is the form FRUS abbreviates."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Dulles Papers",
+      "subCollection": "Subject Series",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Subject Series (John Foster Dulles Papers) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/subject-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Dulles Papers",
+      "subCollection": "JFD Chronological Series",
+      "subCollectionAliases": [
+        "JFD Chronological"
+      ],
+      "resolution": {
+        "title": "JFD Chronological Series (John Foster Dulles Papers) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/jfd-chronological-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Herter Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "HERTER, CHRISTIAN A.: Papers, 1957-61 (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/herter-christian-papers.pdf",
+        "naId": null,
+        "rationale": "The library publishes one aid for the whole collection rather than per series, so the telephone-conversation citations reach it too."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Hagerty papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "HAGERTY, JAMES C.: Papers, 1952-74 (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/hagerty-james-papers.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "CFEP Records",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "U.S. COUNCIL ON FOREIGN ECONOMIC POLICY: Records, 1955-61 (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/us-council-foreign-economic-policy.pdf",
+        "naId": null,
+        "rationale": "One aid covers the council's records; the Office Series and Policy Papers citations reach it."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "White House Central Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "EISENHOWER, DWIGHT D.: Records as President, White House Central Files, 1953-61",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-9",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Staff Secretary Records",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "WHITE HOUSE OFFICE, Office of the Staff Secretary: Records",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-staff-secretary",
+        "naId": null,
+        "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Staff Secretary Records",
+      "subCollection": "International Series",
+      "subCollectionAliases": [
+        "International File"
+      ],
+      "resolution": {
+        "title": "International Series (WHO, Office of the Staff Secretary) — container list (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/who-oss/international-series.pdf",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "White House Office Files",
+      "subCollection": "Records of the Office of the Staff Secretary",
+      "subCollectionAliases": [
+        "Staff Secretary Records",
+        "Staff Secretary’s Records",
+        "Office of the Staff Secretary",
+        "Records of the Staff Secretary"
+      ],
+      "resolution": {
+        "title": "WHITE HOUSE OFFICE, Office of the Staff Secretary: Records",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-staff-secretary",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "White House Office Files",
+      "subCollection": "Additional Records of the Office of the Special Assistant for National Security Affairs",
+      "subCollectionAliases": [
+        "Records of the Special Assistant to the President for National Security Affairs",
+        "Records of the Office of the Special Assistant for National Security Affairs",
+        "Office of the Special Assistant for National Security Affairs"
+      ],
+      "resolution": {
+        "title": "WHITE HOUSE OFFICE, Office of the Special Assistant for National Security Affairs: Records",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-special-assistant-national-security-affairs-robert",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "White House Office Files",
+      "subCollection": "Additional Records of the Special Assistant for Science and Technology",
+      "subCollectionAliases": [
+        "Records of the Special Assistant for Science and Technology",
+        "Office of the Special Assistant for Science and Technology"
+      ],
+      "resolution": {
+        "title": "WHITE HOUSE OFFICE, Office of the Special Assistant for Science and Technology: Records",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-special-assistant-science-and-technology-james-r",
+        "naId": null,
+        "rationale": "The library's own container list for this series."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "James C. Hagerty papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "HAGERTY, JAMES C.: Papers, 1952-74 (PDF)",
+        "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/hagerty-james-papers.pdf",
+        "naId": null,
+        "rationale": "The same papers cited with the full name. A collection-level spelling needs its own entry — subCollectionAliases only aliases the level below."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Eisenhower papers",
+      "subCollection": "DDE Diaries",
+      "subCollectionAliases": [
+        "Eisenhower Diaries",
+        "DDE Diary Series"
+      ],
+      "resolution": {
+        "title": "EISENHOWER, DWIGHT D.: Papers as President, 1953-61 (Ann Whitman File)",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
+        "naId": null,
+        "rationale": "The Ann Whitman File's diary series, cited through the papers."
+      }
+    },
+    {
+      "repository": "Eisenhower Library",
+      "collection": "Staff Secretary’s Records",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "WHITE HOUSE OFFICE, Office of the Staff Secretary: Records",
+        "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-staff-secretary",
+        "naId": null,
+        "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too. Cited possessively; the possessive does not fold, so it needs its own entry."
+      }
     }
   ]
 }
