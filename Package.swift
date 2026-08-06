@@ -167,6 +167,32 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Harvests the NARA Catalog's presidential-library collections and series into an
+        /// offline index (#681). Library holdings sit outside every record group, so the
+        /// record-group harvester structurally cannot reach them.
+        .target(
+            name: "PresidentialLibraryCatalogGeneratorCore",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "PresidentialLibraryCatalogGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls PresidentialLibraryCatalogRunner.run() and exits.
+        .executableTarget(
+            name: "PresidentialLibraryCatalogGenerator",
+            dependencies: [.target(name: "PresidentialLibraryCatalogGeneratorCore")],
+            path: "PresidentialLibraryCatalogGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for the projection, the query shape and the completeness check.
+        .testTarget(
+            name: "PresidentialLibraryCatalogGeneratorTests",
+            dependencies: [.target(name: "PresidentialLibraryCatalogGeneratorCore")],
+            path: "PresidentialLibraryCatalogGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Thin entry point — calls CentralFilesIndexGeneratorRunner.run() and exits.
         .executableTarget(
             name: "CentralFilesIndexGenerator",
