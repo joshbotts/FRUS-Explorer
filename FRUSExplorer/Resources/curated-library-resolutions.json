@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generated": "2026-08-06",
+  "note": "Hand-curated finding aids for archival collections that have no NARA catalog record. All 438 presidential-library clusters in collection-authority.json carry a null naId, and that is structural: the libraries sit outside every NARA record group, so the record-group-filtered catalogue harvest cannot reach them. What the repositories publish instead is a finding aid, which is what a researcher needs. Seeded (#355 / N-4) with the two rows measurement showed are containers rather than collections: Carter's National Security Affairs (3,591 documents splitting 57.5% Brzezinski Material / 40.2% Staff Material) and the Library of Congress Manuscript Division (958 documents naming 12 distinct personal-papers collections). Every URL was fetched before it was written here.",
+  "entries": [
+    {
+      "repository": "Carter Library",
+      "collection": "National Security Affairs",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Advisor (Brzezinski and Staff Material)",
+        "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
+        "naId": null,
+        "rationale": "The whole Records of the Office of the National Security Advisor, 775 linear feet — what an unqualified 'National Security Affairs' citation names. The library's own finding aid states the records 'were kept in two large sub-collections given the titles \"Brzezinski Material\" and \"Staff Material\"', which is why the two branches below share this aid."
+      }
+    },
+    {
+      "repository": "Carter Library",
+      "collection": "National Security Affairs",
+      "subCollection": "Brzezinski Material",
+      "subCollectionAliases": ["Brzezinski Materials", "Brzezinksi Material", "Brzezinsky Material"],
+      "resolution": {
+        "title": "National Security Advisor (Brzezinski and Staff Material)",
+        "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
+        "naId": null,
+        "rationale": "Series NSA 1–16 of the collection. NARA assigns identifiers to the parent collection (560131) and to each of the 32 series, but to no intermediate sub-collection, so this level carries no NAID of its own. The aliases are spellings the corpus actually prints."
+      }
+    },
+    {
+      "repository": "Carter Library",
+      "collection": "National Security Affairs",
+      "subCollection": "Staff Material",
+      "subCollectionAliases": ["Staff Material."],
+      "resolution": {
+        "title": "National Security Advisor (Brzezinski and Staff Material)",
+        "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
+        "naId": null,
+        "rationale": "Series NSA 17–32 of the same collection. The library publishes no separate Staff Material aid, so this collection-level aid — whose own title names both branches — is the most precise honest target."
+      }
+    },
+    {
+      "repository": "Carter Library",
+      "collection": "National Security Affairs",
+      "subCollection": "Brzezinski Office File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Zbigniew Brzezinski Material — Office Files (NSA 15)",
+        "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
+        "naId": "560164",
+        "rationale": "Series NSA 15, containers 1–127. Identified by its sub-series rather than by name: the scope note reads 'divided into a Country Chron File and a Subject Chron File', and the corpus cites exactly those two. NSA 17 is also titled 'Office Files' but contains neither, so the 'Brzezinski' qualifier is decisive. The linked page is the collection aid; NARA publishes the series identifier in the PDF."
+      }
+    },
+    {
+      "repository": "Carter Library",
+      "collection": "National Security Affairs",
+      "subCollection": "Staff Material North/South",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Staff Material — North/South Files (NSA 24)",
+        "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
+        "naId": "560184",
+        "rationale": "Series NSA 24, an exact match to the citation segment. The library publishes no per-series page, so the link is the collection aid."
+      }
+    },
+    {
+      "repository": "Carter Library",
+      "collection": "National Security Affairs",
+      "subCollection": "Brzezinski Donated Material",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Zbigniew Brzezinski Papers",
+        "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/brzezinski-zbigniew",
+        "naId": "1104",
+        "rationale": "A DIFFERENT collection from the NSA Brzezinski Material despite the similar name: accession 92-03 under Brzezinski's own 1992 instrument of gift, against the NSA collection's accession 80-1 under Carter's 1981 gift. The NSA finding aid lists it separately as related material held in the same repository."
+      }
+    },
+
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Kissinger Papers",
+      "subCollectionAliases": ["Henry Kissinger Papers"],
+      "resolution": {
+        "title": "Henry A. Kissinger Papers, Part I",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms016034",
+        "naId": null,
+        "rationale": "Part I covers Kissinger's service as National Security Adviser 1969–1975 and Secretary of State 1973–1977, in 26 series spanning 1957–1982 — the FRUS era. Part II is at Yale and is distinguishable by its citations; the corpus contains none. Library of Congress collections carry no NARA identifier."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Harriman Papers",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "W. Averell Harriman Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms003012",
+        "naId": null,
+        "rationale": "W. Averell Harriman (1891–1986), 346,760 items. Not Pamela Harriman (1920–1997) or Florence Jaffray Harriman (1870–1967), both of whom the Library also holds."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Haig Papers",
+      "subCollectionAliases": ["Alexander Haig Papers"],
+      "resolution": {
+        "title": "Alexander Meigs Haig Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms011082",
+        "naId": null,
+        "rationale": "Alexander Meigs Haig, Jr. (1924–2010), 161,000 items. Not the Douglas Haig, Earl (1861–1928) papers the Library also holds."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Schlesinger Papers",
+      "subCollectionAliases": ["James Schlesinger Papers"],
+      "resolution": {
+        "title": "James R. Schlesinger Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms013143",
+        "naId": null,
+        "rationale": "James R. Schlesinger, Secretary of Defense and Secretary of Energy — not Arthur M. Schlesinger, Jr., whose papers FRUS cites at the Kennedy Library under a separate row."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Weinberger Papers",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Caspar W. Weinberger Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms011107",
+        "naId": null,
+        "rationale": "Caspar W. Weinberger, Secretary of Defense 1981–1987."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Richardson Papers",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Elliot L. Richardson Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms010302",
+        "naId": null,
+        "rationale": "Elliot L. Richardson, Secretary of Defense, Attorney General and Secretary of Commerce."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Nitze Papers",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Paul H. Nitze Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms001027",
+        "naId": null,
+        "rationale": "Paul H. Nitze, Policy Planning Staff director and arms-control negotiator."
+      }
+    },
+    {
+      "repository": "Library of Congress",
+      "collection": "Manuscript Division",
+      "subCollection": "Linowitz Papers",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Sol M. Linowitz Papers",
+        "url": "https://hdl.loc.gov/loc.mss/eadmss.ms008125",
+        "naId": null,
+        "rationale": "Sol M. Linowitz, Panama Canal treaty negotiator and Middle East envoy."
+      }
+    }
+  ]
+}

@@ -440,6 +440,40 @@ struct MacSourceExplorerView: View {
                                                    defaultValue: "File Identifier"),
                                       value: fileId)
                     }
+                    // #355/N-4: the hand-curated finding aid for this collection — or, where
+                    // the collection is a container, for the sub-collection this citation
+                    // names. Mirrors the iOS `curatedLibrarySection` — keep in sync; this
+                    // codebase has shipped a Source Explorer affordance to iOS only before.
+                    if let curated = CuratedLibraryResolutionsStore.shared?.resolution(
+                        repository: library, collection: collection,
+                        subCollection: CuratedLibraryResolutions.subCollection(
+                            inNote: rawSourceNote, afterCollection: collection)) {
+                        provenanceRow(label: String(localized: "source.explorer.curatedLibrary.header",
+                                                   defaultValue: "Finding Aid"),
+                                      value: curated.title)
+                        if let url = curated.findingAid {
+                            Link(destination: url) {
+                                Label(String(localized: "source.explorer.curatedLibrary.open",
+                                             defaultValue: "Open Finding Aid"),
+                                      systemImage: "doc.text.magnifyingglass")
+                            }
+                            .font(.callout)
+                        }
+                        if let catalog = curated.catalogURL {
+                            Link(destination: catalog) {
+                                Label(String(localized: "source.explorer.curatedLibrary.catalog",
+                                             defaultValue: "NARA Catalog Record"),
+                                      systemImage: "building.columns")
+                            }
+                            .font(.callout)
+                        }
+                        if let rationale = curated.rationale, !rationale.isEmpty {
+                            Text(rationale)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
 
                 case .foreignGovernmentArchive(let desc):
                     provenanceRow(label: String(localized: "source.explorer.foreignArchive.type",
