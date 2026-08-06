@@ -434,6 +434,34 @@ public enum CollectionKeying {
         }
     }
 
+    /// The record-group pattern both parsers use: `SourceNoteParser.rgRegex` and
+    /// `FRUSDocumentParser.rgPat` are this literal string. Pinned by
+    /// `CollectionKeyingRecordGroupTests` against the corpus's real heading texts.
+    private static let namedRecordGroupRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
+
+    /// The record group a row's **own text** names (`"Record Group 59, Records of the
+    /// Department of State"` → `"59"`), or `nil` when it names none.
+    ///
+    /// The front-matter outline stores an **inherited** record group on every descendant of a
+    /// record-group heading, so `volume_sources.record_group` cannot distinguish a row that *is*
+    /// a record group from one that merely sits beneath one. This is that distinction: a row
+    /// earns a whole-record-group catalogue link only by naming the record group itself.
+    ///
+    /// Without it, `frus1961-63v25`'s "USIA Historical Collection" — nested under the heading
+    /// "Lot Files … Record Group 59" exactly as the published volume nests it — inherited RG 59
+    /// and linked to *General Records of the Department of State*. USIA's records are **RG 306**,
+    /// which the same volume names correctly a few rows further down.
+    public static func recordGroupNamedIn(_ text: String) -> String? {
+        guard let regex = namedRecordGroupRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: ns) else { return nil }
+        for group in 1...2 where match.range(at: group).location != NSNotFound {
+            if let r = Range(match.range(at: group), in: text) { return String(text[r]) }
+        }
+        return nil
+    }
+
     /// Strips the `RG-` prefix the parser writes (`"RG-59"` → `"59"`), matching the
     /// bare record-group numbers front matter stores.
     public static func bareRG(_ rg: String?) -> String? {

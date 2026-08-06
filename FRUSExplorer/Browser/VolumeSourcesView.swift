@@ -148,6 +148,11 @@ struct VolumeSourcesView: View {
     /// on each body evaluation would hand `OutlineGroup` fresh identities and collapse the
     /// user's expanded disclosure state on any re-render (e.g. opening the neighbors sheet).
     @State private var collectionTree: [SourceTreeNode] = []
+    /// Ids of the outline branches currently open. Seeded with **every** branch when the tree
+    /// is built (see `loadSources`), so the outline opens the way the published Sources page
+    /// reads rather than as a list of repository names. Keyed by `SourceTreeNode.id`, whose
+    /// lifetime is the tree's — the same guard that keeps `OutlineGroup` identities stable.
+    @State private var expandedNodes: Set<UUID> = []
 
     /// Neighbor counts for every keyed entry, resolved by ONE batched query after
     /// `loadSources` (`IndexingPipeline.archivalNeighborCounts(forKeys:)` — grouped
@@ -208,10 +213,32 @@ struct VolumeSourcesView: View {
                     // (or the enclosing Group) is applied per row inside the parent List,
                     // creating multiple presenters over one binding — the open/close loop.
                     // The sheets anchor once, on the parent's List (see the bindings above).
-                    Section(header: Text(String(localized: "browser.sources.collections.header",
-                                                defaultValue: "Archival Collections"))) {
-                        OutlineGroup(collectionTree, children: \.children) { node in
-                            sourceNodeRow(node.entry)
+                    Section {
+                        // Every branch is open on load. A bare `OutlineGroup` starts each
+                        // disclosure COLLAPSED with no way to open them all, which put the lot
+                        // files — the most actionable rows here, and what
+                        // history.state.gov/…/sources shows in full — three taps down under
+                        // "National Archives and Records Administration ▸ Record Group 59 ▸ Lot
+                        // Files". Corpus-wide only 4,268 of 34,152 outline rows were reachable
+                        // without a tap, while 17,204 sit at depth ≥ 2 where every lot lives.
+                        SourceOutline(nodes: collectionTree, expanded: $expandedNodes) { entry in
+                            sourceNodeRow(entry)
+                        }
+                    } header: {
+                        HStack {
+                            Text(String(localized: "browser.sources.collections.header",
+                                        defaultValue: "Archival Collections"))
+                            Spacer()
+                            Button(allExpanded
+                                   ? String(localized: "browser.sources.collapseAll",
+                                            defaultValue: "Collapse All")
+                                   : String(localized: "browser.sources.expandAll",
+                                            defaultValue: "Expand All")) {
+                                expandedNodes = allExpanded ? [] : Self.expandableIDs(collectionTree)
+                            }
+                            .font(.caption)
+                            .buttonStyle(.borderless)
+                            .textCase(nil)
                         }
                     }
                 }
@@ -292,7 +319,7 @@ struct VolumeSourcesView: View {
         // central-files (98 nodes here), 7 only in volume-sources, so the precedence is a
         // fallback rather than a swap. `ArchivalResolver` owns the rule for both surfaces.
         let resolution = ArchivalResolver.frontMatterResolution(
-            recordGroup: entry.recordGroup, lotFile: entry.lotFile)
+            recordGroup: entry.recordGroup, lotFile: entry.lotFile, entryText: entry.rawText)
         // Phase 4: the collection-authority record this row resolves to, via the
         // shared front-matter identity derivation (lot key, else repository-scoped
         // leading segment, else unambiguous alias).
@@ -463,6 +490,24 @@ struct VolumeSourcesView: View {
     /// Rebuilds the collection outline from the flat, pre-ordered `.item` rows using each
     /// row's `depth` (0 = a top-level collection). Parents precede their children in the
     /// input, so a single left-to-right pass with a recursive descent suffices.
+    /// Whether every expandable branch is currently open — drives the header button's label
+    /// and which way it toggles.
+    private var allExpanded: Bool {
+        let ids = Self.expandableIDs(collectionTree)
+        return !ids.isEmpty && ids.isSubset(of: expandedNodes)
+    }
+
+    /// The ids of every node that has children, at any depth.
+    static func expandableIDs(_ nodes: [SourceTreeNode]) -> Set<UUID> {
+        var ids: Set<UUID> = []
+        for node in nodes {
+            guard let children = node.children, !children.isEmpty else { continue }
+            ids.insert(node.id)
+            ids.formUnion(expandableIDs(children))
+        }
+        return ids
+    }
+
     static func buildTree(_ items: [VolumeSourceEntry]) -> [SourceTreeNode] {
         var index = 0
         return build(items, &index, depth: 0)
@@ -560,6 +605,7 @@ struct VolumeSourcesView: View {
         let entries = (try? await pipeline.volumeSources(forVolumeId: volumeId)) ?? []
         sources = entries
         collectionTree = Self.buildTree(entries.filter { $0.kind == .item })
+        expandedNodes = Self.expandableIDs(collectionTree)
         isLoading = false
         #if DEBUG
         print("[VolumeSourcesView] Loaded \(entries.count) sources for \(volumeId)")
@@ -628,6 +674,40 @@ struct SourceTreeNode: Identifiable {
     let id = UUID()
     let entry: VolumeSourceEntry
     var children: [SourceTreeNode]?
+}
+
+// MARK: - SourceOutline
+
+/// The archival-collection outline, with expansion under the caller's control.
+///
+/// SwiftUI's `OutlineGroup` starts every disclosure collapsed and offers no way to open them
+/// all, so this recurses through `DisclosureGroup` bound to a shared id set instead. The row
+/// content is injected, so the (substantial) `sourceNodeRow` stays where it is.
+private struct SourceOutline<Row: View>: View {
+    let nodes: [SourceTreeNode]
+    @Binding var expanded: Set<UUID>
+    @ViewBuilder let row: (VolumeSourceEntry) -> Row
+
+    var body: some View {
+        ForEach(nodes) { node in
+            if let children = node.children, !children.isEmpty {
+                DisclosureGroup(isExpanded: binding(for: node.id)) {
+                    SourceOutline(nodes: children, expanded: $expanded, row: row)
+                } label: {
+                    row(node.entry)
+                }
+            } else {
+                row(node.entry)
+            }
+        }
+    }
+
+    private func binding(for id: UUID) -> Binding<Bool> {
+        Binding(get: { expanded.contains(id) },
+                set: { isOpen in
+                    if isOpen { expanded.insert(id) } else { expanded.remove(id) }
+                })
+    }
 }
 
 // MARK: - CrossVolumeTarget

@@ -43,8 +43,11 @@ struct ArchivalResolverTests {
         try #require(VolumeSourcesIndexStore.shared, "volume-sources-index.json must decode")
     }
     /// The FRONT-MATTER resolution under test, against both real bundles.
-    private func resolve(rg: String? = nil, lot: String? = nil) throws -> ArchivalResolution? {
+    private func resolve(rg: String? = nil, lot: String? = nil,
+                         text: String = "Record Group 59, Records of the Department of State")
+        throws -> ArchivalResolution? {
         ArchivalResolver.frontMatterResolution(recordGroup: rg, lotFile: lot,
+                                               entryText: text,
                                                centralFiles: try central(),
                                                volumeSources: try volumes())
     }
@@ -201,6 +204,56 @@ struct ArchivalResolverTests {
                 "\(collections.filter { $0["resolved"] != nil }.count) collections still carry a resolved record")
     }
 
+    // MARK: - A row must NAME its record group, not inherit one
+
+    /// The `frus1961-63v25` canary, verbatim.
+    ///
+    /// The volume nests "USIA Historical Collection" under the heading "Lot Files … Record
+    /// Group 59" — exactly as history.state.gov does — so the indexer stores RG 59 on it and on
+    /// its descriptive child. Both linked to *General Records of the Department of State*.
+    /// USIA's records are **RG 306**, which the same volume names correctly a few rows later.
+    @Test("A row that only inherited its record group gets no catalogue link")
+    func inheritedRecordGroupEarnsNoLink() throws {
+        #expect(try volumes().recordGroups["59"] != nil, "fixture guard: RG 59 is mapped")
+        #expect(try resolve(rg: "59", text: "USIA Historical Collection") == nil)
+        #expect(try resolve(rg: "59", text: "Reference works, visual materials, transcripts of "
+                            + "oral histories, and copies of official records documenting the "
+                            + "activities and history of the USIA and its predecessor agencies") == nil)
+        // …and the same for a specific series borrowing RG 383's link.
+        #expect(try resolve(rg: "383", text: "ACDA/DD Files: FRC 77 A 17") == nil)
+    }
+
+    /// The rows that keep their link: they name the record group themselves.
+    @Test("A row that names its record group keeps its catalogue link")
+    func namedRecordGroupKeepsItsLink() throws {
+        #expect(try resolve(rg: "59", text: "Record Group 59, Records of the Department of State")?
+            .naId == "388")
+        #expect(try resolve(rg: "383", text: "Record Group 383, Records of the Arms Control and "
+                            + "Disarmament Agency")?.naId == "685")
+        // The pointer row names RG 59 mid-sentence and legitimately links to it.
+        #expect(try resolve(rg: "59", text: "Lot Files. These files may be transferred to the "
+                            + "National Archives and Records Administration at College Park, "
+                            + "Maryland, Record Group 59.")?.naId == "388")
+    }
+
+    /// A row naming a *different* record group from the one it inherited must not resolve to
+    /// either — the stored value is the lookup key, and disagreement means the row is not the
+    /// header for what it sits under.
+    @Test("A row naming a different record group than it inherited resolves to nothing")
+    func mismatchedRecordGroupResolvesToNothing() throws {
+        #expect(try volumes().recordGroups["306"] != nil, "fixture guard: RG 306 is mapped")
+        #expect(try resolve(rg: "59", text: "Record Group 306, Records of the U.S. Information "
+                            + "Agency") == nil)
+    }
+
+    /// A lot row is unaffected: it resolves through its lot and never consults the text.
+    @Test("A lot row still resolves regardless of its text")
+    func lotRowsIgnoreTheRecordGroupRule() throws {
+        #expect(try resolve(rg: "306", lot: "64 D 171", text: "USIA Files: Lot 64 D 171")?
+            .naId == "40967113")
+        #expect(try resolve(rg: "59", lot: "60–D 224", text: "anything at all")?.naId == "592873")
+    }
+
     // MARK: - Document citations get no record-group link
 
     /// The N-5 follow-up decision. A document citation names something far more specific than
@@ -282,8 +335,10 @@ struct ArchivalResolverTests {
         #expect(hit.naId == "388")
         #expect(hit.title == "General Records of the Department of State")
         // …and the same for a non-State group, so the branch is not special-cased to 59.
-        #expect(try resolve(rg: "306") != nil)
-        #expect(try resolve(rg: "84") != nil)
+        // Each row must name its OWN record group — see `namedRecordGroupKeepsItsLink`.
+        #expect(try resolve(rg: "306",
+                            text: "Record Group 306, Records of the U.S. Information Agency") != nil)
+        #expect(try resolve(rg: "84", text: "Record Group 84, Foreign Service Posts") != nil)
     }
 
     /// The front-matter branch normalizes the record group before the lookup, so it cannot
@@ -323,6 +378,7 @@ struct ArchivalResolverTests {
             #expect(index.lotFile(forRawLot: "11 D 11") == nil,
                     "guard precondition failed for \(json)")
             #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: "11 D 11",
+                                                           entryText: "Record Group 59",
                                                            centralFiles: index,
                                                            volumeSources: try volumes()) == nil,
                     "a refused entry must resolve to nothing — not to the record group, not by reading past the guard")
@@ -348,10 +404,11 @@ struct ArchivalResolverTests {
     @Test("The bundled-store overload agrees with the injected one")
     func conveniencOverloadUsesBothBundles() throws {
         for lot in ["60–D 224", "64 D 171", "53 D 413"] {
-            #expect(ArchivalResolver.frontMatterResolution(recordGroup: nil, lotFile: lot)?.naId
+            #expect(ArchivalResolver.frontMatterResolution(recordGroup: nil, lotFile: lot, entryText: "x")?.naId
                     == (try resolve(lot: lot))?.naId, "convenience overload diverged on \(lot)")
         }
-        #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: nil)?.naId == "388")
+        #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: nil,
+                                                      entryText: "Record Group 59, Records of the Department of State")?.naId == "388")
     }
 
     /// Both render surfaces must go through the resolver. A call site left on
