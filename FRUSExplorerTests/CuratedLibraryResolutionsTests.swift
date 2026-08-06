@@ -41,6 +41,8 @@ import Foundation
 ///         identifier, plus two generic integrity guards (own-domain, well-formed naId)
 ///   1.4 — Session 2026-08-06: #355 / N-4, Eisenhower — the Ann Whitman File name trap, and a
 ///         third generic guard against aliases that can never match
+///   1.5 — Session 2026-08-06: #355 / N-4, Kennedy — one aid per collection, the Herter Papers
+///         held at two libraries at once, and why the series anchors are not linked
 @Suite("Curated library resolutions")
 struct CuratedLibraryResolutionsTests {
 
@@ -649,6 +651,98 @@ struct CuratedLibraryResolutionsTests {
                                    subCollection: "Records of the Office of the Staff Secretary") != nil)
     }
 
+    // MARK: - Kennedy
+
+    /// The JFK Library publishes **one** finding aid per subcollection — overview, series list
+    /// and container list on a single page — so a series citation has no more specific
+    /// published destination and the collection entry is the honest answer for all of them.
+    ///
+    /// It is deliberately not an anchor link. The aid's series anchors (`#id1`…) are injected
+    /// client-side, so measured on the live page the fragment resolves before the target exists
+    /// and the browser stays at scroll position 0; and the ids are per-page sequential — `#id5`
+    /// is Subjects in the National Security Files but Press Conferences in the President's
+    /// Office Files — so they would drift silently if a series were ever inserted.
+    @Test("A Kennedy series citation reaches its subcollection's finding aid")
+    func kennedySeriesReachTheCollectionAid() throws {
+        let curated = try bundled()
+        let nsf = try #require(curated.resolution(repository: "Kennedy Library",
+                                                  collection: "National Security Files",
+                                                  subCollection: nil))
+        #expect(nsf.title.contains("National Security Files"))
+        // Every series citation lands on the same aid — 2,108 documents, measured.
+        for series in ["Countries Series", "Meetings and Memoranda Series", "Subjects Series",
+                       "Vietnam Country Series", "Kaysen Series", "Germany"] {
+            #expect(curated.resolution(repository: "Kennedy Library",
+                                       collection: "National Security Files",
+                                       subCollection: series) == nsf,
+                    Comment(rawValue: "\(series) must reach the National Security Files aid"))
+        }
+        #expect(curated.resolution(repository: "Kennedy Library", collection: "NSF",
+                                   subCollection: nil)?.url == nsf.url)
+        // The President's Office Files are a different subcollection, in both spellings.
+        let pof = curated.resolution(repository: "Kennedy Library",
+                                     collection: "Presidential Office Files", subCollection: nil)
+        #expect(pof != nil)
+        #expect(pof?.url != nsf.url)
+        #expect(curated.resolution(repository: "Kennedy Library",
+                                   collection: "President\u{2019}s Office Files",
+                                   subCollection: nil)?.url == pof?.url,
+                Comment(rawValue: "the library's possessive spelling reaches the same entry "
+                        + "through the President's/Presidential fold added in #696, so it "
+                        + "needs no entry of its own"))
+    }
+
+    /// A personal-papers entry must name the **person the collection is named after**.
+    ///
+    /// The Kennedy entries were found by trying slugs and reading the page title back, and that
+    /// is a method with a specific failure: `gwbpp` looks like George W. Ball and is **Gerald W.
+    /// Bush**; `chpp` looks like Christian Herter and is **Chet Huntley**. Both were caught only
+    /// by the title. The own-domain guard cannot see either one — same library, same host — so
+    /// the surname is the only thing that distinguishes a right link from a plausible wrong one.
+    ///
+    /// Mutation-tested: pointing the Ball entry at `gwbpp` passes every other test in this suite.
+    @Test("A personal-papers entry names the right person")
+    func personalPapersNameTheRightPerson() throws {
+        let curated = try bundled()
+        // (repository, collection, surname that must appear in the finding aid's own title)
+        let people: [(String, String, String)] = [
+            ("Kennedy Library", "Ball Papers", "Ball"),
+            ("Kennedy Library", "Papers of George W. Ball", "Ball"),
+            ("Kennedy Library", "Hilsman Papers", "Hilsman"),
+            ("Kennedy Library", "Sorensen Papers", "Sorensen"),
+            ("Kennedy Library", "Papers of Arthur M. Schlesinger", "Schlesinger"),
+            ("Kennedy Library", "Dillon Papers", "Dillon"),
+            ("Kennedy Library", "Cleveland Papers", "Cleveland"),
+            ("Eisenhower Library", "Herter Papers", "HERTER"),
+            ("Eisenhower Library", "Hagerty papers", "HAGERTY"),
+            ("Ford Library", "National Security Adviser", "National Security Adviser"),
+        ]
+        for (repository, collection, surname) in people {
+            let hit = try #require(curated.resolution(repository: repository,
+                                                      collection: collection, subCollection: nil),
+                                   Comment(rawValue: "\(repository)/\(collection) is not curated"))
+            #expect(hit.title.localizedCaseInsensitiveContains(surname),
+                    Comment(rawValue: "\(collection) resolves to \"\(hit.title)\", which does not "
+                            + "name \(surname) — a slug that lands on a different person's papers "
+                            + "looks entirely plausible and is on the same domain"))
+        }
+    }
+
+    /// Christian Herter's papers are held at **two** libraries, and the corpus cites both.
+    /// Eisenhower's are curated; Kennedy's are not, and must stay unresolved rather than
+    /// borrowing Eisenhower's aid — which is exactly what an unscoped name match would do.
+    @Test("Herter Papers at two libraries do not borrow each other's aid")
+    func herterPapersDoNotCrossLibraries() throws {
+        let curated = try bundled()
+        let ike = curated.resolution(repository: "Eisenhower Library", collection: "Herter Papers",
+                                     subCollection: nil)
+        #expect(ike?.url.contains("eisenhowerlibrary.gov") == true)
+        #expect(curated.resolution(repository: "Kennedy Library", collection: "Herter Papers",
+                                   subCollection: nil) == nil,
+                Comment(rawValue: "the Kennedy Library's Herter papers have no curated aid yet "
+                        + "— they must not resolve to the Eisenhower Library's"))
+    }
+
     // MARK: - Artifact integrity
 
     /// `subCollectionAliases` alias the **sub-collection**, so on an entry with no
@@ -682,6 +776,7 @@ struct CuratedLibraryResolutionsTests {
                         "Ford Library": "fordlibrarymuseum.gov",
                         "Eisenhower Library": "eisenhowerlibrary.gov",
                         "Johnson Library": "discoverlbj.org",
+                        "Kennedy Library": "jfklibrary.org",
                         "Library of Congress": "loc.gov",
                         "Nixon": "nixonlibrary.gov",
                         "Reagan Library": "reaganlibrary.gov"]
