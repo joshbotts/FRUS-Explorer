@@ -37,7 +37,7 @@ struct PresidentialLibraryCatalogTests {
     }
 
     @Test("Series are grouped under their collection and sorted")
-    func projectionGroupsAndSorts() {
+    func projectionGroupsAndSorts() throws {
         let collections: [[String: Any]] = [
             ["collectionIdentifier": "LBJ-NSF", "naId": 567979,
              "title": "National Security Files", "seriesCount": 2],
@@ -51,26 +51,57 @@ struct PresidentialLibraryCatalogTests {
         let library = PresidentialLibraryCatalogRunner.project(
             prefix: "LBJ", citedAs: "Johnson Library", collections: collections, series: series)
         #expect(library.collections.map(\.identifier) == ["LBJ-NSF", "LBJ-WHCF"])
-        #expect(library.collections[0].series.map(\.naId) == [100, 900], "sorted by NAID")
-        #expect(library.collections[0].isComplete == true, "2 harvested, 2 stated")
-        #expect(library.collections[1].series.isEmpty)
+        let nsf = try #require(library.collections.first)
+        #expect(nsf.series.map(\.naId) == [100, 900], "sorted by NAID")
+        #expect(nsf.isComplete == true, "2 harvested, 2 stated")
+        #expect(library.collections.last?.series.isEmpty == true)
     }
 
-    /// NARA states each collection's `seriesCount`, which is what makes a short harvest
-    /// self-detecting rather than silently plausible.
+    /// A per-collection shortfall is **reported, never thrown** — because it is not necessarily
+    /// ours. Measured in the first keyed run: `RR-0121` (Records of the Crisis Management Center)
+    /// states `seriesCount: 1` while the catalogue holds no record carrying `RR-0121` at any
+    /// level but the collection itself. NARA describes the collection; its contents are not
+    /// catalogued. Throwing would make the harvest unrunnable for a reason nobody can fix.
+    ///
+    /// The check that *can* only fail because of our own paging is the level-total one in
+    /// `CatalogSearchClient.streamRecords`, and that one throws.
     @Test("A collection short of NARA's stated count reports incomplete")
-    func shortHarvestIsDetected() {
+    func shortHarvestIsDetected() throws {
         let library = PresidentialLibraryCatalogRunner.project(
             prefix: "RR", citedAs: "Reagan Library",
             collections: [["collectionIdentifier": "RR-EXSEC", "naId": 1,
                            "title": "Executive Secretariat, NSC", "seriesCount": 21]],
             series: [["naId": 5, "title": "One", "ancestors": [["collectionIdentifier": "RR-EXSEC"]]]])
-        #expect(library.collections[0].isComplete == false, "1 harvested against 21 stated")
+        let short = try #require(library.collections.first, "the collection must survive at all")
+        #expect(short.isComplete == false, "1 harvested against 21 stated")
         // A collection NARA states no count for cannot be judged, and must not claim to be.
         let unstated = PresidentialLibraryCatalogRunner.project(
             prefix: "RR", citedAs: "Reagan Library",
             collections: [["collectionIdentifier": "RR-X", "naId": 2, "title": "X"]], series: [])
-        #expect(unstated.collections[0].isComplete == nil)
+        let noCount = try #require(unstated.collections.first,
+                                   "a collection with no series must still be kept")
+        #expect(noCount.isComplete == nil)
+    }
+
+    /// The real `RR-0121` shape, pinned: a collection NARA states a series for, with no series
+    /// in the catalogue carrying its identifier. The projection must still produce the
+    /// collection — dropping it, or refusing the whole harvest, would lose a real holding over
+    /// a gap in somebody else's cataloguing.
+    @Test("A collection NARA has described but not catalogued still lands")
+    func describedButUncataloguedCollectionSurvives() throws {
+        let library = PresidentialLibraryCatalogRunner.project(
+            prefix: "RR", citedAs: "Reagan Library",
+            collections: [["collectionIdentifier": "RR-0121", "naId": 364672879,
+                           "title": "Records of the Crisis Management Center (CMC), NSC",
+                           "seriesCount": 1]],
+            series: [])
+        let collection = try #require(library.collections.first,
+                                      "the collection is kept, not dropped")
+        #expect(collection.identifier == "RR-0121")
+        #expect(collection.naId == 364672879)
+        #expect(collection.series.isEmpty)
+        #expect(collection.isComplete == false, "reported as short…")
+        #expect(library.collections.count == 1, "…and the harvest still yields it")
     }
 
     /// Both routes must build the same query — the only permitted difference is the host.

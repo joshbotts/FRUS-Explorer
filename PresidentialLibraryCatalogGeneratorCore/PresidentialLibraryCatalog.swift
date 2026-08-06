@@ -88,10 +88,7 @@ public struct PresidentialLibraryCatalog: Codable, Sendable, Equatable {
         public let naId: Int
         /// The collection record's own `seriesCount`, when NARA states one.
         ///
-        /// This is the completeness check, and it is NARA's number rather than ours: a harvest
-        /// that paged short is self-detecting because `series.count` will not match it. The
-        /// record-group harvester uses the same trick and it is the reason a truncated run there
-        /// cannot report success.
+        /// NARA's number rather than ours, which is what makes it worth checking against.
         public let statedSeriesCount: Int?
         /// Series beneath this collection, sorted by NAID.
         public let series: [Series]
@@ -103,6 +100,22 @@ public struct PresidentialLibraryCatalog: Codable, Sendable, Equatable {
         }
 
         /// Whether the harvested series match the count NARA states. `nil` when NARA states none.
+        ///
+        /// ## A `false` here has two causes, and only one of them is ours
+        /// 1. **Our harvest paged short.** That is a defect, and it is caught earlier and harder
+        ///    — see `CatalogSearchClient.streamRecords`, which throws when a level's record count
+        ///    disagrees with the total the endpoint states for that level.
+        /// 2. **NARA's own description is ahead of its catalogue.** A collection can state a
+        ///    `seriesCount` for series that are not described in the catalogue yet.
+        ///
+        /// Cause 2 is real and measured. In the first keyed run, `RR-0121` (*Records of the
+        /// Crisis Management Center (CMC), National Security Council*) states `seriesCount: 1`
+        /// and the catalogue contains **no** record carrying `RR-0121` at any level except the
+        /// collection itself — one of 103 Reagan collections. The collection is described; its
+        /// contents are not catalogued.
+        ///
+        /// So this is **reported, never thrown**. Throwing would make the harvest unrunnable for
+        /// a reason nobody in this repository can fix.
         public var isComplete: Bool? {
             statedSeriesCount.map { $0 == series.count }
         }
