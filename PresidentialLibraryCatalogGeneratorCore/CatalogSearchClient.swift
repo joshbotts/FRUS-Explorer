@@ -148,8 +148,12 @@ public struct CatalogSearchClient: Sendable {
                 try await Task.sleep(nanoseconds: UInt64(politenessDelay * 1_000_000_000))
             }
         }
-        // NARA states its own total. Either direction is a failure: short means paging stopped
-        // early, over means it double-counted.
+        // The endpoint states how many records match this query, so a disagreement here is
+        // arithmetic about OUR paging and nothing else — short means it stopped early, over means
+        // it double-counted. That is why this throws while a per-collection shortfall only
+        // reports: this check can only fail because of a bug in this file, and it is what caught
+        // the offset-paging bug ("harvested 2000 of 1281"). See
+        // `PresidentialLibraryCatalog.Collection.isComplete` for the check that cannot.
         if let stated, count != stated {
             throw HarvestError(
                 "\(collectionIdentifier)/\(level): harvested \(count) against a stated "
