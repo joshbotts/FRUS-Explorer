@@ -84,14 +84,22 @@ enum ArchivalResolver {
     ///     record-group branch.
     static func frontMatterResolution(recordGroup: String?,
                                       lotFile: String?,
+                                      entryText: String,
                                       centralFiles: CentralFilesIndex?,
                                       volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
         if let lotHit = lotResolution(lotFile, centralFiles, volumeSources) { return lotHit }
         guard (lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty else {
             return nil   // the lot-only rule
         }
-        return volumeSources?.resolution(recordGroup: CollectionKeying.bareRG(recordGroup),
-                                         lotFile: nil)
+        // The row must NAME the record group, not merely sit under one. `volume_sources`
+        // stores the inherited value on every descendant, so without this a descriptive line
+        // like "Reference works, visual materials, transcripts of oral histories…" borrows its
+        // ancestor's link — and where the ancestor is the wrong record group, so is the link.
+        guard let named = CollectionKeying.recordGroupNamedIn(entryText),
+              let stored = CollectionKeying.bareRG(recordGroup),
+              CollectionKeying.bareRG(named) == stored
+        else { return nil }
+        return volumeSources?.resolution(recordGroup: stored, lotFile: nil)
     }
 
     /// The resolution for a **document's own source citation**: its lot, and nothing else.
@@ -135,9 +143,9 @@ enum ArchivalResolver {
 
     /// ``frontMatterResolution(recordGroup:lotFile:centralFiles:volumeSources:)`` against the
     /// app's bundled indexes.
-    static func frontMatterResolution(recordGroup: String?,
-                                      lotFile: String?) -> ArchivalResolution? {
-        frontMatterResolution(recordGroup: recordGroup, lotFile: lotFile,
+    static func frontMatterResolution(recordGroup: String?, lotFile: String?,
+                                      entryText: String) -> ArchivalResolution? {
+        frontMatterResolution(recordGroup: recordGroup, lotFile: lotFile, entryText: entryText,
                               centralFiles: CentralFilesIndexStore.shared,
                               volumeSources: VolumeSourcesIndexStore.shared)
     }
