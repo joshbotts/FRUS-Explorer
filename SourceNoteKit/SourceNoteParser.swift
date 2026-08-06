@@ -722,8 +722,37 @@ public struct SourceNoteParser {
     /// citation sentence on `", "` (the frus-sources `merge.xq` segment model), so its
     /// leading-segment keys are bounded to the citation exactly as the class scan is.
     public static func citationSentence(of text: String) -> String {
-        guard let boundary = sentenceBoundaryRegex, let anchor = centralFilesAnchorRegex
-        else { return text }
+        guard let anchor = centralFilesAnchorRegex else { return text }
+        let sentences = self.sentences(of: text)
+        guard sentences.count > 1 else { return text }
+        for sentence in sentences {
+            let range = NSRange(sentence.startIndex..., in: sentence)
+            if anchor.firstMatch(in: sentence, range: range) != nil { return sentence }
+        }
+        return sentences[0]
+    }
+
+    /// Sentence 1 of a source note — the archival citation, per the frus-sources sentence model
+    /// (citation, then classification markings, then remarks).
+    ///
+    /// Distinct from `citationSentence(of:)`, which returns the first sentence **naming the
+    /// central files** and only falls back to sentence 1. That anchoring is right for the class
+    /// scan and for the collection-authority keying, and wrong for anything reading a
+    /// presidential-library citation: a note whose remarks cross-reference the White House
+    /// Central Files — very common in the Nixon volumes — makes the anchor match the *remarks*,
+    /// so the citation itself is never examined. Measured, that is 4,672 Nixon documents whose
+    /// sub-collection was being read out of an editor's commentary instead of the citation.
+    ///
+    /// The two must stay separate rather than one being "fixed" into the other:
+    /// `citationSentence` is what keys `collection-authority.json`, so changing it would
+    /// invalidate every stored key in a shipped artifact.
+    public static func firstSentence(of text: String) -> String {
+        sentences(of: text).first ?? text
+    }
+
+    /// Splits a source note on sentence boundaries, keeping each terminator with its sentence.
+    private static func sentences(of text: String) -> [String] {
+        guard let boundary = sentenceBoundaryRegex else { return [text] }
         let ns = text as NSString
         var sentences: [String] = []
         var start = 0
@@ -733,12 +762,7 @@ public struct SourceNoteParser {
             start = end
         }
         if start < ns.length { sentences.append(ns.substring(from: start)) }
-        guard sentences.count > 1 else { return text }
-        for sentence in sentences {
-            let range = NSRange(sentence.startIndex..., in: sentence)
-            if anchor.firstMatch(in: sentence, range: range) != nil { return sentence }
-        }
-        return sentences[0]
+        return sentences.isEmpty ? [text] : sentences
     }
 
     // MARK: - Classification markings (frus-sources sentence model)

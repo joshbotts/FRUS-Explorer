@@ -197,11 +197,15 @@ extension CuratedLibraryResolutions {
     /// `children` are volume-grain vocabulary with no document linkage, so neither can answer
     /// "which sub-collection is *this* citation in". It has to come back out of the note.
     ///
+    /// Read from **sentence 1** — the archival citation — rather than from
+    /// `SourceNoteParser.citationSentence(of:)`, whose central-files anchoring lands on the
+    /// editor's remarks whenever those cross-reference a central file.
+    ///
     /// Box and folder locators are refused: `Carter Library, Plains File, Box 17` names no
     /// sub-collection, and treating `Box 17` as one would key every document separately.
     ///
     /// ## The middle-initial truncation
-    /// `citationSentence` treats a middle initial as the end of a sentence, so a series named
+    /// The sentence split treats a middle initial as the end of a sentence, so a series named
     /// after a person arrives cut off at the initial — the Ford citations for
     /// `Robert C. McFarlane Files` and `Staff Assistants: Peter W. Rodman Files` reach the
     /// matcher as `Robert C.` and `Staff Assistants: Peter W.`. Curating the stump would key
@@ -212,7 +216,7 @@ extension CuratedLibraryResolutions {
     /// truncated one, so anything else degrades to the value it produced before.
     static func subCollection(inNote note: String, afterCollection collection: String) -> String? {
         guard let candidate = segment(after: collection,
-                                      in: SourceNoteParser.citationSentence(of: note))
+                                      in: SourceNoteParser.firstSentence(of: note))
         else { return nil }
         guard candidate.range(of: #"(^|\s)\p{Lu}\.$"#, options: .regularExpression) != nil,
               let full = segment(after: collection, in: note),
@@ -221,19 +225,43 @@ extension CuratedLibraryResolutions {
         return full
     }
 
-    /// The segment following `collection` in `text`, or `nil` when there is none or it is a
-    /// locator rather than a name.
+    /// The series segment following `collection` in `text`, looking past **one** box or folder
+    /// locator, or `nil` when there is none.
+    ///
+    /// FRUS puts the locator on either side of the series, and which side is a house style of
+    /// the citing volume rather than of the repository. Both of these are the Nixon NSC Files:
+    ///
+    /// ```
+    /// NSC Files, Kissinger Office Files, Box 1, HAK Administrative and Staff Files
+    /// NSC Files, Box 849, Country Files, Latin America
+    /// ```
+    ///
+    /// Stopping at the locator reads the second form as having no series at all — measured,
+    /// 4,605 Nixon documents, including the 1,817 that say `Box N, Country Files`.
+    ///
+    /// The cost of looking past it is that when a citation really does stop at the box, the
+    /// segment picked up is a folder title or a classification marking rather than a series.
+    /// That is acceptable *here* because the value is only ever used as a lookup key against
+    /// hand-written series names: a folder title matches nothing and resolves to nothing, which
+    /// is the same answer as before. What must never happen is returning the locator itself as
+    /// a sub-collection, which would key every box separately; that is still refused, on both
+    /// positions.
     private static func segment(after collection: String, in text: String) -> String? {
         let segments = text.components(separatedBy: ", ")
             .map { $0.trimmingCharacters(in: .whitespaces) }
         let target = CollectionKeying.segmentNorm(collection)
         guard let index = segments.firstIndex(where: {
             CollectionKeying.segmentNorm($0) == target
-        }), index + 1 < segments.count else { return nil }
-        let candidate = segments[index + 1]
-        guard candidate.range(of: #"^(Box|Boxes|Folder|Reel|Container|Lot)\b"#,
-                              options: [.regularExpression, .caseInsensitive]) == nil,
-              !candidate.isEmpty else { return nil }
-        return candidate
+        }) else { return nil }
+        for candidate in segments.dropFirst(index + 1).prefix(2) where !candidate.isEmpty {
+            guard isLocator(candidate) else { return candidate }
+        }
+        return nil
+    }
+
+    /// Whether a citation segment is a box/folder locator rather than the name of anything.
+    private static func isLocator(_ segment: String) -> Bool {
+        segment.range(of: #"^(Box|Boxes|Folder|Folders|Reel|Reels|Container|Lot)\b"#,
+                      options: [.regularExpression, .caseInsensitive]) != nil
     }
 }

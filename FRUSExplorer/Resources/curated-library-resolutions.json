@@ -976,6 +976,459 @@
         "naId": null,
         "rationale": "The collection-level answer for a citation that names no series, and the fallback for the few series the library has not published an aid for (notably the Scowcroft Daily Work Files). It is the library's own account of how these records were assembled — \"Numerous subcollections comprise what Ford Library archivists have chosen to call collectively the 'National Security Adviser Files'\" — so it is an overview rather than a box list. Ford publishes one; Nixon does not for the White House Special Files, which is why that row has no collection-wide entry."
       }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Council Files",
+        "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-files",
+        "naId": null,
+        "rationale": "The collection-level list of all 28 series with their box ranges — the answer for a citation naming a series the library has not published a separate list for. That is not a small residue: `Country Files` (1,697 documents) is split by region in the archive but cited without one, so the box range on this page is what identifies which regional list to open; `Agency Files` (506, boxes 193–306) and the Backchannel files (130) have no list of their own."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "NSC Institutional Files (H-Files)",
+      "subCollectionAliases": [
+        "NSC Institutional Files ( H -Files)",
+        "NSC Institutional Files (H–Files)",
+        "NSC Institutional Files ( H –Files)",
+        "NSC Institutional Files",
+        "H-Files"
+      ],
+      "resolution": {
+        "title": "National Security Council Institutional Files (H-Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-institutional-files-h-files",
+        "naId": null,
+        "rationale": "The H-Files — 105 feet, boxes H-1 to H-315. Nixon's are a different series from the Ford and Carter institutional files of the same name; this entry is reachable only from a Nixon citation."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Kissinger Office Files",
+      "subCollectionAliases": [
+        "Henry A. Kissinger Office Files",
+        "HAK Office Files",
+        "Kissinger Office File"
+      ],
+      "resolution": {
+        "title": "Henry A. Kissinger (HAK) Office Files",
+        "url": "https://www.nixonlibrary.gov/finding-aids/henry-kissinger-hak-office-files",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Subject Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Subject Files (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/subject_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "President’s Trip Files",
+      "subCollectionAliases": [
+        "President's Trip Files",
+        "Presidential Trip Files"
+      ],
+      "resolution": {
+        "title": "President's Trip Files (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidents_trip_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Country Files—Europe",
+      "subCollectionAliases": [
+        "Country Files-Europe",
+        "Country Files - Europe"
+      ],
+      "resolution": {
+        "title": "Country Files – Europe (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_europe.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Country Files—Middle East",
+      "subCollectionAliases": [
+        "Country Files-Middle East"
+      ],
+      "resolution": {
+        "title": "Country Files – Middle East (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_middle_east.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Country Files—Africa",
+      "subCollectionAliases": [
+        "Country Files-Africa"
+      ],
+      "resolution": {
+        "title": "Country Files – Africa (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_africa.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Country Files—Far East",
+      "subCollectionAliases": [
+        "Country Files-Far East"
+      ],
+      "resolution": {
+        "title": "Country Files – Far East (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_far_east.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "For the President’s Files ( Winston Lord )—China Trip/Vietnam",
+      "subCollectionAliases": [
+        "For the President’s Files ( Winston Lord )—China Trip/Vietnam Negotiations",
+        "For the President’s Files (Winston Lord)—China Trip/Vietnam",
+        "For the President’s Files— Lord",
+        "For the President’s Files—Lord"
+      ],
+      "resolution": {
+        "title": "For the President's Files (Winston Lord) – China Trip/Vietnam (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidents_files_winston_lord_china_trip_vietnam.pdf",
+        "naId": null,
+        "rationale": "Boxes 846–872. Distinct from `For the President's Files – China/Vietnam Negotiations` (1031–1041), which has its own list."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "For the President’s File—Vietnam Negotiations",
+      "subCollectionAliases": [
+        "For the President’s Files—China/Vietnam Negotiations"
+      ],
+      "resolution": {
+        "title": "For the President's Files – China/Vietnam Negotiations (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidents_files_china_vietnam_negotiations.pdf",
+        "naId": null,
+        "rationale": "Boxes 1031–1041."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Saunders Files",
+      "subCollectionAliases": [
+        "Harold H. Saunders Files",
+        "Harold H. Saunders Files: Middle East Negotiations"
+      ],
+      "resolution": {
+        "title": "Harold H. Saunders Files: Middle East Negotiations (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/saunders_files_middle_east_negotiations_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Vietnam Subject Files",
+      "subCollectionAliases": [
+        "Vietnam Subject File"
+      ],
+      "resolution": {
+        "title": "Vietnam Subject Files (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/vietnam_subject_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Vietnam Country Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Vietnam Country Files (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/vietnam_country_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "VIP Visits",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "VIP Visits (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/vip_visits.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Presidential Correspondence",
+      "subCollectionAliases": [
+        "Presidential Correspondence File",
+        "Presidential Correspondence 1969–1974"
+      ],
+      "resolution": {
+        "title": "Presidential Correspondence, 1969–1974 (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidential_correspondence_1969_1974.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "SALT",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "SALT (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/salt.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Name Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Name Files (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/name_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Paris Talks/Meetings",
+      "subCollectionAliases": [
+        "Paris Talks / Meetings"
+      ],
+      "resolution": {
+        "title": "Paris Talks/Meetings (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/paris_talks_meetings.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Presidential/HAK Memcons",
+      "subCollectionAliases": [
+        "Presidential/ HAK Memcons",
+        "Presidential/ HAK Memcon s",
+        "Presidential/ HAK MemCons",
+        "Presidential/ HAK MemCon s",
+        "Presidential/HAK MemCons"
+      ],
+      "resolution": {
+        "title": "Presidential/HAK MemCons (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidential_hak_memcons.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Alexander M. Haig Special File",
+      "subCollectionAliases": [
+        "Haig Special File"
+      ],
+      "resolution": {
+        "title": "Alexander M. Haig Special File (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/haig_special_file.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Alexander M. Haig Chronological Files",
+      "subCollectionAliases": [
+        "Haig Chronological Files",
+        "Haig Chron Files"
+      ],
+      "resolution": {
+        "title": "Alexander M. Haig Chronological Files (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/haig_chronological_files.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Indo-Pak War",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Indo-Pak War (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/indo_pak_war.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "ABM – MIRV",
+      "subCollectionAliases": [
+        "ABM-MIRV",
+        "ABM/MIRV"
+      ],
+      "resolution": {
+        "title": "ABM/MIRV (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/abm_mirv.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Kissinger Telephone Conversation Transcripts",
+      "subCollectionAliases": [
+        "Telcons"
+      ],
+      "resolution": {
+        "title": "Kissinger Telephone Conversation Transcripts",
+        "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Cambodian Operations",
+      "subCollectionAliases": [
+        "Cambodian Operations (1970)"
+      ],
+      "resolution": {
+        "title": "Cambodian Operations (1970) (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/cambodian_operations_1970.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Files",
+      "subCollection": "Pentagon Papers",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Pentagon Papers (National Security Council Files) — box and folder list (PDF)",
+        "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/pentagon_papers.pdf",
+        "naId": null,
+        "rationale": "The library's own box-and-folder list for this series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Institutional Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Council Institutional Files (H-Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-institutional-files-h-files",
+        "naId": null,
+        "rationale": "Cited without the NSC Files level."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "NSC Institutional Files (H-Files)",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Council Institutional Files (H-Files)",
+        "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-institutional-files-h-files",
+        "naId": null,
+        "rationale": "Cited without the NSC Files level."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "Kissinger Office Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Henry A. Kissinger (HAK) Office Files",
+        "url": "https://www.nixonlibrary.gov/finding-aids/henry-kissinger-hak-office-files",
+        "naId": null,
+        "rationale": "Cited without the NSC Files level."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "Kissinger Telephone Conversations",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Kissinger Telephone Conversation Transcripts",
+        "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
+        "naId": null,
+        "rationale": "The Telcons, cited as a collection in their own right. Curated at the collection level because the segment after the box is a folder title (Chronological File, Dobrynin File, Home File), not a series."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "Henry Kissinger Telephone Conversation Transcripts",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Kissinger Telephone Conversation Transcripts",
+        "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
+        "naId": null,
+        "rationale": "As above."
+      }
+    },
+    {
+      "repository": "Nixon",
+      "collection": "Henry A. Kissinger Telephone Conversation Transcripts",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Kissinger Telephone Conversation Transcripts",
+        "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
+        "naId": null,
+        "rationale": "As above."
+      }
     }
   ]
 }
