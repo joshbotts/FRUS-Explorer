@@ -39,6 +39,8 @@ import Foundation
 ///         central-files-anchored sentence, and find the series on either side of the box
 ///   1.3 — Session 2026-08-06: #355 / N-4, Johnson — the first entries carrying a NARA
 ///         identifier, plus two generic integrity guards (own-domain, well-formed naId)
+///   1.4 — Session 2026-08-06: #355 / N-4, Eisenhower — the Ann Whitman File name trap, and a
+///         third generic guard against aliases that can never match
 @Suite("Curated library resolutions")
 struct CuratedLibraryResolutionsTests {
 
@@ -574,7 +576,98 @@ struct CuratedLibraryResolutionsTests {
         #expect(Set(hits).count == 4, "four repositories, four destinations")
     }
 
+    // MARK: - Eisenhower
+
+    /// The Eisenhower Library holds **two** collections whose names contain "Whitman", and the
+    /// wrong one is the obvious-looking match: `WHITMAN, ANN C.: PAPERS, 1949-90` is Ann
+    /// Whitman's own papers, **one foot**. The Ann Whitman File the corpus cites 1,900 times is
+    /// `EISENHOWER, DWIGHT D.: Papers as President … (Ann Whitman File)`, 122 feet.
+    ///
+    /// This is the same shape as the Nixon Returned Materials Collection removed in #695: a
+    /// plausible name match to a small unrelated collection.
+    @Test("The Whitman File is the presidential papers, not Ann Whitman's own")
+    func whitmanFileIsNotAnnWhitmansPapers() throws {
+        let curated = try bundled()
+        let whitman = try #require(curated.resolution(repository: "Eisenhower Library",
+                                                      collection: "Whitman File",
+                                                      subCollection: nil))
+        #expect(whitman.title.contains("Papers as President"))
+        #expect(whitman.title.contains("Ann Whitman File"))
+        #expect(!whitman.url.contains("whitman-ann-papers"),
+                "that URL is the one-foot personal papers, not the 122-foot presidential file")
+        // Cited a level up, through the papers, it must reach the same place.
+        #expect(curated.resolution(repository: "Eisenhower Library", collection: "Eisenhower papers",
+                                   subCollection: "Whitman file")?.url == whitman.url)
+    }
+
+    /// The library titles one series two ways and FRUS uses both. Confirmed from the container
+    /// list itself, whose scope note says "The Dwight D. Eisenhower Diaries series" while the
+    /// series is titled DDE Diary.
+    @Test("Eisenhower's series spellings reach one container list")
+    func eisenhowerSeriesSpellingsAgree() throws {
+        let curated = try bundled()
+        func awf(_ sub: String) -> CuratedLibraryResolution? {
+            curated.resolution(repository: "Eisenhower Library", collection: "Whitman File",
+                               subCollection: sub)
+        }
+        #expect(awf("Eisenhower Diaries") == awf("DDE Diaries"))
+        #expect(awf("Eisenhower Diaries")?.url.contains("dde-diary-series") == true)
+        #expect(awf("International File") == awf("International Series"))
+        #expect(awf("NSC Records") == awf("NSC Series"))
+        // …and distinct series stay distinct.
+        #expect(awf("NSC Records") != awf("Cabinet Series"))
+        #expect(awf("Administration Series") != awf("Miscellaneous Series"))
+
+        // Dulles: General and White House telephone conversations are subseries of one series.
+        let general = curated.resolution(repository: "Eisenhower Library", collection: "Dulles Papers",
+                                         subCollection: "General Telephone Conversations")
+        #expect(general?.url.contains("telephone-conversations-series") == true)
+        #expect(curated.resolution(repository: "Eisenhower Library", collection: "Dulles Papers",
+                                   subCollection: "White House Telephone Conversations") == general)
+        // But the memoranda series is a different destination.
+        #expect(curated.resolution(repository: "Eisenhower Library", collection: "Dulles Papers",
+                                   subCollection: "Meetings with the President") != general)
+    }
+
+    /// `White House Office Files` names a records group of some fifteen separate offices, each
+    /// with its own finding aid and no aid for the whole. So it is curated sub-collection-only:
+    /// an unqualified citation must resolve to nothing rather than to one office's records.
+    @Test("The White House Office level never answers on its own")
+    func whiteHouseOfficeIsSubKeyedOnly() throws {
+        let curated = try bundled()
+        #expect(curated.resolution(repository: "Eisenhower Library",
+                                   collection: "White House Office Files",
+                                   subCollection: nil) == nil)
+        // Project Clean Up (40 documents) has no published aid anywhere in the library's 581,
+        // so it must stay unresolved rather than borrow a neighbouring office's.
+        #expect(curated.resolution(repository: "Eisenhower Library",
+                                   collection: "White House Office Files",
+                                   subCollection: "Project Clean Up") == nil)
+        // A named office does resolve.
+        #expect(curated.resolution(repository: "Eisenhower Library",
+                                   collection: "White House Office Files",
+                                   subCollection: "Records of the Office of the Staff Secretary") != nil)
+    }
+
     // MARK: - Artifact integrity
+
+    /// `subCollectionAliases` alias the **sub-collection**, so on an entry with no
+    /// sub-collection they match nothing and silently do nothing.
+    ///
+    /// This is not hypothetical: `James C. Hagerty papers` (19 documents) and
+    /// `Staff Secretary's Records` were both written as aliases on collection-wide entries and
+    /// resolved nothing until each was given its own entry. A collection-level spelling needs
+    /// an entry; only a sub-collection spelling can be an alias.
+    @Test("No entry carries aliases that can never match")
+    func collectionWideEntriesHaveNoDeadAliases() throws {
+        for entry in try bundled().entries where entry.subCollection == nil {
+            #expect(entry.subCollectionAliases == nil,
+                    Comment(rawValue: "\(entry.repository)/\(entry.collection) has "
+                            + "subCollectionAliases but no subCollection — they match nothing. "
+                            + "Give each spelling its own entry instead."))
+        }
+    }
+
 
     /// Every entry must point at **its own repository's** domain.
     ///
@@ -587,6 +680,7 @@ struct CuratedLibraryResolutionsTests {
     func entriesStayWithinTheirRepository() throws {
         let expected = ["Carter Library": "jimmycarterlibrary.gov",
                         "Ford Library": "fordlibrarymuseum.gov",
+                        "Eisenhower Library": "eisenhowerlibrary.gov",
                         "Johnson Library": "discoverlbj.org",
                         "Library of Congress": "loc.gov",
                         "Nixon": "nixonlibrary.gov",
