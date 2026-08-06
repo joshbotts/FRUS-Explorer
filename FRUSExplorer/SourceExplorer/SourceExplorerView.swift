@@ -1132,9 +1132,44 @@ struct SourceExplorerView: View {
             curatedLibrarySection(curated)
         }
 
-        // Fallback: institution-specific finding-aid URL when API returns zero results
-        let fallback = client.libraryFallbackURL(libraryName: library)
-        naraResultSection(requiresKey: true, fallbackURL: fallback)
+        // #681: the National Archives catalogue is only queried for repositories NARA
+        // administers. For anything else there is no record to find, so the section explains
+        // that instead of rendering three free-text hits as though they were the answer.
+        if NARACustody.mayQueryCatalog(forRepository: library) {
+            // Fallback: institution-specific finding-aid URL when API returns zero results
+            let fallback = client.libraryFallbackURL(libraryName: library)
+            naraResultSection(requiresKey: true, fallbackURL: fallback)
+        } else {
+            outsideNARASection(repository: library)
+        }
+    }
+
+    /// Explains why no NARA catalogue results are shown for a repository the National Archives
+    /// does not administer (#681).
+    ///
+    /// The alternative is what shipped before: a free-text query on the library and collection
+    /// names, rendered as up to three results behind the same "View in NARA Catalog" button
+    /// used for verified lot resolutions. For the 1,061 Library of Congress documents — and the
+    /// 900 more naming universities, historical societies and bodies that are not repositories
+    /// at all — the catalogue has nothing to find, so every row shown was noise presented as a
+    /// finding.
+    private func outsideNARASection(repository: String) -> some View {
+        Section(String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
+            Label {
+                Text(String(localized: "source.explorer.nara.outsideCustody",
+                            defaultValue: """
+                            \(repository) is not a National Archives repository, so the NARA \
+                            Catalog has no record of this collection. Searching it on the \
+                            collection name alone returns results that look authoritative and \
+                            are not, so none is shown.
+                            """))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            } icon: {
+                Image(systemName: "building.columns")
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     /// The curated finding aid for a library collection.
@@ -1405,10 +1440,24 @@ struct SourceExplorerView: View {
             await fetchResults { try await client.resolveLotFileVariants(lotNumber: lotNumber, recordGroup: rgToUse) }
 
         case .naraCollection(let rg, let series, let lot, _):
-            let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
-            await fetchResults { try await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 5) }
+            // #681: a record-group citation that names a lot belongs on the *guarded* route.
+            // Measured, 853 documents take this branch, and until now they ran the unfiltered
+            // record-group query for a citation the acceptance test was built for.
+            if let lot {
+                let rgToUse = rg.replacingOccurrences(of: "RG-", with: "")
+                await fetchResults {
+                    try await client.resolveLotFileVariants(lotNumber: lot, recordGroup: rgToUse)
+                }
+            } else {
+                let keywords = [series].compactMap { $0 }.joined(separator: " ")
+                await fetchResults { try await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 5) }
+            }
 
         case .presidentialLibrary(let library, let collection, _):
+            // #681: the catalogue can only answer for repositories NARA actually administers.
+            // For the other 1,961 documents the free-text query returns rows that are wrong by
+            // construction, so no query is issued and the view says why.
+            guard NARACustody.mayQueryCatalog(forRepository: library) else { return }
             await fetchResults {
                 try await client.searchByPresidentialMaterials(
                     library: library, collection: collection, maxResults: 3
