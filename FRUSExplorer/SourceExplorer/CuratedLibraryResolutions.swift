@@ -97,6 +97,14 @@ struct CuratedLibraryResolutions: Codable, Sendable {
         /// Other spellings of `subCollection` the corpus writes — including misspellings, which
         /// are real: the Carter citations include `Brzezinksi` and `Brzezinsky`.
         let subCollectionAliases: [String]?
+        /// NARA's `collectionIdentifier` for this collection (`LBJ-NSF`), when one has been
+        /// verified against the harvested catalogue (#681).
+        ///
+        /// The bridge between a FRUS citation and NARA's own description. Hand-verified per row
+        /// rather than inferred: the two name the same records differently, and the scoring
+        /// heuristic that looks like it would work picks `Ann C. Whitman Papers` — a one-foot
+        /// personal collection — for the 2,083 documents citing the Ann Whitman File.
+        let collectionIdentifier: String?
         /// The curated destination.
         let resolution: CuratedLibraryResolution
     }
@@ -127,6 +135,16 @@ struct CuratedLibraryResolutions: Codable, Sendable {
             }) { return hit.resolution }
         }
         return candidates.first { $0.subCollection == nil }?.resolution
+    }
+
+    /// NARA's `collectionIdentifier` for a cited collection, when one has been verified.
+    ///
+    /// Keyed on `(repository, collection)` alone — every sub-collection entry under a collection
+    /// carries the same identifier, because the identifier names the collection and not the
+    /// series inside it.
+    func collectionIdentifier(repository: String?, collection: String) -> String? {
+        byCollection[Self.collectionKey(repository, collection)]?
+            .compactMap(\.collectionIdentifier).first
     }
 
     /// The match key for a sub-collection segment: `CollectionKeying.segmentNorm` with **colons

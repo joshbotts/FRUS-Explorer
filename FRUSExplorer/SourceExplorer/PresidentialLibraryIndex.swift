@@ -72,10 +72,24 @@ struct PresidentialLibraryIndex: Codable, Sendable {
     ///   - repository: as the citation writes it (`Kennedy Library`).
     ///   - collection: the level-1 segment (`National Security Files`).
     ///   - series: the level-2 segment, when the citation names one (`Countries Series`).
-    func match(repository: String?, collection: String, series: String?) -> Match {
+    /// - Parameter collectionIdentifier: NARA's own identifier for the cited collection, from
+    ///   the curated table. **This is what makes the join safe.** Measured, a title join
+    ///   resolves 3.3% of library documents and misses 78.5%, because FRUS writes `Whitman File`
+    ///   where NARA writes *"Papers as President of the United States"* — no title rule bridges
+    ///   that, and a looser one picks a plausible wrong collection for exactly the rows with the
+    ///   most documents behind them. With the identifier the collection is exact, and the
+    ///   remaining title match is over ~20 series inside it rather than 3,837 collections.
+    func match(repository: String?, collection: String, series: String?,
+               collectionIdentifier: String? = nil) -> Match {
         guard let library = library(for: repository) else { return .none }
-        let collections = library.collections.filter {
-            Self.titlesAgree($0.title, collection)
+        let collections: [Collection]
+        if let collectionIdentifier {
+            // An identifier that names no collection resolves to nothing rather than falling
+            // back to the title guess — a wrong identifier is a curation error to surface, not
+            // to paper over.
+            collections = library.collections.filter { $0.identifier == collectionIdentifier }
+        } else {
+            collections = library.collections.filter { Self.titlesAgree($0.title, collection) }
         }
         // More than one collection answering to the name is not a resolution. It happens: 22
         // identifiers name two records each, and a citation cannot tell them apart.
