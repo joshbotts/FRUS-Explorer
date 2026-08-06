@@ -33,6 +33,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-06: #355 / N-4, Carter + Library of Congress
+///   1.1 — Session 2026-08-06: #355 / N-4, Ford — the two citation truncations (middle initial,
+///         comma inside a series name) and one series cited at four different levels
 @Suite("Curated library resolutions")
 struct CuratedLibraryResolutionsTests {
 
@@ -154,6 +156,151 @@ struct CuratedLibraryResolutionsTests {
         #expect(spelled != nil || amp == nil,
                 "if the spelled form is curated the ampersand must reach it too")
         if spelled != nil { #expect(amp == spelled) }
+    }
+
+    // MARK: - Ford: the two truncations
+
+    /// `citationSentence` ends the sentence at a middle initial, so a series named after a
+    /// person arrives cut off. Curating the stump would key every `Robert C.` in the corpus to
+    /// one person's aid, so the remainder is recovered from the raw note instead.
+    @Test("A series named after a person survives the middle-initial truncation")
+    func middleInitialIsRepaired() {
+        let cases = [
+            ("Source: Ford Library, National Security Adviser, Robert C. McFarlane Files, Box 1, "
+             + "Intelligence Investigations Subject Files. No classification marking.",
+             "Robert C. McFarlane Files"),
+            ("Source: Ford Library, National Security Adviser, John K. Matheny Files, Box 11, "
+             + "Senate Select Committee on Intelligence, Final Report. No classification marking.",
+             "John K. Matheny Files"),
+            ("Source: Ford Library, National Security Adviser, Staff Assistants: Peter W. Rodman "
+             + "Files, 1974–1977, Box 1, Subject File, Glomar Explorer. Secret.",
+             "Staff Assistants: Peter W. Rodman Files"),
+        ]
+        for (note, expected) in cases {
+            let sub = CuratedLibraryResolutions.subCollection(
+                inNote: note, afterCollection: "National Security Adviser")
+            #expect(sub == expected, "got \(sub ?? "nil") — the stump would mis-key every namesake")
+        }
+    }
+
+    /// The repair must stay narrow: a candidate that does not end in an initial is returned as
+    /// the citation sentence produced it, never extended into the commentary that follows.
+    @Test("A candidate that is not truncated is left alone")
+    func unruncatedCandidatesAreUntouched() {
+        let note = "Source: Ford Library, National Security Adviser, Presidential Agency File, "
+            + "Box 5, Central Intelligence Agency. Secret. Drafted by W. Colby, who forwarded it."
+        #expect(CuratedLibraryResolutions.subCollection(
+            inNote: note, afterCollection: "National Security Adviser") == "Presidential Agency File")
+    }
+
+    /// The other truncation is inherent: a series whose own name contains a comma splits on it,
+    /// so only the head reaches the matcher. The curated segment is that head, which has to be
+    /// unambiguous inside the collection for this to be safe.
+    @Test("A series name containing a comma resolves from its head")
+    func commaBearingSeriesResolveFromTheHead() throws {
+        let curated = try bundled()
+        let europe = "Source: Ford Library, National Security Adviser, NSC Europe, Canada, and "
+            + "Ocean Affairs Staff, Box 58, General Subject File, Ocean Policy, 1976. Confidential."
+        let sub = CuratedLibraryResolutions.subCollection(
+            inNote: europe, afterCollection: "National Security Adviser")
+        #expect(sub == "NSC Europe", "the citation splits at the series' own comma")
+        let aid = curated.resolution(repository: "Ford Library",
+                                     collection: "National Security Adviser", subCollection: sub)
+        #expect(aid?.title.contains("Europe, Canada, and Ocean Affairs") == true)
+        #expect(curated.resolution(repository: "Ford Library",
+                                   collection: "National Security Adviser",
+                                   subCollection: "NSC Staff for Europe") == aid,
+                "the other FRUS spelling of the same staff must reach the same aid")
+    }
+
+    // MARK: - Ford: one series, cited at several levels
+
+    /// The NSC institutional records are cited through the adviser's papers, as a collection in
+    /// their own right, and under a bare `NSC Files` level. All of them are the same records, and
+    /// the parenthesised spellings key differently, so each needs its own entry.
+    @Test("Every spelling of the NSC Institutional Files reaches one aid")
+    func institutionalFilesSpellingsAgree() throws {
+        let curated = try bundled()
+        let viaAdviser = curated.resolution(repository: "Ford Library",
+                                            collection: "National Security Adviser",
+                                            subCollection: "NSC Institutional Files")
+        #expect(viaAdviser != nil)
+        for collection in ["NSC Institutional Files (H-Files)", "NSC Institutional Files",
+                           "NSC Institutional Files (H\u{2013}Files)"] {
+            let hit = curated.resolution(repository: "Ford Library", collection: collection,
+                                         subCollection: nil)
+            #expect(hit?.url == viaAdviser?.url,
+                    "\(collection) must reach the same finding aid as the adviser-level citation")
+        }
+        // …and the subseries the corpus splits off with an em dash.
+        for sub in ["Institutional Files", "Institutional Files\u{2014} NSDMs",
+                    "Institutional Files\u{2014}Meetings"] {
+            #expect(curated.resolution(repository: "Ford Library",
+                                       collection: "National Security Council",
+                                       subCollection: sub)?.url == viaAdviser?.url,
+                    "\(sub) is a subseries of the same Institutional Files")
+        }
+    }
+
+    /// `NSC Institutional Files` is the single most dangerous name in this artifact: three
+    /// repositories use it for three different series. Measured over the corpus, of the
+    /// documents whose note names institutional files, **1,206 are Nixon's, 447 are Carter's and
+    /// only 331 are Ford's** — so a match on the series name alone would send the majority of
+    /// them to the wrong repository. The lookup is repository-scoped, which is what makes the
+    /// Ford entry safe; this test is what keeps it that way.
+    @Test("The institutional-files aid is reachable only from a Ford citation")
+    func institutionalFilesDoNotCrossRepositories() throws {
+        let curated = try bundled()
+        let ford = curated.resolution(repository: "Ford Library",
+                                      collection: "NSC Institutional Files (H-Files)",
+                                      subCollection: nil)
+        #expect(ford != nil, "fixture guard: the Ford entry must exist for this test to mean anything")
+        for repository in ["Nixon Presidential Materials", "Nixon", "Carter Library",
+                           "Reagan Library", "Library of Congress"] {
+            for collection in ["NSC Institutional Files (H-Files)", "NSC Institutional Files"] {
+                #expect(curated.resolution(repository: repository, collection: collection,
+                                           subCollection: nil) == nil,
+                        "\(repository)/\(collection) reached a Ford finding aid")
+            }
+            #expect(curated.resolution(repository: repository,
+                                       collection: "National Security Council",
+                                       subCollection: "Institutional Files") == nil,
+                    "\(repository) reached Ford's institutional files through the NSC level")
+        }
+    }
+
+    /// `National Security Council` names a body, not a collection, so it is curated
+    /// sub-collection-only: an unrecognized sub-collection must resolve to nothing rather than
+    /// to the Institutional Files.
+    @Test("The bare National Security Council level never answers on its own")
+    func bodyLevelDoesNotAnswer() throws {
+        let curated = try bundled()
+        #expect(curated.resolution(repository: "Ford Library",
+                                   collection: "National Security Council",
+                                   subCollection: nil) == nil)
+        #expect(curated.resolution(repository: "Ford Library",
+                                   collection: "National Security Council",
+                                   subCollection: "Some Other Series") == nil)
+    }
+
+    /// Ford publishes a collection-level page for the National Security Adviser Files, so an
+    /// unqualified citation gets it — and so does a series the library has never published an
+    /// aid for. Nixon publishes no equivalent for the White House Special Files, which is why
+    /// that row deliberately has no collection-wide entry; the asymmetry is the point.
+    @Test("An unqualified Ford citation gets the collection-level page")
+    func fordCollectionLevelAnswers() throws {
+        let curated = try bundled()
+        let whole = curated.resolution(repository: "Ford Library",
+                                       collection: "National Security Adviser", subCollection: nil)
+        #expect(whole != nil, "Ford publishes a collection-level page; it must be reachable")
+        // The Scowcroft Daily Work Files have no aid of their own — measured, 21 documents. They
+        // fall back to the collection page rather than to nothing.
+        #expect(curated.resolution(repository: "Ford Library",
+                                   collection: "National Security Adviser",
+                                   subCollection: "Scowcroft Daily Work Files") == whole)
+        #expect(curated.resolution(repository: "Nixon", collection: "White House Special Files",
+                                   subCollection: nil) == nil,
+                "Nixon has no collection-level aid, so it must still answer nothing")
     }
 
     /// The Library of Congress row has no honest whole-row answer — it is a division, not a

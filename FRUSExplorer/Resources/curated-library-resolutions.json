@@ -393,6 +393,589 @@
         "naId": null,
         "rationale": "Same series as the NSC Head of State File entry, reached through a differently punctuated level-1 segment."
       }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Memoranda of Conversations",
+      "subCollectionAliases": [
+        "Memoranda of Conversation",
+        "Memorandum of Conversation",
+        "NSA Memcons",
+        "National Security Adviser Memcons",
+        "Memoranda of Conversations 1973–1977"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Memoranda of Conversations, 1973-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-memoranda-conversations-1973-1977",
+        "naId": null,
+        "rationale": "The single largest Ford series in FRUS. The library titles it in the plural; the corpus writes both numbers, and abbreviates it \"Memcons\"."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Kissinger-Scowcroft West Wing Office Files",
+      "subCollectionAliases": [
+        "Kissinger and Scowcroft West Wing Office Files",
+        "Kissinger-Scowcroft West Wing Offices File",
+        "Kissinger / Scowcroft West Wing Office Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Kissinger-Scowcroft West Wing Office Files, 1969-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-kissinger-scowcroft-west-wing-office",
+        "naId": null,
+        "rationale": "The office files Kissinger and Scowcroft kept in the West Wing, as distinct from the NSC staff files. The corpus joins the two names with a hyphen, an en dash, a slash and the word \"and\"."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Country Files for East Asia and the Pacific",
+      "subCollectionAliases": [
+        "Presidential Country Files for East Asian and Pacific Affairs"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Presidential Country Files for East Asia and the Pacific, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-east-asia",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Country Files for Europe and Canada",
+      "subCollectionAliases": [
+        "Presidential Country Files for Europe"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Presidential Country Files for Europe and Canada, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-europe-and",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Kissinger Reports on USSR",
+      "subCollectionAliases": [
+        "Kissinger Reports",
+        "Kissinger Reports on U.S.S.R.",
+        "Kissinger Reports on USSR ; China",
+        "[ Kissinger Reports on USSR"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Kissinger Reports on USSR, China and Middle East Discussions, 1974-1976",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-kissinger-reports-ussr-china-and",
+        "naId": null,
+        "rationale": "The series name contains commas, so the citation splits and only \"Kissinger Reports on USSR\" reaches the matcher — the stored segment is that head, which is unambiguous inside this collection."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Country Files for Middle East and South Asia",
+      "subCollectionAliases": [
+        "Presidential Country Files for the Middle East and South Asia",
+        "President Country Files for Middle East and South Asia",
+        "Presidential Country Files Middle East and South Asia",
+        "Country Files for Middle East and South Asia",
+        "Presidential Country File for the Middle East and South Asia"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Presidential Country Files for Middle East and South Asia, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-middle-east",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Subject File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Adviser Presidential Subject File, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-presidential-subject-file-1974-1977",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Backchannel Messages",
+      "subCollectionAliases": [
+        "Back Channel Messages"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Backchannel Messages, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-backchannel-messages-1974-77",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Country Files for Africa",
+      "subCollectionAliases": [
+        "Presidential Country File for Africa",
+        "Presidential Country Files for Africa 1975–77"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Presidential Country Files for Africa, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-africa-1974",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Agency File",
+      "subCollectionAliases": [
+        "Presidential Agency File 1974–1977"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Presidential Agency File, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-agency-file-1974-1977",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC Program Analysis Staff Files",
+      "subCollectionAliases": [
+        "NSC Program Analysis Staff",
+        "National Security Council Staff for Program Analysis"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, NSC Program Analysis Staff Files, 1969-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-program-analysis-staff-files-1969",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC Meetings File",
+      "subCollectionAliases": [
+        "NSC Meetings",
+        "NSC Meeting File",
+        "National Security Council Meetings File"
+      ],
+      "resolution": {
+        "title": "National Security Adviser National Security Council Meetings File, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-national-security-council-meetings",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC Europe",
+      "subCollectionAliases": [
+        "NSC Staff for Europe",
+        "National Security Council Staff for Europe",
+        "Staff for Europe"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, NSC Europe, Canada, and Ocean Affairs Staff Files, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-europe-canada-and-ocean-affairs",
+        "naId": null,
+        "rationale": "Another comma-bearing series name: the corpus writes \"NSC Europe, Canada, and Ocean Affairs Staff\" and \"NSC Staff for Europe, Canada, and Ocean Affairs\", both of which split at the first comma. The stored segments are those heads."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Trip Briefing Books and Cables of Henry Kissinger",
+      "subCollectionAliases": [
+        "Trip Briefing Books and Cables for Henry Kissinger",
+        "Trip Briefing Books of Henry Kissinger",
+        "Trip Briefing Books and Cables for Henry A. Kissinger",
+        "Trip Briefing Books for Henry Kissinger",
+        "Trip Briefing Books for HAK",
+        "Kissinger Trip Briefings"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Trip Briefing Books and Cables of Henry Kissinger, 1974-76",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-trip-briefing-books-and-cables-henry",
+        "naId": null,
+        "rationale": "The corpus writes \"of\", \"for\", with and without \"and Cables\", and abbreviates Kissinger to HAK."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Correspondence with Foreign Leaders",
+      "subCollectionAliases": [
+        "Correspondence with Foreign Leaders"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Presidential Correspondence with Foreign Leaders, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-presidential-correspondence-foreign",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC Institutional Files",
+      "subCollectionAliases": [
+        "NSC Institutional Files (H-Files)",
+        "NSC Institutional Files (H–Files)"
+      ],
+      "resolution": {
+        "title": "U.S. National Security Council Institutional Files, (1969) 1974-1977 (1980)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
+        "naId": null,
+        "rationale": "The library files these under the NSC as an institution rather than under the National Security Adviser; the corpus cites them through the adviser's papers and calls them the H-Files."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC Latin American Affairs Staff Files",
+      "subCollectionAliases": [
+        "National Security Council Latin American Affairs Staff Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Latin American Affairs Staff Files, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-latin-american-affairs-staff-files",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Files of NSC Logged Documents",
+      "subCollectionAliases": [
+        "Presidential File of NSC Logged Documents"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Presidential Files of NSC Logged Documents: Select Documents Arranged by Log Number, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-files-nsc-logged",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Country Files for Latin America",
+      "subCollectionAliases": [
+        "Presidential Country Files on Latin America"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Presidential Country Files for Latin America, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-latin",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC East Asian and Pacific Affairs Staff Files",
+      "subCollectionAliases": [
+        "NSC Staff for East Asia and Pacific Affairs",
+        "NSC Staff for East Asia & Pacific Affairs",
+        "NSC Staff for East Asia and Pacific Affairs Convenience File"
+      ],
+      "resolution": {
+        "title": "National Security Adviser NSC East Asian and Pacific Affairs Staff: Files, 1969-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-east-asian-and-pacific-affairs",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Outside the System Chronological File",
+      "subCollectionAliases": [
+        "Outside the System Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Outside the System Chronological File, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-outside-system-chronological-file-1974",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC International Economic Affairs Staff Files",
+      "subCollectionAliases": [
+        "NSC Staff for International Economic Affairs Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, International Economic Affairs Staff Files, (1973) 1975-1976",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-international-economic-affairs-staff",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Trip Briefing Books and Cables for President Ford",
+      "subCollectionAliases": [
+        "Trip Briefing Books and Cables of President Ford"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Trip Briefing Books and Cables of President Ford, 1974-1976",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-trip-briefing-books-and-cables",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Name File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Adviser, Presidential Name File, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-name-file-1974-77",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "National Security Decision Memoranda and National Security Study Memoranda",
+      "subCollectionAliases": [
+        "National Security Decision and Study Memoranda",
+        "National Security Decision Memoranda and Study Memoranda",
+        "National Security Study Memoranda and National Security Decision Memoranda",
+        "NSDMs and NSSMs",
+        "NSSMs and NSDMs",
+        "NSDM and NSSM",
+        "NSDMs",
+        "NSSMs",
+        "NSDMs File",
+        "NSDM s",
+        "NSSM s",
+        "NSDM s and NSSM s",
+        "NSSM s and NSDM s",
+        "NSDM s and NSSM"
+      ],
+      "resolution": {
+        "title": "National Security Study and Decision Memoranda (NSSMs/NSDMs)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser",
+        "naId": null,
+        "rationale": "One aid covers both memoranda series (Box 1 NSDMs, Box 2 NSSMs). The corpus names them in either order, spelled out or abbreviated."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "NSC Middle East and South Asian Affairs Staff Files",
+      "subCollectionAliases": [
+        "NSC Middle East and South Asian Affairs Staff Convenience Files",
+        "NSC Staff for Middle East and South Asian Affairs Convenience File",
+        "NSC Middle East and South Asian Affairs Staff",
+        "NSC Staff for Middle East and South Asian Affairs",
+        "NSC Staff for Middle East and South Asia Affairs",
+        "NSC Operations Staff for Middle East and South Asia Affairs",
+        "NSC Operations Staff for the Middle East and South Asia Affairs",
+        "National Security Council Operations Staff for the Middle East and South Asian Affairs",
+        "National Security Council Operations Staff for the Middle East and South Asia Affairs",
+        "National Security Council Staff for the Middle East and South Asia",
+        "NSC Staff for Middle East and South Asia Files: Convenience Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, NSC Middle East and South Asian Affairs Staff Files, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-middle-east-and-south-asian",
+        "naId": null,
+        "rationale": "The corpus calls this staff the Middle East and South Asian Affairs Staff, the Operations Staff, and the NSC Staff for the region, and cites its convenience files under the same names."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Briefing Material for VIP Visits",
+      "subCollectionAliases": [
+        "Presidential Briefing Materials for VIP Visits"
+      ],
+      "resolution": {
+        "title": "National Security Adviser Presidential Briefing Material for VIP Visits, 1974-1976",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-presidential-briefing-material-vip",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Presidential Transition File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Adviser, Presidential Transition File, 1974",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-transition-file-1974",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "John K. Matheny Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Adviser, Staff Assistant John K. Matheny Files, 1975-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-staff-assistant-john-k-matheny-files",
+        "naId": null,
+        "rationale": "Reachable only because the middle-initial truncation is repaired before matching — the citation sentence otherwise ends at \"John K.\"."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Robert C. McFarlane Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Adviser, Staff Assistant Robert C. (\"Bud\") McFarlane Files, 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-staff-assistant-robert-c-bud-mcfarlane",
+        "naId": null,
+        "rationale": "Reachable only because the middle-initial truncation is repaired before matching — the citation sentence otherwise ends at \"Robert C.\"."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Staff Assistants: Peter W. Rodman Files",
+      "subCollectionAliases": [
+        "Staff Assistant Peter Rodman Files",
+        "Peter W. Rodman Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, Staff Assistant Peter W. Rodman Files, (1970) 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-staff-assistant-peter-w-rodman-files",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Legislative Interdepartmental Group File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Adviser Legislative Interdepartmental Group Files, 1971-1972 (1976)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-legislative-interdepartmental-group",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": "Staff Secretary",
+      "subCollectionAliases": [
+        "NSC Staff Secretary Files"
+      ],
+      "resolution": {
+        "title": "National Security Adviser, NSC Staff Secretary Files, (1973) 1974-1977",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-staff-secretary-files-1973-1974-77",
+        "naId": null,
+        "rationale": "The library's own finding aid for this series."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "NSC Institutional Files (H-Files)",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "U.S. National Security Council Institutional Files, (1969) 1974-1977 (1980)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
+        "naId": null,
+        "rationale": "The same NSC institutional records the adviser's files point to, cited without the adviser level — FRUS writes them as the H-Files. Parenthesised and unparenthesised spellings key differently, so each gets its own entry."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "NSC Institutional Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "U.S. National Security Council Institutional Files, (1969) 1974-1977 (1980)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
+        "naId": null,
+        "rationale": "The same NSC institutional records the adviser's files point to, cited without the adviser level — FRUS writes them as the H-Files. Parenthesised and unparenthesised spellings key differently, so each gets its own entry."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Council",
+      "subCollection": "Institutional Files",
+      "subCollectionAliases": [
+        "Institutional Files— NSDMs",
+        "Institutional Files—Meetings",
+        "Institutional Files— NSSMs",
+        "Institutional Files—NSDMs",
+        "Institutional Files—NSSMs",
+        "Institutional Files (H-Files)"
+      ],
+      "resolution": {
+        "title": "U.S. National Security Council Institutional Files, (1969) 1974-1977 (1980)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
+        "naId": null,
+        "rationale": "Sub-keyed deliberately: \"National Security Council\" alone is a body, not a collection, so an unrecognised sub-collection under it must resolve to nothing rather than to these files. The corpus subdivides the series with an em dash (NSDMs, NSSMs, Meetings); all three are subseries of the same Institutional Files."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "NSC Files",
+      "subCollection": "NSC Institutional Files ( H –Files)",
+      "subCollectionAliases": [
+        "NSC Institutional Files (H-Files)",
+        "NSC Institutional Files"
+      ],
+      "resolution": {
+        "title": "U.S. National Security Council Institutional Files, (1969) 1974-1977 (1980)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
+        "naId": null,
+        "rationale": "\"NSC Files\" is a level rather than a series — as with the Nixon Staff Member and Office Files, only the named sub-collection gets an answer."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Decision Memoranda and Study Memoranda",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Study and Decision Memoranda (NSSMs/NSDMs)",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser",
+        "naId": null,
+        "rationale": "The same reference file the adviser's papers carry, cited as a collection in its own right."
+      }
+    },
+    {
+      "repository": "Ford Library",
+      "collection": "National Security Adviser",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Provenance of the Ford National Security Adviser Files",
+        "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/provenance-ford-national-security-adviser-files",
+        "naId": null,
+        "rationale": "The collection-level answer for a citation that names no series, and the fallback for the few series the library has not published an aid for (notably the Scowcroft Daily Work Files). It is the library's own account of how these records were assembled — \"Numerous subcollections comprise what Ford Library archivists have chosen to call collectively the 'National Security Adviser Files'\" — so it is an overview rather than a box list. Ford publishes one; Nixon does not for the White House Special Files, which is why that row has no collection-wide entry."
+      }
     }
   ]
 }

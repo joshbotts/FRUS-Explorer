@@ -199,9 +199,32 @@ extension CuratedLibraryResolutions {
     ///
     /// Box and folder locators are refused: `Carter Library, Plains File, Box 17` names no
     /// sub-collection, and treating `Box 17` as one would key every document separately.
+    ///
+    /// ## The middle-initial truncation
+    /// `citationSentence` treats a middle initial as the end of a sentence, so a series named
+    /// after a person arrives cut off at the initial — the Ford citations for
+    /// `Robert C. McFarlane Files` and `Staff Assistants: Peter W. Rodman Files` reach the
+    /// matcher as `Robert C.` and `Staff Assistants: Peter W.`. Curating the stump would key
+    /// **every** `Robert C.` in the corpus to one person's finding aid, which is exactly the
+    /// confidently-wrong link this workstream exists to avoid, so the remainder is recovered
+    /// from the raw note instead. The recovery is deliberately narrow: it fires only on a
+    /// candidate ending in an initial, and only when the raw note's segment *extends* the
+    /// truncated one, so anything else degrades to the value it produced before.
     static func subCollection(inNote note: String, afterCollection collection: String) -> String? {
-        let segments = SourceNoteParser.citationSentence(of: note)
-            .components(separatedBy: ", ")
+        guard let candidate = segment(after: collection,
+                                      in: SourceNoteParser.citationSentence(of: note))
+        else { return nil }
+        guard candidate.range(of: #"(^|\s)\p{Lu}\.$"#, options: .regularExpression) != nil,
+              let full = segment(after: collection, in: note),
+              full.hasPrefix(candidate)
+        else { return candidate }
+        return full
+    }
+
+    /// The segment following `collection` in `text`, or `nil` when there is none or it is a
+    /// locator rather than a name.
+    private static func segment(after collection: String, in text: String) -> String? {
+        let segments = text.components(separatedBy: ", ")
             .map { $0.trimmingCharacters(in: .whitespaces) }
         let target = CollectionKeying.segmentNorm(collection)
         guard let index = segments.firstIndex(where: {
