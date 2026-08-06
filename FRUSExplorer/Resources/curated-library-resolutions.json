@@ -1429,6 +1429,509 @@
         "naId": null,
         "rationale": "As above."
       }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Files, 1963-1969",
+        "url": "https://discoverlbj.org/loh/pres/nsf",
+        "naId": "567979",
+        "rationale": "The collection-level page, listing all 42 series with their extents — the answer for a citation naming a series the library files elsewhere or does not itemise, such as the `Aides File` (22 documents), whose staff files ARE the NSF's own per-person series. It carries the collection's NARA identifier, so these rows also reach the catalogue."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Country File",
+      "subCollectionAliases": [
+        "Country Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Country Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-co",
+        "naId": null,
+        "rationale": "2,015 documents — 41% of the Johnson corpus in one series. The archive divides it into seven regional subseries, but FRUS cites it undivided, so the series-wide list is the right grain."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Memos to the President",
+      "subCollectionAliases": [
+        "Memos to the President— Walt W. Rostow",
+        "Memos to the President— McGeorge Bundy",
+        "Memos to the President- McGeorge Bundy",
+        "Memos to the President—Walt W. Rostow"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Memos to the President",
+        "url": "https://discoverlbj.org/item/ftl-nsf-memos",
+        "naId": null,
+        "rationale": "The corpus appends the adviser's name with three different dashes; all are the one series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Subject File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Subject Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-subject",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Agency File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Agency Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-agency",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Name File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Name Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-name",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Intelligence File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Intelligence Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-intel",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Vietnam Country File",
+      "subCollectionAliases": [
+        "Country File, Vietnam",
+        "Vietnam Country Series"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Country Files, Vietnam",
+        "url": "https://discoverlbj.org/item/ftl-nsf-cf-vn",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of Walt W. Rostow",
+      "subCollectionAliases": [
+        "Rostow Files",
+        "Files of Walt Rostow",
+        "Walt W. Rostow Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Walt W. Rostow",
+        "url": "https://discoverlbj.org/item/ftl-nsf-rostow",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "NSC Histories",
+      "subCollectionAliases": [
+        "NSC History",
+        "National Security Council Histories",
+        "NSC History of the March 31st Speech",
+        "NSC Histories Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, National Security Council Histories Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-nsch",
+        "naId": null,
+        "rationale": "The March 31st Speech history is one of the histories in this series, not a series of its own."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Special Head of State Correspondence File",
+      "subCollectionAliases": [
+        "Special Head of State Correspondence",
+        "Special Head of State Correspondence Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Special Head of State Correspondence Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-shosc",
+        "naId": "7763260",
+        "rationale": "Kept separately by White House Staff Assistant Dorothy Territo rather than by the NSC, and the library publishes its own NARA identifier for it."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "NSC Meetings File",
+      "subCollectionAliases": [
+        "NSC Meetings",
+        "National Security Council Meetings File",
+        "NSC Meeting File"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, National Security Council Meetings Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-nscmtg",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Head of State Correspondence",
+      "subCollectionAliases": [
+        "Head of State Correspondence File",
+        "Head of State Correspondence Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Head of State Correspondence Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-hosc",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of Robert W. Komer",
+      "subCollectionAliases": [
+        "Komer Files",
+        "Robert W. Komer Files",
+        "Files of Robert Komer",
+        "Komer File"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Robert W. Komer",
+        "url": "https://discoverlbj.org/item/ftl-nsf-komer",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Komer-Leonhart File",
+      "subCollectionAliases": [
+        "Komer-Leonhart Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Komer-Leonhart Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-kl",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "NSC Special Committee Files",
+      "subCollectionAliases": [
+        "Special Committee",
+        "Files of the Special Committee of the NSC",
+        "Special Committee Files",
+        "Files of the Special Committee of the National Security Council"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of the Special Committee of the National Security Council",
+        "url": "https://discoverlbj.org/item/ftl-nsf-scnsc",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "International Meetings and Travel File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, International Meetings and Travel Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-imt",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Charles E. Johnson Files",
+      "subCollectionAliases": [
+        "Files of Charles E. Johnson"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Charles E. Johnson",
+        "url": "https://discoverlbj.org/item/ftl-nsf-cej",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "NSAMs",
+      "subCollectionAliases": [
+        "National Security Action Memoranda",
+        "National Security Action Memorandums",
+        "NSAM s"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, National Security Action Memorandums",
+        "url": "https://discoverlbj.org/item/ftl-nsf-nsams",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of McGeorge Bundy",
+      "subCollectionAliases": [
+        "Bundy Files",
+        "McGeorge Bundy Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of McGeorge Bundy",
+        "url": "https://discoverlbj.org/item/ftl-nsf-bundy",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Saunders Files",
+      "subCollectionAliases": [
+        "Files of Harold H. Saunders",
+        "Files of Harold Saunders",
+        "NSC Files of Harold Saunders",
+        "Harold H. Saunders Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Harold Saunders",
+        "url": "https://discoverlbj.org/item/ftl-nsf-saunders",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Hamilton Files",
+      "subCollectionAliases": [
+        "Files of Edward K. Hamilton"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Edward K. Hamilton",
+        "url": "https://discoverlbj.org/item/ftl-nsf-hamilton",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "National Intelligence Estimates",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, National Intelligence Estimates",
+        "url": "https://discoverlbj.org/item/ftl-nsf-nies",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Haynes Files",
+      "subCollectionAliases": [
+        "Files of Ulric Haynes"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Ulric Haynes",
+        "url": "https://discoverlbj.org/item/ftl-nsf-haynes",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of Gordon Chase",
+      "subCollectionAliases": [
+        "Chase Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Gordon Chase",
+        "url": "https://discoverlbj.org/item/ftl-nsf-chase",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Committee File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Committee Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-committee",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Fried Files",
+      "subCollectionAliases": [
+        "Files of Edward R. Fried"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Edward R. Fried",
+        "url": "https://discoverlbj.org/item/ftl-nsf-fried",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of David Klein",
+      "subCollectionAliases": [
+        "Klein Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of David Klein",
+        "url": "https://discoverlbj.org/item/ftl-nsf-klein",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of William J. Jorden",
+      "subCollectionAliases": [
+        "Jorden Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of William J. Jorden",
+        "url": "https://discoverlbj.org/item/ftl-nsf-jorden",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of Bromley Smith",
+      "subCollectionAliases": [
+        "Smith Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Bromley Smith",
+        "url": "https://discoverlbj.org/item/ftl-nsf-smith",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Situation Room Files",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Situation Room Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-sitroom",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Speech File",
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Folder title list, National Security Files, Speech Files",
+        "url": "https://discoverlbj.org/item/ftl-nsf-speech",
+        "naId": null,
+        "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "National Security File",
+      "subCollection": "Files of Francis M. Bator",
+      "subCollectionAliases": [
+        "Bator Files"
+      ],
+      "resolution": {
+        "title": "Folder title list, National Security Files, Files of Francis M. Bator",
+        "url": "https://discoverlbj.org/item/ftl-nsf-bator",
+        "naId": null,
+        "rationale": "The NSF series. Distinct from the separately deposited Papers of Francis M. Bator, which the corpus also cites and which is not curated here."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "NSF",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "National Security Files, 1963-1969",
+        "url": "https://discoverlbj.org/loh/pres/nsf",
+        "naId": "567979",
+        "rationale": "The collection under its abbreviation."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "Recordings and Transcripts",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Telephone Conversations",
+        "url": "https://discoverlbj.org/loh/telecon",
+        "naId": null,
+        "rationale": "Cited by conversation rather than by box, so a folder title list is the wrong model: the collection page is where the recordings and their transcripts are listed. Curated at the collection level for that reason, not for lack of a more specific aid."
+      }
+    },
+    {
+      "repository": "Johnson Library",
+      "collection": "White House Central Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "White House Central Files",
+        "url": "https://discoverlbj.org/loh/pres/whcf",
+        "naId": "566962",
+        "rationale": "The Confidential File and the Subject Files are both described here, and the library publishes the collection's NARA identifier."
+      }
     }
   ]
 }
