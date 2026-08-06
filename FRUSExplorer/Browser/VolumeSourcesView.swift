@@ -291,7 +291,7 @@ struct VolumeSourcesView: View {
         // #372/N-5: central-files first, volume-sources second — 220 lot keys resolve only in
         // central-files (98 nodes here), 7 only in volume-sources, so the precedence is a
         // fallback rather than a swap. `ArchivalResolver` owns the rule for both surfaces.
-        let resolution = ArchivalResolver.resolution(
+        let resolution = ArchivalResolver.frontMatterResolution(
             recordGroup: entry.recordGroup, lotFile: entry.lotFile)
         // Phase 4: the collection-authority record this row resolves to, via the
         // shared front-matter identity derivation (lot key, else repository-scoped

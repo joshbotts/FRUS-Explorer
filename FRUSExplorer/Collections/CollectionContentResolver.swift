@@ -1270,14 +1270,17 @@ class CollectionContentResolver {
             }
         }
 
-        // #372/N-5: central-files first, volume-sources second. This block's rows are the
-        // only `document_sources` consumer of the archival resolution, and 733 documents —
-        // 375 of its `(repository, recordGroup, lotFile, seriesName)` group rows — cite a lot
-        // that only central-files resolves. See `ArchivalResolver` for why it layers rather
-        // than replaces.
+        // #372/N-5: a document citation resolves through its LOT and nothing else —
+        // `documentResolution` does not take a record group, so this block can no longer
+        // answer "740.00119 (Potsdam)/5-2446" with a link to the whole of RG 59. The record
+        // group still appears in the row's label; only the hyperlink is withheld. The lot half
+        // is central-files first, volume-sources second. See `ArchivalResolver`.
+        //
+        // `recordGroup` stays in the signature because `CollectionGeneratedBlocks` groups and
+        // labels by it — it is simply not part of the resolution any more.
         func archivalResolution(recordGroup: String?, lotFile: String?)
             -> CollectionGeneratedBlocks.ArchivalLink? {
-            ArchivalResolver.resolution(recordGroup: recordGroup, lotFile: lotFile)
+            ArchivalResolver.documentResolution(lotFile: lotFile)
                 .map { CollectionGeneratedBlocks.ArchivalLink(title: $0.title,
                                                               urlString: $0.catalogURL) }
         }

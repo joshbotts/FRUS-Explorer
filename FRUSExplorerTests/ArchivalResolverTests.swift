@@ -42,10 +42,18 @@ struct ArchivalResolverTests {
     private func volumes() throws -> VolumeSourcesIndex {
         try #require(VolumeSourcesIndexStore.shared, "volume-sources-index.json must decode")
     }
-    /// The resolution under test, against both real bundles.
+    /// The FRONT-MATTER resolution under test, against both real bundles.
     private func resolve(rg: String? = nil, lot: String? = nil) throws -> ArchivalResolution? {
-        ArchivalResolver.resolution(recordGroup: rg, lotFile: lot,
-                                    centralFiles: try central(), volumeSources: try volumes())
+        ArchivalResolver.frontMatterResolution(recordGroup: rg, lotFile: lot,
+                                               centralFiles: try central(),
+                                               volumeSources: try volumes())
+    }
+
+    /// The DOCUMENT resolution under test — lot only; there is no record group to pass.
+    private func resolveDoc(lot: String?) throws -> ArchivalResolution? {
+        ArchivalResolver.documentResolution(lotFile: lot,
+                                            centralFiles: try central(),
+                                            volumeSources: try volumes())
     }
 
     // MARK: - Precedence
@@ -158,6 +166,44 @@ struct ArchivalResolverTests {
         #expect(compared == 751, "expected 751 shared lot keys; compared \(compared)")
     }
 
+    // MARK: - Document citations get no record-group link
+
+    /// The N-5 follow-up decision. A document citation names something far more specific than
+    /// a record group; answering it with "General Records of the Department of State" is a
+    /// category, not a resolution.
+    ///
+    /// The rule is structural — `documentResolution` has **no** `recordGroup` parameter — so
+    /// this test is really pinning the *signature*. If someone re-adds the parameter and wires
+    /// the branch back, the corpus check below is what notices.
+    @Test("A document citation never resolves through its record group")
+    func documentCitationsGetNoRecordGroupLink() throws {
+        // A lot-less decimal citation: RG 59 is mapped, so the old branch would have answered.
+        #expect(try volumes().recordGroups["59"] != nil, "fixture guard: RG 59 is mapped")
+        #expect(try resolveDoc(lot: nil) == nil)
+        #expect(try resolveDoc(lot: "") == nil)
+        #expect(try resolveDoc(lot: "   ") == nil)
+        // …while the same inputs on the FRONT-MATTER path still resolve. That contrast is the
+        // whole change: one surface keeps the branch, the other loses it.
+        #expect(try resolve(rg: "59", lot: nil)?.naId == "388")
+    }
+
+    /// The document path keeps everything the lot half earned in #692.
+    @Test("A document citation still resolves through its lot, both arms")
+    func documentCitationsStillResolveLots() throws {
+        #expect(try resolveDoc(lot: "60–D 224")?.naId == "592873", "central-files arm")
+        #expect(try resolveDoc(lot: "70 D 449")?.naId == "40967285", "volume-sources fallback arm")
+        #expect(try resolveDoc(lot: "53 D 413")?.matchType == "control", "precedence intact")
+        #expect(try resolveDoc(lot: "99 D 9999") == nil, "an unresolvable lot is still nil")
+    }
+
+    /// The bundled-store overload must lose the branch too — the injected one proving it is
+    /// not enough, since the call site uses the convenience form.
+    @Test("The bundled-store document overload has no record-group branch either")
+    func bundledDocumentOverloadHasNoRecordGroupBranch() throws {
+        #expect(ArchivalResolver.documentResolution(lotFile: nil) == nil)
+        #expect(ArchivalResolver.documentResolution(lotFile: "60–D 224")?.naId == "592873")
+    }
+
     // MARK: - Rules that must survive
 
     /// Predates this type and survives it: a citation naming a lot resolves *only* through that
@@ -205,6 +251,21 @@ struct ArchivalResolverTests {
         #expect(try resolve(rg: "84") != nil)
     }
 
+    /// The front-matter branch normalizes the record group before the lookup, so it cannot
+    /// become form-sensitive the way the document branch was.
+    ///
+    /// `volume_sources` stores these bare today — 0 of 7,374 rows carry the prefix — so this
+    /// is defence, not a live fix. It matters because the *reason* the document branch was
+    /// removed was a form mismatch, and leaving the surviving branch exposed to the same
+    /// mismatch would be the identical bug one surface over.
+    @Test("The front-matter branch is not sensitive to the record-group's stored form")
+    func frontMatterBranchNormalizesTheForm() throws {
+        #expect(try resolve(rg: "59")?.naId == "388")
+        #expect(try resolve(rg: "RG-59")?.naId == "388", "the parser's inferred form must work too")
+        #expect(try resolve(rg: "RG 59")?.naId == "388", "and the spaced spelling")
+        #expect(try resolve(rg: "rg-59")?.naId == "388", "and lower case")
+    }
+
     @Test("No citation at all resolves to nothing")
     func emptyInputResolvesToNil() throws {
         #expect(try resolve() == nil)
@@ -226,9 +287,9 @@ struct ArchivalResolverTests {
             let index = try Self.syntheticCentralFiles(lot: "11D11", extra: json)
             #expect(index.lotFile(forRawLot: "11 D 11") == nil,
                     "guard precondition failed for \(json)")
-            #expect(ArchivalResolver.resolution(recordGroup: "59", lotFile: "11 D 11",
-                                                centralFiles: index,
-                                                volumeSources: try volumes()) == nil,
+            #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: "11 D 11",
+                                                           centralFiles: index,
+                                                           volumeSources: try volumes()) == nil,
                     "a refused entry must resolve to nothing — not to the record group, not by reading past the guard")
         }
     }
@@ -252,10 +313,10 @@ struct ArchivalResolverTests {
     @Test("The bundled-store overload agrees with the injected one")
     func conveniencOverloadUsesBothBundles() throws {
         for lot in ["60–D 224", "64 D 171", "53 D 413"] {
-            #expect(ArchivalResolver.resolution(recordGroup: nil, lotFile: lot)?.naId
+            #expect(ArchivalResolver.frontMatterResolution(recordGroup: nil, lotFile: lot)?.naId
                     == (try resolve(lot: lot))?.naId, "convenience overload diverged on \(lot)")
         }
-        #expect(ArchivalResolver.resolution(recordGroup: "59", lotFile: nil)?.naId == "388")
+        #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: nil)?.naId == "388")
     }
 
     /// Both render surfaces must go through the resolver. A call site left on
@@ -267,15 +328,24 @@ struct ArchivalResolverTests {
     func bothCallSitesUseTheResolver() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        for path in ["FRUSExplorer/Browser/VolumeSourcesView.swift",
-                     "FRUSExplorer/Collections/CollectionContentResolver.swift"] {
+        // Each surface must use ITS OWN entry point. An "either one" assertion would pass
+        // while the Collections block called `frontMatterResolution` and kept the very
+        // record-group branch this change removes.
+        let expected = [
+            "FRUSExplorer/Browser/VolumeSourcesView.swift":
+                ("ArchivalResolver.frontMatterResolution(", "ArchivalResolver.documentResolution("),
+            "FRUSExplorer/Collections/CollectionContentResolver.swift":
+                ("ArchivalResolver.documentResolution(", "ArchivalResolver.frontMatterResolution("),
+        ]
+        for (path, calls) in expected {
             let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
-            // Drop full-line comments: this file's own prose names the old call.
+            // Drop full-line comments: this file's own prose names the other call.
             let code = text.split(separator: "\n", omittingEmptySubsequences: false)
                 .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
                 .joined(separator: "\n")
-            #expect(code.contains("ArchivalResolver.resolution("),
-                    "\(path) no longer routes through ArchivalResolver")
+            #expect(code.contains(calls.0), "\(path) must resolve through \(calls.0)")
+            #expect(!code.contains(calls.1),
+                    "\(path) uses the OTHER surface's entry point (\(calls.1)) — the record-group branch belongs to front matter only")
             #expect(!code.contains("VolumeSourcesIndexStore.shared?.resolution("),
                     "\(path) still resolves through volume-sources directly, bypassing the precedence")
         }
