@@ -14,7 +14,8 @@
         "naId": null,
         "rationale": "The whole Records of the Office of the National Security Advisor, 775 linear feet — what an unqualified 'National Security Affairs' citation names. The library's own finding aid states the records 'were kept in two large sub-collections given the titles \"Brzezinski Material\" and \"Staff Material\"', which is why the two branches below share this aid."
       },
-      "collectionIdentifier": "JC-NSA"
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -31,7 +32,8 @@
         "naId": null,
         "rationale": "Series NSA 1–16 of the collection. NARA assigns identifiers to the parent collection (560131) and to each of the 32 series, but to no intermediate sub-collection, so this level carries no NAID of its own. The aliases are spellings the corpus actually prints."
       },
-      "collectionIdentifier": "JC-NSA"
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -46,7 +48,8 @@
         "naId": null,
         "rationale": "Series NSA 17–32 of the same collection. The library publishes no separate Staff Material aid, so this collection-level aid — whose own title names both branches — is the most precise honest target."
       },
-      "collectionIdentifier": "JC-NSA"
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -59,7 +62,8 @@
         "naId": "560164",
         "rationale": "Series NSA 15, containers 1–127. Identified by its sub-series rather than by name: the scope note reads 'divided into a Country Chron File and a Subject Chron File', and the corpus cites exactly those two. NSA 17 is also titled 'Office Files' but contains neither, so the 'Brzezinski' qualifier is decisive. The linked page is the collection aid; NARA publishes the series identifier in the PDF."
       },
-      "collectionIdentifier": "JC-NSA"
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -72,7 +76,8 @@
         "naId": "560184",
         "rationale": "Series NSA 24, an exact match to the citation segment. The library publishes no per-series page, so the link is the collection aid."
       },
-      "collectionIdentifier": "JC-NSA"
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -85,7 +90,8 @@
         "naId": "1104",
         "rationale": "A DIFFERENT collection from the NSA Brzezinski Material despite the similar name: accession 92-03 under Brzezinski's own 1992 instrument of gift, against the NSA collection's accession 80-1 under Carter's 1981 gift. The NSA finding aid lists it separately as related material held in the same repository."
       },
-      "collectionIdentifier": "JC-NSA"
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -100,7 +106,8 @@
         "naId": null,
         "rationale": "Part I covers Kissinger's service as National Security Adviser 1969–1975 and Secretary of State 1973–1977, in 26 series spanning 1957–1982 — the FRUS era. Part II is at Yale and is distinguishable by its citations; the corpus contains none. Library of Congress collections carry no NARA identifier."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -113,7 +120,8 @@
         "naId": null,
         "rationale": "W. Averell Harriman (1891–1986), 346,760 items. Not Pamela Harriman (1920–1997) or Florence Jaffray Harriman (1870–1967), both of whom the Library also holds."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -128,7 +136,8 @@
         "naId": null,
         "rationale": "Alexander Meigs Haig, Jr. (1924–2010), 161,000 items. Not the Douglas Haig, Earl (1861–1928) papers the Library also holds."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -143,7 +152,8 @@
         "naId": null,
         "rationale": "James R. Schlesinger, Secretary of Defense and Secretary of Energy — not Arthur M. Schlesinger, Jr., whose papers FRUS cites at the Kennedy Library under a separate row."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -156,7 +166,8 @@
         "naId": null,
         "rationale": "Caspar W. Weinberger, Secretary of Defense 1981–1987."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -169,7 +180,8 @@
         "naId": null,
         "rationale": "Elliot L. Richardson, Secretary of Defense, Attorney General and Secretary of Commerce."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -182,7 +194,8 @@
         "naId": null,
         "rationale": "Paul H. Nitze, Policy Planning Staff director and arms-control negotiator."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -195,7 +208,8 @@
         "naId": null,
         "rationale": "Sol M. Linowitz, Panama Canal treaty negotiator and Middle East envoy."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -208,7 +222,8 @@
         "naId": null,
         "rationale": "A subseries of the NSC Executive Secretariat's Presidential Acquisitions series, arranged in five geographical regions."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -223,7 +238,8 @@
         "naId": null,
         "rationale": "Correspondence between the President and world leaders, arranged by country then chronologically."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -236,7 +252,8 @@
         "naId": null,
         "rationale": "The aid's span (1982–1985) is narrower than the volumes' coverage; some box inventories show only a range of material."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -249,7 +266,8 @@
         "naId": null,
         "rationale": "Three series: Memorandum File, Correspondence File, and Cabinet/Cabinet Council Meeting File."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -262,7 +280,8 @@
         "naId": null,
         "rationale": "Records on specific Executive-branch agencies, including the Secretary of State's evening reports and the Secretary of Defense's weekly briefings."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -275,7 +294,8 @@
         "naId": null,
         "rationale": "Two series: Chronological Trip File and Summit File. The aid titles it plural; the citations write it singular."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -295,7 +315,8 @@
         "naId": null,
         "rationale": "The Executive Secretariat's centralized NSDD material — drafts, action plans and background memoranda as well as the directives."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -313,7 +334,8 @@
         "naId": null,
         "rationale": "Copies of material the NSC retained in Washington."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -329,7 +351,8 @@
         "naId": null,
         "rationale": "Duplicates of originals that remained at the White House; the Library expects the originals in due course."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -344,7 +367,8 @@
         "naId": null,
         "rationale": "National Security Study Directives — the policy studies commissioned by Senior Interagency Groups, the NSC staff or the National Security Adviser."
       },
-      "collectionIdentifier": "RR-EXSEC"
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -357,7 +381,8 @@
         "naId": "876218",
         "rationale": "NARA series 876218. Not the Returned Materials Collection, whose own 'White House Special Files' pages describe personal material returned to the Nixon estate — a different body of records from the one these citations name."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -370,7 +395,8 @@
         "naId": "595291",
         "rationale": "NARA series 595291, whose own title is the plural 'President's Personal Files' the citations use; the library titles the aid singular. 18 sub-series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -383,7 +409,8 @@
         "naId": null,
         "rationale": "No NARA series record corresponds to this unit — searched at series level several ways — so the absence of an identifier here is a finding, not an omission."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -396,7 +423,8 @@
         "naId": "6004162",
         "rationale": "NARA series 6004162, titled 'Staff Secretary's Files' as the citations write it; the library titles the aid simply 'Staff Secretary'. Its five series match the aid's."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -409,7 +437,8 @@
         "naId": null,
         "rationale": "Same series as the NSPG sub-collection entry. The citation punctuates the level-1 segment differently, so it keys separately in the authority."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -422,7 +451,8 @@
         "naId": null,
         "rationale": "Same series as the NSC Head of State File entry, reached through a differently punctuated level-1 segment."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -441,7 +471,8 @@
         "naId": null,
         "rationale": "The single largest Ford series in FRUS. The library titles it in the plural; the corpus writes both numbers, and abbreviates it \"Memcons\"."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -458,7 +489,8 @@
         "naId": null,
         "rationale": "The office files Kissinger and Scowcroft kept in the West Wing, as distinct from the NSC staff files. The corpus joins the two names with a hyphen, an en dash, a slash and the word \"and\"."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -473,7 +505,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -488,7 +521,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -506,7 +540,8 @@
         "naId": null,
         "rationale": "The series name contains commas, so the citation splits and only \"Kissinger Reports on USSR\" reaches the matcher — the stored segment is that head, which is unambiguous inside this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -525,7 +560,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -538,7 +574,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -553,7 +590,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -569,7 +607,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -584,7 +623,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -600,7 +640,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -617,7 +658,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -634,7 +676,8 @@
         "naId": null,
         "rationale": "Another comma-bearing series name: the corpus writes \"NSC Europe, Canada, and Ocean Affairs Staff\" and \"NSC Staff for Europe, Canada, and Ocean Affairs\", both of which split at the first comma. The stored segments are those heads."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -654,7 +697,8 @@
         "naId": null,
         "rationale": "The corpus writes \"of\", \"for\", with and without \"and Cables\", and abbreviates Kissinger to HAK."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -669,7 +713,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -685,7 +730,8 @@
         "naId": null,
         "rationale": "The library files these under the NSC as an institution rather than under the National Security Adviser; the corpus cites them through the adviser's papers and calls them the H-Files."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -700,7 +746,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -715,7 +762,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -730,7 +778,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -747,7 +796,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -762,7 +812,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -777,7 +828,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -792,7 +844,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -805,7 +858,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -833,7 +887,8 @@
         "naId": null,
         "rationale": "One aid covers both memoranda series (Box 1 NSDMs, Box 2 NSSMs). The corpus names them in either order, spelled out or abbreviated."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -858,7 +913,8 @@
         "naId": null,
         "rationale": "The corpus calls this staff the Middle East and South Asian Affairs Staff, the Operations Staff, and the NSC Staff for the region, and cites its convenience files under the same names."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -873,7 +929,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -886,7 +943,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -899,7 +957,8 @@
         "naId": null,
         "rationale": "Reachable only because the middle-initial truncation is repaired before matching — the citation sentence otherwise ends at \"John K.\"."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -912,7 +971,8 @@
         "naId": null,
         "rationale": "Reachable only because the middle-initial truncation is repaired before matching — the citation sentence otherwise ends at \"Robert C.\"."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -928,7 +988,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -941,7 +1002,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -956,7 +1018,8 @@
         "naId": null,
         "rationale": "The library's own finding aid for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -969,7 +1032,8 @@
         "naId": null,
         "rationale": "The same NSC institutional records the adviser's files point to, cited without the adviser level — FRUS writes them as the H-Files. Parenthesised and unparenthesised spellings key differently, so each gets its own entry."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -982,7 +1046,8 @@
         "naId": null,
         "rationale": "The same NSC institutional records the adviser's files point to, cited without the adviser level — FRUS writes them as the H-Files. Parenthesised and unparenthesised spellings key differently, so each gets its own entry."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -1002,7 +1067,8 @@
         "naId": null,
         "rationale": "Sub-keyed deliberately: \"National Security Council\" alone is a body, not a collection, so an unrecognised sub-collection under it must resolve to nothing rather than to these files. The corpus subdivides the series with an em dash (NSDMs, NSSMs, Meetings); all three are subseries of the same Institutional Files."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -1018,7 +1084,8 @@
         "naId": null,
         "rationale": "\"NSC Files\" is a level rather than a series — as with the Nixon Staff Member and Office Files, only the named sub-collection gets an answer."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -1031,7 +1098,8 @@
         "naId": null,
         "rationale": "The same reference file the adviser's papers carry, cited as a collection in its own right."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -1044,7 +1112,8 @@
         "naId": null,
         "rationale": "The collection-level answer for a citation that names no series, and the fallback for the few series the library has not published an aid for (notably the Scowcroft Daily Work Files). It is the library's own account of how these records were assembled — \"Numerous subcollections comprise what Ford Library archivists have chosen to call collectively the 'National Security Adviser Files'\" — so it is an overview rather than a box list. Ford publishes one; Nixon does not for the White House Special Files, which is why that row has no collection-wide entry."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1057,7 +1126,8 @@
         "naId": null,
         "rationale": "The collection-level list of all 28 series with their box ranges — the answer for a citation naming a series the library has not published a separate list for. That is not a small residue: `Country Files` (1,697 documents) is split by region in the archive but cited without one, so the box range on this page is what identifies which regional list to open; `Agency Files` (506, boxes 193–306) and the Backchannel files (130) have no list of their own."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1076,7 +1146,8 @@
         "naId": null,
         "rationale": "The H-Files — 105 feet, boxes H-1 to H-315. Nixon's are a different series from the Ford and Carter institutional files of the same name; this entry is reachable only from a Nixon citation."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1093,7 +1164,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1106,7 +1178,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1122,7 +1195,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1138,7 +1212,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1153,7 +1228,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1168,7 +1244,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1183,7 +1260,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1201,7 +1279,8 @@
         "naId": null,
         "rationale": "Boxes 846–872. Distinct from `For the President's Files – China/Vietnam Negotiations` (1031–1041), which has its own list."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1216,7 +1295,8 @@
         "naId": null,
         "rationale": "Boxes 1031–1041."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1232,7 +1312,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1247,7 +1328,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1260,7 +1342,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1273,7 +1356,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1289,7 +1373,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1302,7 +1387,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1315,7 +1401,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1330,7 +1417,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1349,7 +1437,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1364,7 +1453,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1380,7 +1470,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1393,7 +1484,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1409,7 +1501,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1424,7 +1517,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1439,7 +1533,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1452,7 +1547,8 @@
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1465,7 +1561,8 @@
         "naId": null,
         "rationale": "Cited without the NSC Files level."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1478,7 +1575,8 @@
         "naId": null,
         "rationale": "Cited without the NSC Files level."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1491,7 +1589,8 @@
         "naId": null,
         "rationale": "Cited without the NSC Files level."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1504,7 +1603,8 @@
         "naId": null,
         "rationale": "The Telcons, cited as a collection in their own right. Curated at the collection level because the segment after the box is a folder title (Chronological File, Dobrynin File, Home File), not a series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1517,7 +1617,8 @@
         "naId": null,
         "rationale": "As above."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1530,7 +1631,8 @@
         "naId": null,
         "rationale": "As above."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1543,7 +1645,8 @@
         "naId": "567979",
         "rationale": "The collection-level page, listing all 42 series with their extents — the answer for a citation naming a series the library files elsewhere or does not itemise, such as the `Aides File` (22 documents), whose staff files ARE the NSF's own per-person series. It carries the collection's NARA identifier, so these rows also reach the catalogue."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1558,7 +1661,8 @@
         "naId": null,
         "rationale": "2,015 documents — 41% of the Johnson corpus in one series. The archive divides it into seven regional subseries, but FRUS cites it undivided, so the series-wide list is the right grain."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1576,7 +1680,8 @@
         "naId": null,
         "rationale": "The corpus appends the adviser's name with three different dashes; all are the one series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1589,7 +1694,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12006886
     },
     {
       "repository": "Johnson Library",
@@ -1602,7 +1708,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 4734742
     },
     {
       "repository": "Johnson Library",
@@ -1615,7 +1722,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16575543
     },
     {
       "repository": "Johnson Library",
@@ -1628,7 +1736,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12093071
     },
     {
       "repository": "Johnson Library",
@@ -1644,7 +1753,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 591194
     },
     {
       "repository": "Johnson Library",
@@ -1661,7 +1771,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12021213
     },
     {
       "repository": "Johnson Library",
@@ -1679,7 +1790,8 @@
         "naId": null,
         "rationale": "The March 31st Speech history is one of the histories in this series, not a series of its own."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1695,7 +1807,8 @@
         "naId": "7763260",
         "rationale": "Kept separately by White House Staff Assistant Dorothy Territo rather than by the NSC, and the library publishes its own NARA identifier for it."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7763260
     },
     {
       "repository": "Johnson Library",
@@ -1712,7 +1825,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7624433
     },
     {
       "repository": "Johnson Library",
@@ -1728,7 +1842,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12008318
     },
     {
       "repository": "Johnson Library",
@@ -1746,7 +1861,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12009321
     },
     {
       "repository": "Johnson Library",
@@ -1761,7 +1877,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12010023
     },
     {
       "repository": "Johnson Library",
@@ -1779,7 +1896,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7369107
     },
     {
       "repository": "Johnson Library",
@@ -1792,7 +1910,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12007725
     },
     {
       "repository": "Johnson Library",
@@ -1807,7 +1926,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12013717
     },
     {
       "repository": "Johnson Library",
@@ -1824,7 +1944,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12075320
     },
     {
       "repository": "Johnson Library",
@@ -1840,7 +1961,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12032296
     },
     {
       "repository": "Johnson Library",
@@ -1858,7 +1980,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12008959
     },
     {
       "repository": "Johnson Library",
@@ -1873,7 +1996,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16601872
     },
     {
       "repository": "Johnson Library",
@@ -1886,7 +2010,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16568320
     },
     {
       "repository": "Johnson Library",
@@ -1901,7 +2026,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7260916
     },
     {
       "repository": "Johnson Library",
@@ -1916,7 +2042,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 23806510
     },
     {
       "repository": "Johnson Library",
@@ -1929,7 +2056,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12008350
     },
     {
       "repository": "Johnson Library",
@@ -1944,7 +2072,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1959,7 +2088,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 148893512
     },
     {
       "repository": "Johnson Library",
@@ -1974,7 +2104,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 2679432
     },
     {
       "repository": "Johnson Library",
@@ -1989,7 +2120,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -2002,7 +2134,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12093084
     },
     {
       "repository": "Johnson Library",
@@ -2015,7 +2148,8 @@
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12165928
     },
     {
       "repository": "Johnson Library",
@@ -2030,7 +2164,8 @@
         "naId": null,
         "rationale": "The NSF series. Distinct from the separately deposited Papers of Francis M. Bator, which the corpus also cites and which is not curated here."
       },
-      "collectionIdentifier": "LBJ-NSF"
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16567623
     },
     {
       "repository": "Johnson Library",
@@ -2043,7 +2178,8 @@
         "naId": "567979",
         "rationale": "The collection under its abbreviation."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -2056,7 +2192,8 @@
         "naId": null,
         "rationale": "Cited by conversation rather than by box, so a folder title list is the wrong model: the collection page is where the recordings and their transcripts are listed. Curated at the collection level for that reason, not for lack of a more specific aid."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -2069,7 +2206,8 @@
         "naId": "566962",
         "rationale": "The Confidential File and the Subject Files are both described here, and the library publishes the collection's NARA identifier."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2082,7 +2220,8 @@
         "naId": null,
         "rationale": "The collection page listing all eighteen series. The library's own name for it is \"Papers as President of the United States, 1953-61 (Ann Whitman File)\" — NOT the one-foot ANN C. WHITMAN: PAPERS, which is her personal papers and a different collection."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2098,7 +2237,8 @@
         "naId": null,
         "rationale": "Confirmed from the container list, which opens \"Record of Actions by NSC 1953\" — this is the series FRUS cites as the NSC Records."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2115,7 +2255,8 @@
         "naId": null,
         "rationale": "The library uses both names for the one series: the scope note calls it \"The Dwight D. Eisenhower Diaries series\" while the series is titled DDE Diary."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2130,7 +2271,8 @@
         "naId": null,
         "rationale": "FRUS writes \"International File\", the library \"International Series\"; the container list is arranged by country from Afghanistan, which is what the citations point into."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": 594080
     },
     {
       "repository": "Eisenhower Library",
@@ -2146,7 +2288,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2159,7 +2302,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2174,7 +2318,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2189,7 +2334,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2204,7 +2350,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2219,7 +2366,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2232,7 +2380,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2247,7 +2396,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": 186474
     },
     {
       "repository": "Eisenhower Library",
@@ -2262,7 +2412,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2275,7 +2426,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-EPRES"
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2291,7 +2443,8 @@
         "naId": null,
         "rationale": "Cited through the papers rather than as the file itself. The series is a third level the citation keeps but this artifact does not, so the collection page is the answer."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2306,7 +2459,8 @@
         "naId": null,
         "rationale": "As above."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2319,7 +2473,8 @@
         "naId": null,
         "rationale": "The collection page listing all twelve series."
       },
-      "collectionIdentifier": "DDE-1037"
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2337,7 +2492,8 @@
         "naId": null,
         "rationale": "One series of over 13,000 pages; General and White House are its subseries, and FRUS cites both by subseries name."
       },
-      "collectionIdentifier": "DDE-1037"
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2354,7 +2510,8 @@
         "naId": null,
         "rationale": "Confirmed from the container list, which carries \"Meetings with the President 1954\" and \"Meeting with the President 1953\" folders."
       },
-      "collectionIdentifier": "DDE-1037"
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2370,7 +2527,8 @@
         "naId": null,
         "rationale": "The container list's MEMORANDA OF CONVERSATIONS SUBSERIES opens \"Memos of Conversation - General - A Through D\", which is the form FRUS abbreviates."
       },
-      "collectionIdentifier": "DDE-1037"
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2383,7 +2541,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-1037"
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2398,7 +2557,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": "DDE-1037"
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2411,7 +2571,8 @@
         "naId": null,
         "rationale": "The library publishes one aid for the whole collection rather than per series, so the telephone-conversation citations reach it too."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2424,7 +2585,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2437,7 +2599,8 @@
         "naId": null,
         "rationale": "One aid covers the council's records; the Office Series and Policy Papers citations reach it."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2450,7 +2613,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2463,7 +2627,8 @@
         "naId": null,
         "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2478,7 +2643,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2496,7 +2662,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2513,7 +2680,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2529,7 +2697,8 @@
         "naId": null,
         "rationale": "The library's own container list for this series."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2542,7 +2711,8 @@
         "naId": null,
         "rationale": "The same papers cited with the full name. A collection-level spelling needs its own entry — subCollectionAliases only aliases the level below."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2558,7 +2728,8 @@
         "naId": null,
         "rationale": "The Ann Whitman File's diary series, cited through the papers."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2571,7 +2742,8 @@
         "naId": null,
         "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too. Cited possessively; the possessive does not fold, so it needs its own entry."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2584,7 +2756,8 @@
         "naId": null,
         "rationale": "The library publishes ONE finding aid for the whole subcollection — administrative overview, series list and container list on a single page — so there is no more specific published destination for a series citation. The page's own series list is the next step."
       },
-      "collectionIdentifier": "JFK-4"
+      "collectionIdentifier": "JFK-4",
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2597,7 +2770,8 @@
         "naId": null,
         "rationale": "The subcollection under its abbreviation."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2610,7 +2784,8 @@
         "naId": null,
         "rationale": "The library publishes ONE finding aid for the whole subcollection — administrative overview, series list and container list on a single page — so there is no more specific published destination for a series citation. The page's own series list is the next step."
       },
-      "collectionIdentifier": "JFK-3"
+      "collectionIdentifier": "JFK-3",
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2623,7 +2798,8 @@
         "naId": null,
         "rationale": "The Vietnam country-series citations reach it too; the library publishes one aid for the whole collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2636,7 +2812,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2649,7 +2826,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2662,7 +2840,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2675,7 +2854,8 @@
         "naId": null,
         "rationale": "Verified by the page's own title. Slug-guessing found `gwbpp` first, which is the personal papers of a different person entirely — the title check is what caught it."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2688,7 +2868,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2701,7 +2882,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2714,7 +2896,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2727,7 +2910,8 @@
         "naId": null,
         "rationale": "The library's finding aid for this collection."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2740,7 +2924,8 @@
         "naId": null,
         "rationale": "The same papers cited without the middle initial — a collection-level spelling needs its own entry."
       },
-      "collectionIdentifier": null
+      "collectionIdentifier": null,
+      "seriesNaId": null
     }
   ]
 }
