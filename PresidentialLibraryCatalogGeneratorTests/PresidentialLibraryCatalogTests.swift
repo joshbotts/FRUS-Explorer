@@ -48,13 +48,13 @@ struct PresidentialLibraryCatalogTests {
             ["naId": 900, "title": "Later", "ancestors": [["collectionIdentifier": "LBJ-NSF"]]],
             ["naId": 100, "title": "Earlier", "ancestors": [["collectionIdentifier": "LBJ-NSF"]]],
         ]
-        let library = PresidentialLibraryCatalogRunner.project(
+        let projected = PresidentialLibraryCatalogRunner.project(
             prefix: "LBJ", citedAs: "Johnson Library", collections: collections, series: series)
-        #expect(library.collections.map(\.identifier) == ["LBJ-NSF", "LBJ-WHCF"])
-        let nsf = try #require(library.collections.first)
+        #expect(projected.library.collections.map(\.identifier) == ["LBJ-NSF", "LBJ-WHCF"])
+        let nsf = try #require(projected.library.collections.first)
         #expect(nsf.series.map(\.naId) == [100, 900], "sorted by NAID")
         #expect(nsf.isComplete == true, "2 harvested, 2 stated")
-        #expect(library.collections.last?.series.isEmpty == true)
+        #expect(projected.library.collections.last?.series.isEmpty == true)
     }
 
     /// A per-collection shortfall is **reported, never thrown** — because it is not necessarily
@@ -67,18 +67,18 @@ struct PresidentialLibraryCatalogTests {
     /// `CatalogSearchClient.streamRecords`, and that one throws.
     @Test("A collection short of NARA's stated count reports incomplete")
     func shortHarvestIsDetected() throws {
-        let library = PresidentialLibraryCatalogRunner.project(
+        let projected = PresidentialLibraryCatalogRunner.project(
             prefix: "RR", citedAs: "Reagan Library",
             collections: [["collectionIdentifier": "RR-EXSEC", "naId": 1,
                            "title": "Executive Secretariat, NSC", "seriesCount": 21]],
             series: [["naId": 5, "title": "One", "ancestors": [["collectionIdentifier": "RR-EXSEC"]]]])
-        let short = try #require(library.collections.first, "the collection must survive at all")
+        let short = try #require(projected.library.collections.first, "the collection must survive at all")
         #expect(short.isComplete == false, "1 harvested against 21 stated")
         // A collection NARA states no count for cannot be judged, and must not claim to be.
-        let unstated = PresidentialLibraryCatalogRunner.project(
+        let unstatedP = PresidentialLibraryCatalogRunner.project(
             prefix: "RR", citedAs: "Reagan Library",
             collections: [["collectionIdentifier": "RR-X", "naId": 2, "title": "X"]], series: [])
-        let noCount = try #require(unstated.collections.first,
+        let noCount = try #require(unstatedP.library.collections.first,
                                    "a collection with no series must still be kept")
         #expect(noCount.isComplete == nil)
     }
@@ -89,19 +89,19 @@ struct PresidentialLibraryCatalogTests {
     /// a gap in somebody else's cataloguing.
     @Test("A collection NARA has described but not catalogued still lands")
     func describedButUncataloguedCollectionSurvives() throws {
-        let library = PresidentialLibraryCatalogRunner.project(
+        let projected = PresidentialLibraryCatalogRunner.project(
             prefix: "RR", citedAs: "Reagan Library",
             collections: [["collectionIdentifier": "RR-0121", "naId": 364672879,
                            "title": "Records of the Crisis Management Center (CMC), NSC",
                            "seriesCount": 1]],
             series: [])
-        let collection = try #require(library.collections.first,
+        let collection = try #require(projected.library.collections.first,
                                       "the collection is kept, not dropped")
         #expect(collection.identifier == "RR-0121")
         #expect(collection.naId == 364672879)
         #expect(collection.series.isEmpty)
         #expect(collection.isComplete == false, "reported as short…")
-        #expect(library.collections.count == 1, "…and the harvest still yields it")
+        #expect(projected.library.collections.count == 1, "…and the harvest still yields it")
     }
 
     /// Both routes must build the same query — the only permitted difference is the host.
@@ -240,5 +240,66 @@ struct LevelStoreTests {
         try store.append([["naId": 1], ["naId": 2]], cursor: nil)
         #expect(try store.count() == 2, "data lands even when no cursor follows")
         #expect(store.savedCursor == nil)
+    }
+}
+
+// MARK: - Shared-identifier projection
+
+/// Pins the fix for the defect the first full harvest exposed (#681).
+///
+/// A `collectionIdentifier` is **not unique**: 22 of them name two collection records each.
+/// Keying the series grouping by identifier gave both entries every series, which emitted 55
+/// series twice and made NARA's correct counts look wrong (`HH-BDN (4/3)` and `(4/1)` against a
+/// real 3 and 1).
+///
+/// Version history:
+///   1.0 — Session 2026-08-06: #681, after the full harvest
+@Suite("Projection — collections sharing one identifier")
+struct SharedIdentifierProjectionTests {
+
+    /// The real `HH-BDN` shape: two accessions of the Bradley DeLamater Nash Papers, three
+    /// series under one and one under the other.
+    @Test("Two collections sharing an identifier each get only their own series")
+    func sharedIdentifierSplitsByParentNaId() throws {
+        func series(_ naId: Int, parent: Int) -> [String: Any] {
+            ["naId": naId, "title": "S\(naId)",
+             "ancestors": [["naId": parent, "collectionIdentifier": "HH-BDN",
+                            "levelOfDescription": "collection"]]]
+        }
+        let projected = PresidentialLibraryCatalogRunner.project(
+            prefix: "HH", citedAs: "Hoover Library",
+            collections: [
+                ["collectionIdentifier": "HH-BDN", "naId": 872174,
+                 "title": "Bradley DeLamater Nash Papers", "seriesCount": 3],
+                ["collectionIdentifier": "HH-BDN", "naId": 17408503,
+                 "title": "Bradley DeLamater Nash Papers", "seriesCount": 1],
+            ],
+            series: [series(872171, parent: 872174), series(872172, parent: 872174),
+                     series(872173, parent: 872174), series(17408789, parent: 17408503)])
+        let byNaId = Dictionary(uniqueKeysWithValues:
+            projected.library.collections.map { ($0.naId, $0) })
+        #expect(byNaId[872174]?.series.map(\.naId) == [872171, 872172, 872173])
+        #expect(byNaId[17408503]?.series.map(\.naId) == [17408789])
+        #expect(byNaId[872174]?.isComplete == true, "NARA's 3 was right all along")
+        #expect(byNaId[17408503]?.isComplete == true, "and so was its 1")
+        // No series may appear under both.
+        let emitted = projected.library.collections.flatMap { $0.series.map(\.naId) }
+        #expect(emitted.count == Set(emitted).count, "a series belongs to exactly one collection")
+        #expect(projected.unplaced.isEmpty)
+    }
+
+    /// A series naming a collection that was not harvested must be **accounted for**, not
+    /// dropped. Sixteen went missing from the first full harvest this way, past a level-total
+    /// check that had passed.
+    @Test("A series with no harvested parent is reported, not silently lost")
+    func unplacedSeriesAreReported() {
+        let projected = PresidentialLibraryCatalogRunner.project(
+            prefix: "JC", citedAs: "Carter Library",
+            collections: [],
+            series: [["naId": 42, "title": "Orphan",
+                      "ancestors": [["naId": 999, "collectionIdentifier": "JC-OH",
+                                     "levelOfDescription": "collection"]]]])
+        #expect(projected.library.collections.isEmpty)
+        #expect(projected.unplaced == [42], "the loss must be visible, not silent")
     }
 }

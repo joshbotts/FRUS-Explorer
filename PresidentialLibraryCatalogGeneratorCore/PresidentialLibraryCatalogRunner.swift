@@ -47,12 +47,15 @@ public enum PresidentialLibraryCatalogRunner {
         let useProxy = env["PUBLIC_PROXY"] == "1"
         let route: CatalogRoute = useProxy ? .publicProxy : .apiV2
         let apiKey = env["CATALOG_API_KEY"]
-        guard !route.needsKey || (apiKey?.isEmpty == false) else {
+        let projectOnly = env["PROJECT_ONLY"] == "1"
+        // A re-projection reads the store and touches no network, so demanding a key for it made
+        // the documented "rebuild offline, so a wrong projection costs seconds rather than a
+        // re-harvest" path impossible to actually take.
+        guard projectOnly || !route.needsKey || (apiKey?.isEmpty == false) else {
             throw HarvestError(
                 "CATALOG_API_KEY is required for the v2 route. Set it, or pass PUBLIC_PROXY=1 to "
                 + "use the keyless website endpoint (see CatalogRoute.publicProxy).")
         }
-        let projectOnly = env["PROJECT_ONLY"] == "1"
         let cacheDir = URL(fileURLWithPath: env["CACHE_DIR"] ?? ".cache/presidential-library-catalog")
         let output = URL(fileURLWithPath:
             env["OUTPUT"] ?? "FRUSExplorer/Resources/presidential-library-catalog.json")
@@ -78,6 +81,7 @@ public enum PresidentialLibraryCatalogRunner {
 
         let client = CatalogSearchClient(route: route, apiKey: apiKey)
         var built: [PresidentialLibraryCatalog.Library] = []
+        var unplaced: [String: [Int]] = [:]
 
         for library in libraries {
             generatorLog("harvesting \(library.prefix)-* (\(library.citedAs))…")
@@ -85,10 +89,12 @@ public enum PresidentialLibraryCatalogRunner {
                 try await harvest(level: level, library: library.prefix, client: client,
                                   cacheDir: cacheDir, projectOnly: projectOnly)
             }
-            built.append(project(
+            let projected = project(
                 prefix: library.prefix, citedAs: library.citedAs,
                 collections: try records(level: "collection", library: library.prefix, cacheDir: cacheDir),
-                series: try records(level: "series", library: library.prefix, cacheDir: cacheDir)))
+                series: try records(level: "series", library: library.prefix, cacheDir: cacheDir))
+            built.append(projected.library)
+            unplaced[library.prefix] = projected.unplaced
         }
 
         let catalog = PresidentialLibraryCatalog(
@@ -97,7 +103,7 @@ public enum PresidentialLibraryCatalogRunner {
             source: route.rawValue,
             libraries: built)
         try write(catalog, to: output)
-        report(catalog)
+        report(catalog, unplaced: unplaced)
     }
 
     // MARK: - Fetch (cached)
@@ -137,30 +143,63 @@ public enum PresidentialLibraryCatalogRunner {
 
     /// Groups series under their collection by the ancestry link.
     ///
-    /// A series does **not** carry `collectionIdentifier` itself — it carries
-    /// `ancestors[].collectionIdentifier`, which is exactly why the live filter works and why
-    /// this projection has to read the ancestry rather than the record's own fields. Reading the
-    /// top level would silently produce a catalogue of collections with no series under any.
+    /// ## Keyed on the parent's NAID, not its identifier
+    /// A `collectionIdentifier` is **not unique**: measured over the full harvest, 22 of them
+    /// name two collection records each. `HH-BDN` is two accessions of the Bradley DeLamater
+    /// Nash Papers — NAID 872174 with three series, NAID 17408503 with one — and keying by
+    /// identifier gave *both* entries all four, emitting 55 series twice and making NARA's
+    /// perfectly correct counts read as `4/3` and `4/1`.
+    ///
+    /// The ancestry carries the parent's `naId` beside its identifier, which disambiguates
+    /// exactly. The identifier survives only as a fallback for a record whose ancestry omits it.
+    ///
+    /// - Returns: the library, and the NAIDs of harvested series that could not be placed —
+    ///   accounted for rather than dropped. Silently losing them is how 16 series vanished from
+    ///   a harvest whose own level-total check had passed.
     static func project(prefix: String, citedAs: String,
                         collections: [[String: Any]], series: [[String: Any]])
-    -> PresidentialLibraryCatalog.Library {
-        var seriesByCollection: [String: [PresidentialLibraryCatalog.Series]] = [:]
+    -> (library: PresidentialLibraryCatalog.Library, unplaced: [Int]) {
+        var byParentNaId: [Int: [PresidentialLibraryCatalog.Series]] = [:]
+        var byIdentifier: [String: [PresidentialLibraryCatalog.Series]] = [:]
+        var seen = Set<Int>()
         for record in series {
-            guard let naId = record["naId"] as? Int,
-                  let title = record["title"] as? String,
-                  let identifier = collectionIdentifier(ofDescendant: record) else { continue }
-            seriesByCollection[identifier, default: []].append(
-                .init(naId: naId, title: title, inclusiveDates: dateSpan(record)))
+            guard let naId = record["naId"] as? Int, let title = record["title"] as? String,
+                  seen.insert(naId).inserted else { continue }
+            let entry = PresidentialLibraryCatalog.Series(
+                naId: naId, title: title, inclusiveDates: dateSpan(record))
+            if let parent = collectionAncestor(of: record) {
+                byParentNaId[parent, default: []].append(entry)
+            } else if let identifier = collectionIdentifier(ofDescendant: record) {
+                byIdentifier[identifier, default: []].append(entry)
+            }
         }
+        var placed = Set<Int>()
         let built = collections.compactMap { record -> PresidentialLibraryCatalog.Collection? in
             guard let identifier = record["collectionIdentifier"] as? String,
                   let naId = record["naId"] as? Int,
                   let title = record["title"] as? String else { return nil }
+            // A collection takes the series naming it by NAID, plus any that named only its
+            // identifier — and that bucket is *consumed*, so two collections sharing one
+            // identifier cannot both claim it.
+            var mine = byParentNaId[naId] ?? []
+            if let loose = byIdentifier.removeValue(forKey: identifier) { mine.append(contentsOf: loose) }
+            mine.forEach { placed.insert($0.naId) }
             return .init(identifier: identifier, title: title, naId: naId,
                          statedSeriesCount: record["seriesCount"] as? Int,
-                         series: (seriesByCollection[identifier] ?? []).sorted { $0.naId < $1.naId })
+                         series: mine.sorted { $0.naId < $1.naId })
         }.sorted { $0.identifier < $1.identifier }
-        return .init(prefix: prefix, citedAs: citedAs, collections: built)
+        return (.init(prefix: prefix, citedAs: citedAs, collections: built),
+                seen.subtracting(placed).sorted())
+    }
+
+    /// The NAID of a record's collection-level ancestor, when its ancestry names one.
+    static func collectionAncestor(of record: [String: Any]) -> Int? {
+        guard let ancestors = record["ancestors"] as? [[String: Any]] else { return nil }
+        for ancestor in ancestors
+        where (ancestor["levelOfDescription"] as? String) == "collection" {
+            if let naId = ancestor["naId"] as? Int { return naId }
+        }
+        return nil
     }
 
     /// The collection a descendant record belongs to, read from its ancestry.
@@ -195,24 +234,53 @@ public enum PresidentialLibraryCatalogRunner {
 
     /// Prints the completeness check. NARA states each collection's `seriesCount`, so a harvest
     /// that paged short is self-detecting — this is where it gets reported rather than assumed.
-    static func report(_ catalog: PresidentialLibraryCatalog) {
-        var collections = 0, series = 0, incomplete: [String] = []
+    static func report(_ catalog: PresidentialLibraryCatalog, unplaced: [String: [Int]]) {
+        var collections = 0, series = 0, distinct = Set<Int>()
+        var fewer: [String] = [], more: [String] = []
         for library in catalog.libraries {
             collections += library.collections.count
             for collection in library.collections {
                 series += collection.series.count
-                if collection.isComplete == false {
-                    incomplete.append("\(collection.identifier) "
-                                      + "(\(collection.series.count)/\(collection.statedSeriesCount ?? -1))")
-                }
+                collection.series.forEach { distinct.insert($0.naId) }
+                guard let stated = collection.statedSeriesCount,
+                      stated != collection.series.count else { continue }
+                let line = "\(collection.identifier) (\(collection.series.count)/\(stated))"
+                // Both directions are NARA's stated figure disagreeing with NARA's catalogue, and
+                // neither implicates this projection: duplication is caught by the
+                // distinct-vs-emitted check below, a dropped series by the unplaced one. Verified
+                // for FDR-MORGEN (25/24) — one collection record, stated 24, and 25 series
+                // genuinely naming it as their collection ancestor.
+                if collection.series.count < stated { fewer.append(line) } else { more.append(line) }
             }
         }
-        generatorLog("libraries \(catalog.libraries.count) · collections \(collections) · series \(series)")
-        if incomplete.isEmpty {
+        generatorLog("libraries \(catalog.libraries.count) · collections \(collections) "
+                     + "· series \(series)")
+        // A series belongs to exactly one collection, so emitted must equal distinct. A gap means
+        // the projection attached one to more than one entry.
+        if series != distinct.count {
+            generatorLog("PROJECTION BUG: emitted \(series) series but only \(distinct.count) are "
+                         + "distinct — \(series - distinct.count) attached to more than one "
+                         + "collection")
+        }
+        let lost = unplaced.filter { !$0.value.isEmpty }
+        if !lost.isEmpty {
+            let n = lost.values.reduce(0) { $0 + $1.count }
+            generatorLog("UNPLACED: \(n) harvested series name a collection that was not "
+                         + "harvested, so they are absent from the index — "
+                         + lost.map { "\($0.key):\($0.value.count)" }.sorted().joined(separator: " "))
+        }
+        if !more.isEmpty {
+            generatorLog("over NARA's stated seriesCount (NARA's count is stale; the catalogue "
+                         + "holds more than it claims): \(more.count) — "
+                         + "\(more.prefix(8).joined(separator: ", "))")
+        }
+        if fewer.isEmpty && more.isEmpty {
             generatorLog("completeness: every collection matches NARA's own seriesCount")
-        } else {
-            generatorLog("completeness: \(incomplete.count) collection(s) short of NARA's stated "
-                         + "seriesCount — \(incomplete.prefix(8).joined(separator: ", "))")
+        } else if !fewer.isEmpty {
+            generatorLog("completeness: \(fewer.count) collection(s) short of NARA's stated "
+                         + "seriesCount — \(fewer.prefix(8).joined(separator: ", "))")
+            generatorLog("  (collections NARA describes but has not fully catalogued; a paging "
+                         + "failure would have thrown instead of reaching this line)")
         }
     }
 }
