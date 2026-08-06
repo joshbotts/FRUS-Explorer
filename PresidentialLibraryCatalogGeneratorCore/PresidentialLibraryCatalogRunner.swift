@@ -18,10 +18,19 @@ import GeneratorKit
 /// - `CATALOG_API_KEY` — required unless `PUBLIC_PROXY=1`.
 /// - `PUBLIC_PROXY=1` — use the keyless website endpoint instead of the v2 API. See
 ///   `CatalogRoute.publicProxy` for why that is opt-in.
+/// - `DEPTH` — `seriesOnly` (default) or `all`. `all` additionally harvests **file units and
+///   items**: ~934,000 records the app does not read, kept because the harvest is the expensive
+///   part and re-running it later to answer a new question would cost the same again. They land
+///   in the store as NDJSON and are **never projected into the bundled index**, which stays at
+///   collection + series.
 /// - `LIBRARIES` — comma-separated prefixes to harvest (default: all eleven).
 /// - `OUTPUT` — default `FRUSExplorer/Resources/presidential-library-catalog.json`.
-/// - `CACHE_DIR` — default `.cache/presidential-library-catalog`. Raw pages land here so a
-///   re-run costs nothing and `PROJECT_ONLY=1` can rebuild the index with no network.
+/// - `CACHE_DIR` — default `.cache/presidential-library-catalog`. Raw pages are appended here as
+///   NDJSON, one file per (library, level), with a `.cursor` sidecar and a `.done` marker. So a
+///   re-run costs nothing, an **interrupted run resumes from its cursor** rather than restarting,
+///   and `PROJECT_ONLY=1` rebuilds the index with no network. At `DEPTH=all` this store is
+///   hundreds of megabytes — it is a local cache like `nara-record-group-catalog`, not a bundled
+///   resource, and it is gitignored.
 /// - `PROJECT_ONLY=1` — rebuild from the cache. The reason a wrong projection costs seconds
 ///   rather than a re-harvest.
 /// - `GENERATED_DATE` — pin the stamp for a reproducible build.
@@ -57,19 +66,29 @@ public enum PresidentialLibraryCatalogRunner {
         }
         try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
 
+        let depth = env["DEPTH"] ?? "seriesOnly"
+        guard ["seriesOnly", "all"].contains(depth) else {
+            throw HarvestError("DEPTH must be seriesOnly or all, not \(depth)")
+        }
+        // The projection only ever reads the first two. The rest are harvested for later use and
+        // deliberately not projected — see the type doc for why the app does not want them.
+        let levels = depth == "all"
+            ? ["collection", "series", "fileUnit", "item"]
+            : ["collection", "series"]
+
         let client = CatalogSearchClient(route: route, apiKey: apiKey)
         var built: [PresidentialLibraryCatalog.Library] = []
 
         for library in libraries {
             generatorLog("harvesting \(library.prefix)-* (\(library.citedAs))…")
-            let collections = try await fetch(level: "collection", library: library.prefix,
-                                              client: client, cacheDir: cacheDir,
-                                              projectOnly: projectOnly)
-            let series = try await fetch(level: "series", library: library.prefix,
-                                         client: client, cacheDir: cacheDir,
-                                         projectOnly: projectOnly)
-            built.append(project(prefix: library.prefix, citedAs: library.citedAs,
-                                 collections: collections, series: series))
+            for level in levels {
+                try await harvest(level: level, library: library.prefix, client: client,
+                                  cacheDir: cacheDir, projectOnly: projectOnly)
+            }
+            built.append(project(
+                prefix: library.prefix, citedAs: library.citedAs,
+                collections: try records(level: "collection", library: library.prefix, cacheDir: cacheDir),
+                series: try records(level: "series", library: library.prefix, cacheDir: cacheDir)))
         }
 
         let catalog = PresidentialLibraryCatalog(
@@ -83,21 +102,35 @@ public enum PresidentialLibraryCatalogRunner {
 
     // MARK: - Fetch (cached)
 
-    /// One level for one library, from the cache when present.
-    static func fetch(level: String, library: String, client: CatalogSearchClient,
-                      cacheDir: URL, projectOnly: Bool) async throws -> [[String: Any]] {
-        let file = cacheDir.appending(path: "\(library)-\(level).json")
-        if FileManager.default.fileExists(atPath: file.path) {
-            let data = try Data(contentsOf: file)
-            return (try JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
-        }
+    /// Harvests one level for one library into the store, resuming an interrupted run.
+    ///
+    /// Nothing is held in memory: pages are appended as NDJSON as they arrive. The `.done`
+    /// marker is written only after the completeness check passes, so a store without one is
+    /// known-partial rather than ambiguously so.
+    static func harvest(level: String, library: String, client: CatalogSearchClient,
+                        cacheDir: URL, projectOnly: Bool) async throws {
+        let store = LevelStore(cacheDir: cacheDir, library: library, level: level)
+        if store.isComplete { return }
         guard !projectOnly else {
             throw HarvestError(
-                "PROJECT_ONLY=1 but \(file.lastPathComponent) is not cached — run the harvest first")
+                "PROJECT_ONLY=1 but \(library)/\(level) is not completely cached — run the harvest")
         }
-        let records = try await client.allRecords(collectionIdentifier: "\(library)-*", level: level)
-        try JSONSerialization.data(withJSONObject: records).write(to: file)
-        return records
+        let resume = store.savedCursor
+        if resume != nil { generatorLog("  \(library)/\(level): resuming from a saved cursor") }
+        let have = resume == nil ? 0 : try store.count()
+        if resume == nil { try store.reset() }
+        try await client.streamRecords(collectionIdentifier: "\(library)-*", level: level,
+                                       resumeAfter: resume, alreadyHave: have) { page, next in
+            try store.append(page, cursor: next)
+        }
+        try store.markComplete()
+        generatorLog("  \(library)/\(level): \(try store.count()) records")
+    }
+
+    /// The stored records for one level. Only ever called for `collection` and `series`; the
+    /// deeper levels stay on disk.
+    static func records(level: String, library: String, cacheDir: URL) throws -> [[String: Any]] {
+        try LevelStore(cacheDir: cacheDir, library: library, level: level).load()
     }
 
     // MARK: - Projection

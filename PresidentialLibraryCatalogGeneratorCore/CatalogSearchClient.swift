@@ -87,17 +87,31 @@ public struct CatalogSearchClient: Sendable {
         return c?.url
     }
 
-    /// Every record at `level` under `collectionIdentifier`, paged to exhaustion.
+    /// Every record at `level` under `collectionIdentifier`, handed to `onPage` a page at a
+    /// time and never accumulated here.
     ///
-    /// Throws rather than truncating on a non-2xx: a short harvest that reports success is the
-    /// failure mode the record-group harvester was built to make impossible, and silently
-    /// treating an error page as end-of-results is how it happens.
-    public func allRecords(collectionIdentifier: String, level: String,
-                           limit: Int = 1000) async throws -> [[String: Any]] {
-        var out: [[String: Any]] = []
-        var cursor = "*"
+    /// Streaming rather than returning an array is the difference between a bounded harvest and
+    /// the record-group harvester's known 18.5 GB peak, which comes from holding a whole group's
+    /// projection and encoding it in one `Data`. The biggest library file-unit level here is
+    /// ~224,000 records; at a page at a time it costs nothing.
+    ///
+    /// - Parameters:
+    ///   - resumeAfter: cursor from an interrupted run, or `nil` to start at the beginning.
+    ///   - onPage: receives each page and the cursor that follows it, so the caller can persist
+    ///     both and resume from exactly there.
+    /// - Returns: the total the endpoint stated, for the completeness check.
+    @discardableResult
+    public func streamRecords(
+        collectionIdentifier: String,
+        level: String,
+        limit: Int = 1000,
+        resumeAfter: String? = nil,
+        alreadyHave: Int = 0,
+        onPage: ([[String: Any]], String?) throws -> Void
+    ) async throws -> Int? {
+        var cursor = resumeAfter ?? "*"
         var stated: Int? = nil
-        var seen = Set<Int>()
+        var count = alreadyHave
         while true {
             guard let url = Self.pageURL(base: route.base, collectionIdentifier: collectionIdentifier,
                                          level: level, limit: limit, searchAfter: cursor) else {
@@ -117,36 +131,31 @@ public struct CatalogSearchClient: Sendable {
             }
             let (page, total, next) = try Self.decodePage(data)
             stated = stated ?? total
-            let fresh = page.filter { ($0["naId"] as? Int).map { seen.insert($0).inserted } ?? true }
-            out.append(contentsOf: fresh)
             if page.isEmpty { break }
-            // A cursor that does not advance means the endpoint ignored it — the failure that
-            // an offset-paged version hid behind a rising count of duplicates.
+            count += page.count
+            // A cursor that does not advance means the endpoint ignored it — the failure an
+            // offset-paged version hid behind a rising count of duplicates.
             guard let next, next != cursor else {
                 throw HarvestError(
                     "\(collectionIdentifier)/\(level): the paging cursor did not advance after "
-                    + "\(out.count) records. The endpoint is ignoring `searchAfter`, so this "
-                    + "harvest would loop on page 1.")
+                    + "\(count) records. The endpoint is ignoring `searchAfter`, so this harvest "
+                    + "would loop on page 1.")
             }
-            guard fresh.count == page.count else {
-                throw HarvestError(
-                    "\(collectionIdentifier)/\(level): a page repeated records already seen — "
-                    + "the cursor is advancing but the result set is not stable.")
-            }
+            try onPage(page, next)
             cursor = next
-            if let stated, out.count >= stated { break }
+            if let stated, count >= stated { break }
             if politenessDelay > 0 {
                 try await Task.sleep(nanoseconds: UInt64(politenessDelay * 1_000_000_000))
             }
         }
         // NARA states its own total. Either direction is a failure: short means paging stopped
         // early, over means it double-counted.
-        if let stated, out.count != stated {
+        if let stated, count != stated {
             throw HarvestError(
-                "\(collectionIdentifier)/\(level): harvested \(out.count) against a stated "
+                "\(collectionIdentifier)/\(level): harvested \(count) against a stated "
                 + "\(stated) — a harvest that does not match NARA's own count must not be written")
         }
-        return out
+        return stated
     }
 
     /// Unwraps the Elasticsearch envelope both routes return —

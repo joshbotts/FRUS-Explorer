@@ -141,3 +141,73 @@ struct PresidentialLibraryCatalogTests {
         #expect(prefixes.contains("LBJ") && prefixes.contains("RN") && prefixes.contains("JFK"))
     }
 }
+
+// MARK: - LevelStoreTests
+
+/// Pins the on-disk store that makes a ~950,000-record harvest survivable (#681).
+///
+/// Version history:
+///   1.0 — Session 2026-08-06: #681, DEPTH=all
+@Suite("Level store — append, resume, completeness")
+struct LevelStoreTests {
+
+    private func tempDir() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appending(path: "plc-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    @Test("Pages append rather than overwrite, and are counted without decoding")
+    func appendsAndCounts() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = LevelStore(cacheDir: dir, library: "LBJ", level: "fileUnit")
+        try store.append([["naId": 1], ["naId": 2]], cursor: "2")
+        try store.append([["naId": 3]], cursor: "3")
+        #expect(try store.count() == 3, "the second page must append, not replace")
+        #expect(try store.load().compactMap { $0["naId"] as? Int } == [1, 2, 3])
+    }
+
+    /// A store with no `.done` is known-partial, and the cursor is what lets a run of nearly a
+    /// million records pick up instead of starting over.
+    @Test("An interrupted slice is resumable and never reads as complete")
+    func interruptedSliceResumes() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = LevelStore(cacheDir: dir, library: "GB", level: "fileUnit")
+        #expect(store.savedCursor == nil, "nothing stored yet")
+        try store.append([["naId": 7]], cursor: "cursor-7")
+        #expect(!store.isComplete)
+        #expect(store.savedCursor == "cursor-7")
+
+        try store.markComplete()
+        #expect(store.isComplete)
+        #expect(store.savedCursor == nil, "a complete slice has nothing to resume from")
+    }
+
+    @Test("Reset clears a partial slice so a fresh run does not append to it")
+    func resetClears() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = LevelStore(cacheDir: dir, library: "RR", level: "series")
+        try store.append([["naId": 1]], cursor: "1")
+        try store.reset()
+        #expect(try store.count() == 0)
+        #expect(store.savedCursor == nil)
+        #expect(!store.isComplete)
+    }
+
+    /// The write order is page-then-cursor on purpose: a crash between them costs a repeated
+    /// page on resume, which the harvest tolerates, rather than a skipped one, which it cannot
+    /// detect.
+    @Test("The cursor is never ahead of the data it describes")
+    func cursorTrailsTheData() throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = LevelStore(cacheDir: dir, library: "JC", level: "item")
+        try store.append([["naId": 1], ["naId": 2]], cursor: nil)
+        #expect(try store.count() == 2, "data lands even when no cursor follows")
+        #expect(store.savedCursor == nil)
+    }
+}
