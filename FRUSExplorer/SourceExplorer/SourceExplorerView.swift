@@ -105,6 +105,9 @@ struct SourceExplorerView: View {
     @State private var catalogResults: [NARACatalogResult] = []
     @State private var isLoading = false
     @State private var loadError: String? = nil
+    /// What the live catalogue results are evidence of (#681). Set alongside the
+    /// query so the heading and the caveat cannot describe a query never issued.
+    @State private var catalogEvidence: CatalogQueryEvidence? = nil
     @State private var hasAPIKey: Bool = false
     /// Same-collection document discovery results.
     @State private var relatedDocs: [IndexingPipeline.RelatedDocument] = []
@@ -1289,7 +1292,8 @@ struct SourceExplorerView: View {
         requiresKey: Bool,
         fallbackURL: URL? = nil
     ) -> some View {
-        Section(String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
+        Section(catalogEvidence?.sectionTitle
+                ?? String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
             if requiresKey && !hasAPIKey {
                 noAPIKeyPrompt
             } else if isLoading {
@@ -1318,9 +1322,17 @@ struct SourceExplorerView: View {
                     }
                 }
             } else if !catalogResults.isEmpty {
+                // #681: an unverified result set is headed and captioned as candidates. The
+                // caveat leads rather than trails — a note under five rows is read last.
+                if let caveat = catalogEvidence?.caveat {
+                    Text(caveat)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 // Up to 5 ranked candidates
                 ForEach(catalogResults.prefix(5), id: \.naId) { result in
-                    catalogResultRow(result: result)
+                    catalogResultRow(result: result,
+                                     isVerified: catalogEvidence?.isVerified ?? true)
                     if result.naId != catalogResults.prefix(5).last?.naId {
                         Divider()
                     }
@@ -1366,10 +1378,16 @@ struct SourceExplorerView: View {
     }
 
     @ViewBuilder
-    private func catalogResultRow(result: NARACatalogResult) -> some View {
+    private func catalogResultRow(result: NARACatalogResult,
+                                  isVerified: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(result.title)
-                .font(.callout.weight(.medium))
+            HStack(spacing: 6) {
+                Text(result.title)
+                    .font(.callout.weight(.medium))
+                // #681: the same chip #669 gives a curated possible match. An unchecked live
+                // hit has no more standing than a curated one, and had been showing with more.
+                if !isVerified { ConfidenceChip(confidence: .medium) }
+            }
             if let scope = result.scopeNote {
                 Text(scope)
                     .font(.caption)
@@ -1429,6 +1447,7 @@ struct SourceExplorerView: View {
 
         hasAPIKey = await client.hasAPIKey()
         guard hasAPIKey else { return }
+        catalogEvidence = CatalogQueryEvidence.forNote(note)
 
         switch note {
 

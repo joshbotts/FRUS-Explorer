@@ -109,6 +109,19 @@ struct MacSourceExplorerView: View {
     /// Export actions, so the array has to remember which it is holding.
     @State private var resultsAreVerified: Bool = true
 
+    /// What the *automatic* lookup's results are evidence of (#681).
+    ///
+    /// `resultsAreVerified` above answers a different question — manual field or automatic
+    /// lookup — and answering only that one let an unconstrained automatic query render as
+    /// confidently as a control-number-verified one. Both facts gate the banner now.
+    @State private var catalogEvidence: CatalogQueryEvidence? = nil
+
+    /// Whether the rows currently held may be presented as the answer: they must have come
+    /// from the automatic lookup **and** that lookup must have constrained on something.
+    private var resultsAreTrustworthy: Bool {
+        resultsAreVerified && (catalogEvidence?.isVerified ?? true)
+    }
+
     /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
     /// or `nil` when the note's keys land in no tracked collection.
     @State private var authorityRecord: AuthorityCollectionRecord? = nil
@@ -692,10 +705,17 @@ struct MacSourceExplorerView: View {
                         // #680: a free-text manual result is a different kind of claim from an
                         // automatic one — no record-group filter, no acceptance test — and it
                         // lands in the same array behind the same "View in NARA Catalog" row.
-                        if !resultsAreVerified { unverifiedResultBanner }
+                        // #681: an automatic query that constrained on nothing is no more
+                        // trustworthy than a manual one. Prefer the evidence-specific caveat,
+                        // which names what the query actually constrained.
+                        if let caveat = catalogEvidence?.caveat {
+                            unverifiedCaveat(caveat)
+                        } else if !resultsAreVerified {
+                            unverifiedResultBanner
+                        }
                         // Up to 5 ranked candidates (parity with iOS).
                         ForEach(catalogResults.prefix(5), id: \.naId) { result in
-                            catalogResultView(result)
+                            catalogResultView(result, isVerified: resultsAreTrustworthy)
                             if result.naId != catalogResults.prefix(5).last?.naId {
                                 Divider()
                             }
@@ -710,6 +730,25 @@ struct MacSourceExplorerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    /// The evidence-specific caveat for an unverified automatic result set (#681), in the
+    /// same visual grammar as the #680 manual banner so the two read as one idea.
+    private func unverifiedCaveat(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(String(localized: "source.explorer.manualSearch.unverified.chip",
+                        defaultValue: "Unverified"))
+                .font(.caption2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.orange.opacity(0.18), in: Capsule())
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Marks results that came from the manual free-text field rather than the automatic,
@@ -993,11 +1032,16 @@ struct MacSourceExplorerView: View {
 
     // MARK: - Catalog Result
 
-    private func catalogResultView(_ result: NARACatalogResult) -> some View {
+    private func catalogResultView(_ result: NARACatalogResult,
+                                   isVerified: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(result.title)
-                .font(.callout.weight(.medium))
-                .textSelection(.enabled)
+            HStack(spacing: 6) {
+                Text(result.title)
+                    .font(.callout.weight(.medium))
+                    .textSelection(.enabled)
+                // #681: the same chip a curated possible match carries (#669). Mirrors iOS.
+                if !isVerified { ConfidenceChip(confidence: .medium) }
+            }
 
             if let scope = result.scopeNote {
                 Text(scope)
@@ -1183,6 +1227,7 @@ struct MacSourceExplorerView: View {
         }
 
         hasAPIKey = await client.hasAPIKey()
+        catalogEvidence = CatalogQueryEvidence.forNote(note)
 
         // Pre-1906 country-series resolution (no source note; no API key).
         await resolveCountrySeries()
