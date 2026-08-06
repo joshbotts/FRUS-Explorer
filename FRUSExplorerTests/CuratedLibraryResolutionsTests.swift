@@ -37,6 +37,8 @@ import Foundation
 ///         comma inside a series name) and one series cited at four different levels
 ///   1.2 — Session 2026-08-06: #355 / N-4, Nixon — read sentence 1 rather than the
 ///         central-files-anchored sentence, and find the series on either side of the box
+///   1.3 — Session 2026-08-06: #355 / N-4, Johnson — the first entries carrying a NARA
+///         identifier, plus two generic integrity guards (own-domain, well-formed naId)
 @Suite("Curated library resolutions")
 struct CuratedLibraryResolutionsTests {
 
@@ -449,7 +451,171 @@ struct CuratedLibraryResolutionsTests {
                                    subCollection: nil) == nil)
     }
 
+    // MARK: - Johnson
+
+    /// One series is 41% of the Johnson corpus. The library titles it in the plural and FRUS
+    /// cites it in the singular, which the shared plural fold handles — so this is really a test
+    /// that the fold is load-bearing for 2,015 documents.
+    @Test("The Johnson Country File resolves in either number")
+    func johnsonCountryFileResolves() throws {
+        let curated = try bundled()
+        let singular = curated.resolution(repository: "Johnson Library",
+                                          collection: "National Security File",
+                                          subCollection: "Country File")
+        #expect(singular != nil, "2,015 documents ride on this one")
+        #expect(singular?.title.contains("Country Files") == true)
+        #expect(curated.resolution(repository: "Johnson Library",
+                                   collection: "National Security Files",
+                                   subCollection: "Country Files") == singular,
+                "the collection's plural spelling reaches the same list")
+        // Vietnam is a separate series, not part of it.
+        #expect(curated.resolution(repository: "Johnson Library",
+                                   collection: "National Security File",
+                                   subCollection: "Vietnam Country File") != singular)
+    }
+
+    /// The Johnson aliases carry real weight, and nothing else in this suite exercises them:
+    /// dropping them all leaves every other test green (mutation-tested). Each spelling below is
+    /// a verbatim corpus form, with the document count it accounts for.
+    @Test("Johnson's alias spellings reach their series")
+    func johnsonAliasesResolve() throws {
+        let curated = try bundled()
+        // canonical sub-collection -> other spellings the corpus writes
+        let families: [String: [String]] = [
+            "Files of Walt W. Rostow": ["Rostow Files",                      // 64
+                                        "Files of Walt Rostow"],             // 44
+            "Files of Robert W. Komer": ["Komer Files",                      // 28
+                                         "Robert W. Komer Files",            // 6
+                                         "Files of Robert Komer"],           // 5
+            "NSAMs": ["National Security Action Memoranda",                  // 13
+                      "National Security Action Memorandums"],               // 9
+            "NSC Histories": ["NSC History",                                 // 7
+                              "NSC History of the March 31st Speech"],       // 20
+            "Saunders Files": ["Files of Harold H. Saunders",                // 12
+                               "NSC Files of Harold Saunders"],              // 9
+            "Memos to the President": ["Memos to the President— Walt W. Rostow",
+                                       "Memos to the President- McGeorge Bundy"],
+            "Head of State Correspondence": ["Head of State Correspondence File"],
+            "NSC Meetings File": ["NSC Meetings"],
+        ]
+        for (canonical, spellings) in families {
+            let expected = curated.resolution(repository: "Johnson Library",
+                                              collection: "National Security File",
+                                              subCollection: canonical)
+            #expect(expected != nil, Comment(rawValue: "\(canonical) is not curated"))
+            for spelling in spellings {
+                #expect(curated.resolution(repository: "Johnson Library",
+                                           collection: "National Security File",
+                                           subCollection: spelling) == expected,
+                        Comment(rawValue: "\(spelling) fell through instead of matching "
+                                + "\(canonical) — compare on the whole resolution, since the "
+                                + "collection page would share neither URL nor rationale"))
+            }
+        }
+    }
+
+    /// LBJ files some things the corpus cites under the NSF elsewhere — `Aides File` names the
+    /// NSF's own per-person series rather than a series of its own — so the collection page is
+    /// the honest answer rather than a guess at which aide.
+    @Test("An un-itemised Johnson series gets the collection page")
+    func johnsonCollectionPageAnswers() throws {
+        let curated = try bundled()
+        let whole = curated.resolution(repository: "Johnson Library",
+                                       collection: "National Security File", subCollection: nil)
+        #expect(whole != nil)
+        #expect(curated.resolution(repository: "Johnson Library",
+                                   collection: "National Security File",
+                                   subCollection: "Aides File") == whole)
+        // The abbreviation and the plural both name the same collection.
+        for spelling in ["NSF", "National Security Files"] {
+            #expect(curated.resolution(repository: "Johnson Library", collection: spelling,
+                                       subCollection: nil)?.url == whole?.url)
+        }
+    }
+
+    /// Johnson is the first repository whose entries carry a NARA identifier, so these rows show
+    /// a catalogue link beside the finding aid. Both values were read off the library's own
+    /// pages and then confirmed against the catalogue record itself.
+    @Test("Published NARA identifiers produce a catalogue link")
+    func johnsonCarriesNARAIdentifiers() throws {
+        let curated = try bundled()
+        let nsf = curated.resolution(repository: "Johnson Library",
+                                     collection: "National Security File", subCollection: nil)
+        #expect(nsf?.naId == "567979")
+        #expect(nsf?.catalogURL?.absoluteString == "https://catalog.archives.gov/id/567979")
+        let shosc = curated.resolution(repository: "Johnson Library",
+                                       collection: "National Security File",
+                                       subCollection: "Special Head of State Correspondence File")
+        #expect(shosc?.naId == "7763260")
+        #expect(shosc?.catalogURL != nil)
+        // An entry with no published identifier must not invent one.
+        #expect(curated.resolution(repository: "Johnson Library",
+                                   collection: "National Security File",
+                                   subCollection: "Country File")?.catalogURL == nil)
+    }
+
+    /// `Subject File` is the most-shared series name in the artifact — four repositories use it
+    /// for four different series. Each must reach its own repository, and the four must be
+    /// four distinct destinations.
+    @Test("Subject Files resolve per repository, never across")
+    func subjectFilesDoNotCrossRepositories() throws {
+        let curated = try bundled()
+        let hits = [
+            curated.resolution(repository: "Johnson Library",
+                               collection: "National Security File", subCollection: "Subject File"),
+            curated.resolution(repository: "Nixon", collection: "NSC Files",
+                               subCollection: "Subject Files"),
+            curated.resolution(repository: "Ford Library", collection: "National Security Adviser",
+                               subCollection: "Presidential Subject File"),
+            curated.resolution(repository: "Reagan Library", collection: "Executive Secretariat",
+                               subCollection: "NSC Subject File"),
+        ].map { $0?.url }
+        #expect(hits.allSatisfy { $0 != nil }, "fixture guard: all four must be curated")
+        #expect(Set(hits).count == 4, "four repositories, four destinations")
+    }
+
     // MARK: - Artifact integrity
+
+    /// Every entry must point at **its own repository's** domain.
+    ///
+    /// This is the generic form of the defect this whole workstream exists to prevent, and the
+    /// one a hand-written entry is most likely to introduce: a URL copied from the row above it.
+    /// Series names repeat across repositories — `NSC Institutional Files`, `Subject Files`,
+    /// `Country Files`, `Name Files` all name different records at different libraries — so the
+    /// mistake produces a plausible-looking link to the wrong archive.
+    @Test("No entry links to another repository's domain")
+    func entriesStayWithinTheirRepository() throws {
+        let expected = ["Carter Library": "jimmycarterlibrary.gov",
+                        "Ford Library": "fordlibrarymuseum.gov",
+                        "Johnson Library": "discoverlbj.org",
+                        "Library of Congress": "loc.gov",
+                        "Nixon": "nixonlibrary.gov",
+                        "Reagan Library": "reaganlibrary.gov"]
+        for entry in try bundled().entries {
+            let host = try #require(URL(string: entry.resolution.url)?.host(),
+                                    Comment(rawValue: "\(entry.resolution.url) has no host"))
+            let domain = try #require(
+                expected[entry.repository],
+                Comment(rawValue: "\(entry.repository) is not in the expected-domain table — "
+                        + "add it deliberately rather than widening the check"))
+            #expect(host.hasSuffix(domain),
+                    Comment(rawValue: "\(entry.repository)/\(entry.collection)/"
+                            + "\(entry.subCollection ?? "—") links to \(host), not \(domain)"))
+        }
+    }
+
+    /// A NARA identifier must be a bare number: anything else silently builds a broken
+    /// catalogue URL, and the row would show a link that 404s.
+    @Test("Every NARA identifier is a bare number")
+    func naIdsAreWellFormed() throws {
+        for entry in try bundled().entries {
+            guard let naId = entry.resolution.naId else { continue }
+            #expect(naId.allSatisfy(\.isNumber) && !naId.isEmpty,
+                    "\(entry.collection) has a malformed naId: \(naId)")
+            #expect(entry.resolution.catalogURL != nil)
+        }
+    }
+
 
     /// A curated entry whose URL does not parse is worse than no entry: the row would render a
     /// title with nothing behind it.
