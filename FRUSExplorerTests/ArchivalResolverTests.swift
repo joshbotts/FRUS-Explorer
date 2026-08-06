@@ -58,18 +58,35 @@ struct ArchivalResolverTests {
 
     // MARK: - Precedence
 
-    /// 751 lot keys are in both bundles. They agree on every rendered field, and differ only in
-    /// `matchType` — central-files says `"control"`, volume-sources `"lot"` — which is exactly
-    /// what makes `matchType` the usable witness for *which bundle answered*.
+    /// Central-files answers first when both bundles carry a lot.
+    ///
+    /// The fold (#372 / N-5 PR 2) made the shipped bundles **disjoint**, so there is no longer a
+    /// real lot to witness this with — which is exactly why the precedence now has to be tested
+    /// against an **injected** volume-sources that does carry the key. Testing it against the
+    /// bundle would silently become vacuous the moment the artifact is regenerated.
     @Test("A lot in both bundles is answered by central-files")
     func centralFilesWinsOnSharedKeys() throws {
-        let shared = "53 D 413"
-        #expect(try volumes().resolution(recordGroup: nil, lotFile: shared)?.matchType == "lot",
-                "fixture guard: volume-sources must still carry this lot, or the test proves nothing")
-        let hit = try #require(try resolve(lot: shared))
-        #expect(hit.matchType == "control", "central-files must answer first")
-        // Both bundles carry the same NAID here — the precedence changes the source, not the link.
-        #expect(hit.naId == "2127212")
+        let shared = "53 D 413"                       // central-files: naId 2127212, matchType "control"
+        #expect(try central().lotFile(forRawLot: shared)?.naId == "2127212",
+                "fixture guard: central-files must carry this lot")
+        // A volume-sources that also claims it, with a DIFFERENT NAID so the winner is unambiguous.
+        let rival = try Self.syntheticVolumeSources(lot: "53D413", naId: "999999")
+        #expect(rival.resolution(recordGroup: nil, lotFile: shared)?.naId == "999999",
+                "fixture guard: the rival must really answer, or the test proves nothing")
+        let hit = try #require(ArchivalResolver.documentResolution(
+            lotFile: shared, centralFiles: try central(), volumeSources: rival))
+        #expect(hit.naId == "2127212", "central-files must answer first")
+        #expect(hit.matchType == "control")
+    }
+
+    /// A one-entry volume-sources index claiming `lot`.
+    private static func syntheticVolumeSources(lot: String, naId: String) throws -> VolumeSourcesIndex {
+        let doc = #"""
+        {"recordGroups":{},"majorCollections":[],
+         "lots":{"\#(lot)":{"naId":"\#(naId)","catalogURL":"https://catalog.archives.gov/id/\#(naId)",
+                            "title":"rival","matchType":"lot"}}}
+        """#
+        return try JSONDecoder().decode(VolumeSourcesIndex.self, from: Data(doc.utf8))
     }
 
     /// The repoint's actual value: 220 lot keys resolve only in central-files.
@@ -143,27 +160,45 @@ struct ArchivalResolverTests {
                 "the accessor both surfaces read for the file-series caption")
     }
 
-    /// The same crossing, over every lot both bundles carry. If the bridge dropped or
-    /// transposed a rendered field, 751 rows would say so at once.
-    @Test("Across all 751 shared lots the bridge agrees with volume-sources on every rendered field")
-    func bridgeAgreesWithVolumeSourcesCorpusWide() throws {
-        var compared = 0
-        for entry in try central().lotFiles {
-            guard let vs = try volumes().lots[entry.lotNumber] else { continue }
-            let bridged = ArchivalResolution(lotFileEntry: entry)
-            compared += 1
-            #expect(bridged.naId == vs.naId, "naId differs on \(entry.lotNumber)")
-            #expect(bridged.title == vs.title, "title differs on \(entry.lotNumber)")
-            #expect(bridged.catalogURL == vs.catalogURL, "catalogURL differs on \(entry.lotNumber)")
-            #expect(bridged.recordGroup == vs.recordGroup, "recordGroup differs on \(entry.lotNumber)")
-            #expect(bridged.levelOfDescription == vs.levelOfDescription,
-                    "levelOfDescription differs on \(entry.lotNumber)")
-            #expect(bridged.hmsMlrEntryNumbers == vs.hmsMlrEntryNumbers,
-                    "hmsMlrEntryNumbers differ on \(entry.lotNumber)")
-            // `matchType` is the one field that legitimately differs — "control" vs "lot" —
-            // and nothing renders it.
+    /// The fold's invariant, replacing the corpus-wide bridge cross-check.
+    ///
+    /// Until #372 / N-5 PR 2 this suite compared the bridged central-files record against
+    /// volume-sources' own copy across all **751** lots both bundles carried — a genuinely strong
+    /// check, and one the fold deliberately destroys by removing the duplicate. Nothing is lost
+    /// silently: per-field fidelity is still pinned by `bridgeCopiesEveryFieldFaithfully`, whose
+    /// title/catalogURL and hmsMlr/seriesHmsMlr transposition mutations both fail without it.
+    ///
+    /// What replaces it is the invariant that makes the duplicate unnecessary: the two maps are
+    /// **disjoint**, and what volume-sources keeps is exactly what central-files cannot answer.
+    @Test("The two lot maps are disjoint, and volume-sources keeps exactly the orphans")
+    func lotMapsAreDisjoint() throws {
+        let cf = try central(), vs = try volumes()
+        let overlap = vs.lots.keys.filter { cf.lotFile(forRawLot: $0) != nil }
+        #expect(overlap.isEmpty,
+                "volume-sources still duplicates \(overlap.count) lots central-files answers: \(overlap.sorted().prefix(10))")
+        // …and it is not disjoint by being empty: every entry must be a real orphan that resolves.
+        #expect(!vs.lots.isEmpty, "the orphan map must not be empty — see lotsToWrite's carry-forward")
+        for key in vs.lots.keys {
+            #expect(cf.lotFile(forRawLot: key) == nil)
+            #expect(ArchivalResolver.documentResolution(lotFile: key, centralFiles: cf,
+                                                        volumeSources: vs) != nil,
+                    "\(key) is carried but does not resolve")
         }
-        #expect(compared == 751, "expected 751 shared lot keys; compared \(compared)")
+    }
+
+    /// `majorCollections[].resolved` is no longer serialized (#372 / N-5 PR 2): 932 objects,
+    /// 307,810 bytes, 20.4% of the artifact, decoded on every launch and read by nothing. The
+    /// app struct no longer declares it, so only the raw JSON can hold this.
+    @Test("The artifact carries no per-collection resolved records")
+    func majorCollectionsCarryNoResolvedRecords() throws {
+        let url = try #require(Bundle.main.url(forResource: "volume-sources-index",
+                                               withExtension: "json"))
+        let json = try #require(try JSONSerialization.jsonObject(
+            with: Data(contentsOf: url)) as? [String: Any])
+        let collections = try #require(json["majorCollections"] as? [[String: Any]])
+        #expect(collections.count > 2_000, "fixture guard: the authority must still be here")
+        #expect(collections.allSatisfy { $0["resolved"] == nil },
+                "\(collections.filter { $0["resolved"] != nil }.count) collections still carry a resolved record")
     }
 
     // MARK: - Document citations get no record-group link

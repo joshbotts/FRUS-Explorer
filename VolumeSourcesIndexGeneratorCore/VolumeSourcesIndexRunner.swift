@@ -103,10 +103,10 @@ public enum VolumeSourcesIndexRunner {
             apiRGHits = rgMap.count
         }
 
-        let prior = (try? JSONDecoder().decode(
-            PriorIndex.self, from: Data(contentsOf: URL(fileURLWithPath: outputPath))))?.recordGroups
+        let prior = try? JSONDecoder().decode(
+            PriorIndex.self, from: Data(contentsOf: URL(fileURLWithPath: outputPath)))
         let decided = try recordGroupsToWrite(resolved: rgMap, headingCount: rgHeadings.count,
-                                              prior: prior ?? [:], outputPath: outputPath)
+                                              prior: prior?.recordGroups ?? [:], outputPath: outputPath)
         rgMap = decided.map
         if let note = decided.note { log(note) }
 
@@ -123,11 +123,26 @@ public enum VolumeSourcesIndexRunner {
         }
 
         let majorCollections = authority.values
-            .map { var c = $0; c.volumeIds.sort(); return c }
+            .map { var c = $0
+                   // #372/N-5 PR 2: `resolved` is built (Phase D needs it on the tree) but not
+                   // SERIALIZED. Nothing reads it — the app's `MajorCollectionRecord` is consulted
+                   // only for `volumeIds`, to caption "Cited in N volumes" — and 758 of the 932
+                   // populated objects duplicate a `lots` entry verbatim. Measured: 307,810 bytes,
+                   // 20.4% of the artifact, decoded on every launch and discarded.
+                   c.resolved = nil
+                   c.volumeIds.sort(); return c }
             .sorted { $0.occurrences != $1.occurrences ? $0.occurrences > $1.occurrences : $0.key < $1.key }
 
+        // #372/N-5 PR 2, the fold: `lots` keeps only what central-files CANNOT answer.
+        // Deliberately applied here, at serialization, and not to the `lotMap` Phase D consumed —
+        // so the authority and the coverage count are provably untouched by this change.
+        let lotsDecision = lotsToWrite(resolved: lotMap, prior: prior?.lots ?? [:],
+                                       isAnsweredByCentralFiles: { bundled.resolve(rawLot: $0) != nil })
+        if let note = lotsDecision.note { log(note) }
+        let lotsOut = lotsDecision.map
+
         let output = VolumeSourcesIndex(schemaVersion: 2, generated: generated,
-                                        recordGroups: rgMap, lots: lotMap,
+                                        recordGroups: rgMap, lots: lotsOut,
                                         majorCollections: majorCollections)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -139,7 +154,8 @@ public enum VolumeSourcesIndexRunner {
           prose paragraphs:     \(totalProse)
           collection items:     \(totalItems)  (headings: \(totalHeadings))
           resolved nodes:       \(resolvedNodes)  (API lot hits: \(apiLotHits), API RG hits: \(apiRGHits))
-          record groups:        \(rgMap.count)   lot files: \(lotMap.count)
+          record groups:        \(rgMap.count)   lot files written: \(lotsOut.count) \
+        of \(lotMap.count) resolved (the rest are central-files' to answer)
           major collections:    \(majorCollections.count)
         """)
     }
@@ -258,6 +274,51 @@ public enum VolumeSourcesIndexRunner {
     /// Just enough of the previous artifact to carry its record-group map forward.
     struct PriorIndex: Decodable {
         let recordGroups: [String: ResolvedNAID]
+        /// Carried forward for the same reason as ``recordGroups``: a keyless run resolves no
+        /// lots through the API, and after the fold every entry that survives pruning is an
+        /// API-only resolution. Without this, one offline run empties the map.
+        let lots: [String: ResolvedNAID]?
+    }
+
+    /// The lot map to write: **only the lots central-files cannot answer** (#372 / N-5 PR 2).
+    ///
+    /// ## The fold
+    /// Both bundles carried a lot map. 751 keys were in both and agreed on every rendered field;
+    /// `central-files-index.json` answers 971 and `volume-sources-index.json` 758, so all this
+    /// map ever needed to hold was the difference — measured, **7 lots**
+    /// (`64D171`, `67D317`, `67D333`, `68D393`, `70D449`, `74D267`, `78D26`). Every reader
+    /// already consults central-files first (`ArchivalResolver`, `OfflineNAIDResolver`, and this
+    /// runner's own `applyResolution`), so dropping the duplicates changes no resolution
+    /// anywhere — measured 0 changes across 17,834 document rows and 34,152 front-matter nodes.
+    ///
+    /// ## Why the test is the acceptance predicate, not key membership
+    /// It asks *can central-files answer this?*, not *does central-files list it?* An entry the
+    /// bundle carries but **refuses** — `#321` `ancestryLacksRecordGroup`, `#351` `fileUnit` —
+    /// must stay here, or the lot would vanish from both artifacts at once. Those two guards
+    /// currently refuse nothing, so the two readings coincide today and only today.
+    ///
+    /// ## Why the previous map is carried forward
+    /// After the fold, every surviving entry is API-derived by construction: anything central-files
+    /// could answer is pruned, and what remains reached the map through
+    /// `NARACatalogHarvestClient.resolveLotFile`. Phase C's `guard let apiClient else { continue }`
+    /// means a **keyless** run resolves none of them — so without this the offline invocation
+    /// (the first one `CLAUDE.md` documents) would write `lots: {}` and drop all 7. Same failure,
+    /// same remedy as ``recordGroupsToWrite``. Inherited entries are pruned too, so a lot that
+    /// central-files has since learned does not survive on inheritance alone.
+    ///
+    /// Unlike `recordGroups`, an empty result is **legitimate** here — it means central-files
+    /// answers everything the corpus cites — so this warns rather than throwing.
+    static func lotsToWrite(resolved: [String: ResolvedNAID],
+                            prior: [String: ResolvedNAID],
+                            isAnsweredByCentralFiles: (String) -> Bool)
+        -> (map: [String: ResolvedNAID], note: String?) {
+        let keep = resolved.filter { !isAnsweredByCentralFiles($0.key) }
+        if !keep.isEmpty { return (keep, nil) }
+        let inherited = prior.filter { !isAnsweredByCentralFiles($0.key) }
+        guard !inherited.isEmpty else { return ([:], nil) }
+        return (inherited,
+                "Preserved \(inherited.count) central-files-orphan lot resolutions from the "
+                + "existing artifact — this run had no CATALOG_API_KEY and cannot re-derive them.")
     }
 
     /// The record-group map to write, given what this run resolved and what the previous

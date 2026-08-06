@@ -993,7 +993,49 @@ string carrying prose (`"55D323 Two lot files containing…"`) is mangled mid-st
 `lot_file_norm` values already diverge from it. None of this changes a resolution today; all of it
 is a trap for the next measurement taken on `lot_file_norm`.
 
-**PR 2 (the fold) is unchanged in scope** and still worth 2 documents on its own.
+**PR 2 (the fold) SHIPPED 2026-08-05 — but not as specified.** The spec said "fold volume-sources'
+surviving lots **into central-files** at generation … drop the `lots` map". That direction is
+unsafe: `central-files-index.json` is rebuilt wholesale by the keyed harvest (CLAUDE.md: it
+"replaces that whole `lotFiles` array"), so the 7 merged lots would be deleted by the next routine
+re-harvest — which is exactly why `lot-claimants-index.json` was made a **separate** artifact in
+#675. The repo had already answered this question once.
+
+*What shipped instead — the same goal, opposite direction.* `volume-sources.lots` now keeps **only
+what central-files cannot answer**: **758 → 7** entries. Every reader already consults central-files
+first — `ArchivalResolver` (app), `OfflineNAIDResolver` (authority generator), and this generator's
+own `applyResolution`, which does `bundled.resolve(rawLot:) ?? lotMap[key]` — so the 751 duplicates
+were pure weight. Measured through the shipped readers: documents **9,057 → 9,057**, front-matter
+nodes **9,404 → 9,404**, **0 NAIDs changed**.
+
+*And a larger find in the same artifact.* `majorCollections[].resolved` — **932 objects, 307,810
+bytes, 20.4% of the file** — is decoded on every launch and **read by nothing**: the app's
+`MajorCollectionRecord` is consulted only for `volumeIds`, to caption "Cited in N volumes". 758 of
+those objects were themselves duplicate copies of the `lots` entries being pruned. Dropped.
+
+**Artifact: 1,506,052 → 951,629 bytes, −36.8%.** `recordGroups` byte-identical; the 7 kept lots
+byte-identical; `majorCollections` 2,929 → 2,929 with **zero** records differing outside `resolved`.
+
+*The blocker the scoping pass caught.* After the fold every surviving `lots` entry is API-derived by
+construction, and Phase C's `guard let apiClient else { continue }` means a **keyless** run resolves
+none — so the offline invocation would have written `lots: {}` and dropped all 7, the identical
+failure `recordGroupsToWrite` exists to prevent. `lotsToWrite` carries the previous map forward and
+**prunes what it inherits**, so a lot central-files has since learned cannot survive on inheritance.
+Verified end-to-end: a real keyless regeneration logged both preservations and produced the diff above.
+
+*Two implementation traps, both pinned by tests.* The prune must use the **acceptance predicate**
+(`bundled.resolve(rawLot:) == nil`), not key membership — an entry central-files *carries but
+refuses* (#321 `ancestryLacksRecordGroup`, #351 `fileUnit`) has to stay, or the lot vanishes from
+both artifacts at once. Those guards refuse nothing today, so the two readings coincide now and only
+now. And a fresh run must win over the prior map, or a real re-resolution could never land.
+
+*One test was deliberately destroyed.* `bridgeAgreesWithVolumeSourcesCorpusWide` compared the bridged
+central-files record against volume-sources' own copy across all 751 shared lots. The fold removes
+the duplicate, so the check has no data. Per-field fidelity is still pinned by
+`bridgeCopiesEveryFieldFaithfully` (10 fields, transposition-mutation-verified); the replacement
+test pins the new invariant — **the two maps are disjoint** and what volume-sources keeps is exactly
+the orphans.
+
+**N-5 is complete.**
 
 ---
 

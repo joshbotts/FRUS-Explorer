@@ -31,6 +31,13 @@ struct VolumeSourcesIndex: Decodable, Sendable {
     let recordGroups: [String: ArchivalResolution]
     /// Lot-file citations → their resolved record, keyed by **normalized** lot number
     /// (`CentralFilesIndex.normalizeLot`, e.g. `"80D212"`).
+    ///
+    /// **Only the lots `central-files-index.json` cannot answer** (#372 / N-5 PR 2, the fold).
+    /// Both bundles used to carry a lot map; 751 keys were in both and agreed on every rendered
+    /// field. Since every reader consults central-files first — `ArchivalResolver` in the app,
+    /// `OfflineNAIDResolver` in the authority generator, `applyResolution` in the volume-sources
+    /// generator itself — the duplicates were pure weight. This map is now the *difference*, and
+    /// the two are disjoint by construction (pinned by `VolumeSourcesIndexTests`).
     let lots: [String: ArchivalResolution]
     /// The cross-volume authority, keyed by each collection's dedup key for O(1) lookup.
     let authorityByKey: [String: MajorCollectionRecord]
@@ -154,8 +161,11 @@ struct MajorCollectionRecord: Decodable, Sendable, Equatable {
     let lotFile: String?
     /// The holding repository, when named.
     let repository: String?
-    /// The resolved NARA Catalog record, when one was found.
-    let resolved: ArchivalResolution?
+    // `resolved` was here. It is no longer serialized (#372 / N-5 PR 2): nothing ever read it
+    // — this record is consulted only for `volumeIds`, to caption "Cited in N volumes" — and 758
+    // of its 932 populated objects duplicated a `lots` entry verbatim. 307,810 bytes, 20.4% of
+    // the artifact, decoded on every launch and discarded. An older bundle that still carries the
+    // key simply decodes without it.
     /// Volumes whose Sources section cites this collection, sorted.
     let volumeIds: [String]
     /// Total citing nodes across all volumes.
