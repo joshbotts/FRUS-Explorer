@@ -2400,6 +2400,162 @@
         "naId": null,
         "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too. Cited possessively; the possessive does not fold, so it needs its own entry."
       }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "National Security Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Papers of John F. Kennedy. Presidential Papers. National Security Files",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/jfknsf",
+        "naId": null,
+        "rationale": "The library publishes ONE finding aid for the whole subcollection — administrative overview, series list and container list on a single page — so there is no more specific published destination for a series citation. The page's own series list is the next step."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "NSF",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Papers of John F. Kennedy. Presidential Papers. National Security Files",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/jfknsf",
+        "naId": null,
+        "rationale": "The subcollection under its abbreviation."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Presidential Office Files",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Papers of John F. Kennedy. Presidential Papers. President's Office Files",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/jfkpof",
+        "naId": null,
+        "rationale": "The library publishes ONE finding aid for the whole subcollection — administrative overview, series list and container list on a single page — so there is no more specific published destination for a series citation. The page's own series list is the next step."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Hilsman Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Roger Hilsman Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/rhpp",
+        "naId": null,
+        "rationale": "The Vietnam country-series citations reach it too; the library publishes one aid for the whole collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Papers of Arthur M. Schlesinger",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Arthur M. Schlesinger Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/amspp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Schlesinger Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Arthur M. Schlesinger Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/amspp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Sorensen Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Theodore C. Sorensen Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/tcspp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Ball Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "George W. Ball Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/gbpp",
+        "naId": null,
+        "rationale": "Verified by the page's own title. Slug-guessing found `gwbpp` first, which is the personal papers of a different person entirely — the title check is what caught it."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Papers of George W. Ball",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "George W. Ball Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/gbpp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Dillon Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "C. Douglas Dillon Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/cddpp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Papers of C. Douglas Dillon",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "C. Douglas Dillon Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/cddpp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Cleveland Papers",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Harlan Cleveland Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/hcpp",
+        "naId": null,
+        "rationale": "The library's finding aid for this collection."
+      }
+    },
+    {
+      "repository": "Kennedy Library",
+      "collection": "Papers of Arthur Schlesinger",
+      "subCollection": null,
+      "subCollectionAliases": null,
+      "resolution": {
+        "title": "Arthur M. Schlesinger Personal Papers",
+        "url": "https://www.jfklibrary.org/asset-viewer/archives/amspp",
+        "naId": null,
+        "rationale": "The same papers cited without the middle initial — a collection-level spelling needs its own entry."
+      }
     }
   ]
 }
