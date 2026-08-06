@@ -166,6 +166,52 @@ struct CollectionAuthorityStoreTests {
         #expect(index.record(id: "txt:eisenhower library|whitman file") != nil)
     }
 
+    /// The artifact and the keying must ship together.
+    ///
+    /// Every `txt:` id is a merge key produced by `CollectionKeying`. If the normalizer gains a
+    /// fold and the artifact is not regenerated, records that today's keying would have merged
+    /// sit in the bundle under their old separate ids — and every runtime lookup, which computes
+    /// the *new* key, misses them. Measured on the 2026-08-06 fold: shipping the code against
+    /// the stale artifact cost **290 documents**, silently.
+    ///
+    /// So: no two shipped ids may collide under the current normalizer.
+    @Test("No two authority ids collide under the current keying")
+    func artifactIsKeyedWithTheCurrentNormalizer() throws {
+        let index = try index()
+        var byRekeyed: [String: [String]] = [:]
+        for record in index.collections where record.id.hasPrefix("txt:") {
+            let body = record.id.dropFirst(4)
+            guard let bar = body.firstIndex(of: "|") else { continue }
+            let repo = String(body[..<bar]), segment = String(body[body.index(after: bar)...])
+            // Re-apply the normalizer to the stored key halves. A key already in normal form is
+            // a fixed point; one minted by an older normalizer is not.
+            let rekeyed = "txt:" + CollectionKeying.normalized(repo) + "|"
+                + CollectionKeying.segmentNorm(segment)
+            byRekeyed[rekeyed, default: []].append(record.id)
+        }
+        let collisions = byRekeyed.filter { $0.value.count > 1 }
+        let collisionDetail = "\(collisions.count) id groups collide under today's keying — regenerate collection-authority.json: \(collisions.values.prefix(3).map { $0.sorted() })"
+        #expect(collisions.isEmpty, Comment(rawValue: collisionDetail))
+        let notFixedPoints = byRekeyed.filter { $0.value.first != $0.key }
+        let staleDetail = "\(notFixedPoints.count) ids are not in current normal form, e.g. \(notFixedPoints.first.map { "\($0.value.first ?? "") -> \($0.key)" } ?? "")"
+        #expect(notFixedPoints.isEmpty, Comment(rawValue: staleDetail))
+    }
+
+    /// A two-record index in which `lotAlias` is carried by exactly one record — a `lot:`
+    /// cluster — so the cross-domain alias bridge the #351/#373 guards exist to block is
+    /// actually reachable. The shipped artifact stopped offering it when the possessive fold
+    /// made the alias ambiguous; the guards still have to work.
+    private static func syntheticIndex(lotAlias: String) throws -> CollectionAuthorityIndex {
+        let doc = """
+        {"schemaVersion":1,"generated":"2026-01-01","collections":[
+          {"id":"lot:66D204","name":"Presidential Correspondence: Lot 66 D 204",
+           "repository":"Department of State","lotFileNorm":"66D204","aliases":["\(lotAlias)"]},
+          {"id":"txt:carter library|plains file","name":"Plains File","repository":"Carter Library"}
+        ]}
+        """
+        return try JSONDecoder().decode(CollectionAuthorityIndex.self, from: Data(doc.utf8))
+    }
+
     @Test("Alias lookup (order step 4): unique forms resolve, shared forms never do")
     func aliasLookup() throws {
         let index = try index()
@@ -276,11 +322,24 @@ struct CollectionAuthorityStoreTests {
     @Test("#351 domain guard: a presidential-library note never resolves to a lot cluster")
     func presidentialLibraryDomainGuard() throws {
         let index = try index()
-        // Precondition (keeps the test non-vacuous): the raw alias bridge to the lot exists.
-        let rawBridge = index.uniqueRecord(
-            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))
-        #expect(rawBridge?.id == "lot:66D204",
-                "guard-test precondition: the alias bridge to the lot cluster must still exist")
+        // The bundled artifact no longer OFFERS this bridge, and that is a second, independent
+        // improvement rather than a weakening: since the 2026-08-06 possessive fold, Carter's
+        // "President\u{2019}s Files" and the lot's "Presidential Files" alias share one normal
+        // form, so step 4's own uniqueness rule refuses them both before the domain guard is
+        // consulted. Pinned so the change is visible if the artifact is ever regenerated back.
+        #expect(index.uniqueRecord(forAliasNorm: CollectionKeying.segmentNorm("Presidential Files")) == nil,
+                "the alias is shared by two records and must not resolve through step 4 at all")
+        // The guard itself is therefore exercised against a synthetic index where the
+        // cross-domain alias IS unique — otherwise this test would prove nothing.
+        let synthetic = try Self.syntheticIndex(lotAlias: "Presidential Files")
+        #expect(synthetic.uniqueRecord(
+            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))?.id == "lot:66D204",
+                "synthetic precondition: the bridge must exist for the guard to have work to do")
+        let libParseSynthetic = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        #expect(synthetic.record(forParsed: libParseSynthetic,
+                                 note: "Source: Carter Library, Presidential Files, Box 1.") == nil,
+                "the #351 guard must block the cross-domain resolution where it is reachable")
         // A presidential-library note with that leading segment must NOT land on any lot cluster.
         let note = "Source: Carter Library, Presidential Files, Box 1."
         let parsed = ParsedSourceNote.presidentialLibrary(
@@ -320,9 +379,14 @@ struct CollectionAuthorityStoreTests {
     @Test("#373 front-matter domain guard: a library-repository row never resolves to a lot cluster")
     func frontMatterDomainGuard() throws {
         let index = try index()
-        // Precondition (non-vacuous): the raw alias bridge to the lot cluster still exists.
-        #expect(index.uniqueRecord(
-            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))?.id == "lot:66D204")
+        // As in `presidentialLibraryDomainGuard`: the shipped artifact no longer offers the
+        // bridge (the alias is now shared), so the guard is exercised against a synthetic index
+        // where it is reachable.
+        let synthetic = try Self.syntheticIndex(lotAlias: "Presidential Files")
+        #expect(synthetic.record(forFrontMatterText: "Presidential Files",
+                                 repository: "Carter Library", lotFileNorm: nil,
+                                 decimalClass: nil) == nil,
+                "the #373 front-matter guard must block the cross-domain resolution")
         // A library-repository front-matter row whose leading segment is "Presidential Files" must
         // NOT land on the State lot cluster.
         let resolved = index.record(forFrontMatterText: "Presidential Files",

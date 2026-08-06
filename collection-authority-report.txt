@@ -1,28 +1,28 @@
-collection-authority.json regeneration report — 2026-07-17
+collection-authority.json regeneration report — 2026-08-06
 ============================================================
 volumes parsed:            501
 document notes parsed:     264464
-authority records:         4431 (lot-keyed: 1727, with NAID: 938)
-sub-series children:       7650
-alias forms:               5436
+authority records:         4423 (lot-keyed: 1727, with NAID: 938)
+sub-series children:       7656
+alias forms:               5444
 unclusterable references:  0
-artifact size:             1911168 bytes
+artifact size:             1911031 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
   lot-keyed:   4249/4249 (100.0%)
-  class-keyed: 3416/4089 (83.5%)
-  text-keyed:  8601/11761 (73.1%)
-  overall:     16266/20099 (80.9%)
+  class-keyed: 3499/4224 (82.8%)
+  text-keyed:  8601/11630 (74.0%)
+  overall:     16349/20103 (81.3%)
 
 Coverage — document source notes by era (parsed → clusterable → landed):
-  1946–1960: 73657 notes → 25823 clusterable (35.1%) → 25505 landed (34.6% of notes, 98.8% of clusterable)
-  1961–1968: 22481 notes → 19183 clusterable (85.3%) → 18498 landed (82.3% of notes, 96.4% of clusterable)
-  1969–1976: 18489 notes → 15697 clusterable (84.9%) → 15269 landed (82.6% of notes, 97.3% of clusterable)
-  1977–1988: 12083 notes → 8889 clusterable (73.6%) → 8120 landed (67.2% of notes, 91.3% of clusterable)
+  1946–1960: 73657 notes → 27441 clusterable (37.3%) → 27125 landed (36.8% of notes, 98.8% of clusterable)
+  1961–1968: 22481 notes → 19462 clusterable (86.6%) → 18779 landed (83.5% of notes, 96.5% of clusterable)
+  1969–1976: 18489 notes → 15697 clusterable (84.9%) → 15278 landed (82.6% of notes, 97.3% of clusterable)
+  1977–1988: 12083 notes → 8889 clusterable (73.6%) → 8121 landed (67.2% of notes, 91.4% of clusterable)
   1989–…: 239 notes → 169 clusterable (70.7%) → 89 landed (37.2% of notes, 52.7% of clusterable)
   …–1945: 137515 notes → 3963 clusterable (2.9%) → 3669 landed (2.7% of notes, 92.6% of clusterable)
 
-Ambiguous clusters left unmerged (same leading segment, different repositories): 464
+Ambiguous clusters left unmerged (same leading segment, different repositories): 460
   advisory committee on foreign aid: frc 74 a 58  ←  national archives | washington national records center
   advisory committees on foreign aid: frc 73 a 159  ←  national archives | washington national records center
   african affairs directorate  ←  department of state | reagan library
@@ -45,7 +45,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   ball paper  ←  johnson library | kennedy library
   bandow file  ←  department of state | reagan library
   bangkok embassy files: frc 68 a 5612  ←  (unattributed) | department of state
-  bowles paper  ←  yale university | yale university library
   bromley smith paper  ←  (unattributed) | johnson library | kennedy library
   brzezinski  ←  department of state | national archives
   brzezinski donated material  ←  carter library | department of state | national archives
@@ -67,6 +66,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   cfep files: frc 62 a 624  ←  national archives | washington national records center
   cfep record  ←  (unattributed) | eisenhower library
   charles s. murphy file  ←  (unattributed) | truman library
+  chester b. bowles paper  ←  (unattributed) | yale university
   christian a. herter paper  ←  (unattributed) | kennedy library
   chronological files of c. tracy barne  ←  (unattributed) | central intelligence agency
   clifford paper  ←  (unattributed) | johnson library
@@ -93,7 +93,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   dci files: job 91-00741r  ←  (unattributed) | central intelligence agency
   dci memoranda  ←  (unattributed) | central intelligence agency
   dci memos for record  ←  (unattributed) | central intelligence agency
-  dci’s executive registry files: jobs 80-b01086a  ←  (unattributed) | central intelligence agency
+  dci's executive registry files: jobs 80-b01086a  ←  (unattributed) | central intelligence agency
   ddi files: job 79-r1012a  ←  (unattributed) | central intelligence agency
   ddi files: job 80-r01386r  ←  (unattributed) | central intelligence agency
   ddi files: job 89-t01385r  ←  (unattributed) | central intelligence agency
@@ -104,7 +104,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   deputy director of intelligence file  ←  (unattributed) | central intelligence agency
   donated material  ←  carter library | national archives
   dulle  ←  (unattributed) | eisenhower library
-  dulles paper  ←  (unattributed) | eisenhower library | nixon | princeton university
+  dulles paper  ←  (unattributed) | eisenhower library | national archives | nixon | princeton university
   dwight d. eisenhower paper  ←  (unattributed) | eisenhower library
   dwight d. eisenhower record  ←  (unattributed) | eisenhower library
   e files: frc 71 a 6682  ←  (unattributed) | department of state | national archives
@@ -156,8 +156,8 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   hilsman paper  ←  kennedy library | national defense university | princeton university
   history staff file  ←  (unattributed) | central intelligence agency | national archives
   howard c. petersen paper  ←  (unattributed) | kennedy library
-  ica director’s file  ←  (unattributed) | department of state | washington national records center
-  ica director’s files: frc 61 a 32  ←  (unattributed) | washington national records center
+  ica director's file  ←  (unattributed) | department of state | washington national records center
+  ica director's files: frc 61 a 32  ←  (unattributed) | washington national records center
   ica message file  ←  (unattributed) | department of state | washington national records center
   ica message files: frc 58 a 403  ←  (unattributed) | washington national records center
   inco-cotton: cotton industry and commoditie  ←  (unattributed) | department of state
@@ -194,7 +194,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   lisa r. jameson file  ←  (unattributed) | department of state | reagan library
   london embassy file  ←  (unattributed) | national archives
   mansfield library  ←  (unattributed) | university of montana
-  mansfield paper  ←  university of montana | university of montana library
   manuscript division  ←  (unattributed) | library of congress
   mccone file  ←  (unattributed) | central intelligence agency
   mccone paper  ←  (unattributed) | eisenhower library
@@ -221,6 +220,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   national intelligence council file  ←  (unattributed) | central intelligence agency
   national intelligence estimate  ←  (unattributed) | central intelligence agency
   national security action memorandum  ←  (unattributed) | department of state | national archives
-  national security adviser  ←  department of state | ford library | library of congress | national archives
-  national security adviser file  ←  ford library | national archives
-  … 264 more
+  national security advisor  ←  department of state | ford library | library of congress | national archives
+  national security advisor file  ←  ford library | national archives
+  national security affair  ←  carter library | department of state | kennedy library | national archives | reagan library
+  … 260 more

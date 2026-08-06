@@ -68,7 +68,11 @@ struct ManuscriptRepositoryBridgeTests {
 
     @Test("A President's Daily Diary citation never crosses into the Library of Congress")
     func dailyDiaryDoesNotCrossRepository() throws {
-        #expect(try index().record(id: "txt:library of congress|president’s daily diary)") != nil,
+        // Derived, not hardcoded: the id is a `CollectionKeying` merge key, and pinning its
+        // literal spelling made this guard fail the moment the normalizer gained a fold.
+        let locDiary = "txt:library of congress|"
+            + CollectionKeying.segmentNorm("President\u{2019}s Daily Diary)")
+        #expect(try index().record(id: locDiary) != nil,
                 "fixture guard: the Library of Congress cluster must still exist")
         #expect(try resolve("Johnson Library, President’s Daily Diary)") == nil)
         #expect(try resolve("Reagan Library, President’s Daily Diary)") == nil)
