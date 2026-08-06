@@ -474,6 +474,25 @@ struct MacSourceExplorerView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    // #681: mirrors the iOS `outsideNARASection`. The catalogue is only queried
+                    // for repositories NARA administers; for the rest it has no record to find,
+                    // so say that rather than render free-text hits as the answer.
+                    if !NARACustody.mayQueryCatalog(forRepository: library) {
+                        Label {
+                            Text(String(localized: "source.explorer.nara.outsideCustody",
+                                        defaultValue: """
+                                        \(library) is not a National Archives repository, so the \
+                                        NARA Catalog has no record of this collection. Searching \
+                                        it on the collection name alone returns results that look \
+                                        authoritative and are not, so none is shown.
+                                        """))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        } icon: {
+                            Image(systemName: "building.columns").foregroundStyle(.secondary)
+                        }
+                    }
 
                 case .foreignGovernmentArchive(let desc):
                     provenanceRow(label: String(localized: "source.explorer.foreignArchive.type",
@@ -1189,13 +1208,24 @@ struct MacSourceExplorerView: View {
             let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
             manualQuery = "RG \(rg) \(keywords)"
             guard hasAPIKey else { return }
-            await fetchResults {
-                try await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 5)
+            // #681: a record-group citation naming a lot belongs on the guarded route — 853
+            // documents that until now ran the unfiltered record-group query. Mirrors iOS.
+            if let lot {
+                let rgToUse = rg.replacingOccurrences(of: "RG-", with: "")
+                await fetchResults {
+                    try await client.resolveLotFileVariants(lotNumber: lot, recordGroup: rgToUse)
+                }
+            } else {
+                await fetchResults {
+                    try await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 5)
+                }
             }
 
         case .presidentialLibrary(let library, let collection, _):
             manualQuery = "\(library) \(collection)"
             guard hasAPIKey else { return }
+            // #681: only query for repositories NARA administers. Mirrors iOS.
+            guard NARACustody.mayQueryCatalog(forRepository: library) else { return }
             await fetchResults {
                 try await client.searchByPresidentialMaterials(
                     library: library, collection: collection, maxResults: 3
