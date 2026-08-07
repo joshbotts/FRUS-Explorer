@@ -317,12 +317,20 @@ struct MacSourceExplorerView: View {
                     if let outcome = curatedOutcome(for: parsed) {
                         curatedLotBox(outcome)
                     }
-                    // #681: where the bundled library catalogue answered, it replaces the live
-                    // NARA box rather than sitting beside it — unconstrained free-text rows
-                    // shown next to a verified NARA collection cannot be told apart from it
-                    // (owner decision 2026-08-06). Mirrors the iOS twin.
+                    // #681: where the bundled library catalogue answered, it replaces the
+                    // *automatic* NARA box rather than sitting beside it — unconstrained
+                    // free-text rows shown next to a verified NARA collection cannot be told
+                    // apart from it (owner decision 2026-08-06). Mirrors the iOS twin.
+                    //
+                    // The manual search field is the exception, and it exists only on this
+                    // platform: a query the user typed is theirs to see, and its results land in
+                    // the same `catalogResults`. Suppressing the box outright would make the
+                    // Search button silently do nothing.
                     if libraryOutcome.isHit {
                         offlineLibraryBox(libraryOutcome)
+                        if let parsed, !catalogResults.isEmpty || isLoading || loadError != nil {
+                            naraBox(for: parsed)
+                        }
                     } else if let parsed {
                         naraBox(for: parsed)
                     } else {
@@ -1621,11 +1629,15 @@ struct MacSourceExplorerView: View {
             "NARA Catalog Record",
             "===================",
         ]
-        if !resultsAreVerified {
-            // A durable copy of an unverified result must say so — the chip in the UI does
-            // not travel into a research note (#680).
-            lines.append(String(localized: "source.explorer.manualSearch.exportCaveat",
-                                defaultValue: "NOTE: Result of a manual free-text search. It has not been checked against the cited lot number or record group."))
+        // A durable copy of an unverified result must say so — the chip in the UI does not
+        // travel into a research note (#680). Both reasons a result can be unverified are
+        // asked about here, through the same type the rows are chipped from: it came from the
+        // manual field, *or* the automatic query constrained on nothing narrower than a record
+        // group (#681). Gating on the first alone exported 26,667 documents' worth of
+        // unconstrained keyword hits under a bare "NARA Catalog Record" heading.
+        if let caveat = CatalogQueryEvidence.exportCaveat(evidence: catalogEvidence,
+                                                          isManualSearch: !resultsAreVerified) {
+            lines.append(caveat)
             lines.append("")
         }
         lines += [
