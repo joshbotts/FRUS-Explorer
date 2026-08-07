@@ -210,4 +210,76 @@ struct ParisPeaceRecordsTests {
         #expect(note.contains("256"))
         #expect(note.contains("RG 59"))
     }
+
+    // MARK: - Wiring
+
+    private static let views = [
+        "FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
+        "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift",
+    ]
+
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, Comment(rawValue: "\(path) is implausibly small — did it move?"))
+        return text
+    }
+
+    /// Both views must actually reach the panel.
+    ///
+    /// **What this test can and cannot do.** Everything above pins the data and the gate,
+    /// and every one of those assertions still passed when the iOS call site was deleted
+    /// outright — measured, not assumed. So without this test the PR's entire subject
+    /// (1,547 documents getting a panel) has no guard at all.
+    ///
+    /// It is a source audit, and a source audit is a *presence* check: it detects the call
+    /// being removed or renamed, which is the realistic regression, and it does **not**
+    /// detect the surrounding condition being changed to something wrong. The same
+    /// limitation was measured on this file's neighbour — flipping `||` to `&&` in
+    /// `MacSourceExplorerView`'s manual-search escape hatch leaves
+    /// `PresidentialLibraryOutcomeTests` entirely green. Proving behaviour would take a UI
+    /// test; this proves the wiring exists.
+    @Test("Both views reach the Paris Peace panel")
+    func bothViewsReachThePanel() throws {
+        for path in Self.views {
+            let text = try Self.source(path)
+            #expect(text.contains("ParisPeaceRecords.applies(recordGroup:"),
+                    Comment(rawValue: """
+                            \(path) never gates on the Paris Peace record group — the 1,547 \
+                            `Paris Peace Conf.` citations get no offline resolution.
+                            """))
+            #expect(text.contains("ParisPeaceRecords.series"),
+                    Comment(rawValue: "\(path) never renders the series that holds the records"))
+            #expect(text.contains("ParisPeaceRecords.rollNote"),
+                    Comment(rawValue: """
+                            \(path) renders the Paris Peace records without the roll caveat — \
+                            naming the series without saying the roll is unidentified reads as \
+                            a claim the panel cannot support.
+                            """))
+        }
+    }
+
+    /// The macOS `.centralFiles` branch must not send RG 256 to the RG-59 period box.
+    ///
+    /// This is the correctness half of the change: before #354 that branch bound `_` for the
+    /// record group and routed every central-file note through `centralFilesPeriodBox`, so a
+    /// Paris Peace citation was offered the State Department's finding aids and filing
+    /// manual — a different record group with a different filing system.
+    @Test("macOS routes RG 256 away from the RG-59 period box")
+    func macDoesNotSendRG256ToThePeriodBox() throws {
+        let text = try Self.source("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift")
+        let branch = try #require(
+            text.range(of: "case .centralFiles("),
+            Comment(rawValue: "the macOS central-files dispatch branch moved — update this test"))
+        let periodBox = try #require(
+            text.range(of: "centralFilesPeriodBox(", range: branch.upperBound..<text.endIndex),
+            Comment(rawValue: "the macOS period box is gone — update this test"))
+        #expect(text[branch.upperBound..<periodBox.lowerBound].contains("ParisPeaceRecords.applies"),
+                """
+                MacSourceExplorerView reaches centralFilesPeriodBox from the .centralFiles \
+                branch without excluding RG 256, so Paris Peace citations are offered the \
+                RG 59 decimal-file finding aids and filing manual.
+                """)
+    }
 }
