@@ -207,3 +207,116 @@ struct DigitizedRangeIndexTests {
                 Comment(rawValue: "caveat no longer refuses the document claim: \(caveat)"))
     }
 }
+
+// MARK: - RollScansIndexTests
+
+/// Scan data for the M862 Numerical File rolls (#663 follow-up).
+///
+/// ## Why this is a NAID join and not a second range parser
+/// `central-files-index.json` already names every M862 roll. What it could not do was open one:
+/// its roll records carry `caseStart`, `caseEnd`, `naId`, `catalogURL`, `title` and nothing
+/// else. The harvest has the image count and the roll PDF, and they join by identifier —
+/// **1,218 of the 1,261 bundled rolls, 96.6%**, with no parsing at all. The decimal half of
+/// #663 had to parse titles and reached 14.7% of its candidate units.
+///
+/// Worth **2,449 documents**: every 1906–1910 citation that already resolves to a roll, of which
+/// 2,425 have every one of their rolls digitised.
+///
+/// ## Why the two sections stayed separate
+/// Multiple rolls mean *opposite* things in the two routes. A Numerical File case split across
+/// consecutive rolls is the **complete** answer — the researcher needs all of them. Several
+/// decimal ranges mean NARA digitised in overlapping layers, and that section says "narrowest
+/// first, the widest is not wrong". One wording cannot serve both, so only the row is shared.
+///
+/// Version history:
+///   1.0 — Session 2026-08-07: #663 follow-up
+@Suite("Numerical File roll scans")
+struct RollScansIndexTests {
+
+    private func index() throws -> RollScansIndex {
+        try #require(RollScansIndexStore.shared, "roll-scans-index.json must be bundled")
+    }
+
+    /// The join the whole feature rests on, measured against both shipped bundles.
+    @Test("Almost every bundled roll finds its scan by NAID")
+    func rollsJoinToScans() throws {
+        let scans = try index()
+        let central = try #require(CentralFilesIndexStore.shared)
+        let rolls = central.numericalFile.rolls
+        #expect(rolls.count > 1_000, Comment(rawValue: "only \(rolls.count) rolls"))
+        let joined = rolls.filter { scans.scan(forNaId: $0.naId) != nil }.count
+        let rate = Double(joined) / Double(rolls.count)
+        #expect(rate > 0.95,
+                Comment(rawValue: "join rate fell to \(joined)/\(rolls.count) — did a harvest change?"))
+    }
+
+    /// The first roll, end to end: the bundle names it, the scan index opens it.
+    @Test("A known roll resolves to its microfilm PDF")
+    func knownRollHasItsPDF() throws {
+        let scan = try #require(try index().scan(forNaId: "19086784"))
+        #expect(scan.objectFilename == "M862_Roll1.pdf")
+        #expect(scan.objectCount == 1172)
+        #expect(scan.rollPDFURL != nil)
+    }
+
+    /// Same rule as the decimal ranges: a direct link only for a whole-roll PDF, because a
+    /// `.tif` object URL is the first image of the unit and one frame of a thousand is worse
+    /// than the viewer holding all of them.
+    @Test("Only whole-roll PDFs get a direct link")
+    func onlyPDFsLinkDirectly() throws {
+        for scan in try index().scans {
+            let isPDF = (scan.objectFilename ?? "").lowercased().hasSuffix(".pdf")
+            #expect((scan.rollPDFURL != nil) == isPDF,
+                    Comment(rawValue: "\(scan.naId) \(scan.objectFilename ?? "-")"))
+            #expect(scan.objectCount > 0, Comment(rawValue: "\(scan.naId) has no images"))
+        }
+    }
+
+    /// The 43 rolls the harvest has no record for are not an error to hide: the row keeps its
+    /// catalog link and offers no PDF, which is the honest state rather than a missing one.
+    @Test("A roll with no scan still presents its catalog link")
+    func unjoinedRollStillPresents() throws {
+        let central = try #require(CentralFilesIndexStore.shared)
+        let scans = try index()
+        let unjoined = central.numericalFile.rolls.first { scans.scan(forNaId: $0.naId) == nil }
+        let roll = try #require(unjoined, "no unjoined roll — the fixture assumption changed")
+        let presentation = DigitizedScanPresentation(roll: roll, scan: nil)
+        #expect(presentation.catalogURL != nil)
+        #expect(presentation.pdfURL == nil)
+        #expect(presentation.pdfLabel == nil)
+        #expect(presentation.objectCount == 0)
+    }
+
+    /// The presentation is what stops the two platforms drifting; both routes must build one.
+    @Test("Both scan routes build the same presentation type")
+    func bothRoutesUseThePresentation() throws {
+        let central = try #require(CentralFilesIndexStore.shared)
+        let roll = try #require(central.numericalFile.rolls.first)
+        let fromRoll = DigitizedScanPresentation(
+            roll: roll, scan: try index().scan(forNaId: roll.naId))
+        #expect(fromRoll.title == roll.title)
+
+        let range = try #require(DigitizedRangeIndexStore.shared?.ranges.first)
+        let fromRange = DigitizedScanPresentation(range)
+        #expect(fromRange.title == range.title)
+        #expect(fromRange.objectCount == range.objectCount)
+    }
+
+    /// Both views must render rolls through the shared row, or the pre-1910 section quietly
+    /// keeps its old catalog-link-only treatment on one platform.
+    @Test("Both views give rolls the shared scan row")
+    func bothViewsUseTheSharedRow() throws {
+        for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
+                     "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
+            let root = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+            let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            #expect(text.contains("DigitizedScanPresentation("),
+                    Comment(rawValue: "\(path) never builds the shared presentation"))
+            #expect(text.contains("RollScansIndexStore.shared?.scan(forNaId:"),
+                    Comment(rawValue: "\(path) never looks up a roll's scan"))
+            #expect(text.contains("digitizedScanRow("),
+                    Comment(rawValue: "\(path) does not render through the shared row"))
+        }
+    }
+}
