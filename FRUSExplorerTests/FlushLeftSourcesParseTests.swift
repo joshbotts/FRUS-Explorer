@@ -190,3 +190,174 @@ struct FlushLeftSourcesParseTests {
                 "parse output changed without bumping currentDateIndexVersion")
     }
 }
+
+// MARK: - #668 follow-up: the owner's report against the shipped v34
+
+/// The two defects the owner found after #725 shipped, both reproduced from the live index.
+///
+/// ## 1. A long book citation closed the published subtree
+/// `proseKind`'s narrative-exit rule ends a published-works run when a paragraph runs past
+/// 200 characters, on the reasoning that a volume can resume narrative after its book list.
+/// **frus1950v07's `S. L. A. Marshall, The River and the Gauntlet …` is 208 characters** —
+/// eight over — so the run closed there and the **16 books after it were promoted to
+/// archival collections**, each with a catalog-resolution affordance. frus1952-54Guat lost
+/// its last published row the same way, at 207.
+///
+/// Before #725 those rows were merely misfiled as prose; the promotion turned a cosmetic
+/// misclassification into a wrong archival claim, which is this project's worst defect
+/// class. A **flushleft paragraph is a list entry by definition** and can never be the
+/// narrative that ends the list, so it no longer triggers the exit.
+///
+/// This also restores parity with `VolumeSourcesExtractor`, which has no narrative-exit rule
+/// and therefore never had the bug: measured over all 552 volumes it promoted 0 rows in
+/// frus1950v07 while the app promoted 16.
+///
+/// ## 2. Descriptions were divorced from their collections
+/// The browser groups rows by `kind`, so a promoted collection landed under "Archival
+/// Collections" and its description paragraph under "About These Sources" — the two halves
+/// of one entry in different sections of the screen. `note` carries the description on the
+/// collection row.
+///
+/// Version history:
+///   1.0 — Session 2026-08-07: #668 follow-up
+@Suite("Paragraph-encoded sources — owner report on v34 (#668)")
+struct FlushLeftSourcesFollowUpTests {
+
+    private func rows(_ front: String) async throws -> [VolumeSourceEntry] {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("frus668b-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("frus1950v07.xml")
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>fixture</title></titleStmt>
+          <publicationStmt><date when="1976">1976</date></publicationStmt>
+          <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><front>
+        \(front)
+          </front><body></body></text>
+        </TEI>
+        """.write(to: url, atomically: true, encoding: .utf8)
+        return try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).volumeSources
+    }
+
+    /// The 208-character citation, verbatim from frus1950v07, and the two books that
+    /// followed it into the wrong section.
+    private let longBookShape = """
+    <div type="section" subtype="sources" xml:id="sources">
+      <head>Note on sources</head>
+      <p rend="center"><hi rend="smallcaps">Published Sources</hi></p>
+      <p rend="flushleft">Douglas MacArthur, Reminiscences (New York, McGraw-Hill Book Company, 1964).</p>
+      <p rend="flushleft">S. L. A. Marshall, The River and the Gauntlet: Defeat of the Eighth Army by the \
+    Chinese Communist Forces, November, 1950, in the Battle of the Chongchon River, Korea (New York, \
+    William Morrow and Company, 1953).</p>
+      <p rend="flushleft">David Rees, Korea: The Limited War (New York, St. Martin's Press, 1964).</p>
+      <p rend="flushleft">Matthew Ridgway, The Korean War (Garden City, N.Y., Doubleday, 1967).</p>
+    </div>
+    """
+
+    @Test("A long book citation does not close the published list")
+    func longCitationDoesNotEndTheBookList() async throws {
+        let all = try await rows(longBookShape)
+        // Fixture guard: the citation really is over the narrative-exit threshold, or this
+        // test passes for the wrong reason.
+        let marshall = try #require(all.first { $0.rawText.hasPrefix("S. L. A. Marshall") })
+        #expect(marshall.rawText.count > 200,
+                Comment(rawValue: "fixture no longer trips the threshold: \(marshall.rawText.count)"))
+
+        #expect(all.allSatisfy { $0.kind != .item },
+                Comment(rawValue: "books promoted: \(all.filter { $0.kind == .item }.map(\.rawText))"))
+        #expect(all.filter { $0.kind == .bibliography }.count == 4,
+                Comment(rawValue: "kinds: \(all.map { "\($0.kind)" })"))
+    }
+
+    /// The exit rule still has to work — a volume that genuinely resumes narrative after its
+    /// book list must still leave the list. The discriminator is `rend`, not length.
+    @Test("A long narrative paragraph still ends the published list")
+    func longNarrativeStillEndsTheList() async throws {
+        let all = try await rows("""
+        <div type="section" subtype="sources" xml:id="sources">
+          <head>Sources</head>
+          <p>Published Sources</p>
+          <p rend="flushleft">David Rees, Korea: The Limited War (New York, St. Martin's Press, 1964).</p>
+          <p>The Department of State also drew on a substantial body of covert-action \
+        documentation for this volume, which is described at length in the paragraphs that \
+        follow and which does not form part of the published bibliography above; the editors \
+        have noted its provenance wherever it bears on the record printed here.</p>
+          <p rend="flushleft">Conference Files, Lot 59 D 95</p>
+        </div>
+        """)
+        #expect(all.contains { $0.kind == .bibliography && $0.rawText.hasPrefix("David Rees") })
+        // The narrative paragraph closed the run, so the collection after it is promoted.
+        #expect(all.contains { $0.kind == .item && $0.rawText == "Conference Files, Lot 59 D 95" },
+                Comment(rawValue: "kinds: \(all.map { "\($0.kind): \($0.rawText.prefix(28))" })"))
+    }
+
+    // MARK: - The description belongs to its collection
+
+    private let frus1951v05Shape = """
+    <div type="section" subtype="sources" xml:id="source">
+      <head>List of sources</head>
+      <p>The principal source of documentation for this volume was the indexed central files.</p>
+      <p rend="flushleft"><gloss target="#t_CFM1">CFM</gloss> Files, Lot M 88</p>
+      <p>Consolidated master collection of the records of conferences of heads of state.</p>
+      <p rend="flushleft">PPS Files, Lot 64 D 563</p>
+      <p>Files of the Policy Planning Staff.</p>
+    </div>
+    """
+
+    @Test("Each collection carries the description that follows it")
+    func descriptionsRideOnTheirCollection() async throws {
+        let items = try await rows(frus1951v05Shape).filter { $0.kind == .item }
+        #expect(items.count == 2)
+        #expect(items.first?.note == "Consolidated master collection of the records of conferences of heads of state.",
+                Comment(rawValue: "note: \(items.first?.note ?? "nil")"))
+        #expect(items.last?.note == "Files of the Policy Planning Staff.")
+    }
+
+    /// Absorbed descriptions must leave the prose list, or the volume shows each one twice —
+    /// once on its collection and once under "About These Sources".
+    @Test("An absorbed description is no longer a separate prose row")
+    func absorbedDescriptionsLeaveTheProseList() async throws {
+        let all = try await rows(frus1951v05Shape)
+        let prose = all.filter { $0.kind == .prose }
+        #expect(prose.count == 1, Comment(rawValue: "prose rows: \(prose.map(\.rawText))"))
+        #expect(prose[0].rawText.hasPrefix("The principal source"))
+        #expect(all.map { "\($0.kind)" } == ["prose", "item", "item"],
+                Comment(rawValue: "kinds: \(all.map { "\($0.kind)" })"))
+    }
+
+    /// The description must not reach the key extraction: `rawText` is what the lot and
+    /// record-group grammars read, and a paragraph of narrative would both bury the
+    /// collection name and hand them spurious matches.
+    @Test("The description stays out of the collection's keys")
+    func descriptionDoesNotPolluteKeys() async throws {
+        let items = try await rows(frus1951v05Shape).filter { $0.kind == .item }
+        #expect(items.first?.rawText == "CFM Files, Lot M 88")
+        #expect(items.last?.lotFileNorm == "64D563")
+    }
+
+    /// Consecutive headings have no description between them, and must not absorb each
+    /// other — the book-list shape, where every row is flushleft.
+    @Test("A heading does not absorb the next heading")
+    func consecutiveHeadingsDoNotAbsorb() async throws {
+        let items = try await rows("""
+        <div type="section" subtype="sources" xml:id="sources">
+          <head>List of sources</head>
+          <p rend="flushleft">CFM Files, Lot M 88</p>
+          <p rend="flushleft">Conference Files, Lot 59 D 95</p>
+        </div>
+        """).filter { $0.kind == .item }
+        #expect(items.map(\.rawText) == ["CFM Files, Lot M 88", "Conference Files, Lot 59 D 95"])
+        #expect(items.allSatisfy { $0.note == nil },
+                Comment(rawValue: "notes: \(items.map { $0.note ?? "nil" })"))
+    }
+
+    @Test("The follow-up is carried by its own index-version bump")
+    func indexVersionMovedAgain() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 35,
+                "parse output changed again without bumping currentDateIndexVersion")
+    }
+}
