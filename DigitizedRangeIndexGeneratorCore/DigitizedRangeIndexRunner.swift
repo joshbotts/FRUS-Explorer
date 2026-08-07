@@ -49,6 +49,13 @@ public enum DigitizedRangeIndexRunner {
     /// a second index answering the same question is how two surfaces come to disagree.
     public static let seriesNaIds: Set<String> = ["302021", "2555709"]
 
+    /// The 1906–1910 Numerical File. Its rolls are **not** range-parsed into
+    /// `digitized-ranges-index.json` — the app already routes those citations by case number
+    /// through `central-files-index.json`, and two indexes answering one question is how two
+    /// surfaces come to disagree. What this series contributes instead is `roll-scans-index.json`:
+    /// the image count and roll PDF for rolls the app can already name, joined by NAID.
+    public static let numericalFileSeriesNaId = "654171"
+
     public static func run() throws {
         let env = ProcessInfo.processInfo.environment
         let harvestDir = env["HARVEST_DIR"]
@@ -64,6 +71,7 @@ public enum DigitizedRangeIndexRunner {
         }
 
         var ranges: [DigitizedRange] = []
+        var rollScans: [RollScan] = []
         var digitizedUnits = 0
         try HarvestRecordStream(url: shard).forEach { record in
             guard record["levelOfDescription"] as? String == "fileUnit",
@@ -71,9 +79,20 @@ public enum DigitizedRangeIndexRunner {
                   let ancestors = record["ancestors"] as? [[String: Any]],
                   let seriesId = ancestors.first(where: {
                       $0["levelOfDescription"] as? String == "series"
-                  })?["naId"].map(String.init(describing:)),
-                  seriesNaIds.contains(seriesId)
+                  })?["naId"].map(String.init(describing:))
             else { return }
+
+            if seriesId == numericalFileSeriesNaId {
+                let objects = record["digitalObjects"] as? [[String: Any]] ?? []
+                rollScans.append(RollScan(
+                    naId: String(describing: record["naId"] ?? ""),
+                    objectCount: count,
+                    objectUrl: objects.first?["objectUrl"] as? String,
+                    objectFilename: objects.first?["objectFilename"] as? String))
+                return
+            }
+
+            guard seriesNaIds.contains(seriesId) else { return }
             digitizedUnits += 1
             let title = (record["title"] as? String) ?? ""
             guard let parsed = DigitizedRangeTitleParser.parse(title) else { return }
@@ -108,10 +127,22 @@ public enum DigitizedRangeIndexRunner {
         encoder.outputFormatting = [.sortedKeys]
         try encoder.encode(file).write(to: URL(fileURLWithPath: output))
 
+        // The second artifact: scan data for the M862 rolls the app already names.
+        rollScans.sort { $0.naId < $1.naId }
+        guard rollScans.count > 1_000 else { throw GeneratorError.tooFewRollScans(rollScans.count) }
+        let rollOutput = env["ROLL_OUTPUT"]
+            ?? "FRUSExplorer/Resources/roll-scans-index.json"
+        let rollFile = RollScansIndexFile(
+            schemaVersion: 1, generated: generated,
+            seriesNaId: numericalFileSeriesNaId, scans: rollScans)
+        try encoder.encode(rollFile).write(to: URL(fileURLWithPath: rollOutput))
+
         FileHandle.standardError.write(Data("""
             digitised file units in the target series: \(digitizedUnits)
             ranges written: \(ranges.count) across \(classes.count) classes
             output: \(output)
+            roll scans written: \(rollScans.count)
+            output: \(rollOutput)
 
             """.utf8))
     }
@@ -126,6 +157,7 @@ public enum DigitizedRangeIndexRunner {
         case missingInput(String)
         case emptyIndex(Int)
         case singleClass(String)
+        case tooFewRollScans(Int)
 
         public var description: String {
             switch self {
@@ -138,6 +170,10 @@ public enum DigitizedRangeIndexRunner {
             case .singleClass(let cls):
                 return "Every range landed in one class (\(cls)). That is a field-shape change, "
                      + "not a corpus fact — refusing to write."
+            case .tooFewRollScans(let count):
+                return "Only \(count) digitised Numerical File rolls found; the harvest holds "
+                     + "1,238. A short join would silently drop the roll PDFs from documents "
+                     + "that have them — refusing to write."
             }
         }
     }

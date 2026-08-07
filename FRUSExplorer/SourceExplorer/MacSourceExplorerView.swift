@@ -1573,13 +1573,11 @@ struct MacSourceExplorerView: View {
                             defaultValue: "These digitized rolls hold File No. \(fileIdentifier). Open one and review the images page by page — documents are filed in numeric order by case."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                // #663 follow-up: the roll's own PDF and image count, joined by NAID from
+                // `roll-scans-index.json`. Mirrors the iOS section — keep in sync.
                 ForEach(rolls) { roll in
-                    Button {
-                        if let url = URL(string: roll.catalogURL) { openURL(url) }
-                    } label: {
-                        Label(roll.title, systemImage: "film")
-                    }
-                    .buttonStyle(.link)
+                    digitizedScanRow(DigitizedScanPresentation(
+                        roll: roll, scan: RollScansIndexStore.shared?.scan(forNaId: roll.naId)))
                 }
             }
         }
@@ -1796,29 +1794,37 @@ struct MacSourceExplorerView: View {
         }
     }
 
-    /// One digitised range: NARA's own title for it, its size, and the ways in.
-    @ViewBuilder
     private func digitizedRangeRow(_ range: DigitizedRange, isCandidate: Bool) -> some View {
+        digitizedScanRow(DigitizedScanPresentation(range), isCandidate: isCandidate)
+    }
+
+    /// One digitised scan — a decimal file range or a Numerical File roll.
+    ///
+    /// Both routes render through `DigitizedScanPresentation`, so the two cannot drift on what
+    /// a scan row says while each section keeps its own heading, prose and empty state. The iOS
+    /// twin mirrors this.
+    @ViewBuilder
+    private func digitizedScanRow(_ scan: DigitizedScanPresentation,
+                                  isCandidate: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 6) {
-                Text(range.title)
+                Text(scan.title)
                     .font(.callout.weight(.medium))
                     .textSelection(.enabled)
                 if isCandidate { ConfidenceChip(confidence: .medium) }
             }
-            Text(String(localized: "source.explorer.scans.count",
-                        defaultValue: "\(range.objectCount) scanned images"))
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-            if let pdf = range.rollPDFURL, let name = range.objectFilename {
+            if scan.objectCount > 0 {
+                Text(scan.imageCountLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let pdf = scan.pdfURL, let label = scan.pdfLabel {
                 Button { openURL(pdf) } label: {
-                    Label(String(localized: "source.explorer.scans.openRoll",
-                                 defaultValue: "Open \(name)"),
-                          systemImage: "doc.richtext")
+                    Label(label, systemImage: "doc.richtext")
                 }
                 .buttonStyle(.link)
             }
-            if let url = range.catalogURL {
+            if let url = scan.catalogURL {
                 Button { openURL(url) } label: {
                     Label(String(localized: "source.explorer.nara.viewRecord",
                                  defaultValue: "View in NARA Catalog"),
