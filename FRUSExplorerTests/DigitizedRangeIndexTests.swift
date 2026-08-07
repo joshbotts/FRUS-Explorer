@@ -320,3 +320,73 @@ struct RollScansIndexTests {
         }
     }
 }
+
+// MARK: - FlatOutlineExpandControlTests
+
+/// The Expand All control on a flat Sources outline (#727).
+///
+/// The owner reported that "Expand All" did nothing on frus1952-54Guat. It is not a
+/// hierarchy-recovery problem: `expandableIDs` returns the ids of nodes **with children**, so a
+/// flat outline gives it an empty set. Pressing the button then assigned an empty set — no
+/// change — and `allExpanded` stayed `false` because it guards on `!ids.isEmpty`, so the label
+/// never flipped either. A control that renders, does nothing, and never updates.
+///
+/// Measured over the reindexed store: **8 of the 255 volumes with an outline are entirely
+/// flat**, carrying 520 rows between them — frus1969-76ve13 (327), frus1981-88v10 (69),
+/// frus1969-76v34 (51), frus1951v05 (25), frus1951v02 (24), frus1952-54v07p1 (20), and the two
+/// frus1952-54v15 parts. Every one showed the dead button.
+///
+/// Version history:
+///   1.0 — Session 2026-08-07: #727
+@Suite("Flat outline expand control")
+struct FlatOutlineExpandControlTests {
+
+    private func node(_ text: String, depth: Int) -> VolumeSourceEntry {
+        VolumeSourceEntry(kind: .item, depth: depth, rawText: text)
+    }
+
+    /// The shape #725 produces for the paragraph-encoded volumes: every collection at depth 0.
+    @Test("A flat outline has nothing to expand")
+    func flatOutlineHasNoExpandableNodes() {
+        let tree = VolumeSourcesView.buildTree([
+            node("CFM Files, Lot M 88", depth: 0),
+            node("PPS Files, Lot 64 D 563", depth: 0),
+            node("S/S–NSC Files, Lot 63 D 351", depth: 0),
+        ])
+        #expect(tree.count == 3)
+        #expect(VolumeSourcesView.expandableIDs(tree).isEmpty,
+                "a flat outline reported expandable nodes")
+    }
+
+    /// A nested outline — what #728 gives frus1952-54Guat, and what the 240 `<item>` volumes
+    /// have — must still offer the control.
+    @Test("A nested outline has something to expand")
+    func nestedOutlineHasExpandableNodes() {
+        let tree = VolumeSourcesView.buildTree([
+            node("Dwight D. Eisenhower Library, Abilene, Kansas", depth: 0),
+            node("John Foster Dulles Papers", depth: 1),
+            node("Ann Whitman File", depth: 1),
+        ])
+        let ids = VolumeSourcesView.expandableIDs(tree)
+        #expect(ids.count == 1, Comment(rawValue: "expected one expandable parent, got \(ids.count)"))
+    }
+
+    /// The header must gate on "is there anything to expand", which `allExpanded` cannot answer
+    /// — it is `false` both when there is more to open and when there is nothing to open.
+    @Test("The header gates the control on expandable nodes, not on allExpanded")
+    func headerGatesOnExpandability() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/Browser/VolumeSourcesView.swift"),
+            encoding: .utf8)
+        let header = try #require(text.range(of: "browser.sources.collections.header"))
+        let expand = try #require(text.range(of: "browser.sources.expandAll",
+                                             range: header.upperBound..<text.endIndex))
+        #expect(text[header.upperBound..<expand.lowerBound].contains("hasExpandableNodes"),
+                """
+                The Expand All control is not gated on there being something to expand. On a \
+                flat outline it renders, does nothing when pressed, and never changes its label.
+                """)
+    }
+}
