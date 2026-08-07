@@ -317,12 +317,20 @@ struct MacSourceExplorerView: View {
                     if let outcome = curatedOutcome(for: parsed) {
                         curatedLotBox(outcome)
                     }
-                    // #681: where the bundled library catalogue answered, it replaces the live
-                    // NARA box rather than sitting beside it — unconstrained free-text rows
-                    // shown next to a verified NARA collection cannot be told apart from it
-                    // (owner decision 2026-08-06). Mirrors the iOS twin.
+                    // #681: where the bundled library catalogue answered, it replaces the
+                    // *automatic* NARA box rather than sitting beside it — unconstrained
+                    // free-text rows shown next to a verified NARA collection cannot be told
+                    // apart from it (owner decision 2026-08-06). Mirrors the iOS twin.
+                    //
+                    // The manual search field is the exception, and it exists only on this
+                    // platform: a query the user typed is theirs to see, and its results land in
+                    // the same `catalogResults`. Suppressing the box outright would make the
+                    // Search button silently do nothing.
                     if libraryOutcome.isHit {
                         offlineLibraryBox(libraryOutcome)
+                        if let parsed, !catalogResults.isEmpty || isLoading || loadError != nil {
+                            naraBox(for: parsed)
+                        }
                     } else if let parsed {
                         naraBox(for: parsed)
                     } else {
