@@ -9,13 +9,13 @@ TOTAL NOTES: 267663
   unrecognized                   2033  (100.0%)
 
 === era 1906-1939  (volumes: 118, notes: 92013)
-  centralFiles                  89461  ( 97.2%)
+  centralFiles                  89607  ( 97.4%)
   presidentialLibrary             172  (  0.2%)
   naraCollection                  373  (  0.4%)
   ciaCollection                     1  (  0.0%)
   namedFileSeries                 655  (  0.7%)
   previouslyPublished             589  (  0.6%)
-  unrecognized                    762  (  0.8%)
+  unrecognized                    616  (  0.7%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
   centralFiles                  74877  ( 86.9%)
@@ -95,7 +95,7 @@ TOTAL NOTES: 267663
   unrecognized                    187  (  1.5%)
 
 === OVERALL
-  centralFiles                 194431  ( 72.6%)
+  centralFiles                 194577  ( 72.7%)
   cfpfFile                       4028  (  1.5%)
   lotFile                       13955  (  5.2%)
   presidentialLibrary           28780  ( 10.8%)
@@ -104,11 +104,11 @@ TOTAL NOTES: 267663
   namedFileSeries                6046  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             894  (  0.3%)
-  unrecognized                   6264  (  2.3%)
+  unrecognized                   6118  (  2.3%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
-  1906-1939                       762  (  0.8%)
+  1906-1939                       616  (  0.7%)
   1940-1951                       939  (  1.1%)
   1952-1954                      1096  (  7.3%)
   1955-1957                       452  (  4.2%)
@@ -116,7 +116,7 @@ TOTAL NOTES: 267663
   1961-1963                       306  (  3.1%)
   1964-1976                       304  (  1.0%)
   1977+                           187  (  1.5%)
-  overall                        6264  (  2.3%)
+  overall                        6118  (  2.3%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906

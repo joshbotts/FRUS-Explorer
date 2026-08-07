@@ -929,7 +929,10 @@ public struct SourceNoteParser {
         // with a digit so "File Nothing…" prose can never match.
         let patterns: [(String, NSRegularExpression.Options)] = [
             // File No. / Filed No. / File. No. / File No, / FileNo. / File Not / File Nos.
-            (#"^File[d]?\s*[.,]?\s*Nos?[.,t]?\s*[.,]?\s*(\d[0-9A-Za-z./½–—\-]*)"#, .caseInsensitive),
+            // The `{1,2}` admits the doubled label `File No. No. 195.2/1176` — a
+            // compositor's repetition running through frus1918Supp02, 146 documents, where
+            // the second `No.` is not a digit so the capture never started (#353).
+            (#"^File[d]?\s*[.,]?\s*(?:Nos?[.,t]?\s*[.,]?\s*){1,2}(\d[0-9A-Za-z./½–—\-]*)"#, .caseInsensitive),
             // Bare "File <number>" — same capture class as the "File No." form, so
             // dotted decimals keep their class and item ("File 093.11141/21." must
             // store "093.11141/21", not the truncated "093").
