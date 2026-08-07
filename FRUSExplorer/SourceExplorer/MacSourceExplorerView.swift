@@ -806,13 +806,20 @@ struct MacSourceExplorerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-        case .namedFileSeries:
-            GroupBox(header) {
-                Text(String(localized: "source.explorer.namedSeries.note",
-                            defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        case .namedFileSeries(let series, _):
+            // #354 item 1: the citation states no repository, so this box used to say only
+            // that. Where the volume's own Sources section says where the series is — or the
+            // name states a Foreign Service post — say it instead.
+            if let routing = NamedFileSeriesRouting.routing(forSeriesName: series) {
+                namedSeriesRoutingBox(routing)
+            } else {
+                GroupBox(header) {
+                    Text(String(localized: "source.explorer.namedSeries.note",
+                                defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
         case .unrecognized:
@@ -1648,6 +1655,38 @@ struct MacSourceExplorerView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Named File Series Routing
+
+    /// Where a series cited by name alone is held (#354 item 1).
+    ///
+    /// Mirrors `SourceExplorerView.namedSeriesRoutingSection`, reading the same
+    /// `NamedFileSeriesRouting` entry and wording. The evidence line is the point, not
+    /// decoration: it is the FRUS editors' own sentence about this series, so the researcher
+    /// can judge the destination rather than trust it.
+    @ViewBuilder
+    private func namedSeriesRoutingBox(_ routing: NamedFileSeriesRouting.Entry) -> some View {
+        GroupBox(NamedFileSeriesRouting.sectionTitle) {
+            VStack(alignment: .leading, spacing: 6) {
+                provenanceRow(label: NamedFileSeriesRouting.label(routing),
+                              value: NamedFileSeriesRouting.title(routing))
+                if let url = NamedFileSeriesRouting.url(routing) {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label(NamedFileSeriesRouting.linkLabel(routing),
+                              systemImage: "arrow.up.right.square")
+                    }
+                    .buttonStyle(.link)
+                }
+                Text(routing.evidence)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     // MARK: - Manuscript Repository Guidance
