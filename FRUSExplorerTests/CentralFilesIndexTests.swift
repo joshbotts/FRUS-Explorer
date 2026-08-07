@@ -84,6 +84,103 @@ struct CentralFilesIndexTests {
         #expect(index.numericalFile.rolls(forFileNumber: "5000").isEmpty)  // between 699 and 7179
     }
 
+    // MARK: - #354 item 5: the decimal-era format gate
+    //
+    // Both surfaces that resolve Numerical File rolls gate on `documentYear` being
+    // 1906–1910, and the decimal file opened in the MIDDLE of 1910. Measured over the
+    // corpus export, 334 documents sit inside that year gate carrying a decimal citation
+    // — 327 of them dated 1910. Without the form gate `caseNumber` took their first run of
+    // digits and returned a real case number belonging to an unrelated case, which the
+    // roll lookup then resolved to a real digitised roll. The researcher was sent to a
+    // specific microfilm roll that does not hold the document, with nothing to signal it.
+
+    /// The corpus's decimal citations, verbatim, must yield no case number.
+    @Test("Decimal-era citations produce no case number")
+    func decimalFormsAreGated() {
+        for fileNumber in [
+            "215.1/84",       // frus1908/d594
+            "358.117/1–2",    // frus1909/d515
+            "835.415A/97",    // frus1910/d19
+            "864.56/12",      // frus1910/d37
+            "825.00/69",      // frus1910/d109
+            "211.63 Or5/2",   // frus1910/d50 — a space inside the class, not after the dot
+            "811B.5034",      // frus1910/d54 — no sub-document suffix at all
+        ] {
+            #expect(CentralFilesIndex.caseNumber(fromFileNumber: fileNumber) == nil,
+                    Comment(rawValue: """
+                            \(fileNumber) resolved case \
+                            \(CentralFilesIndex.caseNumber(fromFileNumber: fileNumber) ?? -1) — \
+                            a decimal citation was read as a Numerical File case.
+                            """))
+        }
+    }
+
+    /// The fourteen documents that a rule reasoned about rather than measured would miss.
+    ///
+    /// `511. 4A1/914` and `812. 415A/7` are `511.4A1` and `812.415A` with a space
+    /// transcribed into the decimal point. The first version of the gate required an
+    /// alphanumeric *immediately* after the dot and let all fourteen through, still
+    /// resolving cases 511 and 812. The corpus measurement is what caught it.
+    @Test("A space transcribed into the decimal point is still decimal-era")
+    func spacedDecimalPointIsGated() {
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "511. 4A1/914") == nil)
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "812. 415A/7") == nil)
+    }
+
+    /// `811B.5034`'s decimal point follows a **letter**, so the gate cannot be "a dot after
+    /// a digit" — the obvious alternative rule, which would let it resolve case 811.
+    @Test("A decimal point after a letter still gates")
+    func decimalPointAfterLetterIsGated() {
+        #expect(CentralFilesIndex.isDecimalFileForm("811B.5034"))
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "811B.5034") == nil)
+    }
+
+    /// The gate must cost the Numerical File nothing. Measured over the same 2,787
+    /// in-year identifiers: 334 gated, **0** whose case number changed any other way.
+    @Test("Numerical File citations are untouched by the gate")
+    func numericalFormsSurviveTheGate() {
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "7187") == 7187)
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "697/43") == 697)
+        // The abbreviation dot in the label is not a decimal point — this is why the rule
+        // starts reading at the first digit instead of at the start of the string.
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "File No. 17529.") == 17529)
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "14319/77") == 14319)
+        #expect(!CentralFilesIndex.isDecimalFileForm("File No. 17529."))
+        #expect(!CentralFilesIndex.isDecimalFileForm("697/43"))
+    }
+
+    /// The `/` clause, which has **zero traffic** inside the year gate and is kept anyway.
+    ///
+    /// Measured over all 2,787 identifiers on 1906–1910 documents, removing it changes no
+    /// verdict — so nothing else in this suite would notice its removal, and it is pinned
+    /// here rather than left to a mutation that survives silently. It is kept because
+    /// `caseNumber(fromFileNumber:)` is a general entry point and a slash genuinely closes
+    /// the case number: 183 identifiers elsewhere in the corpus carry a trailing
+    /// `101/2-2162. Secret.`-style clause that would otherwise read as decimal.
+    @Test("A dot after the sub-document slash is not a decimal point")
+    func dotAfterSlashIsNotDecimal() {
+        #expect(!CentralFilesIndex.isDecimalFileForm("697/43."))
+        #expect(!CentralFilesIndex.isDecimalFileForm("101/2-2162. Secret."))
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "697/43.") == 697)
+    }
+
+    /// End to end against the **bundled** index, so the test fails if the gate stops being
+    /// reached from the lookup the two views actually call.
+    ///
+    /// `697.1/43` is built to be caught: its leading digits are case 697, which the bundled
+    /// index really does resolve to roll `19174810` (the assertion directly above pins
+    /// that). Before the gate this decimal citation returned that roll.
+    @Test("A decimal citation resolves no roll through the bundled index")
+    func decimalCitationResolvesNoRoll() throws {
+        let index = try #require(CentralFilesIndexStore.shared,
+                                 "central-files-index.json should be bundled and decodable")
+        #expect(index.numericalFile.rolls(forFileNumber: "697/43").contains { $0.naId == "19174810" },
+                "fixture guard: case 697 must resolve, or the negative below proves nothing")
+        #expect(index.numericalFile.rolls(forFileNumber: "697.1/43").isEmpty,
+                "a decimal citation was resolved to a Numerical File roll")
+        #expect(index.numericalFile.rolls(forFileNumber: "215.1/84").isEmpty)
+    }
+
     @Test("Lot file decodes and resolves from a raw source-note lot number")
     func lotFileLookup() throws {
         let json = """
