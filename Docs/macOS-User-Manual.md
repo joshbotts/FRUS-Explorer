@@ -962,7 +962,10 @@ Source Explorer classifies each source note and applies the most precise resolut
 | **Pre-1910 Central Files** | Resolved from a **bundled index** (no API call or key): 1906–1910 Numerical File citations link to the digitized microfilm roll (e.g. M862), and pre-1906 records resolve within the country-arranged diplomatic series across the full pre-1906 range, including 19th-century (18xx) datelines | No |
 | **Lot files** | NARA Catalog API `variantControlNumber_is` query with three normalised forms of the lot number (e.g. `63D135`, `63 D 135`, `63 D135`), constrained to Record Group 59 | Yes |
 | **Other NARA record groups** (RG 218, 306, 330, 84) | NARA Catalog API search with record group number constraint | Yes |
-| **Presidential library** | NARA Catalog keyword search combining library name and collection keywords; up to 3 candidates shown; zero-result path links to the institution's own finding-aid portal (e.g. jfklibrary.org, lbjlibrary.org, nixonlibrary.gov) | Yes |
+| **Presidential library** | Answered first from a **bundled catalog** of the eleven NARA presidential libraries — their collections and series, with catalog links — so a citation resolves with no key and no network. Where the bundle answers, no live query is issued at all. Where it does not, the keyword search runs as before, with a caveat saying the result is unverified | No (bundle) / Yes (fallback) |
+| **Paris Peace Conference (`Paris Peace Conf. 180.03401/101`)** | These are **Record Group 256**, the American Commission to Negotiate Peace — not the State Department's central file. Resolved offline to the record group, to the series holding the decimal file, and to NARA's own index, classification manual and key for it | No |
+| **Named file series** (`Roosevelt Papers`, `J.C.S. Files`, `Moscow Embassy Files`) | Where the volume's own Sources section says where the series is held, that answer is shown **with the editors' sentence beneath it**, so you can judge the destination rather than trust it. Foreign Service post files resolve to Record Group 84 | No |
+| **Repositories outside the National Archives** (Library of Congress, National Defense University, Center of Military History, university and historical-society collections) | No catalog query is issued — there is no record for it to find. Instead the panel names the repository, says what it holds, and links to its finding aids. See *Where These Records Are*, below | No |
 | **CIA records** | CIA CREST database link with job number pre-populated when available | No |
 | **Foreign archive** | Displays parsed text | — |
 | **Previously published** | Displays parsed citation | — |
@@ -973,6 +976,25 @@ When the API returns multiple candidates (up to 5 for lot files and 3 for presid
 **File series names and HMS/MLR entry numbers.** When a lot file resolves against the app's bundled index, the **NARA Catalog Record** box now identifies the record the way NARA itself does: a **File Series** line names the enclosing series (when the resolved record is a file unit rather than the series itself), and an **HMS/MLR Entry** line gives the entry number(s) — the identifier NARA staff ask researchers to quote when requesting the original records. When the entry numbers belong to the enclosing series rather than the specific file unit, the line is labeled **HMS/MLR Entry (series)** and a note says so. A citation hint below the link reminds you to cite the HMS/MLR entry number together with the lot number. The same identifiers appear on resolved entries in a volume's Sources list (Section 12.1.3).
 
 **Honest lot resolution.** A class of lot citations that an earlier fallback matched to the *wrong* NARA records — chiefly presidential-library staff-file lots — is now treated as unresolved and routed to the live NARA Catalog lookup instead, so the Source Explorer never shows a confident link to the wrong series.
+
+**Where These Records Are.** Some FRUS citations name repositories the National Archives does not administer — the Library of Congress Manuscript Division, the National Defense University, the Army's Center of Military History, the Hoover Institution at Stanford, the Minnesota Historical Society, and a tail of university libraries. The catalog has no record of these, so no query is issued for them. Instead the panel names the holding institution, describes what it holds and where, and links to its finding aids.
+
+Two of them no longer exist under the names FRUS printed, which is worth knowing before you search:
+
+| The citation says | The records are now at |
+|---|---|
+| **Naval Historical Center** | **Naval History and Heritage Command** — redesignated 1 December 2008; the Navy Archives is at the Washington Navy Yard |
+| **U.S. Army Military History Institute** | **U.S. Army Heritage and Education Center**, Carlisle Barracks, Pennsylvania |
+
+Searching either institution under the name in the citation finds nothing, so the panel says so outright.
+
+**Where This Series Is Held.** A citation like `Roosevelt Papers` or `Leahy Papers` is the *entire* source note — no lot number, no record group, no repository. Where a volume's own front-matter Sources section states where such a series is held, Source Explorer shows that destination **together with the editors' sentence**, so the claim is checkable rather than asserted. `frus1943`, for instance, prints "Roosevelt Papers — The papers of President Franklin D. Roosevelt, deposited in the Franklin D. Roosevelt Library at Hyde Park," and that is what the panel quotes. Joint Chiefs files resolve to Record Group 218, SWNCC files to RG 353, and any `<City> Embassy | Legation | Consulate | Post Files` to RG 84, the Foreign Service posts' own records.
+
+Where the evidence does not support a destination, none is offered. Several series the volumes describe but never locate — and a handful whose name means different records in different years — are deliberately left unresolved rather than pointed at a plausible guess.
+
+`[SCREENSHOT: Source Explorer showing "Where These Records Are" for a Naval Historical Center citation, with the current institution name, the redesignation note, and the finding-aid link]`
+
+`[SCREENSHOT: Source Explorer showing "Where This Series Is Held" for a Roosevelt Papers citation, with the FDR Library destination and the volume's own Sources sentence quoted beneath it]`
 
 `[SCREENSHOT: Source Explorer showing a resolved State Dept. lot file with multiple NARA Catalog candidates listed]`
 
@@ -1001,6 +1023,10 @@ Beneath the resolution, Source Explorer lists **other indexed documents that cit
 ### 12.1.3 Volume Sources List — Collection Links and Cross-Volume Provenance
 
 The provenance above is per document. Recent volumes also describe, in their front matter, the archival collections their editors consulted for the *whole* volume. Browse to a volume's **Sources** section to see that list: an "About These Sources" note, followed by a nested **Archival Collections** outline of record groups, lot files, and named collections (a separate **Published Sources** section lists the bibliography — books and printed collections, which are deliberately not treated as archival collections). Entries inherit context from their parent headings — a sub-file listed under a record group knows its record group, a folder listed under a presidential-library heading knows its library — so even deep outline entries resolve.
+
+**Volumes that list their sources as paragraphs.** The early-1950s volumes do not write that outline as a list. They alternate a collection name with a paragraph describing it — `CFM Files, Lot M 88`, then "Consolidated master collection of the records of conferences of heads of state…" — and fourteen volumes' Sources sections used to read as undifferentiated prose because of it. They are now read as the collection lists they are: **526 collections** across those volumes, each shown with the editors' description beneath its name, and each resolving to the National Archives like any other. Where such a list names a repository — `Dwight D. Eisenhower Library, Abilene, Kansas` — that row becomes the heading for the collections beneath it, and those collections resolve against the bundled presidential-library catalog.
+
+Book lists stay book lists. A volume whose front matter lists published works in the same paragraph form keeps them under **Published Sources**, never as archival collections.
 
 Each collection that resolves to a National Archives record — a record group or a lot file — carries a **catalog link** (the columns icon) that opens the record in the embedded browser, the same authority records the Source Explorer links to for individual documents. Resolved entries also show the identifiers researchers need on site: a **File Series** line naming the enclosing series and an **HMS/MLR Entry** line with the entry number(s) NARA staff use to locate the records (labeled **HMS/MLR Entry (series)** when the numbers describe the enclosing series rather than the specific file unit) — the same enrichment the per-document Source Explorer shows (Section 12.1).
 

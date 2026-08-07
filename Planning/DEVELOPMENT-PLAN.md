@@ -185,6 +185,50 @@ Present these files to Claude Code in order. The leading number matches the sess
 
 ---
 
+## Session 2026-08-06/07 — the N wave: archival resolution (build 40)
+
+Fifteen PRs, #710–#728. Every figure below was measured against the corpus with shipped code, not
+estimated; every parser change was mutation-tested.
+
+**#681 presidential libraries** — #709/#710 wired the bundled library catalogue into Source
+Explorer, answering **43.8% of 30,417 documents** offline and suppressing the live query where it
+answers. #711 carried the unverified caveat into Copy and Export (26,667 documents had been
+exporting caveat-free) and re-landed a fix #710 lost. #720 fixed the macOS escape hatch that
+opened only on a *successful* manual search.
+
+**#353 parser recoveries** — eight PRs (#712–#719) moving **~3,010 documents** and taking corpus
+`unrecognized` from **2.8% → 2.2%**. Status comment on the issue lists what is left; the largest
+remaining item is the 36,063 named-subfile decimal classes.
+
+**#354 archival routing — CLOSED.** #721 Paris Peace Conference (1,547), #722 the numerical-file
+format gate (334, a *wrong-answer* fix), #723 manuscript repositories (564), #724 named file
+series (1,763). Two of its five items were closed unbuilt after measurement showed they return
+nothing. **4,208 documents** total.
+
+**#668 front-matter Sources — CLOSED.** #725 read the paragraph-encoded list (14 volumes, +526
+collections), #726 fixed a book list being filed as archival collections and attached each
+description to its collection, #728 fixed a `ForEach` identity collision and gave front-matter
+rows the library route. Index version 33 → 36 across the wave. Residue split to **#727**.
+
+### Lessons worth carrying
+
+- **The issue's own comments reversed its body twice** (#675, #354). Read them before scoping.
+- **A count going up is not evidence a rule is right.** #719's first measurement reported 89
+  documents; a test found `Lot 52–242` truncating to `52`, and 29 of the 89 were wrong.
+- **Two of #354's proposed record-group mappings were contradicted by the volumes themselves.**
+  262 documents were left unrouted rather than sent to record groups that do not hold them.
+- **Mutation testing found what review did not** — twice: a source audit that could not detect a
+  logic change (#721), and a library match that would have silently lost 57 collections (#728).
+- **The simulator app host wedges per-device.** A control run of the *unmutated* suite is the only
+  way to tell a wedge from a surviving mutant; switching devices clears it.
+
+### Owed
+
+- `SourceExplorerExportGenerator` re-run + new `eval-baseline.txt` (#353's own closing step).
+- `macManualSearchSurvivesSuppression` is a presence check, not a behaviour check — lift the
+  condition out of the `ViewBuilder` into a testable predicate.
+- Screenshots for the four new Source Explorer surfaces (see #106).
+
 ## Notes for All Sessions
 
 - Read `FRUS-Explorer-Specification.md` before beginning any session
