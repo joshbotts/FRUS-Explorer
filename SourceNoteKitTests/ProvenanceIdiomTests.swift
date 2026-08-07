@@ -104,6 +104,24 @@ struct ProvenanceIdiomTests {
         #expect(!SourceNoteParser.assertsProvenance(far[...]))
     }
 
+    /// Why the idiom is `obtained from` and not simply `from`.
+    ///
+    /// Measured, broadening it costs exactly **one** document — but the mechanism matters more
+    /// than the count. A generic `from` anchors on the *first* occurrence, which in this real
+    /// note is `"…of June 2 from Dr. Soong to President Roosevelt"`, far from the repository;
+    /// the window bound then refuses the whole note. The specific idiom anchors where the
+    /// provenance assertion actually is.
+    @Test("The idiom anchors on the provenance clause, not the first \"from\"")
+    func idiomAnchorsOnProvenanceNotAnyFrom() {
+        let note = """
+            Copy of telegram transmitted in covering letter of June 2 from Dr. Soong to \
+            President Roosevelt. Photostatic copy obtained from the Franklin D. Roosevelt \
+            Library, Hyde Park, N.Y.
+            """
+        #expect(library(note) == "Roosevelt Library",
+                "got \(library(note) ?? "nil") — an earlier \"from\" captured the anchor")
+    }
+
     /// #713's counterpart. `a copy is in the … Library` names a duplicate and must not become
     /// provenance — the two idioms differ by one verb, and this pins that they still do.
     @Test("A duplicate's location is not a provenance assertion")
