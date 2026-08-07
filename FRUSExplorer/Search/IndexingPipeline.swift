@@ -612,7 +612,17 @@ public actor IndexingPipeline {
     ///   note otherwise, because the 1961–1963 abstract notes are genuinely lot files and put
     ///   their citation in the tail; a blanket "sentence 1 only" rule would have broken 1,006
     ///   correct classifications.
-    public static let currentDateIndexVersion: Int = 26
+    /// - v27 — #353 §3.2/§3.3: the library strategy matched a repository keyword anywhere in a
+    ///   note, so a *secondary copy* named in a parenthetical or a remark captured the whole
+    ///   citation, and the extracted repository name swallowed everything before the keyword.
+    ///   `tryPresidentialLibrary` now searches a body with parentheticals and secondary-copy
+    ///   sentences removed, and takes the repository from the keyword's own segment. Measured
+    ///   against the v26 index: **382 reclassified** (364 → centralFiles, 8 → namedFileSeries,
+    ///   10 → unrecognized) and **457 repository names repaired** — from up to 150 characters
+    ///   of abstract prose down to the name, which matters because that value is the archival
+    ///   neighbour key and the catalogue query string. The `"Copy obtained from the … Library"`
+    ///   idiom is deliberately kept: it asserts provenance rather than a duplicate.
+    public static let currentDateIndexVersion: Int = 27
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
