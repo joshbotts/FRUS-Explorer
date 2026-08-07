@@ -645,7 +645,11 @@ public actor IndexingPipeline {
     ///   admits a longer prefix only when `obtained from` stands within 30 characters of the
     ///   repository name, which is what tells it apart from `a copy is in the … Library` (a
     ///   duplicate, refused since #713).
-    public static let currentDateIndexVersion: Int = 30
+    /// - v31 — #353: the doubled `File No. No. 195.2/1176` label. A compositor's repetition
+    ///   running through frus1918Supp02; the capture after the label requires a digit, and the
+    ///   second `No.` is not one, so **146 documents** never reached the decimal grammars at
+    ///   all. The label group now admits one or two repetitions.
+    public static let currentDateIndexVersion: Int = 31
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
