@@ -1335,7 +1335,47 @@ struct SourceExplorerView: View {
                 Image(systemName: "building.columns")
                     .foregroundStyle(.secondary)
             }
+
+            // #354 item 4: saying the National Archives cannot help is only half an answer.
+            // 565 of these documents reached no curated finding aid either, so they were told
+            // where the records are *not* and nothing about where they are.
+            if let guidance = ManuscriptRepositoryGuidance.guidance(forRepository: repository) {
+                repositoryGuidanceRows(guidance)
+            }
         }
+    }
+
+    /// The rows naming the repository that actually holds these records (#354 item 4).
+    ///
+    /// Shared wording with the macOS twin through `ManuscriptRepositoryGuidance`, so the two
+    /// platforms cannot state different things about the same institution.
+    @ViewBuilder
+    private func repositoryGuidanceRows(_ guidance: ManuscriptRepositoryGuidance.Entry) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(guidance.name)
+                .font(.callout.weight(.medium))
+            // A renamed repository is the single most useful thing here: the citation's own
+            // spelling finds nothing at the institution that now holds the records.
+            if let formerName = guidance.formerName {
+                Text("\(ManuscriptRepositoryGuidance.citedAsLabel): \(formerName)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            Text(guidance.holdings)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let url = guidance.url {
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(ManuscriptRepositoryGuidance.linkLabel(guidance),
+                          systemImage: "arrow.up.right.square")
+                    .font(.callout)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     /// The curated finding aid for a library collection.
