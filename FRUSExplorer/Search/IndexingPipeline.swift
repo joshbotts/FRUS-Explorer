@@ -662,7 +662,18 @@ public actor IndexingPipeline {
     ///   lookahead so neither `Lot 122A` nor the compound `Lot 52-242` is cut to its first
     ///   digits — the second was caught by a test after the first measurement, and was worth 29
     ///   documents that would have merged with unrelated files.
-    public static let currentDateIndexVersion: Int = 33
+    /// - v34 — #668: the front-matter Sources list encoded as paragraphs. The early-1950s
+    ///   volumes alternate a `<p rend="flushleft">` collection heading with an ordinary
+    ///   description paragraph and use no `<list>`/`<item>` at all, so every row became
+    ///   `.prose` and the volume produced **zero** collection rows — `frus1951v05` appeared
+    ///   0 times in `volume-sources-index.json`. Flushleft paragraphs are now promoted to
+    ///   collection rows in a section that emitted no item row, which leaves the 240
+    ///   already-working volumes untouched by construction rather than by measurement.
+    ///   Measured with the real extractor over all 552 manifest volumes: **14 volumes,
+    ///   +526 collection rows, 0 volumes losing a row.** Published-works runs are excluded
+    ///   (frus1950v07's 39 flushleft rows are Acheson and Allison memoirs, and stay prose),
+    ///   as are the series' six boilerplate `Sources for …` section titles.
+    public static let currentDateIndexVersion: Int = 34
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
