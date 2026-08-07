@@ -73,3 +73,39 @@ National Archives.
   not as archival collections.
 - Anywhere a catalogue link appears, check where it actually lands. **A confident link to the
   wrong records is the bug we most want to hear about.**
+
+## Facets can now be sorted, paged, and filtered — and the years histogram stopped hiding 72% of the corpus
+
+**The bug first.** Every facet section fetched at most 50 rows, and the years section is ordered
+newest-first — so the cut kept the 50 most recent years and dropped everything earlier. On a
+552-volume index that meant the year histogram **began at 1953**: 88,720 of 314,676 dated rows, 28%.
+Both World Wars, the interwar years and the whole nineteenth century sat behind a caption reading
+"Showing the top 50 of 203". The count was honest; "top" was the wrong word for a cut that kept the
+*latest*, not the largest. Years, document type and archival provenance now show **everything** —
+those lists have a natural ceiling and never needed triage.
+
+**Sorting.** Years, Volumes and People each carry a sort menu: by count, or by label in either
+direction. On years that reads as **Oldest first** and **Newest first**; on people and volumes as
+**A–Z** and **Z–A**. Alphabetical on people is effectively last-name order, because FRUS records
+names as "Last, First" — the exceptions are figures printed without a surname, who sort by whatever
+their name begins with. Accented initials sort where you would look for them: Ágústsson sits between
+Adams and Baker, not after Zimmermann.
+
+**Paging.** A **Show** menu sets 5, 10, 25, or all rows, and a page turner appears when there is more
+than one page, above a line saying which rows you are seeing and how many there are.
+
+**Filtering.** Volumes and People — the two that can run to hundreds and to sixteen thousand rows —
+get a filter field. Type part of a name and the list narrows as you type, ignoring case and accents,
+so `agustsson` finds Ágústsson. A page turner alone would have been 656 pages of people; this is
+what makes that list navigable.
+
+## What to test
+1. Open **Facets → Years** on a broad search. Does the histogram reach your earliest volumes, not
+   just the recent ones?
+2. Change the years sort to **Oldest first** and back. Does the list reverse, and does it return to
+   page 1?
+3. Open **People**, set **Show all**, then page through it. Does the "showing N–M of T" line track?
+4. Type a partial surname into the People filter. Does it narrow live, and does clearing it restore
+   the full list?
+5. Run a new search with a sort still chosen. The sort should persist; the page and the filter
+   should reset.
