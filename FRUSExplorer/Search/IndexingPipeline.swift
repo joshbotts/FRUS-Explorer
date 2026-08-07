@@ -638,7 +638,14 @@ public actor IndexingPipeline {
     ///   House as a press release`. Measured against the v28 index: **346 recovered** from
     ///   `unrecognized`, **0 lost**. `Unperfected Treaty No. A-10` is deliberately NOT a lead:
     ///   those are archival (NARA RG 11), not printed.
-    public static let currentDateIndexVersion: Int = 29
+    /// - v30 — #353: the `obtained from the … Library` provenance idiom. The library lead gate
+    ///   admits a prefix of at most 40 comma-free characters, and the WWII-era volumes write
+    ///   `"Copy of telegram obtained from the Franklin D. Roosevelt Library."` — 47 characters,
+    ///   every one of them asserting where the document came from. `assertsProvenance(_:)`
+    ///   admits a longer prefix only when `obtained from` stands within 30 characters of the
+    ///   repository name, which is what tells it apart from `a copy is in the … Library` (a
+    ///   duplicate, refused since #713).
+    public static let currentDateIndexVersion: Int = 30
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
