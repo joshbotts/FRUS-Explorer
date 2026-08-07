@@ -23,10 +23,10 @@ TOTAL NOTES: 267663
   presidentialLibrary             239  (  0.3%)
   naraCollection                  483  (  0.6%)
   ciaCollection                   678  (  0.8%)
-  namedFileSeries                4453  (  5.2%)
+  namedFileSeries                4461  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
   previouslyPublished               3  (  0.0%)
-  unrecognized                   1297  (  1.5%)
+  unrecognized                   1289  (  1.5%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
   centralFiles                  10481  ( 69.7%)
@@ -43,10 +43,10 @@ TOTAL NOTES: 267663
   presidentialLibrary            1223  ( 11.4%)
   naraCollection                    6  (  0.1%)
   ciaCollection                    52  (  0.5%)
-  namedFileSeries                  82  (  0.8%)
+  namedFileSeries                  87  (  0.8%)
   foreignGovernmentArchive          9  (  0.1%)
   previouslyPublished               4  (  0.0%)
-  unrecognized                    458  (  4.3%)
+  unrecognized                    453  (  4.2%)
 
 === era 1958-1960  (volumes: 23, notes: 8547)
   centralFiles                   5092  ( 59.6%)
@@ -54,10 +54,10 @@ TOTAL NOTES: 267663
   presidentialLibrary            1511  ( 17.7%)
   naraCollection                  147  (  1.7%)
   ciaCollection                    42  (  0.5%)
-  namedFileSeries                   5  (  0.1%)
+  namedFileSeries                   7  (  0.1%)
   foreignGovernmentArchive          6  (  0.1%)
   previouslyPublished               1  (  0.0%)
-  unrecognized                    187  (  2.2%)
+  unrecognized                    185  (  2.2%)
 
 === era 1961-1963  (volumes: 27, notes: 9941)
   centralFiles                   4329  ( 43.5%)
@@ -65,10 +65,10 @@ TOTAL NOTES: 267663
   presidentialLibrary            2871  ( 28.9%)
   naraCollection                  668  (  6.7%)
   ciaCollection                   447  (  4.5%)
-  namedFileSeries                  26  (  0.3%)
+  namedFileSeries                  31  (  0.3%)
   foreignGovernmentArchive          1  (  0.0%)
   previouslyPublished               2  (  0.0%)
-  unrecognized                    311  (  3.1%)
+  unrecognized                    306  (  3.1%)
 
 === era 1964-1976  (volumes: 100, notes: 30790)
   centralFiles                   3008  (  9.8%)
@@ -77,10 +77,10 @@ TOTAL NOTES: 267663
   presidentialLibrary           15351  ( 49.9%)
   naraCollection                 7720  ( 25.1%)
   ciaCollection                   990  (  3.2%)
-  namedFileSeries                  60  (  0.2%)
+  namedFileSeries                 337  (  1.1%)
   foreignGovernmentArchive         29  (  0.1%)
   previouslyPublished              67  (  0.2%)
-  unrecognized                    601  (  2.0%)
+  unrecognized                    324  (  1.1%)
 
 === era 1977+  (volumes: 39, notes: 12402)
   centralFiles                     79  (  0.6%)
@@ -89,9 +89,10 @@ TOTAL NOTES: 267663
   presidentialLibrary            6505  ( 52.5%)
   naraCollection                  894  (  7.2%)
   ciaCollection                   423  (  3.4%)
+  namedFileSeries                 290  (  2.3%)
   foreignGovernmentArchive         20  (  0.2%)
   previouslyPublished             114  (  0.9%)
-  unrecognized                    479  (  3.9%)
+  unrecognized                    189  (  1.5%)
 
 === OVERALL
   centralFiles                 194436  ( 72.6%)
@@ -100,22 +101,22 @@ TOTAL NOTES: 267663
   presidentialLibrary           28499  ( 10.6%)
   naraCollection                10291  (  3.8%)
   ciaCollection                  2903  (  1.1%)
-  namedFileSeries                5459  (  2.0%)
+  namedFileSeries                6046  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             530  (  0.2%)
-  unrecognized                   7491  (  2.8%)
+  unrecognized                   6904  (  2.6%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
   1906-1939                      1015  (  1.1%)
-  1940-1951                      1297  (  1.5%)
+  1940-1951                      1289  (  1.5%)
   1952-1954                      1110  (  7.4%)
-  1955-1957                       458  (  4.3%)
-  1958-1960                       187  (  2.2%)
-  1961-1963                       311  (  3.1%)
-  1964-1976                       601  (  2.0%)
-  1977+                           479  (  3.9%)
-  overall                        7491  (  2.8%)
+  1955-1957                       453  (  4.2%)
+  1958-1960                       185  (  2.2%)
+  1961-1963                       306  (  3.1%)
+  1964-1976                       324  (  1.1%)
+  1977+                           189  (  1.5%)
+  overall                        6904  (  2.6%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -302,53 +303,53 @@ TOTAL NOTES: 267663
   | Presidential statement on nuclear testing. Attached is a proposed Presidential statement. No classification marking. 3 pp. Seaborg, Journal, Vol. 2, pp. 350–352.
 --- 1964-1976
   | Source: Washington National Records Center, OASD/ISA Files: FRC 69 A 7425, Vietnam 381. Top Secret. A note on the source text indicates that McNamara saw this memorandum on April 2.
-  | Source: Department of Defense, Records of the Joint Chiefs of Staff, 9155.3 (24 Mar 66). Top Secret.
-  | Source: Department of Defense, Records of the Joint Chiefs of Staff, 9155.3 (29 Oct 66). Top Secret. Prepared by J–3, Directorate for Operations. Forwarded to Wheeler by Goodpaster under cover of an O
   | Source: U.S. Army Center for Military History, DepCORDS/MACV Papers, Pacification Program (Planning): 1968. Confidential. Copies were sent to Bunker, Abrams, and Colby.
   | Source: U.S. Army Center for Military History, Dep CORDS/MACV Files, Pacification File, GVN Liaison File: 1968. Confidential. Prepared on December 10. The meeting was held at Independence Palace. Copi
   | Source: Washington National Records Center, E/CBA/REP Files: FRC 72 A 6248, Current Economic Developments. Unclassified. The source text comprises page 16 of the issue.
   | Source: Washington National Records Center, E/CBA/REP Files: FRC 72 A 6248, Current Economic Developments. Limited Official Use. The source text comprises pages 20–22 of the issue.
-  | Source: National Security Council, Records of the 303 Committee, Vietnam, 1965–1969. Secret; Eyes Only. No drafting information appears on the memorandum. At the bottom of the first page of the memora
-  | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911/080 (30 Jan 67), IR #557. Top Secret; Sensitive.
-  | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911/319 (18 Apr 67), IR 1090 67–13. Secret. Another copy is in the Johnson Library, National Security File, Country File, 
   | Source: Center for Military History, Dep CORDS/MACV Files, Pacification Concepts: 1967–68. Secret; Eyes Only. This memorandum was sent first to Katzenbach, and then to McNamara and Vance. In a transmi
   | Source: Center for Military History, Dep CORDS/MACV Files, GVN Elections (General): 1967. Secret. Copies were sent to Locke and Komer.
   | Source: Center for Military History, DepCORDS/MACV Files, Westmoreland Memos—RWK 1967–68. Secret; Eyes Only.
   | Source: Center for Military History, Dep CORDS/MACV Files, Lansdale (1967–1968). Secret; Sensitive. Copies were sent to Locke, Westmoreland, Komer, Calhoun, Hart, and Jacobson.
   | Source: Center for Military History, Dep CORDS/MACV Files, GVN Corruption 1967. Secret; Noforn.
   | Source: Center for Military History, Dep CORDS/MACV Files, Bunker Memos to RWK, 1967–68. Confidential. Copies were sent to Locke, Calhoun, and Zorthian.
-  | Source: National Security Council, Records of the 303 Committee, Vietnam 1965–1969. Secret; Eyes Only.
   | Source: Center for Military History, Dep CORDS/MACV Files, Lansdale (1967–1968). Secret. Copies were sent to Locke, Westmoreland, Komer, Calhoun, Hart, and Jacobson.
   | Source: Washington, National Records Center, RG 286, AID Administrator Files: FRC 69 G 1866, DEF 19 Military Assistance, FY 1966. Confidential. A copy was sent to Schultze.
   | Source: Washington National Records Center, AID Administrator Files: FRC 68 A 2148, PRM 7–1, Development Assistance Committee, FY 1965. No classification marking. Drafted by Coffin. The meeting was he
   | Attachment 1
   | Attachment 2
-  | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911/301 (29 Jan 68), IR 4542. Top Secret. An attached note reads: “At the special meeting of the Joint Chiefs of Staff at 
   | Attachment
-  | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911 (5 Mar 68) IR 3134. Top Secret; Sensitive; Nodis. Copies were sent to Clifford, Nitze, and Warnke.
+  | Source: U.S. Army Center of Military History, William C. Westmoreland Papers, Eyes Only Message File, 1 Mar-31 Mar 1968. Secret; Eyes Only; Immediate. Repeated to Sharp.
+  | Source: U.S. Army Center of Military History, William C. Westmoreland Papers, Eyes Only Message Files, 1 Mar-31 Mar 1968. Secret. Repeated to Admiral Sharp and General Johnson. In JCSM–159–68 to Cliff
+  | Enclosure A
+  | Appendix
+  | Tab A
+  | Source: U.S. Army Center of Military History, Dep CORDS/MACV Papers, 84c-Pacification Concepts: 1967–1968. Secret. Prepared by Komer on June 2.
+  | Source: Seaborg, Journal, Vol. 7, pp. 251-252. No classification marking.
+  | Source: Seaborg, Journal, Vol. 7, pp. 424, 429-430. No classification marking. Here and elsewhere, Seaborg has inserted reproduced documents in the Journal, which account for the interrupted paginatio
 --- 1977+
   | [Top Secret. 13 pages not declassified]
   | [Top Secret. 2 pages not declassified]
   | [Secret. 8 pages not declassified]
-  | Source: National Security Council, Carter Intelligence Files, Box I027, USSR–JEC, 1979–1980. Secret. Carter wrote in the upper right-hand corner, “Zbig—Refer to SCC. J.”
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1978 Files, 56–83–69. Confidential. Sent through Solomon. Printed from a copy that bears a handwritten notation indi
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1978 Files, 56–83–69. Secret. In a March 24 note to Hutcheson, Hessler wrote: “Mike Blumenthal asked whether the Pre
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1978 Files, 56–83–69. No classification marking. Sent to Blumenthal for his signature under cover of a May 18 memora
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1979 Files, 56–83–70. No classification marking. Sent for action. Sent through Solomon. Drafted by Department of the
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking. Drafted by Department of the Treasury staff member Robert Blake on 
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking. Priority.
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking. Sent to Miller for his signature under a November 19 cover memorand
-  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking.
-  | Source: Department of Defense, Afghan War Collection, Box 7, USSR in Afghanistan (1978). Secret; [handling restriction not declassified].
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 8 May 1978–7 Dec 1978. Secret. Attached but not printed is a covering memorandum from Inderfurth to
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 8 May 1978–7 Dec 1978. Secret; [handling restriction not declassified]. No drafting information app
   | The uprising in Herat began on March 15 by civilian insurgents, who were joined by resident Afghan Army troops who had mutinied. The revolt ended on March 20 when Afghan Army troops loyal to the Tarak
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 15 Feb 1979–22 Aug 1979. Secret; [handling restriction not declassified]. In the top right corner, 
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–020, Minutes—SCC 1979. Top Secret; Sensitive. Drafted by Henze. The meeting took place in the White House Situation R
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 15 Feb 1979–22 Aug 1979. Secret; Immediate; Exdis. Sent for information Immediate to London, Beijin
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 15 Feb 1979–22 Aug 1979. Secret. Attached but not printed is Brzezinski’s handwritten note forwardi
-  | Source: Department of Defense, Afghan War Collection, Box 7, USSR in Afghanistan (May 79–Jun 79). Top Secret; [ handling restriction not declassified ]. 2 pages not declassified.
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 15 Feb 1979–22 Aug 1979. Top Secret; [codeword and handling restriction not declassified]. The appr
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 15 Feb 1979–22 Aug 1979. Secret; [handling restriction not declassified]. The report was attached a
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 11 Sep 1979–22 Jul 1980. Top Secret; Sensitive; Outside the System. Sent for action. Attached but n
-  | Source: Department of Defense, Afghan War Collection, Box 4, USSR in Afghanistan (October 79). Secret; [handling restriction not declassified].
+  | NSC 4–A, December 17, 1947, is printed in Foreign Relations, 1945–1950, Emergence of the Intelligence Establishment, Document 257.
+  | NSC 10/2, June 18, 1948, is printed ibid., Document 292.
+  | Memorandum of conversation by Frank G. Wisner, “Implementation of NSC –10/2,” August 12, 1948, is printed ibid., Document 298 .
+  | NSC 10/5, “Scope and Pace of Covert Operations,” October 23, 1951, is printed in Foreign Relations , 1950–1955, The Intelligence Community, Document 90 .
+  | William M. Leary, editor, The Central Intelligence Agency: History and Documents (The University of Alabama Press, 1984), p. 63; for text of NSC 5412, see Foreign Relations, 1950–1955, The Intelligenc
+  | Leary, The Central Intelligence Agency: History and Documents, pp. 63, 147–148; Final Report of the Select Committee To Study Governmental Operations With Respect to Intelligence Activities, United St
+  | Leary, The Central Intelligence Agency: History and Documents, p. 63.
+  | Ibid., p. 82.
+  | See Foreign Relations, 1961–1963, volume X, Cuba, 1961–1962, Documents 270 and 278.
+  | For text of NSAM No. 124, see ibid., volume VIII, National Security Policy, Document 68. NSAM No. 341, March 2, 1966, is printed ibid., 1964–1968, volume XXXIII, Organization and Management of U.S. Fo
+  | For text of NSAM No. 303, see ibid., Document 204.
+  | Final Report of the Select Committee To Study Governmental Operations With Respect to Intelligence Activities, United States Senate, Book I, Foreign and Military Intelligence, pp. 56–57.
+  | For text of NSDM 40, see Foreign Relations , 1969–1976, volume II, Organization and Management of U.S. Foreign Policy, 1969–1972, Document 203 .
+  | Final Report of the Select Committee To Study Governmental Operations With Respect to Intelligence Activities, United States Senate, Book I, Foreign and Military Intelligence, pp. 54–55, 57.
+  | Public Law 93–559.
+  | Executive Order 11905, “United States Foreign Intelligence Activities,” Weekly Compilation of Presidential Documents, Vol. 12, No. 8, February 23, 1976.
+  | The broader NSC reorganization sought to reduce the number of NSC committees to two: the Policy Review Committee ( PRC ) and the Special Coordination Committee ( SCC ). The SCC ’s jurisdiction include
+  | Executive Order 11985, “United States Foreign Intelligence Activities,” May 13, 1977, Weekly Compilation of Presidential Documents, Vol. 13, No. 20 (May 16, 1977), pp. 719–720.
+  | Executive Order 12036, “United States Foreign Intelligence Activities,” January 24, 1978, Weekly Compilation of Presidential Documents, Vol. 14, No. 4 (January 30, 1978), pp. 194–214. Since E.O. 12036
+  | PL 96–450, Sec. 407 (October 14, 1980). See also the description of the Hughes-Ryan amendment and its replacement by PL 96–450 in: Richard A. Best, Jr., “Covert Action: Legislative Background and Poss
+  | Kissinger met with King Hassan during his visit to Rabat October 15, 1974. See Foreign Relations , 1969–1976, vol. E–9. Part 1, Documents on North Africa, 1973–1976, Document 90 .
