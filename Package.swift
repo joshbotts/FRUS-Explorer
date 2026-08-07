@@ -159,6 +159,27 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Builds the digitised decimal-range index (#663): NARA file units whose titles
+        /// state a decimal range and which carry scanned images, so Source Explorer can link
+        /// the microfilm PDF for a citation's file range.
+        .target(
+            name: "DigitizedRangeIndexGeneratorCore",
+            path: "DigitizedRangeIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "DigitizedRangeIndexGenerator",
+            dependencies: [.target(name: "DigitizedRangeIndexGeneratorCore")],
+            path: "DigitizedRangeIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "DigitizedRangeIndexGeneratorTests",
+            dependencies: [.target(name: "DigitizedRangeIndexGeneratorCore")],
+            path: "DigitizedRangeIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Thin entry point — calls LotClaimantsIndexRunner.run() and exits.
         .executableTarget(
             name: "LotClaimantsIndexGenerator",

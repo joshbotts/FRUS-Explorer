@@ -560,6 +560,111 @@ struct SourceExplorerView: View {
         if ParisPeaceRecords.applies(recordGroup: recordGroup) {
             parisPeaceSection()
         }
+
+        // #663: NARA has scanned parts of the decimal file. Where this citation's serial lands
+        // in a digitised range, link it — as a *range*, never as this document.
+        if let fileIdentifier {
+            digitizedScansSection(fileIdentifier: fileIdentifier)
+        }
+    }
+
+    // MARK: - Digitised Scans
+
+    /// NARA's own scans for the file range a decimal citation names (#663).
+    ///
+    /// Three states, and the middle one is why this is not a single link. **4.6% of adjacent
+    /// ranges within a class overlap** in NARA's titles, and a wrong roll sends the researcher
+    /// into the wrong several-hundred-page scan — so an ambiguous answer is shown as ambiguous
+    /// rather than resolved to whichever range sorted first.
+    @ViewBuilder
+    private func digitizedScansSection(fileIdentifier: String) -> some View {
+        if let index = DigitizedRangeIndexStore.shared,
+           let (cls, serial) = DigitizedRangeIndex.classAndSerial(fromFileIdentifier: fileIdentifier) {
+            switch index.match(decimalClass: cls, serial: serial) {
+            case .resolved(let range):
+                Section(String(localized: "source.explorer.scans.header",
+                               defaultValue: "Digitised Scans")) {
+                    digitizedRangeRow(range, isCandidate: false)
+                    Text(Self.scanCaveat)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            case .multipleRanges(let ranges):
+                Section(String(localized: "source.explorer.scans.header",
+                               defaultValue: "Digitised Scans")) {
+                    Text(String(localized: "source.explorer.scans.multiple",
+                                defaultValue: """
+                                \(ranges.count) scanned file ranges contain \(fileIdentifier), \
+                                listed narrowest first. NARA digitised this file in overlapping \
+                                sets, so the widest is not wrong — the narrowest is simply the \
+                                most specific.
+                                """))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    ForEach(ranges) { digitizedRangeRow($0, isCandidate: true) }
+                }
+            case .classDigitizedButSerialNotCovered(let count):
+                Section(String(localized: "source.explorer.scans.header",
+                               defaultValue: "Digitised Scans")) {
+                    Text(String(localized: "source.explorer.scans.classOnly",
+                                defaultValue: """
+                                NARA has scanned \(count) file ranges in decimal class \(cls), \
+                                but none of them covers \(fileIdentifier). The scans for this \
+                                file are partial.
+                                """))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            case .none:
+                EmptyView()
+            }
+        }
+    }
+
+    /// The honesty line that rides with every resolved scan. The index places the citation in a
+    /// *file range*; it cannot place it on a page.
+    static let scanCaveat = String(
+        localized: "source.explorer.scans.caveat",
+        defaultValue: """
+        This is the scan of the file range the citation falls in, not of this document. \
+        The document is somewhere inside it.
+        """)
+
+    /// One digitised range: NARA's own title for it, its size, and the ways in.
+    @ViewBuilder
+    private func digitizedRangeRow(_ range: DigitizedRange, isCandidate: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(range.title)
+                    .font(.callout.weight(.medium))
+                if isCandidate { ConfidenceChip(confidence: .medium) }
+            }
+            Text(String(localized: "source.explorer.scans.count",
+                        defaultValue: "\(range.objectCount) scanned images"))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            if let pdf = range.rollPDFURL, let name = range.objectFilename {
+                Button {
+                    openURL(pdf)
+                } label: {
+                    Label(String(localized: "source.explorer.scans.openRoll",
+                                 defaultValue: "Open \(name)"),
+                          systemImage: "doc.richtext")
+                    .font(.callout)
+                }
+            }
+            if let url = range.catalogURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(String(localized: "source.explorer.nara.viewRecord",
+                                 defaultValue: "View in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                    .font(.callout)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     // MARK: - Paris Peace Conference Section

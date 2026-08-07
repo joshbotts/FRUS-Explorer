@@ -739,6 +739,16 @@ struct MacSourceExplorerView: View {
             // own records, and they are named here instead.
             if ParisPeaceRecords.applies(recordGroup: rg) {
                 parisPeaceBox()
+            } else if let scans = Self.digitizedMatch(for: fileId) {
+                // #663: NARA's own scans for the file range this citation falls in. Mirrors
+                // `SourceExplorerView.digitizedScansSection` — keep in sync.
+                digitizedScansBox(scans, fileIdentifier: fileId ?? "")
+                GroupBox(header) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        centralFilesPeriodBox(fileIdentifier: fileId)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             } else {
                 // Period-based routing replaces the old resolveRG59CentralFiles catalog-search
                 // URL, which returned empty results for decimal file numbers. For 1906–1910
@@ -1724,6 +1734,99 @@ struct MacSourceExplorerView: View {
             }
         }
         .padding(.top, 2)
+    }
+
+    // MARK: - Digitised Scans Box
+
+    /// The index's answer for a decimal citation, or `nil` when it has nothing to say (#663).
+    static func digitizedMatch(for fileIdentifier: String?) -> DigitizedRangeMatch? {
+        guard let fileIdentifier, let index = DigitizedRangeIndexStore.shared,
+              let (cls, serial) = DigitizedRangeIndex.classAndSerial(
+                fromFileIdentifier: fileIdentifier)
+        else { return nil }
+        let match = index.match(decimalClass: cls, serial: serial)
+        return match == .none ? nil : match
+    }
+
+    /// NARA's own scans for the file range a decimal citation names (#663).
+    ///
+    /// Mirrors `SourceExplorerView.digitizedScansSection`, including the ambiguity state:
+    /// 4.6% of adjacent ranges within a class overlap in NARA's titles, and a wrong roll sends
+    /// the researcher into the wrong several-hundred-page scan.
+    @ViewBuilder
+    private func digitizedScansBox(_ match: DigitizedRangeMatch,
+                                   fileIdentifier: String) -> some View {
+        GroupBox(String(localized: "source.explorer.scans.header",
+                        defaultValue: "Digitised Scans")) {
+            VStack(alignment: .leading, spacing: 8) {
+                switch match {
+                case .resolved(let range):
+                    digitizedRangeRow(range, isCandidate: false)
+                    Text(SourceExplorerView.scanCaveat)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                case .multipleRanges(let ranges):
+                    Text(String(localized: "source.explorer.scans.multiple",
+                                defaultValue: """
+                                \(ranges.count) scanned file ranges contain \(fileIdentifier), \
+                                listed narrowest first. NARA digitised this file in overlapping \
+                                sets, so the widest is not wrong — the narrowest is simply the \
+                                most specific.
+                                """))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(ranges) { digitizedRangeRow($0, isCandidate: true) }
+                case .classDigitizedButSerialNotCovered(let count):
+                    Text(String(localized: "source.explorer.scans.classOnlyMac",
+                                defaultValue: """
+                                NARA has scanned \(count) file ranges in this decimal class, \
+                                but none of them covers \(fileIdentifier). The scans for this \
+                                file are partial.
+                                """))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                case .none:
+                    EmptyView()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// One digitised range: NARA's own title for it, its size, and the ways in.
+    @ViewBuilder
+    private func digitizedRangeRow(_ range: DigitizedRange, isCandidate: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text(range.title)
+                    .font(.callout.weight(.medium))
+                    .textSelection(.enabled)
+                if isCandidate { ConfidenceChip(confidence: .medium) }
+            }
+            Text(String(localized: "source.explorer.scans.count",
+                        defaultValue: "\(range.objectCount) scanned images"))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            if let pdf = range.rollPDFURL, let name = range.objectFilename {
+                Button { openURL(pdf) } label: {
+                    Label(String(localized: "source.explorer.scans.openRoll",
+                                 defaultValue: "Open \(name)"),
+                          systemImage: "doc.richtext")
+                }
+                .buttonStyle(.link)
+            }
+            if let url = range.catalogURL {
+                Button { openURL(url) } label: {
+                    Label(String(localized: "source.explorer.nara.viewRecord",
+                                 defaultValue: "View in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+            }
+        }
     }
 
     // MARK: - Paris Peace Conference Box
