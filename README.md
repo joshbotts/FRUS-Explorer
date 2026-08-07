@@ -38,6 +38,9 @@ More in [`Docs/screenshots/`](Docs/screenshots).
   word cloud with keyness and collocation.
 - **Trace sources** — Source Explorer resolves FRUS source notes to NARA record groups, lot files,
   and collections, with archival neighbours and cross-volume provenance, from bundled indexes.
+  Where the records are **not** at the National Archives it names the institution that holds them
+  — including two that have been renamed since FRUS printed them — rather than returning
+  catalogue rows that cannot be right.
 - **Organise** — projects, collections, exports (PDF, HTML, Word, BibTeX, RIS), Zotero, a research
   trail, and iCloud sync of your own work.
 - **Summarize** — on-device Apple Intelligence summaries, one document at a time or as unattended

@@ -33,3 +33,42 @@ The progress count was attempts, not summaries: a run where every document faile
 4. Set the summarization concurrency, close the sheet, reopen it — it should have kept your choice.
 
 Include macOS version, what you clicked, what you expected, what happened. Thanks!
+
+## Source Explorer now answers where the National Archives cannot
+
+Four kinds of citation that used to end in a shrug now resolve, all without a NARA API key.
+
+**Repositories outside the National Archives.** Library of Congress, National Defense University,
+the Army's Center of Military History, the Hoover Institution, university and historical-society
+collections. Source Explorer no longer runs a catalogue query that cannot succeed; it names the
+institution, says what it holds, and links to its finding aids. **Two have been renamed since FRUS
+printed them** — the Naval Historical Center is now the Naval History and Heritage Command (2008),
+and the U.S. Army Military History Institute's holdings are now the Army Heritage and Education
+Center — so searching under the printed name finds nothing. The panel says so.
+
+**Series cited by name alone.** `Roosevelt Papers`, `Leahy Papers`, `J.C.S. Files`,
+`Moscow Embassy Files` — the whole source note, with no repository in it. Where a volume's own
+front matter says where the series is held, that destination is shown **with the editors'
+sentence quoted beneath it**, so you can judge it rather than take it on trust.
+
+**Paris Peace Conference citations.** `Paris Peace Conf. 180.03401/101` looks like a State
+Department decimal file and is not — it is Record Group 256. These now resolve to the right record
+group, the series holding the Conference's decimal file, and NARA's index and classification manual
+for it. The panel deliberately does *not* guess which microfilm roll holds your document.
+
+**Front-matter Sources lists in the early-1950s volumes.** Fourteen volumes wrote their collection
+list as paragraphs rather than a list, and read as a wall of prose. They now show their collections
+properly — 526 of them — each with the editors' description attached, and each resolving to the
+National Archives.
+
+### What to test
+
+- Open a 1919 Paris volume document and check the Paris Peace Conference panel.
+- Open any document citing the Library of Congress or the Naval Historical Center and read the
+  repository block — is what it tells you what you'd want to know before travelling?
+- Browse to **frus1951v05 ▸ Sources** and confirm the collections read as a list, with each
+  description under its collection.
+- Browse to **frus1950v07 ▸ Sources** and confirm its published-works list still reads as books,
+  not as archival collections.
+- Anywhere a catalogue link appears, check where it actually lands. **A confident link to the
+  wrong records is the bug we most want to hear about.**
