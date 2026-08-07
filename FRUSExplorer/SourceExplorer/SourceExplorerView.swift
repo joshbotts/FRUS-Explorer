@@ -511,6 +511,75 @@ struct SourceExplorerView: View {
         if recordGroup == "RG-59" || recordGroup == "59" {
             centralFilesPeriodSection(fileIdentifier: fileIdentifier)
         }
+
+        // #354: RG 256 is not a State Department central file, so neither section above
+        // applies to it, and until now these 1,547 documents ended at the Provenance rows.
+        // The Commission's records resolve to two hand-verified catalog records plus NARA's
+        // own finding aids for them — the same answer for every citation, so a constant.
+        if ParisPeaceRecords.applies(recordGroup: recordGroup) {
+            parisPeaceSection()
+        }
+    }
+
+    // MARK: - Paris Peace Conference Section
+
+    /// The offline resolution for a `Paris Peace Conf.` citation (#354).
+    ///
+    /// Needs no API key and issues no query: every one of these citations resolves to the
+    /// same record group and series. The roll is deliberately not claimed — see
+    /// `ParisPeaceRecords` for why guessing it is worse than handing over the index.
+    @ViewBuilder
+    private func parisPeaceSection() -> some View {
+        Section(ParisPeaceRecords.sectionTitle) {
+            parisPeaceRow(ParisPeaceRecords.recordGroup, label: ParisPeaceRecords.recordGroupLabel)
+            parisPeaceRow(ParisPeaceRecords.series, label: ParisPeaceRecords.seriesLabel)
+
+            Text(ParisPeaceRecords.provenanceNote)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(ParisPeaceRecords.rollNote)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            DisclosureGroup(ParisPeaceRecords.findingAidsTitle) {
+                ForEach(ParisPeaceRecords.findingAids) { aid in
+                    parisPeaceRow(aid, label: nil)
+                }
+            }
+        }
+    }
+
+    /// One catalog record in the Paris Peace section: NARA's own title, its dates, and a
+    /// link to the record itself.
+    @ViewBuilder
+    private func parisPeaceRow(_ record: ParisPeaceRecords.CatalogRecord, label: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let label {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text(record.title)
+                .font(.callout.weight(.medium))
+            if let dates = record.inclusiveDates {
+                Text(dates)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let url = record.catalogURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(String(localized: "source.explorer.nara.viewRecord",
+                                 defaultValue: "View in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                    .font(.callout)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     // MARK: - Country-Series Resolution (pre-1906, Phase 2)

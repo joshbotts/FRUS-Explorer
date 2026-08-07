@@ -427,6 +427,7 @@
 		72FFACAB87300C0AE42F6168 /* WhileIndexingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BE1B8C74F9684023BB2E77 /* WhileIndexingSheet.swift */; };
 		7336F8B800E7AF03CE2701F0 /* CollocationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7BFA6BF31B25476FC1C7CCA /* CollocationView.swift */; };
 		73425055601A14CDF65DC09A /* DecimalNeighbourSpaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B70A4EDD3D16FBC0FDBAB6 /* DecimalNeighbourSpaceTests.swift */; };
+		735FD7AB53D40AACBD845BEC /* ParisPeaceRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC131D26253372FC469A4B2D /* ParisPeaceRecords.swift */; };
 		73627CF1F89D6CA7C111EF2B /* CrossReferenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4DBCDDAB89A4B10B74AD55 /* CrossReferenceModels.swift */; };
 		738EA19E522C8B9294C68E30 /* IndexingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4796534819AD8F60335063F5 /* IndexingPipeline.swift */; };
 		74AB68F00384EE6C5C128666 /* ProjectEngagedDocumentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E89F898CB2C6D4B3CCC410B /* ProjectEngagedDocumentsTests.swift */; };
@@ -465,6 +466,7 @@
 		7F90F1CB1E52BC749538C3AC /* ZoteroAccountStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D68DAB18F8C0E737BE6422F /* ZoteroAccountStore.swift */; };
 		7FCD802AFF00B084ECCF859B /* WordCloudPayloadDigest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FF8DC81284AA9B9B225BEC /* WordCloudPayloadDigest.swift */; };
 		8014D0A6ABA23D79E5C08D4C /* CollectionAuthorityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87812460BF179AF2492AB0FF /* CollectionAuthorityStoreTests.swift */; };
+		8097E4DB750C68ACD3E816AC /* ParisPeaceRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC131D26253372FC469A4B2D /* ParisPeaceRecords.swift */; };
 		809C5F94BF37A56236138B8B /* FrameTimeProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C593DE6B4B83F7E728E9593 /* FrameTimeProbe.swift */; };
 		80F505597CCF0D78426068D0 /* CollectionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA74E7E22289A1B3801D3E51 /* CollectionDetailView.swift */; };
 		80F862E6521F21BC7F8D0513 /* EducationDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8927AFD7F65221657E7459A4 /* EducationDashboardView.swift */; };
@@ -1405,6 +1407,7 @@
 		A9A90A825EA2E648BD14AE48 /* SettingsSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSyncCoordinator.swift; sourceTree = "<group>"; };
 		AA0ADA1D9C2433D796F840F4 /* SavedSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSearch.swift; sourceTree = "<group>"; };
 		AA65CAAC809A11300ACDA6D3 /* TwoPhaseFetchParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwoPhaseFetchParityTests.swift; sourceTree = "<group>"; };
+		AC131D26253372FC469A4B2D /* ParisPeaceRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParisPeaceRecords.swift; sourceTree = "<group>"; };
 		AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedSummary.swift; sourceTree = "<group>"; };
 		AC8EF6A6AA20275212262AF9 /* ResearchNoteEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorViewModel.swift; sourceTree = "<group>"; };
 		ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCorpusBrowserWindow.swift; sourceTree = "<group>"; };
@@ -1703,6 +1706,7 @@
 				73AD5E4C3F5410E494B55EEF /* NARAAPIKeyStore.swift */,
 				6CEBCC915167AB40F815AD6B /* NARACatalogClient.swift */,
 				1580185F6CAD33F08EDA329B /* NARACatalogLookupView.swift */,
+				AC131D26253372FC469A4B2D /* ParisPeaceRecords.swift */,
 				3A1DB6D82807F8D83FF105FE /* PresidentialLibraryIndex.swift */,
 				3829E8738375754D6E764C5A /* PresidentialLibraryOutcome.swift */,
 				92591E59620EC7B177E71E25 /* SourceExplorerLoadIdentity.swift */,
@@ -2971,6 +2975,7 @@
 				A1D6D547B67EA1C2BD8AF5B2 /* PageRangeStore.swift in Sources */,
 				EBE20FF2763759B14F4F74DB /* PageRank.swift in Sources */,
 				E8CBB006720323159597F24B /* PageSpanResolver.swift in Sources */,
+				735FD7AB53D40AACBD845BEC /* ParisPeaceRecords.swift in Sources */,
 				41A8715EB2E705D0434495E9 /* PendingCloudBackdrop.swift in Sources */,
 				7EBBA5871175377DD60A3806 /* PendingStoreReset.swift in Sources */,
 				2758916B3D1FBDCF21048A56 /* PersonAnalyticsView.swift in Sources */,
@@ -3340,6 +3345,7 @@
 				862089694FCB1479D6DD7BDB /* PageRangeStore.swift in Sources */,
 				AFA74F9A6B777F931D7E16D7 /* PageRank.swift in Sources */,
 				70642BA083567199E623DD83 /* PageSpanResolver.swift in Sources */,
+				8097E4DB750C68ACD3E816AC /* ParisPeaceRecords.swift in Sources */,
 				F34B646E5AE0BE67CCD34CB9 /* PendingCloudBackdrop.swift in Sources */,
 				1D553EE3ACBFD55EA4B790EA /* PendingStoreReset.swift in Sources */,
 				9F5BAB74E69B20AED3E1D0E9 /* PersonAnalyticsView.swift in Sources */,

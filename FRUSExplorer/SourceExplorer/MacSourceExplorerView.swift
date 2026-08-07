@@ -725,19 +725,28 @@ struct MacSourceExplorerView: View {
 
         switch parsed {
 
-        case .centralFiles(_, let fileId):
-            // Period-based routing replaces the old resolveRG59CentralFiles catalog-search
-            // URL, which returned empty results for decimal file numbers. For 1906–1910
-            // documents, the bundled index resolves the exact digitized roll first.
-            GroupBox(header) {
-                VStack(alignment: .leading, spacing: 10) {
-                    if let fileId, let year = documentYear, (1906...1910).contains(year) {
-                        numericalFileBox(fileIdentifier: fileId)
-                        Divider()
+        case .centralFiles(let rg, let fileId):
+            // #354: this case used to bind `_` for the record group and send every central-file
+            // note through `centralFilesPeriodBox`. For the 1,547 `Paris Peace Conf.` citations
+            // that meant being offered the RG **59** decimal-file finding aids and filing
+            // manual — a different record group with a different filing system. RG 256 has its
+            // own records, and they are named here instead.
+            if ParisPeaceRecords.applies(recordGroup: rg) {
+                parisPeaceBox()
+            } else {
+                // Period-based routing replaces the old resolveRG59CentralFiles catalog-search
+                // URL, which returned empty results for decimal file numbers. For 1906–1910
+                // documents, the bundled index resolves the exact digitized roll first.
+                GroupBox(header) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let fileId, let year = documentYear, (1906...1910).contains(year) {
+                            numericalFileBox(fileIdentifier: fileId)
+                            Divider()
+                        }
+                        centralFilesPeriodBox(fileIdentifier: fileId)
                     }
-                    centralFilesPeriodBox(fileIdentifier: fileId)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .ciaCollection:
@@ -1633,6 +1642,77 @@ struct MacSourceExplorerView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Paris Peace Conference Box
+
+    /// The offline resolution for a `Paris Peace Conf.` citation (#354).
+    ///
+    /// Mirrors `SourceExplorerView.parisPeaceSection`, reading the same
+    /// `ParisPeaceRecords` identifiers and wording so the two platforms cannot state
+    /// different things about the same records. Needs no API key and issues no query.
+    @ViewBuilder
+    private func parisPeaceBox() -> some View {
+        GroupBox(ParisPeaceRecords.sectionTitle) {
+            VStack(alignment: .leading, spacing: 10) {
+                parisPeaceRow(ParisPeaceRecords.recordGroup,
+                              label: ParisPeaceRecords.recordGroupLabel)
+                parisPeaceRow(ParisPeaceRecords.series,
+                              label: ParisPeaceRecords.seriesLabel)
+
+                Text(ParisPeaceRecords.provenanceNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(ParisPeaceRecords.rollNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+
+                Text(ParisPeaceRecords.findingAidsTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(ParisPeaceRecords.findingAids) { aid in
+                    parisPeaceRow(aid, label: nil)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// One catalog record in the Paris Peace box: NARA's own title, its dates, and a link
+    /// to the record itself.
+    @ViewBuilder
+    private func parisPeaceRow(_ record: ParisPeaceRecords.CatalogRecord,
+                               label: String?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let label {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text(record.title)
+                .font(.callout.weight(.medium))
+                .textSelection(.enabled)
+            if let dates = record.inclusiveDates {
+                Text(dates)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let url = record.catalogURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(String(localized: "source.explorer.nara.viewRecord",
+                                 defaultValue: "View in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+            }
+        }
     }
 
     private func naraExportText(_ result: NARACatalogResult) -> String {
