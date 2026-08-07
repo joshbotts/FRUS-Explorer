@@ -537,9 +537,8 @@ struct MacSourceExplorerView: View {
                         // #354 item 4: mirrors the iOS `repositoryGuidanceRows`. Saying the
                         // National Archives cannot help is only half an answer — 565 of these
                         // documents reached no curated finding aid either.
-                        if let guidance = ManuscriptRepositoryGuidance
-                            .guidance(forRepository: library) {
-                            repositoryGuidanceRows(guidance)
+                        if let g = ManuscriptRepositoryGuidance.guidance(forRepository: library) {
+                            repositoryGuidanceRows(g)
                         }
                     }
 
