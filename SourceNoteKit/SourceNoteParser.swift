@@ -365,8 +365,12 @@ public struct SourceNoteParser {
         // Paris Peace Conference council-document series ("HD–46", "BC–29", "WCP–1133")
         if let result = tryCouncilDocumentSeries(trimmed) { return result }
 
-        // Treaty Series print citation ("Treaty Series No. 762")
-        if trimmed.hasPrefix("Treaty Series") {
+        // A printed source, cited without a `Source:` prefix. This used to be a one-off
+        // `hasPrefix("Treaty Series")`, so the bare-note path recognised exactly one
+        // publication while the `Source:` path recognised six — and most publication notes are
+        // bare (measured: 331 of 527). Both paths now read `previouslyPublishedLeads`, so a
+        // lead added for one is a lead for the other.
+        if matchesPreviouslyPublished(trimmed) {
             return .previouslyPublished(citation: trimmed)
         }
 
@@ -2071,21 +2075,52 @@ public struct SourceNoteParser {
         return keywords.contains { body.range(of: $0, options: .caseInsensitive) != nil }
     }
 
+    /// Publication leads that mark a note as printed-from rather than archival (#353).
+    ///
+    /// Lead-anchored, always: a note *mentioning* a publication in a remark is still an
+    /// archival citation, and only the head of the note says what the FRUS text was set from.
+    ///
+    /// ## What #353 added, and what it did not
+    /// Measured over the corpus, these five leads recover **346 documents** that classified as
+    /// `unrecognized`:
+    ///
+    /// | lead | documents |
+    /// |---|---|
+    /// | `Reprinted from` (Bulletin, Press Releases, Miller, SC, Senate Q and R, …) | 196 |
+    /// | `Executive Agreement Series` | 102 |
+    /// | `Documents on Disarmament` | 19 |
+    /// | `The Official Bulletin` (the 1917–18 official gazette) | 17 |
+    /// | `Issued by the White House as a press release` | 12 |
+    ///
+    /// **`Unperfected Treaty No. A–10` is deliberately excluded**, though #353 lists it here.
+    /// Unperfected treaties are *archival*: NARA holds them in RG 11, and `A–10` is its file
+    /// designation, not a publication number. Classifying those 8 documents as
+    /// previously-published would tell a researcher to go and find a print that does not exist.
+    private static let previouslyPublishedLeads = [
+        "Foreign Relations of the United States",
+        "Department of State Bulletin",
+        // Also covers the "Public Papers of the Presidents" long form and the
+        // "Public Papers: Carter, 1978, Book I" short form used by 1977+ volumes.
+        "Public Papers",
+        // GPO campaign-document compilation cited by the Carter volumes.
+        "The Presidential Campaign",
+        // The GPO Pentagon Papers print ("United States–Vietnam Relations,
+        // 1945–1967, Book 10, pp. 937–940").
+        "United States–Vietnam Relations",
+        // The treaty-print series, previously a one-off check in `parse()`'s tail.
+        "Treaty Series",
+        "Executive Agreement Series",
+        // Any printed source the volume set its text from: "Reprinted from Department of
+        // State Bulletin", "Reprinted from Miller, Treaties", "Reprinted from SC…".
+        "Reprinted from",
+        "Documents on Disarmament",
+        "The Official Bulletin",
+        "Issued by the White House as a press release",
+        "Ibid", "ibid",
+    ]
+
     private func matchesPreviouslyPublished(_ body: String) -> Bool {
-        let keywords = [
-            "Foreign Relations of the United States",
-            "Department of State Bulletin",
-            // Also covers the "Public Papers of the Presidents" long form and the
-            // "Public Papers: Carter, 1978, Book I" short form used by 1977+ volumes.
-            "Public Papers",
-            // GPO campaign-document compilation cited by the Carter volumes.
-            "The Presidential Campaign",
-            // The GPO Pentagon Papers print ("United States–Vietnam Relations,
-            // 1945–1967, Book 10, pp. 937–940").
-            "United States–Vietnam Relations",
-            "Ibid", "ibid",
-        ]
-        return keywords.contains { body.hasPrefix($0) }
+        Self.previouslyPublishedLeads.contains { body.hasPrefix($0) }
     }
 
     // MARK: - Utility

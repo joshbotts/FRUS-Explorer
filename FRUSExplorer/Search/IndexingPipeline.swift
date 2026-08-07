@@ -630,7 +630,15 @@ public actor IndexingPipeline {
     ///   dispatch, so it claims only notes every other strategy declined. Measured against the
     ///   v27 index: **592 recovered** (504 NSC), all from `unrecognized`, **0 lost** — the
     ///   dispatch position guarantees the second number rather than merely reporting it.
-    public static let currentDateIndexVersion: Int = 28
+    /// - v29 — #353: publication leads. The bare-note path recognised exactly one publication
+    ///   (a one-off `hasPrefix("Treaty Series")`) while the `Source:` path recognised six, and
+    ///   most publication notes are bare — measured, 331 of 527. Both paths now read one
+    ///   `previouslyPublishedLeads` list, extended with `Reprinted from`, `Executive Agreement
+    ///   Series`, `Documents on Disarmament`, `The Official Bulletin` and `Issued by the White
+    ///   House as a press release`. Measured against the v28 index: **346 recovered** from
+    ///   `unrecognized`, **0 lost**. `Unperfected Treaty No. A-10` is deliberately NOT a lead:
+    ///   those are archival (NARA RG 11), not printed.
+    public static let currentDateIndexVersion: Int = 29
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
