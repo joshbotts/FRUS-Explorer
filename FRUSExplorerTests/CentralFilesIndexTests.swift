@@ -149,6 +149,21 @@ struct CentralFilesIndexTests {
         #expect(!CentralFilesIndex.isDecimalFileForm("697/43"))
     }
 
+    /// The `/` clause, which has **zero traffic** inside the year gate and is kept anyway.
+    ///
+    /// Measured over all 2,787 identifiers on 1906–1910 documents, removing it changes no
+    /// verdict — so nothing else in this suite would notice its removal, and it is pinned
+    /// here rather than left to a mutation that survives silently. It is kept because
+    /// `caseNumber(fromFileNumber:)` is a general entry point and a slash genuinely closes
+    /// the case number: 183 identifiers elsewhere in the corpus carry a trailing
+    /// `101/2-2162. Secret.`-style clause that would otherwise read as decimal.
+    @Test("A dot after the sub-document slash is not a decimal point")
+    func dotAfterSlashIsNotDecimal() {
+        #expect(!CentralFilesIndex.isDecimalFileForm("697/43."))
+        #expect(!CentralFilesIndex.isDecimalFileForm("101/2-2162. Secret."))
+        #expect(CentralFilesIndex.caseNumber(fromFileNumber: "697/43.") == 697)
+    }
+
     /// End to end against the **bundled** index, so the test fails if the gate stops being
     /// reached from the lookup the two views actually call.
     ///
