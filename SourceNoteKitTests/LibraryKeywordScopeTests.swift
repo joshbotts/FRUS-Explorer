@@ -152,6 +152,24 @@ struct LibraryKeywordScopeTests {
                 "got: \(hit?.keyword ?? "nil")")
     }
 
+    /// The same invariant through `parse()`, because the unit test above exercises the
+    /// selector while the defect lived in its **caller** — a mutation restoring the list-order
+    /// loop left the selector untouched and was caught only by a test in the *app* target.
+    /// A rule is guarded in the package that owns it.
+    @Test("A citation's own repository outranks one named in a closing remark")
+    func citationRepositoryOutranksARemark() {
+        let note = """
+            Source: National Defense University, Taylor Papers, Vietnam, chap. XXIII. Top \
+            Secret; Sensitive. Drafted by Krulak . A memorandum of conversation of this \
+            meeting by Hilsman is in the Kennedy Library, Hilsman Papers, Countries, Vietnam.
+            """
+        #expect(library(note) == "National Defense University", "got: \(library(note) ?? "nil")")
+        if case .presidentialLibrary(_, let collection, _) = parser.parse(note) {
+            #expect(collection == "Taylor Papers",
+                    "got \(collection) — the Hilsman Papers are at the Kennedy Library")
+        }
+    }
+
     /// `earliestLibraryKeyword` has no tie-break, and this is what makes that safe: two
     /// keywords can only start at the same index when one is a **prefix** of the other.
     /// `Bush Library` is a *suffix* of `George H.W. Bush Library`, so the longer name still
