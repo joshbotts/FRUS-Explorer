@@ -1919,7 +1919,7 @@ public struct SourceNoteParser {
     ///   norm-parity sweep). The negative lookahead keeps run-together prose
     ///   (`313Records…`) and following words (`563 and…`) out of the key.
     private static let looseLotRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bLots?\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:\s?[A-Za-z](?![A-Za-z]))?)"#,
+        pattern: #"\bLots?\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:\s?[A-Za-z](?![A-Za-z]))?|\d{1,4}(?![0-9A-Za-z]))"#,
         options: .caseInsensitive
     )
 
