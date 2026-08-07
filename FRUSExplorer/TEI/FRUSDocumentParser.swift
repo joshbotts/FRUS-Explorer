@@ -1810,6 +1810,16 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var elementDepth = 0
     private var sectionDepth = -1
 
+    /// Whether this section emitted any `<item>` row. Decides, at section close, whether
+    /// its `<p rend="flushleft">` paragraphs are the collection outline (#668).
+    private var sawItemRow = false
+
+    /// Orders of the prose rows this section produced from a `<p rend="flushleft">`.
+    private var flushLeftOrders: Set<Int> = []
+
+    /// Whether the paragraph currently open carries `rend="flushleft"`.
+    private var proseIsFlushLeft = false
+
     /// Whether the current section is entirely a published-works bibliography: a
     /// `listofworks` div, or a sources div whose `<head>` is a published-sources
     /// title (`Published sources` — frus1969-76v34/v36). Every row in such a
@@ -1943,6 +1953,11 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 proseOrder = openCounter
                 inProse = true
                 proseBuffer = ""
+                // #668: remembered, not acted on yet — whether a flushleft paragraph is a
+                // collection heading or a line of prose depends on whether this section
+                // turns out to have an `<item>` outline, which is not known until it closes.
+                proseIsFlushLeft = attributeDict["rend"]?.lowercased()
+                    .contains("flushleft") ?? false
             }
         case "hi":
             // Bold `<hi rend="strong">` marks a major named collection (Department of State,
@@ -2009,6 +2024,7 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                                                    ancestorTexts: ancestors)
                     }
                     collected.append((frame.order, entry))
+                    sawItemRow = true
                 }
             }
         case "p":
@@ -2017,9 +2033,11 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 if !text.isEmpty {
                     collected.append((proseOrder,
                                       VolumeSourceEntry(kind: proseKind(for: text), rawText: text)))
+                    if proseIsFlushLeft { flushLeftOrders.insert(proseOrder) }
                 }
                 inProse = false
                 proseBuffer = ""
+                proseIsFlushLeft = false
             }
         default:
             break
@@ -2030,10 +2048,14 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             // Append (don't assign): a volume can legitimately have more than one matching
             // section (e.g. a bibliography plus a combined sources-and-abbreviations list),
             // and each should accumulate rather than the last overwriting the rest.
+            promoteFlushLeftHeadingsIfSectionHasNoItems()
             entries.append(contentsOf: collected.sorted { $0.order < $1.order }.map(\.entry))
             collected.removeAll()
             inSourcesSection = false
             sectionDepth = -1
+            sawItemRow = false
+            flushLeftOrders.removeAll()
+            proseIsFlushLeft = false
             sectionIsBibliography = false
             inPublishedSubtree = false
             publishedSubtreeSawRows = false
@@ -2044,6 +2066,73 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             itemStack.removeAll()
             listDepth = 0
         }
+    }
+
+    /// Promotes `<p rend="flushleft">` paragraphs to collection rows in a sources section
+    /// that has no `<item>` outline at all (#668).
+    ///
+    /// ## The encoding this exists for
+    /// The early-1950s volumes do not write their collection list as a `<list>`. They
+    /// alternate a flushleft heading with an ordinary description paragraph:
+    ///
+    /// ```xml
+    /// <p rend="flushleft"><gloss target="#t_CFM1">CFM</gloss> Files, Lot M 88</p>
+    /// <p>Consolidated master collection of the records of conferences of heads of state…</p>
+    /// <p rend="flushleft">PPS Files, Lot 64 D 563</p>
+    /// ```
+    ///
+    /// Every one of those paragraphs used to become `.prose`, so the volume produced a wall
+    /// of narrative and **zero** collection rows — and contributed nothing to
+    /// `volume-sources-index.json`. Measured over all 552 manifest volumes: **15 volumes,
+    /// 637 flushleft headings, 290 of them carrying a lot or FRC accession number**
+    /// (`CFM Files, Lot M 88`, `PPS Files, Lot 64 D 563`, `S/S–NSC Files, Lot 63 D 351`).
+    ///
+    /// ## Why the gate is the whole section, not the paragraph
+    /// 240 volumes already encode the outline with `<item>`, and several of them also use
+    /// flushleft paragraphs for other purposes. Gating on "this section emitted no item row"
+    /// leaves all 240 untouched **by construction** rather than by measurement, which is the
+    /// only version of this rule that cannot regress them. It is also why the decision waits
+    /// for the section to close: a streaming parse cannot know whether an `<item>` is coming.
+    ///
+    /// ## What is deliberately not promoted
+    /// Only `.prose` rows. `proseKind(for:)` has already marked the published-works subtrees
+    /// `.bibliography`, and that matters here: **frus1950v07's 39 flushleft rows are books** —
+    /// `Dean Acheson, Present at the Creation`, `John M. Allison, Ambassador from the
+    /// Prairie` — sitting under a `Published Sources` pseudo-heading. Promoting them would
+    /// file a memoir as an archival collection. (The heading test reads the paragraph's
+    /// *text*, not its `rend`, which is why it catches that volume's `smallcaps` spelling as
+    /// readily as the usual `strong`.)
+    ///
+    /// The description paragraph after each heading stays `.prose`. Rows keep document order,
+    /// so it still reads directly beneath its heading, and folding it into the heading's
+    /// `rawText` would bury the collection name in a paragraph of narrative and corrupt the
+    /// key extraction that reads that text.
+    ///
+    /// ## The one shape that had to be excluded by name
+    /// Three volumes (frus1952-54Guat, frus1969-76v34, frus1969-76v36) use a flushleft
+    /// paragraph for the series' own boilerplate section titles — `Sources for the Foreign
+    /// Relations Series` and `Sources for Foreign Relations, 1969–1976, Volume XXXIV`.
+    /// They are titles, not collections.
+    ///
+    /// The exclusion is a prefix test, and it is exact rather than approximate: measured
+    /// over the promoted corpus, **6 of 30,920 item rows begin `Sources for `, and all six
+    /// are those titles**. No real collection in any volume starts that way, so the guard
+    /// costs nothing and takes the false-positive count to zero. Without it those three
+    /// volumes each gain two rows carrying no keys and naming nothing findable.
+    private func promoteFlushLeftHeadingsIfSectionHasNoItems() {
+        guard !sawItemRow, !flushLeftOrders.isEmpty else { return }
+        for index in collected.indices where flushLeftOrders.contains(collected[index].order) {
+            let row = collected[index].entry
+            guard row.kind == .prose, !Self.isSectionTitle(row.rawText) else { continue }
+            collected[index].entry = Self.makeItemEntry(text: row.rawText, depth: 0,
+                                                        isHeading: false, ancestorTexts: [])
+        }
+    }
+
+    /// Whether a flushleft paragraph is one of the series' boilerplate section titles rather
+    /// than a collection name — see `promoteFlushLeftHeadingsIfSectionHasNoItems()`.
+    static func isSectionTitle(_ text: String) -> Bool {
+        text.lowercased().hasPrefix("sources for ")
     }
 
     /// Decides whether a closing top-level paragraph is narrative `.prose` or a

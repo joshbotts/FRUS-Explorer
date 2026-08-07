@@ -59,6 +59,45 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
     private var proseBuffer = ""
     private var proseOrder = 0
 
+    /// Whether this section emitted any `<item>` row (#668).
+    private var sawItemRow = false
+    /// Orders of the prose rows this section produced from a `<p rend="flushleft">`.
+    private var flushLeftOrders: Set<Int> = []
+    /// Whether the paragraph currently open carries `rend="flushleft"`.
+    private var proseIsFlushLeft = false
+    /// Whether the parse position is inside a published-works run — either the whole
+    /// section (a `Published sources` `<head>`) or the subtree a `Published Sources`
+    /// pseudo-heading paragraph opens.
+    ///
+    /// The app's delegate expresses this as a `.bibliography` row kind; `SourceRow` has no
+    /// such case, so here it exists only to **withhold promotion**. Those rows stay `.prose`,
+    /// exactly as they are today, which is why adding this costs nothing and omitting it
+    /// would file `Dean Acheson, Present at the Creation` as an archival collection.
+    private var inPublishedRun = false
+    /// Whether a `<head>` is open at section level, and its accumulating text.
+    private var inSectionHead = false
+    private var sectionHeadBuffer = ""
+
+    /// Anchored published-works heading shape, matched against a normalized candidate.
+    /// The same pattern the app's `SourcesParserDelegate` uses — it reads the paragraph's
+    /// **text**, not its `rend`, so it catches `smallcaps` spellings as well as `strong`.
+    private static let publishedHeadingPat = try? NSRegularExpression(
+        pattern: #"^(?:part [a-z][.:]? )?(?:selected )?published (?:sources|references)$"#)
+    /// Anchored unpublished-sources heading shape; closes a published run.
+    private static let unpublishedHeadingPat = try? NSRegularExpression(
+        pattern: #"^(?:part [a-z][.:]? )?unpublished sources$"#)
+
+    /// Normalizes a candidate heading and tests it. Candidates longer than 60 characters
+    /// are never headings — they are narrative paragraphs containing the words.
+    private static func matchesHeading(_ text: String, _ pattern: NSRegularExpression?) -> Bool {
+        guard let pattern, text.count <= 60 else { return false }
+        var s = text.lowercased()
+        while s.hasSuffix(".") { s = String(s.dropLast()) }
+        s = s.trimmingCharacters(in: .whitespaces)
+        let ns = NSRange(s.startIndex..., in: s)
+        return pattern.firstMatch(in: s, range: ns) != nil
+    }
+
     private struct ItemFrame {
         var text = ""
         var isHeading = false
@@ -103,12 +142,19 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
         case "item":
             openCounter += 1
             itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter))
+        case "head":
+            if itemStack.isEmpty {
+                inSectionHead = true
+                sectionHeadBuffer = ""
+            }
         case "p":
             if itemStack.isEmpty {
                 openCounter += 1
                 proseOrder = openCounter
                 inProse = true
                 proseBuffer = ""
+                proseIsFlushLeft = attributeDict["rend"]?.lowercased()
+                    .contains("flushleft") ?? false
             }
         case "hi":
             if attributeDict["rend"]?.lowercased() == "strong", !itemStack.isEmpty {
@@ -123,6 +169,8 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
         guard inSourcesSection else { return }
         if !itemStack.isEmpty {
             itemStack[itemStack.count - 1].text += string
+        } else if inSectionHead {
+            sectionHeadBuffer += string
         } else if inProse {
             proseBuffer += string
         }
@@ -138,6 +186,19 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
         switch elementName {
         case "list":
             listDepth = max(0, listDepth - 1)
+        case "head":
+            if inSectionHead {
+                // A whole published-works section (`<head>Published sources</head>` —
+                // frus1969-76v34/v36, whose books are flushleft paragraphs with no `<item>`
+                // in sight). Without this the promotion below would turn every one of them
+                // into an archival collection.
+                if Self.matchesHeading(Self.collapseWhitespace(sectionHeadBuffer),
+                                       Self.publishedHeadingPat) {
+                    inPublishedRun = true
+                }
+                inSectionHead = false
+                sectionHeadBuffer = ""
+            }
         case "item":
             if let frame = itemStack.popLast() {
                 let text = Self.collapseWhitespace(frame.text)
@@ -145,33 +206,81 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
                     collected.append((frame.order,
                                       Self.makeItemRow(text: text, depth: frame.depth,
                                                        isHeading: frame.isHeading)))
+                    sawItemRow = true
                 }
             }
         case "p":
             if inProse && itemStack.isEmpty {
                 let text = Self.collapseWhitespace(proseBuffer)
                 if !text.isEmpty {
+                    // A `Published Sources` pseudo-heading opens the published run; an
+                    // `Unpublished Sources` one closes it. The headings themselves stay prose.
+                    if Self.matchesHeading(text, Self.publishedHeadingPat) {
+                        inPublishedRun = true
+                    } else if Self.matchesHeading(text, Self.unpublishedHeadingPat) {
+                        inPublishedRun = false
+                    } else if proseIsFlushLeft && !inPublishedRun {
+                        flushLeftOrders.insert(proseOrder)
+                    }
                     collected.append((proseOrder, SourceRow(kind: .prose, depth: 0, isHeading: false,
                                                             recordGroup: nil, lotFile: nil,
                                                             repository: nil, text: text)))
                 }
                 inProse = false
                 proseBuffer = ""
+                proseIsFlushLeft = false
             }
         default:
             break
         }
 
         if elementDepth <= sectionDepth {
+            promoteFlushLeftHeadingsIfSectionHasNoItems()
             entries.append(contentsOf: collected.sorted { $0.order < $1.order }.map(\.row))
             collected.removeAll()
             inSourcesSection = false
             sectionDepth = -1
             inProse = false
             proseBuffer = ""
+            proseIsFlushLeft = false
+            sawItemRow = false
+            flushLeftOrders.removeAll()
+            inPublishedRun = false
+            inSectionHead = false
+            sectionHeadBuffer = ""
             itemStack.removeAll()
             listDepth = 0
         }
+    }
+
+    /// Promotes `<p rend="flushleft">` paragraphs to collection rows in a sources section
+    /// that has no `<item>` outline at all (#668).
+    ///
+    /// The port of the app's `promoteFlushLeftHeadingsIfSectionHasNoItems()`, and it must
+    /// stay one: the app parses this at index time while this builds
+    /// `volume-sources-index.json`, and a volume that resolves in one and not the other is
+    /// the exact split #668 reported. See the app's copy for the corpus measurement
+    /// (15 volumes, 637 headings, 290 with a lot number) and the reasoning.
+    ///
+    /// Published-works rows are excluded at insertion time rather than here, because
+    /// `SourceRow` has no `.bibliography` kind to test for.
+    private func promoteFlushLeftHeadingsIfSectionHasNoItems() {
+        guard !sawItemRow, !flushLeftOrders.isEmpty else { return }
+        for index in collected.indices where flushLeftOrders.contains(collected[index].order) {
+            let row = collected[index].row
+            guard row.kind == .prose, !Self.isSectionTitle(row.text) else { continue }
+            collected[index].row = Self.makeItemRow(text: row.text, depth: 0, isHeading: false)
+        }
+    }
+
+    /// Whether a flushleft paragraph is one of the series' boilerplate section titles
+    /// (`Sources for the Foreign Relations Series`) rather than a collection name.
+    ///
+    /// Measured over the promoted corpus: **6 of 30,920 item rows begin `Sources for `, and
+    /// all six are those titles**. The app's `SourcesParserDelegate.isSectionTitle` is the
+    /// same test; keep them together.
+    public static func isSectionTitle(_ text: String) -> Bool {
+        text.lowercased().hasPrefix("sources for ")
     }
 
     private static func collapseWhitespace(_ s: String) -> String {
