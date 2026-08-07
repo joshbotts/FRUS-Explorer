@@ -656,10 +656,12 @@ public actor IndexingPipeline {
     ///   `$` anchor is what keeps the widening safe: the whole note must be the citation.
     /// - v33 — #353: old-style digits-only lot numbers (`Lot 122`, `Lot 110`). The shared lot
     ///   grammar required a letter designator (`64 D 563`), so the 1940s numeric lots matched
-    ///   nothing. **89 documents** — 44 from `unrecognized`, 45 from `namedFileSeries`, where a
+    ///   nothing. **60 documents** — 43 from `unrecognized`, 17 from `namedFileSeries`, where a
     ///   lot citation had been keyed by its series name instead. The digits-only branch is LAST
     ///   in the alternation so a lettered lot still keys whole, and carries a negative
-    ///   lookahead so `Lot 122A` is never cut to `122`.
+    ///   lookahead so neither `Lot 122A` nor the compound `Lot 52-242` is cut to its first
+    ///   digits — the second was caught by a test after the first measurement, and was worth 29
+    ///   documents that would have merged with unrelated files.
     public static let currentDateIndexVersion: Int = 33
 
     /// UserDefaults key under which the installed date-index version is persisted.
