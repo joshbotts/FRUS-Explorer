@@ -116,6 +116,11 @@ struct MacSourceExplorerView: View {
     /// confidently as a control-number-verified one. Both facts gate the banner now.
     @State private var catalogEvidence: CatalogQueryEvidence? = nil
 
+    /// What the bundled presidential-library catalogue says about this citation (#681).
+    /// Resolved in `load()` rather than in `body` — it reads a 3.1 MB bundle and the box
+    /// re-renders on every state change. Mirrors the iOS twin.
+    @State private var libraryOutcome: PresidentialLibraryOutcome = .none
+
     /// Whether the rows currently held may be presented as the answer: they must have come
     /// from the automatic lookup **and** that lookup must have constrained on something.
     private var resultsAreTrustworthy: Bool {
@@ -312,7 +317,13 @@ struct MacSourceExplorerView: View {
                     if let outcome = curatedOutcome(for: parsed) {
                         curatedLotBox(outcome)
                     }
-                    if let parsed {
+                    // #681: where the bundled library catalogue answered, it replaces the live
+                    // NARA box rather than sitting beside it — unconstrained free-text rows
+                    // shown next to a verified NARA collection cannot be told apart from it
+                    // (owner decision 2026-08-06). Mirrors the iOS twin.
+                    if libraryOutcome.isHit {
+                        offlineLibraryBox(libraryOutcome)
+                    } else if let parsed {
                         naraBox(for: parsed)
                     } else {
                         ProgressView()
@@ -577,6 +588,102 @@ struct MacSourceExplorerView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    // MARK: - Offline Library Box (#681)
+
+    /// The bundled catalogue's answer for a library citation — the macOS twin of the iOS
+    /// `offlineLibrarySection`.
+    ///
+    /// The collection is a resolution in both branches (its identifier was verified by hand
+    /// against the harvest); the series is either named exactly or left as candidates under a
+    /// caveat rendered **above** them, so the hedge is read before the rows it qualifies. Wording
+    /// and the branch itself come from `PresidentialLibraryOutcome`, shared with iOS, so the two
+    /// platforms cannot answer the same citation differently.
+    @ViewBuilder
+    private func offlineLibraryBox(_ outcome: PresidentialLibraryOutcome) -> some View {
+        GroupBox(outcome.sectionTitle) {
+            VStack(alignment: .leading, spacing: 10) {
+                if let collection = outcome.verifiedCollection {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(outcome.collectionRowLabel)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(collection.title)
+                            .font(.callout.weight(.medium))
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let url = collection.catalogURL {
+                            Link(destination: url) {
+                                Label(String(localized: "source.explorer.nara.viewRecord",
+                                             defaultValue: "View in NARA Catalog"),
+                                      systemImage: "arrow.up.right.square")
+                            }
+                            .font(.callout)
+                        }
+                    }
+                }
+
+                if let series = outcome.resolvedSeries {
+                    Divider()
+                    offlineSeriesRow(series, label: outcome.seriesRowLabel, isCandidate: false)
+                }
+
+                if let caveat = outcome.caveat {
+                    Text(caveat)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                ForEach(outcome.candidateSeries ?? []) { series in
+                    offlineSeriesRow(series, label: nil, isCandidate: true)
+                }
+
+                Text(outcome.provenanceNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(6)
+        }
+    }
+
+    /// One series row in the offline catalogue box. Candidates carry the same `ConfidenceChip`
+    /// #669 gives a curated possible match; the resolved series does not.
+    @ViewBuilder
+    private func offlineSeriesRow(_ series: PresidentialLibraryIndex.Series,
+                                  label: String?,
+                                  isCandidate: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let label {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 6) {
+                Text(series.title)
+                    .font(.callout.weight(.medium))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                if isCandidate { ConfidenceChip(confidence: .medium) }
+            }
+            if let dates = series.inclusiveDates {
+                Text(dates)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let url = series.catalogURL {
+                Link(destination: url) {
+                    Label(String(localized: "source.explorer.nara.viewRecord",
+                                 defaultValue: "View in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .font(.callout)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func provenanceRow(label: String, value: String) -> some View {
@@ -1236,6 +1343,18 @@ struct MacSourceExplorerView: View {
         // Must be called before the per-case hasAPIKey guards that return early.
         await loadRelatedDocuments(for: note)
 
+        // #681: the bundled library catalogue is resolved before the per-case `hasAPIKey`
+        // guards — it needs neither a key nor the network, and gating it on one would withhold
+        // the offline answer from exactly the users who have no other. Detached because it is a
+        // 3.1 MB decode the first time it is touched. Mirrors the iOS twin.
+        if case .presidentialLibrary(let library, let collection, _) = note {
+            let raw = rawSourceNote
+            libraryOutcome = await Task.detached(priority: .userInitiated) {
+                PresidentialLibraryOutcome.resolve(
+                    repository: library, collection: collection, note: raw)
+            }.value
+        }
+
         switch note {
         case .lotFile(let rg, let lotNumber, _):
             // Pre-fill manual query with the lot number (without decorative prefix).
@@ -1271,6 +1390,9 @@ struct MacSourceExplorerView: View {
             guard hasAPIKey else { return }
             // #681: only query for repositories NARA administers. Mirrors iOS.
             guard NARACustody.mayQueryCatalog(forRepository: library) else { return }
+            // #681: and where the bundled catalogue already resolved the citation, the live
+            // query is suppressed (owner decision 2026-08-06). Mirrors iOS.
+            guard !libraryOutcome.suppressesLiveQuery else { return }
             await fetchResults {
                 try await client.searchByPresidentialMaterials(
                     library: library, collection: collection, maxResults: 3

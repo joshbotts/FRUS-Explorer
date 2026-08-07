@@ -801,7 +801,7 @@ Open Source Explorer from the **Sources** tile in the Research rail (Section 3.3
 
 `[SCREENSHOT: Source Explorer view showing parsed archival source information with a NARA catalog link]`
 
-Source Explorer picks the most precise resolution available for each note type: State Department decimal files route to the right period-specific NARA finding aid; lot files resolve through the NARA Catalog; presidential-library and CIA citations link to the appropriate finding-aid or CREST page; and **pre-1910 Central Files** — 1906–1910 Numerical File rolls and pre-1906 country-arranged diplomatic series (across the full pre-1906 range, including 19th-century documents such as an 1863 despatch) — resolve from a **bundled index with no API key required**.
+Source Explorer picks the most precise resolution available for each note type: State Department decimal files route to the right period-specific NARA finding aid; lot files resolve through the NARA Catalog; presidential-library citations resolve against **the National Archives' own description of each library, bundled with the app** — naming the NARA collection, and the series within it where the citation pins one — and otherwise link to the appropriate finding aid; CIA citations link to the CREST page; and **pre-1910 Central Files** — 1906–1910 Numerical File rolls and pre-1906 country-arranged diplomatic series (across the full pre-1906 range, including 19th-century documents such as an 1863 despatch) — resolve from a **bundled index with no API key required**.
 
 **File series and HMS/MLR entry numbers.** When a lot file resolves through the bundled index, the **NARA Catalog Record** section names the record and — where the record describes a file *unit* — its enclosing **File Series**, and lists the **HMS/MLR Entry** number(s): the identifier NARA staff ask researchers to quote, alongside the lot number, when requesting the original records (a note under the record says exactly that). When only the parent series' identifiers are known, they're labeled **HMS/MLR Entry (series)** with a caption noting they identify the enclosing file series, not the specific file unit. The same identifiers appear beneath resolved lot-file entries in a volume's **Sources** list (below). And where a class of lot resolutions was found to be unreliable — some presidential-library staff files previously resolved to the wrong catalog records — those lots are now treated as unresolved and routed to the live catalog lookup instead of showing a confident wrong link.
 
@@ -823,7 +823,9 @@ Each recognized entry also carries an **Archival Neighbors** affordance in one o
 
 **Archival collections across the series.** FRUS Explorer ships a corpus-wide authority of the ~4,400 archival collections FRUS editors cite — each with its canonical name, the variant forms volumes actually print, its National Archives catalog record where one resolved offline, and every citing volume. The **Collection** view shows all of this plus two kinds of counts, deliberately distinct: the *series-wide* citing-volume list comes from the bundled authority and is independent of what you have downloaded, while **In Your Library** counts are always computed from *your own indexed volumes* ("N documents in M of your indexed volumes"). An **Archival Neighbors** action lists those local documents. You reach a Collection view from a matching entry in a volume's Sources list, or from Source Explorer when a document's source note matches a tracked collection — and **Browse Archival Collections** (in Source Explorer's Archival Collection section) opens a searchable list of the whole authority, grouped by repository, with each collection's sub-series one disclosure away.
 
-If you have a NARA API key configured (see **Settings → System → Connections**), Source Explorer can enrich lot-file and presidential-library lookups with live catalog data. Central-file, decimal-file, pre-1910, and CIA resolution work without a key.
+**Presidential libraries, without a key.** A presidential-library citation is first matched against the bundled catalog of what each library holds. Where it matches, Source Explorer names the **NARA collection** — and the **series** inside it when the citation identifies one unambiguously — with a link to the catalog record, and no network call or API key is involved. Measured across the series, that answers a little under half of all presidential-library citations. Where the citation names something the National Archives divides differently (FRUS cites the Johnson *Country File*; NARA holds seven regional country-file series), the collection is still named and the note says plainly that the series is not pinned, rather than picking one. When the bundled catalog answers, the live keyword search is **not** also run — showing an exact collection beside unconstrained keyword hits would leave you unable to tell which was which.
+
+If you have a NARA API key configured (see **Settings → System → Connections**), Source Explorer can enrich lot-file lookups — and the presidential-library citations the bundled catalog cannot answer — with live catalog data. Central-file, decimal-file, pre-1910, and CIA resolution work without a key.
 
 ---
 
@@ -1063,9 +1065,10 @@ before you open it. Both keys are held in your keychain and travel with iCloud K
 other devices.
 
 **NARA Catalog.** A free API key from the National Archives, used by Source Explorer to resolve
-lot files and Presidential Library records. Open the card, follow **Get a free key from NARA**,
-and paste it in. Without a key, Source Explorer still works — it falls back to the strategies that
-need no key.
+lot files, and the Presidential Library records the bundled library catalog cannot answer
+(Section 12). Open the card, follow **Get a free key from NARA**, and paste it in. Without a key,
+Source Explorer still works — it falls back to the strategies that need no key, which now include
+most presidential-library citations.
 
 **Zotero.** Connecting your Zotero account, so **Send to Zotero Library** (Sections 9.3 and 10.6) can push documents and whole collections — with your tags and research notes — straight into your library over the Zotero Web API, where they sync to all your devices including the Zotero iOS app (as the screen notes, this is the only way to get FRUS annotations into Zotero on iPhone and iPad).
 
