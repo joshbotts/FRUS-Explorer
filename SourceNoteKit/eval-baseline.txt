@@ -10,23 +10,23 @@ TOTAL NOTES: 267663
 
 === era 1906-1939  (volumes: 118, notes: 92013)
   centralFiles                  89461  ( 97.2%)
-  presidentialLibrary             170  (  0.2%)
+  presidentialLibrary             172  (  0.2%)
   naraCollection                  373  (  0.4%)
   ciaCollection                     1  (  0.0%)
   namedFileSeries                 655  (  0.7%)
   previouslyPublished             589  (  0.6%)
-  unrecognized                    764  (  0.8%)
+  unrecognized                    762  (  0.8%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
   centralFiles                  74877  ( 86.9%)
   lotFile                        4113  (  4.8%)
-  presidentialLibrary             239  (  0.3%)
+  presidentialLibrary             518  (  0.6%)
   naraCollection                  483  (  0.6%)
   ciaCollection                   678  (  0.8%)
   namedFileSeries                4461  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
   previouslyPublished              74  (  0.1%)
-  unrecognized                   1218  (  1.4%)
+  unrecognized                    939  (  1.1%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
   centralFiles                  10476  ( 69.7%)
@@ -98,25 +98,25 @@ TOTAL NOTES: 267663
   centralFiles                 194431  ( 72.6%)
   cfpfFile                       4028  (  1.5%)
   lotFile                       13955  (  5.2%)
-  presidentialLibrary           28499  ( 10.6%)
+  presidentialLibrary           28780  ( 10.8%)
   naraCollection                10291  (  3.8%)
   ciaCollection                  2903  (  1.1%)
   namedFileSeries                6046  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             894  (  0.3%)
-  unrecognized                   6545  (  2.4%)
+  unrecognized                   6264  (  2.3%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
-  1906-1939                       764  (  0.8%)
-  1940-1951                      1218  (  1.4%)
+  1906-1939                       762  (  0.8%)
+  1940-1951                       939  (  1.1%)
   1952-1954                      1096  (  7.3%)
   1955-1957                       452  (  4.2%)
   1958-1960                       185  (  2.2%)
   1961-1963                       306  (  3.1%)
   1964-1976                       304  (  1.0%)
   1977+                           187  (  1.5%)
-  overall                        6545  (  2.4%)
+  overall                        6264  (  2.3%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -172,31 +172,31 @@ TOTAL NOTES: 267663
   | Reading Room of the Allies. Interior. Partial View. [Caption is in the original. See Document 24.]
   | See Document 24.
 --- 1940-1951
-  | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, New York. The original of this memorandum was transmitted by Mr. Welles to President Roosevelt under covering memorandum of
-  | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y.
   | 7601D 61/919: Telegram
   | 740.00111 A.R.–Subs/la: Telegram
   | 311.6121½
   | 311.6121 Chichkov, Viktor
   | 811.5034 (China); American Radio Service/41: Telegram
-  | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y. An attached note states that this letter was given to H. Freeman Matthews, Counselor of Embassy in London, to take to
   | Printed from Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Adm
   | Defense Flies
   | Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Administration, 
   | Roosevelt Papers The copy of this memorandum in the Department’s files (851A.01/87A) does not have the enclosure mentioned in the memorandum.
   | Department of the Army Piles
   | Hopkins: Papers
-  | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y. For additional correspondence on Dr. Curried mission to China, see vol. v, pp. 479 and 602 ff. passim.
-  | Undated but written on stationery of the Office of the Secretary of the Navy; photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y.
-  | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y. Penciled statement on White House stationery, accompanied by a note from the Secretary of State: “My suggestion on Ja
-  | Transmitted by the Soviet Ambassador (Litvinov). Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y.
-  | Received in the Department on July 10. Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y.
-  | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y. Notation in ink by President Roosevelt: “L. C. OK FDR”
   | 811.20 Defense (M) 24801
   | 840.48 Regis. Commission for Polish Relief, Inc.
   | 811.24546/la: Telegram
   | Paraphrased text reprinted from Department of State Bulletin, November 8, 1941, p. 365.
   | 360M.1121 Devenis, Michael: Telegram
+  | 811.111 Habicht, Hermann: Telegram
+  | 360M.1121 Devenis, Mikhail: Telegram
+  | 123 Johnson, Louis A./½
+  | Copy of telegram transmitted in covering letter of June 1 from the Chinese Minister for Foreign Affairs (Soong) to Harry L. Hopkins, with the explanation: “I shall be presenting this message from the 
+  | 893 51/7502: Telegram
+  | 862 20210/1221: Telegram
+  | 841.244/la: Circular telegram
+  | 811.20 Defense (M)8702: Telegram
+  | Copy from Press Conference file in the News Division.
 --- 1952-1954
   | [Extract]
   | [Attachment]
