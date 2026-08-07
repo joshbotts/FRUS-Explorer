@@ -1018,7 +1018,9 @@ Any collection row — there, in a volume's Sources list, or in a document's Sou
 
 ### 12.2 NARA API Key
 
-Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → System → Connections**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.
+Lot file lookups require a free NARA Catalog API key. Enter your key once in **Settings → System → Connections**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.
+
+**Presidential libraries mostly no longer need one.** A presidential-library citation is first matched against a bundled copy of the National Archives' own description of what each library holds. Where it matches, Source Explorer names the **NARA collection** — and the **series** within it when the citation identifies one unambiguously — with a link to the catalog record, and no key or network call is involved. Measured across the series, that answers a little under half of all presidential-library citations. Where the citation names something the National Archives divides differently (FRUS cites the Johnson *Country File*; NARA holds seven regional country-file series), the collection is still named and the note says the series is not pinned, rather than picking one. When the bundled catalog answers, the live keyword search is **not** also run — an exact collection shown beside unconstrained keyword hits would be indistinguishable from them. A key is still what resolves the presidential-library citations the bundled catalog cannot answer, and the **NARA Search Query** field remains available for a search of your own either way.
 
 `[SCREENSHOT: Settings pane for NARA API key entry with a "Need a Key?" link]`
 
@@ -1315,8 +1317,9 @@ card shows whether it is connected before you open it. Both keys are held in you
 travel with iCloud Keychain to your other devices.
 
 **NARA Catalog.** A free API key from the National Archives, used by Source Explorer to resolve lot
-files and Presidential Library records. Open the card and follow **Get a free key from NARA**.
-Without a key, Source Explorer falls back to the strategies that need none.
+files, and the Presidential Library records the bundled library catalog cannot answer (Section
+12.2). Open the card and follow **Get a free key from NARA**. Without a key, Source Explorer falls
+back to the strategies that need none — which now include most presidential-library citations.
 
 **Zotero.** Connect your account with a Web API key so **Send to Zotero Library** can push
 documents and whole collections — with your tags and research notes — into your library. A link in

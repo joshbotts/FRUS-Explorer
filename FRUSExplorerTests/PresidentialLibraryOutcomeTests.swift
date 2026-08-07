@@ -339,6 +339,34 @@ struct PresidentialLibraryOutcomeTests {
         }
     }
 
+    /// Suppressing the automatic query must not suppress the user's own.
+    ///
+    /// Only macOS has a manual search field, and its results land in the *same*
+    /// `catalogResults` the automatic query fills — which the offline box replaces. Gating the
+    /// box on the offline hit alone made the Search button silently do nothing: the query ran,
+    /// the results arrived, and nothing on screen changed. The owner's decision was about the
+    /// automatic query; a query the user typed is theirs to see.
+    @Test("The macOS manual search stays visible behind an offline hit")
+    func macManualSearchSurvivesSuppression() throws {
+        let text = try Self.source("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift")
+        let hit = try #require(
+            text.range(of: "if libraryOutcome.isHit {"),
+            Comment(rawValue: "the macOS offline branch moved — update this test"))
+        // The branch must still reach `naraBox`, conditioned on there being manual state to show.
+        let branch = text[hit.lowerBound...].prefix(900)
+        #expect(branch.contains("naraBox(for: parsed)"),
+                """
+                MacSourceExplorerView hides the NARA box on an offline hit without an escape \
+                hatch for the manual search field. A user's typed query still fills \
+                `catalogResults`, and with the box gone the Search button does nothing visible.
+                """)
+        #expect(branch.contains("catalogResults.isEmpty"),
+                """
+                The macOS offline branch reaches `naraBox` unconditionally — that is the \
+                automatic result set the owner decision suppresses. Gate it on manual state.
+                """)
+    }
+
     @Test("Both views render the offline catalogue answer")
     func bothViewsRenderTheOfflineAnswer() throws {
         for path in Self.views {
