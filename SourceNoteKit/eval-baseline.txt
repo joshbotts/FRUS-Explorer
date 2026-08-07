@@ -38,20 +38,20 @@ TOTAL NOTES: 267663
   unrecognized                   1110  (  7.4%)
 
 === era 1955-1957  (volumes: 29, notes: 10749)
-  centralFiles                   7009  ( 65.2%)
+  centralFiles                   7108  ( 66.1%)
   lotFile                        1807  ( 16.8%)
-  presidentialLibrary            1323  ( 12.3%)
+  presidentialLibrary            1223  ( 11.4%)
   naraCollection                    6  (  0.1%)
   ciaCollection                    52  (  0.5%)
-  namedFileSeries                  81  (  0.8%)
+  namedFileSeries                  82  (  0.8%)
   foreignGovernmentArchive          9  (  0.1%)
   previouslyPublished               4  (  0.0%)
   unrecognized                    458  (  4.3%)
 
 === era 1958-1960  (volumes: 23, notes: 8547)
-  centralFiles                   5062  ( 59.2%)
+  centralFiles                   5092  ( 59.6%)
   lotFile                        1556  ( 18.2%)
-  presidentialLibrary            1541  ( 18.0%)
+  presidentialLibrary            1511  ( 17.7%)
   naraCollection                  147  (  1.7%)
   ciaCollection                    42  (  0.5%)
   namedFileSeries                   5  (  0.1%)
@@ -60,50 +60,50 @@ TOTAL NOTES: 267663
   unrecognized                    187  (  2.2%)
 
 === era 1961-1963  (volumes: 27, notes: 9941)
-  centralFiles                   4190  ( 42.1%)
+  centralFiles                   4329  ( 43.5%)
   lotFile                        1286  ( 12.9%)
-  presidentialLibrary            3011  ( 30.3%)
+  presidentialLibrary            2871  ( 28.9%)
   naraCollection                  668  (  6.7%)
   ciaCollection                   447  (  4.5%)
   namedFileSeries                  26  (  0.3%)
   foreignGovernmentArchive          1  (  0.0%)
   previouslyPublished               2  (  0.0%)
-  unrecognized                    310  (  3.1%)
+  unrecognized                    311  (  3.1%)
 
 === era 1964-1976  (volumes: 100, notes: 30790)
-  centralFiles                   2913  (  9.5%)
+  centralFiles                   3008  (  9.8%)
   cfpfFile                       1607  (  5.2%)
   lotFile                        1357  (  4.4%)
-  presidentialLibrary           15456  ( 50.2%)
+  presidentialLibrary           15351  ( 49.9%)
   naraCollection                 7720  ( 25.1%)
   ciaCollection                   990  (  3.2%)
-  namedFileSeries                  53  (  0.2%)
+  namedFileSeries                  60  (  0.2%)
   foreignGovernmentArchive         29  (  0.1%)
   previouslyPublished              67  (  0.2%)
-  unrecognized                    598  (  1.9%)
+  unrecognized                    601  (  2.0%)
 
 === era 1977+  (volumes: 39, notes: 12402)
-  centralFiles                     78  (  0.6%)
+  centralFiles                     79  (  0.6%)
   cfpfFile                       2421  ( 19.5%)
   lotFile                        1467  ( 11.8%)
-  presidentialLibrary            6512  ( 52.5%)
+  presidentialLibrary            6505  ( 52.5%)
   naraCollection                  894  (  7.2%)
   ciaCollection                   423  (  3.4%)
   foreignGovernmentArchive         20  (  0.2%)
   previouslyPublished             114  (  0.9%)
-  unrecognized                    473  (  3.8%)
+  unrecognized                    479  (  3.9%)
 
 === OVERALL
-  centralFiles                 194072  ( 72.5%)
+  centralFiles                 194436  ( 72.6%)
   cfpfFile                       4028  (  1.5%)
   lotFile                       13955  (  5.2%)
-  presidentialLibrary           28881  ( 10.8%)
+  presidentialLibrary           28499  ( 10.6%)
   naraCollection                10291  (  3.8%)
   ciaCollection                  2903  (  1.1%)
-  namedFileSeries                5451  (  2.0%)
+  namedFileSeries                5459  (  2.0%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             530  (  0.2%)
-  unrecognized                   7481  (  2.8%)
+  unrecognized                   7491  (  2.8%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
@@ -112,10 +112,10 @@ TOTAL NOTES: 267663
   1952-1954                      1110  (  7.4%)
   1955-1957                       458  (  4.3%)
   1958-1960                       187  (  2.2%)
-  1961-1963                       310  (  3.1%)
-  1964-1976                       598  (  1.9%)
-  1977+                           473  (  3.8%)
-  overall                        7481  (  2.8%)
+  1961-1963                       311  (  3.1%)
+  1964-1976                       601  (  2.0%)
+  1977+                           479  (  3.9%)
+  overall                        7491  (  2.8%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -303,11 +303,14 @@ TOTAL NOTES: 267663
 --- 1964-1976
   | Source: Washington National Records Center, OASD/ISA Files: FRC 69 A 7425, Vietnam 381. Top Secret. A note on the source text indicates that McNamara saw this memorandum on April 2.
   | Source: Department of Defense, Records of the Joint Chiefs of Staff, 9155.3 (24 Mar 66). Top Secret.
+  | Source: Department of Defense, Records of the Joint Chiefs of Staff, 9155.3 (29 Oct 66). Top Secret. Prepared by J–3, Directorate for Operations. Forwarded to Wheeler by Goodpaster under cover of an O
   | Source: U.S. Army Center for Military History, DepCORDS/MACV Papers, Pacification Program (Planning): 1968. Confidential. Copies were sent to Bunker, Abrams, and Colby.
+  | Source: U.S. Army Center for Military History, Dep CORDS/MACV Files, Pacification File, GVN Liaison File: 1968. Confidential. Prepared on December 10. The meeting was held at Independence Palace. Copi
   | Source: Washington National Records Center, E/CBA/REP Files: FRC 72 A 6248, Current Economic Developments. Unclassified. The source text comprises page 16 of the issue.
   | Source: Washington National Records Center, E/CBA/REP Files: FRC 72 A 6248, Current Economic Developments. Limited Official Use. The source text comprises pages 20–22 of the issue.
   | Source: National Security Council, Records of the 303 Committee, Vietnam, 1965–1969. Secret; Eyes Only. No drafting information appears on the memorandum. At the bottom of the first page of the memora
   | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911/080 (30 Jan 67), IR #557. Top Secret; Sensitive.
+  | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911/319 (18 Apr 67), IR 1090 67–13. Secret. Another copy is in the Johnson Library, National Security File, Country File, 
   | Source: Center for Military History, Dep CORDS/MACV Files, Pacification Concepts: 1967–68. Secret; Eyes Only. This memorandum was sent first to Katzenbach, and then to McNamara and Vance. In a transmi
   | Source: Center for Military History, Dep CORDS/MACV Files, GVN Elections (General): 1967. Secret. Copies were sent to Locke and Komer.
   | Source: Center for Military History, DepCORDS/MACV Files, Westmoreland Memos—RWK 1967–68. Secret; Eyes Only.
@@ -323,9 +326,6 @@ TOTAL NOTES: 267663
   | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911/301 (29 Jan 68), IR 4542. Top Secret. An attached note reads: “At the special meeting of the Joint Chiefs of Staff at 
   | Attachment
   | Source: Department of Defense, Official Records of the Joint Chiefs of Staff, 911 (5 Mar 68) IR 3134. Top Secret; Sensitive; Nodis. Copies were sent to Clifford, Nitze, and Warnke.
-  | Source: U.S. Army Center of Military History, William C. Westmoreland Papers, Eyes Only Message File, 1 Mar-31 Mar 1968. Secret; Eyes Only; Immediate. Repeated to Sharp.
-  | Source: U.S. Army Center of Military History, William C. Westmoreland Papers, Eyes Only Message Files, 1 Mar-31 Mar 1968. Secret. Repeated to Admiral Sharp and General Johnson. In JCSM–159–68 to Cliff
-  | Source: National Security Council, 303 Committee Files, Vietnam 1965–1968. Secret; Eyes Only. A handwritten note reads: “303 Committee approved on 10 April 1968.”
 --- 1977+
   | [Top Secret. 13 pages not declassified]
   | [Top Secret. 2 pages not declassified]
@@ -337,6 +337,7 @@ TOTAL NOTES: 267663
   | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1979 Files, 56–83–70. No classification marking. Sent for action. Sent through Solomon. Drafted by Department of the
   | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking. Drafted by Department of the Treasury staff member Robert Blake on 
   | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking. Priority.
+  | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking. Sent to Miller for his signature under a November 19 cover memorand
   | Source: Department of the Treasury, Office of the Secretary, Executive Secretariat, 1980 Files, 56–83–05. No classification marking.
   | Source: Department of Defense, Afghan War Collection, Box 7, USSR in Afghanistan (1978). Secret; [handling restriction not declassified].
   | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 8 May 1978–7 Dec 1978. Secret. Attached but not printed is a covering memorandum from Inderfurth to
@@ -351,4 +352,3 @@ TOTAL NOTES: 267663
   | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 15 Feb 1979–22 Aug 1979. Secret; [handling restriction not declassified]. The report was attached a
   | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, Afghanistan: 11 Sep 1979–22 Jul 1980. Top Secret; Sensitive; Outside the System. Sent for action. Attached but n
   | Source: Department of Defense, Afghan War Collection, Box 4, USSR in Afghanistan (October 79). Secret; [handling restriction not declassified].
-  | Source: National Security Council, Carter Administration Intelligence Files, Box I–047, SCC (I) on Covert Action, 23 Oct 1979. Secret; Sensitive. The meeting took place in the White House Situation Ro

@@ -1564,15 +1564,18 @@ public struct SourceNoteParser {
     ]
 
     private func tryPresidentialLibrary(_ body: String) -> ParsedSourceNote? {
+        // #353 §3.2: a library named inside a parenthetical is a *secondary copy*, not the
+        // cited original — the principle `strippingParentheticals(_:)` already states for FRC
+        // accessions and #712 applied to lot numbers. Without it, 339 documents whose own
+        // citation reads `Source: Department of State, Central Files, 033.6141/4–556` were
+        // filed at a presidential library because a later parenthetical mentioned one.
+        let searchable = Self.droppingSecondaryCopyClauses(Self.strippingParentheticals(body))
         for keyword in Self.libraryKeywords {
-            guard let keyRange = body.range(of: keyword, options: .caseInsensitive) else { continue }
-            // Library name = text from start to end of keyword, first segment
-            let libraryRaw = String(body[body.startIndex..<keyRange.upperBound])
-            let library = libraryRaw.components(separatedBy: ",").first?
-                .trimmingCharacters(in: .whitespaces) ?? keyword
+            guard let keyRange = searchable.range(of: keyword, options: .caseInsensitive) else { continue }
+            let library = Self.libraryNameSegment(in: searchable, endingAt: keyRange, keyword: keyword)
 
             // Collection = next comma-delimited segment
-            let remainder = String(body[keyRange.upperBound...])
+            let remainder = String(searchable[keyRange.upperBound...])
                 .trimmingCharacters(in: CharacterSet(charactersIn: ",").union(.whitespaces))
             let collection = remainder.components(separatedBy: ",").first?
                 .trimmingCharacters(in: .whitespaces) ?? ""
@@ -1581,6 +1584,98 @@ public struct SourceNoteParser {
             return .presidentialLibrary(library: library, collection: collection, fileIdentifier: fileId)
         }
         return nil
+    }
+
+    /// Removes remark sentences that assert where a **second copy** lives (#353 §3.2).
+    ///
+    /// The unparenthesised half of the same defect. After the parenthetical strip, 139
+    /// documents still reached a library through a remark:
+    ///
+    /// ```
+    /// … Another copy is in the Johnson Library.
+    /// … A copy of the report is also at the Johnson Library.
+    /// … Copies of these documents are in Eisenhower Library.
+    /// ```
+    ///
+    /// Those name where a duplicate was filed, not where the cited document is.
+    ///
+    /// ## The exception, which is the reason this is content-keyed and not positional
+    /// `"Copy obtained from the Franklin D. Roosevelt Library"` opens with the same word and
+    /// means the opposite: the WWII-era idiom asserts the document's **actual provenance**, and
+    /// #353 lists it as a recovery worth 296 documents rather than a steal. A sentence naming
+    /// `obtained from` is therefore kept.
+    ///
+    /// **Measured, that exception changes 0 documents today**, and the reason is worth
+    /// recording: the idiom appears as a *whole-note* form, which reaches `tryLibraryLeadNote`
+    /// and never enters this function — only `Source:`-prefixed notes do. It is kept because it
+    /// errs toward keeping a provenance assertion rather than discarding one, and because the
+    /// recovery item that will handle those 296 notes has no reason to make them `Source:`
+    /// forms. It is not load-bearing, and this comment is here so nobody later reads it as if
+    /// it were.
+    ///
+    /// Sentence 1 is never dropped. It carries the citation on the `Source:` forms, and on the
+    /// abstract forms the citation is in the tail and never says "copy" — so a content rule is
+    /// safe in both directions where a positional one would not be.
+    static func droppingSecondaryCopyClauses(_ body: String) -> String {
+        let parts = sentences(of: body)
+        guard parts.count > 1 else { return body }
+        let kept = parts.enumerated().filter { index, sentence in
+            guard index > 0 else { return true }
+            guard sentence.range(of: #"(?i)\bcop(?:y|ies)\b"#,
+                                 options: .regularExpression) != nil else { return true }
+            return sentence.range(of: #"(?i)\bobtained\s+from\b"#,
+                                  options: .regularExpression) != nil
+        }
+        // Returning the ORIGINAL body when nothing was dropped is load-bearing, not an
+        // optimisation. `sentences(of:)` splits on a period followed by whitespace and a
+        // capital, which lands inside `George H.W. Bush Library`; rejoining the pieces with a
+        // single space rewrote that to `George H. W. Bush Library`, the keyword stopped
+        // matching, and the shorter `Bush Library` alias won instead. Reconstructing a string
+        // that was never going to change is how a splitter's edge case reaches every note.
+        guard kept.count != parts.count else { return body }
+        return kept.map(\.element).joined(separator: " ")
+    }
+
+    /// The repository name for a matched library keyword — the segment the keyword sits in,
+    /// not everything before it (#353 §3.3).
+    ///
+    /// ## What it was doing
+    /// The old rule took `body[startIndex..<keywordEnd]` and then its first comma segment. On a
+    /// `Source: Kennedy Library, …` note that is exactly right. On the **1958–1963 abstract
+    /// notes**, whose citation sits in the tail after a prose summary, it swallowed the summary:
+    ///
+    /// ```
+    /// Activist exile groups. Secret. 2 pp. Kennedy Library, NSF, Countries Series, Cuba…
+    ///   library = "Activist exile groups. Secret. 2 pp. Kennedy Library"
+    /// ```
+    ///
+    /// **507 documents** carried a repository name like that — up to 150 characters of abstract
+    /// prose. It is not merely untidy: the value is the repository key for archival neighbours
+    /// and the query string Source Explorer sends the catalogue, so every one of them keyed to
+    /// itself and matched nothing.
+    ///
+    /// The classification was never wrong — these really are library citations, and #712's
+    /// measurement of the parallel lot shape is why the tail form is trusted rather than
+    /// refused. Only the extracted field was.
+    ///
+    /// ## Why the cut points are taken strictly before the keyword
+    /// A sentence break is searched only in the text *preceding* the keyword. Searching the
+    /// whole span would cut inside `George H.W. Bush Library`, whose own name contains `". "`.
+    static func libraryNameSegment(in body: String,
+                                   endingAt keyRange: Range<String.Index>,
+                                   keyword: String) -> String {
+        let prefix = body[..<keyRange.lowerBound]
+        var start = body.startIndex
+        if let comma = prefix.lastIndex(of: ",") {
+            start = body.index(after: comma)
+        }
+        if let sentence = prefix.range(of: ". ", options: .backwards),
+           sentence.upperBound > start {
+            start = sentence.upperBound
+        }
+        let segment = body[start..<keyRange.upperBound]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return segment.isEmpty ? keyword : segment
     }
 
     /// Presidential-library note without the `Source:` prefix
