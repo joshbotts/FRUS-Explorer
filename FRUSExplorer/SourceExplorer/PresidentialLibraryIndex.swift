@@ -44,6 +44,8 @@ struct PresidentialLibraryIndex: Codable, Sendable {
         let naId: Int
         let statedSeriesCount: Int?
         let series: [Series]
+        /// The catalogue record for this collection.
+        var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
     }
 
     struct Series: Codable, Sendable, Equatable, Identifiable {

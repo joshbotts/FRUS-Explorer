@@ -108,6 +108,10 @@ struct SourceExplorerView: View {
     /// What the live catalogue results are evidence of (#681). Set alongside the
     /// query so the heading and the caveat cannot describe a query never issued.
     @State private var catalogEvidence: CatalogQueryEvidence? = nil
+    /// What the bundled presidential-library catalogue says about this citation (#681).
+    /// Resolved in `load()` rather than in `body` — it reads a 3.1 MB bundle and the panel
+    /// re-renders on every state change.
+    @State private var libraryOutcome: PresidentialLibraryOutcome = .none
     @State private var hasAPIKey: Bool = false
     /// Same-collection document discovery results.
     @State private var relatedDocs: [IndexingPipeline.RelatedDocument] = []
@@ -1135,16 +1139,106 @@ struct SourceExplorerView: View {
             curatedLibrarySection(curated)
         }
 
-        // #681: the National Archives catalogue is only queried for repositories NARA
-        // administers. For anything else there is no record to find, so the section explains
-        // that instead of rendering three free-text hits as though they were the answer.
-        if NARACustody.mayQueryCatalog(forRepository: library) {
+        // #681: the bundled catalogue answers first, with no key and no network. Where it
+        // answers, the live query is not issued at all (owner decision) — see
+        // `PresidentialLibraryOutcome`. Keep in sync with the macOS twin.
+        if libraryOutcome.isHit {
+            offlineLibrarySection(libraryOutcome)
+        } else if NARACustody.mayQueryCatalog(forRepository: library) {
             // Fallback: institution-specific finding-aid URL when API returns zero results
             let fallback = client.libraryFallbackURL(libraryName: library)
             naraResultSection(requiresKey: true, fallbackURL: fallback)
         } else {
             outsideNARASection(repository: library)
         }
+    }
+
+    /// The bundled catalogue's answer for a library citation (#681).
+    ///
+    /// The collection row is a resolution in both branches — the identifier behind it was
+    /// verified by hand against the harvest. What varies is the series: named exactly, or left
+    /// as candidates under a caveat that is rendered *above* them so it is read first.
+    @ViewBuilder
+    private func offlineLibrarySection(_ outcome: PresidentialLibraryOutcome) -> some View {
+        Section(outcome.sectionTitle) {
+            if let collection = outcome.verifiedCollection {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(outcome.collectionRowLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(collection.title)
+                        .font(.callout.weight(.medium))
+                    if let url = collection.catalogURL {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Label(String(localized: "source.explorer.nara.viewRecord",
+                                         defaultValue: "View in NARA Catalog"),
+                                  systemImage: "arrow.up.right.square")
+                            .font(.callout)
+                        }
+                        .padding(.top, 2)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            if let series = outcome.resolvedSeries {
+                Divider()
+                offlineSeriesRow(series, label: outcome.seriesRowLabel, isCandidate: false)
+            }
+
+            if let caveat = outcome.caveat {
+                Text(caveat)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(outcome.candidateSeries ?? []) { series in
+                offlineSeriesRow(series, label: nil, isCandidate: true)
+            }
+
+            Text(outcome.provenanceNote)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// One series row in the offline catalogue section. Candidates carry the same
+    /// `ConfidenceChip` #669 gives a curated possible match; the resolved series does not.
+    @ViewBuilder
+    private func offlineSeriesRow(_ series: PresidentialLibraryIndex.Series,
+                                  label: String?,
+                                  isCandidate: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let label {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 6) {
+                Text(series.title)
+                    .font(.callout.weight(.medium))
+                if isCandidate { ConfidenceChip(confidence: .medium) }
+            }
+            if let dates = series.inclusiveDates {
+                Text(dates)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let url = series.catalogURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(String(localized: "source.explorer.nara.viewRecord",
+                                 defaultValue: "View in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                    .font(.callout)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     /// Explains why no NARA catalogue results are shown for a repository the National Archives
@@ -1445,6 +1539,18 @@ struct SourceExplorerView: View {
         // who have not configured a NARA Catalog API key.
         await loadRelatedDocuments(for: note)
 
+        // #681: the bundled library catalogue is resolved BEFORE the API-key guard — it needs
+        // neither a key nor the network, and gating it on one would withhold the offline answer
+        // from exactly the users who have no other. Detached for the same reason the authority
+        // record is: it is a 3.1 MB decode the first time it is touched.
+        if case .presidentialLibrary(let library, let collection, _) = note {
+            let raw = rawSourceNote
+            libraryOutcome = await Task.detached(priority: .userInitiated) {
+                PresidentialLibraryOutcome.resolve(
+                    repository: library, collection: collection, note: raw)
+            }.value
+        }
+
         hasAPIKey = await client.hasAPIKey()
         guard hasAPIKey else { return }
         catalogEvidence = CatalogQueryEvidence.forNote(note)
@@ -1477,6 +1583,10 @@ struct SourceExplorerView: View {
             // For the other 1,961 documents the free-text query returns rows that are wrong by
             // construction, so no query is issued and the view says why.
             guard NARACustody.mayQueryCatalog(forRepository: library) else { return }
+            // #681: and where the bundled catalogue already resolved the citation, the live
+            // query is suppressed — unconstrained free-text rows shown beside a verified NARA
+            // collection cannot be told apart from it (owner decision 2026-08-06).
+            guard !libraryOutcome.suppressesLiveQuery else { return }
             await fetchResults {
                 try await client.searchByPresidentialMaterials(
                     library: library, collection: collection, maxResults: 3
