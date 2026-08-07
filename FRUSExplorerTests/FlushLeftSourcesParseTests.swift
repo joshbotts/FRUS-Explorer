@@ -361,3 +361,150 @@ struct FlushLeftSourcesFollowUpTests {
                 "parse output changed again without bumping currentDateIndexVersion")
     }
 }
+
+// MARK: - #668 follow-up 2: repository headings and the library route
+
+/// The owner's second report against the reindexed store: frus1952-54Guat's Eisenhower Library
+/// collections did not resolve, though the #681 harvest holds them.
+///
+/// Two independent gaps, both measured before either was written:
+///
+/// 1. **The repository never reached the rows that need it.** `repository` is inherited from
+///    ancestor *items* in a `<list>` outline; promoted paragraphs are all depth 0 with no
+///    ancestors, so only the row naming the library in its own text carried one. Measured over
+///    the reindexed store, **541 keyless promoted rows across 8 volumes** sit under a repository
+///    heading (frus1969-76ve13 266, v34 51, frus1981-88v10 50, frus1950-55Intel 50, …).
+/// 2. **`frontMatterResolution` never asked the library catalogue.** It consulted the lot index
+///    and the record-group headers and nothing else; the presidential-library bundle was wired
+///    into Source Explorer's document route in #710 and no further.
+///
+/// Version history:
+///   1.0 — Session 2026-08-07: #668 follow-up 2
+@Suite("Repository headings in a flat sources list (#668)")
+struct FlatSourcesRepositoryHeadingTests {
+
+    private func rows(_ front: String) async throws -> [VolumeSourceEntry] {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("frus668c-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("frus1952-54Guat.xml")
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>fixture</title></titleStmt>
+          <publicationStmt><date when="2003">2003</date></publicationStmt>
+          <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><front>
+        \(front)
+          </front><body></body></text>
+        </TEI>
+        """.write(to: url, atomically: true, encoding: .utf8)
+        return try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).volumeSources
+    }
+
+    /// frus1952-54Guat's unpublished list, reduced — two repository headings and their children.
+    private let guatShape = """
+    <div type="section" subtype="sources" xml:id="sources">
+      <head>Sources</head>
+      <p>Unpublished Sources</p>
+      <p rend="flushleft">Central Intelligence Agency, Langley, Virginia</p>
+      <p rend="flushleft">Guatemala Collection, Job 79–01025A</p>
+      <p rend="flushleft">Dwight D. Eisenhower Library, Abilene, Kansas</p>
+      <p rend="flushleft">John Foster Dulles Papers</p>
+      <p rend="flushleft">Ann Whitman File</p>
+      <p rend="flushleft">James C. Hagerty Papers</p>
+    </div>
+    """
+
+    @Test("A repository row becomes the heading for the rows after it")
+    func repositoryRowsBecomeHeadings() async throws {
+        let items = try await rows(guatShape).filter { $0.kind == .item }
+        #expect(items.map(\.isHeading) == [true, false, true, false, false, false],
+                Comment(rawValue: "headings: \(items.map { "\($0.rawText.prefix(24)):\($0.isHeading)" })"))
+        #expect(items.map(\.depth) == [0, 1, 0, 1, 1, 1],
+                Comment(rawValue: "depths: \(items.map(\.depth))"))
+    }
+
+    /// The point of the heading: its children inherit the repository, which is what a library
+    /// collection needs before it can resolve at all.
+    @Test("Children inherit their repository from the heading")
+    func childrenInheritTheRepository() async throws {
+        let items = try await rows(guatShape).filter { $0.kind == .item }
+        let dulles = try #require(items.first { $0.rawText == "John Foster Dulles Papers" })
+        #expect(dulles.repository == "Eisenhower Library",
+                Comment(rawValue: "got \(dulles.repository ?? "nil")"))
+        let guatemala = try #require(items.first { $0.rawText.hasPrefix("Guatemala Collection") })
+        #expect(guatemala.repository == "Central Intelligence Agency")
+    }
+
+    /// A lot-bearing row is a collection even when its text contains a repository keyword, or
+    /// every `Department of State … Files, Lot 57 D 688` row would become a heading and swallow
+    /// the lots after it.
+    @Test("A lot-bearing row is never a repository heading")
+    func lotRowsAreNotHeadings() async throws {
+        let items = try await rows("""
+        <div type="section" subtype="sources" xml:id="source">
+          <head>List of sources</head>
+          <p rend="flushleft">Department of State Atomic Energy Files, Lot 57 D 688</p>
+          <p rend="flushleft">PPS Files, Lot 64 D 563</p>
+        </div>
+        """).filter { $0.kind == .item }
+        #expect(items.allSatisfy { !$0.isHeading },
+                Comment(rawValue: "headings: \(items.map { "\($0.rawText.prefix(30)):\($0.isHeading)" })"))
+        #expect(items.allSatisfy { $0.depth == 0 })
+        #expect(items.last?.lotFileNorm == "64D563")
+    }
+
+    // MARK: - The library route
+
+    /// The two collections the owner's harvest holds, resolved through the **real** bundled
+    /// catalogue and the **real** matcher.
+    @Test("An Eisenhower Library collection resolves to its catalog record")
+    func libraryCollectionsResolve() async throws {
+        try #require(PresidentialLibraryIndexStore.shared != nil,
+                     "presidential-library-catalog.json must be bundled")
+        let dulles = try #require(ArchivalResolver.libraryResolution(
+            repository: "Eisenhower Library", entryText: "John Foster Dulles Papers"))
+        #expect(dulles.naId == "580942", Comment(rawValue: "got \(dulles.naId)"))
+        #expect(dulles.matchType == "library")
+
+        let hagerty = try #require(ArchivalResolver.libraryResolution(
+            repository: "Eisenhower Library", entryText: "James C. Hagerty Papers"))
+        #expect(hagerty.naId == "581740", Comment(rawValue: "got \(hagerty.naId)"))
+    }
+
+    /// **The trap this route exists to avoid.** `Ann Whitman File` is the common name for the
+    /// Eisenhower Papers as President; the catalogue separately holds `Ann C. Whitman Papers`
+    /// (NAID 643447), a different body of records. A looser title rule would hand a researcher
+    /// a real NARA record for the wrong papers — the worst defect class this project has.
+    @Test("Ann Whitman File does not resolve to Ann C. Whitman Papers")
+    func annWhitmanFileIsNotAnnWhitmanPapers() async throws {
+        let hit = ArchivalResolver.libraryResolution(
+            repository: "Eisenhower Library", entryText: "Ann Whitman File")
+        #expect(hit == nil, Comment(rawValue: "resolved to \(hit?.title ?? "-") (\(hit?.naId ?? "-"))"))
+    }
+
+    /// Without a repository the route cannot run, which is exactly why gap 1 had to be fixed
+    /// before gap 2 could pay off.
+    @Test("No repository, no library resolution")
+    func repositoryIsRequired() {
+        #expect(ArchivalResolver.libraryResolution(
+            repository: nil, entryText: "John Foster Dulles Papers") == nil)
+        #expect(ArchivalResolver.libraryResolution(
+            repository: "", entryText: "John Foster Dulles Papers") == nil)
+    }
+
+    /// End to end: the parse gives the row its repository, and the resolver turns it into a
+    /// catalog record. Neither half is useful alone.
+    @Test("A parsed front-matter row resolves through the front-matter entry point")
+    func endToEndFromParseToResolution() async throws {
+        let items = try await rows(guatShape).filter { $0.kind == .item }
+        let dulles = try #require(items.first { $0.rawText == "John Foster Dulles Papers" })
+        let resolution = ArchivalResolver.frontMatterResolution(
+            recordGroup: dulles.recordGroup, lotFile: dulles.lotFile,
+            entryText: dulles.rawText, repository: dulles.repository)
+        #expect(resolution?.naId == "580942",
+                Comment(rawValue: "got \(resolution?.naId ?? "nil")"))
+    }
+}
