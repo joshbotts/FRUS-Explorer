@@ -1802,11 +1802,38 @@ public struct SourceNoteParser {
     /// 1952–1954 encoding). The gate is a library-name *lead*: the text before the
     /// keyword must be short (≤ 40 characters) and comma-free, so a library merely
     /// mentioned inside a comma list or later prose never triggers.
+    /// Whether the text before a library keyword *asserts the document's provenance* rather
+    /// than merely running on (#353).
+    ///
+    /// The lead gate exists to stop a library mentioned deep in prose from claiming a note, and
+    /// it works by length: 40 characters, comma-free. The WWII-era volumes defeat it with an
+    /// idiom that is the opposite of incidental —
+    ///
+    /// ```
+    /// Copy of telegram obtained from the Franklin D. Roosevelt Library.
+    /// Photostatic copy obtained from the Franklin D. Roosevelt Library.
+    /// ```
+    ///
+    /// — where the prefix runs to 47 characters and every one of them says *this is where the
+    /// document came from*. `obtained from` is what distinguishes it: #714 already had to tell
+    /// that idiom apart from `a copy is in the … Library`, which names a duplicate, and refuses
+    /// to strip it for exactly this reason. That exception had **zero traffic** until now,
+    /// because these notes are bare and never reached the function it guards.
+    ///
+    /// The window after the idiom is bounded so the exception cannot become a general licence:
+    /// only a repository's own name may stand between `obtained from` and the keyword.
+    static func assertsProvenance(_ prefix: Substring) -> Bool {
+        guard let idiom = prefix.range(of: #"(?i)\bobtained\s+from\b"#,
+                                       options: .regularExpression) else { return false }
+        return prefix[idiom.upperBound...].count <= 30
+    }
+
     private func tryLibraryLeadNote(_ text: String) -> ParsedSourceNote? {
         for keyword in Self.libraryKeywords {
             guard let range = text.range(of: keyword, options: .caseInsensitive) else { continue }
             let prefix = text[..<range.lowerBound]
-            guard prefix.count <= 40, !prefix.contains(",") else { continue }
+            guard prefix.count <= 40 || Self.assertsProvenance(prefix),
+                  !prefix.contains(",") else { continue }
             return tryPresidentialLibrary(text) ?? tryManuscriptRepositoryLead(text)
         }
         return tryManuscriptRepositoryLead(text)
