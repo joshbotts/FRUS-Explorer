@@ -649,7 +649,12 @@ public actor IndexingPipeline {
     ///   running through frus1918Supp02; the capture after the label requires a digit, and the
     ///   second `No.` is not one, so **146 documents** never reached the decimal grammars at
     ///   all. The label group now admits one or two repetitions.
-    public static let currentDateIndexVersion: Int = 31
+    /// - v32 — #353: the decimal file's post-name subdivision, and a document-type tail other
+    ///   than `Telegram`. `102.8951 Rio de Janeiro: Airgram` is a class plus the post it
+    ///   subdivides by, with no `/item` at all; `decimalNoItemRegex` required the note to end
+    ///   at the class and admitted only `: Telegram` after it. **101 documents**, 0 lost. The
+    ///   `$` anchor is what keeps the widening safe: the whole note must be the citation.
+    public static let currentDateIndexVersion: Int = 32
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

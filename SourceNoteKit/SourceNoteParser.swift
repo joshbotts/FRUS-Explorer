@@ -1096,7 +1096,7 @@ public struct SourceNoteParser {
     /// class with an optional `: Telegram` suffix (`102.8951: Telegram`,
     /// `103.9151: Telegram`). Anchored to the full note.
     private static let decimalNoItemRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.]*?)\.?\s*(?::\s*Telegram)?\.?\s*$"#,
+        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.]*?(?:\s[A-Z][^/:;"“”]{0,40}?)?)\.?\s*(?::\s*[A-Z][a-z]{2,14})?\.?\s*$"#,
         options: []
     )
 
