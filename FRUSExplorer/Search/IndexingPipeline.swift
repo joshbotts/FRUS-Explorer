@@ -682,7 +682,13 @@ public actor IndexingPipeline {
     ///   the list, so flushleft now blocks the exit. (2) `VolumeSourceEntry.note` carries the
     ///   description paragraph that belongs to a promoted collection, instead of leaving it a
     ///   separate `.prose` row the browser files under a different heading.
-    public static let currentDateIndexVersion: Int = 35
+        /// - v36 — #668 follow-up 2: a flat paragraph list's **repository heading**. A promoted
+    ///   row naming a repository and no lot is the heading for the rows after it — measured,
+    ///   **541 keyless rows across 8 volumes** sat under one with no repository of their own,
+    ///   which is why frus1952-54Guat's `John Foster Dulles Papers` could not resolve against
+    ///   the presidential-library catalogue. The heading now takes depth 0 and its children
+    ///   depth 1, inheriting through `makeItemEntry`'s existing `ancestorTexts` channel.
+    public static let currentDateIndexVersion: Int = 36
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

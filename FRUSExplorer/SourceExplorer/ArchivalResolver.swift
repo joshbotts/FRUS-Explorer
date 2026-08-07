@@ -85,11 +85,22 @@ enum ArchivalResolver {
     static func frontMatterResolution(recordGroup: String?,
                                       lotFile: String?,
                                       entryText: String,
+                                      repository: String? = nil,
                                       centralFiles: CentralFilesIndex?,
                                       volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
         if let lotHit = lotResolution(lotFile, centralFiles, volumeSources) { return lotHit }
         guard (lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty else {
             return nil   // the lot-only rule
+        }
+        // #668: a presidential-library collection, from the catalogue #681 harvested. This
+        // surface never asked it — the bundle was wired into Source Explorer's *document*
+        // route in #710 and nowhere else — so `John Foster Dulles Papers` and `James C.
+        // Hagerty Papers` sat unresolved under `Dwight D. Eisenhower Library` while their
+        // records (NAIDs 580942 and 581740) were sitting in the shipped bundle. Tried before
+        // the record-group branch because it answers the row itself, where that branch answers
+        // the record group the row sits in.
+        if let libraryHit = libraryResolution(repository: repository, entryText: entryText) {
+            return libraryHit
         }
         // The row must NAME the record group, not merely sit under one. `volume_sources`
         // stores the inherited value on every descendant, so without this a descriptive line
@@ -100,6 +111,34 @@ enum ArchivalResolver {
               CollectionKeying.bareRG(named) == stored
         else { return nil }
         return volumeSources?.resolution(recordGroup: stored, lotFile: nil)
+    }
+
+    /// The bundled presidential-library catalogue's answer for a front-matter row, or `nil`.
+    ///
+    /// Routed through `PresidentialLibraryIndex.match`, the same matcher #710 uses, rather
+    /// than a title comparison written here — and the reason is a real case in the corpus.
+    /// frus1952-54Guat cites `Ann Whitman File`, the common name for the Eisenhower Papers as
+    /// President; the catalogue separately holds `Ann C. Whitman Papers`, a different body of
+    /// records. `titlesAgree` requires equality after normalisation or a segment-boundary tail
+    /// match, so it refuses that pair — and a looser rule written for this surface would have
+    /// handed a researcher a real NARA record for the wrong papers.
+    ///
+    /// Only a **collection-level** hit resolves. The row names a collection, so a series
+    /// candidate list is not an answer to it, and `match` returns `.none` when more than one
+    /// collection answers to the name.
+    static func libraryResolution(repository: String?, entryText: String,
+                                  index: PresidentialLibraryIndex?
+                                    = PresidentialLibraryIndexStore.shared) -> ArchivalResolution? {
+        guard let index, let repository, !repository.isEmpty,
+              case .collection(let hit, _) = index.match(repository: repository,
+                                                         collection: entryText, series: nil),
+              let url = hit.catalogURL
+        else { return nil }
+        return ArchivalResolution(naId: String(hit.naId), catalogURL: url.absoluteString,
+                                  title: hit.title, recordGroup: nil, matchType: "library",
+                                  hmsMlrEntryNumbers: nil, levelOfDescription: "collection",
+                                  seriesNaId: nil, seriesTitle: nil,
+                                  seriesHmsMlrEntryNumbers: nil)
     }
 
     /// The resolution for a **document's own source citation**: its lot, and nothing else.
@@ -144,8 +183,10 @@ enum ArchivalResolver {
     /// ``frontMatterResolution(recordGroup:lotFile:centralFiles:volumeSources:)`` against the
     /// app's bundled indexes.
     static func frontMatterResolution(recordGroup: String?, lotFile: String?,
-                                      entryText: String) -> ArchivalResolution? {
+                                      entryText: String,
+                                      repository: String? = nil) -> ArchivalResolution? {
         frontMatterResolution(recordGroup: recordGroup, lotFile: lotFile, entryText: entryText,
+                              repository: repository,
                               centralFiles: CentralFilesIndexStore.shared,
                               volumeSources: VolumeSourcesIndexStore.shared)
     }

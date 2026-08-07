@@ -135,13 +135,26 @@ struct VolumeSourcesView: View {
     @Binding var collectionDetailTarget: AuthorityCollectionRecord?
 
     /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
-    private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
+    /// Narrative rows, each paired with its **position in `sources`** — a globally unique
+    /// identity, which index-within-the-filtered-array is not.
+    ///
+    /// #668: both this section and the bibliography section used to key their `ForEach` on the
+    /// filtered array's own offset, so prose claimed ids 0…7 and published works claimed 0…39
+    /// inside one `List`. Where SwiftUI collapsed those identities a published row rendered the
+    /// prose row that shared its id: frus1950v07 showed its eight narrative paragraphs a second
+    /// time under "Published Sources", with the real book list resuming at the first id no
+    /// prose row had claimed. Positions in `sources` never collide across the three sections.
+    private var proseEntries: [(offset: Int, entry: VolumeSourceEntry)] {
+        sources.enumerated().compactMap { $0.element.kind == .prose ? ($0.offset, $0.element) : nil }
+    }
 
     /// Published-works bibliography rows (a `Published Sources` pseudo-heading
     /// subtree, a published-sources section, or `listofworks`), shown as plain rows —
     /// deliberately without neighbor or catalog affordances (they cite books, not
     /// archival collections; audit §2.3 counted 2,634 masquerading as resolvable).
-    private var bibliographyEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .bibliography } }
+    private var bibliographyEntries: [(offset: Int, entry: VolumeSourceEntry)] {
+        sources.enumerated().compactMap { $0.element.kind == .bibliography ? ($0.offset, $0.element) : nil }
+    }
 
     /// The archival-collection outline, built **once** in `loadSources`. It must be stored
     /// (not recomputed per render): `SourceTreeNode` ids are `UUID`s, so rebuilding the tree
@@ -200,7 +213,7 @@ struct VolumeSourcesView: View {
                 if !proseEntries.isEmpty {
                     Section(header: Text(String(localized: "browser.sources.about.header",
                                                 defaultValue: "About These Sources"))) {
-                        ForEach(Array(proseEntries.enumerated()), id: \.offset) { _, entry in
+                        ForEach(proseEntries, id: \.offset) { _, entry in
                             Text(entry.rawText)
                                 .font(.callout)
                                 .textSelection(.enabled)
@@ -247,7 +260,7 @@ struct VolumeSourcesView: View {
                     // no neighbor or catalog affordance can ever attach to them.
                     Section(header: Text(String(localized: "browser.sources.bibliography.header",
                                                 defaultValue: "Published Sources"))) {
-                        ForEach(Array(bibliographyEntries.enumerated()), id: \.offset) { _, entry in
+                        ForEach(bibliographyEntries, id: \.offset) { _, entry in
                             Text(entry.rawText)
                                 .font(.callout)
                                 .textSelection(.enabled)
@@ -319,7 +332,8 @@ struct VolumeSourcesView: View {
         // central-files (98 nodes here), 7 only in volume-sources, so the precedence is a
         // fallback rather than a swap. `ArchivalResolver` owns the rule for both surfaces.
         let resolution = ArchivalResolver.frontMatterResolution(
-            recordGroup: entry.recordGroup, lotFile: entry.lotFile, entryText: entry.rawText)
+            recordGroup: entry.recordGroup, lotFile: entry.lotFile, entryText: entry.rawText,
+            repository: entry.repository)
         // Phase 4: the collection-authority record this row resolves to, via the
         // shared front-matter identity derivation (lot key, else repository-scoped
         // leading segment, else unambiguous alias).

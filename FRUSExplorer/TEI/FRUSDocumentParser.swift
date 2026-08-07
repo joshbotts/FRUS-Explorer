@@ -2146,6 +2146,18 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         guard !sawItemRow, !flushLeftOrders.isEmpty else { return }
         collected.sort { $0.order < $1.order }
         var absorbed = Set<Int>()
+        // #668 follow-up: in a flat paragraph list, a row that names a **repository and no
+        // lot** is the heading for the rows after it — `Dwight D. Eisenhower Library, Abilene,
+        // Kansas` followed by `John Foster Dulles Papers`, `Ann Whitman File`, `James C.
+        // Hagerty Papers`. Those three carried no repository at all, and a library collection
+        // cannot be resolved without knowing whose library it is: measured over the reindexed
+        // store, **541 keyless promoted rows across 8 volumes** sit under such a heading.
+        //
+        // The inheritance rides `makeItemEntry`'s existing `ancestorTexts` channel, the same
+        // one the `<list>`/`<item>` outlines use, so both encodings derive the repository the
+        // same way. The heading also takes depth 0 and its children depth 1, which is what
+        // lets `buildTree` render the grouping the volume actually describes.
+        var repositoryHeading: String?
         for index in collected.indices where flushLeftOrders.contains(collected[index].order) {
             let row = collected[index].entry
             guard row.kind == .prose, !Self.isSectionTitle(row.rawText) else { continue }
@@ -2161,9 +2173,19 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 description = collected[next].entry.rawText
                 absorbed.insert(collected[next].order)
             }
-            collected[index].entry = Self.makeItemEntry(text: row.rawText, depth: 0,
-                                                        isHeading: false, ancestorTexts: [])
-                .withNote(description)
+            // A repository named without a lot is a heading; a lot-bearing row is a collection
+            // even when its text happens to contain a repository keyword (`Department of State
+            // Atomic Energy Files, Lot 57 D 688`).
+            let namesRepository = Self.extractRepository(from: row.rawText) != nil
+                && SourceNoteParser.firstLotReference(in: row.rawText) == nil
+            if namesRepository { repositoryHeading = row.rawText }
+            let isChild = !namesRepository && repositoryHeading != nil
+            collected[index].entry = Self.makeItemEntry(
+                text: row.rawText,
+                depth: isChild ? 1 : 0,
+                isHeading: namesRepository,
+                ancestorTexts: isChild ? [repositoryHeading!] : []
+            ).withNote(description)
         }
         if !absorbed.isEmpty {
             collected.removeAll { absorbed.contains($0.order) }
