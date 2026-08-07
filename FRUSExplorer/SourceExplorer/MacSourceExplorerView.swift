@@ -534,6 +534,13 @@ struct MacSourceExplorerView: View {
                         } icon: {
                             Image(systemName: "building.columns").foregroundStyle(.secondary)
                         }
+                        // #354 item 4: mirrors the iOS `repositoryGuidanceRows`. Saying the
+                        // National Archives cannot help is only half an answer — 565 of these
+                        // documents reached no curated finding aid either.
+                        if let guidance = ManuscriptRepositoryGuidance
+                            .guidance(forRepository: library) {
+                            repositoryGuidanceRows(guidance)
+                        }
                     }
 
                 case .foreignGovernmentArchive(let desc):
@@ -1642,6 +1649,43 @@ struct MacSourceExplorerView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Manuscript Repository Guidance
+
+    /// The rows naming the repository that actually holds these records (#354 item 4).
+    ///
+    /// Mirrors `SourceExplorerView.repositoryGuidanceRows`, reading the same
+    /// `ManuscriptRepositoryGuidance` entry and wording so the two platforms cannot state
+    /// different things about the same institution.
+    @ViewBuilder
+    private func repositoryGuidanceRows(_ guidance: ManuscriptRepositoryGuidance.Entry) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(guidance.name)
+                .font(.callout.weight(.medium))
+                .textSelection(.enabled)
+            // A renamed repository is the single most useful thing here: the citation's own
+            // spelling finds nothing at the institution that now holds the records.
+            if let formerName = guidance.formerName {
+                Text("\(ManuscriptRepositoryGuidance.citedAsLabel): \(formerName)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            Text(guidance.holdings)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let url = guidance.url {
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(ManuscriptRepositoryGuidance.linkLabel(guidance),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+            }
+        }
+        .padding(.top, 2)
     }
 
     // MARK: - Paris Peace Conference Box
