@@ -13,7 +13,9 @@
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
         "naId": null,
         "rationale": "The whole Records of the Office of the National Security Advisor, 775 linear feet — what an unqualified 'National Security Affairs' citation names. The library's own finding aid states the records 'were kept in two large sub-collections given the titles \"Brzezinski Material\" and \"Staff Material\"', which is why the two branches below share this aid."
-      }
+      },
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -29,7 +31,9 @@
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
         "naId": null,
         "rationale": "Series NSA 1–16 of the collection. NARA assigns identifiers to the parent collection (560131) and to each of the 32 series, but to no intermediate sub-collection, so this level carries no NAID of its own. The aliases are spellings the corpus actually prints."
-      }
+      },
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -43,7 +47,9 @@
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
         "naId": null,
         "rationale": "Series NSA 17–32 of the same collection. The library publishes no separate Staff Material aid, so this collection-level aid — whose own title names both branches — is the most precise honest target."
-      }
+      },
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -55,7 +61,9 @@
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
         "naId": "560164",
         "rationale": "Series NSA 15, containers 1–127. Identified by its sub-series rather than by name: the scope note reads 'divided into a Country Chron File and a Subject Chron File', and the corpus cites exactly those two. NSA 17 is also titled 'Office Files' but contains neither, so the 'Brzezinski' qualifier is decisive. The linked page is the collection aid; NARA publishes the series identifier in the PDF."
-      }
+      },
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -67,7 +75,9 @@
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/national-security-advisor-brzezinski-and-staff-material",
         "naId": "560184",
         "rationale": "Series NSA 24, an exact match to the citation segment. The library publishes no per-series page, so the link is the collection aid."
-      }
+      },
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Carter Library",
@@ -79,7 +89,9 @@
         "url": "https://www.jimmycarterlibrary.gov/research/archives/finding-aids/brzezinski-zbigniew",
         "naId": "1104",
         "rationale": "A DIFFERENT collection from the NSA Brzezinski Material despite the similar name: accession 92-03 under Brzezinski's own 1992 instrument of gift, against the NSA collection's accession 80-1 under Carter's 1981 gift. The NSA finding aid lists it separately as related material held in the same repository."
-      }
+      },
+      "collectionIdentifier": "JC-NSA",
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -93,7 +105,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms016034",
         "naId": null,
         "rationale": "Part I covers Kissinger's service as National Security Adviser 1969–1975 and Secretary of State 1973–1977, in 26 series spanning 1957–1982 — the FRUS era. Part II is at Yale and is distinguishable by its citations; the corpus contains none. Library of Congress collections carry no NARA identifier."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -105,7 +119,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms003012",
         "naId": null,
         "rationale": "W. Averell Harriman (1891–1986), 346,760 items. Not Pamela Harriman (1920–1997) or Florence Jaffray Harriman (1870–1967), both of whom the Library also holds."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -119,7 +135,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms011082",
         "naId": null,
         "rationale": "Alexander Meigs Haig, Jr. (1924–2010), 161,000 items. Not the Douglas Haig, Earl (1861–1928) papers the Library also holds."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -133,7 +151,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms013143",
         "naId": null,
         "rationale": "James R. Schlesinger, Secretary of Defense and Secretary of Energy — not Arthur M. Schlesinger, Jr., whose papers FRUS cites at the Kennedy Library under a separate row."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -145,7 +165,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms011107",
         "naId": null,
         "rationale": "Caspar W. Weinberger, Secretary of Defense 1981–1987."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -157,7 +179,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms010302",
         "naId": null,
         "rationale": "Elliot L. Richardson, Secretary of Defense, Attorney General and Secretary of Commerce."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -169,7 +193,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms001027",
         "naId": null,
         "rationale": "Paul H. Nitze, Policy Planning Staff director and arms-control negotiator."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Library of Congress",
@@ -181,7 +207,9 @@
         "url": "https://hdl.loc.gov/loc.mss/eadmss.ms008125",
         "naId": null,
         "rationale": "Sol M. Linowitz, Panama Canal treaty negotiator and Middle East envoy."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -193,7 +221,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-country-file-records-1981-1985",
         "naId": null,
         "rationale": "A subseries of the NSC Executive Secretariat's Presidential Acquisitions series, arranged in five geographical regions."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -207,7 +237,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-head-state-file-records-1981-1989",
         "naId": null,
         "rationale": "Correspondence between the President and world leaders, arranged by country then chronologically."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -219,7 +251,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-cable-file-records-1982-1985",
         "naId": null,
         "rationale": "The aid's span (1982–1985) is narrower than the volumes' coverage; some box inventories show only a range of material."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -231,7 +265,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-subject-file-records-1981-1985",
         "naId": null,
         "rationale": "Three series: Memorandum File, Correspondence File, and Cabinet/Cabinet Council Meeting File."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -243,7 +279,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-agency-file-records-1981-1985",
         "naId": null,
         "rationale": "Records on specific Executive-branch agencies, including the Secretary of State's evening reports and the Secretary of Defense's weekly briefings."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -255,7 +293,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-trip-files-records-1981-1989",
         "naId": null,
         "rationale": "Two series: Chronological Trip File and Summit File. The aid titles it plural; the citations write it singular."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -274,7 +314,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-decision-directives-nsdd-records",
         "naId": null,
         "rationale": "The Executive Secretariat's centralized NSDD material — drafts, action plans and background memoranda as well as the directives."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -291,7 +333,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-nsc-meeting-files-records-1981-1988",
         "naId": null,
         "rationale": "Copies of material the NSC retained in Washington."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -306,7 +350,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-planning-group-nspg-records-1981",
         "naId": null,
         "rationale": "Duplicates of originals that remained at the White House; the Library expects the originals in due course."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -320,7 +366,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-study-directives-nssd-records",
         "naId": null,
         "rationale": "National Security Study Directives — the policy studies commissioned by Senior Interagency Groups, the NSC staff or the National Security Adviser."
-      }
+      },
+      "collectionIdentifier": "RR-EXSEC",
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -332,7 +380,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/presidents-office-files-white-house-special-files-staff-member-and-office-files",
         "naId": "876218",
         "rationale": "NARA series 876218. Not the Returned Materials Collection, whose own 'White House Special Files' pages describe personal material returned to the Nixon estate — a different body of records from the one these citations name."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -344,7 +394,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/presidents-personal-file-white-house-special-files-staff-member-and-office-files",
         "naId": "595291",
         "rationale": "NARA series 595291, whose own title is the plural 'President's Personal Files' the citations use; the library titles the aid singular. 18 sub-series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -356,7 +408,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/subject-files-white-house-special-files",
         "naId": null,
         "rationale": "No NARA series record corresponds to this unit — searched at series level several ways — so the absence of an identifier here is a finding, not an omission."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -368,7 +422,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/staff-secretary-white-house-special-files-staff-member-and-office-files",
         "naId": "6004162",
         "rationale": "NARA series 6004162, titled 'Staff Secretary's Files' as the citations write it; the library titles the aid simply 'Staff Secretary'. Its five series match the aid's."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -380,7 +436,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-national-security-planning-group-nspg-records-1981",
         "naId": null,
         "rationale": "Same series as the NSPG sub-collection entry. The citation punctuates the level-1 segment differently, so it keys separately in the authority."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Reagan Library",
@@ -392,7 +450,9 @@
         "url": "https://www.reaganlibrary.gov/research/finding-aids/executive-secretariat-nsc-head-state-file-records-1981-1989",
         "naId": null,
         "rationale": "Same series as the NSC Head of State File entry, reached through a differently punctuated level-1 segment."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -410,7 +470,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-memoranda-conversations-1973-1977",
         "naId": null,
         "rationale": "The single largest Ford series in FRUS. The library titles it in the plural; the corpus writes both numbers, and abbreviates it \"Memcons\"."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -426,7 +488,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-kissinger-scowcroft-west-wing-office",
         "naId": null,
         "rationale": "The office files Kissinger and Scowcroft kept in the West Wing, as distinct from the NSC staff files. The corpus joins the two names with a hyphen, an en dash, a slash and the word \"and\"."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -440,7 +504,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-east-asia",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -454,7 +520,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-europe-and",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -471,7 +539,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-kissinger-reports-ussr-china-and",
         "naId": null,
         "rationale": "The series name contains commas, so the citation splits and only \"Kissinger Reports on USSR\" reaches the matcher — the stored segment is that head, which is unambiguous inside this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -489,7 +559,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-middle-east",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -501,7 +573,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-presidential-subject-file-1974-1977",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -515,7 +589,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-backchannel-messages-1974-77",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -530,7 +606,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-africa-1974",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -544,7 +622,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-agency-file-1974-1977",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -559,7 +639,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-program-analysis-staff-files-1969",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -575,7 +657,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-national-security-council-meetings",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -591,7 +675,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-europe-canada-and-ocean-affairs",
         "naId": null,
         "rationale": "Another comma-bearing series name: the corpus writes \"NSC Europe, Canada, and Ocean Affairs Staff\" and \"NSC Staff for Europe, Canada, and Ocean Affairs\", both of which split at the first comma. The stored segments are those heads."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -610,7 +696,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-trip-briefing-books-and-cables-henry",
         "naId": null,
         "rationale": "The corpus writes \"of\", \"for\", with and without \"and Cables\", and abbreviates Kissinger to HAK."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -624,7 +712,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-presidential-correspondence-foreign",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -639,7 +729,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
         "naId": null,
         "rationale": "The library files these under the NSC as an institution rather than under the National Security Adviser; the corpus cites them through the adviser's papers and calls them the H-Files."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -653,7 +745,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-latin-american-affairs-staff-files",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -667,7 +761,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-files-nsc-logged",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -681,7 +777,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-country-files-latin",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -697,7 +795,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-east-asian-and-pacific-affairs",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -711,7 +811,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-outside-system-chronological-file-1974",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -725,7 +827,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-international-economic-affairs-staff",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -739,7 +843,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-trip-briefing-books-and-cables",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -751,7 +857,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-name-file-1974-77",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -778,7 +886,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser",
         "naId": null,
         "rationale": "One aid covers both memoranda series (Box 1 NSDMs, Box 2 NSSMs). The corpus names them in either order, spelled out or abbreviated."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -802,7 +912,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-middle-east-and-south-asian",
         "naId": null,
         "rationale": "The corpus calls this staff the Middle East and South Asian Affairs Staff, the Operations Staff, and the NSC Staff for the region, and cites its convenience files under the same names."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -816,7 +928,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-presidential-briefing-material-vip",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -828,7 +942,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-presidential-transition-file-1974",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -840,7 +956,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-staff-assistant-john-k-matheny-files",
         "naId": null,
         "rationale": "Reachable only because the middle-initial truncation is repaired before matching — the citation sentence otherwise ends at \"John K.\"."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -852,7 +970,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-staff-assistant-robert-c-bud-mcfarlane",
         "naId": null,
         "rationale": "Reachable only because the middle-initial truncation is repaired before matching — the citation sentence otherwise ends at \"Robert C.\"."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -867,7 +987,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-staff-assistant-peter-w-rodman-files",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -879,7 +1001,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser-legislative-interdepartmental-group",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -893,7 +1017,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-advisor-nsc-staff-secretary-files-1973-1974-77",
         "naId": null,
         "rationale": "The library's own finding aid for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -905,7 +1031,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
         "naId": null,
         "rationale": "The same NSC institutional records the adviser's files point to, cited without the adviser level — FRUS writes them as the H-Files. Parenthesised and unparenthesised spellings key differently, so each gets its own entry."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -917,7 +1045,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
         "naId": null,
         "rationale": "The same NSC institutional records the adviser's files point to, cited without the adviser level — FRUS writes them as the H-Files. Parenthesised and unparenthesised spellings key differently, so each gets its own entry."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -936,7 +1066,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
         "naId": null,
         "rationale": "Sub-keyed deliberately: \"National Security Council\" alone is a body, not a collection, so an unrecognised sub-collection under it must resolve to nothing rather than to these files. The corpus subdivides the series with an em dash (NSDMs, NSSMs, Meetings); all three are subseries of the same Institutional Files."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -951,7 +1083,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/us-national-security-council-institutional-files-1969-1974-77",
         "naId": null,
         "rationale": "\"NSC Files\" is a level rather than a series — as with the Nixon Staff Member and Office Files, only the named sub-collection gets an answer."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -963,7 +1097,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/national-security-adviser",
         "naId": null,
         "rationale": "The same reference file the adviser's papers carry, cited as a collection in its own right."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Ford Library",
@@ -975,7 +1111,9 @@
         "url": "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids/provenance-ford-national-security-adviser-files",
         "naId": null,
         "rationale": "The collection-level answer for a citation that names no series, and the fallback for the few series the library has not published an aid for (notably the Scowcroft Daily Work Files). It is the library's own account of how these records were assembled — \"Numerous subcollections comprise what Ford Library archivists have chosen to call collectively the 'National Security Adviser Files'\" — so it is an overview rather than a box list. Ford publishes one; Nixon does not for the White House Special Files, which is why that row has no collection-wide entry."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -987,7 +1125,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-files",
         "naId": null,
         "rationale": "The collection-level list of all 28 series with their box ranges — the answer for a citation naming a series the library has not published a separate list for. That is not a small residue: `Country Files` (1,697 documents) is split by region in the archive but cited without one, so the box range on this page is what identifies which regional list to open; `Agency Files` (506, boxes 193–306) and the Backchannel files (130) have no list of their own."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1005,7 +1145,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-institutional-files-h-files",
         "naId": null,
         "rationale": "The H-Files — 105 feet, boxes H-1 to H-315. Nixon's are a different series from the Ford and Carter institutional files of the same name; this entry is reachable only from a Nixon citation."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1021,7 +1163,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/henry-kissinger-hak-office-files",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1033,7 +1177,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/subject_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1048,7 +1194,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidents_trip_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1063,7 +1211,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_europe.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1077,7 +1227,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_middle_east.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1091,7 +1243,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_africa.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1105,7 +1259,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/2018-08/country_files_far_east.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1122,7 +1278,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidents_files_winston_lord_china_trip_vietnam.pdf",
         "naId": null,
         "rationale": "Boxes 846–872. Distinct from `For the President's Files – China/Vietnam Negotiations` (1031–1041), which has its own list."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1136,7 +1294,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidents_files_china_vietnam_negotiations.pdf",
         "naId": null,
         "rationale": "Boxes 1031–1041."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1151,7 +1311,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/saunders_files_middle_east_negotiations_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1165,7 +1327,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/vietnam_subject_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1177,7 +1341,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/vietnam_country_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1189,7 +1355,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/vip_visits.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1204,7 +1372,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidential_correspondence_1969_1974.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1216,7 +1386,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/salt.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1228,7 +1400,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/name_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1242,7 +1416,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/paris_talks_meetings.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1260,7 +1436,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/presidential_hak_memcons.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1274,7 +1452,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/haig_special_file.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1289,7 +1469,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/haig_chronological_files.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1301,7 +1483,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/indo_pak_war.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1316,7 +1500,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/abm_mirv.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1330,7 +1516,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1344,7 +1532,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/cambodian_operations_1970.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1356,7 +1546,9 @@
         "url": "https://www.nixonlibrary.gov/sites/default/files/forresearchers/find/textual/files/pentagon_papers.pdf",
         "naId": null,
         "rationale": "The library's own box-and-folder list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1368,7 +1560,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-institutional-files-h-files",
         "naId": null,
         "rationale": "Cited without the NSC Files level."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1380,7 +1574,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/national-security-council-institutional-files-h-files",
         "naId": null,
         "rationale": "Cited without the NSC Files level."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1392,7 +1588,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/henry-kissinger-hak-office-files",
         "naId": null,
         "rationale": "Cited without the NSC Files level."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1404,7 +1602,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
         "naId": null,
         "rationale": "The Telcons, cited as a collection in their own right. Curated at the collection level because the segment after the box is a folder title (Chronological File, Dobrynin File, Home File), not a series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1416,7 +1616,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
         "naId": null,
         "rationale": "As above."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Nixon",
@@ -1428,7 +1630,9 @@
         "url": "https://www.nixonlibrary.gov/finding-aids/kissinger-telephone-conversation-transcripts",
         "naId": null,
         "rationale": "As above."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1440,7 +1644,9 @@
         "url": "https://discoverlbj.org/loh/pres/nsf",
         "naId": "567979",
         "rationale": "The collection-level page, listing all 42 series with their extents — the answer for a citation naming a series the library files elsewhere or does not itemise, such as the `Aides File` (22 documents), whose staff files ARE the NSF's own per-person series. It carries the collection's NARA identifier, so these rows also reach the catalogue."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1454,7 +1660,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-co",
         "naId": null,
         "rationale": "2,015 documents — 41% of the Johnson corpus in one series. The archive divides it into seven regional subseries, but FRUS cites it undivided, so the series-wide list is the right grain."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1471,7 +1679,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-memos",
         "naId": null,
         "rationale": "The corpus appends the adviser's name with three different dashes; all are the one series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1483,7 +1693,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-subject",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12006886
     },
     {
       "repository": "Johnson Library",
@@ -1495,7 +1707,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-agency",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 4734742
     },
     {
       "repository": "Johnson Library",
@@ -1507,7 +1721,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-name",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16575543
     },
     {
       "repository": "Johnson Library",
@@ -1519,7 +1735,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-intel",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12093071
     },
     {
       "repository": "Johnson Library",
@@ -1534,7 +1752,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-cf-vn",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 591194
     },
     {
       "repository": "Johnson Library",
@@ -1550,7 +1770,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-rostow",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12021213
     },
     {
       "repository": "Johnson Library",
@@ -1567,7 +1789,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-nsch",
         "naId": null,
         "rationale": "The March 31st Speech history is one of the histories in this series, not a series of its own."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1582,7 +1806,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-shosc",
         "naId": "7763260",
         "rationale": "Kept separately by White House Staff Assistant Dorothy Territo rather than by the NSC, and the library publishes its own NARA identifier for it."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7763260
     },
     {
       "repository": "Johnson Library",
@@ -1598,7 +1824,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-nscmtg",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7624433
     },
     {
       "repository": "Johnson Library",
@@ -1613,7 +1841,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-hosc",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12008318
     },
     {
       "repository": "Johnson Library",
@@ -1630,7 +1860,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-komer",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12009321
     },
     {
       "repository": "Johnson Library",
@@ -1644,7 +1876,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-kl",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12010023
     },
     {
       "repository": "Johnson Library",
@@ -1661,7 +1895,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-scnsc",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7369107
     },
     {
       "repository": "Johnson Library",
@@ -1673,7 +1909,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-imt",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12007725
     },
     {
       "repository": "Johnson Library",
@@ -1687,7 +1925,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-cej",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12013717
     },
     {
       "repository": "Johnson Library",
@@ -1703,7 +1943,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-nsams",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12075320
     },
     {
       "repository": "Johnson Library",
@@ -1718,7 +1960,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-bundy",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12032296
     },
     {
       "repository": "Johnson Library",
@@ -1735,7 +1979,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-saunders",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12008959
     },
     {
       "repository": "Johnson Library",
@@ -1749,7 +1995,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-hamilton",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16601872
     },
     {
       "repository": "Johnson Library",
@@ -1761,7 +2009,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-nies",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16568320
     },
     {
       "repository": "Johnson Library",
@@ -1775,7 +2025,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-haynes",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 7260916
     },
     {
       "repository": "Johnson Library",
@@ -1789,7 +2041,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-chase",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 23806510
     },
     {
       "repository": "Johnson Library",
@@ -1801,7 +2055,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-committee",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12008350
     },
     {
       "repository": "Johnson Library",
@@ -1815,7 +2071,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-fried",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1829,7 +2087,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-klein",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 148893512
     },
     {
       "repository": "Johnson Library",
@@ -1843,7 +2103,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-jorden",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 2679432
     },
     {
       "repository": "Johnson Library",
@@ -1857,7 +2119,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-smith",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1869,7 +2133,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-sitroom",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12093084
     },
     {
       "repository": "Johnson Library",
@@ -1881,7 +2147,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-speech",
         "naId": null,
         "rationale": "The library's own folder title list — the box-and-folder inventory for this series."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 12165928
     },
     {
       "repository": "Johnson Library",
@@ -1895,7 +2163,9 @@
         "url": "https://discoverlbj.org/item/ftl-nsf-bator",
         "naId": null,
         "rationale": "The NSF series. Distinct from the separately deposited Papers of Francis M. Bator, which the corpus also cites and which is not curated here."
-      }
+      },
+      "collectionIdentifier": "LBJ-NSF",
+      "seriesNaId": 16567623
     },
     {
       "repository": "Johnson Library",
@@ -1907,7 +2177,9 @@
         "url": "https://discoverlbj.org/loh/pres/nsf",
         "naId": "567979",
         "rationale": "The collection under its abbreviation."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1919,7 +2191,9 @@
         "url": "https://discoverlbj.org/loh/telecon",
         "naId": null,
         "rationale": "Cited by conversation rather than by box, so a folder title list is the wrong model: the collection page is where the recordings and their transcripts are listed. Curated at the collection level for that reason, not for lack of a more specific aid."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Johnson Library",
@@ -1931,7 +2205,9 @@
         "url": "https://discoverlbj.org/loh/pres/whcf",
         "naId": "566962",
         "rationale": "The Confidential File and the Subject Files are both described here, and the library publishes the collection's NARA identifier."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -1943,7 +2219,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
         "naId": null,
         "rationale": "The collection page listing all eighteen series. The library's own name for it is \"Papers as President of the United States, 1953-61 (Ann Whitman File)\" — NOT the one-foot ANN C. WHITMAN: PAPERS, which is her personal papers and a different collection."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -1958,7 +2236,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/nsc-series.pdf",
         "naId": null,
         "rationale": "Confirmed from the container list, which opens \"Record of Actions by NSC 1953\" — this is the series FRUS cites as the NSC Records."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -1974,7 +2254,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/dde-diary-series.pdf",
         "naId": null,
         "rationale": "The library uses both names for the one series: the scope note calls it \"The Dwight D. Eisenhower Diaries series\" while the series is titled DDE Diary."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -1988,7 +2270,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/international-series.pdf",
         "naId": null,
         "rationale": "FRUS writes \"International File\", the library \"International Series\"; the container list is arranged by country from Afghanistan, which is what the citations point into."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": 594080
     },
     {
       "repository": "Eisenhower Library",
@@ -2003,7 +2287,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/dulles-herter-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2015,7 +2301,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/administration-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2029,7 +2317,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/cabinet-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2043,7 +2333,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/legislative-meetings-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2057,7 +2349,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/miscellaneous-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2071,7 +2365,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/international-meetings-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2083,7 +2379,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/name-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2097,7 +2395,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/ann-whitman-diary-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": 186474
     },
     {
       "repository": "Eisenhower Library",
@@ -2111,7 +2411,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/press-conferences-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2123,7 +2425,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/eisenhower-dwight-papers-as-president/speech-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-EPRES",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2138,7 +2442,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
         "naId": null,
         "rationale": "Cited through the papers rather than as the file itself. The series is a third level the citation keeps but this artifact does not, so the collection page is the answer."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2152,7 +2458,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
         "naId": null,
         "rationale": "As above."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2164,7 +2472,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/dulles-john-foster",
         "naId": null,
         "rationale": "The collection page listing all twelve series."
-      }
+      },
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2181,7 +2491,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/telephone-conversations-series.pdf",
         "naId": null,
         "rationale": "One series of over 13,000 pages; General and White House are its subseries, and FRUS cites both by subseries name."
-      }
+      },
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2197,7 +2509,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/white-house-memoranda-series.pdf",
         "naId": null,
         "rationale": "Confirmed from the container list, which carries \"Meetings with the President 1954\" and \"Meeting with the President 1953\" folders."
-      }
+      },
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2212,7 +2526,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/general-correspondence-series.pdf",
         "naId": null,
         "rationale": "The container list's MEMORANDA OF CONVERSATIONS SUBSERIES opens \"Memos of Conversation - General - A Through D\", which is the form FRUS abbreviates."
-      }
+      },
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2224,7 +2540,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/subject-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2238,7 +2556,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/dulles-john-foster-papers/jfd-chronological-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": "DDE-1037",
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2250,7 +2570,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/herter-christian-papers.pdf",
         "naId": null,
         "rationale": "The library publishes one aid for the whole collection rather than per series, so the telephone-conversation citations reach it too."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2262,7 +2584,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/hagerty-james-papers.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2274,7 +2598,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/us-council-foreign-economic-policy.pdf",
         "naId": null,
         "rationale": "One aid covers the council's records; the Office Series and Policy Papers citations reach it."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2286,7 +2612,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-9",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2298,7 +2626,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-staff-secretary",
         "naId": null,
         "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2312,7 +2642,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/who-oss/international-series.pdf",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2329,7 +2661,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-staff-secretary",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2345,7 +2679,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-special-assistant-national-security-affairs-robert",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2360,7 +2696,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-special-assistant-science-and-technology-james-r",
         "naId": null,
         "rationale": "The library's own container list for this series."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2372,7 +2710,9 @@
         "url": "https://www.eisenhowerlibrary.gov/sites/default/files/finding-aids/pdf/hagerty-james-papers.pdf",
         "naId": null,
         "rationale": "The same papers cited with the full name. A collection-level spelling needs its own entry — subCollectionAliases only aliases the level below."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2387,7 +2727,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/eisenhower-dwight-d-3",
         "naId": null,
         "rationale": "The Ann Whitman File's diary series, cited through the papers."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Eisenhower Library",
@@ -2399,7 +2741,9 @@
         "url": "https://www.eisenhowerlibrary.gov/research/finding-aids/white-house-office-office-staff-secretary",
         "naId": null,
         "rationale": "The collection page. The NATO, Disarmament and memcon citations name folders inside the Subject Series rather than series of their own, so they reach it too. Cited possessively; the possessive does not fold, so it needs its own entry."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2411,7 +2755,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/jfknsf",
         "naId": null,
         "rationale": "The library publishes ONE finding aid for the whole subcollection — administrative overview, series list and container list on a single page — so there is no more specific published destination for a series citation. The page's own series list is the next step."
-      }
+      },
+      "collectionIdentifier": "JFK-4",
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2423,7 +2769,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/jfknsf",
         "naId": null,
         "rationale": "The subcollection under its abbreviation."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2435,7 +2783,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/jfkpof",
         "naId": null,
         "rationale": "The library publishes ONE finding aid for the whole subcollection — administrative overview, series list and container list on a single page — so there is no more specific published destination for a series citation. The page's own series list is the next step."
-      }
+      },
+      "collectionIdentifier": "JFK-3",
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2447,7 +2797,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/rhpp",
         "naId": null,
         "rationale": "The Vietnam country-series citations reach it too; the library publishes one aid for the whole collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2459,7 +2811,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/amspp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2471,7 +2825,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/amspp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2483,7 +2839,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/tcspp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2495,7 +2853,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/gbpp",
         "naId": null,
         "rationale": "Verified by the page's own title. Slug-guessing found `gwbpp` first, which is the personal papers of a different person entirely — the title check is what caught it."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2507,7 +2867,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/gbpp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2519,7 +2881,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/cddpp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2531,7 +2895,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/cddpp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2543,7 +2909,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/hcpp",
         "naId": null,
         "rationale": "The library's finding aid for this collection."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     },
     {
       "repository": "Kennedy Library",
@@ -2555,7 +2923,9 @@
         "url": "https://www.jfklibrary.org/asset-viewer/archives/amspp",
         "naId": null,
         "rationale": "The same papers cited without the middle initial — a collection-level spelling needs its own entry."
-      }
+      },
+      "collectionIdentifier": null,
+      "seriesNaId": null
     }
   ]
 }
