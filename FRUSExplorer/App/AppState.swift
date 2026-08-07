@@ -301,6 +301,16 @@ final class AppState {
     /// the sync state never reaches `.syncing`. (#377 Phase 5)
     var hasInitialProjectSyncSettled = false
 
+    /// Debounce handle for the settings pull that follows a successful CloudKit event (#665).
+    ///
+    /// Rescheduled on every success, so the pull runs once a couple of seconds after sync goes
+    /// quiet rather than on every batch. Undebounced it re-ran a fetch, a possible save, and a
+    /// UserDefaults write — which fans out to every `@AppStorage`-bound view — for each event of
+    /// a large import. `@ObservationIgnored` because it is transient plumbing, not observable UI
+    /// state, matching ``orphanedTagRepairDebounce``.
+    @ObservationIgnored
+    var settingsPullDebounce: Task<Void, Never>? = nil
+
     /// Debounce handle for the boot-time orphaned-tag repair (#406).
     ///
     /// `FRUSExplorerApp.bootApp()`'s CloudKit event observer reschedules this on every successful

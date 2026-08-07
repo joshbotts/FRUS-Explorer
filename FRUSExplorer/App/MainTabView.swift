@@ -247,7 +247,21 @@ struct MainTabView: View {
     /// slides up from the tab bar edge when indexing completes.
     @ViewBuilder
     private var indexingBanner: some View {
-        if let batch = appState.indexingBatch {
+        // #665: the iCloud indicator shares this inset. Indexing wins when both want it —
+        // indexing is transient and finishes, while a local-only or failed-sync state waits and
+        // will still be true when the banner frees up.
+        if appState.indexingBatch == nil, appState.completedIndexingMetadata == nil,
+           SyncStatusBanner.isWorthShowing(state: appState.cloudKitSyncState,
+                                           cloudKitEnabled: appState.cloudKitSyncEnabled) {
+            SyncStatusBanner(
+                state: appState.cloudKitSyncState,
+                cloudKitEnabled: appState.cloudKitSyncEnabled,
+                onOpenSettings: {
+                    appState.openTab(.settings, from: SceneID(sceneIDToken))
+                }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        } else if let batch = appState.indexingBatch {
             if let queuePosition = appState.indexingQueuePosition {
                 IndexingQueueBannerView(
                     update: batch.latest,

@@ -1860,9 +1860,28 @@ struct FRUSExplorerApp: App {
                         appState.cloudKitSyncState = .syncing
                     } else if succeeded {
                         appState.cloudKitSyncState = .succeeded(endDate)
-                        // A completed import may have brought down updated settings;
-                        // pull them into UserDefaults if this device syncs settings.
-                        appState.settingsSync?.syncNowIfEnabled()
+                        // A completed import may have brought down updated settings; pull them
+                        // into UserDefaults if this device syncs settings — **debounced**
+                        // (#665).
+                        //
+                        // This ran on every successful event. `syncNowIfEnabled()` is
+                        // `pull()` → a `FetchDescriptor<SyncedPreferences>` fetch, possible
+                        // duplicate deletes plus a `context.save()`, then
+                        // `applyModelToDefaults()` writing UserDefaults — which fans out to
+                        // every `@AppStorage`-bound view in the app. A large import emits many
+                        // success events, so that whole chain ran repeatedly on the main actor
+                        // while the user was reading.
+                        //
+                        // Same debounce, same reason, as its two neighbours below: what the
+                        // user's settings should be is a property of the *settled* store, and
+                        // reading it from a partial one mid-import is both wasted work and a
+                        // chance to apply a value that a later batch supersedes.
+                        appState.settingsPullDebounce?.cancel()
+                        appState.settingsPullDebounce = Task { @MainActor in
+                            try? await Task.sleep(for: .seconds(2))
+                            guard !Task.isCancelled else { return }
+                            appState.settingsSync?.syncNowIfEnabled()
+                        }
                         // #406: after a successful IMPORT, reconstruct any orphaned tag
                         // associations — but debounced, so the repair runs once a few seconds
                         // after imports go quiet (a settled store), never against the partial
