@@ -108,6 +108,24 @@ struct AgencyFileSeriesTests {
         #expect(series("Source: National Security Council. Top Secret.") == nil)
     }
 
+    /// The agency must **lead** the citation, and the anchor is load-bearing in a way the
+    /// other guards are not: `tryAgencyFileSeries` computes its remainder with
+    /// `body.dropFirst(agency.count)`, which assumes the match sits at the head. An unanchored
+    /// match would slice from the head while matching elsewhere, and key the document to
+    /// whatever text happened to be that many characters in.
+    ///
+    /// Found by mutation — dropping the `^` was caught by nothing until this test existed.
+    @Test("An agency mentioned mid-note does not claim the citation")
+    func agencyMustLeadTheCitation() {
+        for note in [
+            "Notes of a conversation. No classification marking. A copy is held by the Department of Energy, Executive Secretariat Files.",
+            "Undated summary. Secret. Prepared for the National Security Council, Institutional Files.",
+        ] {
+            #expect(series(note) == nil,
+                    Comment(rawValue: "an agency named mid-note claimed the citation: \(note)"))
+        }
+    }
+
     /// A series name is a name, not a sentence. The length bound stops a run-on remark from
     /// becoming a key.
     @Test("An implausibly long segment is not a series name")
