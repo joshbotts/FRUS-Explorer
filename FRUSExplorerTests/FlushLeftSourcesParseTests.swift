@@ -485,6 +485,21 @@ struct FlatSourcesRepositoryHeadingTests {
         #expect(hit == nil, Comment(rawValue: "resolved to \(hit?.title ?? "-") (\(hit?.naId ?? "-"))"))
     }
 
+    /// The row names a **collection**, so the match is asked for a collection and nothing else.
+    ///
+    /// Asking it to match the same text as a *series* as well looks harmless and is not:
+    /// **57 collections in the bundled catalogue carry a series of their own name** — `Evelyn
+    /// Wight Allen Papers` is collection 1137 and series 187083 — and for every one of them the
+    /// match would answer `.series`, which this route refuses, so the row would resolve to
+    /// nothing instead of to its collection record. Found by a surviving mutation; the fixture
+    /// below is one of the 57.
+    @Test("A collection whose own name is also one of its series still resolves")
+    func collectionSharingASeriesNameStillResolves() {
+        let hit = ArchivalResolver.libraryResolution(
+            repository: "Hoover Library", entryText: "Evelyn Wight Allen Papers")
+        #expect(hit?.naId == "1137", Comment(rawValue: "got \(hit?.naId ?? "nil")"))
+    }
+
     /// Without a repository the route cannot run, which is exactly why gap 1 had to be fixed
     /// before gap 2 could pay off.
     @Test("No repository, no library resolution")
