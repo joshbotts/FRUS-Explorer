@@ -138,6 +138,44 @@ struct LibraryKeywordScopeTests {
         #expect(library(note) == "George H.W. Bush Library", "got: \(library(note) ?? "nil")")
     }
 
+    /// The keyword is chosen by position in the **note**, not position in the **list**.
+    ///
+    /// `libraryKeywords` is a match list, and iterating it treated it as a priority list: on a
+    /// citation opening `National Defense University, Taylor Papers`, `Kennedy Library` — listed
+    /// first — was taken out of the closing remark instead.
+    @Test("The earliest keyword in the note wins, not the earliest in the list")
+    func earliestKeywordInTheNoteWins() {
+        let body = "National Defense University, Taylor Papers, Vietnam. A memorandum by "
+            + "Hilsman is in the Kennedy Library, Hilsman Papers."
+        let hit = SourceNoteParser.earliestLibraryKeyword(in: body)
+        #expect(hit?.keyword == "National Defense University",
+                "got: \(hit?.keyword ?? "nil")")
+    }
+
+    /// `earliestLibraryKeyword` has no tie-break, and this is what makes that safe: two
+    /// keywords can only start at the same index when one is a **prefix** of the other.
+    /// `Bush Library` is a *suffix* of `George H.W. Bush Library`, so the longer name still
+    /// starts earlier and wins on position alone.
+    ///
+    /// A first draft carried a longest-match tie-break. It was unreachable — measured, zero
+    /// prefix pairs — so it was removed and replaced by this. Adding a keyword that *is* a
+    /// prefix of another (a bare `"Bush"`, say) fails here rather than silently making the
+    /// choice arbitrary.
+    @Test("No library keyword is a prefix of another")
+    func noKeywordIsAPrefixOfAnother() {
+        let keywords = SourceNoteParser.libraryKeywordsForAudit
+        for a in keywords {
+            for b in keywords where a != b {
+                #expect(!b.lowercased().hasPrefix(a.lowercased()),
+                        Comment(rawValue: """
+                        "\(a)" is a prefix of "\(b)": they can now match at the same index, \
+                        and `earliestLibraryKeyword` has no tie-break to separate them. Add \
+                        one, or make the keywords disjoint.
+                        """))
+            }
+        }
+    }
+
     /// The direct unit on the extractor, so a caller cannot satisfy the suite by accident.
     @Test("The name segment starts after the last comma or sentence break")
     func nameSegmentCutsAtTheNearestBoundary() {

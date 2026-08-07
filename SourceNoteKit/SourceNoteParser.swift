@@ -1600,23 +1600,28 @@ public struct SourceNoteParser {
     /// `Kennedy Library` — listed first — out of the closing remark, over the repository the
     /// citation opens with.
     ///
-    /// Ties go to the **longer** keyword so `George H.W. Bush Library` wins over the
-    /// `Bush Library` alias that starts 10 characters later; without that, the alias list
-    /// would silently truncate every name it also matches.
+    /// ## There is deliberately no tie-break
+    /// Two keywords can only start at the same index when one is a **prefix** of the other, and
+    /// `libraryKeywords` contains no such pair — `Bush Library` is a *suffix* of
+    /// `George H.W. Bush Library`, not a prefix, so the longer name still starts earlier and
+    /// wins on position alone. A first draft carried a longest-match tie-break; it was
+    /// unreachable, so it is gone and `LibraryKeywordScopeTests` pins the invariant that makes
+    /// its absence safe. Adding a keyword that *is* a prefix of another will fail that test
+    /// rather than silently make this arbitrary.
     static func earliestLibraryKeyword(in body: String)
         -> (keyword: String, range: Range<String.Index>)? {
         var best: (keyword: String, range: Range<String.Index>)?
         for keyword in libraryKeywords {
             guard let range = body.range(of: keyword, options: .caseInsensitive) else { continue }
-            guard let current = best else { best = (keyword, range); continue }
-            if range.lowerBound < current.range.lowerBound
-                || (range.lowerBound == current.range.lowerBound
-                    && keyword.count > current.keyword.count) {
+            if best == nil || range.lowerBound < best!.range.lowerBound {
                 best = (keyword, range)
             }
         }
         return best
     }
+
+    /// The keyword list, for the invariant test above. Not part of parsing.
+    static var libraryKeywordsForAudit: [String] { libraryKeywords }
 
     /// Removes remark sentences that assert where a **second copy** lives (#353 §3.2).
     ///
