@@ -1621,11 +1621,15 @@ struct MacSourceExplorerView: View {
             "NARA Catalog Record",
             "===================",
         ]
-        if !resultsAreVerified {
-            // A durable copy of an unverified result must say so — the chip in the UI does
-            // not travel into a research note (#680).
-            lines.append(String(localized: "source.explorer.manualSearch.exportCaveat",
-                                defaultValue: "NOTE: Result of a manual free-text search. It has not been checked against the cited lot number or record group."))
+        // A durable copy of an unverified result must say so — the chip in the UI does not
+        // travel into a research note (#680). Both reasons a result can be unverified are
+        // asked about here, through the same type the rows are chipped from: it came from the
+        // manual field, *or* the automatic query constrained on nothing narrower than a record
+        // group (#681). Gating on the first alone exported 26,667 documents' worth of
+        // unconstrained keyword hits under a bare "NARA Catalog Record" heading.
+        if let caveat = CatalogQueryEvidence.exportCaveat(evidence: catalogEvidence,
+                                                          isManualSearch: !resultsAreVerified) {
+            lines.append(caveat)
             lines.append("")
         }
         lines += [

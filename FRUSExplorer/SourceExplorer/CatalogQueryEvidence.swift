@@ -72,6 +72,45 @@ enum CatalogQueryEvidence: Sendable, Equatable {
     /// Whether results may be headed and worded as the answer rather than as candidates.
     var isVerified: Bool { self == .controlNumberVerified }
 
+    /// The caveat a **durable copy** of a result must carry, or `nil` when the result was
+    /// verified and needs none.
+    ///
+    /// ## Why this is separate from ``caveat``
+    /// The chip and the caveat on screen qualify the rows a researcher is looking at. A Copy or
+    /// an Export leaves the app: it lands in a research note, months from the moment the reader
+    /// saw the chip, headed "NARA Catalog Record". So the hedge has to travel with it.
+    ///
+    /// macOS shipped exactly half of that. #680 added the manual-search caveat, gated on "did
+    /// this come from the manual field?" — then #681 added a second way for an *automatic*
+    /// result to be unverified (a record-group-only or collection-name-only query), and the
+    /// export gate never learned about it. On screen those rows are chipped; copied, they were
+    /// indistinguishable from a control-number-verified resolution. Measured, that is **26,667
+    /// documents** — 9,580 record-group-only citations and the 17,087 presidential-library
+    /// citations the bundled catalogue cannot answer.
+    ///
+    /// Both reasons are answered here, in the type both views already share, so a third reason
+    /// cannot be added to one gate and not the other.
+    ///
+    /// - Parameters:
+    ///   - evidence: what the automatic query constrained, or `nil` when none ran.
+    ///   - isManualSearch: whether these rows came from the free-text field rather than the
+    ///     automatic lookup. Takes precedence — the manual query is the actual producer, and
+    ///     naming the automatic query's constraint would describe a query these rows did not
+    ///     come from.
+    static func exportCaveat(evidence: CatalogQueryEvidence?,
+                             isManualSearch: Bool) -> String? {
+        if isManualSearch {
+            return String(localized: "source.explorer.manualSearch.exportCaveat",
+                          defaultValue: """
+                          NOTE: Result of a manual free-text search. It has not been checked \
+                          against the cited lot number or record group.
+                          """)
+        }
+        guard let caveat = evidence?.caveat else { return nil }
+        return String(localized: "source.explorer.export.unverifiedCaveat",
+                      defaultValue: "NOTE: \(caveat)")
+    }
+
     /// The section heading. Unverified results say "Candidate" in the heading itself, because
     /// a caveat below the rows is read after the rows and often not at all.
     var sectionTitle: String {
