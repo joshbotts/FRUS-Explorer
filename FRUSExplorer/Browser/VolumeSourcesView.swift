@@ -398,6 +398,17 @@ struct VolumeSourcesView: View {
                     .accessibilityLabel(neighborsAccessibilityLabel(count: count))
                 }
             }
+            // #668 follow-up: the editors' own description of this collection, where the
+            // volume's encoding writes it as a separate paragraph. Rendering it here is the
+            // whole point of carrying it — after #725 these read as a wall of prose under
+            // "About These Sources", divorced from the collection each one describes.
+            if let note = entry.note, !note.isEmpty {
+                Text(note)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             // #322: the #315 archival identifiers (file series + HMS/MLR entry number) for a
             // resolved lot, so this surface shows the same detail as Source Explorer.
             resolutionEnrichment(resolution)

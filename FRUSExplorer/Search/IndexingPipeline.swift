@@ -673,7 +673,16 @@ public actor IndexingPipeline {
     ///   +526 collection rows, 0 volumes losing a row.** Published-works runs are excluded
     ///   (frus1950v07's 39 flushleft rows are Acheson and Allison memoirs, and stay prose),
     ///   as are the series' six boilerplate `Sources for …` section titles.
-    public static let currentDateIndexVersion: Int = 34
+        /// - v35 — #668 follow-up, on the owner's report against the shipped v34. Two defects,
+    ///   both measured in the live index: (1) a **flushleft paragraph could close the
+    ///   published-works subtree** — `S. L. A. Marshall, The River and the Gauntlet …` is 208
+    ///   characters, eight over the narrative-exit threshold, so frus1950v07's **16 remaining
+    ///   books were promoted to archival collections** and frus1952-54Guat lost its last
+    ///   published row the same way at 207. A list entry can never be the narrative that ends
+    ///   the list, so flushleft now blocks the exit. (2) `VolumeSourceEntry.note` carries the
+    ///   description paragraph that belongs to a promoted collection, instead of leaving it a
+    ///   separate `.prose` row the browser files under a different heading.
+    public static let currentDateIndexVersion: Int = 35
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -2100,7 +2109,7 @@ public actor IndexingPipeline {
     public func volumeSources(forVolumeId volumeId: String) throws -> [VolumeSourceEntry] {
         let sql = """
             SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading,
-                   lot_file_norm, decimal_class
+                   lot_file_norm, decimal_class, note
             FROM volume_sources
             WHERE volume_id = ?
             ORDER BY sort_order
@@ -2120,7 +2129,8 @@ public actor IndexingPipeline {
                 lotFileNorm:  auxColumnString(stmt, 8),
                 seriesName:   auxColumnString(stmt, 3),
                 decimalClass: auxColumnString(stmt, 9),
-                rawText:      auxColumnString(stmt, 4) ?? ""
+                rawText:      auxColumnString(stmt, 4) ?? "",
+                note:         auxColumnString(stmt, 10)
             ))
         }
         return entries
@@ -3819,7 +3829,8 @@ public actor IndexingPipeline {
                     kind: entry.kind.rawValue,
                     depth: entry.depth,
                     isHeading: entry.isHeading,
-                    sortOrder: i
+                    sortOrder: i,
+                    note: entry.note
                 )
             }
 
@@ -5063,8 +5074,12 @@ public actor IndexingPipeline {
         // the same form `document_sources.decimal_class` stores). Same
         // drop-and-recreate migration pattern, keyed on the absent newest column; the
         // version-18/19 reindexes repopulate.
+        // #668 adds `note` — the description paragraph belonging to a collection whose
+        // encoding separates name from description. Same drop-and-recreate, keyed on the
+        // absent newest column; the version-34 reindex repopulates.
         if tableExists("volume_sources") && (!columnExists("kind", inTable: "volume_sources")
-                                             || !columnExists("lot_file_norm", inTable: "volume_sources")) {
+                                             || !columnExists("lot_file_norm", inTable: "volume_sources")
+                                             || !columnExists("note", inTable: "volume_sources")) {
             try? exec("DROP TABLE volume_sources")
         }
         try exec("""
@@ -5081,6 +5096,7 @@ public actor IndexingPipeline {
                 depth         INTEGER NOT NULL DEFAULT 0,
                 is_heading    INTEGER NOT NULL DEFAULT 0,
                 sort_order    INTEGER NOT NULL DEFAULT 0,
+                note          TEXT,
                 PRIMARY KEY (volume_id, sort_order)
             )
             """)
@@ -5405,8 +5421,8 @@ public actor IndexingPipeline {
         let sql = """
             INSERT OR REPLACE INTO volume_sources
             (volume_id, repository, record_group, lot_file, lot_file_norm, series_name,
-             decimal_class, entry_text, kind, depth, is_heading, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             decimal_class, entry_text, kind, depth, is_heading, sort_order, note)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -5424,6 +5440,7 @@ public actor IndexingPipeline {
                 sqlite3_bind_int64(stmt, 10, Int64(row.depth))
                 sqlite3_bind_int64(stmt, 11, row.isHeading ? 1 : 0)
                 sqlite3_bind_int64(stmt, 12, Int64(row.sortOrder))
+                auxBindOptional(stmt, 13, row.note)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -7926,6 +7943,9 @@ private struct VolumeSourceRow: Sendable {
     let depth: Int
     let isHeading: Bool
     let sortOrder: Int
+    /// The editors' description of this collection, where the encoding separates the two
+    /// (#668). See `VolumeSourceEntry.note`.
+    let note: String?
 }
 
 private struct VolumeIndexData: Sendable {

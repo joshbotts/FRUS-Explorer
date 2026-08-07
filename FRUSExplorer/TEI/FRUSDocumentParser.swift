@@ -684,11 +684,24 @@ public struct VolumeSourceEntry: Sendable {
     public let decimalClass: String?
     /// The entry's own text (whitespace-collapsed), excluding any nested child items.
     public let rawText: String
+    /// The editors' description of this collection, where the encoding separates the two.
+    ///
+    /// The early-1950s volumes write a collection as a `<p rend="flushleft">` name followed
+    /// by an ordinary paragraph describing it (#668). Both are content of the *same* entry,
+    /// but the parser emits rows flat and the browser groups them by `kind`, so leaving the
+    /// description as its own `.prose` row filed it under "About These Sources" — divorced
+    /// from the collection it describes, which is how the volume read after #725.
+    ///
+    /// It is a separate field rather than an extension of `rawText` because `rawText` is
+    /// what the key extraction reads: folding a paragraph of narrative into the collection
+    /// name would bury the name and hand the lot/record-group grammars a page of prose.
+    /// `nil` wherever the encoding keeps name and description together already.
+    public let note: String?
 
     public init(kind: VolumeSourceKind, depth: Int = 0, isHeading: Bool = false,
                 repository: String? = nil, recordGroup: String? = nil, lotFile: String? = nil,
                 lotFileNorm: String? = nil, seriesName: String? = nil,
-                decimalClass: String? = nil, rawText: String) {
+                decimalClass: String? = nil, rawText: String, note: String? = nil) {
         self.kind = kind
         self.depth = depth
         self.isHeading = isHeading
@@ -699,6 +712,16 @@ public struct VolumeSourceEntry: Sendable {
         self.seriesName = seriesName
         self.decimalClass = decimalClass
         self.rawText = rawText
+        self.note = note
+    }
+
+    /// A copy of this entry carrying `note` — used when the promotion pass discovers the
+    /// description paragraph that belongs to a collection it has just recognised.
+    func withNote(_ note: String?) -> VolumeSourceEntry {
+        VolumeSourceEntry(kind: kind, depth: depth, isHeading: isHeading,
+                          repository: repository, recordGroup: recordGroup, lotFile: lotFile,
+                          lotFileNorm: lotFileNorm, seriesName: seriesName,
+                          decimalClass: decimalClass, rawText: rawText, note: note)
     }
 }
 
@@ -2121,11 +2144,29 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// volumes each gain two rows carrying no keys and naming nothing findable.
     private func promoteFlushLeftHeadingsIfSectionHasNoItems() {
         guard !sawItemRow, !flushLeftOrders.isEmpty else { return }
+        collected.sort { $0.order < $1.order }
+        var absorbed = Set<Int>()
         for index in collected.indices where flushLeftOrders.contains(collected[index].order) {
             let row = collected[index].entry
             guard row.kind == .prose, !Self.isSectionTitle(row.rawText) else { continue }
+            // The following ordinary paragraph is this collection's description — the
+            // encoding's other half. Absorbing it is what keeps the two together on screen;
+            // a consecutive flushleft heading (the book lists) means there is none.
+            let next = index + 1
+            var description: String?
+            if next < collected.count,
+               collected[next].entry.kind == .prose,
+               !flushLeftOrders.contains(collected[next].order),
+               !Self.isSectionTitle(collected[next].entry.rawText) {
+                description = collected[next].entry.rawText
+                absorbed.insert(collected[next].order)
+            }
             collected[index].entry = Self.makeItemEntry(text: row.rawText, depth: 0,
                                                         isHeading: false, ancestorTexts: [])
+                .withNote(description)
+        }
+        if !absorbed.isEmpty {
+            collected.removeAll { absorbed.contains($0.order) }
         }
     }
 
@@ -2166,8 +2207,17 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             return .prose
         }
         guard inPublishedSubtree else { return .prose }
+        // #668 follow-up: a **flushleft** paragraph is a list entry by definition, so it can
+        // never be the narrative that ends the list. Without this conjunct a long book
+        // citation closes the published subtree and every book after it is reclassified.
+        // Measured in the owner's index: frus1950v07's `S. L. A. Marshall, The River and the
+        // Gauntlet …` is 208 characters — eight over the threshold — and closing the subtree
+        // there turned the **16 books after it** into archival collections, complete with
+        // catalog-resolution affordances. frus1952-54Guat lost its last published row the
+        // same way, at 207 characters. Both are flushleft; neither is narrative.
         let isNarrativeExit = text.count > 200
             && publishedSubtreeSawRows
+            && !proseIsFlushLeft
             && !text.lowercased().hasPrefix("note:")
         if isNarrativeExit {
             inPublishedSubtree = false

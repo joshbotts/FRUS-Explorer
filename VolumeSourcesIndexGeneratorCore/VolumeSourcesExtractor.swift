@@ -264,6 +264,22 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
     ///
     /// Published-works rows are excluded at insertion time rather than here, because
     /// `SourceRow` has no `.bibliography` kind to test for.
+    ///
+    /// ## Two deliberate divergences from the app's copy
+    /// Both were introduced by the #668 follow-up and are **intended**; do not "restore
+    /// parity" without reading this.
+    ///
+    /// 1. The app absorbs each collection's following description paragraph into
+    ///    `VolumeSourceEntry.note`, so the browser can render the two together. This
+    ///    extractor leaves it a `.prose` row: `volume-sources-index.json` carries
+    ///    collections and their resolved NAIDs, never descriptions, so absorbing it here
+    ///    would change the row stream for no consumer.
+    /// 2. The app's `proseKind` has a narrative-exit rule that ends a published run at a
+    ///    paragraph over 200 characters; this extractor has none. That rule is what misfiled
+    ///    16 of frus1950v07's books as archival collections — its 208-character
+    ///    `S. L. A. Marshall …` citation tripped the threshold — and the app now refuses the
+    ///    exit for flushleft paragraphs. Having no rule at all, this side was always correct
+    ///    on that volume, and the fix brought the app back into agreement with it.
     private func promoteFlushLeftHeadingsIfSectionHasNoItems() {
         guard !sawItemRow, !flushLeftOrders.isEmpty else { return }
         for index in collected.indices where flushLeftOrders.contains(collected[index].order) {
