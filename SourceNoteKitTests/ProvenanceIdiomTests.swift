@@ -81,9 +81,15 @@ struct ProvenanceIdiomTests {
 
     /// The bound after the idiom is what keeps the exception from becoming a general licence:
     /// only a repository's own name may stand between `obtained from` and the keyword.
+    ///
+    /// The first version of this test used a prefix containing a **comma**, which the gate's
+    /// other conjunct refuses on its own — so it passed without exercising the bound at all,
+    /// and a mutation removing the bound survived it. This one is comma-free.
     @Test("The idiom does not license an unbounded prefix")
     func idiomWindowIsBounded() {
-        let far = "Copy obtained from a source that has asked not to be identified in any published form whatsoever, Truman Library."
+        let far = "Copy obtained from a source that has asked not to be identified in any published form whatsoever at the Truman Library."
+        #expect(!far.prefix(while: { $0 != "T" }).contains(","),
+                "fixture guard: the prefix must be comma-free or the other conjunct decides")
         #expect(library(far) == nil,
                 "an arbitrarily long prefix rode in behind the idiom")
     }
