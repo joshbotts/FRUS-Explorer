@@ -14,8 +14,8 @@ TOTAL NOTES: 267663
   naraCollection                  373  (  0.4%)
   ciaCollection                     1  (  0.0%)
   namedFileSeries                 655  (  0.7%)
-  previouslyPublished             338  (  0.4%)
-  unrecognized                   1015  (  1.1%)
+  previouslyPublished             589  (  0.6%)
+  unrecognized                    764  (  0.8%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
   centralFiles                  74877  ( 86.9%)
@@ -25,17 +25,17 @@ TOTAL NOTES: 267663
   ciaCollection                   678  (  0.8%)
   namedFileSeries                4461  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
-  previouslyPublished               3  (  0.0%)
-  unrecognized                   1289  (  1.5%)
+  previouslyPublished              74  (  0.1%)
+  unrecognized                   1218  (  1.4%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
-  centralFiles                  10481  ( 69.7%)
+  centralFiles                  10476  ( 69.7%)
   lotFile                        2369  ( 15.8%)
   presidentialLibrary             629  (  4.2%)
   ciaCollection                   270  (  1.8%)
   namedFileSeries                 178  (  1.2%)
-  previouslyPublished               1  (  0.0%)
-  unrecognized                   1110  (  7.4%)
+  previouslyPublished              20  (  0.1%)
+  unrecognized                   1096  (  7.3%)
 
 === era 1955-1957  (volumes: 29, notes: 10749)
   centralFiles                   7108  ( 66.1%)
@@ -45,8 +45,8 @@ TOTAL NOTES: 267663
   ciaCollection                    52  (  0.5%)
   namedFileSeries                  87  (  0.8%)
   foreignGovernmentArchive          9  (  0.1%)
-  previouslyPublished               4  (  0.0%)
-  unrecognized                    453  (  4.2%)
+  previouslyPublished               5  (  0.0%)
+  unrecognized                    452  (  4.2%)
 
 === era 1958-1960  (volumes: 23, notes: 8547)
   centralFiles                   5092  ( 59.6%)
@@ -79,8 +79,8 @@ TOTAL NOTES: 267663
   ciaCollection                   990  (  3.2%)
   namedFileSeries                 337  (  1.1%)
   foreignGovernmentArchive         29  (  0.1%)
-  previouslyPublished              67  (  0.2%)
-  unrecognized                    324  (  1.1%)
+  previouslyPublished              87  (  0.3%)
+  unrecognized                    304  (  1.0%)
 
 === era 1977+  (volumes: 39, notes: 12402)
   centralFiles                     79  (  0.6%)
@@ -91,11 +91,11 @@ TOTAL NOTES: 267663
   ciaCollection                   423  (  3.4%)
   namedFileSeries                 290  (  2.3%)
   foreignGovernmentArchive         20  (  0.2%)
-  previouslyPublished             114  (  0.9%)
-  unrecognized                    189  (  1.5%)
+  previouslyPublished             116  (  0.9%)
+  unrecognized                    187  (  1.5%)
 
 === OVERALL
-  centralFiles                 194436  ( 72.6%)
+  centralFiles                 194431  ( 72.6%)
   cfpfFile                       4028  (  1.5%)
   lotFile                       13955  (  5.2%)
   presidentialLibrary           28499  ( 10.6%)
@@ -103,20 +103,20 @@ TOTAL NOTES: 267663
   ciaCollection                  2903  (  1.1%)
   namedFileSeries                6046  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
-  previouslyPublished             530  (  0.2%)
-  unrecognized                   6904  (  2.6%)
+  previouslyPublished             894  (  0.3%)
+  unrecognized                   6545  (  2.4%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
-  1906-1939                      1015  (  1.1%)
-  1940-1951                      1289  (  1.5%)
-  1952-1954                      1110  (  7.4%)
-  1955-1957                       453  (  4.2%)
+  1906-1939                       764  (  0.8%)
+  1940-1951                      1218  (  1.4%)
+  1952-1954                      1096  (  7.3%)
+  1955-1957                       452  (  4.2%)
   1958-1960                       185  (  2.2%)
   1961-1963                       306  (  3.1%)
-  1964-1976                       324  (  1.1%)
-  1977+                           189  (  1.5%)
-  overall                        6904  (  2.6%)
+  1964-1976                       304  (  1.0%)
+  1977+                           187  (  1.5%)
+  overall                        6545  (  2.4%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -173,12 +173,9 @@ TOTAL NOTES: 267663
   | See Document 24.
 --- 1940-1951
   | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, New York. The original of this memorandum was transmitted by Mr. Welles to President Roosevelt under covering memorandum of
-  | Reprinted from Department of State Bulletin, March 30, 1940, p. 335.
   | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y.
   | 7601D 61/919: Telegram
-  | Reprinted from Department of State Bulletin, July 27, 1940, p. 48.
   | 740.00111 A.R.–Subs/la: Telegram
-  | Executive Agreement Series No. 181
   | 311.6121½
   | 311.6121 Chichkov, Viktor
   | 811.5034 (China); American Radio Service/41: Telegram
@@ -197,6 +194,9 @@ TOTAL NOTES: 267663
   | Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y. Notation in ink by President Roosevelt: “L. C. OK FDR”
   | 811.20 Defense (M) 24801
   | 840.48 Regis. Commission for Polish Relief, Inc.
+  | 811.24546/la: Telegram
+  | Paraphrased text reprinted from Department of State Bulletin, November 8, 1941, p. 365.
+  | 360M.1121 Devenis, Michael: Telegram
 --- 1952-1954
   | [Extract]
   | [Attachment]
@@ -233,7 +233,6 @@ TOTAL NOTES: 267663
   | [Subenclosure]
   | Source: Washington National Records Center, OASD/ISA Files: FRC 60 A 1339, 200 Vietnam. Secret.
   | Source: Washington National Records Center, OASD/ISA Files: FRC 60 A 1339, 121 Vietnam. Secret.
-  | Source: Reprinted from Public Papers of the Presidents of the United States: Dwight D. Eisenhower, 1955, pp. 207–211.
   | Source: Public Law 4, approved on January 29; 69 Stat. 7. For text of a statement issued by the President upon signing the joint resolution, see Public Papers of the Presidents of the United States: D
   | [Annex] “E”
   | [Tab 1]
@@ -249,6 +248,7 @@ TOTAL NOTES: 267663
   | Source:
   | Official Use Only.
   | Source: Washington National Records Center, ICA Director’s Files: FRC 61 A 32, Box 315, Finance–Investments. Confidential. The actual title is “Report of the Working Group of the Subcommittee on Sovie
+  | Source: Washington National Records Center, ICA Director’s Files: FRC 61 A 32, Box 35, Finance–Investments. Confidential.
 --- 1958-1960
   | Source: Washington National Records Center, OSD/ISA Files: FRC 62 A 1698, 092 Vietnam. Secret. Notes on the source text indicate Sprague and Byers saw this memorandum.
   | Source: Washington National Records Center, OSD/ISA Files: FRC 62 A 1698, 451.2 Vietnam. Secret.
@@ -339,7 +339,6 @@ TOTAL NOTES: 267663
   | William M. Leary, editor, The Central Intelligence Agency: History and Documents (The University of Alabama Press, 1984), p. 63; for text of NSC 5412, see Foreign Relations, 1950–1955, The Intelligenc
   | Leary, The Central Intelligence Agency: History and Documents, pp. 63, 147–148; Final Report of the Select Committee To Study Governmental Operations With Respect to Intelligence Activities, United St
   | Leary, The Central Intelligence Agency: History and Documents, p. 63.
-  | Ibid., p. 82.
   | See Foreign Relations, 1961–1963, volume X, Cuba, 1961–1962, Documents 270 and 278.
   | For text of NSAM No. 124, see ibid., volume VIII, National Security Policy, Document 68. NSAM No. 341, March 2, 1966, is printed ibid., 1964–1968, volume XXXIII, Organization and Management of U.S. Fo
   | For text of NSAM No. 303, see ibid., Document 204.
@@ -353,3 +352,4 @@ TOTAL NOTES: 267663
   | Executive Order 12036, “United States Foreign Intelligence Activities,” January 24, 1978, Weekly Compilation of Presidential Documents, Vol. 14, No. 4 (January 30, 1978), pp. 194–214. Since E.O. 12036
   | PL 96–450, Sec. 407 (October 14, 1980). See also the description of the Hughes-Ryan amendment and its replacement by PL 96–450 in: Richard A. Best, Jr., “Covert Action: Legislative Background and Poss
   | Kissinger met with King Hassan during his visit to Rabat October 15, 1974. See Foreign Relations , 1969–1976, vol. E–9. Part 1, Documents on North Africa, 1973–1976, Document 90 .
+  | See Document 151 .
