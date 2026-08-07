@@ -128,3 +128,50 @@ public enum DigitizedRangeTitleParser {
             .lowercased()
     }
 }
+
+// MARK: - RollScan
+
+/// One digitised microfilm roll, keyed by the NARA identifier the app already stores (#663
+/// follow-up).
+///
+/// Where `DigitizedRange` has to *parse* a range out of a title, this needs no parsing at all:
+/// `central-files-index.json` already holds every M862 roll's NAID, so the scan data joins onto
+/// it by identifier. Measured, **1,218 of the 1,261 bundled rolls (96.6%)** find a digitised
+/// record this way, and 1,235 of the 1,238 digitised units are whole-roll PDFs.
+public struct RollScan: Codable, Sendable, Equatable {
+    /// The file unit's NARA Archival Identifier — the join key.
+    public let naId: String
+    /// How many scanned images the roll holds.
+    public let objectCount: Int
+    /// The scan's own URL on `catalog.archives.gov`.
+    public let objectUrl: String?
+    /// The scan's filename, which names the microfilm publication and roll (`M862_Roll1.pdf`).
+    public let objectFilename: String?
+
+    public init(naId: String, objectCount: Int, objectUrl: String?, objectFilename: String?) {
+        self.naId = naId; self.objectCount = objectCount
+        self.objectUrl = objectUrl; self.objectFilename = objectFilename
+    }
+}
+
+// MARK: - RollScansIndexFile
+
+/// The second bundled artifact: scan data for the rolls `central-files-index.json` already names.
+///
+/// **Separate from that file on purpose.** `central-files-index.json` is rebuilt wholesale by the
+/// owner-keyed `CentralFilesIndexGenerator` harvest, which would silently drop any field a
+/// different pass had added — the same reasoning that made `lot-claimants-index.json` its own
+/// artifact rather than a column on the central-files index. Keyed by NAID, this survives a
+/// re-harvest of either side.
+public struct RollScansIndexFile: Codable, Sendable {
+    public let schemaVersion: Int
+    public let generated: String
+    /// The NARA series the rolls belong to.
+    public let seriesNaId: String
+    public let scans: [RollScan]
+
+    public init(schemaVersion: Int, generated: String, seriesNaId: String, scans: [RollScan]) {
+        self.schemaVersion = schemaVersion; self.generated = generated
+        self.seriesNaId = seriesNaId; self.scans = scans
+    }
+}
