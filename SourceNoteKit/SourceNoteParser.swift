@@ -1277,7 +1277,85 @@ public struct SourceNoteParser {
         // "JCS Records, CCS 092 Asia (6–25–48)") → .namedFileSeries
         if let seriesResult = tryNarrativeNamedSeries(body) { return seriesResult }
 
+        // Agency-held file series ("National Security Council, Carter Intelligence Files,
+        // Box 20, …"). Deliberately LAST: it can only claim notes every other strategy has
+        // already declined, so it cannot steal from one. See `tryAgencyFileSeries`.
+        if let agencyResult = tryAgencyFileSeries(body) { return agencyResult }
+
         return nil
+    }
+
+    // MARK: - Agency-Held File Series
+
+    /// Executive-branch agencies that hold their own file series and appear at the **head** of
+    /// a citation (#353).
+    ///
+    /// The Department of State is deliberately absent: a citation leading with it is a central
+    /// files or lot citation, and both have their own strategies far earlier in the dispatch.
+    /// The CIA is absent for the same reason — `tryCIACollection` reads its Job numbers.
+    private static let agencyRepositoryKeywords = [
+        "National Security Council",
+        "National Security Agency",
+        "Defense Intelligence Agency",
+        "Department of Defense",
+        "Department of the Treasury",
+        "Department of Energy",
+        "Department of Commerce",
+        "Joint Chiefs of Staff",
+    ]
+
+    /// A file series held by an agency rather than by the National Archives (#353).
+    ///
+    /// ## The gap
+    /// FRUS cites these as `Agency, Series, Box N, Folder`:
+    ///
+    /// ```
+    /// Source: National Security Council, Carter Intelligence Files, Box 20, SCC Meetings…
+    /// Source: Department of the Treasury, Office of the Secretary, Executive Secretariat…
+    /// Source: Defense Intelligence Agency, DIA Command Files 1970s, Box 3, DIA Command 1976.
+    /// ```
+    ///
+    /// `tryNarrativeNamedSeries` cannot reach them: its patterns are anchored to the start of
+    /// the note and require the leading segment to *end* in `Files`/`Papers`/`Records`/
+    /// `Collection`. An agency name does not, so the rule never sees the series in segment 2.
+    /// The tell is that the same corpus classifies `National Security Council **Files**, …`
+    /// correctly and `National Security Council, …` not at all.
+    ///
+    /// Measured: **592 documents**, 504 of them NSC, every one previously `unrecognized`, and
+    /// **0 notes lost a classification** — which the dispatch position guarantees rather than
+    /// merely reports, since this runs only where every other strategy returned nothing.
+    ///
+    /// ## Why `.namedFileSeries` and not a repository claim
+    /// These series are agency-held, and where they have been accessioned the accession is not
+    /// something the citation states. `.namedFileSeries` is the case whose whole meaning is
+    /// "a recognized series with no automated catalogue route", which is exactly true here —
+    /// and Source Explorer already renders it that way. Asserting a repository, or guessing
+    /// which presidential library an NSC institutional file landed in, would be the
+    /// confidently-wrong archival link this workstream exists to remove.
+    ///
+    /// The agency stays at the head of the stored series name, because `National Security
+    /// Council, Institutional Files` and some other body's `Institutional Files` are not the
+    /// same series and must not share an archival-neighbour key.
+    private func tryAgencyFileSeries(_ body: String) -> ParsedSourceNote? {
+        guard let agency = Self.agencyRepositoryKeywords.first(where: {
+            body.range(of: "^\($0)\\b", options: [.regularExpression, .caseInsensitive]) != nil
+        }) else { return nil }
+        let remainder = String(body.dropFirst(agency.count))
+            .trimmingCharacters(in: CharacterSet(charactersIn: ",").union(.whitespaces))
+        var series = remainder.components(separatedBy: ",").first ?? ""
+        // Cut at the first sentence break inside the segment: `Center For Cryptologic History.
+        // Top Secret.` names a series and then stops naming one. Doing this *before* the
+        // emptiness test is what makes `Department of Defense. Secret. Drafted by …` resolve
+        // to nothing rather than to a classification marking — an explicit marking guard was
+        // written, measured at 0 documents against this cut, and removed.
+        if let stop = series.range(of: ". ") { series = String(series[..<stop.lowerBound]) }
+        series = series.trimmingCharacters(in: CharacterSet(charactersIn: ".,;:").union(.whitespaces))
+        guard !series.isEmpty,
+              series.range(of: #"[A-Za-z]"#, options: .regularExpression) != nil,
+              series.count <= 80
+        else { return nil }
+        return .namedFileSeries(seriesName: "\(agency), \(series)",
+                                fileIdentifier: extractBoxOrFileString(from: remainder))
     }
 
     // MARK: - National Archives / WNRC

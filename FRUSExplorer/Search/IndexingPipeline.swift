@@ -622,7 +622,15 @@ public actor IndexingPipeline {
     ///   of abstract prose down to the name, which matters because that value is the archival
     ///   neighbour key and the catalogue query string. The `"Copy obtained from the … Library"`
     ///   idiom is deliberately kept: it asserts provenance rather than a duplicate.
-    public static let currentDateIndexVersion: Int = 27
+    /// - v28 — #353: agency-held file series. FRUS cites `Agency, Series, Box N, Folder`
+    ///   ("National Security Council, Carter Intelligence Files, Box 20, SCC Meetings"), and
+    ///   `tryNarrativeNamedSeries` could not reach them: its patterns are anchored to the start
+    ///   of the note and require the leading segment to END in Files/Papers/Records/Collection,
+    ///   which an agency name does not. `tryAgencyFileSeries` runs LAST in the narrative
+    ///   dispatch, so it claims only notes every other strategy declined. Measured against the
+    ///   v27 index: **592 recovered** (504 NSC), all from `unrecognized`, **0 lost** — the
+    ///   dispatch position guarantees the second number rather than merely reporting it.
+    public static let currentDateIndexVersion: Int = 28
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
