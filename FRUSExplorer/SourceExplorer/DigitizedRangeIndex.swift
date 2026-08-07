@@ -59,16 +59,23 @@ struct DigitizedRange: Codable, Sendable, Equatable, Identifiable {
 
 /// What the index can say about one decimal citation (#663).
 ///
-/// Three outcomes, and the distinction between the first two is the whole point: **4.6% of
-/// adjacent ranges within a class overlap** in NARA's own titles, and a wrong roll sends a
-/// researcher into the wrong several-hundred-page scan. An ambiguous answer is presented as
-/// ambiguous.
+/// Three outcomes, and the distinction between the first two carries the honesty.
+///
+/// Measured over the shipped artifact and the owner's index, of the 5,323 documents this
+/// reaches, **2,550 land in exactly one range and 2,773 land in more than one** — because
+/// NARA's digitisation is layered, not because its titles disagree. A single file unit,
+/// `763.72/354-13348A`, spans 12,994 serials and overlaps every narrow roll in the class. So a
+/// multi-range answer lists them narrowest first and claims nothing about which is *the* one.
 enum DigitizedRangeMatch: Sendable, Equatable {
     /// Exactly one digitised range claims this serial.
     case resolved(DigitizedRange)
-    /// More than one claims it. NARA's ranges overlap here and the catalogue cannot say which
-    /// is right, so both are offered and neither is asserted.
-    case ambiguous([DigitizedRange])
+    /// More than one claims it, **narrowest first**.
+    ///
+    /// This is not a contradiction in the catalogue — it is how the digitisation is layered.
+    /// `763.72/354-13348A` is one file unit spanning 12,994 serials, and it overlaps every
+    /// narrow roll in the class, so a citation legitimately sits inside both. Ordering by span
+    /// puts the most specific scan first without asserting that the wider one is wrong.
+    case multipleRanges([DigitizedRange])
     /// The class has digitised ranges but none contains this serial — worth saying, because
     /// "scans exist for this file, just not this part of it" is useful and is not "no scans".
     case classDigitizedButSerialNotCovered(rangeCount: Int)
@@ -142,7 +149,9 @@ struct DigitizedRangeIndex: Codable, Sendable {
         switch hits.count {
         case 0:  return .classDigitizedButSerialNotCovered(rangeCount: candidates.count)
         case 1:  return .resolved(hits[0])
-        default: return .ambiguous(hits.sorted { ($0.low, $0.high) < ($1.low, $1.high) })
+        default: return .multipleRanges(hits.sorted {
+            ($0.high - $0.low, $0.low, $0.naId) < ($1.high - $1.low, $1.low, $1.naId)
+        })
         }
     }
 

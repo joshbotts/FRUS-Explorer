@@ -1766,12 +1766,13 @@ struct MacSourceExplorerView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                case .ambiguous(let ranges):
-                    Text(String(localized: "source.explorer.scans.ambiguous",
+                case .multipleRanges(let ranges):
+                    Text(String(localized: "source.explorer.scans.multiple",
                                 defaultValue: """
-                                NARA describes \(ranges.count) scanned file ranges that each \
-                                contain \(fileIdentifier). The catalog does not say which holds \
-                                this document, so both are offered rather than one chosen.
+                                \(ranges.count) scanned file ranges contain \(fileIdentifier), \
+                                listed narrowest first. NARA digitised this file in overlapping \
+                                sets, so the widest is not wrong — the narrowest is simply the \
+                                most specific.
                                 """))
                         .font(.caption)
                         .foregroundStyle(.secondary)

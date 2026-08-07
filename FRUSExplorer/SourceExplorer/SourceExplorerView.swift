@@ -589,14 +589,15 @@ struct SourceExplorerView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            case .ambiguous(let ranges):
+            case .multipleRanges(let ranges):
                 Section(String(localized: "source.explorer.scans.header",
                                defaultValue: "Digitised Scans")) {
-                    Text(String(localized: "source.explorer.scans.ambiguous",
+                    Text(String(localized: "source.explorer.scans.multiple",
                                 defaultValue: """
-                                NARA describes \(ranges.count) scanned file ranges that each \
-                                contain \(fileIdentifier). The catalog does not say which holds \
-                                this document, so both are offered rather than one chosen.
+                                \(ranges.count) scanned file ranges contain \(fileIdentifier), \
+                                listed narrowest first. NARA digitised this file in overlapping \
+                                sets, so the widest is not wrong — the narrowest is simply the \
+                                most specific.
                                 """))
                         .font(.caption)
                         .foregroundStyle(.secondary)
