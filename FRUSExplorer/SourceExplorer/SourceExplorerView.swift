@@ -347,6 +347,47 @@ struct SourceExplorerView: View {
         if let outcome = CuratedLotResolutionsStore.shared?.outcome(forSeriesName: seriesName) {
             curatedLotSection(outcome)
         }
+
+        // #354 item 1: the citation states no repository, so until now 5,369 of these 5,745
+        // documents were told only that. Where the volume's own Sources section says where the
+        // series is — or the name states a Foreign Service post — say it.
+        if let routing = NamedFileSeriesRouting.routing(forSeriesName: seriesName) {
+            namedSeriesRoutingSection(routing)
+        }
+    }
+
+    // MARK: - Named File Series Routing
+
+    /// Where a series cited by name alone is held (#354 item 1).
+    ///
+    /// The evidence line is the point, not decoration: it is the FRUS editors' own sentence
+    /// about this series, so the researcher can judge the destination rather than trust it.
+    @ViewBuilder
+    private func namedSeriesRoutingSection(_ routing: NamedFileSeriesRouting.Entry) -> some View {
+        Section(NamedFileSeriesRouting.sectionTitle) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NamedFileSeriesRouting.label(routing))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(NamedFileSeriesRouting.title(routing))
+                    .font(.callout.weight(.medium))
+                if let url = NamedFileSeriesRouting.url(routing) {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label(NamedFileSeriesRouting.linkLabel(routing),
+                              systemImage: "arrow.up.right.square")
+                        .font(.callout)
+                    }
+                    .padding(.top, 2)
+                }
+            }
+            .padding(.vertical, 4)
+
+            Text(routing.evidence)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - NARA Collection Panel (new case)
