@@ -121,6 +121,15 @@ struct MacSourceExplorerView: View {
     /// re-renders on every state change. Mirrors the iOS twin.
     @State private var libraryOutcome: PresidentialLibraryOutcome = .none
 
+    /// Whether the user has run a manual NARA search on this document (#681).
+    ///
+    /// The offline library answer replaces the automatic results box, and the manual field
+    /// writes into the same `catalogResults`. Gating the box's return on *results* meant a
+    /// search that found nothing — or one blocked by a missing API key — left the screen
+    /// unchanged, which is the same "Search does nothing" the escape hatch existed to fix.
+    /// What has to be observable is that a search was **attempted**, not that it succeeded.
+    @State private var manualSearchRan = false
+
     /// Whether the rows currently held may be presented as the answer: they must have come
     /// from the automatic lookup **and** that lookup must have constrained on something.
     private var resultsAreTrustworthy: Bool {
@@ -328,7 +337,8 @@ struct MacSourceExplorerView: View {
                     // Search button silently do nothing.
                     if libraryOutcome.isHit {
                         offlineLibraryBox(libraryOutcome)
-                        if let parsed, !catalogResults.isEmpty || isLoading || loadError != nil {
+                        if let parsed, manualSearchRan || !catalogResults.isEmpty
+                            || isLoading || loadError != nil {
                             naraBox(for: parsed)
                         }
                     } else if let parsed {
@@ -1463,6 +1473,7 @@ struct MacSourceExplorerView: View {
     private func runManualSearch() async {
         let query = manualQuery.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return }
+        manualSearchRan = true
         await fetchResults(verified: false) {
             (try await client.searchCatalog(query: query)).map { [$0] } ?? []
         }

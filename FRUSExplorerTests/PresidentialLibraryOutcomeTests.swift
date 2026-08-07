@@ -365,6 +365,16 @@ struct PresidentialLibraryOutcomeTests {
                 The macOS offline branch reaches `naraBox` unconditionally — that is the \
                 automatic result set the owner decision suppresses. Gate it on manual state.
                 """)
+        // Owner-verified regression: gating on results alone opens the box only on SUCCESS.
+        // A search that finds nothing sets `catalogResults = []` with no error, and one
+        // blocked by a missing key populates nothing either — so the user saw neither "No
+        // matching record found" nor the key prompt, and Search still did nothing visible.
+        #expect(branch.contains("manualSearchRan"),
+                """
+                The macOS offline branch shows the results box only when the manual search \
+                SUCCEEDED. A zero-result search and a missing-key search must both still \
+                render — what has to be observable is that a search was attempted.
+                """)
     }
 
     @Test("Both views render the offline catalogue answer")
