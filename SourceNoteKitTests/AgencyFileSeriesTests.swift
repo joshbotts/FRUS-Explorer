@@ -114,12 +114,16 @@ struct AgencyFileSeriesTests {
     /// match would slice from the head while matching elsewhere, and key the document to
     /// whatever text happened to be that many characters in.
     ///
-    /// Found by mutation — dropping the `^` was caught by nothing until this test existed.
+    /// Found by mutation. Dropping the `^` was caught by nothing, and my first attempt at this
+    /// test was **vacuous** — the notes had no `Source:` prefix, so `parse()` never entered the
+    /// narrative dispatch and the rule was not reached at all. These two are the exact strings
+    /// that expose it: unanchored, they produce `seriesName: "Department of Energy, unfiled"`
+    /// with a file identifier of `"filed. Secret. A copy is held by…"`.
     @Test("An agency mentioned mid-note does not claim the citation")
     func agencyMustLeadTheCitation() {
         for note in [
-            "Notes of a conversation. No classification marking. A copy is held by the Department of Energy, Executive Secretariat Files.",
-            "Undated summary. Secret. Prepared for the National Security Council, Institutional Files.",
+            "Source: Backchannel message, unfiled. Secret. A copy is held by the Department of Energy, Executive Secretariat Files.",
+            "Source: Undated summary, unfiled. Secret. Prepared for the National Security Council, Institutional Files.",
         ] {
             #expect(series(note) == nil,
                     Comment(rawValue: "an agency named mid-note claimed the citation: \(note)"))
