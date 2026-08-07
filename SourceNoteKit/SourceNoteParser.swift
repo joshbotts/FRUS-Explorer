@@ -957,9 +957,14 @@ public struct SourceNoteParser {
     // MARK: - Era 3b: Inline Lot File
 
     private func tryInlineLotFile(_ text: String) -> ParsedSourceNote? {
-        guard let lotRange = text.range(of: #"\bFiles?:\s*Lot\s+"#,
+        // #353 §3.5: this runs second in `parse()`, ahead of every decimal rule, so an
+        // `Ibid., Conference Files: Lot 65 D 533` in a *remark* used to outrank the decimal
+        // citation the note actually leads with. 429 documents — the largest of the three
+        // channels, and the one the owner hit in #675. See `lotClaimScope(_:)`.
+        let scope = Self.lotClaimScope(text)
+        guard let lotRange = scope.range(of: #"\bFiles?:\s*Lot\s+"#,
                                         options: .regularExpression) else { return nil }
-        let afterLot = String(text[lotRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+        let afterLot = String(scope[lotRange.upperBound...]).trimmingCharacters(in: .whitespaces)
         let (lotNumber, box) = splitLotAndBox(afterLot)
         guard !lotNumber.isEmpty else { return nil }
         let rg = lotFileRecordGroup(lotNumber)
@@ -1447,14 +1452,92 @@ public struct SourceNoteParser {
     // MARK: - Lot File (narrative)
 
     private func tryNarrativeLotFile(_ body: String) -> ParsedSourceNote? {
-        guard let lotKeyRange = body.range(of: #"\bLot\s+"#, options: .regularExpression) else { return nil }
-        let afterLot = String(body[lotKeyRange.upperBound...])
+        let scope = Self.lotClaimScope(body)
+        guard let lotKeyRange = scope.range(of: #"\bLot\s+"#, options: .regularExpression) else { return nil }
+        let afterLot = String(scope[lotKeyRange.upperBound...])
         let (lotNumber, box) = splitLotAndBox(afterLot)
         guard !lotNumber.isEmpty else { return nil }
         // Determine RG from lot file letter designator:
         // F-designator → RG 84 (post records); D-designator and others → RG 59
         let rg = lotFileRecordGroup(lotNumber)
         return .lotFile(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: box)
+    }
+
+    /// The span of a note within which a `Lot` token speaks for **this** document
+    /// (#353 §3.5).
+    ///
+    /// ## The defect
+    /// Both lot strategies used to scan the whole note and take the first `Lot` they found.
+    /// FRUS routinely names a *second* archive in a later sentence — where another copy of
+    /// the document lives, or where a document the remark cites lives — and those two shapes
+    /// were flipping the note onto the lot route:
+    ///
+    /// ```
+    /// Source: Carter Library, National Security Affairs, Brzezinski Material, … Box 102, …
+    ///         [later sentence names a lot]                    → filed under the wrong archive
+    /// Source: Department of State, Central Files, TEL 9.
+    ///         (E Bureau Staff Minutes, March 15; … E/CBA/REP Files: Lot 72 A 6248)
+    ///                                                          → the lot is the *footnote's*
+    /// ```
+    ///
+    /// Measured: **554 documents** — 243 whose leading sentence names a presidential library
+    /// and 311 whose leading sentence names the central files. The owner reached 229 and 275
+    /// for the same two shapes by a different route, from the live index.
+    ///
+    /// ## Why the leading sentence, and not simply "outside parentheses"
+    /// Because the 1961–1963 abstract notes are genuinely lot files and put their citation in
+    /// the **tail**: `"Anatomy of the revolution in Ecuador. Secret. 2 pp. WNRC, RG 59, S/P
+    /// Files: Lot 67 D 548, Ecuador."` A rule that refused any lot outside sentence 1 would
+    /// break **1,006** correct classifications — measured, and more than the defect is worth.
+    /// So the scope narrows only when the leading sentence has *already named a competing
+    /// repository*; otherwise it is the whole body, exactly as before.
+    ///
+    /// This is the same principle `strippingParentheticals(_:)` states for FRC accessions —
+    /// a secondary copy is not the cited original — applied to the lot channel.
+    /// ## Why the parentheticals are stripped too
+    /// Narrowing to the leading sentence is not enough on its own. The sentence splitter ends
+    /// a sentence at a period followed by whitespace **and a capital**, and a trailing
+    /// parenthetical opens with `(` — so `"… Central Files, TEL 9. (E Bureau Staff Minutes,
+    /// March 15; … E/CBA/REP Files: Lot 72 A 6248)"` is *one* sentence to the splitter and the
+    /// lot rides along inside it. `strippingParentheticals(_:)` already states the principle
+    /// for FRC accessions — a parenthesised archive describes a secondary copy, never the
+    /// cited original — so the same call finishes the job here.
+    static func lotClaimScope(_ body: String) -> String {
+        let lead = firstSentence(of: body)
+        guard namesCompetingRepository(lead) else { return body }
+        return strippingParentheticals(lead)
+    }
+
+    /// Whether a sentence already names a repository that is not a lot file, and so has
+    /// claimed the document before any later `Lot` token can.
+    ///
+    /// Reuses `centralFilesAnchorRegex` rather than `matchesCentralFiles(_:)`: the latter
+    /// admits a bare `"Department of State"`, which the abstract lot notes above also carry
+    /// (`"… 3 pp. Department of State, S/P Files: Lot 67 D 548"`), so using it here would
+    /// discard the very classifications this rule is scoped to protect.
+    /// ## Why the central-files *anchor*, and not `matchesCentralFiles(_:)`
+    /// Measured, swapping the anchor for that predicate's bare `"Department of State"` test
+    /// changes **373 documents**, and the change is a net loss: **61 of them fall back out of a
+    /// specific repository into `lotFile`** (36 `naraCollection`, 23 `cfpfFile`, 1
+    /// `centralFiles`) and 2 fall to `unrecognized`.
+    ///
+    /// The reason is a shape the bare test cannot see. `"Source: National Archives and Records
+    /// Administration, RG 59, Central Files 1960–63, 110.10/5–1062."` names the central files
+    /// and never names the Department, so `"Department of State"` does not fire, the scope
+    /// stays the whole note, and a lot mentioned later captures a National Archives citation.
+    /// The anchor matches `Central Files 1960–63` and the note keeps its own classification.
+    ///
+    /// ## Why the manuscript repositories are included
+    /// The Library of Congress leads are the same defect: `"Source: Library of Congress,
+    /// Manuscript Division, Harriman Papers, …"` filed under a State Department lot named
+    /// later in the note. Only 4 documents, but each is a wrong archive on a named personal
+    /// collection — and both keyword sets are read, never written, here.
+    private static func namesCompetingRepository(_ sentence: String) -> Bool {
+        let range = NSRange(sentence.startIndex..., in: sentence)
+        if centralFilesAnchorRegex?.firstMatch(in: sentence, range: range) != nil { return true }
+        return (libraryKeywords + manuscriptRepositoryKeywords).contains {
+            sentence.range(of: $0, options: .caseInsensitive) != nil
+        }
     }
 
     // MARK: - Presidential Library
@@ -1623,8 +1706,9 @@ public struct SourceNoteParser {
     }
 
     private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
-        guard let (lotNumber, fullRange) = Self.firstLotReference(in: text) else { return nil }
-        let remainder = String(text[fullRange.upperBound...])
+        let scope = Self.lotClaimScope(text)
+        guard let (lotNumber, fullRange) = Self.firstLotReference(in: scope) else { return nil }
+        let remainder = String(scope[fullRange.upperBound...])
         let box = extractBoxOrFileString(from: remainder)
         return .lotFile(recordGroup: lotFileRecordGroup(lotNumber),
                         lotNumber: lotNumber, fileIdentifier: box)

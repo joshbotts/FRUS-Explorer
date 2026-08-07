@@ -598,7 +598,21 @@ public actor IndexingPipeline {
     ///   space (`751G.5– MSP`), the third spelling of the suffix #688 unified. Measured
     ///   against the v24 index: 3,333 newly classed, 1 corrected (840.50. UNRRA joins the 145
 ///   notes spelling the same class 840.50 UNRRA), 0 lost.
-    public static let currentDateIndexVersion: Int = 25
+    /// - v26 — #353 / §3.5: a lot number named *outside* the note's own citation clause was
+    ///   flipping the whole note onto the lot route. FRUS routinely names a second archive
+    ///   later in a note — where another copy lives, or where a document the remark cites
+    ///   lives — and three strategies (`tryInlineLotFile`, `tryNarrativeLotFile`,
+    ///   `tryLooseLotFile`) each scanned the entire note and took the first `Lot` they found.
+    ///   `SourceNoteParser.lotClaimScope(_:)` now narrows the search to the leading sentence
+    ///   **when that sentence has already named a competing repository** — a presidential
+    ///   library, a manuscript repository, or the central files. Measured against the v25
+    ///   index: **581 corrected** (261 → centralFiles, 209 → presidentialLibrary, 78 →
+    ///   naraCollection, 28 → cfpfFile, 5 → ciaCollection), **0 lost** — every one moved to a
+    ///   *more* specific repository and none fell to `unrecognized`. The scope stays the whole
+    ///   note otherwise, because the 1961–1963 abstract notes are genuinely lot files and put
+    ///   their citation in the tail; a blanket "sentence 1 only" rule would have broken 1,006
+    ///   correct classifications.
+    public static let currentDateIndexVersion: Int = 26
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
