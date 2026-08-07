@@ -242,16 +242,26 @@ struct VolumeSourcesView: View {
                             Text(String(localized: "browser.sources.collections.header",
                                         defaultValue: "Archival Collections"))
                             Spacer()
-                            Button(allExpanded
-                                   ? String(localized: "browser.sources.collapseAll",
-                                            defaultValue: "Collapse All")
-                                   : String(localized: "browser.sources.expandAll",
-                                            defaultValue: "Expand All")) {
-                                expandedNodes = allExpanded ? [] : Self.expandableIDs(collectionTree)
+                            // #727: only where there is something to expand. A flat outline —
+                            // every row at depth 0, no node with children — gave
+                            // `expandableIDs` an empty set, so the control rendered, did
+                            // nothing when pressed, and never changed its own label. Measured
+                            // over the reindexed store, **8 of the 255 volumes with an outline
+                            // are entirely flat**, carrying 520 rows between them, and every
+                            // one of them showed that dead button (frus1969-76ve13 327 rows,
+                            // frus1981-88v10 69, frus1951v05 25).
+                            if hasExpandableNodes {
+                                Button(allExpanded
+                                       ? String(localized: "browser.sources.collapseAll",
+                                                defaultValue: "Collapse All")
+                                       : String(localized: "browser.sources.expandAll",
+                                                defaultValue: "Expand All")) {
+                                    expandedNodes = allExpanded ? [] : Self.expandableIDs(collectionTree)
+                                }
+                                .font(.caption)
+                                .buttonStyle(.borderless)
+                                .textCase(nil)
                             }
-                            .font(.caption)
-                            .buttonStyle(.borderless)
-                            .textCase(nil)
                         }
                     }
                 }
@@ -520,6 +530,16 @@ struct VolumeSourcesView: View {
     private var allExpanded: Bool {
         let ids = Self.expandableIDs(collectionTree)
         return !ids.isEmpty && ids.isSubset(of: expandedNodes)
+    }
+
+    /// Whether the outline has any node that can be opened at all (#727).
+    ///
+    /// `allExpanded` cannot answer this: it is `false` both when there is more to open **and**
+    /// when there is nothing to open, because it guards on `!ids.isEmpty`. So a flat outline
+    /// reported "not all expanded" forever, which is why the control sat there reading
+    /// "Expand All" and doing nothing.
+    private var hasExpandableNodes: Bool {
+        !Self.expandableIDs(collectionTree).isEmpty
     }
 
     /// The ids of every node that has children, at any depth.
