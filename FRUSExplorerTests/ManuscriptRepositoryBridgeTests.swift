@@ -89,7 +89,21 @@ struct ManuscriptRepositoryBridgeTests {
             + "halt on the military situation in Vietnam. ( Johnson Library, Recordings and "
             + "Transcripts, Recording of Telephone Conversation Between Johnson and Wheeler , "
             + "April 28, 1968, 11:10 a.m., Tape F6804.03, PNO 3)"
-        #expect(try resolve(harriman) == nil)
+        // #353 §3.2: this used to parse as `Library of Congress` + **`Recordings and
+        // Transcripts`** — the right repository welded to the Johnson Library's collection out
+        // of the parenthetical — and the pair resolved to nothing, which is what the original
+        // `== nil` here was really observing. The parenthetical is now stripped, so the note
+        // keeps its own collection and may legitimately resolve. The invariant this test is
+        // named for is asserted directly on the parse, where it cannot be satisfied by an
+        // unrelated lookup miss.
+        if case .presidentialLibrary(let library, let collection, _) =
+            SourceNoteParser().parse(harriman) {
+            #expect(library == "Library of Congress")
+            #expect(collection == "Manuscript Division",
+                    "got \(collection) — a cross-reference collection has been attributed")
+        } else {
+            Issue.record("expected a manuscript-repository parse for the Harriman note")
+        }
 
         // Source is the National Defense University; the Hilsman Papers are at Kennedy.
         let taylor = "Source: National Defense University, Taylor Papers, Vietnam, chap. "
@@ -97,7 +111,20 @@ struct ManuscriptRepositoryBridgeTests {
             + "the White House. A memorandum of conversation of this meeting by Hilsman is "
             + "in the Kennedy Library, Hilsman Papers, Countries, Vietnam, White House "
             + "Meetings, State Memcons."
-        #expect(try resolve(taylor) == nil)
+        // Same shape, and it exposed a second defect underneath: `libraryKeywords` is a match
+        // list, not a priority list, and the old loop iterated it in list order — so
+        // `Kennedy Library`, listed first, was taken out of the closing remark over the
+        // `National Defense University` this citation opens with. The old repository rule hid
+        // it by taking the first comma segment of everything before the keyword, which is NDU,
+        // so the wrong keyword produced the right repository and the wrong collection.
+        if case .presidentialLibrary(let library, let collection, _) =
+            SourceNoteParser().parse(taylor) {
+            #expect(library == "National Defense University")
+            #expect(collection == "Taylor Papers",
+                    "got \(collection) — the Hilsman Papers are at the Kennedy Library")
+        } else {
+            Issue.record("expected a repository parse for the Taylor note")
+        }
     }
 
     // MARK: - What the guard must NOT touch

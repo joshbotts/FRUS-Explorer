@@ -1570,8 +1570,14 @@ public struct SourceNoteParser {
         // citation reads `Source: Department of State, Central Files, 033.6141/4–556` were
         // filed at a presidential library because a later parenthetical mentioned one.
         let searchable = Self.droppingSecondaryCopyClauses(Self.strippingParentheticals(body))
-        for keyword in Self.libraryKeywords {
-            guard let keyRange = searchable.range(of: keyword, options: .caseInsensitive) else { continue }
+        // The keyword is chosen by POSITION IN THE NOTE, not by position in the keyword list.
+        // Iterating the list took `Kennedy Library` — which happens to be listed first — out of
+        // a remark, on a note whose own citation reads `National Defense University, Taylor
+        // Papers` and whose only NDU mention is at character 0. The old repository rule hid
+        // this: it took the *first comma segment* of everything before the keyword, which on
+        // that note is `National Defense University`, so the wrong keyword produced the right
+        // answer by accident and the two bugs cancelled.
+        if let (keyword, keyRange) = Self.earliestLibraryKeyword(in: searchable) {
             let library = Self.libraryNameSegment(in: searchable, endingAt: keyRange, keyword: keyword)
 
             // Collection = next comma-delimited segment
@@ -1584,6 +1590,32 @@ public struct SourceNoteParser {
             return .presidentialLibrary(library: library, collection: collection, fileIdentifier: fileId)
         }
         return nil
+    }
+
+    /// The library keyword that appears **earliest in the note**, with its range.
+    ///
+    /// `libraryKeywords` is a match list, not a priority list, and iterating it treated it as
+    /// one. On `"National Defense University, Taylor Papers, Vietnam, chap. XXIII. … A
+    /// memorandum … by Hilsman is in the Kennedy Library, Hilsman Papers, …"` the loop took
+    /// `Kennedy Library` — listed first — out of the closing remark, over the repository the
+    /// citation opens with.
+    ///
+    /// Ties go to the **longer** keyword so `George H.W. Bush Library` wins over the
+    /// `Bush Library` alias that starts 10 characters later; without that, the alias list
+    /// would silently truncate every name it also matches.
+    static func earliestLibraryKeyword(in body: String)
+        -> (keyword: String, range: Range<String.Index>)? {
+        var best: (keyword: String, range: Range<String.Index>)?
+        for keyword in libraryKeywords {
+            guard let range = body.range(of: keyword, options: .caseInsensitive) else { continue }
+            guard let current = best else { best = (keyword, range); continue }
+            if range.lowerBound < current.range.lowerBound
+                || (range.lowerBound == current.range.lowerBound
+                    && keyword.count > current.keyword.count) {
+                best = (keyword, range)
+            }
+        }
+        return best
     }
 
     /// Removes remark sentences that assert where a **second copy** lives (#353 §3.2).
