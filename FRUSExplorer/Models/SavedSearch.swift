@@ -128,12 +128,47 @@ import SwiftData
         self.personRef = parameters.personRef ?? ""
         self.sortOrder = "relevance"
         self.createdAt = .now
+        // The complete snapshot (#756). Encoding cannot realistically fail for this value type, and
+        // a nil here degrades to exactly the old behaviour rather than losing the record.
+        self.parametersData = try? JSONEncoder().encode(parameters)
     }
+
+    // MARK: - Complete snapshot (#756)
+
+    /// The whole `SearchParameters` value, JSON-archived.
+    ///
+    /// ## Why one blob and not eight more columns
+    /// The scalar columns below persist 12 of `SearchParameters`' 20 fields. The other **eight** —
+    /// `userTagIds`, `volumeIds`, `documentIds`, `excludeDocumentIds`, `projectId`,
+    /// `personRollupId`, `personLabel`, `includeFrontMatter` — were dropped on save and returned as
+    /// defaults on recall, so a saved search ran **broader than the one the user named**, silently
+    /// (audit M-26). Worse, the facet panel writes `personRollupId` and clears `personRef`, so a
+    /// facet-narrowed person filter could not survive a save at all — while the legacy single-volume
+    /// `personRef` round-tripped fine.
+    ///
+    /// Adding eight columns would fix today's list and leave the same trap for field nineteen.
+    /// Archiving the value itself means **the drop class cannot recur**: a new field on
+    /// `SearchParameters` is persisted by construction. It is also one CloudKit identifier instead
+    /// of eight, which matters because every one of them is a schema deploy (R-7).
+    ///
+    /// ## Compatibility
+    /// `nil` on every record written before this build, so ``searchParameters`` falls back to the
+    /// scalar columns. Those columns are still WRITTEN too — they are what the CloudKit schema and
+    /// any older build on another device can read, so a record saved here still recalls (partially,
+    /// as before) on a device that has not updated.
+    var parametersData: Data?
 
     // MARK: - Round-trip
 
     /// Reconstructs the `SearchParameters` snapshot stored in this record.
     var searchParameters: SearchParameters {
+        // The complete snapshot wins when present (#756). The scalar reconstruction below remains
+        // for records written before this build — and for anything that fails to decode, which is
+        // better than handing back an empty search.
+        if let parametersData,
+           let decoded = try? JSONDecoder().decode(SearchParameters.self, from: parametersData) {
+            return decoded
+        }
         let kw  = queryText.isEmpty ? nil : queryText
         let ph  = phraseText.isEmpty ? nil : phraseText
         let pw  = prefixWildcard.isEmpty ? nil : prefixWildcard

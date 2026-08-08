@@ -18,7 +18,11 @@ import Foundation
 ///   1.0 — Session 38: initial implementation
 ///   Session 09: `SearchParameters.subjectTagIds` is retained-but-inert (the
 ///         document-level subject taxonomy was retired; the SQL filter is gone).
-public enum DocumentTypeFilter: Sendable, Equatable {
+/// `Codable` so a whole `SearchParameters` can be archived (#756) — see `SavedSearch`.
+///
+/// Raw-value backed on purpose: a synthesised enum encoding is positional, so reordering the cases
+/// would silently re-interpret every archived search. The strings are the contract.
+public enum DocumentTypeFilter: String, Codable, Sendable, Equatable {
     /// Return all documents regardless of type (default).
     case all
     /// Exclude editorial notes — return only primary-source documents.
@@ -95,7 +99,7 @@ public struct PersonRollupAnchor: Sendable, Equatable, Hashable, Codable {
     public var signatureKey: String { "\(volumeId)/\(ref)" }
 }
 
-public struct SearchParameters: Sendable, Equatable {
+public struct SearchParameters: Codable, Sendable, Equatable {
 
     // MARK: - Full-text fields
 
