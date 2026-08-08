@@ -198,6 +198,38 @@ struct POCOMIndexTests {
         #expect(Set(career.a.map(\.id)).count == career.a.count)
     }
 
+    // MARK: - Year formatting
+
+    @Test("A lifespan never carries a thousands separator")
+    func lifespanHasNoGroupingSeparator() throws {
+        // The shipped bug: the Career footer read "1,893–1,971". `String(localized:)` interpolates
+        // an Int through a number formatter; plain Swift interpolation does not, which is why the
+        // People list's own `role · era` subtitles were always right and this line was not.
+        //
+        // This drives `POCOMCareer.lifespanText` — the real emitter — not a re-implementation.
+        let index = try decode(POCOMIndex.self, achesonJSON)
+        let acheson = try #require(index.career(forSlug: "acheson-dean-gooderham"))
+        #expect(acheson.lifespanText == "1893–1971")
+        #expect(!(acheson.lifespanText ?? "").contains(","))
+
+        // The guard is not vacuous: unformatted interpolation really does group on this platform.
+        #expect(String(localized: "test.year.grouped", defaultValue: "\(1893)") != "1893",
+                "if this ever equals 1893 the platform stopped grouping and the fix is moot")
+    }
+
+    @Test("A one-sided or absent lifespan reads correctly, still ungrouped")
+    func partialLifespans() throws {
+        func career(_ born: Int?, _ died: Int?) throws -> POCOMCareer {
+            try decode(POCOMCareer.self, """
+                {"n":"X","a":[]\(born.map { ",\"b\":\($0)" } ?? "")\(died.map { ",\"d\":\($0)" } ?? "")}
+                """)
+        }
+        #expect(try career(1893, nil).lifespanText == "born 1893")
+        #expect(try career(nil, 1971).lifespanText == "died 1971")
+        #expect(try career(nil, nil).lifespanText == nil)
+        #expect(try !(career(1893, nil).lifespanText ?? "").contains(","))
+    }
+
     @Test("A malformed or empty index decodes to no careers rather than throwing")
     func tolerantDecoding() throws {
         // The store returns nil on a decode failure and the section disappears; a partial file

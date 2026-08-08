@@ -584,7 +584,7 @@ struct PersonIndexDetailSheet: View {
             Text(String(localized: "people.detail.career", defaultValue: "Career"))
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
-                if let lifespan = careerLifespanText(career) {
+                if let lifespan = career.lifespanText {
                     Text(lifespan)
                 }
                 // Named, because these are the Department's own appointment records and a reader
@@ -593,20 +593,6 @@ struct PersonIndexDetailSheet: View {
                             defaultValue: "From the Department's Principal Officers and Chiefs of Mission register."))
             }
             .font(.caption2)
-        }
-    }
-
-    /// "1893–1971", when the register records life dates the volume's own list does not.
-    private func careerLifespanText(_ career: POCOMCareer) -> String? {
-        switch (career.b, career.d) {
-        case let (.some(born), .some(died)):
-            return String(localized: "people.detail.career.lifespan", defaultValue: "\(born)–\(died)")
-        case let (.some(born), .none):
-            return String(localized: "people.detail.career.born", defaultValue: "born \(born)")
-        case let (.none, .some(died)):
-            return String(localized: "people.detail.career.died", defaultValue: "died \(died)")
-        case (.none, .none):
-            return nil
         }
     }
 
