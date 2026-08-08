@@ -772,6 +772,14 @@ final class AppState {
     /// refocus-on-reinvoke shape as `DocumentFindBar`'s `focusToken`.
     var searchQueryFocusToken = 0
 
+    /// Whether the indexing-education sheet has auto-opened in this app session (#757 / audit L-46).
+    ///
+    /// Lives here because `AppState` **is** the session — created once per launch, outliving every
+    /// view recreation. The flag was `@AppStorage`, which made the designed once-per-session
+    /// introduction a once-per-**install** one: a researcher who indexed a batch months ago never
+    /// saw it again on their next tranche, because nothing ever reset the key.
+    var hasShownIndexingEducationThisSession = false
+
     /// Whether the async boot has finished wiring the index stack (#753).
     ///
     /// `downloadManager` is assigned **last** in `bootDownloadManager`, after the store open, the

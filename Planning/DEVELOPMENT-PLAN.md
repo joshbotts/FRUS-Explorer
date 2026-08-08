@@ -2968,3 +2968,60 @@ only a raw-value enum can do.
 This is adjacent to the four `contains` failures of the last four sessions but distinct: those
 matched the **wrong occurrence**; this matched the **right** one and still proved nothing.
 **Assert the property, not the presence of a string that the property happens to produce.**
+
+---
+
+## Session 2026-08-08 — #757: the five findings that close the navigation audit
+
+Thirteenth and final item off the 2026-08 navigation and state audit — **L-41, L-42, L-44, L-46,
+L-47**. Five independent small fixes.
+
+**L-41 was in direct tension with #750, and the obvious fix was the wrong one.** The audit wants the
+ranked list to survive an open; #750's H-5 fix was to *dismiss* a sheet before handing off. Deleting
+the `dismiss()` here would have reinstated H-5 exactly — the document landing invisibly beneath a
+still-presented sheet. The answer that satisfies both is the one #750/#751 established for reader
+sheets: **push the document inside the sheet.** Related Documents and Archival Neighbors now own a
+stack and a reader, with #751's push/replace semantics. A test names that trap so the next reader
+does not "simplify" it back.
+
+**L-42** — the dead-but-armed `.constant([])`. Rather than delete the branch, it now passes the real
+`$vm.navigationPath`, which exists on both platforms: the trap cannot spring if `SearchView` is ever
+reused on macOS.
+
+**L-44** — the graph sheet's `if let store` had no `else`, so a nil store presented a blank sheet
+(reachable during boot and after an in-session reindex). It now shows #753's `BootPlaceholderView` —
+reusing that vocabulary rather than inventing a second one.
+
+**L-46** — `hasShownThisSession` was `@AppStorage` with nothing resetting it, so a once-per-session
+introduction was once-per-**install**. Moved to `AppState`, which genuinely is the session.
+
+**L-47** — the alert action read a slot its own `isPresented` setter nils. Captured via `.onChange`.
+A first attempt captured it inside the binding's *getter*, and was backed out: a getter that mutates
+state is a re-render hazard and is called at times SwiftUI does not promise.
+
+**Verification:** 8 tests, **10/10 mutations caught** — after two rounds and one harness fix.
+
+**Four guards were weak, and the shape is sharper than the previous sessions'.** Every string I
+matched was the *right* string; it just was not load-bearing.
+
+- **M1/M2:** deleting the `return` after `onOpenInSheet(entry)` left the callback, the `@State`
+  path and the `navigationDestination` all present — so all three assertions passed while the row
+  opened in the sheet **and then also** handed off to Browse and dismissed. Now asserts the early
+  return, with a fall-through variant in the sweep.
+- **M5:** `} else {` → `} else if false {` keeps `BootPlaceholderView` in the file, so `contains`
+  passed while the branch became unreachable. Now asserts the `else` is unconditional.
+- **M6:** I checked for `@AppStorage` + the key; a raw `UserDefaults.standard.bool(forKey:)`
+  reinstates the defect and is not `@AppStorage`. Now checks **any** persistence API against that
+  key, and that the **guard** reads the session flag.
+
+The five previous sessions' failures were `contains` matching the **wrong occurrence**. These matched
+the right one and still proved nothing: **the fix existed in the file but was not in the control
+path.** Assert the mechanism, not its vocabulary.
+
+**A harness bug worse than a weak guard.** M5 survived a second time for a different reason: the
+mutation string `"                } else {"` (16 spaces) is a **substring of any more-deeply-indented
+`} else {`**, and Python's `str.replace` took the first match — line 584, nowhere near the graph
+sheet. The graph's `else` was never mutated, so the test passed correctly and the sweep reported
+SURVIVED. Unlike a `PATTERN-MISS`, which announces itself, **a mutant that silently hits the wrong
+line is indistinguishable from a weak guard.** Re-anchored on the unique `#757 (audit L-44)` comment:
+caught. **A mutation string must be UNIQUE in the file, not merely correct at the intended site.**

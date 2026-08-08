@@ -275,6 +275,18 @@ struct SecondProjectNudgeModifier: ViewModifier {
     #endif
     @Query private var allProjects: [Project]
     @AppStorage("frus.hasShownSecondProjectNudge") private var hasShown = false
+
+    /// The project the nudge is about, captured when the signal arrives (#757 / audit L-47).
+    ///
+    /// The alert's `isPresented` setter nils `appState.pendingSecondProjectNudge` on dismissal, and
+    /// whether SwiftUI writes `isPresented = false` before or after running a button action has
+    /// varied across OS releases. Reading the shared slot inside the action could therefore find nil
+    /// and silently do nothing — the alert closing with no Project Home, and no second chance,
+    /// because the signal is one-shot.
+    ///
+    /// Captured in `.onChange` rather than in the binding's getter: a getter that mutates state is
+    /// both a re-render hazard and called at times SwiftUI does not promise.
+    @State private var nudgeProjectId: UUID?
     #if os(iOS)
     @State private var homeSheetProjectId: UUID?
     #endif
@@ -287,12 +299,25 @@ struct SecondProjectNudgeModifier: ViewModifier {
                     hasShown = true
                 }
             }
+            .onChange(of: appState.pendingSecondProjectNudge) { _, pending in
+                if let pending { nudgeProjectId = pending }   // #757 / L-47
+            }
             .alert(
                 String(localized: "project.nudge.secondProject.title", defaultValue: "You have a second project"),
                 isPresented: nudgePresented
             ) {
                 Button(String(localized: "project.nudge.secondProject.open", defaultValue: "Open Project Home")) {
-                    let id = appState.pendingSecondProjectNudge
+                    // #757 (audit L-47): use the id captured when the alert was PRESENTED, not the
+                    // shared slot read inside the action.
+                    //
+                    // `nudgePresented`'s setter nils `pendingSecondProjectNudge` on dismissal, and
+                    // whether SwiftUI writes `isPresented = false` before or after running a button
+                    // action has varied across OS releases. Reading the slot here could therefore
+                    // find nil and silently do nothing — the alert closing with no Project Home and
+                    // no way to get it back, since the signal is one-shot.
+                    //
+                    // The captured value cannot be cleared out from under the action.
+                    let id = nudgeProjectId ?? appState.pendingSecondProjectNudge
                     hasShown = true
                     if let id { openProjectHome(id) }
                 }

@@ -636,6 +636,16 @@ struct DocumentView: View {
                     // `.relatedDocuments` case injects this; without it, cross-references inside a
                     // document pushed in the graph sheet posted to `.anyWindow`.
                     .environment(\.sceneID, sceneID)
+                } else {
+                    // #757 (audit L-44): a nil store used to present a COMPLETELY BLANK sheet — this
+                    // `if let` had no else, and neither entry point checked the store first. The
+                    // store is nil during search-infrastructure boot and briefly while the read-only
+                    // stores are recreated after an in-session reindex, so this is reachable, not
+                    // theoretical. Says "still starting" instead, reusing #753's placeholder.
+                    BootPlaceholderView(
+                        detail: String(localized: "graphSheet.preparing.detail",
+                                       defaultValue: "The cross-reference graph will appear in a moment."))
+                        .presentationDetents([.medium, .large], selection: $graphSheetDetent)
                 }
             case .summarizePromptPicker:
                 SummarizationPromptPickerSheet(
