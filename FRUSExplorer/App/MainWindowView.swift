@@ -128,7 +128,7 @@ struct MainWindowView: View {
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
-                DocumentPlaceholderView()
+                DocumentPlaceholderView { navigationPath.append($0) }
                     .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                         MacDocumentView(
                             entry: entry,
@@ -403,6 +403,10 @@ struct MainWindowView: View {
 
 /// Shown in the document column when no document has been selected yet.
 private struct DocumentPlaceholderView: View {
+
+    /// Opens the resumed document in this window's stack (#754).
+    let onResume: (DocumentBrowserEntry) -> Void
+
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "doc.text.magnifyingglass")
@@ -411,9 +415,19 @@ private struct DocumentPlaceholderView: View {
             Text("Select a document to begin")
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
-            Text("Use Search (⌘F) or open the Corpus Browser (⇧⌘B)")
+            // ⌘S, not ⌘F: Search moved to ⌘S in #363 #5 and ⌘F became Find in Document. This
+            // string kept the old shortcut — the same stale claim #749 corrected in the manual,
+            // still wrong in the app itself.
+            Text("Use Search (⌘S) or open the Corpus Browser (⇧⌘B)")
                 .font(.system(size: 12))
                 .foregroundStyle(.tertiary)
+
+            // #754: resume the last document read, offered rather than auto-opened.
+            ResumeReadingRow { entry in
+                onResume(entry)
+            }
+            .padding(.top, 8)
+            .frame(maxWidth: 420)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
