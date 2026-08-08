@@ -173,10 +173,26 @@ struct ResumeReadingTests {
 
     @Test("Both platforms offer it")
     func bothPlatformsOfferResume() throws {
-        #expect(try Self.source("Browser/CorpusView.swift").contains("ResumeReadingRow"),
-                "the iOS Browse root must offer resume (#754 / H-6)")
-        #expect(try Self.source("App/MainWindowView.swift").contains("ResumeReadingRow"),
-                "the macOS placeholder — which said only 'Select a document to begin' — must too")
+        // codeLines, not `contains` on the raw source: the call site carries a comment that NAMES
+        // ResumeReadingRow, so a raw `contains` passed with the call itself deleted (measured —
+        // mutation M4 survived). Same trap as #752's M8: prose satisfying a code assertion.
+        for (relative, why) in [("Browser/CorpusView.swift", "the iOS Browse root"),
+                                ("App/MainWindowView.swift", "the macOS placeholder")] {
+            let calls = Self.codeLines(try Self.source(relative))
+                .filter { $0.text.contains("ResumeReadingRow") }
+            #expect(!calls.isEmpty, "\(why) must offer resume-reading (#754 / H-6)")
+        }
+    }
+
+    @Test("Dismissing the offer sticks for the session")
+    func dismissalSticks() throws {
+        // An offer has to be refusable, and a refusal that the next render undoes is not one.
+        let source = try Self.source("Browser/ResumeReadingRow.swift")
+        #expect(source.contains("guard !dismissed"), """
+            The resumable lookup must respect `dismissed` (#754). Without it the row reappears             immediately after the user swipes it away, which makes the dismiss control a lie.
+            """)
+        #expect(source.contains("dismissed = true"),
+                "and the Dismiss action must actually set it")
     }
 
     // MARK: - L-45: no half-restore
