@@ -500,7 +500,7 @@ private struct SettingsScopesPane: View {
                 // Settings has no document-host provenance — clear the word cloud's binding so any
                 // document open it spawns resolves via the D3 recency fallback, not a stale host.
                 appState.bindTool(.wordCloud, to: nil)
-                openWindow(id: "frus.wordcloud")
+                openWindow.fronting(id: "frus.wordcloud")
                 // An already-open cloud window retargets via its onChange, but openWindow(id:)
                 // does not raise it — front it explicitly, like every other direct open (#334).
                 bringMacWindowToFront(id: "frus.wordcloud")

@@ -192,8 +192,7 @@ struct PersonIndexView: View {
                                                       personLabel: indexEntry.entry.name), from: sceneID)
             #if os(macOS)
             appState.bindTool(.search, to: appState.provenance(of: .people))
-            openWindow(id: "frus.search")
-            bringMacWindowToFront(id: "frus.search")
+            openWindow.fronting(id: "frus.search")
             #else
             appState.openTab(.search, from: sceneID)
             #endif
@@ -691,8 +690,7 @@ struct PersonIndexDetailSheet: View {
                         // Direct open (the MainWindowView relay is retired — provenance
                         // PR 2), bound to the People window's own provenance.
                         appState.bindTool(.search, to: appState.provenance(of: .people))
-                        openWindow(id: "frus.search")
-                        bringMacWindowToFront(id: "frus.search")
+                        openWindow.fronting(id: "frus.search")
                         #else
                         appState.openTab(.search, from: sceneID)
                         #endif

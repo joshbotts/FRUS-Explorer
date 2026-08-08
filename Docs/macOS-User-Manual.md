@@ -125,7 +125,7 @@ The toolbar's trailing edge carries five controls; the two ▾ entries are menus
 
 | Control | Shortcut | Opens |
 |--------|----------|-------|
-| **Search** | ⌘F | Full-text search window |
+| **Search** | ⌘S | Full-text search window |
 | **Browse** | ⇧⌘B | Corpus browser (volume hierarchy) |
 | **Analytics ▾** | — | A menu of the analytics windows: **Corpus Analytics**, **Person Analytics** (Section 13.5), **Cross-Reference Analytics** (Section 13.6), **Chronology** (Section 14), and **Word Cloud** (Section 13.4) |
 | **My Research ▾** | — | A menu: **Research** (⌘⌥R — the Research window listing all annotated documents) and **Collections** (⇧⌘K) |
@@ -188,11 +188,13 @@ If you dismissed them and want them back, use **Show Tips Again** in **Settings 
 
 FRUS Explorer opens specialized tools in their own windows so you can keep a document open in the main window while working elsewhere. Windows are persistent — closing and reopening them restores their previous size and position. Launching a tool whose window is already open brings that window to the front rather than opening a duplicate or leaving it buried behind other windows — including word-cloud windows relaunched from Settings.
 
+**A window you ask for always comes forward.** Every toolbar button, menu item and keyboard shortcut that opens one of the tool windows — Search, Corpus Browser, the analytics windows, Chronology, Word Cloud, Research, Collections, the cross-reference graph, Complete History, About — raises that window if it was already open behind another one. Previously several of these appeared to do nothing when their window was buried, and two of them quietly changed what the hidden window was showing: a Word Cloud set to a volume or collection was reset to the whole corpus, and the cross-reference graph switched to a different document, neither of which you would see until you brought that window forward.
+
 **Documents open where you launched the tool.** When you open a document from a tool window — a search result, a cross-reference graph node, a Corpus Browser row, a Related Documents entry — it opens in the document window you launched that tool *from*, and that window comes forward. Open a second main window with **⌘N** and its tools route to it independently of the first. To deliberately open a document in a *fresh* window instead, use **Open in New Window** from a search result's context menu, or **File ▸ Open Document in New Window** for the document you're reading.
 
 | Window | Shortcut |
 |--------|----------|
-| Search | ⌘F |
+| Search | ⌘S |
 | Corpus Browser | ⇧⌘B |
 | Cross-Reference Graph | (Research rail **Graph** tile) |
 | Source Explorer | (click source note link) |
@@ -299,7 +301,7 @@ This reaches the people the register covers, which is chiefs of mission and Depa
 
 ## 5. Searching Documents
 
-Press **⌘F** to open the Search window, or click the Search toolbar button.
+Press **⌘S** to open the Search window, or click the Search toolbar button. Either way the caret lands in the query field, so you can start typing immediately — even if the window was already open behind something else.
 
 ![Search window on macOS — the keyword field, search-in toggles, filter controls, total count (1,622 results), sort options, and a ranked results list with highlighted snippets, citations, and dates.](screenshots/macos/search.png)
 
@@ -658,7 +660,7 @@ Use the **Degree** picker to control how many hops from the focus document are d
 |--------|--------|
 | Hover | Shows the full document title and metadata |
 | Click | Selects the node; opens its details in the reference list panel |
-| Right-click | Context menu: *Recenter Graph*, *Open in Main Window*, *Archival Neighbors* (documents from the same archival source — lot file, central file, series, or library; Section 12) |
+| Right-click | Context menu: *Recenter Graph*, *Open Document*, *Archival Neighbors* (documents from the same archival source — lot file, central file, series, or library; Section 12) |
 | Scroll | Zoom |
 | Drag (background) | Pan |
 
@@ -1532,9 +1534,10 @@ Wherever FRUS Explorer shows a link to an external resource — onboarding, Abou
 
 | Action | Shortcut |
 |--------|----------|
-| Open Search window | ⌘F |
+| Open Search window | ⌘S |
+| Find in the document you're reading | ⌘F |
 | Open Citation Lookup | ⌘⇧F |
-| Open Corpus Browser | ⇧⌘B |
+| Open Corpus Browser | ⇧⌘B (Research ▸ Corpus Browser) |
 | Open Research window | ⌘⌥R |
 | Open Collections window | ⇧⌘K |
 | Open Complete History window | (History menu → "Complete History…") |

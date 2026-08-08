@@ -2536,3 +2536,59 @@ Note on M1: reverting the platform guard to reproduce the original bug **no long
 but it proves nothing about the guard, so it was re-run as M1b (reintroduce an unguarded legacy write
 alongside the fix), which the guard caught. Both platforms build clean; macOS manual updated. iOS
 behaviour is unchanged, so the iOS manual is deliberately untouched.
+
+---
+
+## Session 2026-08-08 — #749: opening a macOS window now always raises it
+
+Sixth item off the 2026-08 navigation and state audit, covering **M-12, M-13, L-34, L-35, L-36, L-37**.
+
+**Measured first.** 56 `openWindow(id:)` sites across the app: **11 bare, 45 already paired** with
+`bringMacWindowToFront`, matching the audit exactly. All 56 are macOS-only (0 iOS-reachable), which
+is what makes both a macOS-only helper and a blanket invariant safe. The 45 paired sites were
+near-uniform — 44 adjacent same-id pairs, one with a two-line gap — so a mechanical rewrite was
+viable rather than risky.
+
+**The fix is the shape the issue proposed.** `OpenWindowAction.fronting(id:)` does both calls, and
+all 56 sites use it. Pairing by hand is a *rule*, and rules get forgotten — 7 of the 9 main-window
+toolbar launchers had, while every menu-bar equivalent of the same action paired correctly, and two
+Analytics-menu items fronted while the three beside them did not. One call makes the defect
+unrepresentable rather than merely discouraged.
+
+**The consequence was worse than a dead button.** Several tool windows retarget content from shared
+state the moment a producer writes it, visible or not: the Word Cloud toolbar item seeds `.corpus`
+scope and the window's `onChange` consumes it, so a buried cloud lost the volume/collection scope the
+researcher had set up; `CrossReferenceGraphWindowView` binds `currentGraphEntry` live, so a buried
+graph became a different document's graph and only revealed it when next brought forward.
+
+**L-37 — the one scene-level shortcut in the app.** ⌘⇧B was declared on the Corpus Browser `Window`
+scene, which runs no code, so it could not front a buried browser *and* appeared on no menu item. It
+is now a Research-menu command carrying ⌘⇧B. Every other shortcut in the app already lived on a
+command; this was the sole exception.
+
+**L-35 — the Search window had no focus machinery at all.** It now focuses the query field on open
+(with the `.task` fallback `CitationLookupView` needed, because in its own words `.defaultFocus`
+"never landed") and re-focuses on a `searchQueryFocusToken` bump. The token is deliberately bumped by
+only two producers — ⌘S and the toolbar Search button — because parameter hand-offs (Corpus Analytics
+→ Search, a saved search, a facet drill-in) arrive pre-filled and stealing focus there would be its
+own bug. A test pins that exact producer set.
+
+**L-36 — a label that predated its behaviour.** "Open in Main Window" routes through the provenance
+chain, which can land in a document window or mint a new one. Now "Open Document", under a **new**
+localization key: no String Catalog ships, so `defaultValue` IS the shipped string and rewriting it
+in place would silently retarget anything keyed to the old text.
+
+**Verification:** 12 tests; **9/9 mutations caught** — but only after a rerun, see below. Both
+platforms build clean; macOS manual updated (iOS is unaffected).
+
+**A guard that passed for the wrong reason.** The first sweep's M9 — break the invariant test's match
+needle — **SURVIVED**: the whole "no bare calls" assertion went green while every launcher was free to
+skip the raise again. The matcher was inlined in the assertion, so nothing proved it could match
+anything. It is now an extracted `bareOpenWindowSites(in:)` exercised against literal fixtures (a bare
+call, a fronting call, and prose about the old API), plus a floor assertion that ≥50 converted sites
+exist. Re-run, the same mutation is caught. **An invariant test that scans source must prove its
+matcher on a fixture, or it is only asserting that it found nothing.**
+
+**Found while working, and fixed:** the macOS manual documented **⌘F** as "Open Search window" in four
+places. ⌘F is Find in Document; Search has been ⌘S since #363 #5. Corrected in the same pass, since
+three of the four were in tables this change already had to touch.

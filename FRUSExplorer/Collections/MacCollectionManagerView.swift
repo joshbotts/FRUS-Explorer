@@ -257,8 +257,7 @@ struct MacCollectionManagerView: View {
                     // cloud's binding so a spawned document open resolves via the D3 recency
                     // fallback, not a stale host.
                     appState.bindTool(.wordCloud, to: nil)
-                    openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
-                    bringMacWindowToFront(id: "frus.wordcloud")
+                    openWindow.fronting(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
                 },
                 onSnapshot: { c in Task { await snapshotSmartCollection(c) } }
             )

@@ -758,6 +758,20 @@ final class AppState {
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingCollectionSelection: UUID? = nil
 
+    /// Bumped when the user asks to **type a new query** — ⌘S (Find ▸ Search…) or the main
+    /// window's titlebar Search button (#749 / audit L-35).
+    ///
+    /// The macOS Search window is a singleton, so re-summoning it runs no code inside it and
+    /// re-fronting never resets first responder: keystrokes went to whatever control was last
+    /// focused — the results list, a filter — so typing a query moved the result selection instead.
+    /// `MacSearchWindowView` observes this and puts focus back in the query field.
+    ///
+    /// Deliberately NOT bumped by the parameter hand-offs (Corpus Analytics → Search, a saved
+    /// search, a facet drill-in). Those windows arrive pre-filled and the user's next action is
+    /// reading results, not typing; stealing focus there would be its own bug. This is the same
+    /// refocus-on-reinvoke shape as `DocumentFindBar`'s `focusToken`.
+    var searchQueryFocusToken = 0
+
     /// Cross-platform hand-off channel for opening a document from any tool surface. On **iOS**
     /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** every
     /// producer now routes directly through `openDocument(_:from:mintWindow:)` (provenance

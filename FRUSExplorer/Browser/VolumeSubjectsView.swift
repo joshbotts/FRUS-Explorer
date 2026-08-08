@@ -235,8 +235,7 @@ struct VolumeSubjectVolumesSheet: View {
     private func open(_ volumeId: String) {
         appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(macOS)
-        openWindow(id: "frus.corpusBrowser")
-        bringMacWindowToFront(id: "frus.corpusBrowser")
+        openWindow.fronting(id: "frus.corpusBrowser")
         #else
         appState.openTab(.browse, from: sceneID)
         #endif

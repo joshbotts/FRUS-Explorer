@@ -715,7 +715,11 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 700)
-        .keyboardShortcut("b", modifiers: [.command, .shift])
+        // ⌘⇧B lives on the Research-menu item, NOT here (#749 / audit L-37). A shortcut declared on
+        // a Window scene runs no app code — AppState.bindTool relies on exactly that — so it cannot
+        // call `bringMacWindowToFront`, leaving the only keyboard route to Browse unable to raise an
+        // open-but-buried browser. It also put the shortcut on no visible menu item, so nothing
+        // advertised it.
 
         // MARK: - People Window (UI audit B5)
         //
@@ -1213,7 +1217,7 @@ struct FRUSExplorerApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button(String(localized: "menu.about",
                               defaultValue: "About FRUS Explorer")) {
-                    openWindow(id: "about")
+                    openWindow.fronting(id: "about")
                 }
             }
 
@@ -1271,7 +1275,7 @@ struct FRUSExplorerApp: App {
             // on the key document's web view), Search (⌘S, full-text corpus), Citation Lookup (⌘⇧F).
             // ⌘F was remapped off Search (which moves to ⌘S) so the document's own find bar owns it.
             CommandMenu(String(localized: "menu.find", defaultValue: "Find")) {
-                FindMenuContent(openWindow: openWindow)
+                FindMenuContent(openWindow: openWindow, appState: appState)
             }
 
             // "Collection" menu (UI audit gap 5) — collection-authoring commands,
@@ -1360,8 +1364,7 @@ struct FRUSExplorerApp: App {
         appState.openTab(.collections, from: .anyWindow)
         #else
         appState.pendingCollectionSelection = id
-        openWindow(id: "frus.collections")
-        bringMacWindowToFront(id: "frus.collections")
+        openWindow.fronting(id: "frus.collections")
         #endif
     }
 
@@ -2643,6 +2646,9 @@ struct FindMenuContent: View {
     /// The scene's window opener (for Search / Citation Lookup).
     let openWindow: OpenWindowAction
 
+    /// Shared app state — used only to ask the Search window to focus its query field (#749).
+    let appState: AppState
+
     var body: some View {
         Button(String(localized: "menu.find.inDocument", defaultValue: "Find in Document…")) {
             document?.startFindInDocument()
@@ -2665,14 +2671,14 @@ struct FindMenuContent: View {
         Divider()
 
         Button(String(localized: "menu.find.search", defaultValue: "Search…")) {
-            openWindow(id: "frus.search")
-            bringMacWindowToFront(id: "frus.search")
+            // The user pressed ⌘S to type a query, so put the caret where they expect it (#749).
+            appState.searchQueryFocusToken &+= 1
+            openWindow.fronting(id: "frus.search")
         }
         .keyboardShortcut("s", modifiers: .command)
 
         Button(String(localized: "menu.find.citationLookup", defaultValue: "Citation Lookup…")) {
-            openWindow(id: "frus.citationLookup")
-            bringMacWindowToFront(id: "frus.citationLookup")
+            openWindow.fronting(id: "frus.citationLookup")
         }
         .keyboardShortcut("f", modifiers: [.command, .shift])
     }
@@ -2818,32 +2824,27 @@ struct AnalyticsMenuContent: View {
     var body: some View {
         Button(String(localized: "menu.analytics.corpus", defaultValue: "Corpus Analytics")) {
             appState.bindTool(.analytics, to: nil)   // clear stale provenance → recency fallback
-            openWindow(id: "frus.analytics")
-            bringMacWindowToFront(id: "frus.analytics")
+            openWindow.fronting(id: "frus.analytics")
         }
         Button(String(localized: "menu.analytics.person", defaultValue: "Person Analytics")) {
             appState.bindTool(.personAnalytics, to: nil)
-            openWindow(id: "frus.personAnalytics")
-            bringMacWindowToFront(id: "frus.personAnalytics")
+            openWindow.fronting(id: "frus.personAnalytics")
         }
         Button(String(localized: "menu.analytics.crossRef", defaultValue: "Cross-Reference Analytics")) {
             appState.bindTool(.crossRefAnalytics, to: nil)
-            openWindow(id: "frus.crossRefAnalytics")
-            bringMacWindowToFront(id: "frus.crossRefAnalytics")
+            openWindow.fronting(id: "frus.crossRefAnalytics")
         }
 
         Divider()
 
         Button(String(localized: "menu.analytics.chronology", defaultValue: "Chronology")) {
             appState.bindTool(.chronology, to: nil)
-            openWindow(id: "frus.chronology")
-            bringMacWindowToFront(id: "frus.chronology")
+            openWindow.fronting(id: "frus.chronology")
         }
         Button(String(localized: "menu.analytics.wordcloud", defaultValue: "Word Cloud")) {
             appState.bindTool(.wordCloud, to: nil)
             appState.openWordCloud(.corpus, from: nil)   // corpus scope, matching the toolbar affordance
-            openWindow(id: "frus.wordcloud")
-            bringMacWindowToFront(id: "frus.wordcloud")
+            openWindow.fronting(id: "frus.wordcloud")
         }
     }
 }
@@ -2891,8 +2892,7 @@ struct ResearchMenuContent: View {
         // #377 Phase 5: create a project from the menu bar (works from any window). Opens the small
         // New Project window (a menu command can't present a sheet).
         Button(String(localized: "menu.research.newProject", defaultValue: "New Project…")) {
-            openWindow(id: "frus.newProject")
-            bringMacWindowToFront(id: "frus.newProject")
+            openWindow.fronting(id: "frus.newProject")
         }
 
         // #377 Phase 5: switch the app-wide active project from anywhere — a live, checkmarked list.
@@ -2905,17 +2905,24 @@ struct ResearchMenuContent: View {
 
         Button(String(localized: "menu.research.research", defaultValue: "Research")) {
             appState.bindTool(.research, to: nil)   // clear stale provenance → recency fallback
-            openWindow(id: "frus.research")
-            bringMacWindowToFront(id: "frus.research")
+            openWindow.fronting(id: "frus.research")
         }
         .keyboardShortcut("r", modifiers: [.command, .option])
 
         // Collections never routes document opens — no provenance bind (mirrors the toolbar button).
         Button(String(localized: "menu.research.collections", defaultValue: "Collections")) {
-            openWindow(id: "frus.collections")
-            bringMacWindowToFront(id: "frus.collections")
+            openWindow.fronting(id: "frus.collections")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
+
+        // ⌘⇧B moved here from the Window scene (#749 / audit L-37): a scene-level shortcut runs no
+        // code, so it could not front a buried browser — and it appeared on no menu, so the only
+        // keyboard route to Browse was undiscoverable as well as unreliable.
+        Button(String(localized: "menu.research.corpusBrowser", defaultValue: "Corpus Browser")) {
+            appState.bindTool(.corpusBrowser, to: nil)   // clear stale provenance → recency fallback
+            openWindow.fronting(id: "frus.corpusBrowser")
+        }
+        .keyboardShortcut("b", modifiers: [.command, .shift])
 
         Divider()
 

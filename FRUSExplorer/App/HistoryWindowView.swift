@@ -111,7 +111,7 @@ struct HistoryMenuContent: View {
         Divider()
 
         Button(String(localized: "menu.history.completeHistory", defaultValue: "Complete History\u{2026}")) {
-            openWindow(id: "frus.history")
+            openWindow.fronting(id: "frus.history")
         }
     }
 
@@ -134,7 +134,7 @@ struct HistoryMenuContent: View {
         // The menu-bar History menu has no spawning window — clear the search binding so results
         // open via the D3 recency fallback (the window-hosted History runSearch binds `.history`).
         appState.bindTool(.search, to: nil)
-        openWindow(id: "frus.search")
+        openWindow.fronting(id: "frus.search")
         bringMacWindowToFront(id: "frus.search")   // #369 BUG-9: match the eight sibling producers
     }
 }

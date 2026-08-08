@@ -686,8 +686,7 @@ struct ResearchRailView: View {
     private func openWordCloud() {
         appState.openWordCloud(.document(volumeId: entry.volumeId, documentId: entry.documentId), from: sceneID)
         appState.bindTool(.wordCloud, to: documentHostID)
-        openWindow(id: "frus.wordcloud")
-        bringMacWindowToFront(id: "frus.wordcloud")
+        openWindow.fronting(id: "frus.wordcloud")
     }
 
     /// Opens the Source Explorer window, re-priming the source-note fields from the rail's own
@@ -714,8 +713,7 @@ struct ResearchRailView: View {
         // its `.task`; an already-open window via `.onChange(of: sourceNoteFocusID)`), so it stops
         // binding the shared globals live and can't be flickered by another window's `loadDocument`.
         appState.sourceNoteFocusID = UUID()
-        openWindow(id: "frus.sourceExplorer")
-        bringMacWindowToFront(id: "frus.sourceExplorer")
+        openWindow.fronting(id: "frus.sourceExplorer")
     }
 
     /// Opens the cross-reference graph window anchored on this document, bound to this
@@ -723,8 +721,7 @@ struct ResearchRailView: View {
     private func openGraph() {
         appState.currentGraphEntry = entry
         appState.bindTool(.graph, to: documentHostID)
-        openWindow(id: "frus.crossReferenceGraph")
-        bringMacWindowToFront(id: "frus.crossReferenceGraph")
+        openWindow.fronting(id: "frus.crossReferenceGraph")
     }
 
     /// Opens the value-based Related Documents window (focuses an existing equal-request
