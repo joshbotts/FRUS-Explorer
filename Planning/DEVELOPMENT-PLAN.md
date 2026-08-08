@@ -2349,3 +2349,32 @@ EmbeddingGemma-300M has an official lmstudio-community GGUF.
 Division of labour is explicit in both docs: owner = setup, V-0 spike on both machines, model
 sign-off, full harvest, verified transfer; Claude = store validation, weak-positive MRR gates,
 blind-panel staging, quantization ladder, deterministic pooling/packing, artifact tests.
+
+### Session 2026-08-07 — Navigation & state-management audit, both platforms
+
+`Planning/Navigation-State-Audit-2026-08.md`. Seven parallel code auditors over disjoint
+dimensions, adversarial verification of every high/medium finding (24 verified, none refuted),
+plus four hand spot-checks of the most consequential claims. **49 findings: 12 high, 22 medium,
+15 low.**
+
+The owner's two questions, answered: **macOS focus** — deliberate focus-carrying machinery exists
+(deminiaturize+front on routed deliveries; `bringMacWindowToFront` because `openWindow(id:)` won't
+re-raise a buried singleton) but 11 of ~31 `openWindow(id:)` sites lack the fronting companion,
+including 7 of 9 main-window toolbar launchers; Project Home clicks dead-drop entirely with no
+document host open, then fire as a surprise navigation later. **Back from a document** — the first
+Back works from every origin that pushes onto its own stack; but on iOS every document-to-document
+jump (cross-ref, page ref, deep link, edge-tap page-turn) deliberately routes through the Browse
+tab, so after one page-turn the origin is lost, and inside sheet-hosted documents the navigation
+happens invisibly behind the sheet. The architecture protects the first hop and loses the journey.
+
+Headline finds beyond the questions: **Erase Everything leaves 5 of 19 synced record types
+behind** (saved searches, working corpora, custom scopes, person corrections, project leads — the
+same fault class Wave R-2a fixed once, recurring beneath its own warning comment); **person
+corrections renumber every positional rollup id** while only PersonIndexView observes the
+corrections signal, so live search chips and analytics selections silently mis-target; warm
+launches route through the Onboarding screen until async boot finishes; iOS restores the selected
+tab but nothing inside it; the iPad `.anyWindow` family (orphaned aux windows, cross-window
+deliveries); saved searches silently dropping the person/tag/scope filters.
+
+Remediation order proposed in the doc: reset gap → rollup observers → Project Home mint →
+hand-off visibility rule → openWindow pairing sweep → the page-turn design question.
