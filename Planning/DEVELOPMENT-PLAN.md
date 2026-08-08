@@ -2639,3 +2639,49 @@ theories were wrong (`@Bindable` shadowing in `body`; a competing `DocumentView`
 `DocumentView` declares an **explicit** `init(entry:)`, so there was never a memberwise initializer
 to extend. Swift reports this at the call site, not at the declaration — when a new parameter is
 "not there", check for a hand-written init before theorising about scope.
+
+---
+
+## Session 2026-08-08 — #751: reading journeys stay in their tab (Search), page-turns stop stacking
+
+The audit's one genuine **design** question, so it began as an assessment
+(`Planning/iOS-Reading-Journey-Design.md`) with options and a recommendation, not a patch. Owner
+chose **Option B, staged** — journeys stay in their origin tab, tab-hosted origins first.
+
+**Delivered.** `SearchView` passes a host router, so a cross-reference or page-turn inside a
+search-opened document stays on the Search tab and **Back returns to the document the link was in** —
+matching macOS, which never had this problem. That is H-3 and M-28.
+
+**M-17a, in the same pass.** New `DocumentJump` (`.push` / `.replace`) threads the reader's intent:
+a cross-reference descends (Back returns to it), a page-turn **replaces** the reading position. Every
+router host acts on it. Paging through twenty documents no longer costs twenty Back taps — which
+mattered most in the Browse tab, where there is no breadcrumb escape at document level and none at
+all on regular-width iPad.
+
+**`BrowserView` now also passes a router**, which #750's guard forbade. That guard's stated reason —
+"a cross-ref would push onto the browse stack twice over" — was **wrong**: `DocumentView` returns
+after calling the router, so there is no second navigation. It was really encoding #750's decision to
+keep the change opt-in. The guard now records the new rule and says why the old reasoning failed.
+
+**A correction to my own design document, made while implementing it.** The assessment said Search,
+Research and History "each already owns a stack for its pushed reader" — about one line apiece — and
+the owner decided against that estimate. Verified afterwards: **true only for Search.** `HistoryView`
+has no stack at all (it renders *inside* the Research tab's stack), and that stack's path is a
+projection of `selectedItem` typed to `ResearchSidebarItem`, shaped that way for the iPadOS 26
+`.sidebarAdaptable` workaround (#238 Fix B / #272). The codebase had already reached this conclusion
+once: Project Home was made a **sheet** specifically "to keep it decoupled from the typed
+`researchNavigationPath`".
+
+So Research/History is a navigation restructure with a documented regression history, not a one-line
+adoption. Corrected in the design doc in place, reported rather than silently re-scoped, and deferred
+for a second decision. **Estimate before verifying the shape of the code you are estimating, and the
+decision it feeds is built on sand.**
+
+**Not done:** M-17b (the 56 pt edge-tap zone said to overlap the back-swipe region). The zones use
+`.onTapGesture`, so a recognised pan should not fire them; nobody has measured it on device; and the
+width has a documented rationale (sit outside the reading column so in-column links still receive
+taps). Narrowing it blind would trade a measured benefit for an unmeasured one.
+
+**Verification:** 10 tests in the extended suite; **8/8 mutations caught**, including both jump-kind
+inversions (page-turn descends / cross-ref replaces) and the vacuity mutant. Both platforms build
+clean; iOS manual updated. macOS is unaffected — it already behaves the way this makes iOS behave.

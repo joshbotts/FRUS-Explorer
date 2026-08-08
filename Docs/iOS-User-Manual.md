@@ -137,6 +137,10 @@ FRUS Explorer on iPhone and iPad is organized around a **tab bar** with five tab
 |-----|------|---------|
 | **Browse** | books.vertical | Navigate the corpus by subseries, volume, and document; switch your active research project; open the **Analysis Tools** menu (Chronology, Corpus Analytics, Word Cloud, Person Analytics, Cross-Reference Analytics) |
 
+**Where a cross-reference takes you.** Following a cross-reference keeps you where you are reading. If you opened a document from **search results**, the target opens on the Search tab and **Back returns to the document the link was in** — your results are still underneath. The same is true in the Browse tab, and inside the Chronology, Citation Lookup and cross-reference-graph sheets. (Documents opened from the Research tab, History, project leads, Related Documents and Archival Neighbors still move you to the Browse tab; that is a separate piece of work.)
+
+**Turning pages.** Edge-tapping to the previous or next document *replaces* what you are reading rather than stacking another level, so paging through a long run of documents still costs a single **Back** tap to leave.
+
 **Opening things from an analysis sheet.** Tapping a document or a volume in **Cross-Reference Analytics** closes that sheet and takes you to what you tapped. Inside the **Chronology**, **Citation Lookup** and **cross-reference graph** sheets it is the other way round: following a cross-reference, or edge-tapping to the previous or next document, moves *within* that sheet, so you keep the timeline or lookup you were working from and can go back to it. Both are deliberate — the first is you leaving a tool, the second is you reading inside one.
 | **Search** | magnifyingglass | Full-text search across your downloaded volumes; look up a document directly by citation |
 | **Research** | note.text | Your personal research workspace — all notes, highlights, and tagged documents in one place, organized by collection, tag, or highlight color |
