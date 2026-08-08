@@ -94,16 +94,19 @@ So the difference between a covered and an uncovered volume is **not whether the
 up — it is whether there is a list for them to point at.** The uncovered volumes have the names and
 no identities.
 
-**This makes the core problem reconciliation, not detection.** And 93.3% of the names sit in
-`from`/`to` correspondence headers, which is a far better-constrained matching problem than open
-prose: a despatch's sender and recipient, plus the document's date, plus POCOM's record of who held
-which post when, is a three-way constraint. POCOM is genuinely load-bearing here in a way it is not
-for the M0 work that shipped in #736.
+93.3% of the names sit in `from`/`to` correspondence headers, which is a far better-constrained
+matching problem than open prose: a despatch's sender and recipient, plus the document's date, plus
+POCOM's record of who held which post when, is a three-way constraint. POCOM is genuinely
+load-bearing here in a way it is not for the M0 work that shipped in #736 — **M1a measured it at
+83.2% surname-known and 63.9% resolving to exactly one officeholder serving that year.**
 
-> **Do not over-read this.** 253,919 is the count of names the editors *chose to mark up*. What
-> fraction of all person mentions in those volumes that represents is **unmeasured**. Detection may
-> still be needed for people named only in running prose. Measuring that coverage is the first task
-> below, precisely because the program's size depends on the answer.
+> **⚠️ Corrected by M1a, 2026-08-07.** This section originally concluded "the core problem is
+> reconciliation, not detection", flagging that markup coverage was unmeasured. It is now measured
+> and it goes the other way: **only ~34% of person mentions in these volumes carry `<persName>`**,
+> falling to 12–31% in the 1946– volumes. The editors mark up the correspondence apparatus and
+> leave the body prose alone, so **M2 (detection) is not optional**. M1b remains a real, cheap
+> deliverable — it buys the correspondence layer — but it does not buy person coverage.
+> Full findings: `Planning/early-era-people/M1a-Findings.md`.
 
 ---
 
@@ -114,15 +117,18 @@ Phase names kept from the archived plan so the issue history still reads.
 ### M0 — shipped
 POCOM career data + authority schema v2 + the #260 crosswalk expansion — [#736](https://github.com/joshbotts/FRUS-Explorer/issues/736) / PR #737. Enriches the covered corpus. Adds nobody to the 268.
 
-### M1a — measure before building *(new, and the gate on everything else)*
-1. **Marked-up coverage.** In a sample of no-list volumes, what share of person mentions in the
-   document text carry `<persName>`? This decides whether M2 needs detection at all.
-2. **Ground-truth eval set.** The archived plan's non-negotiable, and still right: it does not
-   exist, and nothing downstream is measurable without it. Hand-key a stratified sample of
-   volumes across the 1860s–1940s.
-3. **POCOM constraint strength.** For `from`/`to` names in a dated despatch, how often does POCOM
-   name exactly one plausible officeholder? Measured on the eval set, this is the precision ceiling
-   for the cheap path.
+### M1a — measure before building — **run 2026-08-07**, `early-era-people/M1a-Findings.md`
+1. **Marked-up coverage — done.** ~34% pooled; 12–31% in the 1946– volumes. **M2 is required.**
+2. **Ground-truth eval set — staged, not done.** 300 stratified candidates in
+   `early-era-people/m1a-eval-candidates.csv` with an empty identity column. **Owner work**;
+   nothing downstream is measurable until it is keyed.
+3. **POCOM constraint strength — done.** 12,384 `from`/`to` names in the sample: 83.2%
+   surname-known, 63.9% resolving to exactly one officeholder serving that year. An upper bound on
+   precision, since the match is surname-only.
+
+The survey also found two defects: `frus1873p1v1`/`p1v2` carry 57-entry editor lists the parser
+never reads (`xml:id="correspondents"`, no `subtype`), and `frus1941-43` contributes 77
+back-of-book subject-index headings to the People browser as if they were people.
 
 ### M1b — reconcile the marked-up names
 Cluster the 253,919 `persName` strings into identities, anchored on POCOM where the from/to +
