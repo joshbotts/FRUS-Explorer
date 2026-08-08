@@ -841,6 +841,25 @@ even see.
 
 ---
 
+## Filed issues (2026-08-07 — all 49 findings, grouped)
+
+| Issue | Scope | Findings |
+|---|---|---|
+| [#746](https://github.com/joshbotts/FRUS-Explorer/issues/746) | Erase Everything leaves 5 synced record types behind | H-2 |
+| [#747](https://github.com/joshbotts/FRUS-Explorer/issues/747) | Person rollup lifecycle vs live UI | H-1, M-14, M-27, L-38 |
+| [#748](https://github.com/joshbotts/FRUS-Explorer/issues/748) | macOS Project Home dead-drop / surprise navigation | H-0 |
+| [#749](https://github.com/joshbotts/FRUS-Explorer/issues/749) | macOS window-fronting sweep (11 unpaired sites + focus nits) | M-12, M-13, L-34–L-37 |
+| [#750](https://github.com/joshbotts/FRUS-Explorer/issues/750) | iOS hand-off visibility rule | H-4, H-5, H-8, H-10, H-11, M-15, M-29, M-32 |
+| [#751](https://github.com/joshbotts/FRUS-Explorer/issues/751) | Design: Browse-tab-as-universal-reader loses the origin | H-3, M-16, M-17, M-28 |
+| [#752](https://github.com/joshbotts/FRUS-Explorer/issues/752) | iPad multi-window targeting family | H-7, H-9, M-25, M-30, M-31, M-33, L-39, L-40, L-43, L-48 |
+| [#753](https://github.com/joshbotts/FRUS-Explorer/issues/753) | Boot-in-progress shown as definitive empty states | M-20, M-22, M-23 |
+| [#754](https://github.com/joshbotts/FRUS-Explorer/issues/754) | Restoration depth (program decision) | H-6, M-21, L-45 |
+| [#755](https://github.com/joshbotts/FRUS-Explorer/issues/755) | Collections reader gap + import selection | M-18, M-19, M-24 |
+| [#756](https://github.com/joshbotts/FRUS-Explorer/issues/756) | SavedSearch silently drops filters | M-26 |
+| [#757](https://github.com/joshbotts/FRUS-Explorer/issues/757) | Low-severity polish batch | L-41, L-42, L-44, L-46, L-47 |
+
+---
+
 ## Recommended remediation order
 
 1. **The Erase Everything gap (H-2)** — a stated privacy promise the code does not keep, and the
