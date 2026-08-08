@@ -258,6 +258,34 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - POCOMIndexGenerator
+
+        /// Builds `pocom-index.json` from a checkout of the Office of the Historian's
+        /// public-domain `HistoryAtState/pocom` register — the Principal Officers and Chiefs of
+        /// Mission data — so a person's posts and dates can be shown beside their FRUS mentions.
+        /// Keyed by POCOM slug, which `person-authority-index.json` schema v2 supplies.
+        .target(
+            name: "POCOMIndexGeneratorCore",
+            path: "POCOMIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls POCOMIndexRunner.run() and exits.
+        .executableTarget(
+            name: "POCOMIndexGenerator",
+            dependencies: [.target(name: "POCOMIndexGeneratorCore")],
+            path: "POCOMIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for POCOMIndexGeneratorCore parsing and label rules.
+        .testTarget(
+            name: "POCOMIndexGeneratorTests",
+            dependencies: [.target(name: "POCOMIndexGeneratorCore")],
+            path: "POCOMIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - VolumeSourcesIndexGenerator
 
         /// Harvests every volume's front-matter Sources section into `volume-sources-index.json`:

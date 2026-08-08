@@ -24,6 +24,13 @@ import SwiftUI
 /// The persons table is populated during indexing — volumes that have not been indexed yet
 /// will show an empty list with a prompt to index the volume.
 ///
+/// ## Two different empty states (#736)
+/// "Index this volume to load its persons list" is only true of an *unindexed* volume. **268 of
+/// the 552 volumes have no editor-published person list at all** — every volume from the 1860s
+/// and 1880s, 42 of 58 from the 1900s, 67 of 72 from the 1920s — and telling their reader to
+/// index a volume they have already indexed sends them to do something that will change nothing.
+/// The two cases are distinguished through `AppState.indexedVolumeIds`.
+///
 /// Version history:
 ///   1.0 — Session 2026-06-08: initial implementation
 ///   1.1 — Session 2026-07-03: `selectedPerson` hoisted to a `@Binding`; the detail
@@ -48,6 +55,10 @@ struct FrontMatterPersonsView: View {
     /// and presentation modifiers attached to `Group`/`Section` in `List` content apply
     /// per child/row — multiple presenters over one binding ping-pong after dismissal.
     @Binding var selectedPerson: PersonIndexEntry?
+
+    /// Whether this volume has been indexed, which is what separates "nothing loaded yet" from
+    /// "the editors published no list".
+    private var isIndexed: Bool { appState.indexedVolumeIds.contains(volumeId) }
 
     /// Persons filtered by `searchText` (case-insensitive name or description match).
     private var displayPersons: [PersonEntry] {
@@ -79,10 +90,21 @@ struct FrontMatterPersonsView: View {
                             Text(String(localized: "browser.persons.empty.title",
                                         defaultValue: "No Persons Listed"))
                                 .font(.headline)
-                            Text(String(localized: "browser.persons.empty.detail",
-                                        defaultValue: "Index this volume to load its persons list."))
+                            Text(isIndexed
+                                 ? String(localized: "browser.persons.empty.noEditorList",
+                                          defaultValue: "This volume's editors did not publish a list of persons. Roughly half the corpus has none — they are most common from 1940 onward.")
+                                 : String(localized: "browser.persons.empty.detail",
+                                          defaultValue: "Index this volume to load its persons list."))
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
+                            if isIndexed {
+                                // The people the volume DOES name are still reachable; the front
+                                // matter is just not where they are.
+                                Text(String(localized: "browser.persons.empty.stillSearchable",
+                                            defaultValue: "People named in its documents are still found by searching."))
+                                    .font(.footnote)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
                         .padding(.vertical, 6)
                     } else {

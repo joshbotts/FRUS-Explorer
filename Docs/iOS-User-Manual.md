@@ -260,6 +260,7 @@ Grouping these destinations under one always-reachable menu replaces the separat
 
 ### 4.5 The People Browser
 
+
 At the very top of the Browse screen, above the subseries list, is a **People** row. Tap it to open a reconciled, corpus-wide index of everyone named across the volumes you've indexed — a single alphabetical list rather than a per-volume one.
 
 ![People browser on iPhone — a single alphabetical list of reconciled identities, each with a role · active-years subtitle and a corpus-wide mention count; a reconciled-identity seal appears on matched entries.](screenshots/ios/people-list.png)
@@ -291,6 +292,13 @@ A **Corrections** button in the People browser toolbar lists every merge and sep
 To study *how* these reconciled people are mentioned over time — most-mentioned by era, mention trajectories, and co-mention networks — open **Person Analytics** from the Browse tab's Analysis Tools menu (Section 13.6).
 
 ---
+
+
+**Career records.** Where a person is reconciled to the Department's own register of Principal Officers and Chiefs of Mission, their detail sheet gains a **Career** section: the posts they held, where, and the dates — Acheson's runs Assistant Secretary (1941) through Under Secretary to Secretary of State (1949–1953). Dates appear exactly as the register writes them, which for early appointments is often a bare year; nothing is rounded or invented. A note beside a post ("Left Tehran on", "Died at post") is the register's own.
+
+This reaches the people the register covers, which is chiefs of mission and Department principals — 1,240 of them in this release. It is not everyone: a person known only from a volume's document text has no register entry, and the section simply does not appear. Reconciled people now also carry **Wikidata** and **VIAF** links where those exist, which after this release is most of them.
+
+**Volumes with no persons list.** Roughly half the corpus — 268 of 552 volumes — has no editor-published list of persons at all, including every volume from the 1860s and 1880s and most from before 1930. Those volumes now say so, instead of suggesting you index a volume you have already indexed. The people named in their documents are still found by searching; they simply are not gathered into a front-matter list.
 
 ## 5. Searching Documents
 

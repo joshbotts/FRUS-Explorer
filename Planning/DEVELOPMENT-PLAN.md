@@ -2122,3 +2122,61 @@ coding-standards audit stay green; both platforms build clean.
 
 **Not verified**: the SwiftUI wiring itself (menus rendering, the filter field binding) has no
 automated coverage — the PR carries a visual-review checklist for it.
+
+### Session 2026-08-07 — #736: POCOM career data, authority schema v2, and the #260 crosswalk
+
+Carved out of #234 after a readiness check found its prerequisites satisfied but its scope
+mismatched, and merged with #260 because both regenerate the same bundled artifact.
+
+**#234 stays open, deliberately.** Its complaint is that the people browser reaches only volumes
+whose editors published a person list — measured, **268 of 552 volumes (48.6%) have none**,
+including every volume from the 1860s and 1880s. POCOM carries **no FRUS anchor of any kind**; the
+only join runs backwards (app people-id → registry record → `departmenthistory` slug → POCOM), so
+it can only enrich people already known from front matter. Closing #234 on this would mark the
+pre-1930 gap solved while not one of those 268 volumes gained a person.
+
+**Four premises in the plan/issue were false, and three of them fail silently.**
+
+1. `persons-complete.xml` has **zero** `source-url` elements; anchors ride on
+   `<idno type="frus-ref">`. A parser written from the description returned 0 pairs from 30,776
+   well-formed entries and exited 0.
+2. The identifier idno types are `Wikidata` and `VIAF`, **capitalized**, each shipped twice beside
+   a `-URL` sibling. The lower-case match found 0 of 7,500 and 0 of 6,442 — the first full run
+   wrote an index with `with a Wikidata QID: 0` and reported success.
+3. `merge_audit_report.csv` uses bare `\r` line endings; splitting on `\n` makes the whole file one
+   row and the mandated audit guard silently inert. Caught only because the runner treats a guard
+   resolving zero ids as fatal.
+4. That same CSV keys on `FRUS-NNNNN` xml:ids — **the identifier the plan's own rules forbid
+   relying on**. The guard is applicable only by resolving them inside the same file version and
+   pinning the result in provenance; it cannot be recomputed after the planned re-mint.
+
+Also corrected: the plan called POCOM "chief-of-mission assignments", which would have dropped
+`positions-principals` — 1,293 appointments across 951 people, i.e. every Secretary and Under
+Secretary, the people most represented in FRUS.
+
+**Measured outcomes** (owner's 552-volume index, shipped artifacts):
+
+| | before | after |
+|---|---|---|
+| crosswalk pairs / volumes | 49,345 / 229 | **56,110 / 285** |
+| coverage of live person rows | 78.5% | **89.3%** |
+| VIAF ids | 142 | **3,198** |
+| Wikidata QIDs | 0 | **3,825** |
+| authority index size | 1.3 MB | **2.42 MB** (budget 2.5) |
+| POCOM careers | — | **1,240** of 1,242 reachable slugs, 2,621 assignments, 420 KB |
+
+Rollup impact of the expansion, measured before shipping: of 7,282 newly-covered records, **6,454
+(88.6%) land in a cluster already carrying that id** (no change), 786 in a cluster with none, and
+**90 (1.2%) in a cluster with a different id** — pulled out, a de-conflation in v8's direction.
+`currentPersonRollupVersion` 8 → 9. The 259 anchors where the two sources disagree are **printed in
+full** by the runner; the registry keeps its answer in every case.
+
+**Verification**: 31 new tests (18 POCOM generator, 13 overlay/builder additions, 13 app-side);
+**14/14 mutations caught**. One mutation initially survived — case-sensitive identifier matching —
+because every fixture used the lower-case spelling the real file does not have; the fixtures now
+carry the real capitalization, which is the bug that actually shipped a zero-QID index. A second
+pair survived until the fixtures grew a repeated role title, which **394 of 1,240 real careers
+(32%) have**. 905 SPM tests green, both platforms build clean.
+
+**Not verified**: the Career section's on-screen rendering. The models and parsers are covered; the
+SwiftUI layout is not, and the PR carries a visual-review checklist.

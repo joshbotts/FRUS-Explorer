@@ -169,6 +169,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          purge hardening, clusterer cannot-link/suffix/Mrs guardrails, and the cluster
 ///          authority id picked by majority-of-mentions (`majorityAuthorityId`) instead of
 ///          input order (`currentPersonRollupVersion` → 8).
+///   Rollup v9 (#736) — the bundled crosswalk grew by 6,765 anchors across 56 volumes, lifting
+///   coverage of the person index from 78.5% to 89.3%. Measured against the shipped artifact,
+///   6,454 of the newly-covered records land in a cluster ALREADY carrying that canonical id
+///   (pure confirmation), 786 in a cluster that had none, and 90 in a cluster carrying a
+///   different one — those 90 are pulled out, which is a de-conflation in the same direction v8
+///   was arguing. No clusterer logic changed; only its input did, which is exactly what a version
+///   bump is for.
 ///   4.3 — Source Explorer Phase 1 (Session 2026-07-03): `extractSourceNote` ports the
 ///          frus-sources locator chain — head/note/p/seg[@type="source"] →
 ///          head/note[@type="source"] → top-level inline note — fixing the dominant
@@ -742,7 +749,7 @@ public actor IndexingPipeline {
     ///     back-of-book index artifacts — names with standalone page-number runs
     ///     ("Churchill, 532", "Eden, 815–817"), embedded newlines, or >80 characters — the
     ///     671 digit-name frus1941-43 rows (746 rows, all 0 mentions) mis-parsed as persons.
-    public static let currentPersonRollupVersion: Int = 8
+    public static let currentPersonRollupVersion: Int = 9
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
@@ -1120,7 +1127,9 @@ public actor IndexingPipeline {
     /// The authority index, loading it from the app bundle on first use (cached).
     func authorityIndex() -> PersonAuthorityIndex? {
         if let cached = loadedAuthorityIndex { return cached }
-        let loaded = PersonAuthorityIndex.loadBundled()
+        // Through the shared store so the 2.4 MB index is decoded once for the whole app — the
+        // person detail sheet reads the same copy for its schema-v2 fields (#736).
+        let loaded = PersonAuthorityIndexStore.shared
         loadedAuthorityIndex = .some(loaded)
         return loaded
     }

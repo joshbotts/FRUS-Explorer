@@ -23,6 +23,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Person rollup Phase 5: initial implementation
+///   1.1 — Session 2026-08-07: schema v2 fields — POCOM slug, Wikidata QID, role text (#736)
 public struct PersonAuthorityIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -36,12 +37,44 @@ public struct PersonAuthorityIndex: Codable, Sendable {
     /// `"canonicalId" → entry` for every canonical person referenced by the crosswalk.
     public let authority: [String: AuthorityEntry]
 
-    /// A canonical person: preferred name, optional birth/death years, optional VIAF id.
+    /// A canonical person: preferred name, life years, and reconciled external identifiers.
+    ///
+    /// The three schema-v2 fields are optional in both senses — absent from a v1 file, and absent
+    /// from most v2 entries. Decoding stays tolerant so a build carrying either file works.
     public struct AuthorityEntry: Codable, Sendable {
+        /// Preferred display name ("Surname, Given").
         public let n: String
+        /// Birth year, if known.
         public let b: Int?
+        /// Death year, if known.
         public let d: Int?
+        /// VIAF authority id, if reconciled.
         public let v: String?
+        /// POCOM slug (v2) — the key into `pocom-index.json`.
+        public let s: String?
+        /// Wikidata QID (v2), e.g. `Q193236`.
+        public let q: String?
+        /// Short role text (v2), for a subtitle line.
+        public let r: String?
+
+        /// `https://www.wikidata.org/wiki/{QID}`, when the entry carries one.
+        public var wikidataURL: URL? { q.flatMap { URL(string: "https://www.wikidata.org/wiki/\($0)") } }
+        /// `https://viaf.org/viaf/{id}`, when the entry carries one.
+        public var viafURL: URL? { v.flatMap { URL(string: "https://viaf.org/viaf/\($0)") } }
+
+        /// The v2 fields default to absent so callers that predate them — and any test building a
+        /// fixture entry — keep compiling. The synthesized memberwise init would have required
+        /// all three at every construction site.
+        public init(n: String, b: Int? = nil, d: Int? = nil, v: String? = nil,
+                    s: String? = nil, q: String? = nil, r: String? = nil) {
+            self.n = n
+            self.b = b
+            self.d = d
+            self.v = v
+            self.s = s
+            self.q = q
+            self.r = r
+        }
     }
 
     public init(version: Int, generated: String, source: String,
@@ -75,6 +108,11 @@ public struct PersonAuthorityIndex: Codable, Sendable {
         authority[String(canonicalId)]
     }
 
+    /// The POCOM slug for an id, when schema v2 supplied one (#736).
+    public func pocomSlug(for canonicalId: Int) -> String? {
+        entry(for: canonicalId)?.s?.isEmpty == false ? entry(for: canonicalId)?.s : nil
+    }
+
     /// Total `(volume, ref)` entries in the crosswalk.
     public var crosswalkCount: Int { crosswalk.values.reduce(0) { $0 + $1.count } }
 
@@ -104,4 +142,19 @@ public struct PersonAuthorityIndex: Codable, Sendable {
             return nil
         }
     }
+}
+
+// MARK: - PersonAuthorityIndexStore
+
+/// The one decoded copy of the bundled authority index (#736).
+///
+/// `IndexingPipeline` has loaded this since Phase 5 for clustering; the person detail sheet now
+/// needs it too, for the schema-v2 fields (POCOM slug, Wikidata, role text) that the rollup table
+/// does not carry. Two independent `loadBundled()` calls would hold two decoded copies of a 2.4 MB
+/// file resident, so both go through here instead.
+///
+/// The pipeline keeps its own injectable slot for tests — this store is deliberately *not*
+/// settable, because a shared mutable singleton is how one test leaks a fixture into another.
+enum PersonAuthorityIndexStore {
+    static let shared: PersonAuthorityIndex? = PersonAuthorityIndex.loadBundled()
 }
