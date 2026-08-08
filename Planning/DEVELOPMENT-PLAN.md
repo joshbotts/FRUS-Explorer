@@ -2422,3 +2422,66 @@ timeout killed the mutation loop before it rewrote `$SP/m6.py`, so the run execu
 script from the #586 session** and mutated an unrelated file. Re-run under a uniquely-named
 script, the guard caught it. Generic scratch filenames reused across sessions make a mutation
 result a measurement of the wrong thing — name them per-issue.
+
+---
+
+## Session 2026-08-08 — #747: a person filter that survives a rollup rebuild
+
+Fourth item off the 2026-08 navigation and state audit (`Planning/Navigation-State-Audit-2026-08.md`),
+covering findings **H-1**, **M-14**, **M-27** and **L-38** — all four are the same root cause seen
+from four surfaces.
+
+**The root cause.** `IndexingPipeline.consolidatePersonRollup` does `DELETE FROM person_rollup` and
+then writes one row per cluster at `rollup_id = clusterIndex + 1`. Clusters are ordered by canonical
+name, so **merging two identities shifts every id after the merge point**. `rollup_id` is therefore
+a slot number, not an identity — and the filter chip, the analytics series, the search parameters
+and the research-trail signature were all holding it across rebuilds. The user-visible failure is
+quiet and wrong in the worst way: after a merge, a chip still labelled "Rusk" filters to whoever now
+occupies slot 12.
+
+**The fix is a durable key.** `person_rollup_member`'s primary key is `(volume_id, ref)`, both taken
+from the TEI, so it does not move when the table is renumbered. `PersonRollupAnchor` wraps that pair;
+`SearchParameters` carries it; `PersonRollupRefresh.rebind` is the single rule that captures one,
+re-resolves it, or drops the filter when it no longer resolves.
+
+**Capture happens on apply, not on produce.** Six sites set a `personRollupId`, and none of them can
+supply an anchor: `PersonIndexEntry.entry.ref` is **empty** for rollup-sourced entries — only the
+store knows the member rows. So the anchor is captured lazily, in one place, on the first rebind.
+
+**Both search surfaces, deliberately.** iOS `SearchView`/`SearchViewModel` and the separate macOS
+`SearchSheet`/`MacSearchViewModel` each observe `personRollupGeneration` and each re-resolve. Fixing
+one would have reproduced this repo's documented recurring failure (`Dual Settings Views`,
+`macOS Search is Separate`), so a wiring test now reads both files.
+
+**M-14 — corpus change never reconsolidated.** `refreshReadOnlyStores()` reopens *connections*; it
+does not recompute derived data. Volume add/remove left the rollup standing, so the People browser
+listed people whose only mentions were in a removed volume, with their old counts, until the next
+launch's drift check noticed. New `AppState.refreshAfterCorpusChange(context:)` runs the same
+`consolidatePersonRollupIfNeeded` drift check the launch path uses — cheap when nothing moved,
+which is why it is now called at **every** `refreshReadOnlyStores()` site in both storage hubs
+rather than at the ones someone judged relevant. `consolidatePersonRollupIfNeeded` now returns
+whether it rebuilt, so the generation is published only when ids actually moved.
+
+**M-27 — analytics watched the wrong signal.** `PersonAnalyticsView` reloaded on
+`readOnlyStoresGeneration`, which a correction never moves (the rebuild reopens nothing). Every
+charted series stayed attributed to ids that had since become other people.
+
+**L-38 — the trail signature meant two things.** `SearchScopeSignature` keyed the person component
+on the slot, so two genuinely different scopes recorded either side of a merge could sign
+*identically* — a false match that silently reuses one result set for another — while one unchanged
+scope re-signed after a rebuild looked new. It now digests the anchor, with the slot kept only as a
+labelled fallback for a filter that has not captured one yet.
+
+**A drop is announced, not silent.** When an anchor no longer resolves the filter is cleared rather
+than left pointing at a stranger, and both platforms surface an alert. A `nil` store (mid-reindex)
+is a no-op, not a drop: "I cannot look this up" is not "this person is gone".
+
+**Verification:** 22 tests in two suites (the rule, exercised with injected lookups; plus
+source-reading wiring guards for both search surfaces, analytics, both hubs and both correction
+sites). Both platforms build clean. No `@Model` or stored property changed — `SearchParameters` is a
+struct and `SavedSearch` flattens it into columns — so the R-7 CloudKit deploy gate is untouched.
+
+**Found while working.** `SavedSearch` persists neither `personRollupId` nor `personLabel`, so a
+saved search has never been able to carry a person filter at all. That is #756's territory, left
+alone here and now recorded in the test file so the next reader does not mistake it for a
+regression from this change.

@@ -277,6 +277,13 @@ Use the **search field** to filter the list by name; click a person to open thei
 - When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action.
 - You can also merge any two people **yourself**, for cases the cautious automatic grouping keeps apart: choose **Merge with another person…** in a person's detail panel — or right-click the person's row for the same command — and pick the other person from a searchable list. A confirmation names both people before anything changes, and warns you when they look like genuinely different people (each matched to a distinct entry in the bundled name-authority data).
 - A **Corrections** toolbar button in the People browser lists every merge and separation you've made and lets you **undo** any of them. Corrections sync across your devices via iCloud.
+
+> **After a merge or separation.** The People browser, Person Analytics and any open Search window
+> filtered to a person all re-resolve immediately — a filter set before a merge follows that person
+> into the merged identity, and its chip adopts the merged name. If the person you were filtering
+> to is no longer in the index at all (their only volume was removed), the filter is cleared and the
+> app tells you, rather than quietly returning a wider set of results. The same re-resolution runs
+> after you add or remove volumes.
 - Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
 
 > The consolidation is deliberately cautious: when in doubt it keeps identities **separate** rather than merging two different people. Your merge/separate corrections always take precedence.
