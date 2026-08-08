@@ -162,6 +162,23 @@ public struct VolumeStructure: Sendable, Codable {
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 38: `isEditorialNote` field added
+/// How a document-to-document jump should affect the host's navigation stack (#751).
+///
+/// Lives here rather than in `DocumentView.swift` because that file is iOS-only, while the hosts
+/// that act on a jump (`SearchView`, `BrowserView`, the reader sheets) are cross-platform — the
+/// enum has no platform dependency of its own.
+public enum DocumentJump: Sendable {
+    /// Descend: the reader followed a link *out of* the current document, so Back should return to
+    /// it. Cross-references and page references.
+    case push
+    /// Move sideways: the reader turned the page, so the new document **replaces** the current one.
+    /// A page-turn is a change of reading position, not a descent into it.
+    ///
+    /// Appending instead is what made paging through twenty documents cost twenty Back taps, with
+    /// no breadcrumb escape at document level and none at all on regular-width iPad (audit M-17a).
+    case replace
+}
+
 public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
     /// The document's `xml:id` value within its volume.
     public let documentId: String

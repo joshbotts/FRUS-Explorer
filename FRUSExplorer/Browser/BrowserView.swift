@@ -552,7 +552,7 @@ struct BrowserView: View {
             case .subseries(let g):  SubseriesView(vm: vm, group: g)
             case .volume(let e):     VolumeView(vm: vm, volume: e)
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
-            case .document(let e):   DocumentView(entry: e)
+            case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
             case .people:            PersonIndexView()
             }
         }
@@ -621,6 +621,23 @@ struct BrowserView: View {
     /// and `.onAppear` (value set before the view existed). The clear happens only AFTER a
     /// successful adopt — a nil view model leaves the value pending for the drain that runs once
     /// bootstrap completes (previously the optional-chained append silently dropped it).
+    /// Follows a cross-reference or page-turn inside the Browse stack (#751 / audit M-17a).
+    ///
+    /// Browse is where the hand-off already lands, so `.push` is exactly what the old routing did —
+    /// this changes nothing for cross-references. What it adds is `.replace`: a page-turn no longer
+    /// deepens the stack, so paging through twenty documents costs one Back tap instead of twenty
+    /// (there is no breadcrumb escape at document level, and none at all on regular-width iPad).
+    ///
+    /// Routing directly is also simpler than the hand-off it replaces for this case: no round trip
+    /// through `AppState`, and no window-targeting question, because the reader is already here.
+    private func pushInBrowseStack(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
+        guard let vm = viewModel else { return }
+        if jump == .replace, !vm.navigationPath.isEmpty {
+            vm.navigationPath.removeLast()
+        }
+        vm.navigationPath.append(.document(entry))
+    }
+
     private func consumePendingBrowseDocument() {
         // #338 step 4: consume only a hand-off addressed to THIS window's scene, so a document open
         // no longer fans out to every iPad window. The `vm` check precedes the consume (short-circuit),

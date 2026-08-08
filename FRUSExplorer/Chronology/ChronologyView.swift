@@ -116,7 +116,12 @@ struct ChronologyView: View {
                 // default routing appends to the Browse tab, which is beneath this sheet — the tap
                 // read as dead, and the user later found documents on a stack they never navigated.
                 DocumentView(entry: entry,
-                             onNavigateToDocument: { navigationPath.append($0) })
+                             onNavigateToDocument: { entry, jump in
+                                 if jump == .replace, !navigationPath.isEmpty {
+                                     navigationPath.removeLast()   // a page-turn moves, not descends (#751)
+                                 }
+                                 navigationPath.append(entry)
+                             })
             }
             #endif
             .toolbar { toolbarContent }

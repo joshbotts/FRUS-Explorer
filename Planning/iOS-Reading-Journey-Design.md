@@ -123,13 +123,38 @@ Settle **M-17b** with a device check before touching the zone width.
 
 ## 6. If Option B is chosen — the implementation shape
 
-1. `SearchView`: pass `onNavigateToDocument: { vm.navigationPath.append($0) }` to its `DocumentView`.
-2. Same for `ResearchView` and `HistoryView` (each already owns a stack for its pushed reader).
-3. `BrowserView` keeps the default routing — it *is* the Browse stack; a router there would double up.
-4. Update `HandoffVisibilityTests.browseHostsAreUnchanged` to name only `BrowserView`, and add a test
-   asserting the newly-adopting hosts DO pass a router (so the reverse regression is caught too).
-5. M-17a: make the page-turn path replace rather than append.
-6. Docs: both manuals describe where documents open; this changes that sentence on iOS.
+### CORRECTION, made while implementing
+
+Step 2 below was **wrong when written**, and the owner's decision was taken against it. Verified
+after the fact:
+
+- **`SearchView` is one line** — it owns `NavigationStack(path: $vm.navigationPath)` with a
+  `navigationDestination(for: DocumentBrowserEntry.self)`. Delivered.
+- **`ResearchView` and `HistoryView` are NOT.** `HistoryView` has no stack at all — it is *rendered
+  inside* the Research tab's stack (`ResearchView.swift:254`). And that stack's path is a
+  **projection of `selectedItem`**, typed to `ResearchSidebarItem`, deliberately shaped that way for
+  the iPadOS 26 `.sidebarAdaptable` workaround (#238 Fix B / #272). Pushing a `DocumentBrowserEntry`
+  onto it is impossible without replacing that projection with a heterogeneous path — touching the
+  exact code those two issues fixed.
+
+  The codebase already reached this conclusion once: Project Home was made a **sheet** specifically
+  "to keep it decoupled from the typed `researchNavigationPath` (#272/#238)".
+
+So Research and History are not a one-line adoption; they are a navigation restructure with a
+documented regression history. **Deferred pending a second owner decision** — see the PR.
+
+### Implementation shape (as delivered)
+
+1. `SearchView`: passes a host router. **Done** — this is H-3 / M-28, the audit's highest-rated
+   finding here.
+2. `ResearchView` / `HistoryView`: **deferred**, see the correction above.
+3. `BrowserView` now *also* passes a router — not a routing change (Browse is where the hand-off
+   already landed) but the only way to give the primary reading path `.replace` semantics for M-17a.
+   The #750 guard forbade this on the stated grounds that it "would push twice over"; that reasoning
+   was wrong — `DocumentView` returns after calling the router — and the guard is updated to say so.
+4. `DocumentJump` (`.push` / `.replace`) threads the intent, so a page-turn replaces the reading
+   position instead of deepening the stack. Applied to all five router hosts.
+5. Docs: the iOS manual's account of where documents open.
 
 **Not in scope:** macOS is unaffected — it already keeps journeys in-window, which is the behaviour
 this proposes to match.
