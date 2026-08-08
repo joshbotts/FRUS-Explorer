@@ -98,6 +98,11 @@ struct MainTabView: View {
     /// this window addresses its `Handoff` to *this* scene, and only this scene applies it.
     @State private var sceneIDToken = UUID().uuidString
 
+    /// The word cloud this window is presenting, once **consumed** from the shared hand-off slot
+    /// (#752). Local state, so another window's producer can no longer dismiss this sheet by
+    /// overwriting the slot underneath it.
+    @State private var presentedWordCloud: Handoff<WordCloudScope>?
+
     var body: some View {
         @Bindable var appState = appState
         TabView(selection: $selectedTab) {
@@ -204,14 +209,21 @@ struct MainTabView: View {
         // open window. `Handoff` is `Identifiable`; the guarded binding yields it only for a matching
         // target, and clears the shared slot on dismiss. A producer stamps its own `\.sceneID`
         // (published above), so exactly one window's binding matches.
-        .sheet(item: Binding<Handoff<WordCloudScope>?>(
-            get: {
-                guard let handoff = appState.pendingWordCloud,
-                      handoff.target == SceneID(sceneIDToken) else { return nil }
-                return handoff
-            },
-            set: { if $0 == nil { appState.pendingWordCloud = nil } }
-        )) { handoff in
+        // #752 (audit H-9, M-31, M-33): CONSUME the hand-off into this window's own state, and
+        // accept `.anyWindow`, like every sibling channel.
+        //
+        // The old binding read the shared slot live on every render and cleared it only on dismiss.
+        // Two defects followed. (1) It matched the window's exact token with no `.anyWindow`
+        // acceptance — the one channel of five without it — so a standalone document window whose
+        // launcher had closed (or which the app had restored, capturing no origin) targeted
+        // `.anyWindow` and **no presenter ever matched**: the tile did nothing, permanently, while
+        // its rail siblings worked. That contradicted `AppState`'s own claim that `.anyWindow`
+        // "never black-holes". (2) Because presentation never consumed, the slot stayed populated
+        // for as long as the sheet was up, so opening a cloud in window B overwrote it and window
+        // A's sheet — whose getter now returned nil — dismissed itself.
+        .onChange(of: appState.pendingWordCloud) { _, _ in consumePendingWordCloud() }
+        .onAppear { consumePendingWordCloud() }
+        .sheet(item: $presentedWordCloud) { handoff in
             WordCloudView(scope: handoff.payload)
                 .environment(appState)
                 // #338 step 3: publish THIS window's scene id into the word-cloud sheet so the
@@ -227,6 +239,24 @@ struct MainTabView: View {
         // cf. #338) so an iPad Stage-Manager multi-window setup shows the alert in one window,
         // not all of them.
         .secondProjectNudge()
+    }
+
+    /// Adopts a pending word-cloud hand-off addressed to this window (#752).
+    ///
+    /// Uses `orAnyWindow: true`, matching `pendingSearch`, `pendingTab`, `pendingBrowseDocument`
+    /// and `pendingBrowseVolume` — this was the one channel of five that demanded an exact scene
+    /// match, which is why a standalone document window with no live origin had no presenter at all.
+    ///
+    /// Consuming (rather than reading the slot live) is what stops window B's producer from
+    /// dismissing window A's open sheet: once adopted, this window's presentation depends only on
+    /// its own state.
+    private func consumePendingWordCloud() {
+        guard presentedWordCloud == nil else { return }   // don't replace a sheet already up
+        guard let handoff = appState.pendingWordCloud else { return }
+        let mine = SceneID(sceneIDToken)
+        guard handoff.target == mine || handoff.target == .anyWindow else { return }
+        appState.pendingWordCloud = nil
+        presentedWordCloud = handoff
     }
 
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.

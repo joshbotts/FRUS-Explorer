@@ -470,7 +470,12 @@ struct SearchView: View {
                     .environment(\.sceneID, sceneID)
                 }
                 .sheet(isPresented: $showCitationLookup) {
+                    // #752 (audit L-39): a sheet does not reliably inherit `\.sceneID`, so a
+                    // document pushed inside this one read nil and its cross-references posted to
+                    // `.anyWindow` — first-wins across every open iPad window. Its four sibling
+                    // sheets already inject this; these two were the exceptions.
                     CitationLookupView()
+                        .environment(\.sceneID, sceneID)
                 }
                 .sheet(item: $archivalNeighborsTarget) { key in
                     ArchivalNeighborsSheet(appState: appState, docKey: key)
