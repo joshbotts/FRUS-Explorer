@@ -124,7 +124,10 @@ extension PersonRollupRefresh {
     /// Re-points a person filter at whoever it *actually* names, after any rollup rebuild (#747).
     ///
     /// This is the pure core, taking its two lookups as closures so it can be exercised without a
-    /// database — the store adapter below is the only thing that touches SQLite.
+    /// database — the store adapter below is the only thing that touches SQLite. It is
+    /// `nonisolated` because it touches no shared state and
+    /// ``SearchParameters/reresolvedPerson(using:)``, which is reachable off the main actor, calls
+    /// straight into it.
     ///
     /// Three outcomes:
     ///
@@ -141,9 +144,6 @@ extension PersonRollupRefresh {
     ///
     /// - Returns: the updated binding and whether the filter was dropped, so the caller can tell the
     ///   user rather than silently changing their result set.
-    /// Deliberately `nonisolated`: the pure core touches no shared state, and
-    /// ``SearchParameters/reresolvedPerson(using:)`` — which `SearchParameters` exposes to
-    /// non-main-actor callers — has to be able to reach it.
     nonisolated static func rebind(
         _ binding: PersonFilterBinding,
         anchorFor: (Int) -> PersonRollupAnchor?,
