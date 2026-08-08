@@ -85,11 +85,24 @@ struct CollectionRelationsTests {
         let ranked = CollectionRelations.related(to: focus, in: [focus, singleton, real])
 
         #expect(!ranked.contains { $0.id == "singleton" }, """
-            A one-volume record cleared the floor. It scores 1.000 by construction (its list \
-            is a subset of every list containing it), so it does not merely appear — it \
-            outranks every genuinely related collection.
+            A one-volume record cleared the floor. It scores 1.000 by construction — its list is \
+            a subset of every list containing it — so it lands in the top rows on score, and on \
+            the shipped corpus, where 2,846 records are exactly this shape, it lands there \
+            repeatedly.
             """)
         #expect(ranked.map(\.id) == ["real"])
+    }
+
+    @Test("Two citing volumes is enough to have a list; one is not")
+    func theGateSitsAtTwoVolumes() {
+        // The boundary itself, from both sides. Without this, a gate moved to three volumes
+        // passes every other test in the suite while silently emptying 764 records' sections.
+        let two = record("two", "Two", volumes: volumes(1...2))
+        let one = record("one", "One", volumes: ["frusV1"])
+        let partner = record("partner", "Partner", volumes: volumes(1...3))
+        #expect(CollectionRelations.related(to: two, in: [two, one, partner]).map(\.id) == ["partner"],
+                "a collection cited in exactly two volumes must still get a list")
+        #expect(CollectionRelations.related(to: one, in: [one, two, partner]).isEmpty)
     }
 
     @Test("A collection cited in one volume has no related collections at all")
@@ -243,9 +256,12 @@ struct CollectionRelationsTests {
                 The 1969–1976 subseries — 66 volumes, the largest in the corpus — was split \
                 across two buckets at the 1970 decade line.
                 """)
-        #expect(CollectionRelations.eraIndex(forMidpointYear: 1960)
-                != CollectionRelations.eraIndex(forMidpointYear: 1961),
-                "the 1958–60 and 1961–63 subseries were merged into one 1960s bucket")
+        #expect(CollectionRelations.eraIndex(forMidpointYear: 1962)
+                != CollectionRelations.eraIndex(forMidpointYear: 1966), """
+                The 1961–63 and 1964–68 subseries landed in one bucket. Measured over the \
+                shipped manifest, a decade axis puts volumes from five subseries — 1952–54 \
+                through 1969–76 — into its single 1960s bar.
+                """)
 
         let spans = Set(CollectionRelations.coverageEras.map { "\($0.startYear)-\($0.endYear)" })
         // Exactly the published subseries ids from 1955 on.
@@ -417,6 +433,75 @@ struct CollectionRelationsTests {
         #expect(text.contains("fades"))
     }
 
+    @Test("A maximum that comes back after a dip is not a peak")
+    func narrativeRefusesANonAdjacentMaximum() {
+        // The shipped shape: "Department of the Treasury" is cited by two 1955–1957 volumes and
+        // two 1977–1980 volumes and nothing between — counts [2, 0, 0, 0, 0, 2]. Scanning forward
+        // from the first maximum names 1955–1957 as the peak and then claims a fade, with the
+        // last bar drawn exactly as tall as the first. Nine shipped records have this shape.
+        let text = CollectionRelations.timelineNarrative(
+            for: timeline([(1956, 2), (1978, 2)]))
+        #expect(!text.contains("peaks"), """
+            The maximum occurs twice, with a gap between. There is no single peak to name, and \
+            naming the earlier one describes a chart that is not on screen: \(text)
+            """)
+        #expect(!text.contains("fades"), """
+            The last bar is AT the maximum — nothing faded: \(text)
+            """)
+        #expect(text.contains("1955–1957") && text.contains("1977–1980"))
+    }
+
+    @Test("No shipped collection gets a caption that contradicts its own chart")
+    func shippedCaptionsAgreeWithTheirCharts() throws {
+        // The invariants, stated independently of how the caption is computed: a claimed fade
+        // means the last bar is below the maximum, and a claimed peak means the maximum occupies
+        // one unbroken run. Both are properties of the chart, so this cannot drift into mirroring
+        // the implementation.
+        let index = try #require(CollectionAuthorityStore.shared)
+        let manifestURL = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
+                                               from: Data(contentsOf: manifestURL))
+        let byId = Dictionary(uniqueKeysWithValues: entries.map { ($0.volumeId, $0) })
+
+        var captioned = 0
+        var claimedPeak = 0
+        for record in index.collections {
+            let midpoints = record.volumeIds.compactMap { id -> Int? in
+                byId[id].flatMap {
+                    CollectionRelations.midpointYear(earliest: $0.dateRange.earliest,
+                                                     latest: $0.dateRange.latest)
+                }
+            }
+            let buckets = CollectionRelations.citedOverTime(volumeMidpoints: midpoints)
+            guard !buckets.isEmpty else { continue }
+            let text = CollectionRelations.timelineNarrative(for: buckets)
+            guard !text.isEmpty else { continue }
+            captioned += 1
+            let counts = buckets.map(\.volumeCount)
+            let peak = counts.max() ?? 0
+
+            if text.contains("fades") {
+                #expect(counts.last ?? 0 < peak, """
+                    \(record.name) claims to fade, but its last era holds \(counts.last ?? 0) \
+                    of a maximum \(peak) — the final bar is at the top of the chart. Counts: \
+                    \(counts)
+                    """)
+            }
+            if text.contains("peak") {
+                claimedPeak += 1
+                let atPeak = counts.indices.filter { counts[$0] == peak }
+                let unbroken = atPeak.count == (atPeak.last! - atPeak.first! + 1)
+                #expect(unbroken, """
+                    \(record.name) names a peak, but its maximum recurs after a dip, so no era \
+                    is the peak. Counts: \(counts)
+                    """)
+                #expect(peak >= 2, "\(record.name) calls a single citation a peak: \(counts)")
+            }
+        }
+        #expect(captioned > 100, "guard is vacuous — only \(captioned) captions generated")
+        #expect(claimedPeak > 10, "guard is vacuous — only \(claimedPeak) captions named a peak")
+    }
+
     @Test("Fewer than two buckets produces no sentence")
     func narrativeIsEmptyWithoutAShape() {
         #expect(CollectionRelations.timelineNarrative(for: []).isEmpty)
@@ -524,6 +609,23 @@ struct CollectionDetailWiringTests {
             // a `contains` check). Reformatting this line is expected to fail this test.
             #expect(body[index - 1] == gate,
                     "\(why). The line before it reads: \(body[index - 1])")
+        }
+    }
+
+    @Test("The loaders actually call the computation they are named for")
+    func loadersAreWiredToTheComputation() throws {
+        // Without this, every other assertion in this suite passes over sections that mount,
+        // gate correctly, and are permanently empty because nothing ever fills their state.
+        let lines = Self.codeLines(try Self.source())
+        for (loader, call) in [("private func loadRelated()", "CollectionRelations.related("),
+                               ("private func loadTimeline()", "CollectionRelations.citedOverTime(")] {
+            guard let start = lines.firstIndex(where: { $0.contains(loader) }) else {
+                Issue.record("\(loader) is gone — its section can never fill")
+                return
+            }
+            let body = lines[start..<min(start + 12, lines.count)]
+            #expect(body.contains { $0.contains(call) },
+                    "\(loader) never calls \(call), so its section renders empty forever")
         }
     }
 

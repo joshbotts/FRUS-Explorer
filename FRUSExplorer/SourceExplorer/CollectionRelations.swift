@@ -37,8 +37,9 @@ struct RelatedCollection: Identifiable, Sendable, Equatable {
 
     /// Overlap coefficient — shared ÷ the *smaller* of the two citing-volume lists, in
     /// `0...1`. Dividing by the smaller list is what damps the umbrella records: the
-    /// "Central Files" cluster cites 157 volumes and would otherwise sit at the top of
-    /// every list on raw shared count alone.
+    /// "Central Files" cluster cites 157 volumes, and on raw shared count it is the top answer
+    /// for 461 of the 1,557 collections that have a list at all — near enough one in three,
+    /// whatever the two actually have to do with each other.
     let overlap: Double
 
     var id: String { record.id }
@@ -51,8 +52,9 @@ struct RelatedCollection: Identifiable, Sendable, Equatable {
 ///
 /// These are **not** SA-3's decades. The provenance dashboard buckets by decade because it
 /// charts the whole series at once; for a single collection a decade axis is wrong in both
-/// directions — it splits the 66-volume `1969-76` subseries at the 1970 line and merges the
-/// `1958-60` and `1961-63` subseries into one bar.
+/// directions. Measured over the shipped manifest under SA-3's own midpoint rule, it splits the
+/// 66-volume `1969-76` subseries across the 1960s and 1970s, while its single 1960s bar holds
+/// volumes from five different subseries — `1952-54`, `1955-57`, `1961-63`, `1964-68`, `1969-76`.
 ///
 /// From 1955 the buckets are exactly the published subseries (`1955-57`, `1958-60`,
 /// `1961-63`, `1964-68`, `1969-76`, `1977-80`, `1981-88`, `1989-92`). Earlier, FRUS published
@@ -123,12 +125,16 @@ enum CollectionRelations {
     /// A floor is not a nicety here, it is what makes the metric mean anything. The overlap
     /// coefficient is `shared ÷ min(|A|,|B|)`, so it reaches 1.0 for *any* record whose
     /// citing-volume list is a subset of the focus record's — and 2,846 of the 4,423 shipped
-    /// records cite exactly one volume. Measured on the 2026-08-06 artifact: 77.8% of all
-    /// co-citing pairs score exactly 1.000, and without a floor 80.3% of the top-5 slots for
-    /// records citing 20+ volumes are single-volume records sharing one volume, with a third
-    /// of those records getting a top-5 that is *entirely* such noise. Requiring two shared
-    /// volumes removes it: the same measure drops to 0.5%, while only 19 of the 1,577
-    /// multi-volume records lose their list altogether.
+    /// records cite exactly one volume. Measured on the 2026-08-06 artifact, **77.8% of all
+    /// co-citing pairs score exactly 1.000**, so what a list looks like is decided by the
+    /// tie-breaks far more often than by the score.
+    ///
+    /// Ranked on the score alone, 80.3% of the top-5 slots for records citing 20 or more
+    /// volumes go to single-volume records sharing one volume, and a third of those records get
+    /// a top-5 that is *entirely* that noise. The shared-count tie-break alone brings it to
+    /// 0.5% there — but 27.7% corpus-wide, since for a single-volume focus every candidate ties
+    /// on both keys. This floor removes the class outright: a one-volume record cannot share
+    /// two. It costs 19 of the 1,577 multi-volume records their list.
     static let minimumSharedVolumes = 2
 
     /// Rows shown before the "Show all" disclosure, in every capped section of the detail view.
@@ -209,11 +215,11 @@ enum CollectionRelations {
 
     /// The era a coverage midpoint belongs to.
     ///
-    /// Clamped at both ends rather than returning `nil`: eight manifest volumes are
-    /// retrospective compilations whose midpoint falls before the series' own 1861 floor
-    /// (`frus1872p2v5` reaches back to 1620, giving a midpoint of 1740). None is cited by any
-    /// authority record today, but dropping a citing volume would silently shrink a count the
-    /// user is reading as complete.
+    /// Clamped at both ends rather than returning `nil`: eight manifest volumes have a coverage
+    /// midpoint before the series' own 1861 floor — six because they print retrospective annexes
+    /// (`frus1872p2v5` reaches back to 1620, for a midpoint of 1746), and two because their
+    /// coverage simply opens in 1860. None is cited by any authority record today, but dropping a
+    /// citing volume would silently shrink a count the user is reading as complete.
     static func eraIndex(forMidpointYear year: Int) -> Int {
         for era in coverageEras where year <= era.endYear {
             return era.index
@@ -246,12 +252,16 @@ enum CollectionRelations {
     /// The chart's prose reading of itself — "enters the record with … peaks across … fades
     /// after …", generated from the buckets rather than written per collection.
     ///
-    /// The clauses are guarded, not decorative. "Peaks" is claimed only when some era carries
-    /// two or more citing volumes *and* the peak does not run the whole width, because a
-    /// collection cited once per era has no peak and one cited evenly throughout has no
-    /// single one. "Fades" is claimed only when volumes actually stop after the peak. The
-    /// peak span covers the contiguous run of eras tied at the maximum, so a plateau reads as
-    /// one span rather than an arbitrarily-chosen bar.
+    /// The clauses are guarded, not decorative — each one is a claim about the chart drawn
+    /// directly above it, and a caption that contradicts its own chart is worse than no caption.
+    ///
+    /// "Peaks" is claimed only when three things hold: some era carries two or more citing
+    /// volumes (one per era is the noise floor, not a trend); the eras tied at the maximum form
+    /// **one unbroken run** (a maximum that recurs after a dip has no single peak — see
+    /// ``peakRun(in:at:)``); and that run does not cover the whole width (a collection cited
+    /// evenly throughout peaks nowhere). "Fades" is claimed only when citations continue past
+    /// the peak run at a lower level — which, because the run holds *every* bucket at the
+    /// maximum, is exactly when the chart really does fall away.
     ///
     /// Returns an empty string for fewer than two buckets — the caller renders no chart there.
     static func timelineNarrative(for buckets: [CollectionEraCount]) -> String {
@@ -260,11 +270,10 @@ enum CollectionRelations {
               let lastEra = buckets.last(where: { $0.volumeCount > 0 })?.era else { return "" }
 
         let peak = buckets.map(\.volumeCount).max() ?? 0
-        let peakRun = contiguousPeakRun(in: buckets, at: peak)
-        let peakSpansEverything = peakRun.map(\.era.index) == buckets.map(\.era.index)
+        let run = peakRun(in: buckets, at: peak)
 
-        guard peak >= 2, !peakSpansEverything, let runStart = peakRun.first?.era,
-              let runEnd = peakRun.last?.era else {
+        guard peak >= 2, let run, run.count < buckets.count,
+              let runStart = run.first?.era, let runEnd = run.last?.era else {
             return String(format: String(
                 localized: "collection.detail.timeline.narrative.flat %@ %@",
                 defaultValue: "This collection enters the record with the %1$@ volumes and runs through the %2$@ volumes."),
@@ -274,6 +283,7 @@ enum CollectionRelations {
         let peakSpan = runStart == runEnd
             ? runStart.fullLabel
             : "\(runStart.startYear)–\(runEnd.endYear)"
+        let entersAtItsPeak = firstEra.index == runStart.index
 
         guard lastEra.index > runEnd.index else {
             return String(format: String(
@@ -281,18 +291,33 @@ enum CollectionRelations {
                 defaultValue: "This collection enters the record with the %1$@ volumes and peaks across the %2$@ volumes."),
                 firstEra.fullLabel, peakSpan)
         }
+        // Naming the same era as both the entrance and the peak reads as a stutter, so the
+        // sentence says it once — the collection arrived at full strength.
+        if entersAtItsPeak {
+            return String(format: String(
+                localized: "collection.detail.timeline.narrative.entersAtPeak %@ %@",
+                defaultValue: "This collection enters the record at its peak with the %1$@ volumes and fades after the %2$@ volumes."),
+                peakSpan, lastEra.fullLabel)
+        }
         return String(format: String(
             localized: "collection.detail.timeline.narrative.fade %@ %@ %@",
             defaultValue: "This collection enters the record with the %1$@ volumes, peaks across the %2$@ volumes, and fades after the %3$@ volumes."),
             firstEra.fullLabel, peakSpan, lastEra.fullLabel)
     }
 
-    /// The maximal run of adjacent buckets all sitting at `peak`, containing the earliest one.
-    private static func contiguousPeakRun(in buckets: [CollectionEraCount],
-                                          at peak: Int) -> [CollectionEraCount] {
-        guard let start = buckets.firstIndex(where: { $0.volumeCount == peak }) else { return [] }
-        var end = start
-        while end + 1 < buckets.count, buckets[end + 1].volumeCount == peak { end += 1 }
+    /// The eras tied at `peak` — but only when they form **one unbroken run**, and `nil` otherwise.
+    ///
+    /// Returning the first run and ignoring later recurrences is what a forward scan does, and it
+    /// is wrong: measured on the shipped artifact, 9 of the 600 collections that chart at all have
+    /// their maximum recur after a dip. `Department of the Treasury` is cited by two 1955–1957
+    /// volumes and two 1977–1980 volumes, so a first-run answer names 1955–1957 as the peak and
+    /// then claims a fade — with the last bar drawn exactly as tall as the first. Such a
+    /// collection has no single peak, and `nil` is the honest answer.
+    private static func peakRun(in buckets: [CollectionEraCount],
+                                at peak: Int) -> [CollectionEraCount]? {
+        let atPeak = buckets.indices.filter { buckets[$0].volumeCount == peak }
+        guard let start = atPeak.first, let end = atPeak.last else { return nil }
+        guard atPeak.count == end - start + 1 else { return nil }
         return Array(buckets[start...end])
     }
 }

@@ -351,7 +351,12 @@ struct CollectionDetailView: View {
     }
 
     /// One Related Collections row: identity on the left, the shared count and an overlap
-    /// meter on the right. The meter is the ranking made visible — the list is ordered by it.
+    /// meter on the right.
+    ///
+    /// The meter shows the coefficient the list is ranked on, but it saturates readily — any
+    /// partner whose citing volumes all sit inside this record's scores a full bar — so equal
+    /// meters are the common case, and what separates rows within them is the shared count
+    /// printed above it.
     @ViewBuilder
     private func relatedRow(_ item: RelatedCollection) -> some View {
         HStack(alignment: .center, spacing: 8) {
