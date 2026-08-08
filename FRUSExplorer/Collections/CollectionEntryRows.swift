@@ -644,6 +644,16 @@ struct EntryRow: View {
     /// presenting editor decides the surface: an iPhone `.sheet` or an iPad selection-
     /// driven `.inspector` column.
     var onInspect: () -> Void
+
+    /// Opens this entry's document in the app's reader (#755 / audit M-18, M-19).
+    ///
+    /// A separate action rather than a change to the row tap: the tap has opened the configure
+    /// inspector since Composer v2 §D, and researchers rely on it. What was missing was any route
+    /// at all — the Collections module contained no `openDocument`, `openBrowseDocument` or
+    /// `DocumentView` reference anywhere, making it the only document list in the app with no way
+    /// into the reader. Every other one (search, history, chronology, research, graph, related,
+    /// neighbours) opens it.
+    var onOpenDocument: (() -> Void)? = nil
     /// Whether to render the trailing **⚙ Configure** pill (Composer v2 §D). `true` on the iPad
     /// (regular-width) rows where the pill is the labeled configure trigger; `false` on the iPhone
     /// (compact) drill-in rows, where the whole-row disclosure is the trigger, so the row shows a
@@ -714,6 +724,23 @@ struct EntryRow: View {
         // first, so there is no double-fire, and a discrete tap does not swallow swipe-to-delete.
         .contentShape(Rectangle())
         .onTapGesture { onInspect() }
+        // #755: the reader route. Long-press rather than tap, so the established configure gesture
+        // is untouched; also exposed as a VoiceOver action, since a context menu alone is not.
+        .contextMenu {
+            if let onOpenDocument {
+                Button {
+                    onOpenDocument()
+                } label: {
+                    Label(String(localized: "collection.entry.openDocument",
+                                 defaultValue: "Open Document"),
+                          systemImage: "book.pages")
+                }
+            }
+        }
+        .accessibilityAction(named: Text(String(localized: "collection.entry.openDocument",
+                                                defaultValue: "Open Document"))) {
+            onOpenDocument?()
+        }
         // Without the pill (iPhone) the row itself is the configure control: merge its children into
         // one focusable button and bridge VoiceOver activation to `onInspect` — a bare
         // `.onTapGesture` is not exposed to VoiceOver. With the pill (iPad) the `ConfigurePill` is

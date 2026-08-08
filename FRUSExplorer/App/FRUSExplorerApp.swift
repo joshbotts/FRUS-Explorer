@@ -1367,6 +1367,15 @@ struct FRUSExplorerApp: App {
     @MainActor
     private func surfaceOpenedCollection(_ id: UUID) {
         #if os(iOS)
+        // #755 (audit M-24): set the hand-off on iOS too. `CollectionListView` has had the consumer
+        // since #369 BUG-12 — `.task` + `.onChange` draining `pendingCollectionSelection` to push
+        // the imported collection's editor — but the ONLY writer in the codebase was the macOS
+        // branch below, so the iOS half could never fire. The collection imported fine and then the
+        // user had to go find it by name, while macOS opened straight onto it.
+        //
+        // Set BEFORE the tab switch, for the same reason macOS sets it before `openWindow`: a
+        // freshly created consumer's `.task` must see it.
+        appState.pendingCollectionSelection = id
         appState.openTab(.collections, from: .anyWindow)
         #else
         appState.pendingCollectionSelection = id
