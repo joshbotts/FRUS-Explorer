@@ -354,6 +354,29 @@ struct PersonRollupWiringTests {
         }
     }
 
+    @Test("refreshAfterCorpusChange reopens the stores before it does anything else")
+    func corpusChangeStillSatisfiesTheReindexContract() throws {
+        // #275's contract — VACUUM and reindex swap the database file under the boot-once
+        // read-only connections, so they must be recreated or every dashboard reads empty for the
+        // rest of the session. Both storage hubs now reach that through
+        // `refreshAfterCorpusChange`, so `IndexCompactionTests` accepts the delegating call; this
+        // is the assertion that makes that acceptance safe. If the delegation is ever removed,
+        // #275 regresses silently on every hub action at once.
+        let text = try source("FRUSExplorer/App/AppState.swift")
+        let start = try #require(text.range(of: "func refreshAfterCorpusChange(context:"))
+        let body = String(text[start.lowerBound...].prefix(600))
+        #expect(body.contains("refreshReadOnlyStores()"),
+                "refreshAfterCorpusChange must reopen the read-only stores (#275)")
+
+        // And it must do so BEFORE the async rollup work, not after: the whole point is that the
+        // connections are usable the moment the hub action returns.
+        let reopen = try #require(body.range(of: "refreshReadOnlyStores()"))
+        if let asyncWork = body.range(of: "Task {") {
+            #expect(reopen.lowerBound < asyncWork.lowerBound,
+                    "the stores must be reopened synchronously, before the rollup task is spawned")
+        }
+    }
+
     @Test("Corrections raise the signal through the choke point, not by hand")
     func correctionSitesUseTheChokePoint() throws {
         for path in ["FRUSExplorer/Browser/PersonIndexView.swift",
