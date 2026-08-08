@@ -2291,3 +2291,61 @@ here. The test says so rather than expecting a number the code does not produce.
 **3 of 4 mutations caught**, the fourth an equivalent mutant (defensive depth reset, unreachable on
 XML `XMLParser` accepts) now annotated as such in the source. 25 tests green across the parser,
 pipeline and standards suites; both platforms build clean.
+
+### Session 2026-08-07 — Can M2 ride the vector-embeddings pipeline? Yes — plan + priced
+
+New doc `Planning/M2-Semantic-Pipeline-Ride-Along.md`. The two programs share their expensive
+part — a full pass over the corpus body text — so the answer is yes, with a seam: shared
+extraction, tooling discipline, hardware window, and one load-bearing model reuse
+(mention-context embeddings as the reconciliation signal for identity clustering); **never**
+shared gates or verdicts (V-0's pre-1900 cosine kill stays embedding-only; M2 still waits on its
+own M2a prose ground truth; the M1a 300 rows are still un-keyed).
+
+**Measured before estimating:** the corpus body text is **~330 M BPE tokens** (1.374 B chars /
+229.2 M words over 314,483 document divs — tag-stripped `<div type="document">` character data,
+all 552 volumes); ~380 M after chunk overlap; the M2 scope (268 no-list volumes) is ~176 M
+(51.3%). This corrects two design-doc guesses: ~475 k chunks (not 600 k–1 M), and §3.3's
+"1–6 hour [U]" wall-clock band, which implies ≥49 TFLOPS effective for the 300 M primary — not
+reachable on either machine. Correction note added to the design doc in place.
+
+**Generation price, both machines** (assumptions stated in the doc; V-0 on both machines converts
+them to measurements for pennies): EmbeddingGemma-300M full-corpus embed **~8–13 h on the M1 Max
+Studio**, **~8–26 h on the M5 MacBook Air** — the Air's spread is software, not silicon (whether
+the ML stack drives M5's per-core Neural Accelerators for encoder models is [U]; fanless
+throttling on top). NER pass over the M2 scope ~1–9 h by detector; mention-context pass ~4–7 h.
+Electricity for the whole program: **under $1 on either machine** (~$0.30–0.75 Studio,
+~$0.10–0.30 Air). The only real dollar line is the deferred adversarial-review tier (~$45–90 as a
+Haiku-class API batch over the uncertain band). The genuinely scarce resource is neither machine:
+it is the two owner keying sittings (M1a's 300 rows, M2a's exhaustive sample) that gate both
+programs.
+
+Recommended execution: V-0 spike on both machines, then embed on the Studio + NER on the Air in
+one night, context pass the next evening — a weekend of machine time end to end.
+
+### Session 2026-08-07 — LM Studio execution route for the semantic harvest (owner-run)
+
+The owner will run the model passes themselves through LM Studio; the ride-along plan gains §5
+(execution route) and the repo gains `tools/semantic-harvest/` — a runbook plus a committed,
+**stdlib-only** `harvest_embeddings.py` (no pip/venv; runs on the macOS-bundled python3, which is
+what makes the Studio a 15-minute setup). Resumable per volume, provenance-pinned (GGUF SHA-256
+via MODEL_FILE, LM Studio model id, chunk/prefix/batch params, machine, script SHA), per-volume
+timing log, live ETA, and SHA256SUMS for the Studio → Air transfer the owner named as a
+requirement — the runbook's Phase 4 verifies checksums on the Air before anything reads vectors.
+
+Three design consequences recorded in the plan: (1) the **pin moves** from a Python lockfile + HF
+revision to the GGUF file's SHA — and a quantized GGUF is a different model for pinning purposes,
+so the V-0 gates run through the same runtime as the full pass; (2) **pooling leaves the
+harvest** — the store keeps chunk vectors + spans, and pooling/L2/truncation/quantization all move
+to the deterministic packer, so a pooling-rule change costs a re-pack (minutes) instead of a
+re-run (overnight); (3) GLiNER/spaCy don't run in LM Studio, so the LM-Studio-native NER route is
+structured-output chat NER, sample-first, with the NLTagger control in-repo.
+
+**Verified before handover**: the harvester ran end-to-end against a mock `/v1/embeddings` server
+— frus1861 → 312 docs / 586 chunks, chunk spans tile each document exactly, resume skips the
+completed volume, dimension-change mid-run aborts, checksums and run-manifest written. Confirmed
+externally: LM Studio serves `/v1/embeddings`, embedding models must be explicitly loaded, and
+EmbeddingGemma-300M has an official lmstudio-community GGUF.
+
+Division of labour is explicit in both docs: owner = setup, V-0 spike on both machines, model
+sign-off, full harvest, verified transfer; Claude = store validation, weak-positive MRR gates,
+blind-panel staging, quantization ladder, deterministic pooling/packing, artifact tests.
