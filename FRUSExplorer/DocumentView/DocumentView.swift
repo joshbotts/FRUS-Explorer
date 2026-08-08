@@ -632,6 +632,10 @@ struct DocumentView: View {
                     // weakest first impression of the feature); the user can still
                     // drag down to .medium as a system gesture.
                     .presentationDetents([.medium, .large], selection: $graphSheetDetent)
+                    // #752 (audit L-39): sheets do not reliably inherit `\.sceneID`. Its sibling
+                    // `.relatedDocuments` case injects this; without it, cross-references inside a
+                    // document pushed in the graph sheet posted to `.anyWindow`.
+                    .environment(\.sceneID, sceneID)
                 }
             case .summarizePromptPicker:
                 SummarizationPromptPickerSheet(

@@ -502,13 +502,7 @@ struct FRUSExplorerApp: App {
                 if let id = windowID {
                     // NavigationStack is required so DocumentView's .navigationTitle
                     // and toolbar items render in a proper nav bar for the scene window.
-                    NavigationStack {
-                        DocumentView(entry: DocumentBrowserEntry(
-                            documentId: id.documentId,
-                            volumeId: id.volumeId,
-                            header: id.header
-                        ))
-                    }
+                    StandaloneDocumentWindowContent(id: id)
                 } else {
                     ContentUnavailableView(
                         String(localized: "documentWindow.empty.title",
@@ -3012,3 +3006,67 @@ struct ProjectSwitcherMenuContent: View {
 }
 
 #endif // os(macOS)
+
+#if os(iOS)
+
+// MARK: - StandaloneDocumentWindowContent
+
+/// The content of a standalone iPad document window — a reader that **navigates in place** (#752).
+///
+/// ## What this replaces
+/// The window used to host a bare `NavigationStack { DocumentView(entry:) }` with no path of its
+/// own. Combined with `.auxWindowOrigin` — which republishes the *launching* window's scene as this
+/// window's `\.sceneID` so rail producers have somewhere to present — every document-to-document
+/// jump was addressed to a **different window**:
+///
+/// - a cross-reference tap, or an edge-tap page-turn, delivered the target to the launching
+///   window's Browse tab (audit H-7, M-30). Nothing calls `requestSceneSessionActivation`
+///   anywhere in the app, so that window was never brought forward: on a Stage Manager iPad the
+///   tap looked like a no-op while another stage silently changed;
+/// - and when the launching window had been closed — or the app had restored this window, which
+///   captures no origin at all — the target degraded to `.anyWindow`, i.e. some third window.
+///
+/// macOS never had this: `MacDocumentWindowView` pushes onto its own stack. This gives the iPad
+/// window the same property, using the host router #751 added to `DocumentView`.
+///
+/// ## What is deliberately unchanged
+/// `.auxWindowOrigin` still publishes the launcher's scene, because the *other* rail producers
+/// (word cloud, analytics, chronology) present sheets this window does not host. Document
+/// navigation no longer relies on it, which is the part that was silently going elsewhere.
+///
+/// Version history:
+///   1.0 — Session 2026-08-08: #752 (audit H-7, M-30)
+private struct StandaloneDocumentWindowContent: View {
+
+    /// The document this window was opened for.
+    let id: DocumentWindowID
+
+    /// This window's own reading stack — cross-references and page-turns push and replace here
+    /// rather than being handed to another window.
+    @State private var navigationPath: [DocumentBrowserEntry] = []
+
+    private var rootEntry: DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: id.documentId, volumeId: id.volumeId, header: id.header)
+    }
+
+    var body: some View {
+        // NavigationStack is required so DocumentView's .navigationTitle and toolbar items render
+        // in a proper nav bar for the scene window.
+        NavigationStack(path: $navigationPath) {
+            DocumentView(entry: rootEntry, onNavigateToDocument: navigate)
+                .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                    DocumentView(entry: entry, onNavigateToDocument: navigate)
+                }
+        }
+    }
+
+    /// Follows a jump inside this window (#752), honouring #751's push/replace distinction.
+    private func navigate(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
+        if jump == .replace, !navigationPath.isEmpty {
+            navigationPath.removeLast()   // a page-turn moves, not descends
+        }
+        navigationPath.append(entry)
+    }
+}
+
+#endif

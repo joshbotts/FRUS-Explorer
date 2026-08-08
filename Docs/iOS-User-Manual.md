@@ -1241,6 +1241,10 @@ On iPad, the document view's **Research rail** (Section 3.3) is presented as a t
 
 On iPads that support Stage Manager, FRUS Explorer can open documents in their own windows — tap the **Open in New Window** icon in the Research rail's header (Section 3.3) to pop it out, then arrange it alongside other FRUS Explorer windows or other apps. This is especially useful for comparing two documents side by side, or keeping a reference document visible while you work in another.
 
+**A popped-out document window reads on its own.** Following a cross-reference, or edge-tapping to the previous or next document, navigates **inside that window** — with its own Back button — rather than sending the document to the window you opened it from. Page-turns replace what you are reading, so one Back tap leaves however far you paged.
+
+**Word clouds from a popped-out window.** The Research rail's Word Cloud tile presents in a main window. If the window you opened the document from has since been closed, the cloud now opens in whichever window is available rather than doing nothing. A word cloud already open in another window is no longer dismissed when you open one here.
+
 `[SCREENSHOT: Stage Manager session showing two FRUS Explorer document windows side by side]`
 
 Documents aren't the only windows. With Stage Manager active, the **cross-reference graph**, **Source Explorer**, **Archival Neighbors**, and **Related Documents** each open as their own window rather than a sheet, so a graph or a work list can stay open beside the document you're reading — tapping a result in an Archival Neighbors or Related Documents window opens the document in the main window while the list stays put. These windows restore across relaunch: reopen the app and a Related Documents window comes back with its document, scope, and weight tuning intact.

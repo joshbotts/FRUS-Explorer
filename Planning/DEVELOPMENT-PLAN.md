@@ -2685,3 +2685,58 @@ taps). Narrowing it blind would trade a measured benefit for an unmeasured one.
 **Verification:** 10 tests in the extended suite; **8/8 mutations caught**, including both jump-kind
 inversions (page-turn descends / cross-ref replaces) and the vacuity mutant. Both platforms build
 clean; iOS manual updated. macOS is unaffected — it already behaves the way this makes iOS behave.
+
+---
+
+## Session 2026-08-08 — #752: an action in an iPad window now happens in that window
+
+Eighth item off the 2026-08 navigation and state audit. Eight findings; **six fixed, two deferred
+with reasons.**
+
+**The root of the family.** The standalone document window republishes the *launching* window's
+scene as its own `\.sceneID` (`.auxWindowOrigin`), so rail producers have somewhere to present.
+Document navigation inherited that too — and **nothing in the app calls
+`requestSceneSessionActivation`** (verified: zero hits repo-wide), so the consuming window is never
+brought forward. On a Stage Manager iPad the tap looked like nothing happened while another stage
+silently changed. When the launcher had closed, or the app had restored the window (which captures
+no origin at all), the target degraded to `.anyWindow`.
+
+**H-7 / M-30 — the standalone window now reads on its own.** New
+`StandaloneDocumentWindowContent` owns a path and uses #751's router, so cross-references and
+page-turns navigate in place, exactly as `MacDocumentWindowView` already did. This takes document
+navigation *out of* the aux-origin mechanism rather than trying to make cross-window delivery work.
+
+**H-9 / M-31 / M-33 — the word-cloud channel.** It was the one channel of five demanding an exact
+scene match, so a restored or orphaned standalone window targeted `.anyWindow` and **no presenter
+matched**: the tile did nothing, permanently, while its rail siblings worked — contradicting
+`AppState`'s own promise that `.anyWindow` "never black-holes". It now accepts the wildcard, and
+**consumes** into window-local state instead of holding the shared slot for its presentation
+lifetime, which is what let window B's producer dismiss window A's open sheet.
+
+**L-39 — two sheets got the `\.sceneID` injection their four siblings had.**
+
+**Deferred, and why.** **M-25** (Spotlight/deep-link content can land in a background window) needs
+the app to *activate* the consuming scene — a capability it has never had. Adding scene activation
+is a design change with its own failure modes, not a patch. A test now flags if
+`requestSceneSessionActivation` ever appears, because it would invalidate the reasoning behind these
+fixes. **L-40** (Source Explorer related-document taps) has the same shape: the closure is not a View
+and cannot read `\.sceneID`, as its own comment admits.
+
+**Verification:** 9 tests; **9/9 mutations caught — but only after a second round.**
+
+**Three of my own guards were weak, and mutation testing is the only reason I know.**
+
+1. `#expect(body.contains("onNavigateToDocument: navigate"))` passed with **one of the two**
+   `DocumentView`s stripped of its router — the root and the pushed destination both need one, and
+   `contains` cannot tell. Now counts occurrences.
+2. The Citation Lookup assertion extracted a 600-character window and looked for `\.sceneID`
+   anywhere inside it. That window **spilled into the ArchivalNeighbors sheet three lines below,
+   which injects it too** — so the test passed with Citation Lookup's own injection deleted. It was
+   measuring a different sheet's correctness. Now checks line adjacency.
+3. The "nothing activates scenes" test asserts *absence*, so breaking its needle made it pass
+   vacuously — the same defect #749's M9 exposed, recurring in a new file. Now has a positive control
+   sharing one `needle` constant so control and scan cannot drift.
+
+**A character-window extraction is a proximity heuristic, not a scope.** In a file where sibling
+call sites do the same correct thing a few lines apart, it will happily prove the neighbour's point.
+Anchor on the construct, or assert adjacency.
