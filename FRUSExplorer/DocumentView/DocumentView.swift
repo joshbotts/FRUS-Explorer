@@ -233,6 +233,21 @@ struct DocumentView: View {
 
     let entry: DocumentBrowserEntry
 
+    /// Where a document-to-document jump should go, when this view is **not** hosted by the
+    /// Browse tab (#750 / audit H-10, M-15).
+    ///
+    /// Cross-reference taps and edge-tap page-turns default to `openTab(.browse)` +
+    /// `openBrowseDocument`, which is right for the Browse stack and wrong everywhere else. Three
+    /// sheets push `DocumentView` on their **own** stacks — Chronology, Citation Lookup, and the
+    /// in-document cross-reference graph — and for those the Browse append happened *beneath the
+    /// still-presented sheet*: the tap looked dead, and the user later found a pile of documents on
+    /// a stack they never navigated, with their chronology or lookup context gone.
+    ///
+    /// A host that passes this keeps the jump inside its own stack, so the reader stays where they
+    /// are. `nil` (the Browse tab, the macOS document window, Search's pushed reader) keeps the
+    /// existing routing untouched.
+    var onNavigateToDocument: ((DocumentBrowserEntry) -> Void)? = nil
+
     /// Point size of the "…unavailable" empty-state glyphs (person / gloss not
     /// found sheets), scaled with Dynamic Type relative to `.largeTitle` so the
     /// glyph tracks the message text. Clamped via `FRUSTheme.cappedGlyphSize`
@@ -323,8 +338,12 @@ struct DocumentView: View {
 
     // MARK: - Init
 
-    init(entry: DocumentBrowserEntry) {
+    /// - Parameter onNavigateToDocument: where document-to-document jumps go when this reader is
+    ///   hosted by a sheet rather than the Browse tab (#750). See the property's doc comment.
+    init(entry: DocumentBrowserEntry,
+         onNavigateToDocument: ((DocumentBrowserEntry) -> Void)? = nil) {
         self.entry = entry
+        self.onNavigateToDocument = onNavigateToDocument
         let vId = entry.volumeId
         let dId = entry.documentId
         self._highlights = Query(
@@ -965,6 +984,14 @@ struct DocumentView: View {
             dateline: nil,
             sourceNote: nil
         )
+        // A sheet-hosted reader follows the reference inside its own stack (#750).
+        if let onNavigateToDocument {
+            onNavigateToDocument(crossEntry)
+            #if DEBUG
+            print("[DocumentView] Cross-ref tap → host stack: \(volumeId)/\(documentId)")
+            #endif
+            return
+        }
         #if os(iOS)
         appState.openTab(.browse, from: sceneID)
         #endif
@@ -1529,6 +1556,14 @@ struct DocumentView: View {
     /// Browse), so routing every document-to-document jump through the Browse tab
     /// keeps behaviour predictable and consistent with existing in-document navigation.
     private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry) {
+        // A sheet-hosted reader turns the page inside its own stack (#750).
+        if let onNavigateToDocument {
+            onNavigateToDocument(adjacent)
+            #if DEBUG
+            print("[DocumentView] Edge-tap page-turn → host stack: \(adjacent.volumeId)/\(adjacent.documentId)")
+            #endif
+            return
+        }
         #if os(iOS)
         appState.openTab(.browse, from: sceneID)
         #endif

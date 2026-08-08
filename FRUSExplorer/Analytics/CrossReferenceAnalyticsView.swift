@@ -116,6 +116,9 @@ private struct HeatCell: Identifiable, Equatable {
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
+    /// Dismisses this sheet before handing a document or volume off to the Browse tab (#750 /
+    /// audit H-5). Unused on macOS, where this view is its own window.
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     /// #338 step 4: the scene this view renders in on iOS (the Browse-tab sheet), so its document /
     /// volume open hand-offs address the presenting window. Injected at the sheet site; nil on macOS.
@@ -1208,6 +1211,11 @@ struct CrossReferenceAnalyticsView: View {
         #if os(macOS)
         appState.openDocument(entry, from: .tool(.crossRefAnalytics), using: openWindow)
         #else
+        // Dismiss FIRST (#750 / audit H-5). BrowserView presents this sheet AND consumes the
+        // hand-off, so without this the document was appended to the stack directly underneath —
+        // the tap read as dead, and each retry stacked another copy the user found later.
+        // `openTab(.browse)` cannot help: Browse is already the selected tab.
+        dismiss()
         appState.openBrowseDocument(entry, from: sceneID)
         appState.openTab(.browse, from: sceneID)
         #endif
@@ -1219,6 +1227,9 @@ struct CrossReferenceAnalyticsView: View {
     /// Volume tap → open the browser to that volume (the `pendingBrowseVolume` deep-link,
     /// the volume-grain sibling used by Cross-Volume Provenance rows).
     private func openVolume(_ volumeId: String) {
+        #if os(iOS)
+        dismiss()   // same reason as openDocument (#750 / audit H-5)
+        #endif
         appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(iOS)
         appState.openTab(.browse, from: sceneID)

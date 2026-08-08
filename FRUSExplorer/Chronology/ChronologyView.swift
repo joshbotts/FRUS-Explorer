@@ -112,7 +112,11 @@ struct ChronologyView: View {
             // Citation Lookup window fixed in #239).
             #if os(iOS)
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
-                DocumentView(entry: entry)
+                // Follow cross-references and page-turns inside THIS sheet's stack (#750). The
+                // default routing appends to the Browse tab, which is beneath this sheet — the tap
+                // read as dead, and the user later found documents on a stack they never navigated.
+                DocumentView(entry: entry,
+                             onNavigateToDocument: { navigationPath.append($0) })
             }
             #endif
             .toolbar { toolbarContent }
