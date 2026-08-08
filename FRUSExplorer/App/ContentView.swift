@@ -62,7 +62,7 @@ struct ContentView: View {
             // END of the async boot — so a researcher with hundreds of downloaded volumes looked
             // exactly like someone who had none, and the app told them so. The flash lengthens with
             // store size, which aims it squarely at the people with the most to lose.
-            OnboardingView()
+            BootPlaceholderView()
         } else if hasVolumes || hasActiveDownloads || isUITestMode {
             #if os(iOS)
             MainTabView()
