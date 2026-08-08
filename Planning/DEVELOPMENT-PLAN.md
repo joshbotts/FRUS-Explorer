@@ -2740,3 +2740,51 @@ and cannot read `\.sceneID`, as its own comment admits.
 **A character-window extraction is a proximity heuristic, not a scope.** In a file where sibling
 call sites do the same correct thing a few lines apart, it will happily prove the neighbour's point.
 Anchor on the construct, or assert adjacency.
+
+---
+
+## Session 2026-08-08 — #753: boot-in-progress stops being rendered as a definitive state
+
+Ninth item off the 2026-08 navigation and state audit — M-20, M-22, M-23. Three findings, one lie:
+the async boot runs *after* the first frame, and every surface reading a service it creates had a
+nil branch that made a **definitive** statement.
+
+- The Search tab: *"Search Unavailable — the search index is not available"*, over a fully built
+  index of 316,839 documents (M-23).
+- A restored Cross-Reference Graph window: *"No Document Selected"* — with a perfectly good restored
+  request in hand — plus an instruction to go open one (M-22).
+- `ContentView`: the **first-run Welcome screen**, to a researcher with hundreds of downloaded
+  volumes, because `hasDownloadedVolumes(in: nil)` is `false` and `downloadManager` is assigned at
+  the very END of boot (M-20).
+
+None is a wait; all three read as loss or breakage. **The flash lengthens with store size**, so it
+aims itself squarely at the users with the most to lose.
+
+**One vocabulary, as the issue asked.** New `BootPlaceholderView` — extracted, not copied three times
+— and `AppState.isBootComplete`, *derived* from `downloadManager != nil` rather than stored, so it
+cannot be forgotten at a set site and then lie in the opposite direction by claiming ready when
+nothing is. macOS Search already carried this fix and named the principle: a surface "never renders
+the definitive empty state as a lie".
+
+**The honest failure states survive.** At each site a test asserts the real error branch still exists
+*after* the boot branch. Deleting "Search Unavailable" or "No Document Selected" would be a way to
+make "never lie during boot" pass while making the app strictly worse — a store that genuinely fails
+to open still has to say so.
+
+**Re-onboarding still happens when true.** `ContentView` reaches `OnboardingView` from exactly two
+places — the genuinely new user (decided on the first frame, since that branch needs nothing from
+boot) and the onboarded user whose library is empty *after* boot completed. A test pins the count, so
+the fix cannot quietly become "never show onboarding again".
+
+**A test of mine encoded a false assumption.** The sweep initially asserted all three sites consult
+`isBootComplete`. That is wrong: the graph scene waits on `crossReferenceStore` specifically, and
+keying it to the download manager would be *less* accurate, not more consistent. Fixed the test, not
+the code — what the three genuinely share is the placeholder. **One vocabulary is not one variable.**
+
+**Verification:** 8 tests; mutation sweep across the three sites, the derived signal, the placeholder,
+and the suite's own prose filter. Both platforms build clean; iOS manual updated.
+
+**Method note.** M1 came back `PATTERN-MISS` — my mutant string did not match the real source, so it
+measured nothing and would have been reported as a pass had the harness not distinguished the two
+outcomes. Re-run against the actual text. **A mutation harness must report "pattern not found" as its
+own verdict; scoring it as CAUGHT or SURVIVED silently fabricates a result.**
