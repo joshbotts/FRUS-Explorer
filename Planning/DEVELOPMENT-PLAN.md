@@ -2485,3 +2485,54 @@ struct and `SavedSearch` flattens it into columns — so the R-7 CloudKit deploy
 saved search has never been able to carry a person filter at all. That is #756's territory, left
 alone here and now recorded in the test file so the next reader does not mistake it for a
 regression from this change.
+
+---
+
+## Session 2026-08-08 — #748: Project Home's macOS clicks stopped dead-dropping
+
+Fifth item off the 2026-08 navigation and state audit, finding **H-0**.
+
+**The defect.** `ProjectHomeView.openDocument` guarded only its `openTab` call with `#if os(iOS)`;
+the `appState.openBrowseDocument(...)` beside it therefore compiled and ran on **macOS** too. That
+call writes `pendingBrowseDocument`, whose only macOS consumers are the document hosts' `onAppear`
+drains. Project Home is its own window, so ⌘W can close the main window while the app keeps running
+— and with zero hosts mounted, nothing observed the write.
+
+The click did nothing, and **the value was not discarded**: it sat in `AppState` until the next host
+mounted, so the fresh window the user opened minutes or days later immediately navigated itself to a
+long-forgotten document. Neither half looks like a bug on its own, which is why it survived.
+
+**The fix.** The macOS arm now calls `appState.openDocument(entry, from: .global, using: openWindow)`
+— the provenance router, which **mints a standalone window when no host is live**, precisely so "a
+document open must never silently do nothing". `.global` rather than `.tool(…)` because Project Home
+has no `ToolWindowID`: it is a dashboard, not a document-derived tool, so there is no launching host
+to bind to. The iOS arm is unchanged.
+
+**Project Home really was the only offender — but my first measurement said otherwise.** Checking
+whether the five sibling producers shared the bug, I scanned backwards from each call site for the
+nearest `#if` and got `#if os(macOS)` every time, i.e. "all six are macOS writers". The opposite of
+the truth: their calls sit in that directive's `#else`. Reading the call sites showed all five
+already route through `openDocument(…using: openWindow)`. **A nearest-preceding-directive scan cannot
+answer a conditional-compilation question**, and it fails in the direction that manufactures work.
+
+**That error is why the test does real scope tracking.** `MacDocumentOpenRoutingTests` walks
+`#if`/`#elseif`/`#else`/`#endif` maintaining a frame stack, and asserts that **no macOS-compiled
+producer calls `openBrowseDocument` at all**. Three of its six tests exist only to prove the analyser
+itself before the invariant leans on it — including the `#else` case that my hand-scan got wrong, and
+a `DEBUG`-inside-`os(iOS)` nesting case.
+
+**Why a source-reading test.** `AppStateTests` already proves the *model* mints when no host is live,
+and that was true throughout the bug — the defect was that one producer never called the minting API.
+No behavioural test can see a call that isn't made.
+
+**A doc comment asserted this invariant and was false for two releases.**
+`AppState.pendingBrowseDocument` claimed "on macOS every producer now routes directly through
+`openDocument`" while `ProjectHomeView` contradicted it. The comment now records that history and
+points at the test; the invariant is enforced by the suite, not by prose.
+
+**Verification:** 6 tests; **6/6 mutations caught** after re-running M1 in a form that compiles.
+Note on M1: reverting the platform guard to reproduce the original bug **no longer compiles**, because
+`@Environment(\.openWindow)` is itself inside `#if os(macOS)` — a real compiler-enforced improvement,
+but it proves nothing about the guard, so it was re-run as M1b (reintroduce an unguarded legacy write
+alongside the fix), which the guard caught. Both platforms build clean; macOS manual updated. iOS
+behaviour is unchanged, so the iOS manual is deliberately untouched.
