@@ -1406,6 +1406,16 @@ enum PersonListHeuristics {
 ///
 /// The `<div>` type can be `"persons"`, `"persname"`, or `"listofpersons"` depending
 /// on the volume era. All are treated identically.
+/// Parses the volume's list of persons into `PersonEntry` values.
+///
+/// Version history:
+///   … — see the file's other delegates for the earlier history
+///   2026-08-07 — #740: `correspondents` accepted as a persons-list `xml:id`.
+///   2026-08-07 — #741: only the OUTERMOST `<item>` is a person. A back-of-book
+///          "Index of Persons" nests its sub-entries, so one person is a tree; every nested
+///          `<item>` was being emitted as its own person and text accumulation swallowed the
+///          whole subtree. Both fixes change parse output, so `currentDateIndexVersion` moved
+///          36 → 37 in the same commit.
 private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     var entries: [PersonEntry] = []
@@ -1418,6 +1428,42 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var elementDepth = 0
     private var personsSectionDepth = -1
 
+    /// How many `<item>` elements are currently open inside the persons section (#741).
+    ///
+    /// A back-of-book "Index of Persons" nests its sub-entries, so one person's entry is a tree:
+    ///
+    /// ```xml
+    /// <item>Arnold, Henry H., Lieutenant General…:
+    ///   <list><item>Meetings:
+    ///     <list><item>Casablanca Conference: Combined Chiefs of Staff, 536, 546…</item>
+    /// ```
+    ///
+    /// Treating every `<item>` as a person turned `frus1941-43`'s 749-entry index into rows like
+    /// "Casablanca Conference", "Meetings" and "Correspondence with" — sub-headings filed in the
+    /// People browser as people. Only depth 1 is a person; deeper items are that person's page
+    /// references.
+    private var itemDepth = 0
+
+    /// How many `<list>` elements are open *inside* the current person item (#741).
+    ///
+    /// Used to stop text accumulation at the first nested list: the person's name and role are the
+    /// text **before** their sub-entries, and without this the description swallows every page
+    /// reference in the subtree.
+    private var nestedListDepth = 0
+
+    /// The `xml:id` values that name a volume's list of persons.
+    ///
+    /// `correspondents` is the 1873 spelling (#740). `frus1873p1v1` and `frus1873p1v2` each carry
+    /// a real 57-entry editor list under
+    /// `<div type="section" xml:id="correspondents">` headed "List of persons whose correspondence
+    /// with or from the Department of State is contained in this volume" — no `subtype`, and an
+    /// `xml:id` none of the other spellings match. Measured across all 552 manifest volumes, these
+    /// two are the only ones using it, and they were the only volumes in the corpus whose editor
+    /// list the app held but never read.
+    private static let personsSectionIds: Set<String> = [
+        "persons", "persname", "listofpersons", "correspondents"
+    ]
+
     /// Returns `true` when the given element starts a persons section.
     ///
     /// FRUS TEI marks the persons section with `xml:id="persons"` on a
@@ -1427,11 +1473,9 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         if elementName == "listPerson" { return true }
         if elementName == "div" {
             // Primary pattern (all modern FRUS volumes): xml:id identifies the section.
-            let xmlId = attributes["xml:id"]?.lowercased() ?? ""
-            if xmlId == "persons" || xmlId == "persname" || xmlId == "listofpersons" { return true }
+            if personsSectionIds.contains(attributes["xml:id"]?.lowercased() ?? "") { return true }
             // Secondary pattern (some older or non-standard volumes): type attribute.
-            let type = attributes["type"]?.lowercased() ?? ""
-            return type == "persons" || type == "persname" || type == "listofpersons"
+            return personsSectionIds.contains(attributes["type"]?.lowercased() ?? "")
         }
         return false
     }
@@ -1448,8 +1492,14 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
         guard inPersonsSection else { return }
 
-        if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0) {
+        if elementName == "list" && inPersonElement { nestedListDepth += 1 }
+        if elementName == "item" && personsSectionDepth >= 0 { itemDepth += 1 }
+
+        // Depth 1 only (#741): a nested item is a sub-entry of the person above it, not a person.
+        if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0
+                                       && itemDepth == 1) {
             inPersonElement = true
+            nestedListDepth = 0
             // In FRUS TEI the item's xml:id is on the nested <persName>, not the <item>
             // itself. We initialise currentId to nil here and capture it in the
             // persName handler below; the <item>-level xml:id is also accepted as a
@@ -1469,7 +1519,9 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard inPersonElement else { return }
+        // Stop at the first nested list (#741): everything past it is the person's page
+        // references, not their name or role.
+        guard inPersonElement, nestedListDepth == 0 else { return }
         textBuffer += string
     }
 
@@ -1490,7 +1542,13 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 .joined(separator: " ")
             textBuffer = ""
         }
-        if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0) {
+        if elementName == "list" && inPersonElement && nestedListDepth > 0 { nestedListDepth -= 1 }
+
+        // Mirror of the start rule (#741): only the outermost item closes a person.
+        let closesPerson = elementName == "person"
+            || (elementName == "item" && personsSectionDepth >= 0 && itemDepth == 1)
+        if elementName == "item" && personsSectionDepth >= 0 { itemDepth = max(0, itemDepth - 1) }
+        if closesPerson {
             let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
             let id = currentId ?? raw
             if !id.isEmpty {
@@ -1527,6 +1585,7 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 }
             }
             inPersonElement = false
+            nestedListDepth = 0
             currentId = nil
             currentName = nil
             textBuffer = ""
@@ -1538,6 +1597,13 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         if elementDepth <= personsSectionDepth {
             inPersonsSection = false
             personsSectionDepth = -1
+            // Defensive only: on XML well-formed enough for `XMLParser` to accept, every `<item>`
+            // and `<list>` opened inside the section has already closed, so both counters are
+            // zero here. Kept so a malformed volume cannot carry depth into a second persons
+            // section. Mutation-testing correctly reports removing these two lines as an
+            // equivalent mutant.
+            itemDepth = 0
+            nestedListDepth = 0
         }
     }
 

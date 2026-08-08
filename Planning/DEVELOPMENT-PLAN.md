@@ -2250,3 +2250,44 @@ back-of-book subject-index headings to the People browser as people.
 Those three volumes also reconcile the two volume counts now in circulation: **268** is where the
 app shows no people, **267** is where the TEI has no editor list, and the difference is exactly the
 defect volumes.
+
+### Session 2026-08-07 — #740 / #741: two persons-list encodings the parser mishandled
+
+Both surfaced by the M1a cross-check (TEI-derived volume census vs the app's own database), and
+**both root causes differ from what the issues originally said** — the issues were written from the
+symptom, and the code disagreed.
+
+**#740.** Filed against `FRUSDocumentParser.structuralKind`. The actual gate is
+`PersonsParserDelegate.isPersonsSection`, which accepted `xml:id ∈ {persons, persname,
+listofpersons}`. `frus1873p1v1`/`p1v2` use `<div type="section" xml:id="correspondents">` with no
+`subtype`. Added `correspondents` to the accepted set — measured, those are the only two volumes in
+552 that use it, so this is 114 entries, not an encoding family.
+
+**#741.** Filed as "there is no editor person list in that volume at all, and the rows should not
+exist." Wrong: `frus1941-43` *does* carry `<div subtype="index" type="section" xml:id="persons">`
+headed **"Index of Persons"**, holding 749 entries that are mostly real people (Acheson, Alexander,
+Amery). The defect is **nesting**: a back-of-book index entry is a tree —
+
+```xml
+<item>Arnold, Henry H., Lieutenant General…:
+  <list><item>Meetings:
+    <list><item>Casablanca Conference: Combined Chiefs of Staff, 536…</item>
+```
+
+— and every nested `<item>` was emitted as its own person, which is where "Casablanca Conference",
+"Meetings" and "Correspondence with" came from. Two rules now: only the **outermost** item is a
+person, and text accumulation **stops at the first nested list**, so the role is the text before the
+sub-entries rather than every page reference beneath them.
+
+Both change parse output, so `currentDateIndexVersion` 36 → 37 in the same commit.
+
+**Recorded honestly:** the fix does not make `frus1941-43` contribute its full 749. Index-style
+entries ending in a page run (`Finletter, Thomas K., … , 104`) are still rejected by the
+pre-existing `PersonListHeuristics.isLikelyPersonName`. That is a separate question — whether a
+back-of-book *Index of Persons* should populate the People browser at all — and was not in scope
+here. The test says so rather than expecting a number the code does not produce.
+
+**Verification:** 7 new tests driving the real `parsePersons` through temporary volume files;
+**3 of 4 mutations caught**, the fourth an equivalent mutant (defensive depth reset, unreachable on
+XML `XMLParser` accepts) now annotated as such in the source. 25 tests green across the parser,
+pipeline and standards suites; both platforms build clean.

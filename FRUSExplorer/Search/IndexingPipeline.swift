@@ -695,7 +695,7 @@ public actor IndexingPipeline {
     ///   which is why frus1952-54Guat's `John Foster Dulles Papers` could not resolve against
     ///   the presidential-library catalogue. The heading now takes depth 0 and its children
     ///   depth 1, inheriting through `makeItemEntry`'s existing `ancestorTexts` channel.
-    public static let currentDateIndexVersion: Int = 36
+    public static let currentDateIndexVersion: Int = 37
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
