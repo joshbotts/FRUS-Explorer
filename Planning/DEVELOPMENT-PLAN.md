@@ -2291,3 +2291,33 @@ here. The test says so rather than expecting a number the code does not produce.
 **3 of 4 mutations caught**, the fourth an equivalent mutant (defensive depth reset, unreachable on
 XML `XMLParser` accepts) now annotated as such in the source. 25 tests green across the parser,
 pipeline and standards suites; both platforms build clean.
+
+### Session 2026-08-07 — Can M2 ride the vector-embeddings pipeline? Yes — plan + priced
+
+New doc `Planning/M2-Semantic-Pipeline-Ride-Along.md`. The two programs share their expensive
+part — a full pass over the corpus body text — so the answer is yes, with a seam: shared
+extraction, tooling discipline, hardware window, and one load-bearing model reuse
+(mention-context embeddings as the reconciliation signal for identity clustering); **never**
+shared gates or verdicts (V-0's pre-1900 cosine kill stays embedding-only; M2 still waits on its
+own M2a prose ground truth; the M1a 300 rows are still un-keyed).
+
+**Measured before estimating:** the corpus body text is **~330 M BPE tokens** (1.374 B chars /
+229.2 M words over 314,483 document divs — tag-stripped `<div type="document">` character data,
+all 552 volumes); ~380 M after chunk overlap; the M2 scope (268 no-list volumes) is ~176 M
+(51.3%). This corrects two design-doc guesses: ~475 k chunks (not 600 k–1 M), and §3.3's
+"1–6 hour [U]" wall-clock band, which implies ≥49 TFLOPS effective for the 300 M primary — not
+reachable on either machine. Correction note added to the design doc in place.
+
+**Generation price, both machines** (assumptions stated in the doc; V-0 on both machines converts
+them to measurements for pennies): EmbeddingGemma-300M full-corpus embed **~8–13 h on the M1 Max
+Studio**, **~8–26 h on the M5 MacBook Air** — the Air's spread is software, not silicon (whether
+the ML stack drives M5's per-core Neural Accelerators for encoder models is [U]; fanless
+throttling on top). NER pass over the M2 scope ~1–9 h by detector; mention-context pass ~4–7 h.
+Electricity for the whole program: **under $1 on either machine** (~$0.30–0.75 Studio,
+~$0.10–0.30 Air). The only real dollar line is the deferred adversarial-review tier (~$45–90 as a
+Haiku-class API batch over the uncertain band). The genuinely scarce resource is neither machine:
+it is the two owner keying sittings (M1a's 300 rows, M2a's exhaustive sample) that gate both
+programs.
+
+Recommended execution: V-0 spike on both machines, then embed on the Studio + NER on the Air in
+one night, context pass the next evening — a weekend of machine time end to end.

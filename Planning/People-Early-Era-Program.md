@@ -136,9 +136,16 @@ date constraint resolves, and on the existing `person_rollup` where a name alrea
 Emit derived entries in a **synthetic-ref namespace** distinct from editor `xml:id`s (rules
 documented in the archived plan), force-merge only, never auto-splitting a reconciled identity.
 
-### M2 — detection, only for what M1a shows is missing
-NER over running prose in the early-era volumes, with adversarial review. Scope depends entirely
-on M1a's first measurement; it may be much smaller than the archived plan assumed, or unnecessary.
+### M2 — detection (required — M1a measured ~34% markup coverage)
+NER over running prose in the early-era volumes, with adversarial review. M1a settled the scope
+question: roughly two-thirds of person mentions carry no markup, so detection is not optional.
+
+**Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
+discipline, same hardware window, and the embedding model doubles as a mention-context
+reconciliation signal for identity clustering. The seam (what rides, what must not — gates and
+verdicts stay separate), the combined stage list, and the measured generation costs on both of
+the owner's machines are in **`Planning/M2-Semantic-Pipeline-Ride-Along.md`** (2026-08-07).
+Prerequisite unchanged: the M2a prose ground-truth sample must be keyed before anything ships.
 
 ### M3 — provenance UI
 Derived people must be visibly derived. The app already has the vocabulary for this — the

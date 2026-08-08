@@ -193,6 +193,13 @@ document vector = length-weighted mean of chunk vectors, L2-normalised. Estimate
 corpus-wide. On an M1 Studio running a 100–300M encoder batched on MPS/MLX, expect order
 100–500 chunks/s **[U]** → a full-corpus pass in the **1–6 hour** band, an overnight run at worst.
 This is the CloudVectors "~50–60 minutes, owner-executed once" tier of cost, not a new tier.
+
+> **Corrected 2026-08-07** (`M2-Semantic-Pipeline-Ride-Along.md` §4.1): the corpus measures
+> **~330 M body-text tokens** (~475 k chunks, not 600 k–1 M), and the 1–6 h band implies a
+> throughput no Apple-Silicon machine reaches for the 300 M primary — it holds only for the
+> ≤137 M fallbacks. Measured-assumption estimate for EmbeddingGemma-300M on the M1 Max Studio:
+> **~8–13 h**. Same cost tier, honest clock. That doc also adds the R-0 extracted-text layer
+> (one amendment to Stage 1) so the M2 NER pass shares this pipeline's extraction.
 UMAP over 317k × 256-d (PCA-50 first) is minutes on 20 cores **[U]**.
 
 Two decisions to pin in provenance because changing them silently invalidates every vector: the
