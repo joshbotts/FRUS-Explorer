@@ -122,11 +122,20 @@ struct MacSearchWindowView: View {
 
     /// Whether the facet inspector column is showing. `@SceneStorage` so each window keeps
     /// its own choice.
-    @SceneStorage("search.facets.shown") private var showFacetPanel = false
+    /// Was `@SceneStorage`; now per-session (#754 / audit L-45, owner decision: stop persisting).
+    ///
+    /// The flag survived a relaunch. The query, results and `FacetPanelController` it describes did
+    /// not — they are `@State` — so the window could reopen with **the facet inspector extended over
+    /// nothing**: a persisted description of discarded content. Restoring only the half that costs
+    /// nothing to restore is worse than restoring neither, because the surviving half asserts the
+    /// other one exists.
+    @State private var showFacetPanel = false
 
     /// Whether the inspector's detail rows are showing. `@SceneStorage` so the choice is
     /// remembered per window, as the design asks, rather than globally.
-    @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
+    /// Same reasoning as `showFacetPanel` (#754 / L-45): the Query Inspector describes a search
+    /// that does not survive the relaunch either.
+    @State private var inspectorExpanded = false
 
     @State private var showAdvancedFilters = false
     @State private var showTimeline = false

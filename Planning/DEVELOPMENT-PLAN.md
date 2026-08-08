@@ -2798,3 +2798,60 @@ reads like a verification. It is not one.
 measured nothing and would have been reported as a pass had the harness not distinguished the two
 outcomes. Re-run against the actual text. **A mutation harness must report "pattern not found" as its
 own verdict; scoring it as CAUGHT or SURVIVED silently fabricates a result.**
+
+---
+
+## Session 2026-08-08 — #754: a relaunch gives the document back
+
+Tenth item off the 2026-08 navigation and state audit. Labelled `enhancement` and framed as a
+program decision, so it began as an assessment (`Planning/Restoration-Depth-Design.md`) with three
+mechanisms costed, not a patch. **Owner decisions: resume reading, offered; and for L-45, stop
+persisting entirely** (the stronger of the two options put to them).
+
+**Measured first.** The app's whole restoration surface was **three** `@SceneStorage` keys — the
+selected tab and two inspector toggles. No `stateRestorationActivity` anywhere; the two
+`.userActivity` sites set only `isEligibleForHandoff`, a different feature. So H-6 is a **missing
+capability, not a malfunction** — which is why it belonged in an assessment rather than a bug fix.
+
+**Resume reading beats path-encoding on three counts**, and that is why it was recommended. It reads
+`ReadingHistoryEntry`, which the app already writes and syncs, so it needs **no new persistence**; it
+survives a **reinstall** and works on a **second device**, which no `@SceneStorage` scheme can; and a
+volume removed since the last read is a **row to filter**, not a restored path that dead-ends at
+launch — the worst possible moment for a failure.
+
+**Offered, never forced.** Nothing auto-opens, and a test asserts there is no `.onAppear` navigation
+in the row. Auto-reopening would make the first frame depend on history the user may have moved on
+from, with no way to decline.
+
+**L-45 — the one incoherence.** `search.facets.shown` survived a relaunch while the query and results
+it describes did not, so the Search window could reopen with the facet inspector extended over
+nothing. **Restoring only the half that is cheap to restore is worse than restoring neither**,
+because the surviving half asserts the other one exists. All three Search UI flags are now `@State`,
+leaving exactly one persisted key in the app — and a test guards that `frus.selectedTab` *stays*,
+since "persist nothing" would be over-correcting: a tab selection describes no content.
+
+**Verification:** 10 tests — three of them driving a real `ModelContainer` (newest-wins,
+removed-volume-skipped, nothing-to-offer), so the selection rule is behavioural rather than another
+source read. **8/8 mutations caught** after one round of guard repairs. Both platforms build clean;
+both manuals updated.
+
+**Two of my guards were weak, and one repeats a pattern that has now recurred three times.**
+
+- M3: nothing asserted that **dismissing the offer sticks**. A dismiss control the next render undoes
+  is not a dismiss control.
+- M4: deleting the entire `ResumeReadingRow` call from the Browse root **survived**, because the
+  assertion was `contains` on the raw source and the doc comment two lines above the call names
+  `ResumeReadingRow`. **The prose satisfied the code assertion.**
+
+That is the third occurrence this session — #752's M8 (a character window spilling into a neighbouring
+sheet), #753's label check, and now this. **In these source-reading suites, `contains` on raw source
+is suspect by default:** filter to code lines or anchor on the construct. All four suites now carry
+the same `codeLines` helper.
+
+**Found in passing:** the macOS placeholder told users to "Use Search (⌘F)". Search has been **⌘S**
+since #363 #5 — the same stale claim #749 corrected in the manual, still wrong in the app itself.
+Fixed.
+
+**Deferred, with reasons in the design doc:** navigation-path encoding (B) and macOS window-content
+restoration (C). Note they are coupled to #756: search restoration needs `SearchParameters` to become
+`Codable`, which it is not today.

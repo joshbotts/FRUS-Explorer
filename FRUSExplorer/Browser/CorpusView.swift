@@ -31,6 +31,12 @@ struct CorpusView: View {
 
     var body: some View {
         List {
+            // #754: the one thing a relaunch gives back. Offered, never forced — see
+            // `ResumeReadingRow`. Renders nothing when there is no resumable read.
+            ResumeReadingRow { entry in
+                vm.navigationPath.append(.document(entry))
+            }
+
             // Cross-volume indices
             Section {
                 Button {

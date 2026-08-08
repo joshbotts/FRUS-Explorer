@@ -163,6 +163,8 @@ When the whole queue finishes, the banner becomes a brief summary card — "*27 
 
 The same word cloud fills two other waits. On the first launch after installing, and on a launch where iCloud is still pulling your research down, it appears full-screen behind the wordmark instead of a blank window — and it clears when the wait actually ends, not on a timer. It never appears over onboarding, and never over a list you are reading.
 
+**Picking up where you left off.** iOS closes backgrounded apps to reclaim memory, so a relaunch is common even when you did not quit. When it happens, the top of the Browse tab offers **Continue reading** with the last document you had open — one tap to return to it. Nothing opens by itself, and you can swipe the row away. The offer comes from your reading history, so it survives reinstalling the app and follows you to another device; a document whose volume you have since removed is skipped rather than offered.
+
 **While the app is still starting.** Opening the index takes a moment, and longer the more you have downloaded. During that moment surfaces that need it — the Search tab, a restored cross-reference graph window — say **"Preparing your index…"** rather than reporting that there is nothing there. You will not be shown the first-run Welcome screen again either: if you have onboarded, the app waits and then takes you to your library. These messages are about waiting, not about loss; if something genuinely fails to open, the app still says so plainly once startup has finished.
 
 ### 3.2 Live Activity (iPhone 14 Pro and later)

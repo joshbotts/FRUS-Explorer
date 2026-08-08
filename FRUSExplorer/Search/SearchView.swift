@@ -246,7 +246,9 @@ struct SearchView: View {
 
     /// Whether the inspector card's detail rows are showing. `@SceneStorage` so the choice
     /// survives per scene, matching the macOS strip.
-    @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
+    /// Per-session, not `@SceneStorage` (#754 / L-45): it describes a search that resets on
+    /// relaunch, so persisting it alone made the restored combination incoherent.
+    @State private var inspectorExpanded = false
 
     @State private var showTimeline = false
     /// Concordance mode (R-3b) — mutually exclusive with the timeline, since both replace the list.
