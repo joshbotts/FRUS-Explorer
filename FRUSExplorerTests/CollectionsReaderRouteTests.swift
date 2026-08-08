@@ -109,9 +109,14 @@ struct CollectionsReaderRouteTests {
     func externalLinkIsNotReplaced() throws {
         // The fix ADDS the in-app reader; it must not remove the published-text link. Deleting it
         // would be a way to satisfy "Collections can open a document" while taking something away.
-        let mac = try Self.source("Collections/MacCollectionManagerView.swift")
-        #expect(mac.contains("history.state.gov/historicaldocuments"),
-                "the external link must remain alongside the in-app open (#755)")
+        // Assert the CONTROL, not just the URL string: the first version of this checked only that
+        // the host name still appeared, which a mutant that stripped the button's label satisfied
+        // (M4 survived). A URL constant with nothing to click is not an affordance.
+        let mac = Self.codeLines(try Self.source("Collections/MacCollectionManagerView.swift"))
+        #expect(mac.contains { $0.text.contains("history.state.gov/historicaldocuments") },
+                "the published-text URL must remain (#755)")
+        #expect(mac.contains { $0.text.contains("openURL(url)") },
+                "…and must still be opened by a control, not merely constructed")
     }
 
     @Test("The row's existing tap behaviour is unchanged")
@@ -130,9 +135,24 @@ struct CollectionsReaderRouteTests {
     func openIsAccessible() throws {
         // A context menu alone is not reachable by VoiceOver, which would make the app's only route
         // from a collection to the reader inaccessible — worse than the gap it replaces.
+        // Named specifically. `CollectionEntryRows` has three accessibilityAction(named:) calls —
+        // move-up, move-down, and this one — so a bare `contains("accessibilityAction(named:")`
+        // passed with the OPEN action deleted, satisfied by the reorder actions (measured: M6
+        // survived). Same shape as #754's M4: an assertion answered by an unrelated occurrence.
         let rows = try Self.source("Collections/CollectionEntryRows.swift")
-        #expect(rows.contains("accessibilityAction(named:"),
-                "the open action must be exposed as a VoiceOver action (#755)")
+        let lines = Self.codeLines(rows)
+        let openActionIndex = try #require(
+            lines.firstIndex { $0.text.contains("accessibilityAction(named:")
+                            && $0.text.contains("collection.entry.openDocument") },
+            """
+            The reader route must be exposed as a VoiceOver action naming the open command (#755). \
+            A context menu alone is not reachable by VoiceOver, so without this the app's only \
+            route from a collection to the reader is inaccessible — worse than the gap it replaces.
+            """)
+        // And it must actually invoke the opener, not be an empty gesture.
+        let actionBody = lines[openActionIndex...].prefix(3).map(\.text).joined(separator: " ")
+        #expect(actionBody.contains("onOpenDocument"),
+                "the VoiceOver action must call onOpenDocument")
     }
 
     @Test("Both openers build the entry from the collection row, not a placeholder")
