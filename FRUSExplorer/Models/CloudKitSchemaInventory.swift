@@ -323,22 +323,26 @@ enum CloudKitSchemaInventory {
     /// The fifth (2026-08-01, build 37) promoted M-2's seven `CD_SearchHistoryEntry` fields, which
     /// are what let a recorded search be reproduced: the expression it executed, the scope it ran
     /// under, the indexed-volume denominator, and a count that distinguishes a total from a floor.
-    static let deployedThroughBuild = "37"
+    /// The sixth (2026-08-01, build 37) promoted `CD_Collection.CD_includeMethodAppendix`. The
+    /// seventh (2026-08-08, build 40) promoted `CD_SavedSearch.CD_parametersData` — one field that
+    /// ends the SavedSearch field-drop class outright (#756), rather than the eight columns an
+    /// enumerate-the-fields fix would have cost and re-cost.
+    static let deployedThroughBuild = "40"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-08-01"
+    static let deployedOn = "2026-08-08"
 
     /// How many identifiers the Production schema is attested to carry. Pinned by the test
     /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
     /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 233
+    static let deployedIdentifierCount = 234
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "2575e2a2992d980eedc13b678c47290d636510af662c3cce89f257a4ea339bfa"
+        "a91e9487231bbf0acb5ea2abc9e8ede7f98d96381d5fe083caf61d888dde2a89"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -360,39 +364,19 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // #756 — the complete SavedSearch snapshot. ONE field, not eight: `SearchParameters` is now
-        // archived whole, so the eight-field drop (M-26) is fixed and cannot recur as a ninth.
+        // Empty: Production matches this build.
         //
-        // Until this is promoted, a saved search made on this build recalls its full filter set on
-        // THIS device but syncs only the legacy scalar columns to others — which is exactly the
-        // pre-#756 behaviour, so nothing regresses; the new fidelity is simply local until deploy.
-        // The record still writes those scalar columns for that reason.
+        // Promoted 2026-08-08 (build 40), the SEVENTH promotion:
+        //   `CD_SavedSearch.CD_parametersData` — #756's complete SearchParameters snapshot. ONE
+        //   field rather than the eight the defect would have required, because the whole value is
+        //   archived instead of enumerated: a saved search had been persisting 12 of 20 fields and
+        //   returning the rest as DEFAULTS, so it recalled BROADER than the search the user named,
+        //   silently. Archiving the value makes that drop class unrepresentable — field twenty-one
+        //   is persisted by construction — which is also why this promotion is one identifier and
+        //   not a recurring tax.
         //
-        // Seeding note (the #617 lesson): CloudKit creates a field only when a record carrying a
-        // value for it is first written, so seeding is one save from the Search window's Save
-        // Search sheet with iCloud signed in — every save writes `parametersData`, so any saved
-        // search will do.
-        "CD_SavedSearch.CD_parametersData",
-        //
-        // Previously empty: Production matched this build.
-        //
-        // Promoted 2026-08-01 (UTC), the SIXTH promotion:
-        //   `CD_Collection.CD_includeMethodAppendix` — the per-collection opt-in for appending the
-        //   project's query log to an export (M-2). Seeded by toggling it ON in the Collections
-        //   window with iCloud signed in, because CloudKit creates a field only when a record
-        //   carrying a value for it is first written; a `false` would have done as well, but only
-        //   a real save of any kind creates the column.
-        //
-        //   The seeding path is itself worth recording: the toggle first shipped (#617) on only
-        //   one of the THREE parallel collection-settings surfaces, and not the macOS Collections
-        //   window, so the deploy was blocked until #620 and #621 put a control on all of them.
-        //   `CollectionExportToggleParityTests` now fails if a future export option repeats that.
-        //
-        // Previously promoted 2026-08-01: `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
-        // `CD_WorkingCorpus.CD_totalMatchCountAtCapture`, seeded by saving a real TRUNCATED capture
-        // with a known total. Before that, `CD_WorkingCorpus` and its nine fields, seeded by saving
-        // a real working corpus — CloudKit creates a record TYPE only when a record of it is first
-        // saved, which is the trap behind #488.
+        //   Seeded, as always, by writing a real record: CloudKit creates a field only when one
+        //   carrying a value for it is first written, and every Save Search writes this one.
     ]
 
     // MARK: - Derived state
