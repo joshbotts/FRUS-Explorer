@@ -24,6 +24,10 @@ left residual work, that work is tracked in GitHub issues or in
   record), and `Design-Requirements-Query-Analysis-UI` (the design brief — its hand-back's
   binding is the still-live `../QCA-Design-Handoff-Assessment.md`).
 - **Closed issue-wave plans** — `Issues-207-219-Remediation-Plan`, `Issues-233-243-Plan`
+  (⚠️ `Issues-233-243-Plan` is archived but still holds the **live, unstarted** #234 M1/M2/M3
+  early-era people program's reference rules. The program itself moved to
+  `Planning/People-Early-Era-Program.md` on 2026-08-07 — being filed here had made it
+  invisible for two months.)
   (spawned issues #259–#270), `188-189-Tester-Feedback-Build28-Plan`.
 - **Point-in-time audits/evals** — `UI-Audit-2026-07-03`, `People-Browser-Eval-2026-07-03`
   (successor: issue #234), `Source-Explorer-Audit-2026-07-03` (§2.1 still defines the

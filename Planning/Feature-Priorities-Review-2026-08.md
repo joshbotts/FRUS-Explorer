@@ -144,13 +144,19 @@ sync pain is felt today by every user, while discovery is additive.
 The bundled-index + offline-resolution architecture is the app's differentiator, and the
 generator + eval discipline is proven. Three programs, in value order:
 
-1. **The People program (#234 + #259 + #260).** The owner's own framing: people coverage excludes
-   the first ~70 years because it depends on editor-supplied lists. POCOM as source of truth for
-   early-era officials, adversarial review of NER candidates, the +13,439 crosswalk anchor pairs
-   (#260, explicitly "needs rollup-outcome eval"), and merge suggestions from the dedup clusters
-   (#259). Person search, person analytics, and the co-mention graph all get better for the
-   pre-1945 corpus — the era where the app currently has the least to offer. Run it eval-first,
-   exactly like `SourceNoteEval`.
+1. **The People program (#234).** The owner's own framing: people coverage excludes the first
+   ~70 years because it depends on editor-supplied lists. **Updated 2026-08-07** — the three parts
+   this entry originally bundled have separated:
+   - **#260** (crosswalk expansion) **shipped** in PR #737; coverage went 78.5% → 89.3% of person
+     rows, and POCOM career data landed with it (#736).
+   - **#259** (dedup-cluster merge suggestions) **closed not planned** — of 5,756 clusters only 619
+     reached two app rollups, none of the 207 identifier-backed ones reached the app at all, and
+     79% proposed merges a rollup audit had deliberately forbidden.
+   - **What remains is the early-era program**, now written up in
+     `Planning/People-Early-Era-Program.md`. It is bigger than this entry implied — **199,246
+     documents, 62.9% of the corpus**, sit in the 268 volumes with no person list — and better
+     posed than "NER", because those volumes already carry 253,919 editor-marked `<persName>`
+     elements with no identities attached. Still eval-first, exactly like `SourceNoteEval`.
 2. **#262 resolved-edge manifest.** 2.70M resolved cross-references measured; a bundled edge list
    makes inbound citations complete even when the citing volume isn't downloaded — the
    cross-reference graph and "cited by" views stop silently under-reporting. Needs a size/shape

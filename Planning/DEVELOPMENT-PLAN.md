@@ -2180,3 +2180,39 @@ pair survived until the fixtures grew a repeated role title, which **394 of 1,24
 
 **Not verified**: the Career section's on-screen rendering. The models and parsers are covered; the
 SwiftUI layout is not, and the PR carries a visual-review checklist.
+
+### Session 2026-08-07 — #234's early-era program lifted out of the archive, and its reframe corrected
+
+The M1/M2/M3 NER program was defined inside `Issues-233-243-Plan.md`, which the 2026-08-05 cleanup
+filed under `Completed/` as a "closed issue-wave plan". The wave closed; the program did not. The
+only live pointer was one sentence in the priorities review, bundling it with #259 and #260 — both
+since resolved — so it had been invisible for two months. Now `Planning/People-Early-Era-Program.md`.
+
+**Two corrections, both measured.**
+
+1. **The `persons-new.xml` reframe does not hold.** The archived plan claims it turns M1 from "NER
+   from scratch" into "adopt + review the colleague's extraction — much smaller program". Its
+   anchors are `volume/persons#ref`, so by construction they only land in volumes that already have
+   a persons page: they reach **2 of the 268 no-list volumes** and 2 of the 129 pre-1930 ones. It
+   enriches the covered corpus and cannot extend into the uncovered one. M1 is not smaller.
+
+2. **The gap is bigger, and the problem is different.** 268 of 552 volumes have no person list —
+   but they hold **199,246 documents, 62.9% of the corpus**, because the unserved volumes are the
+   large early annual volumes. And those volumes are *not* unmarked text: they carry **253,919
+   editor-marked `<persName>` elements** (141,064 `from`, 95,837 `to`, 17,018 untyped; 13,914
+   distinct strings, 3,253 appearing 5+ times) with **zero** links to any identity. A covered
+   volume links its mentions with `corresp="#p_W1"` back to an editor list of
+   `<persName xml:id=…>` items; the uncovered ones have the names and no list to point at.
+
+   So the core problem is **reconciliation, not detection** — and with 93.3% of the names in
+   `from`/`to` correspondence headers, POCOM becomes genuinely load-bearing: sender/recipient +
+   document date + who held which post when is a three-way constraint, not open-domain entity
+   linking. A new **M1a** gate goes in front of everything: measure what share of person mentions
+   are marked up at all (unmeasured, and it decides whether M2 is needed), build the ground-truth
+   eval set, and measure POCOM's constraint strength — before any extraction is built.
+
+**Method note.** The first pass at this counted `@ref` and reported "0 linked" across both covered
+and uncovered volumes, which would have been a finding about nothing. The linking attribute is
+`corresp`; a covered volume carries it on ~75% of its `persName` elements. Caught by comparing
+against a volume known to be covered instead of trusting the first number — the same discipline the
+size-against-the-denominator rule exists for.
