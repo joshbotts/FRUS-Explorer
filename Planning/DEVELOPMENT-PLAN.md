@@ -3025,3 +3025,30 @@ sheet. The graph's `else` was never mutated, so the test passed correctly and th
 SURVIVED. Unlike a `PATTERN-MISS`, which announces itself, **a mutant that silently hits the wrong
 line is indistinguishable from a weak guard.** Re-anchored on the unique `#757 (audit L-44)` comment:
 caught. **A mutation string must be UNIQUE in the file, not merely correct at the intended site.**
+
+---
+
+## Session 2026-08-08 — R-7 closeout: #756's schema promoted to Production
+
+Owner deployed `CD_SavedSearch.CD_parametersData` to the Production CloudKit schema — the **seventh**
+promotion, and the only step of the R-7 checklist that cannot be done from the repo.
+
+Repo side, following the checklist the failing test prints:
+
+1. `identifiersAwaitingDeploy` cleared, with the promotion recorded in place (date, build, and *why*
+   it was one field rather than eight).
+2. `deployedThroughBuild` 37 → **40**, `deployedOn` → **2026-08-08**.
+3. Baseline restated from the test's own output: **234** identifiers, digest `a91e9487…`.
+
+The digest matters more than the count here: the count alone would miss a rename, or an add and a
+removal in the same change. Restating it **is** the assertion "I deployed this to Production" — which
+is why the test cannot mend itself and the marker cannot drift quietly.
+
+**Effect:** saved searches now carry their complete filter set **across devices**, not only locally.
+Until this promotion, #756's fidelity was real on the device that saved and absent everywhere else —
+deliberately, since the record kept writing the legacy scalar columns so an un-updated device read it
+partially rather than not at all. That fallback stays: it costs nothing and it is what makes a
+half-updated set of devices degrade gracefully.
+
+`ResearchTrailMigration`'s interlock — which refuses to run while a record type it writes is listed
+as awaiting — is unblocked again, as it was before #756 listed anything.
