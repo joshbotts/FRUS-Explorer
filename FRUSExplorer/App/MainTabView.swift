@@ -405,7 +405,20 @@ private struct SearchTabView: View {
             SearchView(
                 searchService: service
             )
+        } else if !appState.isBootComplete {
+            // #753 (audit M-23): while the app is still starting, say so. This tab used to answer
+            // "Search Unavailable — the search index is not available" over a fully built index of
+            // 316,839 documents, purely because `searchService` is assigned deep into the async
+            // boot. That message reads as permanent breakage, and it was also indistinguishable
+            // from a genuine store-open failure — the case the branch below still covers.
+            //
+            // macOS Search fixed exactly this and named the principle: never render the definitive
+            // empty state as a lie. The iOS tab was simply never given the same treatment.
+            BootPlaceholderView(
+                detail: String(localized: "search.preparing.detail",
+                               defaultValue: "Search will be ready in a moment."))
         } else {
+            // Boot finished and there is still no service: a real failure, correctly stated.
             ContentUnavailableView(
                 String(localized: "search.unavailable.title",
                        defaultValue: "Search Unavailable"),
