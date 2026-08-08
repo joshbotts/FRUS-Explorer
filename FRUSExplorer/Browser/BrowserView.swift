@@ -221,18 +221,8 @@ struct BrowserView: View {
         // #338 step 3: consume the hand-off only when it is addressed to THIS window's scene, so a
         // word cloud's / search's Analyze or Chronology hand-off no longer fans its sheet out to
         // every open iPad window. `consumeHandoff` re-reads, target-checks, and clears in one step.
-        .onChange(of: appState.pendingAnalytics) { _, _ in
-            guard let sceneID,
-                  let params = appState.consumeHandoff(\.pendingAnalytics, for: sceneID) else { return }
-            analyticsParameters = params
-            showAnalytics = true
-        }
-        .onChange(of: appState.pendingChronology) { _, _ in
-            guard let sceneID,
-                  let params = appState.consumeHandoff(\.pendingChronology, for: sceneID) else { return }
-            chronologyParameters = params
-            showChronology = true
-        }
+        .onChange(of: appState.pendingAnalytics) { _, _ in consumePendingAnalytics() }
+        .onChange(of: appState.pendingChronology) { _, _ in consumePendingChronology() }
         .onAppear {
             bootstrapViewModel()
             // Cumulative-review fix: `.onChange` only observes changes made while this view is
@@ -243,6 +233,15 @@ struct BrowserView: View {
             // synchronous, so it does).
             consumePendingBrowseDocument()
             consumePendingBrowseVolume()
+            // Analytics and Chronology were the only two iOS channels with no appear-time drain
+            // (#750 / audit H-8, H-11) — and they are the ones whose producers ALWAYS instantiate
+            // Browse as part of the same action: `openAnalytics(...)` then `openTab(.browse)`. On a
+            // cold launch on another tab, or in a fresh iPad window, `.onChange` never fires for a
+            // value set before the view attached, so the sheet never opened and the hand-off sat
+            // parked until a later one overwrote it. Repeating the action "worked", which is what
+            // made it look intermittent rather than broken.
+            consumePendingAnalytics()
+            consumePendingChronology()
         }
         // #324: under FRUS_UI_TEST_MODE the browse stack can render before AppState
         // finishes booting the download manager, so the view model would capture nil
@@ -633,6 +632,31 @@ struct BrowserView: View {
         #if DEBUG
         print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
         #endif
+    }
+
+    /// Consumes a pending Corpus Analytics hand-off and presents the sheet (#750 / audit H-8, H-11).
+    ///
+    /// Extracted from the `.onChange` observer so the same code can run from `.onAppear`. Both
+    /// entry points are required: the producers write the slot and *then* call `openTab(.browse)`,
+    /// so on a cold launch or a fresh iPad window the tab switch is what creates this view — and
+    /// `.onChange` never fires for a value that was already set when the view attached.
+    ///
+    /// Unlike the browse-document twins this does not wait on `viewModel`: presenting the sheet
+    /// needs only the parameters, and gating on bootstrap would reintroduce the dropped hand-off
+    /// this fixes.
+    private func consumePendingAnalytics() {
+        guard let sceneID,
+              let params = appState.consumeHandoff(\.pendingAnalytics, for: sceneID) else { return }
+        analyticsParameters = params
+        showAnalytics = true
+    }
+
+    /// Chronology twin of ``consumePendingAnalytics`` — same both-ways contract (#750).
+    private func consumePendingChronology() {
+        guard let sceneID,
+              let params = appState.consumeHandoff(\.pendingChronology, for: sceneID) else { return }
+        chronologyParameters = params
+        showChronology = true
     }
 
     /// Volume-grain sibling of `consumePendingBrowseDocument` — same adopt-then-clear contract.

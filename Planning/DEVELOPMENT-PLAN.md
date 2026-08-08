@@ -2592,3 +2592,50 @@ matcher on a fixture, or it is only asserting that it found nothing.**
 **Found while working, and fixed:** the macOS manual documented **⌘F** as "Open Search window" in four
 places. ⌘F is Find in Document; Search has been ⌘S since #363 #5. Corrected in the same pass, since
 three of the four were in tables this change already had to touch.
+
+---
+
+## Session 2026-08-08 — #750: iOS hand-offs that the user could not see
+
+Seventh item off the 2026-08 navigation and state audit. Seven findings (**H-4, H-5, H-8, H-10,
+H-11, M-15, M-29**), three defects, and — the part that mattered — **three different right answers**.
+
+**1. Buried under a stale document (H-4, M-29).** `consumePendingSearch` replaced the query, every
+filter and the results, but never popped `vm.navigationPath`. A document pushed from an *earlier*
+search stayed on top while the new search ran beneath it, so "Find all mentions" looked like it had
+opened the wrong document. Verified before fixing: the entire Search layer has one declaration and
+one append of that path and no pop anywhere. Now pops **before** applying parameters — after would
+render the stale document for a frame; after `runSearch()` would race the results in.
+
+**2. Buried under the sheet that sent it — and NOT a single rule (H-5 vs H-10/M-15).** The audit
+grouped these, but they need opposite fixes:
+
+- **Cross-Reference Analytics (H-5)** is presented *by* BrowserView and hands off *to* BrowserView,
+  so it appended beneath itself; each retry stacked another copy. It had no `@Environment(\.dismiss)`
+  at all. It now dismisses first — correct because the user is *leaving* an analysis tool.
+- **The three reader sheets (H-10, M-15)** — Chronology, Citation Lookup, the cross-reference graph
+  — must NOT dismiss. The audit's own complaint is that the user's chronology or lookup context ends
+  up "gone". `DocumentView` gained an optional `onNavigateToDocument`; each sheet passes its own
+  stack, so a cross-ref or page-turn moves *within* the sheet and the reader keeps their place.
+
+  A test also pins that BrowserView and SearchView must **not** pass it: they host the stack the
+  hand-off already targets, so supplying a router there would navigate twice.
+
+**3. Dropped before the tab existed (H-8, H-11).** `pendingAnalytics` / `pendingChronology` were the
+only two iOS channels with no appear-time drain — and the only two whose producers create the Browse
+tab as part of the same action (`openAnalytics(...)` then `openTab(.browse)`). On a cold launch or a
+fresh iPad window, `.onChange` never fires for a value set before the view attached, so the sheet
+never opened and the hand-off sat parked until a later one overwrote it; repeating "worked", which is
+what made it look intermittent. Both consumers are now extracted and called from `.onAppear` too,
+with the observers delegating so the two paths cannot drift.
+
+**Verification:** 8 tests; **9/9 mutations caught**, including two ordering mutants (pop-after-apply,
+dismiss-after-handoff) and the vacuity mutant that broke the suite's own `codeLines` helper — the
+guard #749 taught me to include. Both platforms build clean; iOS manual updated (macOS is unaffected).
+
+**A compile error worth recording.** Adding the parameter failed with *"extra argument
+'onNavigateToDocument' in call"* while the property was plainly declared on `DocumentView`. Two
+theories were wrong (`@Bindable` shadowing in `body`; a competing `DocumentView` type). The cause:
+`DocumentView` declares an **explicit** `init(entry:)`, so there was never a memberwise initializer
+to extend. Swift reports this at the call site, not at the declaration — when a new parameter is
+"not there", check for a hand-written init before theorising about scope.

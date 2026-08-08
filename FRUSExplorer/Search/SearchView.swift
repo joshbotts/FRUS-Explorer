@@ -661,6 +661,15 @@ struct SearchView: View {
         // wildcard), so the query runs in the window it was triggered from, coupled to the tab switch.
         guard let sceneID,
               let params = appState.consumeHandoff(\.pendingSearch, for: sceneID, orAnyWindow: true) else { return }
+        // Pop to the result list first (#750 / audit H-4, M-29). The hand-off replaces the query,
+        // every filter, and the results — but `applyParameters` never touched `navigationPath`, so
+        // a document the user had pushed from an EARLIER search stayed on top while the new search
+        // ran invisibly beneath it. Tapping "Find all mentions" looked like it had opened the wrong
+        // document, and the results were only reachable via Back.
+        //
+        // Unconditional: the pushed document belongs to the query being replaced, so keeping it
+        // would leave the stack describing a search that no longer exists.
+        vm.navigationPath.removeAll()
         vm.applyParameters(params)
         let canRun = !(params.keywords ?? "").isEmpty
             || !(params.phrase ?? "").isEmpty
