@@ -79,6 +79,11 @@ struct RelatedDocumentsContent: View {
     /// passes `nil` so the list stays open beside the reading window (the value of a work list).
     var onNavigate: (() -> Void)? = nil
 
+    /// When set, a row opens the document INSIDE the presenting sheet instead of handing it to the
+    /// Browse tab and dismissing (#757 / audit L-41). The window presentation leaves this nil and
+    /// keeps its existing routing.
+    var onOpenInSheet: ((DocumentBrowserEntry) -> Void)? = nil
+
     /// The user's persisted default tuning, updated whenever a slider settles so the *next* fresh
     /// open inherits it. The live per-view tuning is `@State` (seeded from `request.weights`), so a
     /// restored macOS window keeps its own tuning independent of this global default.
@@ -107,10 +112,13 @@ struct RelatedDocumentsContent: View {
     @State private var lastLoadedKey: String?
 
     /// Designated initializer — seeds the live tuning + scope from the request.
-    init(appState: AppState, request: RelatedDocumentsRequest, onNavigate: (() -> Void)? = nil) {
+    init(appState: AppState, request: RelatedDocumentsRequest,
+         onNavigate: (() -> Void)? = nil,
+         onOpenInSheet: ((DocumentBrowserEntry) -> Void)? = nil) {
         self.appState = appState
         self.request = request
         self.onNavigate = onNavigate
+        self.onOpenInSheet = onOpenInSheet
         _weights = State(initialValue: request.weights)
         _scope = State(initialValue: request.scope)
     }
@@ -403,6 +411,11 @@ struct RelatedDocumentsContent: View {
             documentId: row.documentId,
             volumeId: row.volumeId,
             header: row.record.header.isEmpty ? row.documentId : row.record.header)
+        // #757 (L-41): the sheet reads in place, so the ranked list is still there on Back.
+        if let onOpenInSheet {
+            onOpenInSheet(entry)
+            return
+        }
         #if os(macOS)
         appState.openDocument(entry, from: .tool(.relatedDocuments(request)), using: openWindow)
         #else
@@ -430,9 +443,12 @@ struct RelatedDocumentsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    /// Documents opened from the ranked list, pushed INSIDE this sheet (#757 / audit L-41).
+    @State private var navigationPath: [DocumentBrowserEntry] = []
+
     var body: some View {
-        NavigationStack {
-            RelatedDocumentsContent(appState: appState, request: request, onNavigate: { dismiss() })
+        NavigationStack(path: $navigationPath) {
+            listContent
                 .navigationTitle(String(localized: "related.title", defaultValue: "Related Documents"))
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
@@ -446,6 +462,42 @@ struct RelatedDocumentsSheet: View {
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 420)
         #endif
+    }
+
+    /// The ranked list, and — on iOS — the in-sheet reader it pushes into (#757 / audit L-41).
+    ///
+    /// The row used to hand the document to the Browse tab and then `dismiss()`, so stepping through
+    /// a ranked work list meant re-opening the sheet after every document, re-running the query and
+    /// re-scrolling from the top; Back landed in the Browse stack, not the list. The *window*
+    /// presentation keeps its list alive (`onNavigate: nil`) — only this iPhone fallback threw it
+    /// away.
+    ///
+    /// Simply dropping the dismiss would be #750's H-5 defect: the document lands invisibly beneath
+    /// the still-presented sheet. Pushing inside the sheet is the shape Chronology, Citation Lookup
+    /// and the graph sheet already use. Extracted into its own builder because a `#if` inside the
+    /// body detaches the trailing modifier chain.
+    ///
+    /// macOS keeps the old routing: `DocumentView` is an iOS type, and there this sheet is only a
+    /// fallback for a window that already preserves its list.
+    @ViewBuilder
+    private var listContent: some View {
+        #if os(iOS)
+        RelatedDocumentsContent(appState: appState, request: request,
+                                onOpenInSheet: { navigationPath.append($0) })
+            .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                DocumentView(entry: entry, onNavigateToDocument: pushInSheet)
+            }
+        #else
+        RelatedDocumentsContent(appState: appState, request: request, onNavigate: { dismiss() })
+        #endif
+    }
+
+    /// Follows a cross-reference or page-turn inside this sheet, honouring #751's push/replace.
+    private func pushInSheet(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
+        if jump == .replace, !navigationPath.isEmpty {
+            navigationPath.removeLast()
+        }
+        navigationPath.append(entry)
     }
 }
 
