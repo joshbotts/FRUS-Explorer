@@ -93,8 +93,14 @@ struct WindowTargetingTests {
         let body = try Self.functionBody("struct StandaloneDocumentWindowContent", in: source, limit: 2_600)
         #expect(body.contains("@State private var navigationPath"),
                 "it needs a stack of its own to push into")
-        #expect(body.contains("onNavigateToDocument: navigate"),
-                "and it must hand DocumentView that stack, or jumps still leave the window")
+        // BOTH DocumentViews must route — the root and the pushed destination. `contains` passed
+        // with one of them stripped (measured: mutation M1 survived), which would leave every jump
+        // after the first still leaving the window.
+        let routed = body.components(separatedBy: "onNavigateToDocument: navigate").count - 1
+        #expect(routed == 2, """
+            \(routed) of the 2 DocumentViews in the standalone window pass a router. The root \
+            reader AND the pushed destination both need one, or jumps leave the window (#752).
+            """)
         #expect(body.contains("navigationDestination(for: DocumentBrowserEntry.self)"),
                 "a pushed entry needs a destination, or the push renders nothing")
     }
@@ -177,11 +183,20 @@ struct WindowTargetingTests {
         // injected it; Citation Lookup and the cross-reference graph did not, so a document pushed
         // inside them read nil and its cross-references posted to `.anyWindow` — first-wins across
         // every open iPad window.
+        // Assert ADJACENCY, not "sceneID appears somewhere nearby": a generous character window
+        // spilled into the ArchivalNeighbors sheet three lines below, which injects it too, so the
+        // assertion passed with Citation Lookup's own injection deleted (measured: M8 survived).
         let searchView = try Self.source("Search/SearchView.swift")
-        let citation = try Self.functionBody(".sheet(isPresented: $showCitationLookup)",
-                                             in: searchView, limit: 600)
-        #expect(citation.contains("\\.sceneID"),
-                "the Citation Lookup sheet must inject \\.sceneID (#752 / L-39)")
+        let searchCode = Self.codeLines(searchView)
+        let citationIndex = try #require(searchCode.firstIndex { $0.text == "CitationLookupView()" },
+                                         "CitationLookupView() presentation not found — moved?")
+        let next = searchCode[(citationIndex + 1)...].prefix(2).map(\.text)
+        #expect(next.contains { $0.contains(".environment(\\.sceneID") }, """
+            The Citation Lookup sheet must inject \\.sceneID on CitationLookupView() itself \
+            (#752 / L-39). Found instead: \(next.joined(separator: " | ")). Without it a document \
+            pushed inside the sheet reads a nil sceneID and its cross-references post to \
+            .anyWindow, first-wins across every open iPad window.
+            """)
 
         let documentView = try Self.source("DocumentView/DocumentView.swift")
         // Anchored on the sheet BUILDER, not the bare case label — `case .crossReferenceGraph:`
@@ -196,12 +211,23 @@ struct WindowTargetingTests {
 
     // MARK: - The scope this PR did not close
 
+    /// The symbol that would front a scene. Declared once so the vacuity control below and the
+    /// real scan cannot drift apart — a control that tests a different string proves nothing.
+    private static let needle = "requestSceneSessionActivation"
+
     @Test("Nothing has quietly started activating scenes")
     func noSceneActivationYet() throws {
         // M-25 (Spotlight/deep-link content can land in a background window) needs the app to
         // ACTIVATE the consuming scene, which it has never done anywhere. This test is a marker,
         // not an endorsement: if someone adds scene activation, M-25's analysis — and this suite's
         // account of why the standalone-window fix was necessary — both need revisiting.
+        // Vacuity control FIRST: prove the scan can match before trusting that it found nothing.
+        // Without this, breaking the needle makes the whole assertion pass (measured: M9 survived —
+        // the same defect #749's M9 exposed).
+        let fixture = "appState.requestSceneSessionActivation(role: .windowApplication)"
+        #expect(!Self.codeLines(fixture).filter { $0.text.contains(Self.needle) }.isEmpty,
+                "the scan must be able to detect a scene activation, or finding none proves nothing")
+
         var activations: [String] = []
         let root = Self.appSourceRoot
         guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
@@ -209,7 +235,7 @@ struct WindowTargetingTests {
         }
         for case let url as URL in walker where url.pathExtension == "swift" {
             let text = try String(contentsOf: url, encoding: .utf8)
-            for entry in Self.codeLines(text) where entry.text.contains("requestSceneSessionActivation") {
+            for entry in Self.codeLines(text) where entry.text.contains(Self.needle) {
                 activations.append("\(url.lastPathComponent):\(entry.line)")
             }
         }
