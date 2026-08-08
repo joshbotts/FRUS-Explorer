@@ -743,6 +743,8 @@ Applying a preset overwrites the composition fields but is **non-destructive**: 
 
 While you compose, a **live preview** shows the collection rendered exactly as its HTML export, updating as you edit:
 
+**Opening a document from a collection.** Tapping a row still opens that document's **⚙ Configure** settings. To *read* the document, long-press the row and choose **Open Document** — it opens in the Browse tab (VoiceOver users will find the same action in the row's actions rotor). Previously a collection was the one list in the app you could not open a document from.
+
 - On **iPad**, the manager is **two roomy columns** — the **Contents** outline and the **live preview** — side by side. Settings are summoned on demand rather than living in a permanent column: the **⚙ Collection** toolbar button opens a **Collection settings** sheet (the presets, the three composition groups, and the title-page front matter), and each document row's **⚙ Configure** pill opens *that document's* settings as a sheet (10.3).
 - On **iPhone**, switch between **Outline** and **Preview** with the segmented control at the top of the editor. In **Outline**, a **Collection settings** row at the top opens the collection's settings (presets, composition, and front matter) on its own screen, and each document row is a **disclosure** (a chevron, ⌄) that drills into that document's settings — so the outline stays uncluttered.
 

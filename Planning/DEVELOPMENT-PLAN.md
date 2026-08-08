@@ -2855,3 +2855,56 @@ Fixed.
 **Deferred, with reasons in the design doc:** navigation-path encoding (B) and macOS window-content
 restoration (C). Note they are coupled to #756: search restoration needs `SearchParameters` to become
 `Codable`, which it is not today.
+
+---
+
+## Session 2026-08-08 — #755: a collection can finally open a document
+
+Eleventh item off the 2026-08 navigation and state audit — **M-18, M-19, M-24**.
+
+**The gap.** Collections was the **only** document list in the app with no route into the reader: a
+module-wide grep found no `openDocument`, `openBrowseDocument`, `DocumentView` or `pendingBrowse*`
+anywhere in `FRUSExplorer/Collections/`, while search, history, chronology, research, the graph,
+related documents and archival neighbours all open it. A researcher reviewing documents **they had
+deliberately curated** had to remember each one's volume and re-find it through Browse or Search. On
+macOS the single per-row "open" launched **history.state.gov in a web browser** — the published text,
+without the notes, highlights and cross-references the app exists to provide.
+
+**Fixed by routing like everything else:** the scene-addressed hand-off on iOS, the provenance chain
+(with its window-minting tail) on macOS.
+
+Two deliberate constraints, both tested and both mutation-checked:
+
+- **The row tap is unchanged.** It has opened the configure inspector since Composer v2 §D and
+  researchers rely on it; the reader route is an *addition* (long-press on iOS, a button on the macOS
+  row), not a re-binding.
+- **The history.state.gov link stays.** The published text is a legitimately different destination.
+  Removing it would be a way to satisfy "Collections can open a document" while taking something
+  away.
+
+The open action is also a VoiceOver action, because a context menu alone is not reachable — an
+inaccessible sole route would be worse than the gap it replaces.
+
+**M-24 — a consumer with no producer.** `CollectionListView.consumePendingCollectionSelection` has
+existed since #369 BUG-12, wired to `.task` and `.onChange` and documented as pushing "the imported
+collection's editor so the user lands on it after an open-with import". The only writer of that slot
+in the whole codebase was the **macOS** branch, so on iOS it could never fire: the collection
+imported correctly, then the user had to find it by name. One line — set before the tab switch, for
+the same reason macOS sets it before `openWindow`.
+
+**Verification:** 9 tests; **10/10 mutations caught** after one round of guard repairs. Both platforms
+build clean; both manuals updated.
+
+**Two weak guards, two distinct failure modes — and a pattern now four sessions old.**
+
+- **M6:** `contains("accessibilityAction(named:")` passed with the open action deleted, satisfied by
+  the row's **move-up/move-down** actions. Now matched on the specific localization key, plus a check
+  that the action actually calls `onOpenDocument`.
+- **M4:** the test asserted the `history.state.gov` URL still appeared — proving a **URL constant
+  exists**, not that anything can click it. (The mutant was also weak: it stripped only the button's
+  label.) Now asserts `openURL(url)` survives, and the mutant guts the whole action.
+
+Four sessions running, a source-reading assertion has been satisfied by something other than the
+thing it named: #752 a neighbouring sheet, #753 a label in prose, #754 a doc comment, #755 a sibling
+accessibility action. **`contains` proves a string exists somewhere, which is almost never the
+claim.** Each fix needed a specific key, line adjacency, or a code-line filter.
