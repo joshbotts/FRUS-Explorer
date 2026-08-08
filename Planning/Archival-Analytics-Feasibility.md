@@ -1,7 +1,9 @@
 # Archival Analytics — Feasibility Assessment
 
-**Date:** 2026-08-08 · **Version:** 1.1 · **Status:** feasibility assessment for owner review —
-no code changes ride this document.
+**Date:** 2026-08-08 · **Version:** 1.3 · **Status:** plan of record with design integrated
+(§7); no code changes ride this document. Design contract: `Archival-Analytics-Design-Handoff.md`
+(in this folder — the verbatim handoff README; annotated HTML mock + PNGs stay with the owner's
+zip).
 
 **The question asked:** is a new archival analytics feature feasible — one that helps users see
 *interrelationships between archival collections*, *how FRUS historians have used archives over
@@ -325,7 +327,8 @@ class-keyed from lot-keyed queries.
 
 ## 6. Recommended shape and sequencing
 
-**Home:** split by audience, matching the corpus/series split already governing analytics.
+**Home:** *(superseded by the approved design — see §7.2; original recommendation kept below for
+the record)* split by audience, matching the corpus/series split already governing analytics.
 Exploratory, collection-grain surfaces (A, B, C-timeline, E, F) live in **Source Explorer**,
 where the collection objects and their navigation already exist. The series-level narrative
 (era × collection rankings, digitisation coverage) extends the **Research Guide's "About the
@@ -361,6 +364,125 @@ once).
 
 ---
 
+## 7. Design integration (2026-08-08 handoff)
+
+The owner's design handoff (contract: `Archival-Analytics-Design-Handoff.md`; annotated mock +
+five PNG captures in the source zip) is now the **design of record** for #762–#765. This section
+records what it decides, where it supersedes §6, what it adds to each issue, and what was verified
+against the tree before integration.
+
+### 7.1 What is approved, and what is explicitly not to be built
+
+- **Approved as-is:** mock `1a` (#762 detail sections), `1b` (Collections mode), `1i` (Your
+  Library mode).
+- **Approved revised directions:** `2a` (Network — repository sectors with umbrella expansion),
+  `2b` (Flows — user-chosen focus, no top-N cap).
+- **Explored, NOT to be built:** `1c`/`1e` (network alternatives), `1f`/`1g` (flow alternatives).
+  `1f`'s heat matrix may return later as a "View as table"-style secondary representation only.
+- Amber dashed notes in the mock are annotations, not UI. **Caveat/disclosure strings are
+  copy-final** — they carry into `String(localized:)` verbatim.
+- Fidelity rule: high-fidelity in **structure and copy**, native in implementation — system
+  colors/fonts/materials, `List` inset-grouped, `Picker(.segmented)`, `.bordered` menu chips,
+  `Canvas`, Swift Charts. The mock's hex values exist only to imitate what the system gives free.
+
+### 7.2 Home: the design supersedes §6's split (owner decision D-1)
+
+§6 recommended splitting by audience — exploratory surfaces in Source Explorer, the era ×
+collection narrative as a Research Guide "About the Series" extension. **The approved design
+consolidates all four modes into one new `ArchivalAnalyticsView` in the Analytics family**
+(alongside Corpus / Person / Cross-Reference Analytics and Word Cloud), explicitly *not* the
+Research Guide.
+
+Consequences, recorded:
+
+- The surface **mixes grains behind one mode picker**: Collections/Network/Flows are corpus-wide
+  (bundled artifacts, independent of the user's library); Your Library is per-user (local index).
+  This departs from the corpus/series governance rule; the design's answer is explicit per-mode
+  disclosure ("The corpus-wide modes are independent of what you have downloaded" / "computed from
+  … *your* N indexed volumes"), which every mode carries copy-final.
+- The Research Guide and SA-3 are **untouched**. Rider (Phase 3, small): SA-3's dashboard gains a
+  cross-link into Archival Analytics ("explore at collection grain"), mirroring the existing
+  `ResearchGuideLinkButton` pattern in the other direction.
+- Entry points: macOS `Window("Archival Analytics", id: "frus.archivalAnalytics")` + Analytics
+  menu item (the `menu.analytics.*` block); iOS a sixth Analysis Tools item presenting the same
+  view. The macOS opener MUST be `openWindow.fronting(id:)` — `MacWindowFrontingTests` fails the
+  suite on any bare `openWindow(id:)` (#749).
+
+### 7.3 What the design adds to each issue (deltas vs. the filed scope)
+
+**#762 (Phase 1)** — as filed, plus the design fixes placement and shape:
+- Three sections insert after "In Your Library", before "Cited Across the Series" (both section
+  names verified in `CollectionDetailView.swift`).
+- Related Collections: top-5 cap + "Show all", overlap-coefficient ranking (decided — not
+  Jaccard; damps umbrellas by dividing by the *smaller* volume list), 56×4pt overlap meter,
+  copy-final volume-grain footer.
+- Cited Over Time: BarMark card with **subseries-era buckets** ('48–50 … '77–88), not SA-3's
+  decades — same `manifest.dateRange` join, finer axis; the enters/peaks/fades caption is
+  **generated from the data**, following the mock's sentence pattern.
+- Divided at NARA: render only when `LotClaimantsIndex.claimants(forRawLot:)` returns >1 for
+  `record.lotFileNorm` (both APIs verified present).
+
+**#763 (Phase 2)** — scope unchanged (`collection-usage-index.json`, #267 fold-in, class × volume
+counts). The design consumes it as: the Documents|Volumes weight toggle (1b), document-weighted
+class edges (2a), and the class info-card counts. **New verification gate added (D-3):** measure
+**subject-numeric (1963–73)** class coverage during the generator session — the substrate exists
+(`decimal_class` carries decimal *and* subject-numeric leaves since index v19; the export's
+`decimalClass` comes from the same shared `CollectionKeying`), but §4-I only measured the decimal
+era. The Network umbrella menu's third option ships only if this measures usable.
+
+**#764 (Phase 2b)** — scope unchanged (flow matrix + class-label table). The design consumes it as
+Flows mode: focus chip + unit-aware search, Outgoing|Incoming, **every** destination rendered with
+the smallest flows grouped into an expandable remainder block (the no-silent-truncation rule as
+UI), ribbon widths ∝ reference count, within-file references excluded *and disclosed*. Unfocused
+state = corpus-wide top flows; per-edge browsing degrades to indexed volumes until #262, disclosed
+with copy-final text. Label-table curation rule (D-2): every label row carries its **source
+edition**; class numbers are era-scoped (763.72 is the 1910–49 schedule; the same number is not
+assumed stable across schedule revisions).
+
+**#765 (Phase 3)** — the shell + four modes. Design refinements over the filed scope:
+- **Network is NOT force-directed.** The filed issue said "reuse the CA-8 Canvas pattern"; the
+  design keeps CA-8's *chrome* (canvas + transparent hit-area buttons, pinned focus, viewport
+  capsules, Reduce Motion, legend, permanently-reserved info dock) but replaces physics with a
+  **deterministic sector layout**: four 90° repository wedges (central files / lot files /
+  presidential libraries / other), radial distance = overlap strength, dashed guide rings at
+  ≥.75/.50/.25.
+- **Umbrella expansion with unit honesty:** the Central Files node expands into its cited classes
+  as **rounded squares** inside a dashed hull (⊖ collapses); a class must never render as a
+  collection (§4-I rider b made visual). Menu: Collapsed / Decimal classes / Subject-numeric
+  (1963–73, gated on D-3). Class actions route to class-keyed Archival Neighbors
+  (`ArchivalNeighborsRequest.decimalClass` — verified present), never a collection detail.
+- **Hub handling (§5.3) is thereby decided:** overlap-coefficient weighting + a "Hiding: Central
+  Files umbrella" filter chip in Collections mode with the copy-final "its bar would dwarf the
+  scale" disclosure — not a hard cap.
+- Collections mode time controls compose as: filter-row year chip + administration preset scope
+  the data; the card's era segmented control selects which era's ranking is displayed.
+- Your Library mode is #765's E rider as designed (three cards; existing `document_sources`
+  columns; queries off-main; no new artifact, no schema bump).
+
+### 7.4 Verified against the tree (2026-08-08, this branch)
+
+Every code anchor the handoff names exists as named: `AdministrationPresetMenu`,
+`AnalyticsScopeBar`/`AnalyticsYearRangeBar` (`AnalyticsChartChrome.swift`), `SeriesChartCard`,
+`ChartDataInspectorView`, `ScrollWheelZoomCatcher`, `PersonCoMentionGraphView`,
+`ArchivalNeighborsRequest.decimalClass(String)`, `CollectionRecord.lotFileNorm`/`.volumeIds`,
+`LotClaimantsIndex.claimants(forRawLot:)`, the off-main-warmed `CollectionAuthorityStore`, and the
+`menu.analytics.*` command block. Standing constraints that intersect: new bundled artifacts each
+need the one-time `xcodegen generate` + scheme restore; `FRUS-API.openapi.yaml` gains the new
+queryable surfaces (audit-suite-enforced validity); nothing touches SwiftData models, so the R-7
+CloudKit gate stays untouched; new charts adopt `AXChartDescriptor` (#268) when it lands; every
+chart card joins the D3 provenance-stamped export.
+
+### 7.5 Decisions log
+
+| # | Decision | Status |
+|---|---|---|
+| D-1 | One unified Archival Analytics surface supersedes §6's Source-Explorer/Research-Guide split; Research Guide untouched; SA-3 cross-link rider in Phase 3 | **Confirmed by owner 2026-08-08** — one surface; SA-3 cross-link rider stays |
+| D-2 | Class-label table: era-scoped labels, per-row source-edition stamp; curate the 1910–49 decimal schedule first | **Confirmed by owner 2026-08-08** — 1910–49 schedule first, per-row edition stamps |
+| D-3 | Subject-numeric umbrella option gated on a coverage measurement in the #763 session; ships Collapsed/Decimal-only if thin | **Confirmed by owner 2026-08-08** — measure in #763, gate the option |
+| D-4 | Build in issue order #762 → #763 → #764 → #765, so the Documents weight toggle never ships disabled | Decided (follows the filed phase order) |
+
+---
+
 ## Version history
 
 - 1.0 (2026-08-08) — initial assessment: verdict, shipped-surface inventory, artifact
@@ -376,6 +498,13 @@ once).
   and `CentralFilesClassifier` is inference, not citation), and re-sequenced §6 (Phase 2
   carries class × volume counts; new Phase 2b for the flow matrix + class-label rider;
   numerical-file case grain parked behind its own eval).
+- 1.3 (2026-08-08) — design integration: the owner's UI handoff recorded as design of record
+  (§7; contract copied in-repo as `Archival-Analytics-Design-Handoff.md`). Supersedes §6's home
+  recommendation (one Analytics-family surface, four modes — D-1); records the per-issue design
+  deltas (deterministic sector network, umbrella expansion with unit honesty, no-cap flows,
+  subseries-era timeline buckets, overlap-coefficient hub handling); verifies every named code
+  anchor against the tree; adds the decisions log (§7.5) with the subject-numeric measurement
+  gate (D-3) and the class-label curation rule (D-2).
 - 1.2 (2026-08-08) — tracker enrolment: the four phases filed as issues #762 (Phase 1),
   #763 (Phase 2, folds in #267), #764 (Phase 2b), #765 (Phase 3); §6 table gains the
   Tracker column. Parked items (G, case grain, per-edge browsing) deliberately have no
