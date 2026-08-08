@@ -240,6 +240,11 @@ struct ArchivalNeighborsContent: View {
     /// Invoked after a row tap posts its navigation hand-off. Sheets dismiss here;
     /// the macOS window intentionally stays open (browsable alongside the document).
     var onNavigate: (() -> Void)? = nil
+
+    /// When set, a row opens the document INSIDE the presenting sheet rather than handing it to the
+    /// Browse tab and dismissing the ranked list (#757 / audit L-41). The window presentation leaves
+    /// this nil — it already keeps its list.
+    var onOpenInSheet: ((DocumentBrowserEntry) -> Void)? = nil
     /// Reports the loaded result upward — the sheet shows `basis` under its title,
     /// the macOS window shows it as the window subtitle.
     var onLoaded: ((ArchivalNeighborsResult) -> Void)? = nil
@@ -279,6 +284,7 @@ struct ArchivalNeighborsContent: View {
          anchorVolumeId: String? = nil,
          load: @escaping (Set<String>?) async -> ArchivalNeighborsResult,
          onNavigate: (() -> Void)? = nil,
+         onOpenInSheet: ((DocumentBrowserEntry) -> Void)? = nil,
          onLoaded: ((ArchivalNeighborsResult) -> Void)? = nil,
          originRequest: ArchivalNeighborsRequest? = nil) {
         self.appState = appState
@@ -286,6 +292,7 @@ struct ArchivalNeighborsContent: View {
         self.anchorVolumeId = anchorVolumeId
         self.load = load
         self.onNavigate = onNavigate
+        self.onOpenInSheet = onOpenInSheet
         self.onLoaded = onLoaded
         self.originRequest = originRequest
         _scope = State(initialValue: defaultScope)
@@ -488,6 +495,11 @@ struct ArchivalNeighborsContent: View {
             volumeId:   doc.volumeId,
             header:     doc.header.isEmpty ? doc.documentId : doc.header
         )
+        // #757 (L-41): read in place, so the neighbours list is still there on Back.
+        if let onOpenInSheet {
+            onOpenInSheet(entry)
+            return
+        }
         #if os(macOS)
         let source: DocumentOpenSource =
             originRequest.map { .tool(.archivalNeighbors($0)) } ?? .global
@@ -580,16 +592,47 @@ struct ArchivalNeighborsSheet: View {
         }
     }
 
+    /// Documents opened from the ranked list, pushed INSIDE this sheet (#757 / audit L-41).
+    @State private var navigationPath: [DocumentBrowserEntry] = []
+
+    /// The in-sheet opener, or `nil` on macOS.
+    ///
+    /// A computed property rather than a `#if` inside the argument list — a conditional cannot
+    /// appear there. On macOS this stays nil so the row keeps its provenance routing: `DocumentView`
+    /// is an iOS type, and there the sheet is only a fallback for a window that already preserves
+    /// its list.
+    private var inSheetOpener: ((DocumentBrowserEntry) -> Void)? {
+        #if os(iOS)
+        { navigationPath.append($0) }
+        #else
+        nil
+        #endif
+    }
+
+    /// Follows a cross-reference or page-turn inside this sheet, honouring #751's push/replace.
+    private func pushInSheet(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
+        if jump == .replace, !navigationPath.isEmpty {
+            navigationPath.removeLast()
+        }
+        navigationPath.append(entry)
+    }
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ArchivalNeighborsContent(
                 appState: appState,
                 defaultScope: defaultScope,
                 anchorVolumeId: anchorVolumeId,
                 load: load,
                 onNavigate: { dismiss() },
+                onOpenInSheet: inSheetOpener,
                 onLoaded: { basis = $0.basis }
             )
+            #if os(iOS)
+            .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                DocumentView(entry: entry, onNavigateToDocument: pushInSheet)
+            }
+            #endif
             .navigationTitle(String(localized: "archivalNeighbors.title",
                                     defaultValue: "Archival Neighbors"))
             #if os(iOS)
