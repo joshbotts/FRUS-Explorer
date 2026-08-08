@@ -169,12 +169,26 @@ struct SavedSearchFidelityTests {
     func enumsAreRawValueBacked() throws {
         // A synthesised enum encoding is positional. If DocumentTypeFilter or BooleanMode were
         // encoded that way, inserting a case would silently change what every archived search means.
-        let filter = try JSONEncoder().encode(DocumentTypeFilter.editorialNotesOnly)
-        #expect(String(data: filter, encoding: .utf8)?.contains("editorialNotesOnly") == true,
-                "DocumentTypeFilter must encode by name (#756)")
+        // Decode from a BARE JSON STRING. This is the assertion that actually distinguishes the
+        // two encodings: a raw-value enum is `"editorialNotesOnly"`, while a synthesised one is
+        // the object `{"editorialNotesOnly":{}}`. My first version checked that the encoded bytes
+        // CONTAINED the case name — which is true of both, so it passed with `String` removed from
+        // the declaration (measured: M5 and M6 both survived). The name being present says nothing
+        // about whether position or name is the contract.
+        #expect(try JSONDecoder().decode(DocumentTypeFilter.self,
+                                         from: Data("\"editorialNotesOnly\"".utf8)) == .editorialNotesOnly,
+                """
+                DocumentTypeFilter must be String-raw-value backed (#756). A synthesised enum \
+                encoding is POSITIONAL, so inserting a case would silently re-interpret every \
+                archived search.
+                """)
+        #expect(try JSONDecoder().decode(FTS5Query.BooleanMode.self,
+                                         from: Data("\"or\"".utf8)) == .or,
+                "BooleanMode must be String-raw-value backed, for the same reason (#756)")
 
-        let mode = try JSONEncoder().encode(FTS5Query.BooleanMode.or)
-        #expect(String(data: mode, encoding: .utf8)?.contains("or") == true,
-                "BooleanMode must encode by name (#756)")
+        // And the round trip must agree with that spelling.
+        let filter = try JSONEncoder().encode(DocumentTypeFilter.editorialNotesOnly)
+        #expect(String(data: filter, encoding: .utf8) == "\"editorialNotesOnly\"",
+                "the encoded form is the bare name, not a wrapper object")
     }
 }
