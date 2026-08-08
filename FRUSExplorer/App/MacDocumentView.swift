@@ -259,8 +259,7 @@ struct MacDocumentView: View {
                                                                   personLabel: person.name), from: nil)
                     }
                     appState.bindTool(.search, to: documentHostID)
-                    openWindow(id: "frus.search")
-                    bringMacWindowToFront(id: "frus.search")
+                    openWindow.fronting(id: "frus.search")
                 }
             )
         }
@@ -642,8 +641,7 @@ struct MacDocumentView: View {
         // A tool-window launch from a document host — stamp provenance (last-spawner-wins)
         // so the Source Explorer's related-document taps route back to THIS window.
         appState.bindTool(.sourceExplorer, to: documentHostID)
-        openWindow(id: "frus.sourceExplorer")
-        bringMacWindowToFront(id: "frus.sourceExplorer")
+        openWindow.fronting(id: "frus.sourceExplorer")
     }
 
     // MARK: - Document Year Extraction

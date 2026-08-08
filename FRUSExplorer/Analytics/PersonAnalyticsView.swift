@@ -1411,8 +1411,7 @@ struct PersonAnalyticsView: View {
                                              personLabel: person.canonicalName), from: sceneID)
         #if os(macOS)
         appState.bindTool(.search, to: appState.provenance(of: .personAnalytics))
-        openWindow(id: "frus.search")
-        bringMacWindowToFront(id: "frus.search")
+        openWindow.fronting(id: "frus.search")
         #else
         appState.openTab(.search, from: sceneID)
         #endif

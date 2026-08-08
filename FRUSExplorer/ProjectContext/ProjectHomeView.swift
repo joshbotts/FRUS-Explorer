@@ -893,8 +893,7 @@ struct ProjectHomeView: View {
     private func openSurface(_ windowId: String) {
         performNavigation {
             #if os(macOS)
-            openWindow(id: windowId)
-            bringMacWindowToFront(id: windowId)
+            openWindow.fronting(id: windowId)
             #else
             // AppTab is iOS-only; map the shared window id to the matching tab.
             let tab: AppTab

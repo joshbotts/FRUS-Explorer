@@ -495,8 +495,7 @@ struct MacSearchWindowView: View {
             Button {
                 // B4: Citation Lookup is its own window (⌘⇧F) — the sibling find
                 // flow to this Search window (⌘F).
-                openWindow(id: "frus.citationLookup")
-                bringMacWindowToFront(id: "frus.citationLookup")
+                openWindow.fronting(id: "frus.citationLookup")
             } label: {
                 Label(
                     String(localized: "search.citationLookup.button",
@@ -1714,8 +1713,7 @@ struct MacSearchWindowView: View {
             from: nil
         )
         appState.bindTool(.analytics, to: appState.provenance(of: .search))
-        openWindow(id: "frus.analytics")
-        bringMacWindowToFront(id: "frus.analytics")
+        openWindow.fronting(id: "frus.analytics")
     }
 
     /// Extracts the four-digit year from an ISO `yyyy-MM-dd` date string, as

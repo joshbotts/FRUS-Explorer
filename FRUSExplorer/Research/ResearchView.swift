@@ -646,8 +646,7 @@ struct ResearchView: View {
             appState.openWordCloud(scope, from: sceneID)
             #if os(macOS)
             appState.bindTool(.wordCloud, to: appState.provenance(of: .research))
-            openWindow(id: "frus.wordcloud")
-            bringMacWindowToFront(id: "frus.wordcloud")
+            openWindow.fronting(id: "frus.wordcloud")
             #endif
         } label: {
             Label { Text(String(localized: "research.wordCloud", defaultValue: "Word Cloud")) }
@@ -680,7 +679,7 @@ struct ResearchView: View {
             appState.currentGraphEntry = browsEntry
             // The graph inherits this Research window's provenance (transitive bind).
             appState.bindTool(.graph, to: appState.provenance(of: .research))
-            openWindow(id: "frus.crossReferenceGraph")
+            openWindow.fronting(id: "frus.crossReferenceGraph")
         } label: {
             Label(
                 String(localized: "research.action.showGraph",

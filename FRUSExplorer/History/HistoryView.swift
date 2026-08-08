@@ -474,7 +474,7 @@ struct HistoryView: View {
         #if os(macOS)
         appState.openSearch(SearchParameters(keywords: row.queryText), from: nil)
         appState.bindTool(.search, to: appState.provenance(of: .history))
-        openWindow(id: "frus.search")
+        openWindow.fronting(id: "frus.search")
         bringMacWindowToFront(id: "frus.search")   // #369 BUG-9: match the sibling producers
         #else
         appState.openSearch(SearchParameters(keywords: row.queryText), from: sceneID)

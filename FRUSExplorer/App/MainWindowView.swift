@@ -263,7 +263,7 @@ struct MainWindowView: View {
             // provenance (bindTool), so the tool's document opens route back HERE.
             Button {
                 appState.bindTool(.search, to: hostID)
-                openWindow(id: "frus.search")
+                openWindow.fronting(id: "frus.search")
             } label: {
                 Label(String(localized: "mainwindow.tools.search", defaultValue: "Search"),
                       systemImage: "magnifyingglass")
@@ -279,7 +279,7 @@ struct MainWindowView: View {
             // Browse (was "Corpus") — shortcut owned by the "frus.corpusBrowser" scene (⌘⇧B)
             Button {
                 appState.bindTool(.corpusBrowser, to: hostID)
-                openWindow(id: "frus.corpusBrowser")
+                openWindow.fronting(id: "frus.corpusBrowser")
             } label: {
                 Label(String(localized: "mainwindow.tools.browse", defaultValue: "Browse"),
                       systemImage: "books.vertical")
@@ -296,23 +296,21 @@ struct MainWindowView: View {
             Menu {
                 Button {
                     appState.bindTool(.analytics, to: hostID)
-                    openWindow(id: "frus.analytics")
+                    openWindow.fronting(id: "frus.analytics")
                 } label: {
                     Label(String(localized: "mainwindow.tools.corpusAnalytics",
                                  defaultValue: "Corpus Analytics"), systemImage: "chart.bar.xaxis")
                 }
                 Button {
                     appState.bindTool(.personAnalytics, to: hostID)
-                    openWindow(id: "frus.personAnalytics")
-                    bringMacWindowToFront(id: "frus.personAnalytics")
+                    openWindow.fronting(id: "frus.personAnalytics")
                 } label: {
                     Label(String(localized: "mainwindow.tools.personAnalytics",
                                  defaultValue: "Person Analytics"), systemImage: "person.2")
                 }
                 Button {
                     appState.bindTool(.crossRefAnalytics, to: hostID)
-                    openWindow(id: "frus.crossRefAnalytics")
-                    bringMacWindowToFront(id: "frus.crossRefAnalytics")
+                    openWindow.fronting(id: "frus.crossRefAnalytics")
                 } label: {
                     Label(String(localized: "mainwindow.tools.crossRefAnalytics",
                                  defaultValue: "Cross-Reference Analytics"), systemImage: "square.grid.3x3")
@@ -320,7 +318,7 @@ struct MainWindowView: View {
                 Divider()
                 Button {
                     appState.bindTool(.chronology, to: hostID)
-                    openWindow(id: "frus.chronology")
+                    openWindow.fronting(id: "frus.chronology")
                 } label: {
                     Label(String(localized: "mainwindow.tools.chronology",
                                  defaultValue: "Chronology"), systemImage: "calendar.day.timeline.left")
@@ -328,7 +326,7 @@ struct MainWindowView: View {
                 Button {
                     appState.openWordCloud(.corpus, from: nil)   // #338: macOS singleton window
                     appState.bindTool(.wordCloud, to: hostID)
-                    openWindow(id: "frus.wordcloud")
+                    openWindow.fronting(id: "frus.wordcloud")
                 } label: {
                     Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
                         icon: { Image(systemName: WordCloudGlyph.symbol) }
@@ -351,13 +349,13 @@ struct MainWindowView: View {
             Menu {
                 Button {
                     appState.bindTool(.research, to: hostID)
-                    openWindow(id: "frus.research")
+                    openWindow.fronting(id: "frus.research")
                 } label: {
                     Label(String(localized: "mainwindow.tools.research", defaultValue: "Research"),
                           systemImage: "note.text")
                 }
                 // Collections never routes document opens — no provenance bind.
-                Button { openWindow(id: "frus.collections") } label: {
+                Button { openWindow.fronting(id: "frus.collections") } label: {
                     Label(String(localized: "mainwindow.tools.collections", defaultValue: "Collections"),
                           systemImage: "tray.2")
                 }
@@ -463,6 +461,31 @@ func bringMacWindowToFront(id: String) {
         return raw == id || raw.hasPrefix(id)
     }
     target?.makeKeyAndOrderFront(nil)
+}
+
+extension OpenWindowAction {
+
+    /// Opens a singleton `Window(id:)` scene **and** raises it if it was already open (#749).
+    ///
+    /// Use this instead of `openWindow(id:)` for every singleton tool window. The two calls are not
+    /// independent choices — `openWindow(id:)` alone leaves an already-open window buried, per the
+    /// measured gap documented on ``bringMacWindowToFront(id:)`` — so pairing them by hand at every
+    /// site is a rule that gets forgotten, and was: the 2026-08 navigation audit found **11 of 56
+    /// sites** unpaired, including seven of the nine main-window toolbar launchers.
+    ///
+    /// The consequences were worse than a dead button, because several tool windows retarget their
+    /// content from shared state the moment a producer writes it, visible or not. A buried Word
+    /// Cloud silently lost the volume or collection scope the researcher had set up; a buried
+    /// Cross-Reference Graph silently switched to a different document, so bringing it forward later
+    /// showed someone else's graph with no explanation.
+    ///
+    /// Making the pair a single call is the point: there is no longer a second step to omit.
+    /// `MacWindowFrontingTests` fails the suite if a bare `openWindow(id:)` reappears.
+    @MainActor
+    func fronting(id: String) {
+        self(id: id)
+        bringMacWindowToFront(id: id)
+    }
 }
 
 #endif // os(macOS)

@@ -1432,8 +1432,7 @@ struct WordCloudView: View {
         // Open the Analytics window DIRECTLY (the MainWindowView relay is retired —
         // provenance PR 2); it inherits this word cloud's provenance (transitive bind).
         appState.bindTool(.analytics, to: appState.provenance(of: .wordCloud))
-        openWindow(id: "frus.analytics")
-        bringMacWindowToFront(id: "frus.analytics")
+        openWindow.fronting(id: "frus.analytics")
         #else
         // Corpus Analytics is presented from the Browse tab on iOS; bring it forward
         // so the analytics sheet (opened by `BrowserView` on `pendingAnalytics`) is visible.
@@ -1558,8 +1557,7 @@ struct WordCloudView: View {
         // Open the Search window DIRECTLY (the MainWindowView relay is retired —
         // provenance PR 2); it inherits this word cloud's provenance (transitive bind).
         appState.bindTool(.search, to: appState.provenance(of: .wordCloud))
-        openWindow(id: "frus.search")
-        bringMacWindowToFront(id: "frus.search")
+        openWindow.fronting(id: "frus.search")
         #else
         // #369 BUG-10: bring the Search tab forward on iOS. Without this the query runs invisibly on
         // the backgrounded Search tab and the user is dropped back on the word cloud's prior tab —
@@ -1594,8 +1592,7 @@ struct WordCloudView: View {
         #if os(macOS)
         // Chronology inherits this word cloud's provenance (transitive bind).
         appState.bindTool(.chronology, to: appState.provenance(of: .wordCloud))
-        openWindow(id: "frus.chronology")
-        bringMacWindowToFront(id: "frus.chronology")
+        openWindow.fronting(id: "frus.chronology")
         #else
         // Chronology is presented from the Browse tab on iOS; surface it and dismiss
         // this sheet so `BrowserView` can present it on the `pendingChronology` change.

@@ -191,8 +191,7 @@ struct ChronologyView: View {
         #if os(macOS)
         // The word cloud inherits this Chronology window's provenance (transitive bind).
         appState.bindTool(.wordCloud, to: appState.provenance(of: .chronology))
-        openWindow(id: "frus.wordcloud")
-        bringMacWindowToFront(id: "frus.wordcloud")
+        openWindow.fronting(id: "frus.wordcloud")
         #else
         // The word cloud is presented at the tab-container level (MainTabView) on iOS;
         // dismiss this sheet so it can present on the `pendingWordCloud` change.
@@ -1172,8 +1171,7 @@ struct ChronologyView: View {
         // Open the Search window DIRECTLY (the MainWindowView relay is retired —
         // provenance PR 2); it inherits this Chronology window's provenance.
         appState.bindTool(.search, to: appState.provenance(of: .chronology))
-        openWindow(id: "frus.search")
-        bringMacWindowToFront(id: "frus.search")
+        openWindow.fronting(id: "frus.search")
         #else
         appState.openTab(.search, from: sceneID)
         dismiss()

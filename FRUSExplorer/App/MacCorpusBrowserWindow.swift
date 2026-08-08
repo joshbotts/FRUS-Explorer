@@ -116,8 +116,7 @@ struct CorpusBrowserWindowView: View {
                         // this browser's provenance (transitive bind), so its "Find all
                         // mentions" search lands where the browser's own opens do.
                         appState.bindTool(.people, to: appState.provenance(of: .corpusBrowser))
-                        openWindow(id: "frus.people")
-                        bringMacWindowToFront(id: "frus.people")
+                        openWindow.fronting(id: "frus.people")
                     } label: {
                         Image(systemName: "person.2")
                     }
@@ -233,8 +232,7 @@ struct CorpusBrowserWindowView: View {
             Button {
                 appState.openWordCloud(.subseries(subseriesId: sub), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
-                bringMacWindowToFront(id: "frus.wordcloud")
+                openWindow.fronting(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
             } label: {
                 Image(systemName: WordCloudGlyph.symbol)
                     .font(.system(size: 11))
@@ -252,8 +250,7 @@ struct CorpusBrowserWindowView: View {
             Button {
                 appState.openWordCloud(.subseries(subseriesId: sub), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.wordcloud")            // #334
-                bringMacWindowToFront(id: "frus.wordcloud")
+                openWindow.fronting(id: "frus.wordcloud")            // #334
             } label: {
                 Label { Text(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud")) }
                     icon: { Image(systemName: WordCloudGlyph.symbol) }
@@ -374,8 +371,7 @@ private struct SubseriesVolumeListView: View {
             Button {
                 appState.openWordCloud(.volume(volumeId: vol.volumeId), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
-                bringMacWindowToFront(id: "frus.wordcloud")
+                openWindow.fronting(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
             } label: {
                 Image(systemName: WordCloudGlyph.symbol)
                     .font(.system(size: 11))
@@ -395,8 +391,7 @@ private struct SubseriesVolumeListView: View {
                 // this browser's provenance (transitive bind).
                 appState.pendingVolumeGraph = vol.volumeId
                 appState.bindTool(.graph, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.crossReferenceGraph")
-                bringMacWindowToFront(id: "frus.crossReferenceGraph")
+                openWindow.fronting(id: "frus.crossReferenceGraph")
             } label: {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
                     .font(.system(size: 11))
@@ -415,8 +410,7 @@ private struct SubseriesVolumeListView: View {
             Button {
                 appState.openWordCloud(.volume(volumeId: vol.volumeId), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.wordcloud")            // #334
-                bringMacWindowToFront(id: "frus.wordcloud")
+                openWindow.fronting(id: "frus.wordcloud")            // #334
             } label: {
                 Label { Text(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud")) }
                     icon: { Image(systemName: WordCloudGlyph.symbol) }
@@ -837,8 +831,7 @@ private struct CorpusVolumeDetailView: View {
                 // stays where it is (this view is pushed, not a sheet to dismiss).
                 appState.openSearch(SearchParameters(volumeIds: [volumeId]), from: nil)
                 appState.bindTool(.search, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.search")
-                bringMacWindowToFront(id: "frus.search")
+                openWindow.fronting(id: "frus.search")
                 appState.completedIndexingMetadata = nil
             },
             onDismiss: {
@@ -1372,7 +1365,7 @@ private struct CorpusSectionDocumentView: View {
             Button {
                 appState.currentGraphEntry = doc
                 appState.bindTool(.graph, to: appState.provenance(of: .corpusBrowser))
-                openWindow(id: "frus.crossReferenceGraph")
+                openWindow.fronting(id: "frus.crossReferenceGraph")
             } label: {
                 Label("Show Cross-Reference Graph",
                       systemImage: "point.3.connected.trianglepath.dotted")

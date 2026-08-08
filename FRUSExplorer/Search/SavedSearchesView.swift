@@ -191,8 +191,7 @@ struct SavedSearchesView: View {
                         // PR 2). This sheet is presented from the Search window, so the
                         // cloud inherits Search's provenance (transitive bind).
                         appState.bindTool(.wordCloud, to: appState.provenance(of: .search))
-                        openWindow(id: "frus.wordcloud")
-                        bringMacWindowToFront(id: "frus.wordcloud")
+                        openWindow.fronting(id: "frus.wordcloud")
                         #endif
                         dismiss()
                     } label: {
