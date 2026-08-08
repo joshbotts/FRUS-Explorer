@@ -84,15 +84,67 @@ struct MacWindowFrontingTests {
 
     // MARK: - The invariant
 
+    /// Code lines that open a window without raising it.
+    ///
+    /// Extracted so it can be exercised against a literal fixture below. Inlined in the assertion,
+    /// a mutation of the needle made the whole invariant pass vacuously — measured, not imagined:
+    /// changing the match string to one that occurs nowhere left this suite green while every
+    /// launcher was free to skip the raise again.
+    ///
+    /// `self(id: id)` inside `fronting(id:)` is the one legitimate raw invocation, and it is not
+    /// spelled `openWindow(id:` — so it needs no exemption.
+    static func bareOpenWindowSites(in source: String) -> [(line: Int, text: String)] {
+        codeLines(source).filter { $0.text.contains("openWindow(id:") }
+    }
+
+    @Test("The bare-call matcher detects one, and does not flag the fronting helper")
+    func matcherIsNotVacuous() {
+        let offending = """
+            Button {
+                openWindow(id: "frus.search")
+            } label: { Text("Search") }
+            """
+        #expect(Self.bareOpenWindowSites(in: offending).count == 1,
+                "the matcher must detect a bare openWindow(id:), or the invariant passes vacuously")
+
+        let correct = """
+            Button {
+                openWindow.fronting(id: "frus.search")
+            } label: { Text("Search") }
+            """
+        #expect(Self.bareOpenWindowSites(in: correct).isEmpty,
+                "openWindow.fronting(id:) is the correct call and must not be flagged")
+
+        let commented = """
+            // Producers open the window directly (openWindow(id: "frus.search")) alongside…
+            /// Set immediately before openWindow(id: "frus.corpusBrowser") on macOS —
+            """
+        #expect(Self.bareOpenWindowSites(in: commented).isEmpty,
+                "prose about the old API is everywhere in this codebase and must not fail the build")
+    }
+
+    @Test("Every launcher in the app uses the fronting helper")
+    func everySiteConverted() throws {
+        // The companion half of the vacuity guard: the matcher finding nothing is only meaningful
+        // if there is a substantial population of converted sites to have found. 56 were converted
+        // in #749; asserting a floor rather than the exact number keeps this from failing every
+        // time a legitimate new window is added.
+        var frontingSites = 0
+        for (_, source) in try Self.allSources() {
+            frontingSites += Self.codeLines(source).filter { $0.text.contains("openWindow.fronting(id:") }.count
+        }
+        #expect(frontingSites >= 50, """
+            Only \(frontingSites) call sites use openWindow.fronting(id:). #749 converted 56. \
+            A sharp drop means the launchers were removed or the helper was renamed — either way \
+            the "no bare calls" invariant above is no longer proving anything.
+            """)
+    }
+
     @Test("No app code calls openWindow(id:) without fronting")
     func noBareOpenWindowByID() throws {
         var offenders: [String] = []
         for (path, source) in try Self.allSources() {
-            for entry in Self.codeLines(source) {
-                // `self(id: id)` inside `fronting(id:)` is the one legitimate raw invocation, and it
-                // is not spelled `openWindow(id:` — so it needs no exemption here. Anything that IS
-                // spelled that way is a launcher that skipped the raise.
-                guard entry.text.contains("openWindow(id:") else { continue }
+            for entry in Self.bareOpenWindowSites(in: source) {
                 offenders.append("\(path):\(entry.line)  \(entry.text)")
             }
         }
