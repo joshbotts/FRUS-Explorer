@@ -1593,7 +1593,11 @@ struct FRUSExplorerApp: App {
                     if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
                     // Rebuild the materialised person rollup after the persons table changes.
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
-                    try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
+                    if (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) == true {
+                        // A launch-time rebuild renumbers every rollup id, and the People browser
+                        // and analytics can already be on screen by the time it finishes (#747).
+                        PersonRollupRefresh.published(appState: appState)
+                    }
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     // Reopen the read-only stores now that the rebuild + WAL checkpoints have
                     // settled — the boot-time connections opened before this Task can be left
@@ -1612,7 +1616,11 @@ struct FRUSExplorerApp: App {
                         await pipeline.markFTSRebuildReindexComplete()
                     }
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
-                    try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
+                    if (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) == true {
+                        // A launch-time rebuild renumbers every rollup id, and the People browser
+                        // and analytics can already be on screen by the time it finishes (#747).
+                        PersonRollupRefresh.published(appState: appState)
+                    }
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     // See the date-reindex branch: reopen the read-only stores post-rebuild (#275).
                     appState.refreshReadOnlyStores()
@@ -1625,7 +1633,11 @@ struct FRUSExplorerApp: App {
                 // member set has drifted (volumes added/removed). Cheap no-op when up to date.
                 Task {
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
-                    try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
+                    if (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) == true {
+                        // A launch-time rebuild renumbers every rollup id, and the People browser
+                        // and analytics can already be on screen by the time it finishes (#747).
+                        PersonRollupRefresh.published(appState: appState)
+                    }
                     // Backfill cross_references.is_broken for already-indexed volumes (#240B).
                     // Gated + idempotent; a no-op once the current index has been applied.
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()

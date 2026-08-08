@@ -167,7 +167,7 @@ extension PersonRollupRefresh {
         updated.rollupId = current
         // The canonical name can change too — a merge adopts the authority's preferred spelling —
         // and a chip that keeps the pre-merge label misdescribes what it is now filtering to.
-        updated.label = binding.label
+        updated.label = entry.entry.name
         return (updated, false)
     }
 
