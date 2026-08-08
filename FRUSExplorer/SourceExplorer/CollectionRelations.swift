@@ -27,6 +27,14 @@ struct RelatedCollection: Identifiable, Sendable, Equatable {
     /// Volumes that cite both this record and the focus record.
     let sharedVolumeCount: Int
 
+    /// Distinct volumes citing *this* record — how broadly it is drawn on across the series.
+    ///
+    /// Stored rather than read back off `record.volumeIds` so that the coefficient's denominator
+    /// and the breadth tie-break are the same number. The shipped artifact happens to carry no
+    /// repeated volume id inside a single record, but a comparator keyed on the raw array while
+    /// the score is keyed on the deduplicated set is an inconsistency waiting for the first one.
+    let partnerVolumeCount: Int
+
     /// Overlap coefficient — shared ÷ the *smaller* of the two citing-volume lists, in
     /// `0...1`. Dividing by the smaller list is what damps the umbrella records: the
     /// "Central Files" cluster cites 157 volumes and would otherwise sit at the top of
@@ -158,6 +166,7 @@ enum CollectionRelations {
             let smaller = min(focusVolumes.count, candidateVolumes.count)
             found.append(RelatedCollection(record: candidate,
                                            sharedVolumeCount: shared,
+                                           partnerVolumeCount: candidateVolumes.count,
                                            overlap: Double(shared) / Double(smaller)))
         }
 
@@ -166,9 +175,9 @@ enum CollectionRelations {
             if a.sharedVolumeCount != b.sharedVolumeCount {
                 return a.sharedVolumeCount > b.sharedVolumeCount
             }
-            let aBreadth = a.record.volumeIds.count
-            let bBreadth = b.record.volumeIds.count
-            if aBreadth != bBreadth { return aBreadth < bBreadth }
+            if a.partnerVolumeCount != b.partnerVolumeCount {
+                return a.partnerVolumeCount < b.partnerVolumeCount
+            }
             if a.record.name != b.record.name { return a.record.name < b.record.name }
             return a.record.id < b.record.id
         }

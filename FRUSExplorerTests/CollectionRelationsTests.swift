@@ -380,6 +380,20 @@ struct CollectionRelationsTests {
         #expect(text.contains("1955–1957"))
     }
 
+    @Test("Two isolated single citations are not a peak")
+    func narrativeDoesNotPeakOnIsolatedSingles() {
+        // One volume in 1948–50, none in 1951–54, one in 1955–57. The maximum is 1 and its run is
+        // the first bucket alone — so the "does the peak span everything" guard does NOT fire, and
+        // only the check on the maximum itself stops the sentence claiming a peak. Measured: this
+        // is the case the mutation sweep found nothing else covering.
+        let text = CollectionRelations.timelineNarrative(for: timeline([(1948, 1), (1955, 1)]))
+        #expect(!text.contains("peaks"), """
+            A collection cited once in each of two eras is not peaking in the earlier one. \
+            Reporting it as a peak reads the noise floor as a trend: \(text)
+            """)
+        #expect(text.contains("1948–1950") && text.contains("1955–1957"))
+    }
+
     @Test("A collection cited evenly throughout has no peak to name")
     func narrativeDoesNotPeakWhenEverythingTies() {
         // Every era at 3 clears the "is there enough here to call a peak" bar, but the peak
@@ -490,24 +504,26 @@ struct CollectionDetailWiringTests {
         let body = try Self.listBody(try Self.source())
         let gates = [
             ("relatedCollectionsSection",
-             "record.volumeIds.count >= CollectionRelations.minimumSharedVolumes",
+             "if record.volumeIds.count >= CollectionRelations.minimumSharedVolumes {",
              """
              Related Collections is not gated on the focus record's own volume count, so a \
              one-volume collection — 2,846 of the 4,423 shipped records — shows a section \
              that can only ever be empty.
              """),
-            ("citedOverTimeSection", "!timeline.isEmpty",
+            ("citedOverTimeSection", "if !timeline.isEmpty {",
              "Cited Over Time would mount with no buckets, drawing a blank chart"),
-            ("dividedAtNARASection", "if let claimants = dividedLotClaimants",
+            ("dividedAtNARASection", "if let claimants = dividedLotClaimants {",
              "Divided at NARA would mount for every record, not the 113 with a divided lot"),
         ]
         for (section, gate, why) in gates {
             let index = try #require(body.firstIndex { $0.contains(section) },
                                      "\(section) is not mounted in body")
             #expect(index > 0, "\(section) is the first line of body — it cannot be gated")
-            let preceding = body[index - 1]
-            #expect(preceding.hasPrefix("if ") && preceding.contains(gate),
-                    "\(why). The line before it reads: \(preceding)")
+            // Whole-line equality, not `contains`: `if true || <gate> {` still contains the gate
+            // and still mounts the section unconditionally (measured — the sweep's M16b survived
+            // a `contains` check). Reformatting this line is expected to fail this test.
+            #expect(body[index - 1] == gate,
+                    "\(why). The line before it reads: \(body[index - 1])")
         }
     }
 
@@ -526,20 +542,40 @@ struct CollectionDetailWiringTests {
             """)
     }
 
-    @Test("The citing-volume list is capped with a disclosed expansion")
-    func citingVolumesAreCapped() throws {
+    @Test("Both long lists are capped on the rows they render, with a disclosed expansion")
+    func longListsAreCapped() throws {
+        // The cap has to be applied to the ROWS. Asserting only that `previewRowCap` appears in
+        // the section passes while the ForEach renders everything, because the "Show all" button's
+        // own condition mentions the constant too (measured — the sweep's M18 and M19 both
+        // survived that weaker check).
         let source = try Self.source()
-        let start = try #require(source.range(of: "private var citingVolumesSection: some View {"))
-        let rest = source[start.upperBound...]
-        let end = rest.range(of: "// MARK: -")?.lowerBound ?? rest.endIndex
-        let section = Self.codeLines(String(rest[..<end]))
-        #expect(section.contains { $0.contains("CollectionRelations.previewRowCap") }, """
-            The citing-volume list renders every row again. The widest shipped record cites \
-            157 volumes, which buries the three new sections above it.
-            """)
-        #expect(section.contains { $0.contains("collection.detail.volumes.showAll") }, """
-            A cap without a stated total is a silent truncation — the house rule the "Show all \
-            N volumes" row exists to satisfy.
-            """)
+        let cases = [
+            ("private var citingVolumesSection: some View {",
+             "record.volumeIds.prefix(CollectionRelations.previewRowCap)",
+             "collection.detail.volumes.showAll",
+             """
+             The citing-volume list renders every row. The widest shipped record cites 157 \
+             volumes, which buries the three new sections above it.
+             """),
+            ("private var relatedCollectionsSection: some View {",
+             "related.prefix(CollectionRelations.previewRowCap)",
+             "collection.detail.related.showAll",
+             """
+             The related-collections list renders every row. A broadly-cited lot has over a \
+             thousand collections clearing the floor; the top five plus a disclosed expansion \
+             is the whole shape of the section.
+             """),
+        ]
+        for (anchor, capExpression, showAllKey, why) in cases {
+            let start = try #require(source.range(of: anchor), "\(anchor) is gone")
+            let rest = source[start.upperBound...]
+            let end = rest.range(of: "// MARK: -")?.lowerBound ?? rest.endIndex
+            let section = Self.codeLines(String(rest[..<end]))
+            #expect(section.contains { $0.contains(capExpression) }, "\(why)")
+            #expect(section.contains { $0.contains(showAllKey) }, """
+                A cap without a stated total is a silent truncation — the house rule the \
+                "Show all N" row exists to satisfy (\(anchor)).
+                """)
+        }
     }
 }
