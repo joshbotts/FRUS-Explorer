@@ -792,16 +792,22 @@ public actor IndexingPipeline {
     /// `persons` table (a volume was added or removed). The People browser reads the rollup directly
     /// because a live cross-corpus rollup over `person_mentions` is too slow on the full corpus.
     /// Cheap when up to date (two `COUNT(*)`s + a version check).
-    public func consolidatePersonRollupIfNeeded(overrides: [PersonClusterOverrideData] = []) async throws {
+    ///
+    /// - Returns: `true` if the rollup was rebuilt (and therefore **renumbered** — every
+    ///   `rollup_id` a caller is holding may now name a different person, #747); `false` when it
+    ///   was already up to date and nothing moved.
+    @discardableResult
+    public func consolidatePersonRollupIfNeeded(overrides: [PersonClusterOverrideData] = []) async throws -> Bool {
         let installedVersion = UserDefaults.standard.integer(forKey: Self.personRollupVersionKey)
         let members = (try? auxScalarInt("SELECT COUNT(*) FROM person_rollup_member")) ?? -1
         let persons = (try? auxScalarInt("SELECT COUNT(*) FROM persons")) ?? 0
         let lastFingerprint = UserDefaults.standard.string(forKey: Self.personRollupOverrideFingerprintKey) ?? ""
         guard installedVersion < Self.currentPersonRollupVersion
             || members != persons
-            || lastFingerprint != Self.overrideFingerprint(overrides) else { return }
+            || lastFingerprint != Self.overrideFingerprint(overrides) else { return false }
         try consolidatePersonRollup(overrides: overrides)
         logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries, \(overrides.count, privacy: .public) overrides).")
+        return true
     }
 
     /// Rebuilds the person rollup from `persons` + `person_mentions` + `document_dates` using the

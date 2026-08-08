@@ -99,8 +99,22 @@ enum SearchScopeSignature {
 
     /// A person filter has two forms and they are not interchangeable — a rollup spans the corpus,
     /// a raw ref is one volume's spelling.
+    ///
+    /// The rollup form keys on the durable `(volumeId, ref)` **anchor** rather than `rollup_id`
+    /// (#747 / audit L-38). `rollup_id` is a slot number reassigned from 1 on every rollup rebuild,
+    /// so signing with it made this key mean two incompatible things at once: two genuinely
+    /// different scopes recorded either side of a merge could sign identically (the same slot,
+    /// different people — a false match that silently reuses one result set for the other), while
+    /// one unchanged scope re-signed after a rebuild would look like a new scope. The anchor is a
+    /// TEI key and does not move, so the signature says what it claims to say.
+    ///
+    /// A rollup filter with no anchor yet falls back to the id — a first-run capture has not
+    /// happened, and an unsigned person filter would be worse than an imprecise one.
     private static func personComponent(_ parameters: SearchParameters) -> String {
-        if let rollup = parameters.personRollupId { return "rollup:\(rollup)" }
+        if let anchor = parameters.personAnchor, parameters.personRollupId != nil {
+            return "rollup:\(digest(of: [anchor.signatureKey]))"
+        }
+        if let rollup = parameters.personRollupId { return "rollup:slot:\(rollup)" }
         if let ref = parameters.personRef, !ref.isEmpty { return "ref:\(digest(of: [ref]))" }
         return "none"
     }

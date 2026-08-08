@@ -478,6 +478,10 @@ final class MacSearchViewModel {
     /// disagree only holds if every narrowable dimension is visible in one place.
     var personFilterLabel: String? {
         if let rollupId = parameters.personRollupId {
+            // Prefer the stored name. `rollup_id` is a slot number that is renumbered on every
+            // rollup rebuild (#747), so "person #12" both means nothing to the reader and stops
+            // being the same person between one correction and the next.
+            if let label = parameters.personLabel, !label.isEmpty { return label }
             return String(localized: "search.filter.person.rollup",
                           defaultValue: "person #\(rollupId)")
         }
@@ -492,9 +496,45 @@ final class MacSearchViewModel {
         guard parameters.personRef != nil || parameters.personRollupId != nil else { return }
         parameters.personRef = nil
         parameters.personRollupId = nil
+        parameters.personAnchor = nil
         filterVM?.personRollupId = nil
+        filterVM?.personAnchor = nil
         parametersVersion += 1
     }
+
+    /// Captures or re-resolves the person filter's durable anchor against the live rollup (#747).
+    ///
+    /// The macOS twin of `SearchViewModel.refreshPersonRollupBinding(using:)`. Both exist because
+    /// the two search surfaces keep separate state (`project_macos_search_separate`); fixing only
+    /// one would leave the Mac search window filtering by a stale slot number after every merge.
+    ///
+    /// - Returns: `true` if the caller should re-run the search.
+    @discardableResult
+    func refreshPersonRollupBinding(using store: PersonMentionStore?) async -> Bool {
+        let before = PersonFilterBinding(rollupId: parameters.personRollupId,
+                                         label: parameters.personLabel,
+                                         anchor: parameters.personAnchor)
+        let (after, dropped) = await PersonRollupRefresh.rebind(before, using: store)
+        guard after != before else { return false }
+        parameters.personRollupId = after.rollupId
+        parameters.personLabel = after.label
+        parameters.personAnchor = after.anchor
+        filterVM?.personRollupId = after.rollupId
+        filterVM?.personLabel = after.label
+        filterVM?.personAnchor = after.anchor
+        if dropped {
+            droppedPersonFilterNotice = String(
+                localized: "search.person.filterDropped",
+                defaultValue: "The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.")
+        }
+        // Only an id change (or a drop) alters the result set; a first-time anchor capture does not.
+        let changed = dropped || after.rollupId != before.rollupId
+        if changed { parametersVersion += 1 }
+        return changed
+    }
+
+    /// Set when the last rebind dropped the person filter because its anchor no longer resolves.
+    var droppedPersonFilterNotice: String?
 
     func clearDateFilter() {
         parameters.dateRange = nil
@@ -572,6 +612,7 @@ final class MacSearchViewModel {
         filterVM.personRefText      = parameters.personRef ?? ""
         filterVM.personRollupId     = parameters.personRollupId
         filterVM.personLabel        = parameters.personLabel
+        filterVM.personAnchor       = parameters.personAnchor
         filterVM.documentTypeFilter = parameters.documentTypeFilter
         filterVM.includeDocumentText = parameters.includeDocumentText
         filterVM.includeSummaries   = parameters.includeSummaries
@@ -616,6 +657,7 @@ final class MacSearchViewModel {
         parameters.personRef        = filterVM.personRefText.isEmpty ? nil : filterVM.personRefText
         parameters.personRollupId   = filterVM.personRollupId
         parameters.personLabel      = filterVM.personLabel
+        parameters.personAnchor     = filterVM.personAnchor
         parameters.documentTypeFilter = filterVM.documentTypeFilter
         parameters.includeDocumentText = filterVM.includeDocumentText
         parameters.includeSummaries = filterVM.includeSummaries

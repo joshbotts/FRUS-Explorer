@@ -65,6 +65,36 @@ enum SearchSortOrder: CaseIterable {
 ///   1.3 — Session 75: `includeDocumentText` added so document body columns can be excluded
 ///          to enable "summaries only" or "notes only" search scope
 ///   1.4 — Session 2026-06-08: `includeFrontMatter` added for Phase 4 front-matter scope toggle
+// MARK: - PersonRollupAnchor
+
+/// A durable handle on a person rollup: one of its members, keyed the way the TEI keys it (#747).
+///
+/// Rollup ids are regenerated on every consolidation; `(volumeId, ref)` is not. Carrying a member
+/// lets a live filter, a saved scope signature, or an open dashboard re-find the same *person*
+/// after a renumber instead of holding an integer that now names someone else.
+///
+/// The member is the rollup's representative (`PersonMentionStore.representativeMember`), so the
+/// anchor stays meaningful for a merged cluster: merging two identities keeps both members, and
+/// either one re-resolves to the surviving rollup.
+public struct PersonRollupAnchor: Sendable, Equatable, Hashable, Codable {
+
+    /// The volume the anchoring person entry lives in.
+    public let volumeId: String
+
+    /// The TEI `xml:id` of that per-volume person entry.
+    public let ref: String
+
+    public init(volumeId: String, ref: String) {
+        self.volumeId = volumeId
+        self.ref = ref
+    }
+
+    /// A stable, printable key — used by the research trail's scope signature, where the old
+    /// `rollup:1234` form meant two rows filtered to the same person could carry different
+    /// signatures after a renumber (and two rows filtered to different people, the same one).
+    public var signatureKey: String { "\(volumeId)/\(ref)" }
+}
+
 public struct SearchParameters: Sendable, Equatable {
 
     // MARK: - Full-text fields
@@ -167,6 +197,28 @@ public struct SearchParameters: Sendable, Equatable {
     /// removable "Mentions: …" chip in the search filter UI. Carried for presentation only.
     public var personLabel: String?
 
+    /// A **renumber-proof** handle on the person `personRollupId` names (#747).
+    ///
+    /// `rollup_id` is positional — `consolidatePersonRollup` writes `clusterIndex + 1` after
+    /// clearing the table — so any reconsolidation renumbers essentially every cluster after the
+    /// first membership change. A live "Mentions: Kissinger" chip that holds only the integer
+    /// therefore keeps pointing at *slot 1,234*, which after one merge in the People browser is a
+    /// different human: the chip's label does not change, the SQL still resolves, and the results
+    /// quietly belong to someone else. Reconsolidation happens on every user correction, on the
+    /// launch that follows a `currentPersonRollupVersion` bump, and (since #747) whenever volumes
+    /// are added or removed.
+    ///
+    /// `person_rollup_member` is keyed on `(volume_id, ref)`, which comes from the TEI and does
+    /// not move, so one member is a durable name for the cluster. `PersonRollupAnchor` carries
+    /// that member; ``SearchParameters/reresolvedPerson(using:)`` trades it back for the current
+    /// `rollupId` after a rebuild. When the anchor no longer resolves — its volume was removed —
+    /// the honest outcome is to drop the filter rather than silently search a different person.
+    ///
+    /// Presentation and re-resolution only: never itself a filter. Setting it alongside
+    /// `personRef` would not AND a second predicate, which is the hazard `FacetNarrowing` documents
+    /// for `personRef`/`personRollupId`.
+    public var personAnchor: PersonRollupAnchor?
+
     // MARK: - Front matter scope
 
     /// Whether front-matter prose sections (preface, introduction, prefatoryNote, terms, etc.)
@@ -200,6 +252,7 @@ public struct SearchParameters: Sendable, Equatable {
         personRef: String? = nil,
         personRollupId: Int? = nil,
         personLabel: String? = nil,
+        personAnchor: PersonRollupAnchor? = nil,
         includeFrontMatter: Bool = true
     ) {
         self.keywords = keywords
@@ -221,6 +274,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.personRef = personRef
         self.personRollupId = personRollupId
         self.personLabel = personLabel
+        self.personAnchor = personAnchor
         self.includeFrontMatter = includeFrontMatter
     }
 }

@@ -368,10 +368,10 @@ struct PersonCorrectionsSheet: View {
             String(localized: "people.corrections.undo.inProgress",
                    defaultValue: "Undoing correction…")).post()
         PersonClusterOverrideStore.remove(override, context: modelContext)
-        await PersonClusterOverrideStore.saveAndReconsolidate(context: modelContext, pipeline: pipeline)
+        await PersonRollupRefresh.afterCorrection(context: modelContext, pipeline: pipeline,
+                                                  appState: appState)
         AccessibilityNotification.Announcement(
             String(localized: "people.corrections.undo.done", defaultValue: "Correction undone")).post()
-        appState.personCorrectionsGeneration += 1
         await load()
         onChange()
     }

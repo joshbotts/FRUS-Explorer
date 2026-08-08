@@ -164,6 +164,20 @@ final class SearchViewModel {
     /// Display name for the active `personRollupId`/`personRef` filter, shown in the filter chip.
     var personLabel: String?
 
+    /// Durable `(volumeId, ref)` identity behind `personRollupId` (#747).
+    ///
+    /// `personRollupId` is a **slot number**: the rollup table is rebuilt wholesale and renumbered
+    /// from 1 on every correction and every corpus change, so a chip that holds only the integer
+    /// starts filtering to a different person the moment anyone merges two identities. The anchor
+    /// is a TEI key and does not move, so it survives the rebuild and re-resolves to the current
+    /// slot. Captured lazily by ``refreshPersonRollupBinding(using:)`` — the sites that *set* a
+    /// rollup id do not have it, because rollup-sourced `PersonIndexEntry`s carry an empty `ref`.
+    var personAnchor: PersonRollupAnchor?
+
+    /// Set when the last rebind dropped the person filter because its anchor no longer resolves,
+    /// so the view can say so instead of silently widening the result set.
+    var droppedPersonFilterNotice: String?
+
     // MARK: - Volume & Subseries Filter
 
     /// **Individually** selected volume IDs (the Volumes picker), distinct from the
@@ -680,6 +694,7 @@ final class SearchViewModel {
         personRefText = ""
         personRollupId = nil
         personLabel = nil
+        personAnchor = nil
         // Reset the project scope selection + Focus "only new" toggle (keep the loaded
         // engaged-key/focus-volume sets — they are context, not user filters, and
         // re-populate only when the project changes).
@@ -823,6 +838,7 @@ final class SearchViewModel {
                 : personRefText.trimmingCharacters(in: .whitespaces),
             personRollupId: personRollupId,
             personLabel: personLabel,
+            personAnchor: personAnchor,
             includeFrontMatter: includeFrontMatter
         )
     }
@@ -945,6 +961,9 @@ final class SearchViewModel {
             selectedSubseriesIds = []
         case .person(let rollupId):
             personRollupId = rollupId
+            // Drop any anchor from a previous person: it names someone else, and leaving it would
+            // make the next rebind silently re-point this filter back at them.
+            personAnchor = nil
             // A rollup and a typed ref are alternative spellings of one filter; leaving the
             // text set would AND them and silently undercount.
             personRefText = ""
@@ -953,6 +972,34 @@ final class SearchViewModel {
         }
         // No version bump: unlike macOS, this view model has no `parametersVersion` and iOS
         // re-runs the search explicitly. The caller owns that — see `SearchView`.
+    }
+
+    /// Captures or re-resolves the person filter's durable anchor against the live rollup (#747).
+    ///
+    /// Call after applying a person filter and again on every `AppState.personRollupGeneration`
+    /// change: the rollup table is renumbered from 1 on every rebuild, so an id captured before a
+    /// merge points at whoever now occupies that slot. Sets ``droppedPersonFilterNotice`` when the
+    /// anchor no longer resolves, so the view can tell the user rather than quietly returning a
+    /// wider result set.
+    ///
+    /// - Returns: `true` if the caller should re-run the search (the filter changed).
+    @discardableResult
+    func refreshPersonRollupBinding(using store: PersonMentionStore?) async -> Bool {
+        let before = PersonFilterBinding(rollupId: personRollupId,
+                                         label: personLabel,
+                                         anchor: personAnchor)
+        let (after, dropped) = await PersonRollupRefresh.rebind(before, using: store)
+        guard after != before else { return false }
+        personRollupId = after.rollupId
+        personLabel = after.label
+        personAnchor = after.anchor
+        if dropped {
+            droppedPersonFilterNotice = String(
+                localized: "search.person.filterDropped",
+                defaultValue: "The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.")
+        }
+        // A pure anchor capture changes no filter, so it must not cost the user a re-run.
+        return dropped || after.rollupId != before.rollupId
     }
 
     /// Parses a `yyyy-MM-dd` string into a `Date`, for the year-facet narrowing.
@@ -1033,7 +1080,7 @@ final class SearchViewModel {
         case "date": dateRangeEnabled = false
         case "volume": selectedVolumeIds = []
         case "subseries": selectedSubseriesIds = []
-        case "person": personRollupId = nil; personRefText = ""
+        case "person": personRollupId = nil; personRefText = ""; personAnchor = nil
         case "type": documentTypeFilter = .all
         case "tag": selectedUserTagIds = []
         default: return
@@ -1092,6 +1139,7 @@ final class SearchViewModel {
         personRefText     = params.personRef ?? ""
         personRollupId    = params.personRollupId
         personLabel       = params.personLabel
+        personAnchor      = params.personAnchor
         if let range = params.dateRange {
             dateRangeEnabled = true
             let fmt = ISO8601DateFormatter()

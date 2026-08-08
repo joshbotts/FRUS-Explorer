@@ -492,6 +492,24 @@ struct SearchView: View {
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
         #endif
+        // The rollup table is renumbered from 1 on every rebuild, so a person filter that is on
+        // screen when someone merges two identities starts filtering to whoever now occupies that
+        // slot (#747). Re-resolve through the durable anchor, and re-run only if it actually moved.
+        .onChange(of: appState.personRollupGeneration) { _, _ in
+            Task { await rebindPersonFilter() }
+        }
+        // A dropped person filter changes the result set, so it is announced rather than left for
+        // the user to notice that a chip is missing (#747). Rare by construction: it fires only
+        // when the anchor's volume has left the index.
+        .alert(String(localized: "search.person.filterDropped.title",
+                      defaultValue: "Person filter cleared"),
+               isPresented: Binding(get: { vm.droppedPersonFilterNotice != nil },
+                                    set: { if !$0 { vm.droppedPersonFilterNotice = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: {
+            Text(vm.droppedPersonFilterNotice ?? "")
+        }
+
         .task {
             vm.availableUserTags = liveUserTags
             // Load the volume/subseries picker options before applying any incoming
@@ -555,6 +573,18 @@ struct SearchView: View {
         vm.recordSearchHistory(projectId: appState.activeProjectId,
                                indexedVolumeCount: appState.indexedVolumeIds.count,
                                in: modelContext)
+    }
+
+    /// Re-resolves the person filter after a rollup rebuild, re-running only if it moved (#747).
+    ///
+    /// Extracted from the `.onChange` closure rather than inlined: the body chain is already at the
+    /// type-checker's limit, and an inline `Task` there tipped it over.
+    ///
+    /// Routes through `runSearch()` like every other iOS entry point, so the re-run is recorded —
+    /// `recordSearchHistory` de-duplicates a same-query re-run, so this mints no spurious row.
+    private func rebindPersonFilter() async {
+        guard await vm.refreshPersonRollupBinding(using: appState.personMentionStore) else { return }
+        await runSearch()
     }
 
     /// Loads the active project's search context into the view model: date defaults,
