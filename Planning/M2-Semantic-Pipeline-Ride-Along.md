@@ -111,6 +111,10 @@ Stages named to compose with the design doc's V-phases:
 Sequencing constraint carried from the design doc unchanged: the #645 truncation fixes and the
 archival route arms land before any *axis* ships. They do not gate the harvest stages above.
 
+**Execution route (2026-08-07 owner decision): the model passes run through LM Studio,
+owner-operated — see §5.** The stage table above is unchanged; §5 replaces *who runs Stage 1 and
+with what runner*, not what gets produced.
+
 ---
 
 ## 4. Generation cost on the two machines
@@ -220,7 +224,48 @@ numbers.
 
 ---
 
-## 5. Owner decisions this doc adds
+## 5. Execution route: LM Studio, owner-run (decided 2026-08-07)
+
+The owner runs the model passes through **LM Studio** on their own machines and hands the raw
+store back; Claude runs everything deterministic downstream. Full recipe:
+**`tools/semantic-harvest/README.md`**, driven by the committed, stdlib-only
+`tools/semantic-harvest/harvest_embeddings.py` (no pip, no venv — it runs on the macOS-bundled
+`python3`, which is what makes the Studio setup a 15-minute job). The script is resumable per
+volume, records provenance and per-volume timings, and was verified end-to-end against a mock
+`/v1/embeddings` server before being handed over (312 docs → 586 chunks on `frus1861`; spans
+tile; resume skips; checksums verify).
+
+What changes relative to §2/§3 of this doc and the design doc's Stage 1:
+
+1. **The runner is LM Studio's `/v1/embeddings`** (OpenAI-compatible; embedding models must be
+   explicitly loaded, context 2048). EmbeddingGemma-300M exists as an official
+   `lmstudio-community` GGUF; nomic and bge-small likewise; arctic-embed's GGUF availability is
+   checked in the app at spike time. **Use F16/Q8_0 GGUFs, never Q4, for embeddings** — and note
+   the engine consequence honestly: llama.cpp under LM Studio may not drive the M5's Neural
+   Accelerators the way MLX does, so the Air's §4 upper band is less likely on this route. The
+   spike measures it; nothing is assumed.
+2. **The pin moves.** Instead of a Python lockfile + HF revision, provenance pins the **GGUF
+   file's SHA-256** (`MODEL_FILE` env), the LM Studio model id, and the chunk/prefix parameters.
+   Same contract, different anchor. A quantized GGUF is a *different model* than the fp32
+   checkpoint for pinning purposes — the V-0 gates run through the same runtime that will do the
+   full pass, so quality is measured on what actually ships.
+3. **Pooling leaves the harvest.** The store keeps **chunk vectors + spans**, not document
+   vectors; pooling, L2, Matryoshka truncation, and quantization all move into the deterministic
+   packer on Claude's side. A pooling-rule change — the exact hazard the OS-27 doc flagged — now
+   costs a re-pack (minutes), never a re-run (overnight). This supersedes §3.1's "pools to one
+   document vector" for this route, and improves on it.
+4. **The transfer is part of the pipeline.** The store carries `SHA256SUMS`; the runbook's Phase
+   4 verifies them on the Air before anything reads the vectors. An unverified transfer is not a
+   raw store.
+5. **Division of labour**, explicit: owner = Phases 0–4 (setup, spike on both machines, model
+   choice sign-off from the spike numbers, full harvest, transfer); Claude = store validation,
+   the V-0 scoring gates (weak-positive MRR via `cross_references`, blind-panel staging,
+   quantization ladder), pooling/packing, and every artifact test.
+6. **NER note:** GLiNER/spaCy are not LM Studio models. The LM-Studio-native detection route is
+   structured-output chat NER (sample-first per §4.4's logic); the NLTagger control runs in-repo
+   on the Air. The R-1 harness lands in `tools/semantic-harvest/` after the spike and M2a exist.
+
+## 6. Owner decisions this doc adds
 
 1. Approve the **R-0 text layer** amendment to Stage 1 (the one change to the design doc's
    pipeline; costs ~1.4 GB of cache and buys a single audited extraction).
@@ -232,5 +277,7 @@ numbers.
    before the spike, not after.
 
 Version history:
+  1.1 — 2026-08-07 (later): §5 execution route — LM Studio owner-run, committed harvester,
+        pin moved to GGUF SHA, pooling moved to the deterministic pack side.
   1.0 — 2026-08-07: initial assessment and cost model (measured corpus tokens; both-machine
         estimates; design-doc §3.3 wall-clock correction; the ride/does-not-ride seam).

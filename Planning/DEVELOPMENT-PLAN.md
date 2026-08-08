@@ -2321,3 +2321,31 @@ programs.
 
 Recommended execution: V-0 spike on both machines, then embed on the Studio + NER on the Air in
 one night, context pass the next evening — a weekend of machine time end to end.
+
+### Session 2026-08-07 — LM Studio execution route for the semantic harvest (owner-run)
+
+The owner will run the model passes themselves through LM Studio; the ride-along plan gains §5
+(execution route) and the repo gains `tools/semantic-harvest/` — a runbook plus a committed,
+**stdlib-only** `harvest_embeddings.py` (no pip/venv; runs on the macOS-bundled python3, which is
+what makes the Studio a 15-minute setup). Resumable per volume, provenance-pinned (GGUF SHA-256
+via MODEL_FILE, LM Studio model id, chunk/prefix/batch params, machine, script SHA), per-volume
+timing log, live ETA, and SHA256SUMS for the Studio → Air transfer the owner named as a
+requirement — the runbook's Phase 4 verifies checksums on the Air before anything reads vectors.
+
+Three design consequences recorded in the plan: (1) the **pin moves** from a Python lockfile + HF
+revision to the GGUF file's SHA — and a quantized GGUF is a different model for pinning purposes,
+so the V-0 gates run through the same runtime as the full pass; (2) **pooling leaves the
+harvest** — the store keeps chunk vectors + spans, and pooling/L2/truncation/quantization all move
+to the deterministic packer, so a pooling-rule change costs a re-pack (minutes) instead of a
+re-run (overnight); (3) GLiNER/spaCy don't run in LM Studio, so the LM-Studio-native NER route is
+structured-output chat NER, sample-first, with the NLTagger control in-repo.
+
+**Verified before handover**: the harvester ran end-to-end against a mock `/v1/embeddings` server
+— frus1861 → 312 docs / 586 chunks, chunk spans tile each document exactly, resume skips the
+completed volume, dimension-change mid-run aborts, checksums and run-manifest written. Confirmed
+externally: LM Studio serves `/v1/embeddings`, embedding models must be explicitly loaded, and
+EmbeddingGemma-300M has an official lmstudio-community GGUF.
+
+Division of labour is explicit in both docs: owner = setup, V-0 spike on both machines, model
+sign-off, full harvest, verified transfer; Claude = store validation, weak-positive MRR gates,
+blind-panel staging, quantization ladder, deterministic pooling/packing, artifact tests.
