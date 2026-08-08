@@ -941,6 +941,7 @@
 		ED3EEE86D4556D6762EBBA49 /* word-cloud-stopwords.json in Resources */ = {isa = PBXBuildFile; fileRef = 661866B4560BAA662EBB3C2F /* word-cloud-stopwords.json */; };
 		EDCB64D5D242AE9D865B3222 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F3D4EC68B2923931D983 /* Project.swift */; };
 		EDF17EAD96A8DC3A5D6082EA /* PersonMentionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5D8E81D46123965E0B18DB /* PersonMentionStore.swift */; };
+		EDF9F2C6DDE4C2E7EA17E4A2 /* MacWindowFrontingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43675704D75D181CD23AC74B /* MacWindowFrontingTests.swift */; };
 		EE035ADCDEB0A34A611546BE /* WordCloudPayloadDigest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FF8DC81284AA9B9B225BEC /* WordCloudPayloadDigest.swift */; };
 		EE0587973EDB31A5EA6D4905 /* CollectionEntryInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A13F919E63FACE77A651F4A /* CollectionEntryInspector.swift */; };
 		EE53B69199CC69C27D34C482 /* presidential-library-catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = 0BB1F192DD9480ED0133BF10 /* presidential-library-catalog.json */; };
@@ -1197,6 +1198,7 @@
 		4098809B135A742E73742AF2 /* SummarizationBackgroundProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationBackgroundProbe.swift; sourceTree = "<group>"; };
 		423271170536DE4B8160B34A /* CollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionExporter.swift; sourceTree = "<group>"; };
 		43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonClusterOverride.swift; sourceTree = "<group>"; };
+		43675704D75D181CD23AC74B /* MacWindowFrontingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWindowFrontingTests.swift; sourceTree = "<group>"; };
 		438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionGeneratedBlocks.swift; sourceTree = "<group>"; };
 		43B423F6A8DB5D743C0EC17A /* SeriesChartCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesChartCard.swift; sourceTree = "<group>"; };
 		44130EB924BD896526D3659D /* RefreshBypassAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshBypassAuditTests.swift; sourceTree = "<group>"; };
@@ -2097,6 +2099,7 @@
 				DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */,
 				EE7C8E93B510701DB6DDE278 /* MacDocumentOpenRoutingTests.swift */,
 				7F55CBFB1680DD882C3B9C21 /* MacSettingsViewTests.swift */,
+				43675704D75D181CD23AC74B /* MacWindowFrontingTests.swift */,
 				8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */,
 				260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */,
 				577CB7289F3041BE4B61ABC2 /* ManuscriptRepositoryBridgeTests.swift */,
@@ -3711,6 +3714,7 @@
 				A0C7E626BF78F426D7A4C5FE /* LotResolutionAcceptanceTests.swift in Sources */,
 				C1E35EA063C5D08951AF8BEB /* MacDocumentOpenRoutingTests.swift in Sources */,
 				14533B37DD02A330F098DE0A /* MacSettingsViewTests.swift in Sources */,
+				EDF9F2C6DDE4C2E7EA17E4A2 /* MacWindowFrontingTests.swift in Sources */,
 				FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */,
 				64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */,
 				3F6F74048838C9BDAD35D45E /* ManuscriptRepositoryBridgeTests.swift in Sources */,
