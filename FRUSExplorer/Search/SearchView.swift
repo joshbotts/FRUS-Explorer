@@ -1468,19 +1468,11 @@ struct SearchView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                // #258 Q4(a): SavedSearch persists no volume scope, so an active
-                // volume/subseries/custom-scope selection is silently dropped on save.
-                // v1 disclosure per the reviewed sketch; the additive optional field
-                // is the named fast-follow.
-                if !vm.effectiveVolumeIds.isEmpty {
-                    Section {
-                        Label(String(localized: "search.saveSearch.scopeNotSaved",
-                                     defaultValue: "The volume scope is not saved with the search — re-apply it after running the saved search."),
-                              systemImage: "info.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                // #756 retired the #258 Q4(a) disclosure — see the macOS twin for the reasoning.
+                // The volume scope IS saved now, so the notice had become a false warning asking
+                // users to redo work the app had already done. (#258 called the real fix "the
+                // named fast-follow"; this is it, arriving as one archived value rather than the
+                // one additive field it imagined.)
             }
             .navigationTitle(String(localized: "search.saveSearch.title",
                                     defaultValue: "Save Search"))
