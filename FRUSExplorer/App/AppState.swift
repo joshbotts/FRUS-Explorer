@@ -766,6 +766,14 @@ final class AppState {
     /// observers + `onAppear` drains (`routeLegacyPendingBrowse`) stay as its delivery
     /// mechanism, re-resolving the value when the next host mounts.
     ///
+    /// **That "every producer" claim was false for two releases and is load-bearing, so treat it as
+    /// an invariant to be checked, not prose.** `ProjectHomeView` wrote this channel on macOS until
+    /// #748: only its `openTab` call was `#if os(iOS)`-guarded, so the `openBrowseDocument` beside
+    /// it ran on both platforms. With Project Home open and the main window closed there were no
+    /// hosts to observe the write, so a click did nothing — and then fired as a surprise navigation
+    /// whenever the user next opened a window. `WindowRoutingTests` now asserts the invariant
+    /// against the source of every macOS-compiled producer, because a doc comment cannot.
+    ///
     /// Scene-addressed (#338 step 4): iOS producers target the producing window's `\.sceneID` (only
     /// that window's `BrowserView` consumes), so a document hand-off no longer fans out across iPad
     /// windows; the macOS demotion targets `.macLegacyBrowse`, which `routeLegacyPendingBrowse` drains.

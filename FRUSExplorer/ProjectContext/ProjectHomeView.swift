@@ -868,12 +868,25 @@ struct ProjectHomeView: View {
             header: title ?? "\(volumeId) · \(documentId)"
         )
         performNavigation {
-            #if os(iOS)
+            #if os(macOS)
+            // Route through the provenance model, which MINTS a standalone window when no document
+            // host is live (#748 / audit H-0). Project Home is its own window and the main window
+            // can be closed (⌘W) while the app keeps running — before this, the click wrote
+            // `pendingBrowseDocument`, whose only macOS consumers are the document hosts' drains.
+            // With zero hosts mounted nothing observed the write, so the click did nothing at all
+            // *and was not discarded*: the next window the user opened, minutes or days later,
+            // immediately navigated itself to the long-forgotten document.
+            //
+            // `.global` rather than `.tool(…)` because Project Home has no `ToolWindowID` — it is a
+            // dashboard, not a document-derived tool, so there is no launching host to bind to.
+            // `.global` resolves to the most-recently-key live host, else mints.
+            appState.openDocument(entry, from: .global, using: openWindow)
+            #else
             // The document lands in the Browse tab's stack; bring that tab forward so the tap isn't a
             // silent no-op (Project Home is reached from the Settings tab). Mirrors the other callers.
             appState.openTab(.browse, from: sceneID)
-            #endif
             appState.openBrowseDocument(entry, from: sceneID)
+            #endif
         }
     }
 
