@@ -78,6 +78,18 @@ struct NavigationAuditLowSeverityTests {
                 """)
             #expect(lines.contains { $0.text.contains("@State private var navigationPath") },
                     "\(relative) needs its own stack to push into")
+
+            // And the row's open path must actually TAKE it. Declaring the callback is not enough:
+            // stripping the early return leaves every assertion above true while the row falls
+            // through to the Browse hand-off and dismisses (measured — M1/M2 survived).
+            let source = try Self.source(relative)
+            let openStart = try #require(source.range(of: "onOpenInSheet(entry)"),
+                                         "\(relative)'s open path must call the in-sheet opener")
+            let afterCall = String(source[openStart.lowerBound...].prefix(120))
+            #expect(afterCall.contains("return"), """
+                \(relative) calls the in-sheet opener but does not RETURN, so it also runs the \
+                Browse hand-off and dismisses the list — L-41 unfixed, plus a double navigation.
+                """)
         }
     }
 
@@ -140,6 +152,10 @@ struct NavigationAuditLowSeverityTests {
         let rest = source[start.lowerBound...]
         let end = rest.range(of: "case .summarizePromptPicker:")?.lowerBound ?? rest.endIndex
         let body = String(rest[..<end])
+        // A plain `else`, not a conditional one: `} else if false {` keeps the placeholder in the
+        // file (so a `contains` still passes) while making it unreachable (measured — M5 survived).
+        #expect(body.contains("} else {"),
+                "the nil-store branch must be an unconditional else (#757 / L-44)")
         #expect(body.contains("BootPlaceholderView"), """
             The `if let store` had no else, so a nil store presented a COMPLETELY BLANK sheet \
             (#757 / L-44) — reachable during boot and briefly after an in-session reindex, when the \
@@ -151,15 +167,27 @@ struct NavigationAuditLowSeverityTests {
 
     @Test("The indexing-education flag is session-scoped, not persisted")
     func educationFlagIsSessionScoped() throws {
-        let banner = Self.codeLines(try Self.source("App/IndexingQueueBannerView.swift"))
-        #expect(!banner.contains { $0.text.contains("@AppStorage") && $0.text.contains("IndexingEducation") },
-                """
-                The education flag is persisted again (#757 / L-46). @AppStorage survives launches \
-                and nothing ever reset the key, so the designed once-per-session introduction became \
-                once per INSTALL — never shown again on a later tranche of downloads.
-                """)
-        #expect(banner.contains { $0.text.contains("hasShownIndexingEducationThisSession") },
-                "it must read the AppState session flag instead")
+        let bannerSource = try Self.source("App/IndexingQueueBannerView.swift")
+        let banner = Self.codeLines(bannerSource)
+
+        // ANY persistence API, not just @AppStorage: a raw UserDefaults read of the same key
+        // reinstates the defect while dodging an @AppStorage-only check (measured — M6 survived).
+        let persisted = banner.filter {
+            ($0.text.contains("@AppStorage") || $0.text.contains("UserDefaults"))
+                && $0.text.contains("IndexingEducation")
+        }
+        #expect(persisted.isEmpty, """
+            The education flag is persisted again (#757 / L-46): \
+            \(persisted.map(\.text).joined(separator: " | ")). Anything that survives a launch \
+            turns the designed once-per-session introduction into once per INSTALL — never shown \
+            again on a later tranche of downloads.
+            """)
+
+        // And the GUARD specifically must consult the session flag — not merely some line in the
+        // file mentioning it, which the assignment below would satisfy on its own.
+        #expect(banner.contains {
+            $0.text.contains("guard") && $0.text.contains("hasShownIndexingEducationThisSession")
+        }, "the auto-open guard must read the AppState session flag (#757 / L-46)")
 
         let appState = try Self.source("App/AppState.swift")
         #expect(appState.contains("var hasShownIndexingEducationThisSession = false"),
