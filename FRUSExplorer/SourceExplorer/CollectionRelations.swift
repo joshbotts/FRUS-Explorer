@@ -263,6 +263,12 @@ enum CollectionRelations {
     /// the peak run at a lower level — which, because the run holds *every* bucket at the
     /// maximum, is exactly when the chart really does fall away.
     ///
+    /// The two-volume condition is unreachable for buckets that came from ``citedOverTime``,
+    /// whose first and last are non-empty by construction: at a maximum of one, every bucket is
+    /// at the maximum, so the run either breaks or spans everything and the other two conditions
+    /// already decide it. It is kept because this function is also correct standing alone, for a
+    /// caller that hands it a bucket list with an empty end.
+    ///
     /// Returns an empty string for fewer than two buckets — the caller renders no chart there.
     static func timelineNarrative(for buckets: [CollectionEraCount]) -> String {
         guard buckets.count >= 2,
@@ -274,6 +280,16 @@ enum CollectionRelations {
 
         guard peak >= 2, let run, run.count < buckets.count,
               let runStart = run.first?.era, let runEnd = run.last?.era else {
+            // "Runs through" is a claim of continuity, and 44 shipped collections reach this
+            // branch with an era in the middle where they are not cited at all — `Lot 66 D 199`
+            // is cited once in the 1951–1954 volumes and once in the 1964–1968 volumes, with
+            // three empty eras between. Those get the discontinuous sentence instead.
+            if buckets.dropFirst().dropLast().contains(where: { $0.volumeCount == 0 }) {
+                return String(format: String(
+                    localized: "collection.detail.timeline.narrative.gapped %@ %@",
+                    defaultValue: "This collection is cited in the %1$@ volumes and again as late as the %2$@ volumes, with eras in between where it does not appear."),
+                    firstEra.fullLabel, lastEra.fullLabel)
+            }
             return String(format: String(
                 localized: "collection.detail.timeline.narrative.flat %@ %@",
                 defaultValue: "This collection enters the record with the %1$@ volumes and runs through the %2$@ volumes."),

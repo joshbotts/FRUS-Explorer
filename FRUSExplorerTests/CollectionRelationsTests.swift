@@ -119,14 +119,22 @@ struct CollectionRelationsTests {
     func tieBreaksPreferEvidenceThenSpecificity() {
         let focus = record("focus", "Focus", volumes: volumes(1...10))
         // Two pairs, each tied on the coefficient, each isolating one tie-break.
+        //
+        // The NAMES are chosen to sort in exactly the reverse of the expected order (A, B, C, D
+        // alphabetically against D, C, B, A expected). Names are the last tie-break, so a fixture
+        // whose names happen to agree with the expectation passes with the real tie-breaks
+        // deleted — measured, that is precisely what the first version of this test did.
+        //
         // 4/min(10,8) = 0.5 and 2/min(10,4) = 0.5 — same score, different evidence.
-        let strongEvidence = record("strongEvidence", "StrongEvidence",
+        let strongEvidence = record("strongEvidence", "D — strongest evidence",
                                     volumes: volumes(1...4) + volumes(50...53))
-        let weakEvidence = record("weakEvidence", "WeakEvidence",
+        let weakEvidence = record("weakEvidence", "C — weaker evidence",
                                   volumes: volumes(1...2) + volumes(60...61))
         // 3/min(10,13) = 0.3 and 3/min(10,33) = 0.3 — same score, same evidence, different breadth.
-        let specific = record("specific", "Specific", volumes: volumes(1...3) + volumes(20...29))
-        let sprawling = record("sprawling", "Sprawling", volumes: volumes(1...3) + volumes(30...59))
+        let specific = record("specific", "B — specific partner",
+                              volumes: volumes(1...3) + volumes(20...29))
+        let sprawling = record("sprawling", "A — sprawling partner",
+                               volumes: volumes(1...3) + volumes(30...59))
 
         let ranked = CollectionRelations.related(
             to: focus, in: [focus, sprawling, weakEvidence, specific, strongEvidence])
@@ -451,6 +459,53 @@ struct CollectionRelationsTests {
         #expect(text.contains("1955–1957") && text.contains("1977–1980"))
     }
 
+    @Test("A gapped shape is not described as running through the gap")
+    func narrativeDoesNotClaimContinuityAcrossAGap() {
+        // `Lot 66 D 199`'s real shape: cited once in the 1951–1954 volumes, once in 1964–1968,
+        // and in none of the three eras between. 44 shipped records reach this branch with an
+        // interior empty era.
+        let gapped = CollectionRelations.timelineNarrative(
+            for: timeline([(1952, 1), (1966, 1)]))
+        #expect(!gapped.contains("runs through"), """
+            "Runs through" asserts continuity across eras the chart shows as empty: \(gapped)
+            """)
+        #expect(gapped.contains("1951–1954") && gapped.contains("1964–1968"))
+
+        // …while an unbroken run still gets the continuous sentence.
+        let unbroken = CollectionRelations.timelineNarrative(
+            for: timeline([(1952, 1), (1956, 1), (1959, 1)]))
+        #expect(unbroken.contains("runs through"), "an unbroken shape does run through: \(unbroken)")
+    }
+
+    @Test("A collection that enters at its own peak says so once")
+    func narrativeDoesNotNameTheSameEraTwice() {
+        // Peak in the FIRST era, then decline: "enters with X, peaks across X, and fades after Y"
+        // names X twice for no reason.
+        let text = CollectionRelations.timelineNarrative(
+            for: timeline([(1949, 8), (1952, 3), (1956, 2)]))
+        #expect(text.contains("at its peak"), "the entrance-is-the-peak wording is gone: \(text)")
+        #expect(text.contains("fades"))
+        let firstEra = "1948–1950"
+        let occurrences = text.components(separatedBy: firstEra).count - 1
+        #expect(occurrences == 1, "\(firstEra) is named \(occurrences) times: \(text)")
+    }
+
+    @Test("Standing alone, the caption still refuses to call a lone citation a peak")
+    func narrativeRefusesASingleCitationPeakOnHandBuiltBuckets() {
+        // `citedOverTime` never emits a trailing empty bucket, so this shape can only arrive from
+        // a direct caller — which is exactly why the two-volume condition is kept: without it,
+        // [1, 1, 0] has an unbroken maximum that does not span the width, and the sentence would
+        // announce a peak over two single citations.
+        let eras = CollectionRelations.coverageEras
+        let buckets = [
+            CollectionEraCount(era: eras[9], volumeCount: 1),
+            CollectionEraCount(era: eras[10], volumeCount: 1),
+            CollectionEraCount(era: eras[11], volumeCount: 0),
+        ]
+        let text = CollectionRelations.timelineNarrative(for: buckets)
+        #expect(!text.contains("peak"), "one volume per era is the noise floor, not a peak: \(text)")
+    }
+
     @Test("No shipped collection gets a caption that contradicts its own chart")
     func shippedCaptionsAgreeWithTheirCharts() throws {
         // The invariants, stated independently of how the caption is computed: a claimed fade
@@ -485,6 +540,13 @@ struct CollectionRelationsTests {
                     \(record.name) claims to fade, but its last era holds \(counts.last ?? 0) \
                     of a maximum \(peak) — the final bar is at the top of the chart. Counts: \
                     \(counts)
+                    """)
+            }
+            if text.contains("runs through") {
+                let interior = counts.dropFirst().dropLast()
+                #expect(!interior.contains(0), """
+                    \(record.name) is described as running through its span, but an era in the \
+                    middle holds nothing. Counts: \(counts)
                     """)
             }
             if text.contains("peak") {
