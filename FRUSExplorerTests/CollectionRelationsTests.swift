@@ -380,6 +380,17 @@ struct CollectionRelationsTests {
         #expect(text.contains("1955–1957"))
     }
 
+    @Test("A collection cited evenly throughout has no peak to name")
+    func narrativeDoesNotPeakWhenEverythingTies() {
+        // Every era at 3 clears the "is there enough here to call a peak" bar, but the peak
+        // runs the whole width — naming it would say the chart rises somewhere it is flat.
+        let text = CollectionRelations.timelineNarrative(
+            for: timeline([(1948, 3), (1951, 3), (1955, 3)]))
+        #expect(!text.contains("peaks"), "a level 3-3-3 shape has no peak: \(text)")
+        #expect(!text.contains("fades"), "…and nothing to fade from: \(text)")
+        #expect(text.contains("1948–1950") && text.contains("1955–1957"))
+    }
+
     @Test("A plateau is reported as one span, not one arbitrary bar")
     func narrativeSpansAPlateau() {
         // 1958–60 and 1961–63 tie at the maximum, then it falls away.
@@ -471,18 +482,33 @@ struct CollectionDetailWiringTests {
         }
     }
 
-    @Test("Related Collections is gated on the record clearing the shared-volume floor")
-    func relatedSectionIsGated() throws {
+    @Test("Each new section's gate is the line that mounts it, not one elsewhere in body")
+    func sectionGatesGuardTheirOwnSections() throws {
+        // Adjacency, not membership: a gate that merely appears somewhere in `body` proves
+        // nothing about the section it is supposed to guard, and every weak audit in this repo
+        // has failed by matching a true-but-unrelated line.
         let body = try Self.listBody(try Self.source())
-        #expect(body.contains {
-            $0.contains("record.volumeIds.count >= CollectionRelations.minimumSharedVolumes")
-        }, """
-            The Related Collections section is not gated on the focus record's own volume \
-            count, so a one-volume collection shows an empty section rather than none — the \
-            case that covers 2,846 of the 4,423 shipped records.
-            """)
-        #expect(body.contains { $0.contains("if !timeline.isEmpty") },
-                "Cited Over Time must not mount with no buckets — the chart would be blank")
+        let gates = [
+            ("relatedCollectionsSection",
+             "record.volumeIds.count >= CollectionRelations.minimumSharedVolumes",
+             """
+             Related Collections is not gated on the focus record's own volume count, so a \
+             one-volume collection — 2,846 of the 4,423 shipped records — shows a section \
+             that can only ever be empty.
+             """),
+            ("citedOverTimeSection", "!timeline.isEmpty",
+             "Cited Over Time would mount with no buckets, drawing a blank chart"),
+            ("dividedAtNARASection", "if let claimants = dividedLotClaimants",
+             "Divided at NARA would mount for every record, not the 113 with a divided lot"),
+        ]
+        for (section, gate, why) in gates {
+            let index = try #require(body.firstIndex { $0.contains(section) },
+                                     "\(section) is not mounted in body")
+            #expect(index > 0, "\(section) is the first line of body — it cannot be gated")
+            let preceding = body[index - 1]
+            #expect(preceding.hasPrefix("if ") && preceding.contains(gate),
+                    "\(why). The line before it reads: \(preceding)")
+        }
     }
 
     @Test("The related-collections scan runs off the main thread")
