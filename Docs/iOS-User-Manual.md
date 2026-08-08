@@ -136,6 +136,8 @@ FRUS Explorer on iPhone and iPad is organized around a **tab bar** with five tab
 | Tab | Icon | Purpose |
 |-----|------|---------|
 | **Browse** | books.vertical | Navigate the corpus by subseries, volume, and document; switch your active research project; open the **Analysis Tools** menu (Chronology, Corpus Analytics, Word Cloud, Person Analytics, Cross-Reference Analytics) |
+
+**Opening things from an analysis sheet.** Tapping a document or a volume in **Cross-Reference Analytics** closes that sheet and takes you to what you tapped. Inside the **Chronology**, **Citation Lookup** and **cross-reference graph** sheets it is the other way round: following a cross-reference, or edge-tapping to the previous or next document, moves *within* that sheet, so you keep the timeline or lookup you were working from and can go back to it. Both are deliberate — the first is you leaving a tool, the second is you reading inside one.
 | **Search** | magnifyingglass | Full-text search across your downloaded volumes; look up a document directly by citation |
 | **Research** | note.text | Your personal research workspace — all notes, highlights, and tagged documents in one place, organized by collection, tag, or highlight color |
 | **Collections** | tray.2 | Build, edit, and export curated sets of documents |
@@ -279,6 +281,8 @@ Tap a person to open their **detail sheet**:
 ![Person detail sheet on iPhone — the reconciled-identity seal under the name, the corpus-wide mention count and active-year span, a Find all mentions button, and the list of underlying volume records each with a Separate action.](screenshots/ios/people-detail.png)
 
 - **Find all mentions** runs a person-scoped search returning every document that references this identity (see Section 5).
+
+> **What happens to a search you already had open.** A hand-off like this replaces the Search tab's query, filters and results. If you had opened a document from an earlier search, the Search tab returns to the results list so the new results are what you see — the old document is no longer on the stack.
 - **Records in This Identity** lists each underlying `(volume, ref)` record that was folded into this person. If one of them is actually a different person, swipe or tap **Separate** to split it out — your correction syncs across your devices via iCloud and is reapplied whenever the index is rebuilt.
 - When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action so you can confirm.
 - **Merge with another person…** lets you combine two people into one identity yourself — for the cases the app's cautious automatic grouping kept apart. It's available here in the detail sheet and in a person row's context menu in the list; a confirmation names both people, and warns you when they look like genuinely different people (they match different entries in the bundled name-authority data).
