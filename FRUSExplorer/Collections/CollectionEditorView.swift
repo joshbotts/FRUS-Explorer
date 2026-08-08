@@ -132,6 +132,11 @@ import UIKit
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
+    /// This scene's identity, so an iPad hand-off addresses the window the user is looking at.
+    @Environment(\.sceneID) private var sceneID
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     #if os(iOS)
@@ -1396,6 +1401,7 @@ struct CollectionEditorView: View {
                      documentDate: documentDates[key],
                      isDuplicate: duplicateKeys.contains(key),
                      onInspect: { presentEntryInspector(for: entry.id) },
+                     onOpenDocument: { openInReader(entry) },
                      // iPad (regular) and the macOS sheet editor show the ⚙ Configure pill; only iPhone
                      // (compact) drills in via the whole-row chevron disclosure (Composer v2 §D).
                      // `isRegularWidth` is false on macOS too, so OR in `isMacOS` to keep the pill there
@@ -1776,6 +1782,30 @@ struct CollectionEditorView: View {
     /// (regular width) it takes over the shared trailing `.inspector` column — so it
     /// also ensures the inspector is visible and hands the column to the entry (versus
     /// collection metadata); on iPhone (compact) it drives the `.sheet`.
+    /// Opens a collection entry in the app's own reader (#755 / audit M-18, M-19).
+    ///
+    /// Collections was the only document list in the app with no route into the reader: the whole
+    /// module contained no `openDocument`, `openBrowseDocument` or `DocumentView` reference, so a
+    /// researcher reviewing a collection they had deliberately curated had to remember each
+    /// document's volume and re-find it through Browse or Search. On macOS the one "open" control
+    /// launched history.state.gov in a web browser — the published text, not the app's reader with
+    /// its notes, highlights and cross-references.
+    ///
+    /// Routes exactly like every other list: the provenance chain on macOS (which mints a window
+    /// when no host is live), the scene-addressed hand-off on iOS.
+    private func openInReader(_ entry: CollectionEntry) {
+        let browseEntry = DocumentBrowserEntry(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            header: entry.titleOverride ?? entry.documentId)
+        #if os(macOS)
+        appState.openDocument(browseEntry, from: .global, using: openWindow)
+        #else
+        appState.openTab(.browse, from: sceneID)
+        appState.openBrowseDocument(browseEntry, from: sceneID)
+        #endif
+    }
+
     private func presentEntryInspector(for entryId: UUID) {
         // Composer v2: iPad (regular) presents the Configure sheet, iPhone (compact) drills in —
         // both driven purely by `inspectedEntryId` (see `iPadCollectionLayout` and the editor's

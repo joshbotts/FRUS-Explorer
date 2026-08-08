@@ -597,6 +597,8 @@ private struct CollectionDetailPane: View {
     let allTags: [UserTag]
 
     @Environment(AppState.self) private var appState
+    /// #755: opens a collection entry in the reader, minting a window when no host is live.
+    @Environment(\.openWindow) private var openWindow
     @Environment(\.modelContext) private var modelContext
 
     /// Projects, for the author-line placeholder (the active project's name is offered
@@ -850,6 +852,19 @@ private struct CollectionDetailPane: View {
 
     /// Toggles `entryId` in the inspector column (each row's ⓘ): opens it, retargets
     /// an open column to another entry, or closes it when it's already showing.
+    /// Opens a collection entry in this Mac's reader (#755 / audit M-19).
+    ///
+    /// Routes through the provenance chain like every other macOS list surface, which mints a
+    /// standalone window when no document host is live — so the open never silently does nothing.
+    private func openInReader(_ entry: CollectionEntry) {
+        appState.openDocument(
+            DocumentBrowserEntry(documentId: entry.documentId,
+                                 volumeId: entry.volumeId,
+                                 header: entry.titleOverride ?? entry.documentId),
+            from: .global,
+            using: openWindow)
+    }
+
     private func toggleInspector(for entryId: UUID) {
         inspectedEntryId = (inspectedEntryId == entryId) ? nil : entryId
     }
@@ -1049,6 +1064,7 @@ private struct CollectionDetailPane: View {
                 documentHeader: documentHeaders[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
                 onInspect: { toggleInspector(for: entry.id) },
+                onOpenDocument: { openInReader(entry) },
                 onDelete: { deleteEntry(at: row.index) },
                 onMoveUp: moveUp,
                 onMoveDown: moveDown
@@ -1536,6 +1552,10 @@ private struct MacEntryRow: View {
     /// calls it, and `CollectionDetailPane` shows/retargets/closes the trailing
     /// `CollectionEntryInspector` accordingly.
     let onInspect: () -> Void
+    /// Opens this entry in the app's reader (#755 / audit M-19). The external history.state.gov
+    /// button beside it stays — the published text is a legitimately different destination — but it
+    /// was the ONLY open on the row, which made the app's own reader unreachable from a collection.
+    let onOpenDocument: () -> Void
     let onDelete: () -> Void
     /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
     var onMoveUp: (() -> Void)? = nil
@@ -1592,6 +1612,19 @@ private struct MacEntryRow: View {
                 ConfigurePill(action: onInspect)
                     .help(String(localized: "collection.entry.inspect.help",
                                  defaultValue: "Show this document's notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
+
+                // Open in the app's reader (#755) — placed BEFORE the external link, because the
+                // in-app document (with its notes, highlights and cross-references) is what a
+                // researcher reviewing their own collection almost always wants.
+                Button {
+                    onOpenDocument()
+                } label: {
+                    Image(systemName: "book.pages")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "collection.entry.openInApp.help",
+                             defaultValue: "Open this document in FRUS Explorer"))
 
                 // Open on history.state.gov
                 Button {
