@@ -444,6 +444,24 @@ struct PersonIndexDetailSheet: View {
     private var effectiveAuthorityId: Int? { indexEntry.authorityId ?? resolvedAuthorityId }
     private var effectiveViafId: String? { indexEntry.viafId ?? resolvedViafId }
 
+    /// The bundled authority entry for this person, when they are reconciled (#736).
+    ///
+    /// Read straight from the bundled index rather than the rollup row, because the rollup stores
+    /// only `authority_id`/`viaf_id` — the schema-v2 additions (POCOM slug, Wikidata, role text)
+    /// live in the JSON and adding three columns to the rollup would force a reindex to show a
+    /// subtitle.
+    private var authorityEntry: PersonAuthorityIndex.AuthorityEntry? {
+        guard let id = effectiveAuthorityId else { return nil }
+        return PersonAuthorityIndexStore.shared?.entry(for: id)
+    }
+
+    /// This person's POCOM career, when the authority entry names a slug and the register has
+    /// appointments for it (#736).
+    private var career: POCOMCareer? {
+        guard let slug = authorityEntry?.s, !slug.isEmpty else { return nil }
+        return POCOMIndexStore.shared?.career(forSlug: slug)
+    }
+
     var body: some View {
         Group {
             #if os(macOS)
@@ -527,6 +545,71 @@ struct PersonIndexDetailSheet: View {
     }
     #endif
 
+    // MARK: - Career (#736)
+
+    /// The person's posts, from the Principal Officers and Chiefs of Mission register.
+    ///
+    /// ## A list of rows, not a drawn timeline
+    /// A visual timeline would have to choose pixel positions for dates that are frequently
+    /// partial — the register records "1935" with no month for a great many early appointments —
+    /// and would need its own Dynamic Type and VoiceOver handling. Rows in document order get
+    /// both for free and never imply a precision the source does not have.
+    ///
+    /// The dates are printed exactly as the register writes them for the same reason: a formatter
+    /// would have to invent the missing month and day.
+    @ViewBuilder
+    private func careerSection(_ career: POCOMCareer) -> some View {
+        Section {
+            ForEach(career.a) { assignment in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(assignment.titleText)
+                        .font(.subheadline)
+                    if let range = assignment.dateRangeText {
+                        Text(range)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    if let note = assignment.nt, !note.isEmpty {
+                        // Kept because it is often the only thing distinguishing an ordinary
+                        // rotation from an incident — "Died at post", "Left Tehran on".
+                        Text(note)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 1)
+                .accessibilityElement(children: .combine)
+            }
+        } header: {
+            Text(String(localized: "people.detail.career", defaultValue: "Career"))
+        } footer: {
+            VStack(alignment: .leading, spacing: 2) {
+                if let lifespan = careerLifespanText(career) {
+                    Text(lifespan)
+                }
+                // Named, because these are the Department's own appointment records and a reader
+                // should know this is not something the app inferred from the documents.
+                Text(String(localized: "people.detail.career.source",
+                            defaultValue: "From the Department's Principal Officers and Chiefs of Mission register."))
+            }
+            .font(.caption2)
+        }
+    }
+
+    /// "1893–1971", when the register records life dates the volume's own list does not.
+    private func careerLifespanText(_ career: POCOMCareer) -> String? {
+        switch (career.b, career.d) {
+        case let (.some(born), .some(died)):
+            return String(localized: "people.detail.career.lifespan", defaultValue: "\(born)–\(died)")
+        case let (.some(born), .none):
+            return String(localized: "people.detail.career.born", defaultValue: "born \(born)")
+        case let (.none, .some(died)):
+            return String(localized: "people.detail.career.died", defaultValue: "died \(died)")
+        case (.none, .none):
+            return nil
+        }
+    }
+
     /// The sectioned person detail shared by both platform bodies.
     private var detailList: some View {
         List {
@@ -537,6 +620,15 @@ struct PersonIndexDetailSheet: View {
                         if let desc = indexEntry.entry.description, !desc.isEmpty {
                             Text(desc)
                                 .font(.body)
+                                .foregroundStyle(.secondary)
+                        }
+                        // The overlay's role text (#736). Shown only when it says something the
+                        // volume's own description does not already say — upstream frequently
+                        // repeats the editors' wording, and printing it twice looks like a bug.
+                        if let role = authorityEntry?.r, !role.isEmpty,
+                           role.caseInsensitiveCompare(indexEntry.entry.description ?? "") != .orderedSame {
+                            Text(role)
+                                .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
                         if effectiveAuthorityId != nil {
@@ -646,8 +738,26 @@ struct PersonIndexDetailSheet: View {
                         }
                         .help(String(localized: "people.detail.viaf.help",
                                      defaultValue: "Open this person's VIAF authority record"))
+                        .accessibilityHint(String(localized: "people.detail.viaf.a11y",
+                                                  defaultValue: "Opens in your browser"))
+                    }
+                    // Wikidata (#736). Coverage jumped from 142 VIAF ids to 3,198 VIAF and 3,825
+                    // Wikidata when the overlay landed, so this is a link most reconciled people
+                    // now have.
+                    if let url = authorityEntry?.wikidataURL {
+                        Link(destination: url) {
+                            Label(String(localized: "people.detail.wikidata",
+                                         defaultValue: "View on Wikidata"),
+                                  systemImage: "link")
+                        }
+                        .help(String(localized: "people.detail.wikidata.help",
+                                     defaultValue: "Open this person's Wikidata item"))
+                        .accessibilityHint(String(localized: "people.detail.wikidata.a11y",
+                                                  defaultValue: "Opens in your browser"))
                     }
                 }
+
+                if let career, !career.a.isEmpty { careerSection(career) }
 
                 if effectiveRollupId != nil {
                     Section {
