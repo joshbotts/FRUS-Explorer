@@ -2378,3 +2378,47 @@ deliveries); saved searches silently dropping the person/tag/scope filters.
 
 Remediation order proposed in the doc: reset gap → rollup observers → Project Home mint →
 hand-off visibility rule → openWindow pairing sweep → the page-turn design question.
+
+### Session 2026-08-08 — #746: Erase Everything accounts for every enrolled @Model
+
+The audit's highest-severity finding: a double-confirmed erase promising "as if newly installed"
+left **five CloudKit-synced user-data types** alive locally *and in the user's iCloud account* —
+`SavedSearch`, `PersonClusterOverride`, `CustomVolumeScope`, `ProjectLeadEntry`, `WorkingCorpus`.
+Second occurrence of the fault class Wave R-2a fixed for `SearchHistoryEntry`, recurring directly
+beneath its own warning comment.
+
+**The fix is the structure, not the five deletes.** A hand-written list in `performReset` cannot be
+kept in agreement with `frusModelTypes` by reviewers reading a different file — it drifted twice.
+So the list moved to `ResetInventory` (`Settings/ResetService.swift`) as two declarations —
+`erased` (ordered) and `deliberatelyRetained` (with reasons) — and `ResetInventoryTests` asserts
+their union **equals** `frusModelTypes` exactly. Enrol a new `@Model` without deciding its reset
+fate and the suite fails naming the type.
+
+**Delete order is now asserted, not just commented.** The sequence is non-transactional, so
+dependents must precede what they reference: `DocumentTagAssignment` before `UserTag` (or #406's
+`OrphanedTagRepair` resurrects deleted tags as "Recovered Tag"), `CollectionEntry` before
+`Collection` and `SessionEvent` before `ResearchSession` (`.nullify`, not cascade), and the three
+additions holding a raw-UUID project reference before `Project`, which is now asserted last.
+
+**`SyncedPreferences` is retained — a decision, recorded.** The verifier flagged it as surviving
+but "defensible". Traced: `ResetService.resetLocalData` clears volumes, index and caches but not
+the `@AppStorage` keys these values mirror, so deleting only the synced record would let the local
+copies immediately re-publish it. Retaining is right; leaving it *unstated* was the fault. It is
+now the sole entry in `deliberatelyRetained`, a test pins that it is the only one, and the erase
+screen says "Your app preferences are kept."
+
+Copy updated in the same commit (new key `settings.erase.warning.inventory` — no String Catalog
+ships, so an in-place rewrite would be a silent collision, the same reason R-5 minted the last
+key) plus both user manuals.
+
+**Verification:** 10 tests, **6/6 mutations caught** — including the vacuity case (re-inlining the
+deletes in `performReset`), which a source-reading wiring guard catches in the style of
+`CodingStandardsAuditTests`. 34 green across the reset, CloudKit-schema-inventory and
+coding-standards suites; both platforms build clean. No `@Model` or stored property changed, so
+the R-7 CloudKit deploy gate is untouched.
+
+**Method note.** The first run of the vacuity mutation reported SURVIVED. It hadn't: a 2-minute
+timeout killed the mutation loop before it rewrote `$SP/m6.py`, so the run executed a **stale
+script from the #586 session** and mutated an unrelated file. Re-run under a uniquely-named
+script, the guard caught it. Generic scratch filenames reused across sessions make a mutation
+result a measurement of the wrong thing — name them per-issue.
