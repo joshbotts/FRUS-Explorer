@@ -2784,6 +2784,16 @@ the code — what the three genuinely share is the placeholder. **One vocabulary
 **Verification:** 8 tests; mutation sweep across the three sites, the derived signal, the placeholder,
 and the suite's own prose filter. Both platforms build clean; iOS manual updated.
 
+**A live mutant reached a commit — again, hours after writing the rule against it.** The docs pass
+ran `git add -A` while a **one-mutant re-run** was in flight, and captured M1c: `OnboardingView()`
+where `BootPlaceholderView()` belongs, i.e. it re-introduced M-20, the defect this PR fixes. Caught
+by the post-sweep tree check and restored in the next commit. The #747 rule said "no commits while a
+sweep runs"; it failed here because **a single-mutant re-run did not feel like a sweep**. The trigger
+is *a background process is editing tracked files*, not *a sweep is running*. Memory updated.
+
+Related habit corrected: `git status --porcelain; echo clean` prints "clean" unconditionally and
+reads like a verification. It is not one.
+
 **Method note.** M1 came back `PATTERN-MISS` — my mutant string did not match the real source, so it
 measured nothing and would have been reported as a pass had the harness not distinguished the two
 outcomes. Re-run against the actual text. **A mutation harness must report "pattern not found" as its
