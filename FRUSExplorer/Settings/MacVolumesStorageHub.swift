@@ -922,7 +922,7 @@ struct MacVolumesStorageHub: View {
             compactionError = error.localizedDescription
             return
         }
-        appState.refreshReadOnlyStores()
+        appState.refreshAfterCorpusChange(context: modelContext)
         await refreshIndexPages()
         if let before, let after = indexPages?.fileBytes, before > after {
             compactedBytes = before - after
@@ -1020,7 +1020,7 @@ struct MacVolumesStorageHub: View {
 
             if imported > 0 {
                 // The new volume added aux-table rows the boot read-only connections can't see (#275).
-                appState.refreshReadOnlyStores()
+                appState.refreshAfterCorpusChange(context: modelContext)
             }
             if messages.isEmpty {
                 sideloadOutcome = .imported(count: imported)
@@ -1082,7 +1082,7 @@ struct MacVolumesStorageHub: View {
         reindexingVolumeId = volumeId
         try? await pipeline.indexVolume(volumeId)
         // The single-volume reindex mutated the aux tables — reopen the read-only stores (#275).
-        appState.refreshReadOnlyStores()
+        appState.refreshAfterCorpusChange(context: modelContext)
         reindexingVolumeId = nil
         await loadReport()
     }
@@ -1092,7 +1092,7 @@ struct MacVolumesStorageHub: View {
         reindexingInterruptedId = volumeId
         Task {
             try? await pipeline.indexVolume(volumeId)
-            appState.refreshReadOnlyStores()
+            appState.refreshAfterCorpusChange(context: modelContext)
             reindexingInterruptedId = nil
             await loadReport()
         }
@@ -1111,7 +1111,7 @@ struct MacVolumesStorageHub: View {
                     #endif
                 }
             }
-            appState.refreshReadOnlyStores()
+            appState.refreshAfterCorpusChange(context: modelContext)
             reindexingInterruptedId = nil
             await loadReport()
         }
@@ -1134,7 +1134,7 @@ struct MacVolumesStorageHub: View {
             }
         }
         // Newly indexed volumes added rows the boot read-only connections can't see (#275).
-        appState.refreshReadOnlyStores()
+        appState.refreshAfterCorpusChange(context: modelContext)
         settingsBatch = nil
         bulkIndexingFailureCount = failures > 0 ? failures : nil
         await loadReport()
@@ -1165,7 +1165,7 @@ struct MacVolumesStorageHub: View {
         try? await pipeline.indexAllVolumes()
         // Reopen the read-only stores post-rebuild so analytics / citation lookup don't read the
         // stale boot connections (#275).
-        appState.refreshReadOnlyStores()
+        appState.refreshAfterCorpusChange(context: modelContext)
         settingsBatch = nil
         await loadReport()
         let indexed = storageReport?.perVolume.filter { indexedVolumeIds.contains($0.volumeId) }.count ?? 0
@@ -1194,7 +1194,7 @@ struct MacVolumesStorageHub: View {
         }
         // Removing volumes deleted their aux-table rows — reopen the read-only stores so analytics
         // don't keep counting them (#275).
-        appState.refreshReadOnlyStores()
+        appState.refreshAfterCorpusChange(context: modelContext)
         await loadReport()
     }
 

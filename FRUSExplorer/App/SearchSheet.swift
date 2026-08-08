@@ -371,6 +371,26 @@ struct MacSearchWindowView: View {
                                         version: searchVM.executedSearchVersion)) {
             await rebuildConcordance()
         }
+        // Same rollup-renumbering hazard as iOS (#747), in a window that can sit open for days.
+        .onChange(of: appState.personRollupGeneration) { _, _ in
+            Task {
+                if await searchVM.refreshPersonRollupBinding(using: appState.personMentionStore) {
+                    await searchVM.performSearch(service: appState.searchService)
+                }
+            }
+        }
+        // A dropped person filter changes the result set, so it is announced rather than left for
+        // the user to notice that a chip is missing (#747). Rare by construction: it fires only
+        // when the anchor's volume has left the index.
+        .alert(String(localized: "search.person.filterDropped.title",
+                      defaultValue: "Person filter cleared"),
+               isPresented: Binding(get: { searchVM.droppedPersonFilterNotice != nil },
+                                    set: { if !$0 { searchVM.droppedPersonFilterNotice = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: {
+            Text(searchVM.droppedPersonFilterNotice ?? "")
+        }
+
         .task {
             // Consume search parameters set *before* this window was opened.
             // `.onChange` only fires on subsequent value changes — it misses the

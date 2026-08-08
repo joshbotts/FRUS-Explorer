@@ -289,6 +289,12 @@ Tap a person to open their **detail sheet**:
 
 A **Corrections** button in the People browser toolbar lists every merge and separation you've made and lets you **undo** any of them; corrections sync across your devices via iCloud.
 
+> **After a merge or separation.** The People browser, Person Analytics and any open search
+> filtered to a person all re-resolve immediately — a filter set before a merge follows that person
+> into the merged identity, and its chip adopts the merged name. If the person you were filtering
+> to is no longer in the index at all (their only volume was removed), the filter is cleared and the
+> app tells you, rather than quietly returning a wider set of results.
+
 To study *how* these reconciled people are mentioned over time — most-mentioned by era, mention trajectories, and co-mention networks — open **Person Analytics** from the Browse tab's Analysis Tools menu (Section 13.6).
 
 ---

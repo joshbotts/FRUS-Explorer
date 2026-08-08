@@ -33,7 +33,7 @@ import SwiftData
 ///          element with a labeled mention count and a hidden decorative chevron
 ///   1.3 — Session 4 review: row context-menu "Merge with another person…" shortcut
 ///          (auto-opens the picker in the detail sheet); the list reloads reactively on
-///          `AppState.personCorrectionsGeneration` so corrections applied from surfaces
+///          `AppState.personRollupGeneration` so corrections applied from surfaces
 ///          without an `onCorrection` closure (front-matter/compilation sheets) refresh it
 struct PersonIndexView: View {
 
@@ -152,7 +152,7 @@ struct PersonIndexView: View {
         // person correction (detail sheets launched from front-matter/compilation views
         // don't hold an onCorrection closure into this list — the app-wide generation
         // counter covers them, and any other open People surface, reactively).
-        .onChange(of: appState.personCorrectionsGeneration) { _, _ in
+        .onChange(of: appState.personRollupGeneration) { _, _ in
             Task { await loadPeople() }
         }
         .sheet(item: $selectedIndexEntry, onDismiss: { autoOpenMergePicker = false }) { indexEntry in
@@ -934,9 +934,9 @@ struct PersonIndexDetailSheet: View {
             String(localized: "people.detail.correction.inProgress",
                    defaultValue: "Applying correction…")).post()
         insert(modelContext)
-        await PersonClusterOverrideStore.saveAndReconsolidate(context: modelContext, pipeline: pipeline)
+        await PersonRollupRefresh.afterCorrection(context: modelContext, pipeline: pipeline,
+                                                  appState: appState)
         AccessibilityNotification.Announcement(announcement).post()
-        appState.personCorrectionsGeneration += 1
         onCorrection?()
         dismiss()
     }

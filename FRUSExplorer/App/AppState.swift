@@ -462,14 +462,22 @@ final class AppState {
     /// this to show download indicators without calling into the actor directly.
     var downloadQueue: [String] = []
 
-    // MARK: - Person Corrections Signal
+    // MARK: - Person Rollup Signal
 
-    /// Bumped after every person-cluster correction (merge / separate / undo) once the
-    /// rollup has re-consolidated, so any People surface can refresh reactively via
-    /// `.onChange` — the live-signal pattern this codebase prefers over navigation- or
-    /// scene-phase-triggered reloads (Session 4 / #243). The value itself is meaningless;
-    /// only changes matter.
-    var personCorrectionsGeneration: Int = 0
+    /// Bumped whenever the materialised person rollup has been **rebuilt** — by a correction
+    /// (merge / separate / undo), by a corpus change (volumes added or removed), or by the launch
+    /// consolidation after a `currentPersonRollupVersion` bump. Any surface holding a rollup id or
+    /// showing rollup-derived rows refreshes reactively via `.onChange` — the live-signal pattern
+    /// this codebase prefers over navigation- or scene-phase-triggered reloads (Session 4 / #243).
+    /// The value itself is meaningless; only changes matter.
+    ///
+    /// Renamed from `personRollupGeneration` in #747. The old name described one of its three
+    /// triggers, and the narrow reading was load-bearing: corrections were the only path that
+    /// raised it, so every other rebuild renumbered `rollup_id` under live search chips and open
+    /// analytics selections with nothing to tell them. It is now raised inside
+    /// ``PersonRollupRefresh``, where the rebuild actually happens, rather than by hand at call
+    /// sites that could forget.
+    var personRollupGeneration: Int = 0
 
     // MARK: - Tag Stores
 
@@ -637,6 +645,34 @@ final class AppState {
     /// rebuild's writes directly, so they are intentionally left untouched.
     ///
     /// No-op if `databaseURL` has not been set yet (index infrastructure never came up).
+    /// `refreshReadOnlyStores()` **plus** the person-rollup drift check — the call every action
+    /// that adds, removes or re-indexes volumes should make (#747 / audit M-14).
+    ///
+    /// Reopening the read-only connections only refreshes *connections*. It does not recompute the
+    /// materialised `person_rollup` tables, which are derived data: `removeVolume` deletes the
+    /// `persons` and `person_mentions` rows but leaves the rollup standing, so the People browser
+    /// kept listing people whose only mentions were in a removed volume — with their old counts —
+    /// and newly indexed volumes' people stayed invisible, in both cases until the next launch.
+    ///
+    /// The drift check is cheap when nothing moved, so this is the safe default even for actions
+    /// that merely VACUUM. When it *does* rebuild, the connections are reopened a second time (the
+    /// rebuild replaced every row underneath them) and `personRollupGeneration` is published so
+    /// open filter chips and dashboards can re-resolve the ids they are holding.
+    ///
+    /// - Parameter context: the main-actor context holding `PersonClusterOverride`. Required for
+    ///   correctness, not convenience — see `PersonRollupRefresh.afterCorpusChange`.
+    func refreshAfterCorpusChange(context: ModelContext?) {
+        refreshReadOnlyStores()
+        guard let indexingPipeline else { return }
+        Task { @MainActor in
+            if await PersonRollupRefresh.afterCorpusChange(context: context,
+                                                           pipeline: indexingPipeline,
+                                                           appState: self) {
+                refreshReadOnlyStores()
+            }
+        }
+    }
+
     func refreshReadOnlyStores() {
         guard let databaseURL else { return }
         crossReferenceStore = try? CrossReferenceStore(databaseURL: databaseURL)

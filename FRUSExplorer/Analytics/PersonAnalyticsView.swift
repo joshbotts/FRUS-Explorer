@@ -681,6 +681,14 @@ struct PersonAnalyticsView: View {
         .onChange(of: appState.readOnlyStoresGeneration) { _, _ in
             reloadForScopeChange()
         }
+        // A correction or a corpus change rebuilds `person_rollup` *without* reopening the store,
+        // so `readOnlyStoresGeneration` never moves and this dashboard kept charting rollup ids
+        // that had since been renumbered — every series silently re-attributed to a neighbour
+        // (#747 / audit M-27). Reloading re-queries by the ids currently on screen; the focus and
+        // comparison rows are rebuilt from that reload.
+        .onChange(of: appState.personRollupGeneration) { _, _ in
+            reloadForScopeChange()
+        }
     }
 
     // MARK: - Scope

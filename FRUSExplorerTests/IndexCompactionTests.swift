@@ -208,11 +208,21 @@ struct CompactionParityTests {
             let hub = try Self.source(path)
             let compact = try #require(hub.range(of: "private func compactIndex()"))
             let body = hub[compact.lowerBound...].prefix(2_000)
-            #expect(body.contains("refreshReadOnlyStores()"),
+            // Either spelling satisfies #275: `refreshAfterCorpusChange(context:)` (#747) calls
+            // `refreshReadOnlyStores()` as its first statement, and `PersonRollupIdentityTests`
+            // pins that delegation — so widening here does not loosen the contract, it moves one
+            // link of it somewhere it is also checked. The hubs now use the corpus-change form
+            // everywhere on purpose: the person rollup is derived data that reopening a connection
+            // does not recompute, and a rule applied at every site cannot be forgotten at the one
+            // that needed it.
+            #expect(body.contains("refreshReadOnlyStores()")
+                    || body.contains("refreshAfterCorpusChange("),
                     """
-                    \(path): compactIndex must call appState.refreshReadOnlyStores(). VACUUM \
-                    swaps the file under the boot-once read-only connections and they go empty \
-                    for the session (#275) — nothing visible would flag it.
+                    \(path): compactIndex must rebuild the read-only stores — directly via \
+                    appState.refreshReadOnlyStores(), or via appState.refreshAfterCorpusChange(), \
+                    which delegates to it. VACUUM swaps the file under the boot-once read-only \
+                    connections and they go empty for the session (#275) — nothing visible would \
+                    flag it.
                     """)
         }
     }
