@@ -29,6 +29,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #736
+///   1.1 — Session 2026-08-07: `POCOMCareer.lifespanText` (moved off the view, grouping off)
 struct POCOMIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -66,6 +67,32 @@ struct POCOMCareer: Codable, Sendable, Equatable {
     let d: Int?
     /// Appointments, already sorted by the generator — the view renders them in order.
     let a: [POCOMAssignment]
+
+    /// "1893–1971", or one-sided, or `nil` when the register has neither date.
+    ///
+    /// Grouping is switched **off** explicitly. `String(localized:)` interpolates an `Int`
+    /// through a number formatter, which renders 1893 as "1,893" — a year wearing a thousands
+    /// separator. Plain Swift interpolation does not, which is why the People list's own
+    /// `role · era` subtitles were always right and this line was not.
+    ///
+    /// On the model rather than in the view so it can be tested against the real formatter
+    /// instead of a re-implementation of it.
+    var lifespanText: String? {
+        let plain = IntegerFormatStyle<Int>.number.grouping(.never)
+        switch (b, d) {
+        case let (.some(born), .some(died)):
+            return String(localized: "people.detail.career.lifespan",
+                          defaultValue: "\(born, format: plain)–\(died, format: plain)")
+        case let (.some(born), .none):
+            return String(localized: "people.detail.career.born",
+                          defaultValue: "born \(born, format: plain)")
+        case let (.none, .some(died)):
+            return String(localized: "people.detail.career.died",
+                          defaultValue: "died \(died, format: plain)")
+        case (.none, .none):
+            return nil
+        }
+    }
 }
 
 // MARK: - POCOMAssignment

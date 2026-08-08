@@ -357,10 +357,16 @@ struct ProjectHomeView: View {
     private func dateFocusText(_ project: Project) -> String? {
         let cal = Calendar.current
         func year(_ date: Date?) -> Int? { date.map { cal.component(.year, from: $0) } }
+        // Grouping off: `String(localized:)` runs an interpolated `Int` through a number
+        // formatter, so an open-ended range read "From 1,969". The two-sided case uses plain
+        // interpolation and was always correct, which is what hid this.
+        let plain = IntegerFormatStyle<Int>.number.grouping(.never)
         switch (year(project.defaultDateRangeStart), year(project.defaultDateRangeEnd)) {
         case let (start?, end?): return "\(start)–\(end)"
-        case let (start?, nil):  return String(localized: "project.home.dateFrom", defaultValue: "From \(start)")
-        case let (nil, end?):    return String(localized: "project.home.dateTo", defaultValue: "Through \(end)")
+        case let (start?, nil):  return String(localized: "project.home.dateFrom",
+                                               defaultValue: "From \(start, format: plain)")
+        case let (nil, end?):    return String(localized: "project.home.dateTo",
+                                               defaultValue: "Through \(end, format: plain)")
         case (nil, nil):         return nil
         }
     }

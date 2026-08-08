@@ -39,41 +39,30 @@ import SwiftUI
 ///         hierarchy, so it rendered on no device; and behind the banner strip it
 ///         would have been a thin bar rather than a backdrop. This sheet is the
 ///         surface the plan actually names.
+///   3.1 — Session 2026-08-07: backdrop removed. See "Why the cloud is not here" below —
+///         O-3's own rule ("backdrop to the content, never a rival to it") is what it
+///         failed in practice, on the one surface whose entire purpose is reading.
+///
+/// ## Why the cloud is not here
+/// Version 3.0 put the animated word cloud behind this sheet on the reasoning that this is
+/// the surface genuinely bare for minutes. In use it reads the other way round: the sheet is
+/// **several screens of prose a first-run user is being asked to read**, and a cloud that
+/// re-aggregates as volumes land animates *underneath the paragraph they are on*. O-3's own
+/// constraint was "backdrop to the content, never a rival to it", and moving text is a rival
+/// no dim factor fixes.
+///
+/// The cloud is not lost — it still runs where it costs nothing to read: the launch splash,
+/// the onboarding backdrop, and the `IndexingCloudStrip` in the indexing banner itself, which
+/// is where a user watching progress will actually see it. `CloudSurfaceArbiter`'s
+/// `.indexingBackdrop` case therefore still has live consumers (both banner views and
+/// `ContentView`) and is deliberately left in place.
 struct WhileIndexingSheet: View {
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppState.self) private var appState
 
     var body: some View {
         IndexingEducationView(presentationContext: .onboarding) {
             dismiss()
-        }
-        .background { indexingCloudBackdrop }
-    }
-
-    /// (c) — the word cloud behind the education content, scoped to what is landing.
-    ///
-    /// The plan places the cloud here rather than behind the banner strip: this sheet is
-    /// what actually fills the download-and-index wait, and it is the surface that is
-    /// genuinely bare for minutes. **Backdrop to the content, never a rival to it** — hence
-    /// the quieter dim factor and no lens chip, so it cannot compete with the prose a user
-    /// opened this sheet to read.
-    ///
-    /// Scoped to the volumes currently queued, so it re-aggregates as they land.
-    @ViewBuilder
-    private var indexingCloudBackdrop: some View {
-        if CloudSurfaceArbiter.resolve(appState: appState) == .indexingBackdrop {
-            WordCloudBackdropView(
-                scope: CloudSurfaceArbiter.indexingScope(
-                    queuedVolumeIds: appState.downloadQueue,
-                    manifest: appState.manifestStore
-                ),
-                dim: FRUSTheme.cloudDimAddVolumes,
-                showsChip: false
-            )
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .transition(.opacity)
         }
     }
 }
