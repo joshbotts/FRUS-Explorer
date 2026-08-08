@@ -1,6 +1,6 @@
 # Archival Analytics — Feasibility Assessment
 
-**Date:** 2026-08-08 · **Version:** 1.0 · **Status:** feasibility assessment for owner review —
+**Date:** 2026-08-08 · **Version:** 1.1 · **Status:** feasibility assessment for owner review —
 no code changes ride this document.
 
 **The question asked:** is a new archival analytics feature feasible — one that helps users see
@@ -45,11 +45,22 @@ Three findings shape the recommendation:
    counts (a recorded design decision). The generator infrastructure to build it exists
    end-to-end (`SourceExplorerExportGenerator` already computes every input), and the same
    session can close #267. Estimated artifact size: ~300–500 KB.
+4. **(Added 1.1, on owner question.) The pre-1946 era is reachable at that era's own grain —
+   the decimal class.** v1.0 conceded the era because only 2.7% of pre-1946 notes land in
+   *named* authority collections; but that is the wrong unit for the period. Measured over
+   the committed export sample (n=1,323, every 200th record): **93–98% of 1910s–1940s
+   documents carry a decimal-class archival-neighbor key** (`derived.archivalNeighborKey`),
+   which the app already treats as first-class (`document_sources.decimal_class`, indexed;
+   class-keyed Archival Neighbors). And the corpus-wide cross-reference harvest
+   (`CrossRefValidationGenerator`: 2,713,736 refs scanned, 652 broken) supports an
+   **aggregated class↔class reference-flow matrix** computed at generation time — no #262
+   dependency for the aggregate. See §4-I and the revised §5.1.
 
-The honest limits (§5) are era asymmetry — collection-grain analytics are structurally a
-1946–1988 story, because pre-1946 sourcing *is* the Central Decimal File — and the
-volume-grain meaning of "co-cited" (§5.2). Both are disclosable in-UI in the house style, and
-the era asymmetry is itself the historical finding the feature would surface.
+The honest limits (§5) are grain-dependent era coverage — *named-collection* analytics are a
+1946–1988 story, extended to ~1910 by the class grain, with the structural floor at pre-1906
+where documents carry no source notes at all — and the volume-grain meaning of "co-cited"
+(§5.2). Both are disclosable in-UI in the house style, and the era asymmetry is itself the
+historical finding the feature would surface.
 
 ---
 
@@ -189,28 +200,107 @@ Join D (or the volume-weighted proxy) against `digitized-ranges-index` / `roll-s
 the N-7 consumer ships; the indexes are new and their in-app consumption is still settling.
 Effort S once N-7 is stable.
 
-### H. Stretch — archival hand-off matrix (cross-references × provenance)
+### H. Archival hand-off matrix (cross-references × provenance) — *upgraded in 1.1*
 
 The one *document-grain* interrelationship that genuinely exists: document A (from
 collection X) cross-references document B (from collection Y). Joining `cross_references` ×
 `document_sources` locally yields a directed collection-to-collection flow matrix ("NSC files
 cite into Central Files; presidential library material cites into lot files"). Feasible
-today **for indexed volumes only**; corpus-wide it wants #262 (bundled resolved-edge
-manifest), which has its own open size/shape design. Park behind #262 — do not let it gate
-A–D.
+today **for indexed volumes only**.
+
+**1.1 correction:** v1.0 parked the corpus-wide version behind #262, which was too
+conservative. #262 is about shipping the **per-edge** list (the big artifact with the open
+size/shape design). The *aggregated* flow matrix needs no per-edge shipping: at generation
+time, `CrossRefValidationGenerator`'s Pass B already captures every ref with its enclosing
+source document (2,713,736 refs scanned across 694 volumes, 652 broken), and the export scan
+already knows every document's provenance unit. One join, emitted as a
+provenance-unit × provenance-unit matrix, is a small bundled aggregate. Per-edge browsing
+("show me the citations behind this cell") still degrades to indexed volumes until #262
+ships — disclose, don't block.
+
+### I. Early-era extension: class-grain interrelationships, 1910–1949 — *added in 1.1*
+
+*(Prompted by owner question: why not leverage central-file archival neighbors +
+document cross-references to extend interrelationships to the earlier era?)* The answer:
+yes — the era is reachable, provided the analytic unit switches to what the era's archive
+actually was. Pre-1946 FRUS cites the Central Decimal File by file number; the **class**
+segment of that number (763.72, 812.00, 861.00) is the subject-file unit researchers pull
+at NARA, and the app already extracts and indexes it.
+
+**Measured key coverage** (committed export sample, n=1,323, every 200th record;
+`derived.archivalNeighborKey` presence — script run 2026-08-08):
+
+| Decade | Sampled docs | With neighbor key | Share |
+|---|---|---|---|
+| 1900s | 10 | 0 | 0% (numerical file — see below) |
+| 1910s | 147 | 141 | 96% |
+| 1920s | 99 | 97 | 98% |
+| 1930s | 197 | 194 | 98% |
+| 1940s | 368 | 342 | 93% |
+| 1950s | 210 | 163 | 78% |
+| 1960s | 143 | 78 | 55% (lot/CFPF transition) |
+
+Corpus scale: `centralDecimalFile` is the largest strategy in the export — 193,675 of
+264,464 document notes — with ~160k of them pre-1950. Against the 2.7% named-collection
+landing rate for pre-1946, the class key is the difference between "no early-era data" and
+"the era's richest per-document key."
+
+Three views, all riding infrastructure that exists:
+
+- **Class co-occurrence** — which subject files feed the same volumes (the early-era
+  analogue of A/B). Same intersect-and-threshold machinery, keyed on
+  `document_sources.decimal_class` locally and the export's class field at generation time.
+- **Class↔class reference flows** — the H join restricted to decimal classes: documents
+  filed under 763.72 (the World War) citing documents filed under 861.00 (Russia, internal
+  affairs) maps the file system's internal wiring as the editors traversed it. Genuinely
+  novel; no equivalent exists anywhere.
+- **Class over time** — a class's document volume across coverage years, segmented by the
+  decimal file's own chronological blocks (1910–29 / 1930–39 / 1940–44 / 1945–49…), which
+  the Archival Neighbors query already encodes (`ArchivalNeighborsDocKey.documentYear`
+  drives the same segmenting). Classes even resolve toward NARA series/rolls via
+  `central-files-index.json` and `digitized-ranges-index.json`, so class rows can link out
+  the same way collections do.
+
+**Design riders:** (a) *Labels.* Class numbers need human names ("763.72 — European War").
+Partially available from the authority's class-keyed sub-series children (front-matter
+names); the gap wants a small bundled class-schedule label table from NARA's public-domain
+decimal classification guides — a data-curation rider, not a parser change. (b) *Unit
+honesty.* A class is a subject file, not a provenance collection; the UI must not present
+class nodes and collection nodes as the same kind of thing. The natural seam is a mode/lens
+switch on the same views, mirroring how Archival Neighbors already distinguishes
+class-keyed from lot-keyed queries.
+
+**The two remaining era gaps, stated precisely:**
+
+- **1906–1910 (Numerical File):** the case number is already parsed
+  (`"File No. 774–44"` → case 774, resolving to specific microfilm rolls), but
+  `supportsArchivalNeighbors` is deliberately `false` today — case numbers are not decimal
+  classes and the neighbor query would find nothing in `decimal_class`. Case-grain
+  neighbors + analytics are a small, real extension (the case *is* a subject unit), but it
+  needs its own small eval before trusting, per house discipline.
+- **Pre-1906:** the structural floor. Documents carry **no source notes**;
+  `CentralFilesClassifier` already infers the country-arranged series from datelines
+  (confidence-tagged, display-only), but that is inference, not citation — and country-series
+  interrelationships would largely reproduce the volumes' own country-chapter organization.
+  Keep pre-1906 out of the analytics substrate; the classifier's Source Explorer surface
+  remains the right exposure.
 
 ---
 
 ## 5. Honest limits (in-UI disclosures, house style)
 
-1. **Era asymmetry is structural, not a parser gap.** Pre-1946 document notes land in
-   distinct authority collections at 2.7% — because the sourcing *was* the Central Decimal
-   File, cited by file number, not by named collection. Collection-grain analytics are a
-   1946–1988 story (83–84% landing in the '60s–'70s), thinning again post-1988 as volumes
-   still in declassification trail off. Every era view needs the same disclosure pattern
-   SA-3 already uses for its pre-1900 floor — and the asymmetry itself is the finding: the
-   feature would *show* the central-file-to-decentralised-sourcing transition, which is the
-   documented arc of FRUS historiography.
+1. **Era asymmetry is real but grain-dependent** *(revised in 1.1)*. *Named-collection*
+   analytics are a 1946–1988 story: pre-1946 document notes land in distinct authority
+   collections at 2.7%, because the sourcing *was* the Central Decimal File, cited by file
+   number, not by named collection. At the **class grain** (§4-I) the same era is richly
+   keyed — 93–98% of sampled 1910s–1940s documents carry a class key — so the feature
+   extends to ~1910 by switching units, not by forcing collections where none were cited.
+   The structural floor is **pre-1906**: no source notes exist, and the dateline classifier
+   is inference, not citation. Every era view needs the same disclosure pattern SA-3
+   already uses for its pre-1900 floor, plus the unit-switch disclosure (§4-I rider b) —
+   and the asymmetry itself is the finding: the feature would *show* the
+   central-file-to-decentralised-sourcing transition, which is the documented arc of FRUS
+   historiography.
 2. **"Co-cited" is volume-grain.** Two collections sharing a volume co-fed one editorial
    compilation; that is not document-level affinity. There is no document-grain
    co-citation: a document has one source note (the copy consulted). The affordance must say
@@ -246,13 +336,15 @@ existing `ResearchGuideLinkButton` / Source Explorer routing.
 | Phase | Content | New data? | Effort |
 |---|---|---|---|
 | 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session |
-| 2 | D: `collection-usage-index.json` generator + #267 fold-in + SA-3 tolerant decode | **Yes** (one artifact, ~0.5 MB) | 1 generator session |
-| 3 | B (ego graph) + era × collection dashboard views consuming D; E rider | No | 1–2 sessions |
-| — | G after N-7 settles; H parked behind #262 | — | — |
+| 2 | D: `collection-usage-index.json` generator + #267 fold-in + SA-3 tolerant decode; **class × volume counts ride the same export scan (I)** | **Yes** (one artifact, ~0.5 MB) | 1 generator session |
+| 2b | H/I flow matrix: `CrossRefValidationGenerator` harvest × export provenance-unit join → bundled aggregate; class labels table rider | **Yes** (small aggregate + label table) | 1 generator session |
+| 3 | B (ego graph) + era × collection dashboard views consuming D; class lens (I) on the same views; E rider | No | 1–2 sessions |
+| — | G after N-7 settles; numerical-file case grain (I) behind its own eval; per-edge flow browsing behind #262 | — | — |
 
 Phase 1 ships user-visible value with zero artifact risk and validates the interrelationship
-UX before the graph work. Phase 2 is the only data work and pays twice (this feature + #267).
-Phase 3 is presentation over data that will already exist.
+UX before the graph work. Phase 2 is the main data work and pays twice (this feature + #267);
+2b is separable and can trail — the class-grain *co-occurrence* views need only Phase 2, and
+the flow matrix is additive. Phase 3 is presentation over data that will already exist.
 
 **Fit against current priorities:** this is §5a territory — "the most on-brand cluster" —
 and does not collide with the P1 sync wave or the P2 discovery lane (different code, different
@@ -261,10 +353,11 @@ Nothing here touches SwiftData models, so the CloudKit R-7 deploy gate is untouc
 is offline-first bundled-JSON + local-SQLite work, consistent with the app's posture. New
 chart surfaces should adopt the shared `AXChartDescriptor` work (#268) when it lands.
 
-**Total estimated cost to the full recommended feature: 3–4 sessions**, one of which is a
-generator session with no UI. No new network dependency, no schema bump to the FTS5 index
-(E reads existing tables), one new ~0.5 MB bundled resource (needs the standard
-`xcodegen generate` + scheme-restore enrolment once).
+**Total estimated cost to the full recommended feature: 3–5 sessions**, one or two of which
+are generator sessions with no UI. No new network dependency, no schema bump to the FTS5
+index (E and the local class queries read existing tables and indexes), two new small
+bundled resources (each needs the standard `xcodegen generate` + scheme-restore enrolment
+once).
 
 ---
 
@@ -273,3 +366,13 @@ generator session with no UI. No new network dependency, no schema bump to the F
 - 1.0 (2026-08-08) — initial assessment: verdict, shipped-surface inventory, artifact
   measurements (co-citation counts over `collection-authority.json`), candidate insights A–H
   with derivations, honest-limits list, and the three-phase recommendation with #267 fold-in.
+- 1.1 (2026-08-08) — early-era extension, on owner question ("why not central-file archival
+  neighbors + cross-references for the earlier era?"). Added §4-I (class-grain
+  interrelationships 1910–1949, with measured neighbor-key coverage per decade from the
+  export sample: 93–98% for the 1910s–1940s), upgraded §4-H (the aggregated flow matrix
+  needs no #262 — `CrossRefValidationGenerator`'s 2.71M-ref harvest supplies the join at
+  generation time; only per-edge browsing stays behind #262), revised §5.1 (era asymmetry is
+  grain-dependent; the structural floor is pre-1906, where documents carry no source notes
+  and `CentralFilesClassifier` is inference, not citation), and re-sequenced §6 (Phase 2
+  carries class × volume counts; new Phase 2b for the flow matrix + class-label rider;
+  numerical-file case grain parked behind its own eval).
