@@ -51,13 +51,27 @@ struct ContentView: View {
         let hasVolumes = OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory)
         let hasActiveDownloads = !appState.downloadQueue.isEmpty
         let isUITestMode = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
-        if appState.hasCompletedOnboarding && (hasVolumes || hasActiveDownloads || isUITestMode) {
+        if !appState.hasCompletedOnboarding {
+            // A genuinely new user. This branch reads nothing that boot has to finish first, so it
+            // is decided on the very first frame and never flashes.
+            OnboardingView()
+        } else if !appState.isBootComplete && !isUITestMode {
+            // #753 (audit M-20): an onboarded user must NEVER be shown the first-run Welcome screen
+            // again while the app is still starting. `hasVolumes` reads
+            // `downloadManager?.volumesDirectory`, and the download manager is assigned at the very
+            // END of the async boot — so a researcher with hundreds of downloaded volumes looked
+            // exactly like someone who had none, and the app told them so. The flash lengthens with
+            // store size, which aims it squarely at the people with the most to lose.
+            BootPlaceholderView()
+        } else if hasVolumes || hasActiveDownloads || isUITestMode {
             #if os(iOS)
             MainTabView()
             #else
             MainWindowView()
             #endif
         } else {
+            // Onboarded, boot finished, and genuinely no volumes — e.g. everything was removed.
+            // Re-onboarding is the right answer here, and now it is only ever said when true.
             OnboardingView()
         }
     }

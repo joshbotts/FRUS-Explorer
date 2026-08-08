@@ -772,6 +772,18 @@ final class AppState {
     /// refocus-on-reinvoke shape as `DocumentFindBar`'s `focusToken`.
     var searchQueryFocusToken = 0
 
+    /// Whether the async boot has finished wiring the index stack (#753).
+    ///
+    /// `downloadManager` is assigned **last** in `bootDownloadManager`, after the store open, the
+    /// pipeline, and the cleanup/migration passes — so its presence is the app's most conservative
+    /// "everything downstream exists now" signal. Surfaces use it to tell *not yet* apart from
+    /// *nothing here*, which they previously could not: `hasDownloadedVolumes(in: nil)` returns
+    /// `false`, making a booting app look like an empty library.
+    ///
+    /// Deliberately not a separate flag someone has to remember to set. It is derived, so it cannot
+    /// drift out of step with the thing it describes.
+    var isBootComplete: Bool { downloadManager != nil }
+
     /// Cross-platform hand-off channel for opening a document from any tool surface. On **iOS**
     /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** every
     /// producer now routes directly through `openDocument(_:from:mintWindow:)` (provenance

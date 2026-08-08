@@ -607,7 +607,19 @@ struct FRUSExplorerApp: App {
                     // (#275 — the stale one reads empty). The generation bump tears the view down
                     // and rebuilds it against the fresh store, matching the macOS graph window.
                     .id("\(request.entry.id)-gen\(appState.readOnlyStoresGeneration)")
+                } else if request != nil {
+                    // #753 (audit M-22): the request restored fine — the STORE is still booting.
+                    // The combined guard above collapsed those two states into one else branch, so
+                    // a restored window told the user "No Document Selected" and instructed them to
+                    // go open one, while holding a perfectly good request that appeared seconds
+                    // later. The sibling value scenes (Archival Neighbors, Related Documents) were
+                    // given this distinction for exactly this restored-window race; the graph scene
+                    // was the one guarded-value scene without it.
+                    BootPlaceholderView(
+                        detail: String(localized: "graphWindow.preparing.detail",
+                                       defaultValue: "The cross-reference graph will appear in a moment."))
                 } else {
+                    // Genuinely no request: an empty window, correctly stated.
                     ContentUnavailableView(
                         String(localized: "graphWindow.empty.title",
                                defaultValue: "No Document Selected"),
