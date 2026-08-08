@@ -661,9 +661,18 @@ struct ResearchView: View {
         Button {
             openDocument(entry)
         } label: {
+            // A NEW key, not a reworded old one: no String Catalog ships, so `defaultValue` IS the
+            // shipped string and rewriting it in place would silently change any translation keyed
+            // to the old text (the reason #746 minted a key rather than editing one).
+            //
+            // The old label said "Open in Main Window" (#749 / audit L-36) but the macOS action
+            // routes through the provenance chain — the window Research was launched from, else the
+            // most-recently-key host, else a freshly minted standalone window. None of those is
+            // necessarily a main window. The routing is the designed behaviour; only the label
+            // predated it.
             Label(
-                String(localized: "research.action.openDocument",
-                       defaultValue: "Open in Main Window"),
+                String(localized: "research.action.openDocument.v2",
+                       defaultValue: "Open Document"),
                 systemImage: "arrow.up.right.square"
             )
         }

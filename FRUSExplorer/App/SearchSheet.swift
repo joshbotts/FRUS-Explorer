@@ -107,6 +107,13 @@ struct MacSearchWindowView: View {
 
     @State private var searchVM = MacSearchViewModel()
 
+    /// Keyboard focus for the query field (#749 / audit L-35).
+    ///
+    /// The window had no focus machinery at all, so on first open the caret landed wherever AppKit's
+    /// initial-first-responder pick put it, and on every re-summon it stayed on whatever was last
+    /// focused — typing a query moved the result-list selection instead of editing text.
+    @FocusState private var queryFieldFocused: Bool
+
     /// The Query Inspector's state for this window (Q-2).
     @State private var inspectorController = QueryInspectorController()
 
@@ -371,6 +378,21 @@ struct MacSearchWindowView: View {
                                         version: searchVM.executedSearchVersion)) {
             await rebuildConcordance()
         }
+        // Put the caret in the query field when the window first appears (#749 / audit L-35).
+        // `.defaultFocus` alone is not trusted here: `CitationLookupView` — the sibling find window —
+        // needed `.defaultFocus` PLUS a `.task` fallback because, in its own words, defaultFocus
+        // "never landed". A one-tick delay lets the field exist before focus is assigned.
+        .task {
+            await Task.yield()
+            queryFieldFocused = true
+        }
+        // And again on every ⌘S / toolbar-Search re-summon. Re-fronting a singleton window runs no
+        // code inside it and never resets first responder, so without this the caret stayed on
+        // whatever was last focused — typing a query drove the result-list selection instead. Same
+        // shape as `DocumentFindBar`'s `focusToken` (the established in-repo pattern).
+        .onChange(of: appState.searchQueryFocusToken) { _, _ in
+            queryFieldFocused = true
+        }
         // Same rollup-renumbering hazard as iOS (#747), in a window that can sit open for days.
         .onChange(of: appState.personRollupGeneration) { _, _ in
             Task {
@@ -451,6 +473,7 @@ struct MacSearchWindowView: View {
                 TextField("Search documents, notes, summaries…", text: $searchVM.queryText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14))
+                    .focused($queryFieldFocused)
                     .onSubmit { searchVM.submitSearch() }
 
                 if !searchVM.queryText.isEmpty {

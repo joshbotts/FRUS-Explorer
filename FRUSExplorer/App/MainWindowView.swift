@@ -263,6 +263,7 @@ struct MainWindowView: View {
             // provenance (bindTool), so the tool's document opens route back HERE.
             Button {
                 appState.bindTool(.search, to: hostID)
+                appState.searchQueryFocusToken &+= 1   // put the caret in the query field (#749)
                 openWindow.fronting(id: "frus.search")
             } label: {
                 Label(String(localized: "mainwindow.tools.search", defaultValue: "Search"),

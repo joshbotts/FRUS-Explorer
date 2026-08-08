@@ -715,7 +715,11 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 700)
-        .keyboardShortcut("b", modifiers: [.command, .shift])
+        // ⌘⇧B lives on the Research-menu item, NOT here (#749 / audit L-37). A shortcut declared on
+        // a Window scene runs no app code — AppState.bindTool relies on exactly that — so it cannot
+        // call `bringMacWindowToFront`, leaving the only keyboard route to Browse unable to raise an
+        // open-but-buried browser. It also put the shortcut on no visible menu item, so nothing
+        // advertised it.
 
         // MARK: - People Window (UI audit B5)
         //
@@ -1271,7 +1275,7 @@ struct FRUSExplorerApp: App {
             // on the key document's web view), Search (⌘S, full-text corpus), Citation Lookup (⌘⇧F).
             // ⌘F was remapped off Search (which moves to ⌘S) so the document's own find bar owns it.
             CommandMenu(String(localized: "menu.find", defaultValue: "Find")) {
-                FindMenuContent(openWindow: openWindow)
+                FindMenuContent(openWindow: openWindow, appState: appState)
             }
 
             // "Collection" menu (UI audit gap 5) — collection-authoring commands,
@@ -2642,6 +2646,9 @@ struct FindMenuContent: View {
     /// The scene's window opener (for Search / Citation Lookup).
     let openWindow: OpenWindowAction
 
+    /// Shared app state — used only to ask the Search window to focus its query field (#749).
+    let appState: AppState
+
     var body: some View {
         Button(String(localized: "menu.find.inDocument", defaultValue: "Find in Document…")) {
             document?.startFindInDocument()
@@ -2664,6 +2671,8 @@ struct FindMenuContent: View {
         Divider()
 
         Button(String(localized: "menu.find.search", defaultValue: "Search…")) {
+            // The user pressed ⌘S to type a query, so put the caret where they expect it (#749).
+            appState.searchQueryFocusToken &+= 1
             openWindow.fronting(id: "frus.search")
         }
         .keyboardShortcut("s", modifiers: .command)
@@ -2905,6 +2914,15 @@ struct ResearchMenuContent: View {
             openWindow.fronting(id: "frus.collections")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
+
+        // ⌘⇧B moved here from the Window scene (#749 / audit L-37): a scene-level shortcut runs no
+        // code, so it could not front a buried browser — and it appeared on no menu, so the only
+        // keyboard route to Browse was undiscoverable as well as unreliable.
+        Button(String(localized: "menu.research.corpusBrowser", defaultValue: "Corpus Browser")) {
+            appState.bindTool(.corpusBrowser, to: nil)   // clear stale provenance → recency fallback
+            openWindow.fronting(id: "frus.corpusBrowser")
+        }
+        .keyboardShortcut("b", modifiers: [.command, .shift])
 
         Divider()
 
