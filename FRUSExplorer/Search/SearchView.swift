@@ -482,7 +482,11 @@ struct SearchView: View {
                     #if os(iOS)
                     // #377 Phase 5 follow-up: a document opened from Search results also keeps the
                     // "Working on:" subtitle on regular-width iPad (no-op elsewhere).
-                    DocumentView(entry: entry)
+                    // #751: keep the reading journey in the Search tab. A cross-reference used to
+                    // switch to Browse and strand this document here, so Back unwound unrelated
+                    // Browse history instead of returning to what the reader was reading. macOS
+                    // never had this problem — it pushes onto the same window's stack.
+                    DocumentView(entry: entry, onNavigateToDocument: pushInSearchStack)
                         .workingOnSubtitle()
                     #else
                     MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
@@ -656,6 +660,14 @@ struct SearchView: View {
     /// snapshot ("Search this volume") has no executable FTS term, so it just
     /// applies the volume scope — surfaced as the dismissible `volumeScopeBanner`
     /// — and waits for the user to type a query that will be scoped to it.
+    /// Follows a cross-reference or page-turn inside the Search tab's own stack (#751).
+    private func pushInSearchStack(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
+        if jump == .replace, !vm.navigationPath.isEmpty {
+            vm.navigationPath.removeLast()   // a page-turn moves, not descends (audit M-17a)
+        }
+        vm.navigationPath.append(entry)
+    }
+
     private func consumePendingSearch() {
         // #338 step 5: consume only a search hand-off addressed to THIS window (or the `.anyWindow`
         // wildcard), so the query runs in the window it was triggered from, coupled to the tab switch.

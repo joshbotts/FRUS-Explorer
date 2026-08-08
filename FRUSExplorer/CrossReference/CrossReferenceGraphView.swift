@@ -158,9 +158,14 @@ struct CrossReferenceGraphView: View {
     /// A method rather than an inline closure: `body` shadows `vm` with a `@Bindable` local, and
     /// capturing that shadow in an escaping closure fails to type-check — reported, unhelpfully, as
     /// "extra argument 'onNavigateToDocument' in call".
-    private func pushInGraphStack(_ entry: DocumentBrowserEntry) {
+    #if os(iOS)
+    private func pushInGraphStack(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
+        if jump == .replace, !vm.navigationPath.isEmpty {
+            vm.navigationPath.removeLast()   // a page-turn moves, not descends (#751)
+        }
         vm.navigationPath.append(entry)
     }
+    #endif
 
     var body: some View {
         @Bindable var vm = vm

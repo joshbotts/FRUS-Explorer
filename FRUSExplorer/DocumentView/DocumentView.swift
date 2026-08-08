@@ -246,7 +246,7 @@ struct DocumentView: View {
     /// A host that passes this keeps the jump inside its own stack, so the reader stays where they
     /// are. `nil` (the Browse tab, the macOS document window, Search's pushed reader) keeps the
     /// existing routing untouched.
-    var onNavigateToDocument: ((DocumentBrowserEntry) -> Void)? = nil
+    var onNavigateToDocument: ((DocumentBrowserEntry, DocumentJump) -> Void)? = nil
 
     /// Point size of the "…unavailable" empty-state glyphs (person / gloss not
     /// found sheets), scaled with Dynamic Type relative to `.largeTitle` so the
@@ -341,7 +341,7 @@ struct DocumentView: View {
     /// - Parameter onNavigateToDocument: where document-to-document jumps go when this reader is
     ///   hosted by a sheet rather than the Browse tab (#750). See the property's doc comment.
     init(entry: DocumentBrowserEntry,
-         onNavigateToDocument: ((DocumentBrowserEntry) -> Void)? = nil) {
+         onNavigateToDocument: ((DocumentBrowserEntry, DocumentJump) -> Void)? = nil) {
         self.entry = entry
         self.onNavigateToDocument = onNavigateToDocument
         let vId = entry.volumeId
@@ -986,7 +986,7 @@ struct DocumentView: View {
         )
         // A sheet-hosted reader follows the reference inside its own stack (#750).
         if let onNavigateToDocument {
-            onNavigateToDocument(crossEntry)
+            onNavigateToDocument(crossEntry, .push)
             #if DEBUG
             print("[DocumentView] Cross-ref tap → host stack: \(volumeId)/\(documentId)")
             #endif
@@ -1558,7 +1558,7 @@ struct DocumentView: View {
     private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry) {
         // A sheet-hosted reader turns the page inside its own stack (#750).
         if let onNavigateToDocument {
-            onNavigateToDocument(adjacent)
+            onNavigateToDocument(adjacent, .replace)
             #if DEBUG
             print("[DocumentView] Edge-tap page-turn → host stack: \(adjacent.volumeId)/\(adjacent.documentId)")
             #endif

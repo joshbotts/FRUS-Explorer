@@ -134,7 +134,7 @@ struct HandoffVisibilityTests {
     @Test("DocumentView routes jumps to its host when one is supplied")
     func documentViewHonoursItsHost() throws {
         let source = try Self.source("DocumentView/DocumentView.swift")
-        #expect(source.contains("var onNavigateToDocument: ((DocumentBrowserEntry) -> Void)?"),
+        #expect(source.contains("var onNavigateToDocument: ((DocumentBrowserEntry, DocumentJump) -> Void)?"),
                 "DocumentView needs a host router; without one a sheet-hosted reader cannot override the Browse-tab routing (#750)")
 
         // Both jump paths must consult it, and must RETURN rather than falling through to the
@@ -168,16 +168,54 @@ struct HandoffVisibilityTests {
         }
     }
 
-    @Test("The Browse tab and the Search reader keep the default routing")
-    func browseHostsAreUnchanged() throws {
-        // The fix must be opt-in. If BrowserView started passing a host router, a cross-ref would
-        // push onto the browse stack twice over — and the macOS document window has no such concept.
-        for relative in ["Browser/BrowserView.swift", "Search/SearchView.swift"] {
+    @Test("Every iOS host that owns a reader stack routes jumps into it")
+    func everyReaderHostSuppliesARouter() throws {
+        // SUPERSEDED #750's `browseHostsAreUnchanged`, which asserted the opposite for these two.
+        // That test's stated reason — "a cross-ref would push onto the browse stack twice over" —
+        // was WRONG: `DocumentView` returns after calling the router, so there is no second
+        // navigation. It was really encoding #750's decision to keep the change opt-in. #751 is the
+        // owner decision that changed it, so the guard now records the new rule instead.
+        for relative in ["Search/SearchView.swift",        // #751: journeys stay in the Search tab
+                         "Browser/BrowserView.swift",      // #751 / M-17a: page-turns replace
+                         "Chronology/ChronologyView.swift",
+                         "Citation/CitationLookupView.swift",
+                         "CrossReference/CrossReferenceGraphView.swift"] {
             let source = try Self.source(relative)
             let passes = Self.codeLines(source).filter { $0.text.contains("onNavigateToDocument:") }
-            #expect(passes.isEmpty, """
-                \(relative) hosts DocumentView in the stack the hand-off already targets, so it must \
-                NOT pass onNavigateToDocument (#750).
+            #expect(!passes.isEmpty, """
+                \(relative) hosts a DocumentView on its own stack, so it must pass \
+                onNavigateToDocument — otherwise cross-references and page-turns leave the reader's \
+                context (#751).
+                """)
+        }
+    }
+
+    @Test("A page-turn replaces the reading position; a cross-reference descends")
+    func pageTurnsReplaceAndCrossRefsPush() throws {
+        // The whole point of DocumentJump. If both jumps pushed, M-17a is unfixed; if both
+        // replaced, Back would no longer return to the document a cross-reference came from.
+        let source = try Self.source("DocumentView/DocumentView.swift")
+        let crossRef = try Self.functionBody(
+            "private func navigateToCrossRef(documentId: String, volumeId: String)", in: source, limit: 2_000)
+        #expect(crossRef.contains("onNavigateToDocument(crossEntry, .push)"),
+                "a cross-reference must PUSH, so Back returns to the document it was in")
+
+        let pageTurn = try Self.functionBody(
+            "private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry)", in: source, limit: 2_000)
+        #expect(pageTurn.contains("onNavigateToDocument(adjacent, .replace)"),
+                "a page-turn must REPLACE — appending is what made 20 pages cost 20 Back taps (M-17a)")
+    }
+
+    @Test("Every router host honours .replace rather than always appending")
+    func hostsImplementReplace() throws {
+        // A host that ignores the jump kind silently reinstates M-17a for its own readers.
+        for relative in ["Search/SearchView.swift", "Browser/BrowserView.swift",
+                         "Chronology/ChronologyView.swift", "Citation/CitationLookupView.swift",
+                         "CrossReference/CrossReferenceGraphView.swift"] {
+            let source = try Self.source(relative)
+            #expect(source.contains("jump == .replace"), """
+                \(relative) must act on DocumentJump.replace — removing the current entry before \
+                appending — or page-turns stack a level each in that host (#751 / M-17a).
                 """)
         }
     }
