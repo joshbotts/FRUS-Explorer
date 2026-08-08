@@ -1420,7 +1420,7 @@ appears only when iCloud sync is running on this Mac.
 |------|--------------|-----------------|
 | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — nothing in iCloud is touched |
 | **Reset This Device** | Clears downloaded volumes and the search index | Volumes and index only; your iCloud data survives |
-| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project and recorded session, on every device |
+| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project and recorded session — plus saved searches, working corpora, custom volume scopes, project leads and person-identity corrections — on every device. App preferences are kept |
 
 `[SCREENSHOT: Settings → System → Data & Recovery — the Contents counts, the export rows, and the Recovery ladder]`
 

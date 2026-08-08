@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftData
 
 // MARK: - ResetService
 
@@ -45,6 +46,88 @@ import Foundation
 ///          clearing the index, so an open session can't keep serving stale clouds
 ///   1.1 — Corpus Analytics cache fix: flushes `CorpusAnalyticsService`'s caches after
 ///          clearing the index, so an open session can't keep serving stale counts
+// MARK: - ResetInventory
+
+/// Which `@Model` types "Erase Everything" deletes, and which it deliberately keeps (#746).
+///
+/// ## Why this is a list and not a sequence of hand-written `delete` calls
+/// `performReset` used to spell out its deletes inline, and the list fell behind the schema
+/// **twice**: Wave R-2a found it reaching `ReadingHistoryEntry` alone and extended it for the
+/// research trail, and the 2026-08 navigation/state audit then found five more types surviving a
+/// double-confirmed erase — `SavedSearch` and `PersonClusterOverride` (never in the list at all),
+/// plus `CustomVolumeScope` (#258), `ProjectLeadEntry` (#377) and `WorkingCorpus` (M-1), each
+/// added to `frusModelTypes` after the last time anyone looked here. Every one of them is
+/// CloudKit-synced, so they survived on the user's other devices too, under a screen that
+/// promises the app "returns to onboarding as if newly installed".
+///
+/// A hand-written list cannot be kept honest by reviewers who are looking at a different file.
+/// `ResetInventoryTests` asserts `erased + deliberatelyRetained` covers `frusModelTypes` exactly,
+/// so adding a `@Model` without deciding its reset fate fails the suite with the type named.
+///
+/// Version history:
+///   1.0 — Session 2026-08-08: extracted from `performReset` (#746)
+@MainActor
+enum ResetInventory {
+
+    /// Types "Erase Everything" deletes, **in deletion order**.
+    ///
+    /// Order is load-bearing and the sequence is not transactional: a dependent must be deleted
+    /// BEFORE whatever it references, so an interrupted reset leaves a harmless orphaned child
+    /// rather than a dangling reference to a deleted parent. Two cases are documented scars —
+    /// `DocumentTagAssignment` before `UserTag`, or the boot-time `OrphanedTagRepair` resurrects
+    /// deleted tags as "Recovered Tag" placeholders (#406); and `CollectionEntry` before
+    /// `Collection`, whose delete rule is `.nullify`, not cascade. `SessionEvent` precedes
+    /// `ResearchSession` for the same `.nullify` reason. The three added in #746 that reference a
+    /// parent by raw `UUID` — `ProjectLeadEntry.projectId`, `WorkingCorpus`, `SavedSearch` — go
+    /// before `Project` on the same principle, even though no `@Relationship` makes it structural.
+    static let erased: [any PersistentModel.Type] = [
+        // Dependents first.
+        DocumentTagAssignment.self,
+        DocumentHighlight.self,
+        CollectionEntry.self,
+        ResearchNote.self,
+        UserTag.self,
+        Collection.self,
+        GeneratedSummary.self,
+        // The research trail (Wave R-2a): every document opened, search run, collection exported.
+        ReadingHistoryEntry.self,
+        SearchHistoryEntry.self,
+        ExportHistoryEntry.self,
+        SessionEvent.self,
+        ResearchSession.self,
+        // Retiring (R-2b removes them from the schema); still deleted while enrolled so a reset
+        // does not leave rows a later migration would read back.
+        SummarizationPrompt.self,
+        // #746 additions — all CloudKit-synced user data that survived every previous reset.
+        SavedSearch.self,
+        PersonClusterOverride.self,
+        CustomVolumeScope.self,
+        WorkingCorpus.self,
+        ProjectLeadEntry.self,
+        // Parent last.
+        Project.self,
+    ]
+
+    /// Types "Erase Everything" deliberately does NOT delete, each with its reason.
+    ///
+    /// `SyncedPreferences` mirrors device settings — word-cloud tuning, citation style, default
+    /// document mode, the research-logging toggle, and the user's own custom stopword lists — to
+    /// iCloud. It is retained because deleting it here would not achieve what it appears to:
+    /// `ResetService.resetLocalData` clears volumes, the index and caches but **not** the
+    /// `@AppStorage` keys these values mirror, so the local copies would immediately re-publish a
+    /// fresh record. Erasing preferences honestly means clearing the local defaults too, which is
+    /// a larger change than this reset does today. Recorded here as a decision rather than left
+    /// as an omission — which is what it was until #746.
+    static let deliberatelyRetained: [any PersistentModel.Type] = [
+        SyncedPreferences.self,
+    ]
+
+    /// Stable identifiers for the two lists, for tests and diagnostics.
+    static var erasedNames: [String] { erased.map { String(describing: $0) } }
+    /// Stable identifiers for the retained list.
+    static var retainedNames: [String] { deliberatelyRetained.map { String(describing: $0) } }
+}
+
 @MainActor
 struct ResetService {
 

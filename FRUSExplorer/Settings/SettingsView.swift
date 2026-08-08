@@ -1295,8 +1295,15 @@ struct EraseEverythingView: View {
                 // under-states its reach is the same fault the wave exists to fix, one screen
                 // over. Rewriting `settings.erase.warning` in place would be a silent collision:
                 // no String Catalog ships.
-                Text(String(localized: "settings.erase.warning.trail",
-                            defaultValue: "This deletes every downloaded volume, the search index, and all of your research notes, projects, tags, collections, highlights, and AI-generated summaries — along with your whole research trail: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. This cannot be undone."))
+                // #746 supersedes `…warning.trail`: that key was itself written because the
+                // list under-stated its reach after Wave R-2a, and the audit then found five more
+                // synced types the screen never mentioned because the code never deleted them.
+                // New key rather than an in-place edit, for the same reason R-5 minted the last
+                // one — no String Catalog ships, so rewriting a key in place is a silent
+                // collision. The retention is stated too: a promise with an unlisted exception is
+                // the fault this screen keeps repeating.
+                Text(String(localized: "settings.erase.warning.inventory",
+                            defaultValue: "This deletes every downloaded volume, the search index, and all of your research notes, projects, tags, collections, highlights, and AI-generated summaries — plus your saved searches, working corpora, custom volume scopes, project leads, and any person-identity corrections you have made — along with your whole research trail: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
                     .foregroundStyle(.secondary)
             } header: {
                 Text(String(localized: "settings.erase.header", defaultValue: "What This Removes"))
@@ -1377,34 +1384,18 @@ struct EraseEverythingView: View {
             do {
                 // Delete downloaded volumes and clear the search index.
                 await ResetService.resetLocalData(appState: appState)
-                // Delete all SwiftData user-generated records. Dependent records are deleted
-                // BEFORE the records they reference: this sequence is not transactional, so if a
-                // reset is interrupted (a thrown delete, OS termination), a leftover child is
-                // harmless but a leftover reference to an already-deleted parent is an orphan.
-                // In particular `DocumentTagAssignment` must go before `UserTag` — otherwise an
-                // interrupted reset leaves dangling assignments that the boot-time
-                // `OrphanedTagRepair` would resurrect as "Recovered Tag" placeholders for tags the
-                // user explicitly asked to delete (#406). Likewise `CollectionEntry` before
-                // `Collection` (its delete rule is `.nullify`, not cascade).
-                try modelContext.delete(model: DocumentTagAssignment.self)
-                try modelContext.delete(model: DocumentHighlight.self)
-                try modelContext.delete(model: CollectionEntry.self)
-                try modelContext.delete(model: ResearchNote.self)
-                try modelContext.delete(model: UserTag.self)
-                try modelContext.delete(model: Collection.self)
-                try modelContext.delete(model: GeneratedSummary.self)
-                // Wave R-2a: the whole research trail, not just reading history. "Erase
-                // Everything" reached `ReadingHistoryEntry` alone, so a reset left every recorded
-                // search — the user's own query text, mirrored to iCloud — and every session row
-                // behind. `SessionEvent` goes before `ResearchSession` for the `.nullify` reason
-                // `ResearchSessionAdmin` documents.
-                try modelContext.delete(model: ReadingHistoryEntry.self)
-                try modelContext.delete(model: SearchHistoryEntry.self)
-                try modelContext.delete(model: ExportHistoryEntry.self)
-                try modelContext.delete(model: SessionEvent.self)
-                try modelContext.delete(model: ResearchSession.self)
-                try modelContext.delete(model: SummarizationPrompt.self)
-                try modelContext.delete(model: Project.self)
+                // Delete every SwiftData type `ResetInventory.erased` names, in its order —
+                // dependents before the records they reference, because this sequence is not
+                // transactional (an interrupted reset should leave a harmless orphaned child, not
+                // a dangling reference to a deleted parent). The list moved out of this function
+                // in #746: spelled out inline it fell behind `frusModelTypes` twice, most
+                // recently leaving five CloudKit-synced user-data types alive under a screen that
+                // promises the app "returns to onboarding as if newly installed".
+                // `ResetInventoryTests` fails the moment a new `@Model` is enrolled without a
+                // decision recorded here.
+                for modelType in ResetInventory.erased {
+                    try modelContext.delete(model: modelType)
+                }
                 await MainActor.run {
                     appState.activeProjectId = nil
                     appState.hasCompletedOnboarding = false
