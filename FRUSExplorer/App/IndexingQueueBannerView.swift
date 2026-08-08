@@ -78,7 +78,18 @@ struct IndexingQueueBannerView: View {
     /// recreates this view during long indexing runs. Use `@AppStorage` rather than
     /// `@State` — `@State` resets to `false` on every view re-creation, causing the
     /// sheet to re-trigger after each progress update.
-    @AppStorage("frus.hasShownIndexingEducation") private var hasShownThisSession = false
+    /// Whether the education sheet has auto-opened in THIS app session (#757 / audit L-46).
+    ///
+    /// Was `@AppStorage("frus.hasShownIndexingEducation")`. That move (version history 1.1) was
+    /// aimed at re-triggering on view recreation *within* a session — but `@AppStorage` persists
+    /// across launches and nothing ever reset the key, so the designed auto-introduction became
+    /// **once per install**: a researcher who indexed a batch a year ago never saw it again when
+    /// downloading a new tranche. The property name and the `onAppear` comment both said
+    /// "session"; only the storage scope disagreed.
+    ///
+    /// `AppState` is the session: it is created once per launch and outlives every view recreation,
+    /// which is exactly the lifetime the original intent asks for.
+    @Environment(AppState.self) private var educationSessionState
 
     var body: some View {
         VStack(spacing: 0) {
@@ -110,8 +121,8 @@ struct IndexingQueueBannerView: View {
         .onAppear {
             // Auto-open the educational sheet the first time this banner appears
             // in the current app session.
-            guard !hasShownThisSession else { return }
-            hasShownThisSession = true
+            guard !educationSessionState.hasShownIndexingEducationThisSession else { return }
+            educationSessionState.hasShownIndexingEducationThisSession = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 showWhileIndexing = true
             }

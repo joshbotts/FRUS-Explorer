@@ -496,7 +496,18 @@ struct SearchView: View {
                     DocumentView(entry: entry, onNavigateToDocument: pushInSearchStack)
                         .workingOnSubtitle()
                     #else
-                    MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
+                    // #757 (L-42): a REAL binding, not `.constant([])`.
+                    //
+                    // Dead today — `MainTabView` is SearchView's only instantiation site and is
+                    // iOS-only — but armed: `.constant([])` is the exact defect the Citation Lookup
+                    // window (#239) and Chronology (D1) were rebuilt to remove, because
+                    // MacDocumentView's navigation appends into a constant are silently dropped,
+                    // killing cross-reference taps and prev/next with no symptom. `vm.navigationPath`
+                    // exists on both platforms, so the correct binding costs nothing and the trap
+                    // cannot spring if this view is ever reused on macOS.
+                    MacDocumentView(entry: entry,
+                                    navigationPath: $vm.navigationPath,
+                                    highlightCoordinator: HighlightCoordinator())
                     #endif
                 }
         }
