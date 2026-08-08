@@ -1279,6 +1279,11 @@ When you read a document that has notes from a different project, a disclosure i
 
 **Leads.** Project Home suggests documents related to the ones you have already gathered under this project, ranked by the same signals as Related Documents (Section 6.4). Each row shows the document's header, how many of your project's documents it is related to, and a few lines of what it actually says — its summary if it has one, otherwise its opening text — so you can judge a lead without opening it. A lead whose volume is not indexed on this Mac shows the header alone.
 
+**Opening things from Project Home.** Clicking a lead, a recently visited document or a note opens
+that document in whichever document window you used last. If no document window is open at all —
+Project Home is its own window, so you can close the main one with ⌘W and keep working — a new
+document window opens for it. The click always goes somewhere.
+
 ### 15.2 User Tags
 
 User tags are global (not project-scoped). They complement projects by letting you mark documents with thematic labels that cut across multiple research initiatives.
