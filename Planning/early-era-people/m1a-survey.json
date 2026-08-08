@@ -1,0 +1,209 @@
+{
+  "eval_candidates_written": 300,
+  "generated_by": "Planning/early-era-people/m1a_survey.py",
+  "measurement_1_markup_share": {
+    "per_volume": [
+      {
+        "band": "1861-1899",
+        "marked": 1050,
+        "share": 0.6604,
+        "unmarked": 540,
+        "volume": "frus1872p1"
+      },
+      {
+        "band": "1861-1899",
+        "marked": 1207,
+        "share": 0.3317,
+        "unmarked": 2432,
+        "volume": "frus1867p2"
+      },
+      {
+        "band": "1861-1899",
+        "marked": 1487,
+        "share": 0.2753,
+        "unmarked": 3915,
+        "volume": "frus1895p1"
+      },
+      {
+        "band": "1900-1929",
+        "marked": 1779,
+        "share": 0.4428,
+        "unmarked": 2239,
+        "volume": "frus1904"
+      },
+      {
+        "band": "1900-1929",
+        "marked": 521,
+        "share": 0.5108,
+        "unmarked": 499,
+        "volume": "frus1924v02"
+      },
+      {
+        "band": "1900-1929",
+        "marked": 932,
+        "share": 0.4513,
+        "unmarked": 1133,
+        "volume": "frus1929v02"
+      },
+      {
+        "band": "1930-1945",
+        "marked": 746,
+        "share": 0.4154,
+        "unmarked": 1050,
+        "volume": "frus1942v05"
+      },
+      {
+        "band": "1930-1945",
+        "marked": 477,
+        "share": 0.47,
+        "unmarked": 538,
+        "volume": "frus1937v02"
+      },
+      {
+        "band": "1930-1945",
+        "marked": 789,
+        "share": 0.4493,
+        "unmarked": 967,
+        "volume": "frus1938v01"
+      },
+      {
+        "band": "1946-",
+        "marked": 502,
+        "share": 0.1237,
+        "unmarked": 3556,
+        "volume": "frus1948v05p2"
+      },
+      {
+        "band": "1946-",
+        "marked": 672,
+        "share": 0.3133,
+        "unmarked": 1473,
+        "volume": "frus1948v06"
+      },
+      {
+        "band": "1946-",
+        "marked": 520,
+        "share": 0.1783,
+        "unmarked": 2397,
+        "volume": "frus1949v06"
+      }
+    ],
+    "pooled_marked": 10682,
+    "pooled_share": 0.34,
+    "pooled_unmarked": 20739
+  },
+  "measurement_3_pocom_constraint": {
+    "per_volume": [
+      {
+        "band": "1861-1899",
+        "from_to_names": 1189,
+        "surname_known": 1045,
+        "uniquely_resolved": 930,
+        "volume": "frus1872p1"
+      },
+      {
+        "band": "1861-1899",
+        "from_to_names": 1230,
+        "surname_known": 974,
+        "uniquely_resolved": 275,
+        "volume": "frus1867p2"
+      },
+      {
+        "band": "1861-1899",
+        "from_to_names": 1571,
+        "surname_known": 1271,
+        "uniquely_resolved": 1198,
+        "volume": "frus1895p1"
+      },
+      {
+        "band": "1900-1929",
+        "from_to_names": 2252,
+        "surname_known": 1880,
+        "uniquely_resolved": 1741,
+        "volume": "frus1904"
+      },
+      {
+        "band": "1900-1929",
+        "from_to_names": 681,
+        "surname_known": 535,
+        "uniquely_resolved": 358,
+        "volume": "frus1924v02"
+      },
+      {
+        "band": "1900-1929",
+        "from_to_names": 1102,
+        "surname_known": 974,
+        "uniquely_resolved": 636,
+        "volume": "frus1929v02"
+      },
+      {
+        "band": "1930-1945",
+        "from_to_names": 774,
+        "surname_known": 724,
+        "uniquely_resolved": 689,
+        "volume": "frus1942v05"
+      },
+      {
+        "band": "1930-1945",
+        "from_to_names": 647,
+        "surname_known": 565,
+        "uniquely_resolved": 443,
+        "volume": "frus1937v02"
+      },
+      {
+        "band": "1930-1945",
+        "from_to_names": 887,
+        "surname_known": 820,
+        "uniquely_resolved": 562,
+        "volume": "frus1938v01"
+      },
+      {
+        "band": "1946-",
+        "from_to_names": 579,
+        "surname_known": 462,
+        "uniquely_resolved": 366,
+        "volume": "frus1948v05p2"
+      },
+      {
+        "band": "1946-",
+        "from_to_names": 772,
+        "surname_known": 464,
+        "uniquely_resolved": 294,
+        "volume": "frus1948v06"
+      },
+      {
+        "band": "1946-",
+        "from_to_names": 700,
+        "surname_known": 596,
+        "uniquely_resolved": 424,
+        "volume": "frus1949v06"
+      }
+    ],
+    "pooled_names": 12384,
+    "pooled_surname_known": 10310,
+    "pooled_uniquely_resolved": 7916,
+    "share_surname_known": 0.8325,
+    "share_uniquely_resolved": 0.6392
+  },
+  "sample": [
+    "frus1872p1",
+    "frus1867p2",
+    "frus1895p1",
+    "frus1904",
+    "frus1924v02",
+    "frus1929v02",
+    "frus1942v05",
+    "frus1937v02",
+    "frus1938v01",
+    "frus1948v05p2",
+    "frus1948v06",
+    "frus1949v06"
+  ],
+  "seed": 234,
+  "volumes_total": 552,
+  "volumes_with_list_the_app_does_not_read": [
+    "frus1873p1v1",
+    "frus1873p1v2"
+  ],
+  "volumes_without_editor_list": 267
+}

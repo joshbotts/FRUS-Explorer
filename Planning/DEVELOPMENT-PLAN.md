@@ -2216,3 +2216,37 @@ and uncovered volumes, which would have been a finding about nothing. The linkin
 `corresp`; a covered volume carries it on ~75% of its `persName` elements. Caught by comparing
 against a volume known to be covered instead of trusting the first number — the same discipline the
 size-against-the-denominator rule exists for.
+
+### Session 2026-08-07 — M1a run: the gate measurements for #234's early-era program
+
+`Planning/early-era-people/` — reproducible survey (`m1a_survey.py`, seed 234, read-only),
+`M1a-Findings.md`, `m1a-survey.json`, and 300 staged eval candidates.
+
+**The headline reverses last session's framing.** `People-Early-Era-Program.md` argued the early-era
+problem looked like *reconciliation, not detection*, explicitly flagging markup coverage as
+unmeasured and as the thing that would size the program. Measured over a stratified 12-volume
+sample: **34.0% pooled markup share** (10,682 marked / 20,739 unmarked), falling to **12–31% in the
+1946– volumes**. The editors mark the correspondence apparatus (`from`/`to`) and leave body prose
+alone, so **M2 (detection) is required**. Spot-checked the unmarked hits — telegram signature lines,
+title parentheticals, running prose — they are genuine mentions, not noise. Stated as a lower bound
+on markup, since a bare surname regex also matches TOC and index repetitions.
+
+**POCOM constrains the `from`/`to` layer strongly:** 12,384 names in the sample, **83.2%
+surname-known**, **63.9% resolving to exactly one officeholder serving that year**. Recorded as an
+upper bound on precision — the match is surname-only, and the 1946– volumes already show the ceiling
+falling as correspondence widens beyond US chiefs of mission.
+
+**The eval set is staged, not done.** 300 stratified rows with an empty identity column; keying is
+owner work, and nothing downstream is measurable until it happens.
+
+**Two defects fell out of validating the survey**, both from cross-checking the TEI-derived volume
+split against the app's own database — they disagreed on three volumes and every disagreement was a
+bug. [#740](https://github.com/joshbotts/FRUS-Explorer/issues/740): `frus1873p1v1`/`p1v2` carry
+57-entry editor lists the parser never reads (`xml:id="correspondents"` with no `subtype`, versus
+the parser's `subtype=="index"` + `xml:id ∈ {persons,persname,listofpersons}` rule).
+[#741](https://github.com/joshbotts/FRUS-Explorer/issues/741): `frus1941-43` contributes 77
+back-of-book subject-index headings to the People browser as people.
+
+Those three volumes also reconcile the two volume counts now in circulation: **268** is where the
+app shows no people, **267** is where the TEI has no editor list, and the difference is exactly the
+defect volumes.
