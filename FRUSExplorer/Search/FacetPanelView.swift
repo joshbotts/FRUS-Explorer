@@ -114,6 +114,7 @@ struct ActiveNarrowing: Sendable, Equatable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — R-1b: initial implementation
+///   1.1 — Session 2026-08-07: per-section sort / page / filter state (#586)
 @Observable
 @MainActor
 final class FacetPanelController {
@@ -138,6 +139,13 @@ final class FacetPanelController {
     /// invalidates the panel, and the recomputed sections describe the **narrowed** set. The
     /// figure only exists at the moment of the click, so it is captured there.
     private(set) var narrowedFrom: Int?
+
+    /// Per-section sort, page size, page, and filter (#586).
+    ///
+    /// Here rather than in the view because the panel's lifetime is the panel's, not the
+    /// match's: `FacetPanelView` keeps its identity across searches, so `@State` would carry a
+    /// stale page index into a result set that has no such page.
+    private(set) var display: [FacetSection: FacetDisplayState] = [:]
 
     /// Set by ``recordNarrowing(from:)`` and promoted by the next ``invalidate(signature:)``.
     ///
@@ -164,6 +172,56 @@ final class FacetPanelController {
         // so "narrowed from" never survives into a query it does not describe.
         narrowedFrom = pendingNarrowedFrom
         pendingNarrowedFrom = nil
+        // Sort and page size are the researcher's stated preference and survive; the page
+        // index and the filter text describe the *previous* result set and do not. Carrying
+        // "Dulles" into a narrowed match would show an empty People section with a filter the
+        // user has stopped looking at, which reads as a broken facet rather than a filtered
+        // one — the same reason the panel invalidates its rows at all.
+        for key in display.keys {
+            display[key]?.pageIndex = 0
+            display[key]?.filterText = ""
+        }
+    }
+
+    /// The display state for `section`, defaulted on first use.
+    func displayState(for section: FacetSection) -> FacetDisplayState {
+        display[section] ?? .standard(for: section)
+    }
+
+    /// Reorders `section`, returning to its first page.
+    ///
+    /// The page index cannot survive a re-sort: page 4 of an alphabetical list holds different
+    /// people from page 4 of a count-ordered one, so keeping the number would move the reader
+    /// somewhere they did not ask to go.
+    func setSort(_ sort: FacetSort, for section: FacetSection) {
+        var state = displayState(for: section)
+        state.sort = sort
+        state.pageIndex = 0
+        display[section] = state
+    }
+
+    /// Resizes `section`'s page, returning to its first page.
+    func setPageSize(_ size: FacetPageSize, for section: FacetSection) {
+        var state = displayState(for: section)
+        state.pageSize = size
+        state.pageIndex = 0
+        display[section] = state
+    }
+
+    /// Turns to a page. Out-of-range values are clamped by ``FacetPaging``, not here, so the
+    /// clamp is applied against the rows that actually exist.
+    func setPage(_ index: Int, for section: FacetSection) {
+        var state = displayState(for: section)
+        state.pageIndex = max(0, index)
+        display[section] = state
+    }
+
+    /// Filters `section` by label substring, returning to its first page.
+    func setFilter(_ text: String, for section: FacetSection) {
+        var state = displayState(for: section)
+        state.filterText = text
+        state.pageIndex = 0
+        display[section] = state
     }
 
     /// Records the match size a facet click is about to narrow away from.
@@ -237,6 +295,7 @@ final class FacetPanelController {
 ///
 /// Version history:
 ///   1.0 — R-1b: initial implementation
+///   1.1 — Session 2026-08-07: sort pickers, paging, and a filter field (#586)
 struct FacetPanelView: View {
 
     /// The panel's state.
@@ -349,10 +408,139 @@ struct FacetPanelView: View {
                     } else {
                         expanded.remove(kind)
                     }
-                })
+                }),
+            controls: { sectionControls(kind) }
         ) {
             sectionBody(kind)
         }
+    }
+
+    // MARK: - Section controls (#586)
+
+    /// The sort picker, page-size picker, and filter field for one section.
+    ///
+    /// Rendered only once the section's rows exist and only where each control earns its
+    /// space: a sort picker on the three sections whose ordering is a real choice, a page-size
+    /// picker only when there is more than one page's worth to show, and a filter field only
+    /// where the list is long enough that reading it is not an option.
+    @ViewBuilder
+    private func sectionControls(_ kind: FacetSection) -> some View {
+        if let facets = controller.facets, case let buckets = rows(for: kind, in: facets),
+           !buckets.isEmpty {
+            let state = controller.displayState(for: kind)
+            let sorts = FacetSort.choices(for: kind)
+            let needsPaging = buckets.count > (FacetPageSize.top5.rowCount ?? 5)
+
+            if !sorts.isEmpty || needsPaging {
+                HStack(spacing: 8) {
+                    if !sorts.isEmpty {
+                        Menu {
+                            Picker(String(localized: "facets.sort.label", defaultValue: "Sort"),
+                                   selection: Binding(
+                                    get: { state.sort },
+                                    set: { controller.setSort($0, for: kind) })) {
+                                ForEach(sorts, id: \.self) { sort in
+                                    Text(sort.title(for: kind)).tag(sort)
+                                }
+                            }
+                            .pickerStyle(.inline)
+                            .labelsHidden()
+                        } label: {
+                            controlLabel("arrow.up.arrow.down", state.sort.title(for: kind))
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                        .accessibilityLabel(String(localized: "facets.sort.a11y",
+                                                   defaultValue: "Sort order"))
+                    }
+
+                    if needsPaging {
+                        Menu {
+                            Picker(String(localized: "facets.page.label", defaultValue: "Show"),
+                                   selection: Binding(
+                                    get: { state.pageSize },
+                                    set: { controller.setPageSize($0, for: kind) })) {
+                                ForEach(FacetPageSize.allCases, id: \.self) { size in
+                                    Text(size.title).tag(size)
+                                }
+                            }
+                            .pickerStyle(.inline)
+                            .labelsHidden()
+                        } label: {
+                            controlLabel("list.bullet", state.pageSize.title)
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                        .accessibilityLabel(String(localized: "facets.page.a11y",
+                                                   defaultValue: "Rows per page"))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal)
+            }
+
+            // Only where a page turner alone would not be navigation. Measured: a whole-corpus
+            // match spans 16,385 person rollups, which is 656 pages of 25 — reachable in
+            // principle and findable by nobody.
+            //
+            // Never on a bounded section, even a long one: years runs to 203 rows, but
+            // "filter the years by substring" is not a thing a reader wants, and offering it
+            // would make the control mean something different in different sections.
+            if !kind.hasBoundedDomain, buckets.count > Self.filterFieldThreshold {
+                facetFilterField(kind, rowCount: buckets.count, text: state.filterText)
+            }
+        }
+    }
+
+    /// The row count above which an unbounded section gets a filter field.
+    ///
+    /// Above four pages of 25 the list has stopped being something a reader scans.
+    static let filterFieldThreshold = 100
+
+    private func facetFilterField(_ kind: FacetSection, rowCount: Int, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(
+                String(localized: "facets.filter.prompt",
+                       defaultValue: "Filter \(rowCount.formatted()) rows"),
+                text: Binding(get: { text },
+                              set: { controller.setFilter($0, for: kind) }))
+                .textFieldStyle(.plain)
+                .font(.caption)
+                #if os(iOS)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                #endif
+            if !text.isEmpty {
+                Button {
+                    controller.setFilter("", for: kind)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "facets.filter.clear",
+                                           defaultValue: "Clear filter"))
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal)
+    }
+
+    private func controlLabel(_ symbol: String, _ text: String) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: symbol)
+            Text(text)
+            Image(systemName: "chevron.down")
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder
@@ -373,9 +561,21 @@ struct FacetPanelView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(buckets) { bucket in
+                    let page = FacetPaging.page(buckets,
+                                                with: controller.displayState(for: kind))
+                    if page.rows.isEmpty {
+                        // Only reachable through the filter field — the empty aggregate is
+                        // handled above — so it names the filter as the cause rather than
+                        // letting the section look like it holds nothing.
+                        Text(String(localized: "facets.filter.noMatches",
+                                    defaultValue: "No rows contain that. Clear the filter to see all \(page.totalCount.formatted())."))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(page.rows) { bucket in
                         row(bucket, in: kind, matchCount: facets.matchCount)
                     }
+                    pageFooter(page, in: kind)
                     if kind == .years, facets.undatedCount > 0 {
                         // Reported, not dropped: otherwise the bars sum to less than the
                         // match with nothing explaining the gap.
@@ -385,10 +585,12 @@ struct FacetPanelView: View {
                             .foregroundStyle(.tertiary)
                     }
                     if let bound = facets.bounds[kind], bound.isTruncated {
-                        // The house rule: no silent truncation. And the total is real —
-                        // one common-term match spans 552 volumes and 14,615 person rollups.
+                        // The house rule: no silent truncation. Since #586 this fires only if
+                        // the 20,000-row fetch ceiling bit, which no real section reaches —
+                        // the largest measured is 16,385 person rollups. The everyday "you are
+                        // seeing part of this" is `pageFooter`'s to say.
                         Text(String(localized: "facets.bound",
-                                    defaultValue: "Showing the top \(bound.shown) of \(bound.total.formatted())."))
+                                    defaultValue: "This breakdown stopped at \(bound.shown.formatted()) of \(bound.total.formatted()) values."))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -412,6 +614,51 @@ struct FacetPanelView: View {
             }
         }
         .padding(.horizontal)
+    }
+
+    /// What the section is showing, and the controls to see the rest (#586).
+    ///
+    /// The count line is unconditional whenever the rows are a subset — of the section or of
+    /// the filter — because the house rule that made the old "Showing the top 50 of 552"
+    /// caption exist applies just as much to a page as to a cut. It is suppressed only when
+    /// the reader is already looking at everything.
+    @ViewBuilder
+    private func pageFooter(_ page: FacetPage, in kind: FacetSection) -> some View {
+        let isShowingEverything = !page.hasMultiplePages && !page.isFiltered
+        if !isShowingEverything, !page.rows.isEmpty {
+            HStack(spacing: 8) {
+                Text(page.isFiltered
+                     ? String(localized: "facets.page.rangeFiltered",
+                              defaultValue: "\(page.firstRowNumber)–\(page.firstRowNumber + page.rows.count - 1) of \(page.matchingCount.formatted()) matching, \(page.totalCount.formatted()) in all")
+                     : String(localized: "facets.page.range",
+                              defaultValue: "Showing \(page.firstRowNumber)–\(page.firstRowNumber + page.rows.count - 1) of \(page.matchingCount.formatted())"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                Spacer(minLength: 0)
+                if page.hasMultiplePages {
+                    Button {
+                        controller.setPage(page.pageIndex - 1, for: kind)
+                    } label: { Image(systemName: "chevron.left") }
+                        .buttonStyle(.plain)
+                        .disabled(page.pageIndex == 0)
+                        .accessibilityLabel(String(localized: "facets.page.previous",
+                                                   defaultValue: "Previous page"))
+                    Text(String(localized: "facets.page.indicator",
+                                defaultValue: "\(page.pageIndex + 1) / \(page.pageCount)"))
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Button {
+                        controller.setPage(page.pageIndex + 1, for: kind)
+                    } label: { Image(systemName: "chevron.right") }
+                        .buttonStyle(.plain)
+                        .disabled(page.pageIndex >= page.pageCount - 1)
+                        .accessibilityLabel(String(localized: "facets.page.next",
+                                                   defaultValue: "Next page"))
+                }
+            }
+            .font(.caption2)
+            .padding(.top, 2)
+        }
     }
 
     private func rows(for kind: FacetSection, in facets: ResultSetFacets) -> [FacetBucket] {

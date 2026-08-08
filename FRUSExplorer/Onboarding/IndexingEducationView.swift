@@ -885,7 +885,8 @@ private extension EducationPage {
                 paragraphs: [
                     "Facets break a result set down by year, volume, person, document type and archival provenance, so you can see at a glance whether a term clusters in one administration, one country file, or one editor\u{2019}s volumes.",
                     "Read the denominator carefully, because it is deliberately not the list you are looking at: facets describe the whole match, before any narrowing you apply below them. That is what makes them comparable to each other — a breakdown that shifted every time you filtered would tell you about your filtering rather than about the corpus.",
-                    "Facet rows are also controls. Tapping one narrows the search to that year, volume, or person, and the narrowing appears as a chip you can clear."
+                    "Facet rows are also controls. Tapping one narrows the search to that year, volume, or person, and the narrowing appears as a chip you can clear.",
+                    "Each section can be re-sorted and paged. Years, volumes and people offer an ordering \u{2014} by count, or by label, which reads as oldest and newest on years and as alphabetical on people \u{2014} and a Show menu setting how many rows a page holds. Years, document type and provenance open showing everything they have; volumes and people open at the top 25 and add a filter field, because a single common-term search can span every volume in the corpus and more than sixteen thousand people."
                 ]
             ),
             EducationSection(

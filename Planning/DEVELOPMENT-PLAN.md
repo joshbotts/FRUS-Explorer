@@ -2077,3 +2077,48 @@ leaving 22 live documents plus the four artifact directories at the root.
   `Planning/<moved-file>` references remain in Swift sources); `CLAUDE.md` and
   `Docs/screenshots/README.md` pointers updated. Generator OUTPUT_DIR defaults
   (`cross-ref-validation/`, `nara-record-group-catalog/`, `source-explorer-export/`) untouched.
+
+### Session 2026-08-07 — #586: sort, page, and filter facets (and stop cutting years at 50)
+
+The issue asked for facet sorting and pagination. Assessing it turned up a defect underneath:
+`FacetRequest.limitPerSection` was 50 for every section, and the years aggregate is ordered
+`k DESC`, so the cut kept the **50 most recent years** and dropped the rest. Measured on the
+owner's index, the histogram began at **1953** — 88,720 of 314,676 dated rows, 28% — and hid both
+World Wars behind a caption reading "Showing the top 50 of 203". The count was honest; "top" was
+the wrong word for a cut that kept the latest, not the largest.
+
+**One premise in the issue was wrong and is worth recording**: it says "facets are displayed by
+count". True of volumes / people / document type / provenance; **not** of years, which has always
+been reverse-chronological. What years lacked was the *choice*.
+
+**Architecture: display cut moved out of SQL.** Two measurements decided this.
+
+1. Cache-controlled on the whole 316,839-document corpus, the people aggregate cost **0.798 s /
+   0.811 s at `LIMIT 50`** and **0.894 s / 0.802 s at `LIMIT 20000`** returning **16,385 rows**.
+   The `GROUP BY` computes every group either way. So sections are fetched whole
+   (`FacetRequest.fetchCeiling = 20_000`, above the 18,078-row rollup table) and `FacetPaging`
+   sorts/pages/filters in Swift — instant, and no re-query per page turn. SQL `OFFSET` paging
+   would have re-paid 0.8 s on **every** page.
+2. `ORDER BY canonical_name` uses BINARY collation, which exiles all **22** non-ASCII initials
+   past `Z` (`Ágústsson, Einar`) and misplaces **1,041** names carrying an internal diacritic.
+   `localizedStandardCompare` fixes both, and also orders `…v05` before `…v10`.
+
+**Alphabetical people ≈ last name, honestly labelled.** **17,062 of 18,078** canonical names
+(94.4%) are stored `Last, First`, so plain alphabetical *is* surname order for almost all of them.
+The 1,016 without a comma are initials-first transliterations (`A. Ya. Vyshinski`) and titled or
+single names (`Abbas Hilmi Pasha`); there is no surname to extract from the latter, so the control
+says "A–Z" rather than promising a last name it cannot always find.
+
+**Shipped**: `FacetSort`, `FacetPageSize`, `FacetDisplayState`, `FacetPage`, `FacetPaging` in
+`ResultSetFacets.swift`; per-section display state on `FacetPanelController`; sort menu, Show menu,
+page turner, and a filter field (volumes/people only, above 100 rows) in `FacetPanelView` — which
+is **shared by both platforms** (`SearchView.swift`, `SearchSheet.swift`), so unlike the rest of
+search this needed no separate macOS port.
+
+**Verification**: 24 tests in `FacetSortingAndPagingTests`, **15/15 mutations caught**. The years
+guard drives the real `IndexingPipeline.resultSetFacets` over a 60-distinct-year fixture, not a
+constant — restoring `fetchCeiling = 50` fails it. The four neighbouring facet suites and the
+coding-standards audit stay green; both platforms build clean.
+
+**Not verified**: the SwiftUI wiring itself (menus rendering, the filter field binding) has no
+automated coverage — the PR carries a visual-review checklist for it.

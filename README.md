@@ -33,7 +33,7 @@ More in [`Docs/screenshots/`](Docs/screenshots).
 - **Inspect the query** — the Query Inspector shows the FTS5 expression your search actually became,
   each term's index form, and its corpus-wide versus in-scope counts.
 - **Facet** — break a result set down by year, volume, person, document type, and archival
-  provenance; tap a row to narrow.
+  provenance; sort, page, and filter each breakdown; tap a row to narrow.
 - **Analyse** — corpus, series, person, and cross-reference dashboards; a chronology view; and a
   word cloud with keyness and collocation.
 - **Trace sources** — Source Explorer resolves FRUS source notes to NARA record groups, lot files,

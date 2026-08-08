@@ -351,6 +351,10 @@ Facet rows are also controls. Tapping a year, volume, person, or document-type r
 - **Archival provenance is descriptive only.** It tells you how the match is sourced; it is not a filter, and the panel states how much of the match it can speak for rather than implying it covers all of it.
 - A truncated section reports that it was truncated. A shown total is never a partial one wearing a complete label.
 
+**Sorting and paging.** Each section carries its own controls. **Years**, **Volumes**, and **People** offer a sort order — by count, or by label in either direction, which on years reads as oldest-first and newest-first and on people is alphabetical. A **Show** menu sets how many rows a page holds (5, 10, 25, or all of them), and a page turner appears beneath the rows when there is more than one page, with a line saying which rows you are looking at and how many there are in total.
+
+Years, document type, and archival provenance open showing **everything**, because those lists have a natural ceiling — the corpus covers about two hundred years, document type is two rows, and provenance is nine eras. Volumes and people open at the top 25, because a single common-term search can span 552 volumes and more than sixteen thousand people. Those two also get a **filter field**: type part of a name and the list narrows as you type, accents and capitals ignored, so `agustsson` finds Ágústsson. Sorting alphabetically puts most people in last-name order, since FRUS records names as "Last, First" — the exceptions are figures recorded without a surname, who sort by whatever their name begins with.
+
 ### 5.6 Filters
 
 Tap the filter control to narrow your search by:
