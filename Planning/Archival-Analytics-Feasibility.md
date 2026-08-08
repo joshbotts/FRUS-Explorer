@@ -333,13 +333,13 @@ Series"** dashboards — either as SA-3 v2 drill-down or a fifth `EducationDashb
 enum + exhaustive switch is the designed extension point). Deep-link both directions with the
 existing `ResearchGuideLinkButton` / Source Explorer routing.
 
-| Phase | Content | New data? | Effort |
-|---|---|---|---|
-| 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session |
-| 2 | D: `collection-usage-index.json` generator + #267 fold-in + SA-3 tolerant decode; **class × volume counts ride the same export scan (I)** | **Yes** (one artifact, ~0.5 MB) | 1 generator session |
-| 2b | H/I flow matrix: `CrossRefValidationGenerator` harvest × export provenance-unit join → bundled aggregate; class labels table rider | **Yes** (small aggregate + label table) | 1 generator session |
-| 3 | B (ego graph) + era × collection dashboard views consuming D; class lens (I) on the same views; E rider | No | 1–2 sessions |
-| — | G after N-7 settles; numerical-file case grain (I) behind its own eval; per-edge flow browsing behind #262 | — | — |
+| Phase | Content | New data? | Effort | Tracker |
+|---|---|---|---|---|
+| 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session | **#762** |
+| 2 | D: `collection-usage-index.json` generator + #267 fold-in + SA-3 tolerant decode; **class × volume counts ride the same export scan (I)** | **Yes** (one artifact, ~0.5 MB) | 1 generator session | **#763** |
+| 2b | H/I flow matrix: `CrossRefValidationGenerator` harvest × export provenance-unit join → bundled aggregate; class labels table rider | **Yes** (small aggregate + label table) | 1 generator session | **#764** |
+| 3 | B (ego graph) + era × collection dashboard views consuming D; class lens (I) on the same views; E rider | No | 1–2 sessions | **#765** |
+| — | G after N-7 settles; numerical-file case grain (I) behind its own eval; per-edge flow browsing behind #262 | — | — | recorded here only |
 
 Phase 1 ships user-visible value with zero artifact risk and validates the interrelationship
 UX before the graph work. Phase 2 is the main data work and pays twice (this feature + #267);
@@ -376,3 +376,7 @@ once).
   and `CentralFilesClassifier` is inference, not citation), and re-sequenced §6 (Phase 2
   carries class × volume counts; new Phase 2b for the flow matrix + class-label rider;
   numerical-file case grain parked behind its own eval).
+- 1.2 (2026-08-08) — tracker enrolment: the four phases filed as issues #762 (Phase 1),
+  #763 (Phase 2, folds in #267), #764 (Phase 2b), #765 (Phase 3); §6 table gains the
+  Tracker column. Parked items (G, case grain, per-edge browsing) deliberately have no
+  issues — they are recorded here and in the issues' scope-boundary notes.
