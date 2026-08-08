@@ -236,6 +236,7 @@ enum CloudKitSchemaInventory {
         "CD_SavedSearch.CD_excludedTermsCSV",
         "CD_SavedSearch.CD_id",
         "CD_SavedSearch.CD_name",
+        "CD_SavedSearch.CD_parametersData",
         "CD_SavedSearch.CD_personRef",
         "CD_SavedSearch.CD_phraseText",
         "CD_SavedSearch.CD_prefixWildcard",
@@ -359,7 +360,21 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build.
+        // #756 — the complete SavedSearch snapshot. ONE field, not eight: `SearchParameters` is now
+        // archived whole, so the eight-field drop (M-26) is fixed and cannot recur as a ninth.
+        //
+        // Until this is promoted, a saved search made on this build recalls its full filter set on
+        // THIS device but syncs only the legacy scalar columns to others — which is exactly the
+        // pre-#756 behaviour, so nothing regresses; the new fidelity is simply local until deploy.
+        // The record still writes those scalar columns for that reason.
+        //
+        // Seeding note (the #617 lesson): CloudKit creates a field only when a record carrying a
+        // value for it is first written, so seeding is one save from the Search window's Save
+        // Search sheet with iCloud signed in — every save writes `parametersData`, so any saved
+        // search will do.
+        "CD_SavedSearch.CD_parametersData",
+        //
+        // Previously empty: Production matched this build.
         //
         // Promoted 2026-08-01 (UTC), the SIXTH promotion:
         //   `CD_Collection.CD_includeMethodAppendix` — the per-collection opt-in for appending the

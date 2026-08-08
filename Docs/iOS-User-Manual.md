@@ -417,6 +417,8 @@ Whenever a search returns results, FRUS Explorer offers to **Visualize in Corpus
 
 Tap the save icon to store your current query and filters for quick reuse later. Saved searches appear in a dedicated list accessible from the Search tab and sync across your devices via iCloud.
 
+**A saved search now keeps everything it was saved with** — including the person filter, your tag selections, the volume scope, the project scope, and whether front matter was included. Previously several of those were dropped silently, so recalling a search could run it more broadly than the one you named, with nothing saying so. Searches saved before this update keep whatever they stored at the time; re-save one to capture its full filter set.
+
 `[SCREENSHOT: Saved searches list]`
 
 ### 5.10 Finding a Document by Citation

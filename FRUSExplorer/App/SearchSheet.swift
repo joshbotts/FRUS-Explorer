@@ -624,16 +624,12 @@ struct MacSearchWindowView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                // #258 Q4(a): SavedSearch persists no volume scope; disclose instead of
-                // dropping silently. Required on BOTH save sheets by the reviewed design
-                // (SS8-Q4) — the pre-merge review caught this one missing.
-                if !(searchVM.filterVM?.effectiveVolumeIds.isEmpty ?? true) {
-                    Label(String(localized: "search.saveSearch.scopeNotSaved",
-                                 defaultValue: "The volume scope is not saved with the search — re-apply it after running the saved search."),
-                          systemImage: "info.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                // #756 retired the #258 Q4(a) disclosure. It read "The volume scope is not saved
+                // with the search — re-apply it after running the saved search", which was true
+                // when SavedSearch flattened SearchParameters into columns and dropped eight of
+                // twenty fields. The whole value is now archived, so the volume scope IS saved —
+                // and the notice had become a false warning telling users to redo work the app had
+                // already done. Removing it is part of the fix, not a cosmetic tidy.
             }
             .padding(20)
 

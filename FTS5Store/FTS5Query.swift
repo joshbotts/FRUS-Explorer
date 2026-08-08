@@ -62,7 +62,8 @@ public struct FTS5Query: Sendable {
     // MARK: - Nested Types
 
     /// Controls how multiple keyword terms are combined.
-    public enum BooleanMode: Sendable, Equatable {
+    /// `Codable` so a whole `SearchParameters` can be archived (#756) — see `SavedSearch`.
+    public enum BooleanMode: String, Codable, Sendable, Equatable {
         /// All keyword terms must appear in the document (default).
         case and
         /// Any keyword term suffices.

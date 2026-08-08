@@ -2908,3 +2908,63 @@ Four sessions running, a source-reading assertion has been satisfied by somethin
 thing it named: #752 a neighbouring sheet, #753 a label in prose, #754 a doc comment, #755 a sibling
 accessibility action. **`contains` proves a string exists somewhere, which is almost never the
 claim.** Each fix needed a specific key, line adjacency, or a code-line filter.
+
+---
+
+## Session 2026-08-08 — #756: a saved search now recalls the search that was saved
+
+Twelfth item off the 2026-08 navigation and state audit — **M-26**.
+
+**The defect.** `SavedSearch` persisted 12 of `SearchParameters`' 20 fields. The other eight —
+`userTagIds`, `volumeIds`, `documentIds`, `excludeDocumentIds`, `projectId`, `personRollupId`,
+`personLabel`, `includeFrontMatter` — were dropped on save and returned as **defaults** on recall. A
+search saved as "Kissinger détente" came back as plain `détente` over everything: **broader than the
+one the user named**, silently. The asymmetry sharpened it — the legacy single-volume `personRef`
+round-tripped fine while the modern rollup filter did not, and the facet panel *writes*
+`personRollupId` and clears `personRef`, so a facet-narrowed person filter could not survive a save
+at all.
+
+**One archived value, not eight more columns.** Eight columns fix today's list and leave the same
+trap for field nineteen — `personAnchor`, added in #747, was already a ninth casualty. Archiving
+`SearchParameters` itself makes the drop class **unrepresentable**: a new field is persisted by
+construction. It is also **one** CloudKit identifier instead of eight, and every identifier is a
+Production deploy.
+
+Making `SearchParameters` `Codable` needed only two enum conformances — and both are **raw-value
+backed on purpose**. A synthesised enum encoding is positional, so inserting a case into
+`DocumentTypeFilter` or `BooleanMode` would silently re-interpret **every saved search a user has**:
+the same defect class as #747's renumbered rollup ids.
+
+**This is also the enabling work #754 deferred.** Search restoration was blocked on
+`SearchParameters` being `Codable`; it now is.
+
+**Compatibility in both directions.** Existing records have `parametersData == nil` and still recall
+from the scalar columns; a corrupt blob falls back rather than returning a blank search. The scalar
+columns are **still written**, so a device on an older build reads the record partially rather than
+not at all.
+
+**A disclosure that became a lie.** Both save sheets carried the #258 Q4(a) notice, "The volume scope
+is not saved with the search — re-apply it after running the saved search." True when written; false
+now, and actively telling users to redo work the app had already done. Retired on both platforms —
+part of the fix, not a tidy. (#258 called the real fix "the named fast-follow"; this is it, arriving
+as one archived value rather than the one additive field it imagined.)
+
+**R-7 gate: fired correctly and handled.** Exactly one added identifier,
+`CD_SavedSearch.CD_parametersData`, now listed in `installedIdentifiers` and
+`identifiersAwaitingDeploy` with its seeding note. **Owner step outstanding:** save any search once
+on a Development build with iCloud signed in, then deploy the schema to Production and clear the
+awaiting list.
+
+**Verification:** 9 tests, all behavioural (round-trip, legacy fallback, corrupt-blob fallback,
+older-build readability, a real SwiftData persist). **7/7 mutations caught** after one repair.
+
+**The most instructive test failure of the session.** M5/M6 — removing `String` from the two enums —
+**survived**, and the test looked right: it asserted the encoded JSON *contained* the case name. But
+a synthesised enum encodes as `{"editorialNotesOnly":{}}`, which contains the name too. **The
+assertion held under both behaviours.** The property that matters is not "the name appears" but "the
+name is the contract rather than the position" — so it now decodes from a *bare* JSON string, which
+only a raw-value enum can do.
+
+This is adjacent to the four `contains` failures of the last four sessions but distinct: those
+matched the **wrong occurrence**; this matched the **right** one and still proved nothing.
+**Assert the property, not the presence of a string that the property happens to produce.**
