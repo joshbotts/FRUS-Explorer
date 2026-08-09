@@ -267,6 +267,87 @@ struct ArchivalNetworkBuilderTests {
             """)
     }
 
+    @Test("The class cap binds, and binds separately from the sector caps")
+    func classCapBinds() throws {
+        // Survived the first sweep: nothing asserted the class cap at all, so raising it to 100
+        // changed no test. Ten classes would crowd the State wedge they share a sub-arc with.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", volumes: ["v1", "v2"])
+        let keys = (1...12).map { "76\($0).72" }
+        let index = try usage(volumes: ["v1", "v2"], collections: [
+            ("f", [0, 1], [500, 500]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1], [400, 400]),
+        ], classes: keys.enumerated().map { ($0.element, [0, 1], [50 - $0.offset, 50 - $0.offset]) })
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, umbrella], usage: index, measure: .sharedDocuments,
+            minimumRelativeStrength: 0, expansion: .decimalClasses)
+        #expect(graph.classNodeCount == ArchivalNetworkGraph.classCap,
+                "drew \(graph.classNodeCount) classes, cap is \(ArchivalNetworkGraph.classCap)")
+        #expect(graph.isCapped, "twelve classes passed the threshold and six were withheld")
+    }
+
+    @Test("Among equals the narrower partner wins, because it is the more specific claim")
+    func specificityTieBreak() throws {
+        // Survived the first sweep: every earlier fixture separated its candidates on value or
+        // shared count, so reversing this comparator changed nothing.
+        //
+        // The tie is only reachable under the DOCUMENT measure. Jaccard puts the partner's own
+        // breadth in its denominator, so two partners of different breadth can never tie on it —
+        // the volume measure cannot test this comparator at all.
+        //
+        // Both share two volumes and supply 100 documents each; they differ only in how widely
+        // they are otherwise cited. They are named so the alphabetical fallback would order them
+        // the OTHER way, or a later tie-break could pass this test for the wrong reason.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2", "v3", "v4"])
+        let broad = record("a", name: "A Broad",
+                           volumes: ["v1", "v2", "x1", "x2", "x3", "x4"])
+        let narrow = record("z", name: "Z Narrow", volumes: ["v1", "v2", "y1"])
+        let index = try usage(volumes: ["v1", "v2", "v3", "v4", "x1", "x2", "x3", "x4", "y1"],
+                              collections: [
+                                  ("f", [0, 1], [100, 100]),
+                                  ("a", [0, 1], [100, 100]),
+                                  ("z", [0, 1], [100, 100]),
+                              ])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, broad, narrow], usage: index, measure: .sharedDocuments,
+            minimumRelativeStrength: 0, expansion: .collapsed)
+
+        #expect(graph.nodes.count == 2)
+        #expect(graph.nodes[0].measureValue == graph.nodes[1].measureValue,
+                "the fixture must tie on the measure or it tests nothing")
+        #expect(graph.nodes[0].sharedVolumeCount == graph.nodes[1].sharedVolumeCount,
+                "and on shared volumes, or the earlier comparator decides it")
+        #expect(graph.nodes.map(\.id) == ["z", "a"], """
+            Ranked \(graph.nodes.map(\.id)). Among partners equal on evidence, the one drawn on \
+            by fewer volumes is the more specific claim about this focus — and `a` sorts first \
+            alphabetically, so a missing breadth comparator would put it first.
+            """)
+    }
+
+    @Test("Three records sharing a name and a repository still get three distinct labels")
+    func lastResortDisambiguation() {
+        // Survived two sweeps before this fixture was right. With only TWO colliding records the
+        // fallback is untested: dropping it leaves "Conference Files · Department of State" and a
+        // bare "Conference Files", which are still distinct. It takes a THIRD record for the
+        // missing id to collide with the second — the same trap as naming a tie-break fixture in
+        // the expected order.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2", "v3"])
+        let all = [focus] + ["a", "b", "c"].map {
+            record("txt:state|\($0)", name: "Conference Files",
+                   repository: "Department of State", volumes: ["v1", "v2", "v3"])
+        }
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: all, usage: nil, measure: .sharedVolumes,
+            minimumRelativeStrength: 0, expansion: .collapsed)
+        #expect(graph.nodes.count == 3)
+        #expect(Set(graph.nodes.map(\.label)).count == 3, """
+            The three nodes are labelled \(graph.nodes.map(\.label)). When the repository cannot \
+            separate records sharing a name, the id must — and it must do so for every one of \
+            them, not just the first collision.
+            """)
+    }
+
     @Test("The ranking is a total order, so the same focus always draws the same graph")
     func rankingIsDeterministic() {
         // Two partners identical in every measured respect: only the id can separate them, and

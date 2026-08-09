@@ -183,6 +183,14 @@ struct ArchivalFlowsDataTests {
             in the flow vocabulary, 16 names are carried by more than one record and \
             `White House Central Files` is six of them.
             """)
+        // Unique is not enough: the id fallback would also produce two distinct labels, and a
+        // reader cannot tell `txt:ford|whcf` from `txt:carter|whcf`. The repository is what makes
+        // the distinction legible, so it is what the test pins.
+        #expect(data.endpoints.contains { $0.label.contains("Ford Library") }, """
+            Labels are \(data.endpoints.map(\.label)). The repository is the disambiguator a \
+            reader can actually use.
+            """)
+        #expect(data.endpoints.contains { $0.label.contains("Carter Library") })
     }
 
     // MARK: - Disclosure

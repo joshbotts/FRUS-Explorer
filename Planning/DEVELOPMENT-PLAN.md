@@ -3453,3 +3453,77 @@ inserted its own rows would pass while the parser wrote something else. A 22-mut
 the category rule, the band axis, the umbrella filter, the sort, the disambiguation, the lifecycle
 endpoints, both weights, the category mapper, the band ordering, the #351 guard, the leading-segment
 split, and both SQL statements.
+
+---
+
+## Session 2026-08-09 — #765 stage 2: Archival Analytics gains Network and Flows
+
+**Shipped:** the two custom-drawn `Canvas` surfaces, completing the design's four-mode picker.
+**Network** is the co-citation neighbourhood of one collection in four custodian sectors;
+**Flows** is where the editors sent the reader when they cross-referenced one document from
+another, over #764's aggregate. Both modes were measured against the shipped artifacts *before*
+any drawing code was written, and that measurement overturned four of the design's premises.
+
+**The Network's edge measure does not survive its own data.** The approved design weights edges
+by the overlap coefficient and offers a threshold slider defaulting to 0.25. Measured: the median
+focus has **35 partners at ≥ 0.25**, `Central Files` has **1,000**, and it is still **810 at
+≥ 0.75**. The coefficient saturates at exactly 1.000 for any partner whose volume list is a subset
+of the focus's, and 2,846 of 4,423 records cite one or two volumes — so the Whitman File's top
+eight neighbours are two-to-seven-volume lot files scoring the maximum with between zero and ten
+documents in common, and a *higher* threshold keeps them. Replaced with Jaccard over citing
+volumes and joint documents supplied. Both surface the real neighbourhoods (for `NSC Files`:
+Central Files 1970–73, the White House Tapes and Special Files, Kissinger's papers) and both thin
+properly under a slider. #762's Related Collections list keeps the coefficient — a five-row list
+with three tie-breaks is a different job from a graph with a strength axis.
+
+**Three things Flows cannot honestly offer**, each verified rather than assumed: the **year-range
+chip** (the artifact's only volume-shaped fields are two scalars, and the generator aggregates
+into a `Pair(from:to:)` carrying two unit ids — a time filter needs a schema-2 regeneration); a
+**class focus** (#764's own reader says not to build it, and the class-label rider was separately
+refuted in the plan of record — 2,550 of 2,550 class children carry a name equal to the class
+key); and **"browse these citations in your library"** (no query joins `cross_references` to
+`document_sources`, and `reference_type` defaults body-text refs to `"footnote"`, so a local list
+could not reproduce the split the surface is framed around). Each absence is stated in the
+caveats rather than left as a gap.
+
+**The review was the session's real work.** A four-lens adversarial review with a verify pass —
+42 agents — raised 38 candidates and confirmed 25. The derivation suite was 31 for 31 green
+throughout, and **the Network mode rendered nothing at all**: `layout` was gated on a `@State
+canvasSize` whose only writer sat inside the branch that state gated, so the geometry never
+entered the hierarchy, the size stayed zero, and every device drew a spinner forever. Three
+agents found it independently. No test I had written could have: they all exercised the
+derivation, which was correct.
+
+The other confirmed defects, all fixed, in the order they would have hurt a reader:
+
+- **Class squares ignored the threshold slider** — 23 of the 40 most-cited foci drew squares
+  below their own threshold at the default setting.
+- **Class strength was normalised against a collection-only maximum.** On `Conference Files, Lot
+  60 D 627` four classes exceeded the strongest collection, the largest by 76%; all four clamped
+  to 1.0 and drew at identical size and radius on top of the focus disc. One radial axis needs
+  one maximum.
+- **The subject-numeric fold took one `min()` per leaf**, so a group could claim more
+  jointly-supplied documents than the focus contributed at all. It clips once per volume now.
+- **Node captions were cut at 16 characters**, eating the ` · Repository` suffix disambiguation
+  appends — so six distinct `White House Central Files` records drew as one identical string. The
+  disambiguation pass was defeated at the last step.
+- **The dashed hull was a bounding box** in a radial layout, enclosing collection circles that
+  were not classes — a dashed outline labelled "Central Files" around a presidential library,
+  which is the exact unit confusion the shapes exist to prevent. Classes now take their own
+  sub-arc and the layout supplies the hull.
+- **The cap was global and the wedge step rank-based**, packing a busy sector 2.6° apart. The cap
+  is now per custodian, which also fixes a reading problem: a neighbourhood that is nine-tenths
+  lot files keeps its one presidential library.
+- The dock's own sentence put class squares over a collection-only denominator; the #498
+  status-bar preference was missing on the focus pickers (BrowserView's comment names this
+  surface); a detached child outlives its parent's cancellation, so a superseded scan could pin
+  the wrong graph; the Flows copy said "destinations" and computed an outgoing share while
+  showing incoming; the two Flows columns overlapped below ~220pt.
+
+**Lesson, and it is the same one in new clothes.** A green derivation suite says nothing about
+whether the view draws. The `canvasSize` deadlock is the "unreachable pane" class (#363, #338)
+with a data dependency instead of a missing modifier, and the only thing that caught it was
+reading the code as a renderer would execute it. Both new wiring tests exist because of it.
+
+**Verification.** 37 tests in 3 suites; six assert against the shipped artifacts. A 27-mutant
+sweep covers both derivations and the two view invariants.
