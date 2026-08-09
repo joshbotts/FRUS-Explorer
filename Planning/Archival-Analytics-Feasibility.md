@@ -1,6 +1,6 @@
 # Archival Analytics — Feasibility Assessment
 
-**Date:** 2026-08-08 · **Version:** 1.3 · **Status:** plan of record with design integrated
+**Date:** 2026-08-08 · **Version:** 1.5 · **Status:** plan of record with design integrated
 (§7); no code changes ride this document. Design contract: `Archival-Analytics-Design-Handoff.md`
 (in this folder — the verbatim handoff README; annotated HTML mock + PNGs stay with the owner's
 zip).
@@ -339,7 +339,7 @@ existing `ResearchGuideLinkButton` / Source Explorer routing.
 | Phase | Content | New data? | Effort | Tracker |
 |---|---|---|---|---|
 | 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session | **#762 — shipped 2026-08-08** |
-| 2 | D: `collection-usage-index.json` generator + #267 fold-in + SA-3 tolerant decode; **class × volume counts ride the same export scan (I)** | **Yes** (one artifact, ~0.5 MB) | 1 generator session | **#763** |
+| 2 | D: `collection-usage-index.json` generator; **class × volume counts ride the same scan (I)**. #267 re-scoped — see §7.7 | **Yes** (one artifact, 628 KB measured) | 1 generator session | **#763 — artifact shipped 2026-08-08; #267 follows** |
 | 2b | H/I flow matrix: `CrossRefValidationGenerator` harvest × export provenance-unit join → bundled aggregate; class labels table rider | **Yes** (small aggregate + label table) | 1 generator session | **#764** |
 | 3 | B (ego graph) + era × collection dashboard views consuming D; class lens (I) on the same views; E rider | No | 1–2 sessions | **#765** |
 | — | G after N-7 settles; numerical-file case grain (I) behind its own eval; per-edge flow browsing behind #262 | — | — | recorded here only |
@@ -507,19 +507,70 @@ generated sentence needs a test that it cannot contradict its own chart**, not o
 that, decades earlier, attributed by SA-3a's own `dateRange`-midpoint rule so the two surfaces
 agree on which era a volume belongs to.
 
+### 7.7 What #763 measured, and where #267 actually goes
+
+**The artifact, as built (2026-08-08).** `collection-usage-index.json`, **628 KB**: 264,464
+document source notes over 552 scanned volumes (501 carry any), **1,828 of the authority's 4,423
+records reached (41.3%)**, 10,435 class keys. 28.3% of notes resolve to a collection; 71.9% carry a
+class key. The two units are near-complementary, which is the measured case for the design's
+unit-switch.
+
+Three things the build settled that the plan had assumed otherwise:
+
+- **The estimate was 300–500 KB; the artifact is 628 KB.** The class table is the bulk (10,435 keys,
+  190,152 documents). One-letter wire names for the row fields took it from 784 KB, because
+  spelling `key`/`volumes`/`counts` out costs 307 KB across 12,273 rows. Nothing is truncated —
+  3,944 classes hold a single document corpus-wide and are all still there.
+- **No era rollups, deliberately.** §4-D said "rolled up by coverage decade". That would have cost
+  ~157 KB and created a second era axis able to disagree with `CollectionRelations.coverageEras`
+  (#762). Every era view is a rollup of these per-volume counts against `manifest.json`, which the
+  app already does.
+- **Never build it from an existing export.** The 2026-07-29 `source-explorer-export.json` joined
+  against the 2026-08-06 authority carries **28 dead collection ids over 2,040 documents** —
+  including the largest presidential-library collection — because #696 folded `president's ` to
+  `presidential `. An artifact-level test now refuses a usage index whose ids miss the shipped
+  authority.
+
+**The Documents ↔ Volumes toggle will reorder violently, and that is correct.** `lot:54D270` is
+1,063 documents from 5 volumes; `lot:63D351` is 625 from 81. Ranking by volumes and by documents
+are different questions. More sharply: **2,595 authority records have no attributed documents at
+all** — they are named in front matter and never resolved from a document note — so more than half
+the authority disappears when the toggle flips to Documents. #765 owes that a disclosure, and the
+app-side reader returns zero rather than nothing so the surface can say which question it answered.
+
+**#267 does not belong in this artifact, and its premise is wrong.** The issue says the SA-3
+dashboard's scope control "filters what the decade-aggregated bundled index allows". There is no
+scope control on SA-3 — it is the one "About the Series" dashboard without a `SeriesScopeBar`, a
+deliberate Session-3 decision recorded in `Planning/Completed/Issues-233-243-Plan.md:122` ("the
+bundled index is decade×category — do not fake volume scope"). So #267 is not making an
+approximation exact; it is **unlocking a capability that was withheld**. And the right home for
+per-volume category counts is `source-provenance-index.json` v2, not this artifact: SA-3's store
+reads that file, its generator already accumulates the volume dimension and discards it
+(`SourceProvenanceIndexRunner.swift:27`), and the app twin takes a new optional field
+backward-compatibly. Making SA-3 load a second artifact for its own scope control would be worse
+architecture for the same data. **#267 therefore lands as its own change** — provenance index v2
+plus the scope bar — and this artifact does not carry per-volume category counts for SA-3's benefit
+(it carries them for the Your Library and Collections modes, which is a different consumer).
+
 ### 7.5 Decisions log
 
 | # | Decision | Status |
 |---|---|---|
 | D-1 | One unified Archival Analytics surface supersedes §6's Source-Explorer/Research-Guide split; Research Guide untouched; SA-3 cross-link rider in Phase 3 | **Confirmed by owner 2026-08-08** — one surface; SA-3 cross-link rider stays |
 | D-2 | Class-label table: era-scoped labels, per-row source-edition stamp; curate the 1910–49 decimal schedule first | **Confirmed by owner 2026-08-08** — 1910–49 schedule first, per-row edition stamps |
-| D-3 | Subject-numeric umbrella option gated on a coverage measurement in the #763 session; ships Collapsed/Decimal-only if thin | **Confirmed by owner 2026-08-08** — measure in #763, gate the option |
+| D-3 | Subject-numeric umbrella option gated on a coverage measurement in the #763 session; ships Collapsed/Decimal-only if thin | **Resolved 2026-08-08 by the #763 measurement — SHIP IT, folded.** Measured on the shipped usage index: 1,362 subject-numeric leaf keys carrying 6,876 documents across 113 volumes. At **leaf** grain the lens is unrankable (691 leaves — half — hold one document; only 8 pass 100). Folded to **category + number** it is 326 groups, 13 past 100 documents (`POL 27` 1,197, `POL 7` 490, `DEF 12-5` 218). The fold ships as `CollectionKeying.subjectNumericGroup`, so #765 calls it rather than re-deriving it |
 | D-4 | Build in issue order #762 → #763 → #764 → #765, so the Documents weight toggle never ships disabled | Decided (follows the filed phase order) |
 
 ---
 
 ## Version history
 
+- 1.5 (2026-08-08) — Phase 2 artifact shipped (#763): §7.7 records the built artifact (628 KB,
+  1,828 of 4,423 authority records reached), the three design changes the build settled (compact
+  wire names, no era rollups, never rebuild from an export), the Documents↔Volumes reordering and
+  the 2,595 records that vanish when the toggle flips, and the re-scoping of #267 onto
+  `source-provenance-index.json` v2 after its premise was found false. Resolves **D-3**: the
+  subject-numeric lens ships, folded to category+number.
 - 1.4 (2026-08-08) — Phase 1 shipped (#762). Adds §7.6, the two findings from building it that
   bind the later phases: the overlap coefficient needs a two-shared-volume support floor and
   meaningful tie-breaks before it ranks anything usefully (measured — 77.8% of co-citing pairs

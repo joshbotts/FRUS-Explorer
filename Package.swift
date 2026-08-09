@@ -674,6 +674,50 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - CollectionUsageIndexGenerator
+
+        /// Builds `collection-usage-index.json` (#763) — document-grain usage counts for the
+        /// archival units FRUS cites: per-(authority collection, volume), per-(central-file
+        /// class, volume), and per-(provenance category, volume) document counts, plus the
+        /// per-volume note totals every share needs as a denominator.
+        ///
+        /// One pass over the shippable corpus reusing the surfaces the export generator already
+        /// pins to the app (`DocumentNoteExtractor`, `SourceNoteParser`, `AuthorityLookup`,
+        /// `ExportClassification.derivedKeys`, `ProvenanceCategory.from`), so the aggregate and
+        /// the per-record export agree by construction. Carries no era rollups on purpose: every
+        /// era view is a rollup of these per-volume counts against `manifest.json`, which the app
+        /// already computes, and a second era axis here could silently disagree with the first.
+        /// Entirely offline & deterministic; throws rather than writing an index of zeroes.
+        .target(
+            name: "CollectionUsageIndexGeneratorCore",
+            dependencies: [
+                .target(name: "SourceNoteKit"),
+                .target(name: "GeneratorKit"),
+                .target(name: "SourceProvenanceIndexGeneratorCore"),
+                .target(name: "CollectionAuthorityGeneratorCore"),
+                .target(name: "SourceExplorerExportGeneratorCore"),
+            ],
+            path: "CollectionUsageIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls CollectionUsageIndexRunner.run() and exits.
+        .executableTarget(
+            name: "CollectionUsageIndexGenerator",
+            dependencies: [.target(name: "CollectionUsageIndexGeneratorCore")],
+            path: "CollectionUsageIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit + fixture tests for CollectionUsageIndexGeneratorCore (aggregation over a fixture
+        /// corpus, the parallel-array invariant, determinism, and the broken-join refusal).
+        .testTarget(
+            name: "CollectionUsageIndexGeneratorTests",
+            dependencies: [.target(name: "CollectionUsageIndexGeneratorCore")],
+            path: "CollectionUsageIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - RecordGroupCatalogGenerator
 
         /// Builds the offline NARA Catalog index for the 22 foreign-affairs record groups

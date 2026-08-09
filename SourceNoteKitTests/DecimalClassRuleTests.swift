@@ -267,3 +267,63 @@ struct DecimalClassRuleTests {
         #expect(SourceNoteParser.decimalClassKey("POL 27 ARAB-ISR") == "POL 27 ARAB-ISR")
     }
 }
+
+// MARK: - SubjectNumericGroupingTests
+
+/// The subject-numeric half of the class vocabulary (#763, owner decision D-3).
+///
+/// `decimal_class` carries two filing systems because the corpus cites both through one grammar:
+/// the 1910–1949 Central Decimal File (`763.72`) and the 1963–1973 subject-numeric designators
+/// (`POL 27 VIET S`). Anything that labels or groups classes has to tell them apart, and the
+/// subject-numeric leaves are too thin to rank until they are folded to category and number.
+///
+/// Version history:
+///   1.0 — Session 2026-08-08: #763
+@Suite("Subject-numeric class grouping")
+struct SubjectNumericGroupingTests {
+
+    @Test("A decimal file number is not subject-numeric, however it is spelled")
+    func decimalClassesAreNotSubjectNumeric() {
+        for decimal in ["763.72", "611.41", "751G.00", "751G.5–MSP", "890D.01", "100"] {
+            #expect(!CollectionKeying.isSubjectNumericClass(decimal),
+                    "\(decimal) is a decimal file number — it opens with its digits")
+            #expect(CollectionKeying.subjectNumericGroup(decimal) == nil)
+        }
+    }
+
+    @Test("A subject-numeric designator folds to its category and number")
+    func subjectNumericFolds() {
+        let cases = [
+            ("POL 27 VIET S", "POL 27"),
+            ("POL 27 ARAB-ISR", "POL 27"),
+            ("POL 7 US", "POL 7"),
+            ("DEF 12-5", "DEF 12-5"),
+            ("POL 23-9 THE CONGO", "POL 23-9"),
+            ("UN 6 CHICOM", "UN 6"),
+            // The parenthesised agency qualifier the parser's grammar already accepts.
+            ("AID (US) 15-4 UAR", "AID (US) 15-4"),
+        ]
+        for (leaf, group) in cases {
+            #expect(CollectionKeying.isSubjectNumericClass(leaf), "\(leaf) opens with letters")
+            #expect(CollectionKeying.subjectNumericGroup(leaf) == group,
+                    "\(leaf) folded to \(CollectionKeying.subjectNumericGroup(leaf) ?? "nil")")
+        }
+    }
+
+    @Test("Folding collapses the leaves — which is the reason it exists")
+    func foldingActuallyGroups() {
+        // Measured on the shipped usage index: 1,362 leaves, half of them holding one document,
+        // fold to 326 groups of which 13 pass a hundred documents. A fold that returned the leaf
+        // would leave the lens unrankable while every assertion above still passed.
+        let leaves = ["POL 27 VIET S", "POL 27 ARAB-ISR", "POL 27 CYP", "POL 7 US", "POL 7 UK"]
+        let groups = Set(leaves.compactMap { CollectionKeying.subjectNumericGroup($0) })
+        #expect(groups == ["POL 27", "POL 7"])
+    }
+
+    @Test("A shape the grammar does not recognise folds to nothing rather than to a guess")
+    func unrecognisedShapesReturnNil() {
+        #expect(CollectionKeying.subjectNumericGroup("") == nil)
+        #expect(CollectionKeying.subjectNumericGroup("Conference Files") == nil,
+                "a prose segment is not a subject-numeric designator")
+    }
+}

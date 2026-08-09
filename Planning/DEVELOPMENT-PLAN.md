@@ -3137,3 +3137,71 @@ defect in a repo that reasons from its own doc comments.
 
 **Also in scope, from the mock:** the citing-volume list is capped at five with "Show all N
 volumes" — the widest record cites 157.
+
+---
+
+## Session 2026-08-08 — #763: how many documents, not just which volumes
+
+Archival analytics Phase 2. `collection-usage-index.json` is the one new bundled artifact the
+feature needs: per-(authority collection, volume), per-(central-file class, volume), and
+per-(provenance category, volume) **document** counts, plus each volume's source-note total so a
+share has a denominator. One pass over the shippable corpus through the surfaces
+`SourceExplorerExportGenerator` already pins to the app — `DocumentNoteExtractor`,
+`SourceNoteParser`, `ProvenanceCategory.from`, `AuthorityLookup`'s four-step mirror, and
+`ExportClassification.derivedKeys` for the gated class — so the aggregate and the per-record export
+agree by construction rather than by review.
+
+**Built: 628 KB.** 264,464 notes over 552 volumes (501 carry any), **1,828 of the authority's 4,423
+records reached (41.3%)**, 10,435 class keys, 28.3% of notes in a collection and 71.9% carrying a
+class.
+
+**Three design decisions the build settled, each against what the plan assumed.**
+
+*No era rollups.* §4-D asked for decade rollups. They would have cost ~157 KB and created a second
+era axis capable of disagreeing with `CollectionRelations.coverageEras` — the one #762 shipped a
+week's work ago. Every era view is a rollup of these per-volume counts against `manifest.json`,
+which the app already computes. One axis, one answer.
+
+*One-letter wire names.* The first build came out at 784 KB, and measuring where the bytes were
+showed 307 KB — **38% of the file** — was the strings `"key"`, `"volumes"`, `"counts"` repeated
+across 12,273 rows. `k`/`v`/`n` via `CodingKeys` took it to 628 KB with the Swift properties still
+spelled out. Nothing was truncated to get there: 3,944 classes hold a single document corpus-wide
+and are all still in the file.
+
+*Never build it from an existing export.* The 182 MB `source-explorer-export.json` was sitting on
+disk and would have made the aggregation a five-minute script. Joined against the current authority
+it carries **28 dead collection ids over 2,040 documents** — including the largest
+presidential-library collection — because #696 folded `president's ` to `presidential ` after the
+export was written. An artifact test now refuses a usage index whose ids miss the shipped authority,
+so the next person cannot take the shortcut either.
+
+**D-3 resolved: the subject-numeric lens ships, folded.** The gate the plan set was to measure
+1963–73 subject-numeric class coverage before letting #765 offer the lens. Measured on the artifact
+just built (not on the stale export, which predates the post-#687 class fixes): **1,362
+subject-numeric leaf keys carrying 6,876 documents across 113 volumes**. At leaf grain it is
+unrankable — 691 leaves, half of them, hold exactly one document, and only 8 pass a hundred. Folded
+to **category + number** it becomes 326 groups, 13 past a hundred (`POL 27` 1,197, `POL 7` 490,
+`DEF 12-5` 218) — a list a reader can work with. The fold ships as
+`CollectionKeying.subjectNumericGroup` so #765 calls it instead of re-deriving a rule from prose.
+
+Worth stating because it will surprise: **the class vocabulary holds two different archives**. The
+corpus cites the 1910–1949 decimal file and the 1963–1973 subject-numeric file through one grammar,
+so 9,073 decimal numbers and 1,362 subject-numeric designators share one column. Anything that
+labels or groups classes has to branch — `CollectionKeying.isSubjectNumericClass` is that branch.
+
+**#267 was folded in, and folding it in was wrong.** Its premise — "the SA-3 dashboard's scope
+control filters what the decade-aggregated index allows" — describes a control that does not exist.
+SA-3 is the one "About the Series" dashboard *without* a `SeriesScopeBar`, deliberately: the
+Session-3 plan says "the bundled index is decade×category — do not fake volume scope". So #267 is
+not making an approximation exact, it is unlocking a capability that was withheld. And its data
+belongs in `source-provenance-index.json` v2, whose store SA-3 already reads and whose generator
+already accumulates the volume dimension before discarding it — not in this artifact, which would
+make SA-3 load a second file for its own scope control. #267 lands as its own change; the plan's
+§7.7 records why.
+
+**What the Documents ↔ Volumes toggle will do.** `lot:54D270` supplies 1,063 documents from 5
+volumes; `lot:63D351` supplies 625 from 81. The two rankings are different questions and both are
+right. More sharply: **2,595 authority records have no attributed documents at all** — named in a
+volume's front matter, never resolved from a document source note — so more than half the authority
+disappears when the toggle flips. The reader returns zero rather than nothing for those, so #765's
+surface can say which question it answered instead of implying the collection is unused.
