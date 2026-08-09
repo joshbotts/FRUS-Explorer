@@ -111,6 +111,14 @@ struct ArchivalFlowsData: Sendable, Equatable {
     let volumesWithEdges: Int
     /// Volumes scanned.
     let volumesScanned: Int
+    /// References between two *different* central-file classes across the whole series.
+    ///
+    /// Read off the artifact rather than written into the caveat, for the same reason the
+    /// footnote share is: a regenerated index that changed either figure would leave a
+    /// hard-coded sentence quietly wrong.
+    let classBetweenReferences: Int
+    /// Distinct pairs those references spread over.
+    let classBetweenPairs: Int
 
     static func == (lhs: ArchivalFlowsData, rhs: ArchivalFlowsData) -> Bool {
         lhs.focus == rhs.focus && lhs.endpoints == rhs.endpoints
@@ -152,7 +160,9 @@ struct ArchivalFlowsData: Sendable, Equatable {
             totalReferences: pairs.reduce(0) { $0 + $1.0.count }, sameUnitReferences: 0,
             topPairs: Array(pairs),
             footnoteShare: footnoteShare(index), volumesWithEdges: index.coverage.volumesWithEdges,
-            volumesScanned: index.coverage.volumesScanned)
+            volumesScanned: index.coverage.volumesScanned,
+            classBetweenReferences: index.coverage.classes.betweenUnitReferences,
+            classBetweenPairs: index.classFlows.count { !$0.isSameUnit })
     }
 
     /// Builds the focused view.
@@ -194,7 +204,9 @@ struct ArchivalFlowsData: Sendable, Equatable {
             sameUnitReferences: index.sameUnitReferences(forCollectionId: focus.id),
             topPairs: [], footnoteShare: footnoteShare(index),
             volumesWithEdges: index.coverage.volumesWithEdges,
-            volumesScanned: index.coverage.volumesScanned)
+            volumesScanned: index.coverage.volumesScanned,
+            classBetweenReferences: index.coverage.classes.betweenUnitReferences,
+            classBetweenPairs: index.classFlows.count { !$0.isSameUnit })
     }
 
     /// Collections that appear at either end of any between-unit flow, for the focus search.

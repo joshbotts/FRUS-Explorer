@@ -232,8 +232,8 @@ struct FeatureInfoButton: View {
             items: [
                 FeatureInfoItem(
                     title: String(localized: "archival.info.shows.title", defaultValue: "What you're seeing"),
-                    detail: String(localized: "archival.info.shows.detail",
-                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file classes each era's volumes drew on, across the whole series. Your Library counts the same thing in the volumes you have indexed.")),
+                    detail: String(localized: "archival.info.shows.detail.v2",
+                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file classes each era's volumes drew on. Network puts one collection at the centre and arranges everything co-cited with it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.weights.title", defaultValue: "Documents and volumes count different things"),
                     detail: String(localized: "archival.info.weights.detail",
@@ -242,6 +242,10 @@ struct FeatureInfoButton: View {
                     title: String(localized: "archival.info.umbrella.title", defaultValue: "Why Central Files is hidden"),
                     detail: String(localized: "archival.info.umbrella.detail",
                                    defaultValue: "The State Department's Central Files are cited by 157 volumes and supply more than seventeen thousand documents — over twice the next-largest collection. Its bar would flatten every other one, so it is hidden by default and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.flows.title", defaultValue: "A flow is an editor's footnote, not an archive's"),
+                    detail: String(localized: "archival.info.flows.detail",
+                                   defaultValue: "About 95% of the references behind the Flows mode are footnotes. A ribbon says the editors, annotating material from one collection, sent the reader to material from another — it does not say the two archives cite each other. Coverage is also uneven, and that is itself a finding: only 254 of the 552 volumes carry any of these references, because the cross-reference style they are harvested from postdates 1945.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.units.title", defaultValue: "Collections and classes are different things"),
                     detail: String(localized: "archival.info.units.detail",

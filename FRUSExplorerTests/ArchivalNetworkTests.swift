@@ -107,7 +107,7 @@ struct ArchivalNetworkBuilderTests {
             quarter of the strong one and must drop out at a half.
             """)
         #expect(narrow.partnersTotal == 2, "the total is what was co-cited, not what survived")
-        #expect(narrow.partnersAboveThreshold == 1)
+        #expect(narrow.nodesAboveThreshold == 1)
     }
 
     @Test("The two measures rank differently, which is why both are offered")
@@ -165,22 +165,105 @@ struct ArchivalNetworkBuilderTests {
 
     // MARK: - The cap discloses
 
-    @Test("The cap withholds nodes but never withholds the fact that it did")
-    func capIsDisclosed() {
-        let focus = record("f", name: "Focus", volumes: (1...40).map { "v\($0)" })
+    @Test("The cap is per custodian, so a crowded sector cannot crowd out a quiet one")
+    func capIsPerSector() {
+        // Twenty lot files and one presidential library. A global top-N ranked by strength would
+        // drop the library; the per-sector cap is what keeps every custodian on screen.
+        let focus = record("f", name: "Focus", volumes: (1...20).map { "v\($0)" })
         var all = [focus]
-        for index in 1...60 {
-            all.append(record("p\(index)", name: "Partner \(index)",
-                              volumes: (1...(index % 30 + 3)).map { "v\($0)" }))
+        for index in 1...20 {
+            all.append(record("lot\(index)", name: "Lot \(index)", lot: "L\(index)",
+                              volumes: (1...19).map { "v\($0)" }))
         }
+        all.append(record("lib", name: "Library", repository: "Ford Library",
+                          volumes: ["v1", "v2", "v3"]))
         let graph = ArchivalNetworkBuilder.graph(
             focus: focus, in: all, usage: nil, measure: .sharedVolumes,
             minimumRelativeStrength: 0, expansion: .collapsed)
-        #expect(graph.nodes.count == ArchivalNetworkGraph.nodeCap)
+
+        let lots = graph.nodes.count { $0.category == .lotFile }
+        #expect(lots == ArchivalNetworkGraph.sectorCap, "drew \(lots) lot files")
+        #expect(graph.nodes.contains { $0.id == "lib" }, """
+            The one presidential library was dropped. Twenty lot files all outrank it, so a \
+            global cap would lose the only node in its quadrant — which is the whole reason the \
+            cap is per sector.
+            """)
         #expect(graph.isCapped)
-        #expect(graph.partnersAboveThreshold == 60, """
-            The cap reported \(graph.partnersAboveThreshold) partners above the threshold. A cap \
-            that does not say what it withheld is the silent truncation the design forbids.
+        #expect(graph.withheldCount == 21 - graph.nodes.count, """
+            Withheld \(graph.withheldCount) of \(graph.nodesAboveThreshold) above the threshold. \
+            A cap that does not say what it withheld is the silent truncation the design forbids.
+            """)
+    }
+
+    @Test("The disclosure's numerator and denominator count the same population")
+    func capCountsAreCommensurable() throws {
+        // The first draft put the drawn nodes — class squares included — over a count of
+        // collections only, so an expanded umbrella could report drawing more collections than
+        // were co-cited at all.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", volumes: ["v1", "v2"])
+        let index = try usage(volumes: ["v1", "v2"], collections: [
+            ("f", [0, 1], [10, 10]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1], [900, 900]),
+        ], classes: [("763.72", [0, 1], [40, 30]), ("890.00", [0, 1], [20, 10])])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, umbrella], usage: index, measure: .sharedVolumes,
+            minimumRelativeStrength: 0, expansion: .decimalClasses)
+        #expect(graph.nodes.count <= graph.nodesAboveThreshold, """
+            Drew \(graph.nodes.count) of \(graph.nodesAboveThreshold). The numerator counts \
+            squares and circles alike, so the denominator must too.
+            """)
+        #expect(graph.classNodeCount == 2)
+        #expect(graph.partnersTotal == 1, "one collection is co-cited, whatever is drawn from it")
+    }
+
+    @Test("Class squares obey the threshold slider, like every other node")
+    func classesObeyTheThreshold() throws {
+        // Measured on the shipped artifacts, 23 of the 40 most-cited foci drew class squares
+        // below their own threshold before this was fixed — the slider governed half the graph.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2", "v3", "v4"])
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", volumes: ["v1", "v2", "v3", "v4"])
+        let index = try usage(volumes: ["v1", "v2", "v3", "v4"], collections: [
+            ("f", [0, 1, 2, 3], [100, 100, 100, 100]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1, 2, 3], [90, 90, 90, 90]),
+        ], classes: [("763.72", [0, 1, 2, 3], [80, 80, 80, 80]), ("890.00", [0, 1], [2, 1])])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, umbrella], usage: index, measure: .sharedDocuments,
+            minimumRelativeStrength: 0.5, expansion: .decimalClasses)
+        for node in graph.nodes {
+            #expect(node.relativeStrength >= 0.5 - 0.0001,
+                    "\(node.name) is drawn at \(node.relativeStrength), below the threshold")
+        }
+        #expect(!graph.nodes.contains { $0.name == "890.00" })
+    }
+
+    @Test("A class stronger than every collection does not clamp to the maximum")
+    func classesShareTheStrengthScale() throws {
+        // On `Conference Files, Lot 60 D 627` four classes exceeded the strongest collection, the
+        // largest by 76%. Normalising them against a collection-only maximum clamped all four to
+        // 1.0, so they drew at identical size and identical radius, on top of the focus disc.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", volumes: ["v1", "v2"])
+        let small = record("small", name: "Small Partner", volumes: ["v1", "v2"])
+        let index = try usage(volumes: ["v1", "v2"], collections: [
+            ("f", [0, 1], [500, 500]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1], [400, 400]),
+            ("small", [0, 1], [10, 10]),
+        ], classes: [("763.72", [0, 1], [300, 300]), ("890.00", [0, 1], [60, 60])])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, umbrella, small], usage: index, measure: .sharedDocuments,
+            minimumRelativeStrength: 0, expansion: .decimalClasses)
+        let strengths = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.name, $0.relativeStrength) })
+        #expect(strengths["763.72"] == 1.0, "the strongest node of either kind is the unit")
+        let strongestCollection = strengths["Small Partner"] ?? 0
+        #expect(strongestCollection < 1.0)
+        #expect(graph.strongestMeasureValue == 600, """
+            The rings are drawn as fractions of \(graph.strongestMeasureValue), but the strongest \
+            drawn node supplies 600 jointly. A ring legend that misquotes its own maximum is \
+            worse than no legend.
             """)
     }
 
@@ -276,8 +359,34 @@ struct ArchivalNetworkBuilderTests {
             Drew \(classes.map(\.name)). The two POL 27 leaves must fold into one group, and the \
             decimal class belongs to the other lens.
             """)
-        #expect(classes.first?.sharedDocumentCount == 28,
-                "the fold sums its leaves: 8 + 8 + 6 + 6 capped by the focus's own contribution")
+        // The focus supplies 10 documents to each of v1 and v2. The POL 27 group supplies
+        // 8 + 6 = 14 to each. The joint total is min(10, 14) per volume = 20 — NOT 28, which is
+        // what taking a separate min() per leaf key produced: two leaves in one volume each
+        // clipped against the same focus contribution and were then added, so a group could claim
+        // more jointly-supplied documents than the focus contributed at all.
+        #expect(classes.first?.sharedDocumentCount == 20, """
+            The fold reported \(classes.first?.sharedDocumentCount ?? -1). It must clip once per \
+            volume, after summing the leaves, or the number exceeds what either side supplied.
+            """)
+    }
+
+    @Test("An expansion that yields no class leaves the umbrella circle in place")
+    func emptyExpansionKeepsTheUmbrella() throws {
+        // Deleting the circle before knowing whether anything replaced it produced a graph that
+        // said "No Co-Cited Collections" about a collection that had passed the threshold.
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", volumes: ["v1", "v2"])
+        // Only a subject-numeric key exists, and the decimal lens asks for decimals.
+        let index = try usage(volumes: ["v1", "v2"], collections: [
+            ("f", [0, 1], [10, 10]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1], [900, 900]),
+        ], classes: [("POL 27 VIET S", [0, 1], [5, 5])])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, umbrella], usage: index, measure: .sharedVolumes,
+            minimumRelativeStrength: 0, expansion: .decimalClasses)
+        #expect(graph.nodes.map(\.id) == [ArchivalCollectionsData.umbrellaCollectionId])
+        #expect(graph.expandedUmbrella == nil, "nothing replaced it, so nothing was expanded")
     }
 
     @Test("Without the usage index the umbrella cannot expand, and does not pretend to")
@@ -394,7 +503,8 @@ struct ArchivalNetworkBuilderTests {
             measure: .sharedVolumes, minimumRelativeStrength: 0.25, expansion: .collapsed)
 
         #expect(!graph.nodes.isEmpty)
-        #expect(graph.nodes.count <= ArchivalNetworkGraph.nodeCap)
+        #expect(graph.nodes.count
+                <= ArchivalNetworkGraph.sectorCap * ArchivalRepositoryCategory.allCases.count)
         // The Eisenhower-era State/White House circuit. Under the overlap coefficient the top of
         // this list was `MID Files, Lot 57 D 59` — two volumes, zero documents in common.
         let top = graph.nodes.prefix(8).map(\.name)
@@ -439,10 +549,66 @@ struct ArchivalNetworkBuilderTests {
             focus: umbrella, in: records, usage: nil, measure: .sharedVolumes,
             minimumRelativeStrength: 0.25, expansion: .collapsed)
         #expect(graph.isCapped, """
-            The Central Files umbrella no longer exceeds the node cap. The design's "no hard cap" \
-            position was overturned by that measurement; if it has stopped being true, revisit \
-            the decision rather than inherit it.
+            The Central Files umbrella no longer exceeds the sector caps. The design's "no hard \
+            cap" position was overturned by that measurement; if it has stopped being true, \
+            revisit the decision rather than inherit it.
             """)
-        #expect(graph.nodes.count == ArchivalNetworkGraph.nodeCap)
+        for category in ArchivalRepositoryCategory.ordered {
+            let drawn = graph.nodes.count { $0.category == category }
+            #expect(drawn <= ArchivalNetworkGraph.sectorCap,
+                    "\(category) drew \(drawn), past the per-sector cap")
+        }
+    }
+}
+
+// MARK: - ArchivalNetworkWiringTests
+
+/// The two structural properties of the Network view that no derivation test can see (#765).
+///
+/// Both exist because the view shipped with them broken and the suite stayed green: the mode
+/// drew nothing at all, and the derivation tests could not tell.
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #765 stage 2
+@Suite("Archival analytics — network view wiring")
+struct ArchivalNetworkWiringTests {
+
+    private static func source(_ relative: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/\(relative)")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("The canvas size never round-trips through state the drawn branch alone can write")
+    func layoutDoesNotDeadlock() throws {
+        // The defect: `layout` was a computed property gated on a `@State canvasSize`, and the
+        // ONLY writer of that state was a GeometryReader inside the branch `layout` gated. The
+        // branch could never be constructed, the size stayed zero, and the Network mode drew a
+        // spinner forever on every device. The layout is now derived from the GeometryReader's
+        // own proxy, so there is no cycle to re-enter.
+        let source = try Self.source("Analytics/ArchivalNetworkView.swift")
+        #expect(!source.contains("canvasSize"), """
+            `canvasSize` is back. If the canvas size is stored in state, check that something \
+            OUTSIDE the branch which consumes it can write it — otherwise the mode renders \
+            nothing and every derivation test still passes.
+            """)
+        #expect(source.contains("let layout = ArchivalNetworkBuilder.layout(graph, in: geometry.size)"),
+                "the layout must come from the GeometryReader proxy")
+    }
+
+    @Test("The focus picker carries the #498 status-bar preference")
+    func focusPickerIsProtected() throws {
+        // The picker hosts a `.searchable` field inside a sheet's own NavigationStack — the exact
+        // shape that wedges under rotation. BrowserView's own comment names this surface: "the
+        // Network mode's focus search would silently re-open the defect".
+        let source = try Self.source("Analytics/ArchivalNetworkView.swift")
+        let sheet = try #require(source.range(of: ".sheet(isPresented: $isChoosingFocus)"))
+        let window = source[sheet.lowerBound...].prefix(600)
+        #expect(window.contains("statusBarHidden(false)"), """
+            The focus picker sheet does not author the status-bar preference. #498 measured \
+            29,040,997 AttributeGraph cycle detections and a hang from this exact shape.
+            """)
     }
 }

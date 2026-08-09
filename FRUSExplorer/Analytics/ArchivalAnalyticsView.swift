@@ -14,11 +14,14 @@ import Charts
 /// Where the FRUS editors found what they published — the Archival Analytics surface (#765),
 /// joining Corpus, Person, Cross-Reference, and Word Cloud in the Analytics family.
 ///
-/// Two modes ship here. **Collections** ranks the archival units each era's volumes drew on,
-/// corpus-wide, from the bundled authority and usage index; **Your Library** counts the same
-/// thing in the volumes this reader has actually indexed. The design's other two modes,
-/// Network and Flows, are the custom-drawn `Canvas` surfaces and follow in their own change —
-/// ``ArchivalAnalyticsMode`` has no case for them, so the picker never offers a dead segment.
+/// Four modes. **Collections** ranks the archival units each era's volumes drew on, corpus-wide,
+/// from the bundled authority and usage index. **Network** draws the co-citation neighbourhood of
+/// one collection in custodian sectors. **Flows** maps where the editors sent the reader when they
+/// cross-referenced one document from another. **Your Library** counts the same things in the
+/// volumes this reader has actually indexed.
+///
+/// Network owns its own gestures and so bypasses the shell's `ScrollView`; see
+/// ``ArchivalAnalyticsMode/isFullFrameCanvas``.
 ///
 /// `AppState` is read as an **optional** environment value, the defensive pattern every
 /// analytics surface here follows: an absent environment degrades to an empty state instead of
@@ -26,6 +29,7 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1 (Collections + Your Library)
+///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -176,8 +180,8 @@ struct ArchivalAnalyticsView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .help(String(localized: "archival.mode.help",
-                         defaultValue: "Switch between the corpus-wide collection rankings and the archival profile of your own indexed volumes."))
+            .help(String(localized: "archival.mode.help.v2",
+                         defaultValue: "Switch between the era rankings, the co-citation network, the reference hand-off diagram, and the archival profile of your own indexed volumes."))
         }
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.archivalAnalytics

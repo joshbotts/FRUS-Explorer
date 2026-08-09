@@ -36,8 +36,6 @@ struct ArchivalFlowsView: View {
     /// Opens Archival Neighbors for a collection.
     let onOpenNeighbors: (AuthorityCollectionRecord) -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     /// The focused collection, or `nil` for the corpus-wide view.
     @State private var focus: AuthorityCollectionRecord?
     /// Which way the focused hand-off runs.
@@ -66,7 +64,7 @@ struct ArchivalFlowsView: View {
     /// Rebuilds off the main actor, for the same reason the Network does.
     private func rebuild() async {
         let inputs = (index: index, authority: authority, focus: focus, direction: direction)
-        cached = await Task.detached(priority: .userInitiated) {
+        let built = await Task.detached(priority: .userInitiated) {
             guard let focus = inputs.focus else {
                 return ArchivalFlowsData.corpusWide(index: inputs.index,
                                                     authority: inputs.authority)
@@ -74,6 +72,10 @@ struct ArchivalFlowsView: View {
             return ArchivalFlowsData.focused(on: focus, direction: inputs.direction,
                                              index: inputs.index, authority: inputs.authority)
         }.value
+        // A detached child outlives its parent's cancellation; without this a superseded
+        // derivation could land after the current one and pin the wrong diagram.
+        guard !Task.isCancelled else { return }
+        cached = built
     }
 
     @ViewBuilder
@@ -201,8 +203,11 @@ struct ArchivalFlowsView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(diagramTitle(data)).font(.headline).accessibilityAddTraits(.isHeader)
                 Spacer()
-                Text(String(format: String(localized: "archival.flows.showingAll %lld",
-                                           defaultValue: "all %lld destinations"),
+                Text(String(format: direction == .outgoing
+                            ? String(localized: "archival.flows.showingAll.outgoing %lld",
+                                     defaultValue: "all %lld destinations")
+                            : String(localized: "archival.flows.showingAll.incoming %lld",
+                                     defaultValue: "all %lld origins"),
                             Int64(data.allEndpoints.count)))
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -227,9 +232,11 @@ struct ArchivalFlowsView: View {
     }
 
     private func diagramCaption(_ data: ArchivalFlowsData) -> String {
-        String(format: String(
-            localized: "archival.flows.caption %lld %lld",
-            defaultValue: "%1$lld references run between this collection and others. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off."),
+        String(format: direction == .outgoing
+                ? String(localized: "archival.flows.caption.outgoing %lld %lld",
+                         defaultValue: "%1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.")
+                : String(localized: "archival.flows.caption.incoming %lld %lld",
+                         defaultValue: "%1$lld references run from other collections to this one. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off."),
             Int64(data.totalReferences), Int64(data.sameUnitReferences))
     }
 
@@ -240,7 +247,7 @@ struct ArchivalFlowsView: View {
     /// Block geometry, shared by the canvas and the button overlay so a ribbon always lands on
     /// the block a reader can actually tap.
     private func blockFrames(_ data: ArchivalFlowsData, size: CGSize) -> [String: CGRect] {
-        let width = min(max(size.width * 0.42, 120), 260)
+        let width = destinationWidth(for: size)
         let rowHeight: CGFloat = 44
         var frames: [String: CGRect] = [:]
         for (index, endpoint) in data.endpoints.enumerated() {
@@ -251,8 +258,16 @@ struct ArchivalFlowsView: View {
         return frames
     }
 
+    /// The two columns are budgeted from ONE width so they cannot collide. Clamping each
+    /// independently let their minimums (100 + 120) exceed a narrow canvas, and below about
+    /// 220pt the destination blocks were drawn on top of the focus block with every ribbon
+    /// running backwards.
+    private func destinationWidth(for size: CGSize) -> CGFloat {
+        max(min(size.width * 0.42, 260), size.width * 0.34)
+    }
+
     private func focusFrame(_ data: ArchivalFlowsData, size: CGSize) -> CGRect {
-        let width = min(max(size.width * 0.34, 100), 200)
+        let width = max(size.width - destinationWidth(for: size) - 48, 60)
         let height = min(CGFloat(data.endpoints.count) * 44, size.height - 24)
         return CGRect(x: 0, y: 12, width: width, height: max(height - 8, 44))
     }
@@ -358,8 +373,11 @@ struct ArchivalFlowsView: View {
     /// The expanded remainder — every collection the diagram folded, listed in full.
     private func remainderList(_ data: ArchivalFlowsData) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "archival.flows.remainder.title",
-                        defaultValue: "The rest of the destinations"))
+            Text(direction == .outgoing
+                 ? String(localized: "archival.flows.remainder.title.outgoing",
+                          defaultValue: "The rest of the destinations")
+                 : String(localized: "archival.flows.remainder.title.incoming",
+                          defaultValue: "The rest of the origins"))
                 .font(.subheadline.weight(.medium))
             ForEach(Array(data.allEndpoints.dropFirst(ArchivalFlowsData.endpointCap))) { endpoint in
                 HStack(spacing: 8) {
@@ -384,9 +402,11 @@ struct ArchivalFlowsView: View {
                         direction == .outgoing ? (data.focus?.name ?? "") : endpoint.label,
                         direction == .outgoing ? endpoint.label : (data.focus?.name ?? "")))
                 .font(.headline)
-            Text(String(format: String(
-                localized: "archival.flows.card.detail %lld %lld",
-                defaultValue: "%1$lld references, %2$lld%% of everything this collection hands off."),
+            Text(String(format: direction == .outgoing
+                        ? String(localized: "archival.flows.card.detail.outgoing %lld %lld",
+                                 defaultValue: "%1$lld references, %2$lld%% of everything this collection hands off.")
+                        : String(localized: "archival.flows.card.detail.incoming %lld %lld",
+                                 defaultValue: "%1$lld references, %2$lld%% of everything handed off to this collection."),
                 Int64(endpoint.count),
                 Int64(data.totalReferences > 0
                       ? (endpoint.count * 100 / data.totalReferences) : 0)))
@@ -439,9 +459,10 @@ struct ArchivalFlowsView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
-                localized: "archival.flows.caveats.body %lld %lld",
-                defaultValue: "Coverage is uneven and the gap is the finding: only %1$lld of the %2$lld volumes in the series contribute a single reference, because the cross-reference idiom these are harvested from postdates 1945. The figures are corpus-wide and independent of what you have downloaded, but they carry no dates — the bundled aggregate stores a pair of archival units and a count, with no volume or year attached, so this mode cannot be narrowed to a period. Central-file classes are excluded on purpose: between them the whole series carries 4,663 references over 2,730 pairs, under two per pair, which is too thin to rank and has no labels to rank it with."),
-                Int64(data.volumesWithEdges), Int64(data.volumesScanned)))
+                localized: "archival.flows.caveats.body.v2 %lld %lld %lld %lld",
+                defaultValue: "Coverage is uneven and the gap is the finding: only %1$lld of the %2$lld volumes in the series contribute a single reference, because the cross-reference idiom these are harvested from postdates 1945. The figures are corpus-wide and independent of what you have downloaded, but they carry no dates — the bundled aggregate stores a pair of archival units and a count, with no volume or year attached, so this mode cannot be narrowed to a period. Central-file classes are excluded on purpose: between them the whole series carries %3$lld references over %4$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with."),
+                Int64(data.volumesWithEdges), Int64(data.volumesScanned),
+                Int64(data.classBetweenReferences), Int64(data.classBetweenPairs)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

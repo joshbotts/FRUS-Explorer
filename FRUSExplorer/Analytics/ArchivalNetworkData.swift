@@ -54,45 +54,67 @@ struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
 /// The approved design says hub handling is "overlap-coefficient weighting … no hard cap". That
 /// decision assumed the weighting controlled the neighbourhood size. Measured, it does not — see
 /// ``ArchivalEdgeMeasure``. Even under the replacement measure, **34.7% of the 1,577 multi-volume
-/// records still have more than forty partners** above a quarter of their strongest link. A graph
-/// cannot draw four hundred nodes legibly, so this caps at ``nodeCap`` and reports
-/// ``partnersAboveThreshold`` so the surface can say what it withheld. A cap that discloses is
-/// honest; a cap that does not is the thing the design was guarding against.
+/// records still have more than forty partners** above a quarter of their strongest link, and a
+/// 90° wedge cannot hold forty nodes without them overlapping into one another's tap targets.
+///
+/// So the cap is **per sector**, not global: each custodian gets at most ``sectorCap`` nodes.
+/// That is better than a global top-N in the way that matters here — a focus whose neighbourhood
+/// is nine-tenths lot files still shows its one presidential library, instead of losing it to
+/// thirty-two lot files. ``withheldCount`` is what the surface must state.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
 struct ArchivalNetworkGraph: Sendable, Equatable {
 
-    /// Nodes drawn, strongest first.
-    static let nodeCap = 32
+    /// Nodes drawn per custodian wedge.
+    ///
+    /// Six, because the geometry says so: a wedge is 74° of usable arc, and six nodes of up to
+    /// 22pt radius are about as many as fit without their 48pt hit targets swallowing each other.
+    static let sectorCap = 6
 
-    /// Classes drawn when the umbrella is expanded. Small on purpose: they share the State
-    /// sector with the collections already there.
-    static let classCap = 10
+    /// Classes drawn when the umbrella is expanded. They get their own sub-arc inside the State
+    /// wedge rather than sharing the collections' — which is also what makes the dashed hull
+    /// around them honest, since it can then enclose classes and nothing else.
+    static let classCap = 6
 
     /// The focus record.
     let focus: AuthorityCollectionRecord
     /// The focus's custodian sector.
     let focusCategory: ArchivalRepositoryCategory
-    /// Neighbours drawn, strongest first.
+    /// Nodes drawn, strongest first.
     let nodes: [ArchivalNetworkNode]
-    /// Neighbours passing the threshold before the cap — the disclosure numerator.
-    let partnersAboveThreshold: Int
-    /// Neighbours sharing at least two volumes with the focus, whatever their strength.
+    /// Nodes that passed the threshold, of both kinds — the denominator ``nodes`` is drawn from.
+    ///
+    /// Counted over the same population as ``nodes``: when the umbrella is expanded its circle is
+    /// gone and its classes are in, so both sides move together. The first draft counted classes
+    /// in the numerator against a collection-only denominator and could report drawing more
+    /// collections than existed.
+    let nodesAboveThreshold: Int
+    /// Collections sharing at least two volumes with the focus, whatever their strength — the
+    /// figure the volume-grain sentence quotes. Independent of the measure and the threshold.
     let partnersTotal: Int
-    /// The strongest partner's raw measure value, which the rings are drawn as fractions of.
+    /// The strongest **drawn** value, which every radius and every ring is a fraction of.
+    ///
+    /// Computed across collections *and* classes. Normalising classes against a collection-only
+    /// maximum let a square exceed 1.0 and clamp: on `Conference Files, Lot 60 D 627` four
+    /// classes exceeded the strongest collection, the largest by 76%, and all four drew at
+    /// identical radius and identical size on top of the focus disc.
     let strongestMeasureValue: Double
-    /// The umbrella record, when it is a neighbour and was replaced by classes.
+    /// The umbrella record, when it was replaced by classes.
     let expandedUmbrella: AuthorityCollectionRecord?
 
-    /// Whether anything was withheld by the cap.
-    var isCapped: Bool { partnersAboveThreshold > nodes.count }
+    /// Nodes the sector caps withheld.
+    var withheldCount: Int { max(nodesAboveThreshold - nodes.count, 0) }
+    /// Whether anything was withheld.
+    var isCapped: Bool { withheldCount > 0 }
+    /// Class squares drawn.
+    var classNodeCount: Int { nodes.count { $0.kind == .centralFileClass } }
 
     /// An empty graph — the honest state for a focus with no co-citing partners.
     static func empty(focus: AuthorityCollectionRecord) -> ArchivalNetworkGraph {
         ArchivalNetworkGraph(focus: focus,
                              focusCategory: ArchivalRepositoryCategory.from(focus),
-                             nodes: [], partnersAboveThreshold: 0, partnersTotal: 0,
+                             nodes: [], nodesAboveThreshold: 0, partnersTotal: 0,
                              strongestMeasureValue: 0, expandedUmbrella: nil)
     }
 }
@@ -102,19 +124,27 @@ struct ArchivalNetworkGraph: Sendable, Equatable {
 /// Where each node sits, in canvas coordinates.
 ///
 /// Deterministic and physics-free (design direction 2a): the sector is decided by custodian and
-/// the radius by strength, so the same focus always draws the same picture and two users
+/// the radius by strength, so the same focus always draws the same picture and two readers
 /// comparing screens are comparing the same thing.
 struct ArchivalNetworkLayout: Sendable, Equatable {
     /// Node id → centre point.
     let positions: [String: CGPoint]
     /// The focus node's centre.
     let center: CGPoint
-    /// Radii of the three dashed guide rings, outermost first.
+    /// Radii of the three dashed guide rings, **innermost first** — parallel to
+    /// ``ringFractions``, which descends, because a stronger link sits nearer the centre.
     let ringRadii: [CGFloat]
     /// The fraction of the strongest link each ring marks, parallel to ``ringRadii``.
     let ringFractions: [Double]
     /// The bounding radius the wedge tints are filled to.
     let outerRadius: CGFloat
+    /// The rectangle enclosing the class squares, when any are drawn — the dashed hull.
+    ///
+    /// Supplied by the layout rather than derived in the renderer from a bounding box of the
+    /// class positions: in a radial layout that box also swallows whatever collection circles
+    /// happen to fall inside it, and a hull labelled "Central Files" drawn around a presidential
+    /// library is precisely the unit confusion the shapes exist to prevent.
+    let classHull: CGRect?
 }
 
 // MARK: - ArchivalNetworkBuilder
@@ -136,6 +166,20 @@ enum ArchivalNetworkBuilder {
     /// The three guide rings, as fractions of the strongest link.
     static let ringFractions: [Double] = [0.75, 0.50, 0.25]
 
+    /// One candidate before normalisation — the shape both the collection and the class pass
+    /// produce, so a single ranking and a single maximum cover both.
+    private struct Candidate {
+        let id: String
+        let name: String
+        let kind: ArchivalNetworkNode.Kind
+        let category: ArchivalRepositoryCategory
+        let shared: Int
+        let documents: Int
+        let value: Double
+        /// Citing volumes of a collection candidate — the specificity tie-break. Zero for classes.
+        let breadth: Int
+    }
+
     // MARK: - Building
 
     /// The neighbourhood of `focus`.
@@ -154,13 +198,10 @@ enum ArchivalNetworkBuilder {
                       minimumRelativeStrength: Double,
                       expansion: ArchivalUmbrellaExpansion) -> ArchivalNetworkGraph {
         let focusVolumes = Set(focus.volumeIds)
-        guard focusVolumes.count >= minimumSharedVolumes else {
-            return .empty(focus: focus)
-        }
+        guard focusVolumes.count >= minimumSharedVolumes else { return .empty(focus: focus) }
         let focusDocuments = usage?.documentsByVolume(forCollectionId: focus.id) ?? [:]
 
-        var candidates: [(record: AuthorityCollectionRecord, shared: Int, documents: Int,
-                          value: Double)] = []
+        var collectionCandidates: [Candidate] = []
         for candidate in collections where candidate.id != focus.id {
             let candidateVolumes = Set(candidate.volumeIds)
             let shared = candidateVolumes.intersection(focusVolumes)
@@ -169,129 +210,144 @@ enum ArchivalNetworkBuilder {
             let joint = shared.reduce(0) { total, volumeId in
                 total + min(focusDocuments[volumeId] ?? 0, candidateDocuments[volumeId] ?? 0)
             }
-            let union = candidateVolumes.union(focusVolumes).count
-            let value: Double
-            switch measure {
-            case .sharedVolumes: value = Double(shared.count) / Double(max(union, 1))
-            case .sharedDocuments: value = Double(joint)
-            }
+            let value = strength(measure: measure, shared: shared.count,
+                                 union: candidateVolumes.union(focusVolumes).count, joint: joint)
             guard value > 0 else { continue }
-            candidates.append((candidate, shared.count, joint, value))
+            collectionCandidates.append(Candidate(
+                id: candidate.id, name: candidate.name, kind: .collection,
+                category: ArchivalRepositoryCategory.from(candidate),
+                shared: shared.count, documents: joint, value: value,
+                breadth: candidateVolumes.count))
+        }
+        // Counted before any threshold or measure is applied, so the volume-grain sentence quotes
+        // a number that does not move when the reader changes the measure.
+        let partnersTotal = collections.count { candidate in
+            candidate.id != focus.id
+                && Set(candidate.volumeIds).intersection(focusVolumes).count >= minimumSharedVolumes
         }
 
-        guard let strongest = candidates.map(\.value).max(), strongest > 0 else {
+        let expandsUmbrella = expansion != .collapsed
+            && collectionCandidates.contains { $0.id == ArchivalCollectionsData.umbrellaCollectionId }
+        let classCandidates = expandsUmbrella && usage != nil
+            ? classes(focusVolumes: focusVolumes, focusDocuments: focusDocuments,
+                      usage: usage!, expansion: expansion, measure: measure)
+            : []
+
+        // The maximum spans BOTH kinds, so a square and a circle at the same radius mean the
+        // same thing — which is the whole justification for putting them on one radial axis.
+        let visible = classCandidates.isEmpty
+            ? collectionCandidates
+            : collectionCandidates.filter { $0.id != ArchivalCollectionsData.umbrellaCollectionId }
+                + classCandidates
+        guard let strongest = visible.map(\.value).max(), strongest > 0 else {
             return ArchivalNetworkGraph(
                 focus: focus, focusCategory: ArchivalRepositoryCategory.from(focus), nodes: [],
-                partnersAboveThreshold: 0, partnersTotal: candidates.count,
-                strongestMeasureValue: 0, expandedUmbrella: nil)
+                nodesAboveThreshold: 0, partnersTotal: partnersTotal, strongestMeasureValue: 0,
+                expandedUmbrella: nil)
         }
 
-        // A total order, so the same focus always draws the same graph: strength, then shared
-        // volumes, then the narrower partner (the more specific one), then name, then id.
-        let ranked = candidates
+        // One threshold, one ranking, both kinds. The first draft filtered only collections, so
+        // the slider governed half the graph: measured, 23 of the 40 most-cited foci drew class
+        // squares below their own threshold at the default setting.
+        let ranked = visible
             .filter { $0.value / strongest >= minimumRelativeStrength }
             .sorted { a, b in
                 if a.value != b.value { return a.value > b.value }
                 if a.shared != b.shared { return a.shared > b.shared }
-                if a.record.volumeIds.count != b.record.volumeIds.count {
-                    return a.record.volumeIds.count < b.record.volumeIds.count
-                }
-                if a.record.name != b.record.name { return a.record.name < b.record.name }
-                return a.record.id < b.record.id
+                if a.breadth != b.breadth { return a.breadth < b.breadth }
+                if a.name != b.name { return a.name < b.name }
+                return a.id < b.id
             }
 
-        let umbrella = expansion == .collapsed
-            ? nil
-            : ranked.first { $0.record.id == ArchivalCollectionsData.umbrellaCollectionId }?.record
-        let drawn = ranked
-            .filter { umbrella == nil || $0.record.id != umbrella?.id }
-            .prefix(ArchivalNetworkGraph.nodeCap)
+        // Per-sector caps, applied after ranking so each wedge keeps its strongest.
+        var perSector: [ArchivalRepositoryCategory: Int] = [:]
+        var classesDrawn = 0
+        var drawn: [Candidate] = []
+        for candidate in ranked {
+            if candidate.kind == .centralFileClass {
+                guard classesDrawn < ArchivalNetworkGraph.classCap else { continue }
+                classesDrawn += 1
+            } else {
+                let used = perSector[candidate.category] ?? 0
+                guard used < ArchivalNetworkGraph.sectorCap else { continue }
+                perSector[candidate.category] = used + 1
+            }
+            drawn.append(candidate)
+        }
 
-        var nodes = drawn.map { candidate in
+        let nodes = drawn.map { candidate in
             ArchivalNetworkNode(
-                id: candidate.record.id, label: candidate.record.name,
-                name: candidate.record.name, kind: .collection,
-                category: ArchivalRepositoryCategory.from(candidate.record),
+                id: candidate.id, label: candidate.name, name: candidate.name,
+                kind: candidate.kind, category: candidate.category,
                 sharedVolumeCount: candidate.shared, sharedDocumentCount: candidate.documents,
                 measureValue: candidate.value,
                 relativeStrength: min(candidate.value / strongest, 1))
         }
-        if umbrella != nil, let usage {
-            nodes.append(contentsOf: classNodes(focusVolumes: focusVolumes,
-                                                focusDocuments: focusDocuments,
-                                                usage: usage, expansion: expansion,
-                                                strongest: strongest, measure: measure))
-        }
+        // The umbrella is reported as expanded only when a class actually survived to replace it.
+        // Otherwise its circle stays, rather than the reader losing a collection that passed the
+        // threshold to an expansion that produced nothing.
+        let umbrella = classesDrawn > 0
+            ? collections.first { $0.id == ArchivalCollectionsData.umbrellaCollectionId }
+            : nil
 
         return ArchivalNetworkGraph(
             focus: focus, focusCategory: ArchivalRepositoryCategory.from(focus),
             nodes: disambiguate(nodes, in: collections),
-            partnersAboveThreshold: ranked.count, partnersTotal: candidates.count,
+            nodesAboveThreshold: ranked.count, partnersTotal: partnersTotal,
             strongestMeasureValue: strongest, expandedUmbrella: umbrella)
     }
 
-    /// The central-file classes co-cited with the focus, as square nodes.
+    /// One edge's raw strength under the active measure.
+    private static func strength(measure: ArchivalEdgeMeasure, shared: Int, union: Int,
+                                 joint: Int) -> Double {
+        switch measure {
+        case .sharedVolumes: return Double(shared) / Double(max(union, 1))
+        case .sharedDocuments: return Double(joint)
+        }
+    }
+
+    /// The central-file classes co-cited with the focus.
     ///
-    /// A class's strength is measured the same way as a collection's so the two sit on one
-    /// radial axis — otherwise a square at the same radius as a circle would mean something
-    /// different, which is exactly the confusion the shape distinction exists to prevent.
-    private static func classNodes(focusVolumes: Set<String>,
-                                   focusDocuments: [String: Int],
-                                   usage: CollectionUsageIndex,
-                                   expansion: ArchivalUmbrellaExpansion,
-                                   strongest: Double,
-                                   measure: ArchivalEdgeMeasure) -> [ArchivalNetworkNode] {
-        var shared: [String: Set<String>] = [:]
-        var joint: [String: Int] = [:]
-        var union: [String: Set<String>] = [:]
+    /// Counts are accumulated **per volume before the `min`**, not per leaf key. Folding
+    /// subject-numeric leaves and taking one `min` each let a group claim more jointly-supplied
+    /// documents than the focus contributed to that volume at all — `POL 27 VIET S` and
+    /// `POL 27 ARAB-ISR` in the same volume each took their own `min` against the same focus
+    /// contribution and the two were then added.
+    private static func classes(focusVolumes: Set<String>, focusDocuments: [String: Int],
+                                usage: CollectionUsageIndex,
+                                expansion: ArchivalUmbrellaExpansion,
+                                measure: ArchivalEdgeMeasure) -> [Candidate] {
+        guard expansion != .collapsed else { return [] }
+        var classDocumentsByVolume: [String: [String: Int]] = [:]
+        var unionVolumes: [String: Set<String>] = [:]
         for key in usage.classKeys {
             let isSubjectNumeric = CollectionKeying.isSubjectNumericClass(key)
-            switch expansion {
-            case .collapsed: return []
-            case .decimalClasses where isSubjectNumeric: continue
-            case .subjectNumeric where !isSubjectNumeric: continue
-            default: break
-            }
-            // Subject-numeric keys are folded to category + number: at leaf grain half of them
-            // carry a single document and the lens is unrankable (#763's D-3 measurement).
+            if expansion == .decimalClasses, isSubjectNumeric { continue }
+            if expansion == .subjectNumeric, !isSubjectNumeric { continue }
+            // Subject-numeric keys fold to category + number: at leaf grain half of them carry a
+            // single document and the lens is unrankable (#763's D-3 measurement).
             let label = expansion == .subjectNumeric
                 ? (CollectionKeying.subjectNumericGroup(key) ?? key)
                 : key
-            let byVolume = usage.documentsByVolume(forClassKey: key)
-            for (volumeId, count) in byVolume {
-                union[label, default: []].insert(volumeId)
+            for (volumeId, count) in usage.documentsByVolume(forClassKey: key) {
+                unionVolumes[label, default: []].insert(volumeId)
                 guard focusVolumes.contains(volumeId) else { continue }
-                shared[label, default: []].insert(volumeId)
-                joint[label, default: 0] += min(focusDocuments[volumeId] ?? 0, count)
+                classDocumentsByVolume[label, default: [:]][volumeId, default: 0] += count
             }
         }
 
-        let ranked = shared
-            .filter { $0.value.count >= minimumSharedVolumes }
-            .map { label, volumes -> (label: String, shared: Int, documents: Int, value: Double) in
-                let documents = joint[label] ?? 0
-                let unionCount = union[label]?.union(focusVolumes).count ?? focusVolumes.count
-                let value: Double
-                switch measure {
-                case .sharedVolumes: value = Double(volumes.count) / Double(max(unionCount, 1))
-                case .sharedDocuments: value = Double(documents)
-                }
-                return (label, volumes.count, documents, value)
+        return classDocumentsByVolume.compactMap { label, byVolume -> Candidate? in
+            guard byVolume.count >= minimumSharedVolumes else { return nil }
+            let joint = byVolume.reduce(0) { total, entry in
+                total + min(focusDocuments[entry.key] ?? 0, entry.value)
             }
-            .filter { $0.value > 0 }
-            .sorted { a, b in
-                if a.value != b.value { return a.value > b.value }
-                return a.label < b.label
-            }
-            .prefix(ArchivalNetworkGraph.classCap)
-
-        return ranked.map { entry in
-            ArchivalNetworkNode(
-                id: "class:\(entry.label)", label: entry.label, name: entry.label,
-                kind: .centralFileClass, category: .stateDepartment,
-                sharedVolumeCount: entry.shared, sharedDocumentCount: entry.documents,
-                measureValue: entry.value,
-                relativeStrength: min(entry.value / max(strongest, .leastNonzeroMagnitude), 1))
+            let union = unionVolumes[label]?.union(focusVolumes).count ?? focusVolumes.count
+            let value = strength(measure: measure, shared: byVolume.count, union: union,
+                                 joint: joint)
+            guard value > 0 else { return nil }
+            return Candidate(id: "class:\(label)", name: label, kind: .centralFileClass,
+                             category: .stateDepartment, shared: byVolume.count,
+                             documents: joint, value: value, breadth: 0)
         }
     }
 
@@ -335,9 +391,9 @@ enum ArchivalNetworkBuilder {
     /// Places every node in a canvas of the given size.
     ///
     /// Sector by custodian, radius by strength, angle by rank within the sector — no physics, so
-    /// the picture is reproducible. Nodes are ordered within their wedge by strength, and the
-    /// wedge is filled from its leading edge, so the strongest neighbour of each custodian is
-    /// always at the same corner of its quadrant.
+    /// the picture is reproducible. Class squares take their own sub-arc at the trailing end of
+    /// the State wedge, which both keeps them off the State collections and lets the hull that
+    /// names them enclose nothing else.
     static func layout(_ graph: ArchivalNetworkGraph, in size: CGSize) -> ArchivalNetworkLayout {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let outer = max(min(size.width, size.height) / 2 - 44, 60)
@@ -349,28 +405,52 @@ enum ArchivalNetworkBuilder {
         let wedgeStart: [ArchivalRepositoryCategory: Double] = [
             .stateDepartment: 180, .lotFile: 270, .presidentialLibrary: 0, .otherInstitution: 90,
         ]
-        for category in ArchivalRepositoryCategory.ordered {
-            let members = graph.nodes.filter { $0.category == category }
-            guard !members.isEmpty else { continue }
-            let start = wedgeStart[category] ?? 0
-            // Inset from both wedge edges so neighbouring sectors never touch, and spread the
-            // members evenly across what is left.
-            let span = 90.0 - 2 * 8.0
-            let step = members.count == 1 ? 0 : span / Double(members.count - 1)
-            for (index, node) in members.enumerated() {
-                let degrees = start + 8.0 + (members.count == 1 ? span / 2 : step * Double(index))
+        let inset = 8.0
+        let usableSpan = 90.0 - 2 * inset
+
+        func place(_ nodes: [ArchivalNetworkNode], from start: Double, span: Double) {
+            guard !nodes.isEmpty else { return }
+            let step = nodes.count == 1 ? 0 : span / Double(nodes.count - 1)
+            for (index, node) in nodes.enumerated() {
+                let degrees = start + (nodes.count == 1 ? span / 2 : step * Double(index))
                 let radians = degrees * .pi / 180
-                let radius = inner + (1 - node.relativeStrength) * (outer - inner)
+                let radius = inner + CGFloat(1 - node.relativeStrength) * (outer - inner)
                 positions[node.id] = CGPoint(x: center.x + cos(radians) * radius,
                                              y: center.y + sin(radians) * radius)
             }
+        }
+
+        let classNodes = graph.nodes.filter { $0.kind == .centralFileClass }
+        for category in ArchivalRepositoryCategory.ordered {
+            let members = graph.nodes.filter { $0.category == category && $0.kind == .collection }
+            let start = (wedgeStart[category] ?? 0) + inset
+            if category == .stateDepartment, !classNodes.isEmpty {
+                // Split the wedge: collections lead, classes trail, with a gap between so the
+                // hull never has to reach across a collection.
+                let half = (usableSpan - 8) / 2
+                place(members, from: start, span: half)
+                place(classNodes, from: start + half + 8, span: half)
+            } else {
+                place(members, from: start, span: usableSpan)
+            }
+        }
+
+        var hull: CGRect?
+        let classPoints = classNodes.compactMap { positions[$0.id] }
+        if let first = classPoints.first {
+            var rect = CGRect(origin: first, size: .zero)
+            for point in classPoints.dropFirst() {
+                rect = rect.union(CGRect(origin: point, size: .zero))
+            }
+            hull = rect.insetBy(dx: -28, dy: -28)
         }
 
         let rings: [CGFloat] = ringFractions.map { fraction in
             inner + CGFloat(1 - fraction) * (outer - inner)
         }
         return ArchivalNetworkLayout(positions: positions, center: center, ringRadii: rings,
-                                     ringFractions: ringFractions, outerRadius: outer)
+                                     ringFractions: ringFractions, outerRadius: outer,
+                                     classHull: hull)
     }
 
     /// The drawn radius of one node, in points.

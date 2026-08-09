@@ -42,6 +42,9 @@ struct ArchivalNetworkView: View {
     let onOpenClassNeighbors: (String) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Compact height is iPhone landscape, where the fixed dock and a 240pt canvas would not both
+    /// fit inside the sheet and the controls would be pushed off the top.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     /// The collection at the centre.
     @State private var focus: AuthorityCollectionRecord?
@@ -72,9 +75,6 @@ struct ArchivalNetworkView: View {
     @State private var panOffset: CGSize = .zero
     /// Committed pan.
     @State private var steadyPan: CGSize = .zero
-    /// The canvas region's measured size, which the layout is computed against.
-    @State private var canvasSize: CGSize = .zero
-
     private var measure: ArchivalEdgeMeasure {
         let stored = ArchivalEdgeMeasure(rawValue: measureRaw) ?? .sharedVolumes
         // The document measure needs the usage index; without it every edge would weigh zero and
@@ -84,25 +84,30 @@ struct ArchivalNetworkView: View {
     private var expansion: ArchivalUmbrellaExpansion {
         ArchivalUmbrellaExpansion(rawValue: expansionRaw) ?? .collapsed
     }
-    private var layout: ArchivalNetworkLayout? {
-        guard let graph, canvasSize.width > 0 else { return nil }
-        return ArchivalNetworkBuilder.layout(graph, in: canvasSize)
-    }
 
     var body: some View {
         VStack(spacing: 0) {
             controls
             Divider()
-            if let graph, let layout, !graph.nodes.isEmpty {
-                graphRegion(graph, layout: layout)
+            if let graph, !graph.nodes.isEmpty {
+                graphRegion(graph)
                 Divider()
                 infoDock(graph)
-                    .frame(height: 168)
+                    .frame(height: isShortScreen ? 116 : 168)
             } else {
                 emptyState
             }
         }
-        .sheet(isPresented: $isChoosingFocus) { focusPicker }
+        .sheet(isPresented: $isChoosingFocus) {
+            // #498: the picker's `.searchable` field is exactly the shape that wedges — a text
+            // field inside a sheet's own NavigationStack. The preference is authored HERE, on the
+            // view handed to `.sheet`, outside that stack. BrowserView's comment predicted this
+            // surface by name.
+            focusPicker
+                #if os(iOS)
+                .statusBarHidden(false)
+                #endif
+        }
         // One trigger, keyed on everything the graph depends on. `.task(id:)` also *cancels* a
         // rebuild that is still running when the reader drags the threshold slider again, which
         // an `.onChange` per input would not.
@@ -221,10 +226,17 @@ struct ArchivalNetworkView: View {
 
     // MARK: - Graph
 
-    private func graphRegion(_ graph: ArchivalNetworkGraph,
-                             layout: ArchivalNetworkLayout) -> some View {
+    /// The canvas and its floating viewport button.
+    ///
+    /// The layout is derived from the `GeometryReader`'s own proxy rather than from state the
+    /// reader writes back. Routing it through `@State` deadlocked: the only writer sat inside the
+    /// branch that the state gated, so the geometry never entered the hierarchy, the size stayed
+    /// zero, and the mode drew a spinner forever. `ArchivalNetworkBuilder.layout` is pure and
+    /// runs over at most thirty nodes, so computing it here costs nothing.
+    private func graphRegion(_ graph: ArchivalNetworkGraph) -> some View {
         ZStack(alignment: .topLeading) {
             GeometryReader { geometry in
+                let layout = ArchivalNetworkBuilder.layout(graph, in: geometry.size)
                 ZStack(alignment: .topLeading) {
                     canvas(graph, layout: layout)
                     hitAreas(graph, layout: layout)
@@ -239,7 +251,6 @@ struct ArchivalNetworkView: View {
                                                     height: steadyPan.height + $0.translation.height) }
                     .onEnded { _ in steadyPan = panOffset })
                 .gesture(TapGesture(count: 2).onEnded { resetViewport() })
-                .onChange(of: geometry.size, initial: true) { _, size in canvasSize = size }
                 #if os(macOS)
                 .background {
                     ScrollWheelZoomCatcher { factor in
@@ -264,7 +275,16 @@ struct ArchivalNetworkView: View {
                 .padding()
             }
         }
-        .frame(minHeight: 320)
+        .frame(minHeight: isShortScreen ? 150 : 240)
+    }
+
+    /// `true` on iPhone landscape; always `false` on macOS and regular-height iOS.
+    private var isShortScreen: Bool {
+        #if os(iOS)
+        return verticalSizeClass == .compact
+        #else
+        return false
+        #endif
     }
 
     private func canvas(_ graph: ArchivalNetworkGraph,
@@ -311,21 +331,14 @@ struct ArchivalNetworkView: View {
 
     /// The dashed hull around the expanded umbrella's classes, with its label.
     ///
-    /// The hull is what says "these squares were one circle a moment ago". Without it the classes
-    /// read as peers of the collections rather than as the inside of one of them.
+    /// The rectangle comes from ``ArchivalNetworkLayout/classHull``, which the layout computes
+    /// after placing the classes in their own sub-arc. Deriving it here from a bounding box of
+    /// the class positions also enclosed whatever collection circles happened to fall inside it,
+    /// and a dashed outline labelled "Central Files" drawn around a presidential library is the
+    /// unit confusion the square-versus-circle distinction exists to prevent.
     private func drawHull(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,
                           layout: ArchivalNetworkLayout) {
-        let classNodes = graph.nodes.filter { $0.kind == .centralFileClass }
-        guard !classNodes.isEmpty else { return }
-        let points = classNodes.compactMap { layout.positions[$0.id] }
-        guard let first = points.first else { return }
-        var minX = first.x, maxX = first.x, minY = first.y, maxY = first.y
-        for point in points {
-            minX = min(minX, point.x); maxX = max(maxX, point.x)
-            minY = min(minY, point.y); maxY = max(maxY, point.y)
-        }
-        let rect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            .insetBy(dx: -26, dy: -26)
+        guard let rect = layout.classHull, graph.expandedUmbrella != nil else { return }
         context.stroke(Path(roundedRect: rect, cornerRadius: 18),
                        with: .color(ArchivalRepositoryCategory.stateDepartment.color.opacity(0.5)),
                        style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
@@ -400,7 +413,22 @@ struct ArchivalNetworkView: View {
             at: CGPoint(x: layout.center.x, y: layout.center.y + radius + 8), anchor: .center)
     }
 
-    private func shortLabel(_ name: String) -> String { String(name.prefix(16)) }
+    /// The drawn caption for a node.
+    ///
+    /// Truncation happens at the END and is marked, because the disambiguator this graph relies
+    /// on is a suffix: cutting `White House Central Files · Ford Library` at sixteen characters
+    /// draws it identically to the Carter Library record beside it, which is exactly the
+    /// collision `disambiguate` exists to prevent. Long labels are cut in the middle so both the
+    /// name and the repository survive.
+    private func shortLabel(_ label: String) -> String {
+        guard label.count > 26 else { return label }
+        guard let separator = label.range(of: " · ") else {
+            return String(label.prefix(25)) + "…"
+        }
+        let name = label[label.startIndex..<separator.lowerBound]
+        let qualifier = label[separator.upperBound...]
+        return String(name.prefix(14)) + "… · " + String(qualifier.prefix(10))
+    }
 
     // MARK: - Hit areas
 
@@ -551,15 +579,28 @@ struct ArchivalNetworkView: View {
         case .sharedDocuments:
             strongest = Int(graph.strongestMeasureValue).formatted(.number)
         }
+        // Numerator and denominator count the same population. The first draft put the drawn
+        // nodes — class squares included — over a count of collections only, so an expanded
+        // umbrella could report drawing more collections than were co-cited at all.
         var text = String(format: String(
-            localized: "archival.network.dock.summary %lld %lld %@",
-            defaultValue: "%1$lld of %2$lld co-citing collections are drawn. Distance from the centre is link strength, and the dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@). Links are volume-grain: the same volumes drew on both collections, which is not document-level affinity."),
-            Int64(graph.nodes.count), Int64(graph.partnersTotal), strongest)
+            localized: "archival.network.dock.summary.v2 %lld %lld %@",
+            defaultValue: "%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the centre is link strength, and the dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@)."),
+            Int64(graph.nodes.count), Int64(graph.nodesAboveThreshold), strongest)
+        text += " " + String(format: String(
+            localized: "archival.network.dock.grain %lld",
+            defaultValue: "%lld collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity."),
+            Int64(graph.partnersTotal))
         if graph.isCapped {
             text += " " + String(format: String(
-                localized: "archival.network.dock.capped %lld",
-                defaultValue: "%lld collections pass the current threshold; the strongest are shown. Raise the threshold to narrow the neighbourhood rather than to see more of it."),
-                Int64(graph.partnersAboveThreshold))
+                localized: "archival.network.dock.capped.v2 %lld",
+                defaultValue: "%lld more are held back so each custodian's quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighbourhood rather than to see more of it."),
+                Int64(graph.withheldCount))
+        }
+        if graph.classNodeCount > 0 {
+            text += " " + String(format: String(
+                localized: "archival.network.dock.classes %lld",
+                defaultValue: "The %lld squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown."),
+                Int64(graph.classNodeCount))
         }
         return text
     }
@@ -583,9 +624,14 @@ struct ArchivalNetworkView: View {
                            defaultValue: "No Co-Cited Collections"),
                     systemImage: "circle.dashed",
                     description: Text(String(format: String(
-                        localized: "archival.network.none.detail %@",
-                        defaultValue: "No other collection shares two or more volumes with %@ above the current threshold. Lower the threshold, or choose a more widely cited collection."),
-                        focus?.name ?? ""))
+                        localized: "archival.network.none.detail.v2 %@ %@",
+                        defaultValue: "No other collection shares two or more volumes with %1$@ above the current threshold. %2$@"),
+                        focus?.name ?? "",
+                        minimumStrength > 0.05
+                            ? String(localized: "archival.network.none.lower",
+                                     defaultValue: "Lower the threshold, or choose a more widely cited collection.")
+                            : String(localized: "archival.network.none.floor",
+                                     defaultValue: "The threshold is already at its lowest, so this collection simply shares no volumes with another — choose a more widely cited one.")))
                 )
             } else {
                 ProgressView()
@@ -704,6 +750,11 @@ struct ArchivalNetworkView: View {
                 measure: inputs.measure, minimumRelativeStrength: inputs.threshold,
                 expansion: inputs.expansion)
         }.value
+        // `.task(id:)` cancels this Task when the token changes, but a *detached* child is not
+        // cancelled with it — so a superseded scan can still return, and the slower of two
+        // overlapping rebuilds would win. Dropping a cancelled result is what makes the last
+        // token the one on screen.
+        guard !Task.isCancelled else { return }
         graph = built
         if !built.nodes.contains(where: { $0.id == selectedNodeId }) { selectedNodeId = nil }
     }
