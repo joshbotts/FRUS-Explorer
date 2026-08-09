@@ -3052,3 +3052,88 @@ half-updated set of devices degrade gracefully.
 
 `ResearchTrailMigration`'s interlock — which refuses to run while a record type it writes is listed
 as awaiting — is unblocked again, as it was before #756 listed anything.
+
+---
+
+## Session 2026-08-08 — #762: what a collection travelled with
+
+Archival analytics Phase 1, and the first code off the design handoff merged in #778. Three
+sections join `CollectionDetailView` after "In Your Library", exactly where mock `1a` puts them:
+**Related Collections**, **Cited Over Time**, **Divided at NARA**. No new bundled data — all three
+derive from `collection-authority.json`, `lot-claimants-index.json`, and the manifest.
+
+**The ranking metric needed a floor before it ranked anything.** The plan recorded the overlap
+coefficient (shared ÷ the *smaller* citing-volume list) as decided, to damp umbrella records.
+Implementing it and measuring first showed the metric alone is degenerate: it hits exactly 1.000
+for *any* record whose volume list is a subset of the focus record's, **2,846 of the 4,423 shipped
+records cite a single volume**, and so **77.8% of all co-citing pairs tie at 1.000**. Ranked on the
+score alone, **80.3%** of the top-5 slots for broadly-cited collections went to one-volume records
+sharing one volume, a third of those records getting a top-5 that was entirely that. Requiring
+**two shared volumes** removes the class outright — a one-volume record cannot share two — and
+costs 19 of the 1,577 multi-volume records their list. The tie-breaks then do the real work
+(shared count, then the partner's own breadth *ascending*, preferring the specific over another
+umbrella), because with coefficients saturating this widely they decide most orderings. For
+contrast: on raw shared count the Central Files umbrella tops **461 of 1,557** lists.
+
+The decision itself was not re-litigated — it was implemented, and the measurement that makes it
+workable is now in §7.6 of the plan, because #765's Network mode uses the same metric for edge
+weights and would otherwise rediscover all of this.
+
+**The mock asked for a number that does not exist.** Divided at NARA's rows read "NAID 4682721 ·
+claims 118 of its documents" in the design. There is no such number and there cannot be: a FRUS
+citation names a *lot*, never a series, which is precisely the fact NARA's division destroyed —
+every claimant claims the whole lot. The rows carry what NARA does state (NAID, record group,
+coverage span, and *every* HMS/MLR entry number, where the existing `.candidates` mapping keeps
+only the first), plus a line noting the NARA Catalog link above points at one of them. Verified:
+all 113 authority records that reach a divided lot have a NAID that is one of the claimants, so
+without that line the screen states one answer twice and contradicts itself.
+
+**A generated sentence is a claim, and three shapes made it lie.** "Cited Over Time" writes its own
+caption — *enters the record with … peaks across … fades after …* — and each clause had to be
+guarded against the chart drawn immediately above it. Two of the three failures were found by the
+adversarial review, not by me and not by the mutation sweep:
+
+1. **A maximum that recurs after a dip.** The peak run was found by scanning forward from the first
+   maximum, so `Department of the Treasury` — two 1955–1957 volumes, two 1977–1980 volumes, nothing
+   between — read "peaks across the 1955–1957 volumes, and fades after the 1977–1980 volumes" with
+   the last bar exactly as tall as the first. Both clauses false. **9 of the 600 charting records**
+   have that shape. A maximum that comes back is not a peak; the run is now `nil` unless every era
+   at the maximum forms one unbroken block.
+2. **"Runs through" across a gap.** `Lot 66 D 199` is cited once in the 1951–1954 volumes and once
+   in 1964–1968, with three empty eras between; "runs through" asserts a continuity the chart
+   denies. **44 records.** They now get a sentence that says they return.
+3. **One volume per era**, which has no trend to describe, and a collection still at its height in
+   the last era, which has nothing to fade from.
+
+**Mutation testing, two rounds, 30 mutants.** Round 1: 20 mutants, 16 caught. Of the four
+survivors, one was an expected non-guard (the early return for a sub-floor focus record is a fast
+path — no candidate could clear the floor anyway) and three were real: the caption's two-volume
+condition was carried entirely by a *different* condition on the same line (both fire on a flat
+1-1-1 shape; only a 1-0-1 shape separates them); two "the list is capped" assertions matched the
+constant anywhere in the section, and the Show-all button's own condition mentions it, so removing
+the cap from the rendered rows left both green; and a section-gate assertion used `contains`, which
+`if true || <gate> {` satisfies while mounting unconditionally.
+
+Round 2 re-ran those against the fixes and added the new guards: 7 of 10 caught. Two more real
+gaps — the "enters at its peak" wording had no test, and **deleting the breadth tie-break outright
+survived where flipping its direction had been caught**, because the four fixture records happened
+to be *named* in the order the tie-breaks produce, so falling through to the name comparison gave
+the expected answer anyway. Renamed to sort in exactly the reverse. **A tie-break fixture must be
+named against its own expectation, or the last tie-break silently stands in for all the others.**
+
+The third round-2 survivor stays: after the peak-run fix, the two-volume condition provably cannot
+change the outcome for buckets from `citedOverTime`, whose ends are non-empty by construction. It
+is kept so the function is correct for a direct caller, documented as such, and pinned by a test
+that hands it the bucket list `citedOverTime` will not produce — an equivalent mutant recorded
+rather than removed or pretended away.
+
+**The review also caught four doc comments asserting numbers I had not checked hard enough**: the
+80.3% figure describes a score-only ranking, so attributing that improvement to the floor rather
+than to the tie-break was wrong; "Central Files would otherwise top *every* list" is one in three,
+not all; a decade axis does *not* merge 1958–60 with 1961–63 (their midpoints fall either side of
+1960) though it does put five subseries into one 1960s bar; and 1740 is `frus1872p2v5`'s decade,
+not its midpoint, which is 1746. All four are measured now. A wrong number in a doc comment is a
+defect in a repo that reasons from its own doc comments.
+
+**Also in scope, from the mock:** the citing-volume list is capped at five with "Show all N
+volumes" — the widest record cites 157.

@@ -338,7 +338,7 @@ existing `ResearchGuideLinkButton` / Source Explorer routing.
 
 | Phase | Content | New data? | Effort | Tracker |
 |---|---|---|---|---|
-| 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session | **#762** |
+| 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session | **#762 — shipped 2026-08-08** |
 | 2 | D: `collection-usage-index.json` generator + #267 fold-in + SA-3 tolerant decode; **class × volume counts ride the same export scan (I)** | **Yes** (one artifact, ~0.5 MB) | 1 generator session | **#763** |
 | 2b | H/I flow matrix: `CrossRefValidationGenerator` harvest × export provenance-unit join → bundled aggregate; class labels table rider | **Yes** (small aggregate + label table) | 1 generator session | **#764** |
 | 3 | B (ego graph) + era × collection dashboard views consuming D; class lens (I) on the same views; E rider | No | 1–2 sessions | **#765** |
@@ -472,6 +472,41 @@ queryable surfaces (audit-suite-enforced validity); nothing touches SwiftData mo
 CloudKit gate stays untouched; new charts adopt `AXChartDescriptor` (#268) when it lands; every
 chart card joins the D3 provenance-stamped export.
 
+### 7.6 Measured in Phase 1, and binding on Phase 3 (#762 → #765)
+
+Two findings from building #762 that the later phases must start from rather than rediscover.
+
+**The overlap coefficient is degenerate without a support floor.** §7.3 recorded the metric as
+decided; implementing it showed the metric alone does not produce a usable list. Measured on the
+2026-08-06 artifact: the coefficient is `shared ÷ min(|A|,|B|)`, so it reaches exactly 1.000 for
+*any* record whose citing-volume list is a subset of the focus record's — and **2,846 of the 4,423
+records cite a single volume**, so **77.8% of all co-citing pairs tie at 1.000**. Ranked on the
+score alone, **80.3%** of the top-5 slots for records citing 20+ volumes go to one-volume records
+sharing one volume, a third of those records getting a top-5 that is entirely that. Shipped
+resolution, and the one #765's Network mode should adopt for its edge weights and threshold
+slider: **require two shared volumes** (which removes the class outright — a one-volume record
+cannot share two, at a cost of 19 of the 1,577 multi-volume records), then tie-break on shared
+count, then on the partner's own breadth ascending. The tie-breaks are not cosmetic; with
+coefficients saturating this widely they decide most orderings.
+
+For contrast, the thing the coefficient is there to prevent is also measured: on raw shared count
+the "Central Files" umbrella is the top answer for **461 of the 1,557** collections that have a
+list — roughly one in three.
+
+**Generated prose must be guarded clause by clause.** The "enters / peaks / fades" caption is
+written from the data, and every clause is a claim about the chart beside it. Three shapes make a
+naive generator lie, all present in the shipped corpus: a maximum that recurs after a dip (9 of
+the 600 charting records — the caption named the earlier occurrence as *the* peak and then claimed
+a fade, with the last bar drawn just as tall); a span with an empty era in the middle (44 records —
+"runs through" asserts a continuity the chart denies); and one volume per era, where there is no
+trend to describe at all. #764's flow copy and #765's dashboard captions inherit this: **a
+generated sentence needs a test that it cannot contradict its own chart**, not only that it renders.
+
+**Also settled here:** the coverage-era axis (`CollectionRelations.coverageEras`) is reusable by
+#765 — the published subseries from 1955, the design's `1948–1950` / `1951–1954` groupings before
+that, decades earlier, attributed by SA-3a's own `dateRange`-midpoint rule so the two surfaces
+agree on which era a volume belongs to.
+
 ### 7.5 Decisions log
 
 | # | Decision | Status |
@@ -485,6 +520,12 @@ chart card joins the D3 provenance-stamped export.
 
 ## Version history
 
+- 1.4 (2026-08-08) — Phase 1 shipped (#762). Adds §7.6, the two findings from building it that
+  bind the later phases: the overlap coefficient needs a two-shared-volume support floor and
+  meaningful tie-breaks before it ranks anything usefully (measured — 77.8% of co-citing pairs
+  tie at 1.000, and 2,846 of 4,423 records cite one volume), and a generated caption needs a test
+  that it cannot contradict its own chart (three lying shapes found in the shipped corpus). Also
+  records the coverage-era axis as reusable by #765, and marks Phase 1 shipped in the §6 table.
 - 1.0 (2026-08-08) — initial assessment: verdict, shipped-surface inventory, artifact
   measurements (co-citation counts over `collection-authority.json`), candidate insights A–H
   with derivations, honest-limits list, and the three-phase recommendation with #267 fold-in.
