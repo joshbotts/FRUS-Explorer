@@ -1754,3 +1754,106 @@ struct CrossRefResolverTests {
         }
     }
 }
+
+// MARK: - SpuriousAutolinkTests
+
+/// #659: upstream autolink noise renders as plain text, and nothing else does.
+///
+/// Drives the **real converter**, not a hand-built `FRUSRenderNode` — the bug is in the AST →
+/// render-node step, so a test that constructs the output node cannot see it. (That is what
+/// `ExternalRefTargetRoundTripTests` does, correctly, for the serializer half; it is parameterised
+/// over `http://would.be`, one of the very targets de-linked here, and still passes because it
+/// never asks the converter anything.)
+///
+/// The **kept** cases matter more than the de-linked ones. The failure this predicate invites is
+/// over-reach: a rule that de-links every external link in the app would satisfy every negative
+/// assertion below and break real navigation in twenty-eight volumes.
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #659
+@Suite("Spurious autolinks (#659)")
+struct SpuriousAutolinkTests {
+
+    /// Converts one `<ref>` in isolation and reports whether a link node survived.
+    private func renders(target: String, text: String) -> (isLink: Bool, flat: String) {
+        var converter = ASTToRenderNodeConverter()
+        let model = converter.convert(FRUSDocumentAST(documentId: "d1", nodes: [
+            .paragraph(children: [
+                .crossReference(target: target, targetVolumeId: nil, children: [.text(text)]),
+            ]),
+        ]))
+        var foundLink = false
+        var flat = ""
+        func walk(_ nodes: [FRUSRenderNode]) {
+            for node in nodes {
+                switch node {
+                case .crossRefLink(_, _, _, let c): foundLink = true; walk(c)
+                case .plainText(let s): flat += s
+                case .paragraph(let c): walk(c)
+                default: break
+                }
+            }
+        }
+        walk(model.bodyNodes)
+        return (foundLink, flat)
+    }
+
+    @Test("An autolinked prose phrase renders as text, keeping its words", arguments: [
+        // Every distinct shape in the corpus: two words, one word, an OCR-mangled word, a word
+        // that is its own host, and a phrase carrying punctuation.
+        ("http://must.be", "must be"),
+        ("http://presen.ce", "presence"),
+        ("http://pha.ll", "Shall"),
+        ("http://would.be", "would.be"),
+        ("http://felt.it", "felt. it"),
+    ])
+    func autolinkNoiseIsDelinked(target: String, text: String) {
+        let result = renders(target: target, text: text)
+        #expect(!result.isLink, """
+            \(target) survived as a link. It is upstream autolink noise over the prose \
+            "\(text)" — the host does not exist, so the tap leaves the app for nothing.
+            """)
+        #expect(result.flat == text, "the words must still be readable, only unlinked")
+    }
+
+    @Test("A real external link survives", arguments: [
+        // Deep target, prose link text — the five frus1917-72PubDip supplement PDFs. The
+        // "link text is not a URL" half of the predicate would de-link these on its own.
+        ("https://static.history.state.gov/frus/frus1917-72PubDip/Document%20A.6.pdf",
+         "a high resolution color PDF"),
+        // Bare host, URL link text — thirty of these ship. The "bare host" half of the predicate
+        // would de-link these on its own.
+        ("http://bookstore.gpo.gov", "http://bookstore.gpo.gov"),
+        ("http://www.un.org", "http://www.un.org"),
+        // Deep target AND URL text.
+        ("http://foia.state.gov/documents/kissinger/0000CF5A.pdf",
+         "http://foia.state.gov/documents/kissinger/0000CF5A.pdf"),
+    ])
+    func realExternalLinksSurvive(target: String, text: String) {
+        #expect(renders(target: target, text: text).isLink, """
+            \(target) was de-linked. Both halves of the predicate are load-bearing: bare-host \
+            alone kills the GPO bookstore links, non-URL-text alone kills the supplement PDFs.
+            """)
+    }
+
+    @Test("In-corpus cross-references are untouched")
+    func internalReferencesSurvive() {
+        #expect(renders(target: "#d42", text: "Document 42").isLink)
+        #expect(renders(target: "frus1969-76v01#d42", text: "Document 42").isLink)
+        #expect(renders(target: "mailto:history@state.gov", text: "history@state.gov").isLink,
+                "the scheme gate is http(s) only — mailto refs are real and 46 of them ship")
+    }
+
+    @Test("Flat text is unchanged, so no stored highlight goes stale")
+    func flatTextIsUnchanged() {
+        // The reason `ASTToRenderNodeConverter.kVersion` must NOT be bumped for #659: a link node
+        // and its de-linked children contribute identical characters, so every stored
+        // `DocumentHighlight.renderingVersion` still matches.
+        #expect(renders(target: "http://must.be", text: "must be").flat
+                == renders(target: "#d42", text: "must be").flat)
+        #expect(ASTToRenderNodeConverter.kVersion == "1.2", """
+            kVersion changed. If that was for #659 it is wrong — de-linking moves no characters, \
+            and a bump marks every highlight in every indexed volume stale.
+            """)
+    }
+}

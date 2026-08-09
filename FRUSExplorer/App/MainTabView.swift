@@ -21,7 +21,8 @@ import SwiftData
 ///
 /// ## Badges
 /// - **Settings** tab: a "·" indicator when downloaded-but-unindexed volumes exist, via
-///   `appState.unindexedVolumeCount`. Prompts the user to run Reindex.
+///   `appState.unindexedVolumeCount`, and no badge at all otherwise. Prompts the user to
+///   run Reindex.
 ///   (The Activity tab and its new-notes badge were retired in 1.7 — Research, its
 ///   replacement, is a navigation tool, not an inbox, and carries no badge.)
 ///
@@ -76,6 +77,13 @@ import SwiftData
 ///          that reintroduced mirroring for co-visible windows and stranded launch hand-offs
 ///          (#337 review). Hand-offs adopt in every open window (as before this change); only
 ///          idle tab taps are now per-window.
+///   1.13 — Session 2026-08-09 (#657, first step): the Settings badge is now ABSENT at zero
+///          rather than empty. `""` is still a badge — it materialises a `UILabel` inside the
+///          tab item's layout, the stack the iPad crash log names. Spelled `Text?` because
+///          `TabContent.badge` (unlike `View.badge`) has no optional-String overload.
+///          **This is a suspect removed, not a proven fix.** #657 is unreproduced and its own
+///          report will not choose between a watchdog hang and a data abort; conviction needs
+///          the device backtrace captured in Read mode (plan item B-1). The issue stays open.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -151,7 +159,18 @@ struct MainTabView: View {
             // background status metric, not an actionable queue the user must clear item
             // by item. A dot communicates "something needs attention" without implying
             // a specific count.
-            .badge(appState.unindexedVolumeCount > 0 ? "·" : "")
+            //
+            // The zero case passes `nil`, not `""` (#657, first step). An empty string is
+            // still a badge: it materialises a `UILabel` in the tab item's layout, which is
+            // the stack the iPad crash log names. `nil` is the absent badge.
+            //
+            // It must be spelled `Text?`, not `String?`. `Tab` conforms to `TabContent`, not
+            // to `View`, and `TabContent.badge` has no optional-String overload — only
+            // `badge(_ label: Text?)` admits nil. (`View.badge` does have `LocalizedStringKey?`
+            // and `S?` overloads; nothing learned from a List-row badge transfers here, which
+            // is the mistake the issue itself makes.) Wrapping the dot in `Text` is what lets
+            // the ternary's two branches unify.
+            .badge(appState.unindexedVolumeCount > 0 ? Text(verbatim: "·") : nil)
         }
         // iPad renders the tabs as a native adaptive sidebar (toggleable to a floating
         // top tab bar) — the macOS-like layout researchers expect on a keyboard/trackpad

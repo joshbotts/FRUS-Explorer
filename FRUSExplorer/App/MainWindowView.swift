@@ -56,6 +56,15 @@ import AppKit
 ///          replaced by the Source Explorer window's NARA Lookup segment
 ///          (`pendingNARALookup` hand-off); Citation Lookup sheet replaced by the
 ///          frus.citationLookup Window scene, which owns ⌘⇧F itself
+///   1.6 — Session 2026-08-09 (#652): **Complete History…** joins the My Research
+///          toolbar menu — the History window's only other door is the menu bar's
+///          Research ▸ History submenu, which a mouse-driven reader never opens. It is
+///          also the first host-bound `.history` provenance producer, so a document
+///          re-opened from History now lands in the window it was launched from.
+///          Tooltip re-keyed `.v2` (the string's meaning changed, not just its wording).
+///   1.7 — Session 2026-08-09 (#795): **Archival Analytics** joins the toolbar Analytics
+///          menu. The menu-bar Analytics menu has carried it since the feature shipped;
+///          the toolbar menu — the discoverable door — never did. Tooltip re-keyed `.v2`.
 @MainActor
 struct MainWindowView: View {
 
@@ -293,7 +302,9 @@ struct MainWindowView: View {
 
             Divider().frame(height: 20)
 
-            // Analytics — Corpus / Person / Cross-Reference analytics · Chronology · Word Cloud
+            // Analytics — Corpus / Person / Cross-Reference / Archival analytics · Chronology ·
+            // Word Cloud. Membership and ORDER mirror the menu-bar Analytics menu
+            // (`AnalyticsMenuContent`) deliberately: #795 is what happens when the two drift.
             Menu {
                 Button {
                     appState.bindTool(.analytics, to: hostID)
@@ -315,6 +326,18 @@ struct MainWindowView: View {
                 } label: {
                     Label(String(localized: "mainwindow.tools.crossRefAnalytics",
                                  defaultValue: "Cross-Reference Analytics"), systemImage: "square.grid.3x3")
+                }
+                // #795: the window has existed since the archival family shipped and the menu-bar
+                // Analytics menu has always listed it — this menu never did, so the feature was
+                // unreachable from the main window. `hostID`, not `nil`: a toolbar launch binds THIS
+                // window as provenance, where the menu bar deliberately clears it (no spawning
+                // window → recency fallback).
+                Button {
+                    appState.bindTool(.archivalAnalytics, to: hostID)
+                    openWindow.fronting(id: "frus.archivalAnalytics")
+                } label: {
+                    Label(String(localized: "mainwindow.tools.archivalAnalytics",
+                                 defaultValue: "Archival Analytics"), systemImage: "archivebox")
                 }
                 Divider()
                 Button {
@@ -338,15 +361,18 @@ struct MainWindowView: View {
             }
             // Handoff: "Analytics menu (▾)" — visible name + the default disclosure chevron.
             .labelStyle(.titleAndIcon)
-            .help(String(localized: "mainwindow.tools.analytics.menu.help",
-                         defaultValue: "Corpus, Person, and Cross-Reference analytics, Chronology, and Word Cloud"))
+            // `.v2`: the menu gained a window, so the string's meaning changed — a new key, not an
+            // edit under the old one.
+            .help(String(localized: "mainwindow.tools.analytics.menu.help.v2",
+                         defaultValue: "Corpus, Person, Cross-Reference, and Archival analytics, Chronology, and Word Cloud"))
 
             Divider().frame(height: 20)
 
-            // My Research — Research window (⌘⌥R) and Collections (⌘⇧K). The key equivalents live
-            // solely on the Research command menu (#363 #2 — they were previously ALSO declared here,
-            // a duplicate binding); these buttons keep the click action and name the shortcut in the
-            // menu-bar Research menu + the tooltip below for discoverability.
+            // My Research — Research window (⌘⌥R), Collections (⌘⇧K), and Complete History. The key
+            // equivalents live solely on the Research command menu (#363 #2 — they were previously
+            // ALSO declared here, a duplicate binding); these buttons keep the click action and name
+            // the shortcut in the menu-bar Research menu + the tooltip below for discoverability.
+            // History is the one item here with no key equivalent at all.
             Menu {
                 Button {
                     appState.bindTool(.research, to: hostID)
@@ -360,14 +386,35 @@ struct MainWindowView: View {
                     Label(String(localized: "mainwindow.tools.collections", defaultValue: "Collections"),
                           systemImage: "tray.2")
                 }
+                // #652: the History window's second door. Until now it was reachable only from the
+                // menu bar (Research ▸ History ▸ Complete History…), which a reader working with the
+                // mouse never opens — the same discoverability gap #795 records for Archival
+                // Analytics one menu to the left.
+                //
+                // This is the FIRST host-bound `.history` producer. Binding it matters: HistoryView
+                // resolves `provenance(of: .history)` when it re-opens a document and when it hands a
+                // recalled search back to Search, and that lookup has always resolved nil because
+                // nothing ever bound the tool. A document re-opened from History now lands in the
+                // window the History window was launched from, instead of falling through to the
+                // recency chain.
+                Button {
+                    appState.bindTool(.history, to: hostID)
+                    openWindow.fronting(id: "frus.history")
+                } label: {
+                    Label(String(localized: "menu.history.completeHistory",
+                                 defaultValue: "Complete History\u{2026}"),
+                          systemImage: "clock.arrow.circlepath")
+                }
             } label: {
                 Label(String(localized: "mainwindow.tools.myResearch", defaultValue: "My Research"),
                       systemImage: "note.text")
             }
             // Handoff: "My Research menu (▾)" — visible name + the default disclosure chevron.
             .labelStyle(.titleAndIcon)
-            .help(String(localized: "mainwindow.tools.myResearch.help",
-                         defaultValue: "Research window (⌘⌥R) and Collections (⇧⌘K)"))
+            // `.v2`: the string names a third window now, so its meaning changed — reusing the old
+            // key with new text is a silent i18n collision, the failure this repo versions around.
+            .help(String(localized: "mainwindow.tools.myResearch.help.v2",
+                         defaultValue: "Research window (⌘⌥R), Collections (⇧⌘K), and Complete History"))
 
             Divider().frame(height: 20)
 

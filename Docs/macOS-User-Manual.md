@@ -122,8 +122,8 @@ The toolbar's trailing edge carries five controls; the two ▾ entries are menus
 |--------|----------|-------|
 | **Search** | ⌘S | Full-text search window |
 | **Browse** | ⇧⌘B | Corpus browser (volume hierarchy) |
-| **Analytics ▾** | — | A menu of the analytics windows: **Corpus Analytics**, **Person Analytics** (Section 13.5), **Cross-Reference Analytics** (Section 13.6), **Chronology** (Section 14), and **Word Cloud** (Section 13.4). **Archival Analytics** (Section 13.7) is *not* on this menu — open it from the menu bar's **Analytics ▸ Archival Analytics** |
-| **My Research ▾** | — | A menu: **Research** (⌘⌥R — the Research window listing all annotated documents) and **Collections** (⇧⌘K) |
+| **Analytics ▾** | — | A menu of the analytics windows: **Corpus Analytics**, **Person Analytics** (Section 13.5), **Cross-Reference Analytics** (Section 13.6), **Archival Analytics** (Section 13.7), **Chronology** (Section 14), and **Word Cloud** (Section 13.4) |
+| **My Research ▾** | — | A menu: **Research** (⌘⌥R — the Research window listing all annotated documents), **Collections** (⇧⌘K), and **Complete History…** (Section 17.2) |
 | **Research rail** | ⌘⇧R | Show or hide the per-document Research rail (Section 3.2) |
 
 The old titlebar **Graph** and **Info** buttons have been removed. The cross-reference graph now opens from the Research rail's **Graph** tile (Section 3.2), and a document's citation and metadata are reached through the rail's **Cite** tile.
@@ -200,9 +200,9 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 | Analytics | (Analytics ▾ menu → **Corpus Analytics**) |
 | Person Analytics | (Analytics ▾ menu → **Person Analytics**, or `frus.personAnalytics`) |
 | Cross-Reference Analytics | (Analytics ▾ menu → **Cross-Reference Analytics**, or `frus.crossRefAnalytics`) |
-| Archival Analytics | (menu bar **Analytics ▸ Archival Analytics**, or `frus.archivalAnalytics`) |
+| Archival Analytics | (Analytics ▾ menu → **Archival Analytics**, or `frus.archivalAnalytics`) |
 | Chronology | (Analytics ▾ menu → **Chronology**) |
-| History | (Research ▸ History → "Complete History…") |
+| History | (My Research ▾ menu → **Complete History…**, or Research ▸ History) |
 | FRUS Research Guide | (Help menu) |
 | Settings | ⌘, |
 
@@ -1119,7 +1119,7 @@ An **info** button (ⓘ) explains what each measure means and how it is computed
 
 ### 13.7 Archival Analytics
 
-Corpus Analytics tracks terms, Person Analytics tracks people, Cross-Reference Analytics tracks citations between documents; **Archival Analytics** tracks *where the documents came from*. Every published FRUS document carries a source note naming the archival file its original was found in, and clustered across the whole series those notes answer a question the volumes themselves never state: which bodies of records each era's editors actually worked in. Open it from **Analytics → Archival Analytics** in the menu bar; it opens in its own window, so you can leave it beside a document. A **Collections · Network · Flows · Your Library** picker in the toolbar splits the surface into four.
+Corpus Analytics tracks terms, Person Analytics tracks people, Cross-Reference Analytics tracks citations between documents; **Archival Analytics** tracks *where the documents came from*. Every published FRUS document carries a source note naming the archival file its original was found in, and clustered across the whole series those notes answer a question the volumes themselves never state: which bodies of records each era's editors actually worked in. Open it from the main window's **Analytics ▾** menu (Section 3.1), or from the menu bar's **Analytics → Archival Analytics**; it opens in its own window, so you can leave it beside a document. A **Collections · Network · Flows · Your Library** picker in the toolbar splits the surface into four.
 
 **Collections** is corpus-wide and needs nothing downloaded — it reads the bundled archival authority, so it works on a fresh install. Three chips above the charts control it:
 
@@ -1420,7 +1420,7 @@ there. Turn it back on and they refill from that point forward.
 
 ### 17.2 The Complete History Window
 
-Choose **Complete History…** from the **Research ▸ History** submenu (or open the `frus.history` window directly) to see your full research trail in a dedicated window — not just the last ten of each: documents visited, searches executed, and collections exported, in three sections.
+Choose **Complete History…** from the toolbar's **My Research ▾** menu or the menu bar's **Research ▸ History** submenu (or open the `frus.history` window directly) to see your full research trail in a dedicated window — not just the last ten of each: documents visited, searches executed, and collections exported, in three sections.
 
 This window is now the **same screen iPhone and iPad show** under Research → History, so a trail that started on your iPad is legible here and the reverse. Its controls moved out of the toolbar and into the top of the window, and two are new:
 
@@ -1479,7 +1479,7 @@ Wherever FRUS Explorer shows a link to an external resource — onboarding, Abou
 | Open Research window | ⌥⌘R |
 | Open Collections window | ⇧⌘K |
 | Open Project Home | ⌘P |
-| Open Complete History window | (Research ▸ History ▸ "Complete History…") |
+| Open Complete History window | (My Research ▾ ▸ "Complete History…", or Research ▸ History) |
 | Open FRUS Research Guide | (Help menu) |
 | Open Settings | ⌘, |
 

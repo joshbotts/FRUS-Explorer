@@ -54,6 +54,10 @@ import Charts
 ///          aggregate was decade × category and a scope would have had to be approximated;
 ///          schema 2 adds the per-volume table, so the narrowing is now exact. The bar is
 ///          still withheld — not approximated — if the artifact lacks that table
+///   1.7 — Session 2026-08-09 (#795): a cross-link into Archival Analytics — the #765 D-1
+///          rider. macOS only; the iOS arm is withheld because this dashboard also renders
+///          inside the mid-onboarding `WhileIndexingSheet`, where it would be a sheet over
+///          a sheet during the first index (see `archivalAnalyticsLink`)
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -65,6 +69,12 @@ struct SourceProvenanceDashboard: View {
     /// Compact-width detection for the year-range bar (drops its label on iPhone).
     /// Resolves to `.regular` on macOS, so `isCompactWidth` is `false` there.
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    #if os(macOS)
+    /// Opens the Archival Analytics window from the #795 cross-link. macOS-only, because
+    /// `OpenWindowAction.fronting(id:)` is itself declared inside `#if os(macOS)`.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     /// This dashboard's default upper year — its time-series charts are
     /// coverage-valued, so the range ends at the coverage ceiling.
@@ -131,6 +141,7 @@ struct SourceProvenanceDashboard: View {
                 mixOverTimeChart
                 compositionChart
                 densityChart
+                archivalAnalyticsLink
                 caveats
             }
         }
@@ -450,6 +461,42 @@ struct SourceProvenanceDashboard: View {
             .chartYAxisLabel(String(localized: "series.provenance.density.y", defaultValue: "Source notes"))
             .frame(height: 240)
         }
+    }
+
+    // MARK: - Cross-link
+
+    /// The #795 rider: a pointer from this dashboard's ten provenance *categories* to the named
+    /// collections behind them.
+    ///
+    /// **macOS only, deliberately.** On the Mac this dashboard only ever renders inside the
+    /// Research Guide window, so opening another window beside it is unremarkable. On iOS it also
+    /// renders inside `WhileIndexingSheet` mid-onboarding, where the same affordance would present
+    /// a sheet over a sheet while the first index is still building — and Archival Analytics needs
+    /// three explicit environment injections a sheet does not inherit (`BrowserView` makes them).
+    /// Deciding whether an onboarding reader should be offered that door at all is a design
+    /// question, not a mechanical one; it is filed rather than guessed at here.
+    @ViewBuilder
+    private var archivalAnalyticsLink: some View {
+        #if os(macOS)
+        VStack(alignment: .leading, spacing: 4) {
+            Button {
+                // `nil`, not a host: this dashboard is not a document window, so there is no
+                // provenance to inherit — the same reason the menu-bar Analytics menu clears it.
+                appState?.bindTool(.archivalAnalytics, to: nil)
+                openWindow.fronting(id: "frus.archivalAnalytics")
+            } label: {
+                Label(String(localized: "series.provenance.archivalLink",
+                             defaultValue: "Open Archival Analytics"),
+                      systemImage: "archivebox")
+            }
+            Text(String(localized: "series.provenance.archivalLink.detail",
+                        defaultValue: "This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 4)
+        #endif
     }
 
     // MARK: - Caveats

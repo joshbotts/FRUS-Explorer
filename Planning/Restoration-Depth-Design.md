@@ -1,15 +1,19 @@
 # What should survive a relaunch? (#754)
 
-**Status:** owner decision required. Nothing is implemented.
+**Status:** decided, and partly shipped. **PR #771** (2026-08-08) delivered **L-45** — all three
+Search UI flags are now `@State` — and **mechanism A**, `ResumeReadingRow`, offered rather than
+forced. **B and C remain deferred** until A has been lived with; M-21 is additionally blocked on
+#756, since `SearchParameters` is still not `Codable`. The costing below is kept as the record of
+that decision: read §§1–2 in the past tense.
 **Source:** 2026-08 navigation & state audit, findings **H-6, M-21, L-45**.
-**Written:** Session 2026-08-08, against `v2` @ `44c8f9ce`.
+**Written:** Session 2026-08-08, against `v2` @ `44c8f9ce`. **Status updated 2026-08-09 (#651).**
 
 ---
 
 ## 1. Measured, not assumed
 
-The app's **entire** scene-restoration surface is four `@SceneStorage` declarations across three
-distinct keys:
+When this was written, the app's **entire** scene-restoration surface **was** four `@SceneStorage`
+declarations across three distinct keys:
 
 | Key | Where | What it holds |
 |---|---|---|
@@ -17,7 +21,10 @@ distinct keys:
 | `search.facets.shown` | macOS Search window | is the facet column extended |
 | `search.inspector.expanded` | both Search surfaces | is the inspector card expanded |
 
-That is all. There is **no** `stateRestorationActivity` anywhere; the two `.userActivity` sites set
+That was all. **Since #771, one survives:** `frus.selectedTab` (`MainTabView.swift:98`), kept
+deliberately — a tab selection describes no content, so it cannot become incoherent. The other two
+keys no longer exist; their flags are `@State` at `SearchSheet.swift:132`, `SearchSheet.swift:138`
+and `SearchView.swift:251`, each with a comment naming this decision. There is **no** `stateRestorationActivity` anywhere; the two `.userActivity` sites set
 only `isEligibleForHandoff`, which is a different feature. Every navigation holder is
 process-lifetime `@State`: `BrowserViewModel.navigationPath`, `SearchViewModel` (query, filters,
 results, its own path), `ResearchView.selectedItem`, `MainWindowView.navigationPath`,
@@ -28,12 +35,14 @@ built. That matters for how it should be scoped — and it is why the issue is l
 
 ## 2. One thing here IS a plain bug (L-45)
 
-`search.facets.shown` survives relaunch. The query, results and `FacetPanelController` it describes
-do not. So the Search window can reopen with **the facet inspector extended over nothing** — the
-persisted half is a description of the discarded half.
+`search.facets.shown` **survived** relaunch. The query, results and `FacetPanelController` it
+described did not. So the Search window could reopen with **the facet inspector extended over
+nothing** — the persisted half was a description of the discarded half.
 
-That is incoherent under *any* answer to the design question below, and it is cheap to fix. It
-should not wait on the program decision.
+That was incoherent under *any* answer to the design question below, and cheap to fix. **Fixed in
+#771**, and by the stronger of the two options: rather than persisting more, the app now persists
+neither. Restoring only the half that is cheap to restore is worse than restoring neither — the
+reasoning is quoted almost verbatim in `SearchSheet.swift:125-131`.
 
 ## 3. What could survive — three mechanisms, very different costs
 
@@ -68,23 +77,26 @@ Source Explorer. macOS already reopens the *windows*; only their content resets.
 
 ## 4. Recommendation
 
-**Do L-45 now** — it is a bug, not a preference.
+**Do L-45 now** — it is a bug, not a preference. ✅ **Done (#771).**
 
-**Then A (resume reading), offered rather than forced.** A researcher who was three levels into a
+**Then A (resume reading), offered rather than forced.** ✅ **Done (#771).** A researcher who was three levels into a
 volume mostly wants *the document back*, not the ladder they climbed. Offering it as an affordance on
 the Browse root — rather than auto-reopening — keeps the launch predictable, which is worth more than
 the last 10% of fidelity. It reuses data the app already syncs, so it also works after a reinstall or
 on a second device, which no `@SceneStorage` scheme can do.
 
-**Defer B and C** until A has been lived with. If the resumed document turns out to be enough, B and
-C are permanently unnecessary; if it is not, the gap will be specific and worth scoping properly. Do
-not build path encoding speculatively — its failure mode is a bad launch, and launch is where this
-app can least afford one.
+**Defer B and C** until A has been lived with — **still the current position.** If the resumed
+document turns out to be enough, B and C are permanently unnecessary; if it is not, the gap will be
+specific and worth scoping properly. Do not build path encoding speculatively — its failure mode is
+a bad launch, and launch is where this app can least afford one. C (M-21) additionally waits on
+#756: `SearchParameters` is not `Codable`, so macOS Search-window restoration cannot start.
 
-## 5. If A is chosen — the shape
+## 5. The shape, as built (#771)
 
 1. Query the most recent `ReadingHistoryEntry` whose volume is still indexed.
-2. Surface it on the Browse root as a dismissible "Continue reading" row (iOS), and on the macOS main
-   window's `DocumentPlaceholderView`, which today says only "Select a document to begin".
+2. Surface it on the Browse root as a dismissible "Continue reading" row (iOS, `CorpusView.swift:36`)
+   and on the macOS main window's `DocumentPlaceholderView` (`MainWindowView.swift:426`), beneath the
+   "Select a document to begin" line and its Search / Corpus Browser hint.
 3. Tapping it opens the document through the existing routing — no new navigation path.
-4. Nothing auto-opens. The launch a user sees is the one they expect.
+4. Nothing auto-opens. The launch a user sees is the one they expect. `ResumeReadingTests` forbids
+   `.onAppear` navigation outright, so this cannot regress into auto-opening by accident.

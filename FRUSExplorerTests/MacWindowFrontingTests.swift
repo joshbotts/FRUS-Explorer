@@ -181,12 +181,16 @@ struct MacWindowFrontingTests {
 
     // MARK: - The sites the audit named
 
-    @Test("The seven main-window toolbar launchers all front")
+    @Test("The nine main-window toolbar launchers all front")
     func toolbarLaunchersFront() throws {
         // Named individually because the invariant above also passes if a launcher is deleted.
+        // `frus.archivalAnalytics` (#795) and `frus.history` (#652) were both added in 2026-08;
+        // each had existed as a window with no toolbar door for months, which is the failure this
+        // roster exists to make loud.
         let source = try Self.source("App/MainWindowView.swift")
-        for windowId in ["frus.search", "frus.corpusBrowser", "frus.analytics", "frus.chronology",
-                         "frus.wordcloud", "frus.research", "frus.collections"] {
+        for windowId in ["frus.search", "frus.corpusBrowser", "frus.analytics",
+                         "frus.archivalAnalytics", "frus.chronology", "frus.wordcloud",
+                         "frus.research", "frus.collections", "frus.history"] {
             #expect(source.contains("openWindow.fronting(id: \"\(windowId)\")"),
                     "the main-window toolbar launcher for \(windowId) must front it (#749 / M-12)")
         }

@@ -6,6 +6,10 @@ claim below checked in the tree (not inferred from PR prose).
 
 **Version history:**
 - 1.0 — Session 2026-08-09: initial plan, from the full open-issue verification sweep.
+- 1.1 — Session 2026-08-09: **Tier 0 executed.** QW-1…QW-5 struck through with their measured
+  corrections — four of the five items were wrong in ways that would have produced a build error
+  (QW-2), a fix that breaks five working links (QW-3), an edit to the wrong file (QW-1), or a red
+  test suite (QW-4). The corrections are recorded in place rather than deleted, per §5.
 
 **What this document is.** The 2026-08-09 sweep verified the status of every open issue, closed the
 five that were finished, retitled three whose own audit comments had refuted their titles, and
@@ -66,10 +70,22 @@ not duplicate them; it only records the post-plan deltas measured on the issues 
 
 Effort scale: XS ≤ ½ session · S = 1 session · M = 1–2 sessions · L = program.
 
-### Tier 0 — Quick wins: one combined session, five small PRs
+### Tier 0 — Quick wins ✅ **DONE (2026-08-09)** — one session, one PR
 
-All five are evidence-complete in their issues; none needs a decision. Together they retire two
-`bug`-labelled items and the only docs-drift item.
+All five were evidence-complete in their issues; none needed a decision. Together they retire two
+`bug`-labelled items and the only docs-drift item. **Shipped as one PR with five commits, not five
+PRs:** QW-1 and QW-4 both insert rows into `MainWindowView`'s toolbar, and separate PRs off `v2`
+would have conflicted on merge for no reviewing benefit.
+
+**What each item got wrong, measured before any edit:**
+
+| item | the plan said | the tree said |
+|---|---|---|
+| QW-2 | `.badge(cond ? "·" : nil)` | Does not compile. `Tab` is `TabContent`, not `View`; `TabContent.badge` has no optional-String overload. Shipped `Text(verbatim: "·") : nil`. |
+| QW-3 | 18 autolinks; de-link when the link text is not a URL | **22**, in twelve volumes — and that predicate de-links five real supplement PDFs. Shipped a two-clause rule (bare-host target **and** non-URL text): 619 http refs, 22 de-linked, 597 kept. Verification doc was wrong too. |
+| QW-1 | cross-link in `EducationDashboardView`; XS | That is a dispatcher; the dashboard is `SourceProvenanceDashboard`. Not XS on iOS, where it renders inside the mid-onboarding sheet — macOS arm shipped, iOS arm filed. |
+| QW-1 | extend the `ArchivalLibraryQueryTests` assertion | It reads `FRUSExplorerApp.swift`, which is why it stayed green through the whole bug. Needed a **second** test reading `MainWindowView.swift`. |
+| QW-4 | `bringMacWindowToFront` + `openWindow(id:)` | That is the pre-#749 idiom `MacWindowFrontingTests` greps for and fails on. Shipped `openWindow.fronting(id:)`. |
 
 - **QW-1 · #795 — the two missing Archival Analytics doors** (XS). Add
   `openWindow.fronting(id: "frus.archivalAnalytics")` to the `MainWindowView.swift:297` toolbar
@@ -249,8 +265,9 @@ sitting, not a session.
 
 **Engineering lane** (each row one session unless noted):
 
-1. **Quick-wins session** — QW-1…QW-5 (five small PRs; retires #795, #659, #652, #651, and
-   #657's first step).
+1. ~~**Quick-wins session** — QW-1…QW-5~~ ✅ **2026-08-09.** Retired #795, #659, #652, #651 and
+   #657's first step. #657 itself stays open — the badge change is a suspect removed, not a proven
+   fix, and B-1 still owes the device backtrace.
 2. **B-2** (#777) — the one user-visible data bug.
 3. **F-1** (#784), two sessions — the highest-value feature; everything it needs is measured.
 4. **F-2** (#752 tail) — closes #752 outright.

@@ -3881,3 +3881,63 @@ surviving issues into five tiers (quick wins → diagnosis bugs → de-risked fe
 infrastructure → owner-gated decisions), carries per-item evidence pointers and effort, defers to
 the live N-lane/People/Subjects/reading-journey docs rather than re-planning them, and records the
 one new unfiled work item (#663's catalog fields). Docs only — no code, no build bump.
+
+---
+
+## Session 2026-08-09 — Tier 0 quick wins (QW-1…QW-5)
+
+The first engineering row of `Resolve-Open-Issues-Plan-2026-08.md`: five small items, all
+evidence-complete in their issues, none needing a decision.
+
+**Every item was verified against the tree before an edit was made, and four of the five plan lines
+were wrong.** That is the point of the house rule, and it earned its keep here:
+
+- **QW-2's fix does not compile as written.** The plan (and #657) prescribe
+  `.badge(cond ? "·" : nil)`. `Tab` conforms to `TabContent`, not `View`, and **`TabContent.badge`
+  has no optional-String overload** — only `badge(_ label: Text?)` admits nil. `View.badge` *does*
+  have `LocalizedStringKey?` and `S?` overloads, which is where the issue generalised from. The
+  shipped spelling is `Text(verbatim: "·") : nil`. An implementer pasting the plan line hits a
+  build error whose obvious "fix" is reverting to `""`.
+- **QW-3 is 22 refs in twelve volumes, not 18 in eight** — and the plan's own predicate breaks five
+  real links. "An `http(s)` target whose link text is not itself a URL" de-links the five
+  `frus1917-72PubDip` supplement PDFs, whose text is prose ("a high resolution color PDF"). The
+  shipped predicate has **two** clauses, and measurement shows each is load-bearing: bare-host
+  target alone kills the thirty genuine `bookstore.gpo.gov` / `un.org` links; non-URL text alone
+  kills the supplement PDFs. Measured over all 552 shippable volumes: **619 http(s) refs, 22
+  de-linked, 597 kept.** The plan's verification document was also wrong — `frus1867p1/d303`
+  carries `would.be` and `only be`, not the three phrases named; "Shall" is d599.
+- **QW-1's SA-3 target is `SourceProvenanceDashboard`, not `EducationDashboardView`** (a four-arm
+  dispatcher), and the item is not XS: that dashboard renders on both platforms and, on iOS, inside
+  the mid-onboarding `WhileIndexingSheet`. The macOS arm shipped; the iOS arm is filed, because a
+  sheet-over-a-sheet during the first index is a design question, not a mechanical edit.
+- **QW-1's test cannot be "extended in place."** `ArchivalAnalyticsEntryPointTests.macOSEntryPoint`
+  asserts the fronting call against `FRUSExplorerApp.swift` — where the menu-bar item has always
+  lived. That is precisely why it stayed green through the whole of #795. Pinning the toolbar
+  needed a **second** test reading `MainWindowView.swift`.
+- **QW-4's snippet fails the suite.** `bringMacWindowToFront` paired with a bare `openWindow(id:)`
+  is the pre-#749 idiom, and `MacWindowFrontingTests` greps for exactly that. The shipped code uses
+  `openWindow.fronting(id:)` like its siblings.
+
+**Two doors, one shape.** #795 and #652 are the same bug twice: a window that exists, a menu-bar
+item that opens it, and no row in the toolbar menu a mouse-driven reader actually uses. Both are now
+in their toolbar menus, and `MacWindowFrontingTests`' roster went from seven launchers to nine so
+the next omission is loud. #652 also makes History the **first host-bound `.history` producer** —
+`provenance(of: .history)` has always resolved nil, so a document re-opened from History fell
+through to the recency chain instead of landing in the window it was launched from.
+
+**QW-2 is a suspect removed, not a fix, and the PR says so.** #657 is unreproduced and its own
+report will not choose between a watchdog hang and a data abort at address 0. `""` is still a badge
+— it materialises a label in the tab-item layout, which is the stack the crash log names — so
+removing it is cheap and defensible. Conviction still needs B-1's device backtrace in Read mode.
+The issue stays open.
+
+**QW-5 found the fifteen-lot list existed nowhere in prose.** #651 asks the run-book to record
+which lots the 2026-07-29 regeneration re-resolved. The only source is the artifact diff at commit
+`2496472f`; the run-book now carries the table and the command that reproduces it. It also states
+the outcome as *of that date* — #694 has since pruned the map from 758 lots to 7, so writing "758"
+as a description of the bundle would have replaced one stale claim with another.
+
+**Verification.** Seven mutations, one per new guard, each verified to turn its suite red:
+the predicate's scheme gate, each of its two clauses separately, both toolbar rows, the SA-3
+cross-link, and the badge reverted to `""`. All seven CAUGHT. Both schemes build clean; **3,146
+tests in 411 suites** pass, plus the UI suite.
