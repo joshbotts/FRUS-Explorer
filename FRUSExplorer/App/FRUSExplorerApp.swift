@@ -92,6 +92,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
+/// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, lifecycles, your library |
 /// | `"frus.wordcloud"`              | Window        | Word cloud (note the lowercase `c`)              |
 /// | `"frus.chronology"`             | Window        | Chronology                                       |
 /// | `"frus.research"`               | Window        | Research — notes, tags, collections, highlights  |
@@ -863,6 +864,20 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 820, height: 660)
+
+        // MARK: - Archival Analytics Window (#765)
+        //
+        // Where the editors found what they published: era × collection rankings and collection
+        // lifecycles from the bundled authority + usage index (corpus-wide, needs no downloads),
+        // and the archival profile of the user's own indexed volumes from `document_sources`.
+        Window(String(localized: "archival.window.title", defaultValue: "Archival Analytics"),
+               id: "frus.archivalAnalytics") {
+            ArchivalAnalyticsView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 820, height: 680)
 
         // MARK: - Word Cloud Window
         Window(String(localized: "wordcloud.window.title", defaultValue: "Word Cloud"),
@@ -2848,6 +2863,10 @@ struct AnalyticsMenuContent: View {
         Button(String(localized: "menu.analytics.crossRef", defaultValue: "Cross-Reference Analytics")) {
             appState.bindTool(.crossRefAnalytics, to: nil)
             openWindow.fronting(id: "frus.crossRefAnalytics")
+        }
+        Button(String(localized: "menu.analytics.archival", defaultValue: "Archival Analytics")) {
+            appState.bindTool(.archivalAnalytics, to: nil)
+            openWindow.fronting(id: "frus.archivalAnalytics")
         }
 
         Divider()

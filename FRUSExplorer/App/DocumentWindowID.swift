@@ -133,6 +133,7 @@ enum ToolWindowID: Hashable {
     case analytics
     case personAnalytics
     case crossRefAnalytics
+    case archivalAnalytics
     case wordCloud
     case chronology
     case research
