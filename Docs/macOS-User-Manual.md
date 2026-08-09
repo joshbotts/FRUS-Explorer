@@ -1208,7 +1208,7 @@ An **info** button (ⓘ) explains what each measure means and how it is computed
 
 ### 13.7 Archival Analytics
 
-Corpus Analytics tracks terms, Person Analytics tracks people, Cross-Reference Analytics tracks citations between documents; **Archival Analytics** tracks *where the documents came from*. Every published FRUS document carries a source note naming the archival file its original was found in, and clustered across the whole series those notes answer a question the volumes themselves never state: which bodies of records each era's editors actually worked in. Open it from **Analytics → Archival Analytics** in the menu bar; it opens in its own window, so you can leave it beside a document. A **Collections / Your Library** picker in the toolbar splits the surface into two.
+Corpus Analytics tracks terms, Person Analytics tracks people, Cross-Reference Analytics tracks citations between documents; **Archival Analytics** tracks *where the documents came from*. Every published FRUS document carries a source note naming the archival file its original was found in, and clustered across the whole series those notes answer a question the volumes themselves never state: which bodies of records each era's editors actually worked in. Open it from **Analytics → Archival Analytics** in the menu bar; it opens in its own window, so you can leave it beside a document. A **Collections · Network · Flows · Your Library** picker in the toolbar splits the surface into four.
 
 **Collections** is corpus-wide and needs nothing downloaded — it reads the bundled archival authority, so it works on a fresh install. Three chips above the charts control it:
 
@@ -1224,7 +1224,26 @@ Below the ranking, **Collection lifecycles** draws each of the most widely-used 
 
 **Your Library** answers the same question about *your* volumes, counted from your own index rather than the bundled aggregates. Three cards: the provenance composition of every source note you have indexed; the same composition split by the era your volumes cover, which is where you can watch the decimal file give way to lot files and then to the libraries; and your most-cited collections, where clicking a row opens **Archival Neighbors** for it in its own window (Section 12). The footer states how many volumes you have indexed against how many exist, and — importantly — that these are *source notes*, not documents: only documents whose editors recorded where the original was found are counted, so the total is smaller than your document count.
 
-Both modes offer **View as table** on each chart, which opens the underlying numbers.
+
+**Network** puts one collection at the centre and arranges everything co-cited with it in four quadrants by custodian — Department of State to the upper left, State lot files upper right, presidential libraries lower right, everyone else lower left. Distance from the centre is link strength, and three dashed rings mark three quarters, a half, and a quarter of the strongest link on screen. The layout is deterministic: nothing settles or drifts, so the same collection always draws the same picture and two people comparing screens are comparing the same thing.
+
+- **Focus** picks the collection at the centre. Right-click any node for **Explore This Collection**, which re-centres on it; a **Back** chip returns you.
+- **Link strength** switches between **Shared volumes** and **Shared documents**. The first asks how much of each collection's use overlaps the other's; the second asks how much material the two jointly supplied to the volumes they share. They give different answers and both are worth asking.
+- The **slider** hides links below a share of the strongest one. Because a hub collection can be co-cited with hundreds of others, the graph draws the 32 strongest and says so — raise the slider to narrow the neighbourhood rather than to see more of it.
+- **Central Files** expands. The State Department's central files sit next to almost every early collection, where they say little more than "this is a State Department volume". Switch the chip to **Decimal classes** or **Subject-numeric groups** and that one circle is replaced by the actual subject headings co-cited with your focus, drawn as **rounded squares inside a dashed outline**. The shape is the point: a class is a heading inside a filing system, not a body of records with a custodian, and the two are never drawn alike. A square's actions open the documents in that class rather than a collection page.
+
+Click a node to fill the panel below the graph with what the link is made of. That panel is always there, even when nothing is selected, so the graph never jumps as you click around it. Scroll to zoom, drag to pan, double-click to reset.
+
+**Flows** asks a different question: when an editor annotated one published document by pointing at another, which archive did the pointer lead to? Opening the mode shows the heaviest hand-offs in the whole series. Choose a **Focus** collection and the view becomes a fan — the focus on the left, every destination on the right, ribbons between them thickened by how many references run along each.
+
+Read one thing before reading a ribbon: **about 95% of these references are footnotes**. A ribbon says *the editors, annotating material from this collection, sent the reader to material from that one*. It does not say the two archives cite each other. The caveat block states the exact share, computed from the data rather than written into the app.
+
+- **Outgoing / Incoming** flips the fan. The two are not mirror images — the heaviest pair in the series runs 449 references one way and 317 the other.
+- **Nothing is silently dropped.** The busiest collection points at 238 others. The ten heaviest are drawn as blocks; the rest fold into a single dashed block that states how many collections and how many references it holds, and clicking opens the full list.
+- Selecting a ribbon opens a card with the reference count, its share of the collection's hand-offs, and **Show Archival Neighbors** for the far end.
+- Coverage is uneven, and the gap is itself the finding: only 254 of the 552 volumes contribute a single reference, because the cross-reference style these are harvested from postdates 1945. The figures carry no dates, so this mode cannot be narrowed to a period, and central-file classes are left out — the whole series carries under two references per pair of them, too thin to rank.
+
+Collections and Your Library each offer **View as table** on their charts, which opens the underlying numbers.
 
 `[SCREENSHOT: The Archival Analytics window on macOS in Collections mode, showing the 1969–1976 ranking with Nixon's NSC Files leading, the Central Files umbrella chip, and the lifecycle span card below]`
 

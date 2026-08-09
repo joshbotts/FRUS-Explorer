@@ -12,27 +12,150 @@ import SwiftUI
 
 /// The modes of ``ArchivalAnalyticsView``, in picker order.
 ///
-/// Two of the design's four modes ship here (#765 stage 1). Network and Flows are the two
-/// custom-drawn `Canvas` surfaces and land next; they are absent from this enum rather than
-/// present-and-empty, so the picker never offers a segment that does nothing.
-///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1 (Collections + Your Library)
+///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
 enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
     /// Corpus-wide era × archival-unit rankings and lifecycles.
     case collections
+    /// The co-citation neighbourhood of one collection, drawn in custodian sectors.
+    case network
+    /// Where the editors sent the reader when they cross-referenced one document from another.
+    case flows
     /// The archival profile of the volumes this user has indexed.
     case yourLibrary
 
     var id: String { rawValue }
+
+    /// Whether the mode draws a full-frame `Canvas` that owns its own gestures.
+    ///
+    /// The two chart modes scroll; Network pans and zooms. Nesting a pinch-and-pan canvas inside
+    /// the shell's `ScrollView` would make the two gesture recognisers fight, so the shell
+    /// branches on this rather than wrapping every mode the same way.
+    var isFullFrameCanvas: Bool { self == .network }
 
     /// Segment label.
     var title: String {
         switch self {
         case .collections:
             return String(localized: "archival.mode.collections", defaultValue: "Collections")
+        case .network:
+            return String(localized: "archival.mode.network", defaultValue: "Network")
+        case .flows:
+            return String(localized: "archival.mode.flows", defaultValue: "Flows")
         case .yourLibrary:
             return String(localized: "archival.mode.yourLibrary", defaultValue: "Your Library")
+        }
+    }
+}
+
+// MARK: - ArchivalEdgeMeasure
+
+/// What a Network edge measures — the design's "edge weighting" toggle, with both options
+/// replaced after measurement.
+///
+/// ## The overlap coefficient does not work here, and the threshold slider cannot save it
+/// The approved design weights edges by the overlap coefficient (shared ÷ the *smaller* of the
+/// two citing-volume lists) and offers a threshold slider defaulting to 0.25. Measured on the
+/// shipped authority, that produces a hairball the slider cannot thin: the median focus has
+/// **35 partners at ≥ 0.25**, and `Central Files` has **1,000** — still **810** at ≥ 0.75. The
+/// coefficient saturates at exactly 1.000 for *any* partner whose volume list is a subset of the
+/// focus's, and 2,846 of the 4,423 shipped records cite one or two volumes. So the top eight
+/// neighbours of the `Whitman File` under that weighting are two-to-seven-volume lot files
+/// scoring 1.000 with between zero and ten documents in common — noise that outranks the Dulles
+/// Papers, and noise a higher threshold *keeps*.
+///
+/// #762's Related Collections list is unaffected and keeps the coefficient: it shows five rows
+/// with three tie-breaks under them, and that ranking was measured for that job. A graph with a
+/// strength axis is a different job.
+///
+/// ## What replaced it
+/// Both cases below were checked against the same three foci. They rank differently and both
+/// rank *well* — for `NSC Files`, shared volumes surfaces Central Files 1970–73, the White House
+/// Tapes and Special Files, and Kissinger's papers; shared documents surfaces Central Files
+/// 1970–73, the Ford Library's National Security Adviser file, and Kissinger's papers. Those are
+/// the Nixon documentary complex, which is what the graph is for.
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #765 stage 2
+enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
+    /// Jaccard over citing volumes: shared ÷ the volumes citing **either**. Unlike the overlap
+    /// coefficient this cannot be won by being small, because a partner's own breadth is in the
+    /// denominator.
+    case sharedVolumes
+    /// Documents the two collections jointly supplied to the volumes they share — for each
+    /// shared volume, the smaller of the two contributions, summed. Needs the usage index.
+    case sharedDocuments
+
+    var id: String { rawValue }
+
+    /// Menu label.
+    var title: String {
+        switch self {
+        case .sharedVolumes:
+            return String(localized: "archival.measure.sharedVolumes",
+                          defaultValue: "Shared volumes")
+        case .sharedDocuments:
+            return String(localized: "archival.measure.sharedDocuments",
+                          defaultValue: "Shared documents")
+        }
+    }
+
+    /// How the info dock words one edge's strength.
+    func detail(shared: Int, documents: Int) -> String {
+        switch self {
+        case .sharedVolumes:
+            return String(format: String(localized: "archival.measure.detail.volumes %lld",
+                                         defaultValue: "%lld volumes cite both"), Int64(shared))
+        case .sharedDocuments:
+            return String(format: String(localized: "archival.measure.detail.documents %lld",
+                                         defaultValue: "%lld documents jointly supplied"),
+                          Int64(documents))
+        }
+    }
+}
+
+// MARK: - ArchivalUmbrellaExpansion
+
+/// How the `Central Files` node is drawn in the Network — the design's umbrella chip.
+///
+/// Central Files is cited by 157 volumes and is therefore a neighbour of almost every early
+/// collection, where it says little more than "this is a State Department volume". Expanding it
+/// into the **classes** actually co-cited with the focus is what makes the pre-1963 graph
+/// legible.
+///
+/// Classes are drawn as rounded squares inside a dashed hull, never as circles: a class is a
+/// subject heading inside one filing system, not a body of records with a custodian, and the two
+/// must not be able to be mistaken for each other (feasibility §4-I rider b).
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #765 stage 2
+enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
+    /// One `Central Files` node, like any other collection.
+    case collapsed
+    /// Replaced by the decimal classes (`763.72`) co-cited with the focus.
+    case decimalClasses
+    /// Replaced by the subject-numeric groups (`POL 27`) co-cited with the focus.
+    ///
+    /// Folded to **category + number**, not the raw leaf: measured under #763, 691 of the 1,362
+    /// subject-numeric leaf keys carry a single document, and only eight pass a hundred. Folded,
+    /// it is 326 groups with thirteen past a hundred. `CollectionKeying.subjectNumericGroup` is
+    /// the fold, shared with the generator so the two cannot disagree.
+    case subjectNumeric
+
+    var id: String { rawValue }
+
+    /// Menu label.
+    var title: String {
+        switch self {
+        case .collapsed:
+            return String(localized: "archival.umbrella.collapsed", defaultValue: "Collapsed")
+        case .decimalClasses:
+            return String(localized: "archival.umbrella.decimal",
+                          defaultValue: "Decimal classes")
+        case .subjectNumeric:
+            return String(localized: "archival.umbrella.subjectNumeric",
+                          defaultValue: "Subject-numeric groups")
         }
     }
 }

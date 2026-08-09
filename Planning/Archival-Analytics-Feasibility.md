@@ -740,6 +740,51 @@ two central-file forms on purpose — their `series_name` holds a file identifie
 `611.51/1-1558`, so grouping on it yields one-document groups that resolve to nothing; the
 footer reports those notes as a separate figure rather than losing them.
 
+### 7.11 Phase 3 stage 2 (#765): Network and Flows, and four more design premises the data refutes
+
+**Shipped:** `ArchivalNetworkView` and `ArchivalFlowsView`, completing the four-mode picker.
+
+**R-1 — the Network's edge measure.** Direction 2a weights edges by the overlap coefficient with a
+threshold slider defaulting to 0.25. Measured over the shipped authority: median focus **35
+partners at ≥ 0.25**, `Central Files` **1,000**, still **810 at ≥ 0.75**. The coefficient divides
+by the *smaller* list, so it saturates at exactly 1.000 for any partner whose volume list is a
+subset — and 2,846 of 4,423 records cite one or two volumes. The Whitman File's top eight
+neighbours under that weighting are two-to-seven-volume lot files at 1.000 with 0–10 documents in
+common, and a higher threshold **keeps** them. Replaced by Jaccard over citing volumes and joint
+documents supplied; both rank the real neighbourhoods and both thin under a slider. #762's
+Related Collections list is unaffected and keeps the coefficient.
+
+**R-2 — "no hard cap" (§5.3) is not achievable.** Even under the replacement measure, 34.7% of the
+1,577 multi-volume records exceed forty partners above a quarter of their strongest link, and a
+90° wedge cannot hold forty nodes without their tap targets overlapping. The cap is **per
+custodian** (6 each), which is strictly better than a global top-N: a neighbourhood that is
+nine-tenths lot files keeps its one presidential library. What the cap withheld is stated.
+
+**R-3 — the Flows year-range chip cannot be built.** Verified twice: the artifact's only
+volume-shaped fields are the scalars `volumesScanned` / `volumesWithEdges`, and
+`ProvenanceFlowIndexRunner` aggregates into a `Pair(from:to:)` carrying two unit ids. A time
+filter needs a schema-2 regeneration keying the pair by volume or coverage bucket.
+
+**R-4 — the Flows class focus should not be built, and could not be labelled.** #764 measured
+4,663 between-class references over 2,730 pairs; its own reader says "do not build a class-flow
+surface on it". Independently, §7.8's Finding 3 refuted the class-label rider. Both figures are
+now read off the artifact at render time rather than written into the caveat, matching how the
+95.3% footnote share is handled.
+
+**"Browse these citations in your library" is withheld, not deferred.** No query joins
+`cross_references` to `document_sources`; more decisively, `cross_references.reference_type`
+defaults body-text references to `"footnote"`, so a local list could not reproduce the split this
+surface is framed around and would disagree with the diagram above it without saying why. The flow
+card offers Archival Neighbors on the endpoint instead.
+
+**What the adversarial review found, and why it matters to the plan.** 42 agents, 38 candidates,
+25 confirmed — while the derivation suite was 31 for 31 green and **the Network mode drew nothing
+at all**. `layout` was gated on a `@State canvasSize` whose only writer sat inside the branch that
+state gated. This is the "unreachable pane" class (#363, #338) with a data dependency in place of
+a missing modifier. Recorded here because the lesson generalises past this issue: for a
+`Canvas`-drawn surface, a green derivation suite is not evidence that anything renders, and the
+cheapest instrument that finds it is reading the code as a renderer would execute it.
+
 ### 7.5 Decisions log
 
 | # | Decision | Status |
@@ -753,6 +798,11 @@ footer reports those notes as a separate figure rather than losing them.
 
 ## Version history
 
+- 1.9 (2026-08-09) — §7.11: Phase 3 stage 2 (#765) shipped — Network and Flows. Records four more
+  refuted design premises (the overlap-coefficient edge measure and its threshold slider; "no hard
+  cap"; the Flows year-range chip; the Flows class focus), the withheld per-citation browse and
+  why, and the adversarial review that found the Network mode rendering nothing while its
+  derivation suite was fully green.
 - 1.8 (2026-08-09) — §7.10: Phase 3 stage 1 (#765) shipped — the `ArchivalAnalyticsView` shell
   with the Collections and Your Library modes on both platforms. Records the finding the mode
   renders (the record's migration from State's central files to the White House, with per-band
