@@ -3205,3 +3205,50 @@ right. More sharply: **2,595 authority records have no attributed documents at a
 volume's front matter, never resolved from a document source note — so more than half the authority
 disappears when the toggle flips. The reader returns zero rather than nothing for those, so #765's
 surface can say which question it answered instead of implying the collection is unused.
+
+---
+
+## Session 2026-08-08 — #267: the scope control SA-3 was withheld
+
+Closes #267, re-scoped. Its filed premise — "the SA-3 dashboard's scope control filters what the
+decade-aggregated bundled index allows" — describes a control that does not exist. `SourceProvenance
+Dashboard` never instantiates `SeriesScopeBar`; it is the one "About the Series" dashboard without
+one, and that was deliberate. The Session-3 plan says it in as many words: *"category filter only
+(the bundled index is decade×category — do not fake volume scope)"*. So nothing was inexact. A
+capability was refused, on the grounds that an approximated scope is worse than none, and the issue
+was really a note to come back with the data that would make it exact.
+
+**The data was already being computed and thrown away.** `SourceProvenanceIndexRunner` accumulates
+`volumeIds: Set<String>` per decade purely to report `volumeCount`, then discards the identities.
+Schema 2 emits them as `byVolume` — volume id, decade, note total, per-category counts. Because
+every volume belongs to **exactly one** coverage decade, a subset of volumes re-totals its decades
+*exactly*: no note is split, none is double-counted, and `volumeCount` is the number of volumes in
+scope rather than a proportion of the whole-series figure. That is the property that turns the
+Session-3 refusal into a shipping control.
+
+**Regenerating was additive, and the old test proved it.** `totalSourceNotes` 268,757,
+`volumesCovered` 522, 16 decades — every headline figure came back identical; only `schemaVersion`
+moved. The existing artifact test failed on exactly that one assertion and nothing else, which is
+the cleanest possible evidence that the new table is another view of the same scan rather than a
+different count. 4.4 KB → 134 KB.
+
+**The unscoped dashboard is byte-identical.** `byDecade` stays authoritative and the app does *not*
+re-sum `byVolume` when no scope is active. The two are pinned against each other by an artifact
+test — decade for decade, category for category — so "scope everything" and "no scope" cannot
+diverge without a test failing.
+
+**The refusal survives as the fallback.** `byVolume` is optional, and `SourceProvenanceData` reports
+`supportsVolumeScope`. Against a schema-1 artifact the dashboard shows **no scope bar at all** and
+the figures stay whole-series — it does not silently filter a decade table by volume id, which is
+precisely the approximation Session 3 declined. The behaviour is pinned by a test that constructs a
+schema-1 index and passes a scope.
+
+**The manual was ahead of the code.** Both user manuals already said "Controls shared by all four
+dashboards: a **Scope** control…", which has been wrong for Archival Sourcing since Session 3. It is
+true now; the bullets gained a sentence saying the narrowing is exact rather than estimated, and why.
+
+**Two note counts that will look like a bug and are not.** This generator counts every
+`type="source"` element (`SourceNoteExtractor`): 268,757 notes over 522 volumes. #763's usage index
+counts notes **paired with a document id** (`DocumentNoteExtractor`): 264,464 over 501. The 4,293-note,
+21-volume gap is source notes with no resolvable enclosing document. Two different questions, both
+correctly answered; recorded here so nobody "fixes" one to match the other.

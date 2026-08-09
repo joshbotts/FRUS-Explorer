@@ -14,6 +14,12 @@ import SourceNoteKit
 /// `SourceNoteParser`, maps each parse to a stable `ProvenanceCategory`, and aggregates
 /// the counts by coverage decade (from the enriched `manifest.json` date ranges).
 ///
+/// Schema 2 (#267) additionally emits `byVolume` — the per-volume breakdown this runner already
+/// accumulated in order to count distinct volumes per decade, and then discarded. Every volume
+/// belongs to exactly one coverage decade, so a decade bucket is the sum of its volumes and any
+/// subset rolls up exactly; that is what lets SA-3 offer a real subseries scope instead of the
+/// approximation Session 3 refused to ship.
+///
 /// Entirely offline and deterministic. Configuration (environment variables):
 /// - `VOLUMES_DIR` — directory of volume `*.xml` files (default `/Users/jbotts/Development/frus/volumes`)
 /// - `MANIFEST` — bundled manifest path (default `FRUSExplorer/Resources/manifest.json`)
@@ -56,6 +62,7 @@ public enum SourceProvenanceIndexRunner {
 
         let parser = SourceNoteParser()
         var accumulators: [Int: DecadeAccumulator] = [:]
+        var volumeBuckets: [SourceProvenanceIndex.VolumeBucket] = []
         var totalNotes = 0
         var volumesCovered = 0
         var skippedNoDecade = 0
@@ -75,13 +82,18 @@ public enum SourceProvenanceIndexRunner {
             }
 
             var acc = accumulators[decade] ?? DecadeAccumulator()
+            var volumeCounts: [ProvenanceCategory: Int] = [:]
             for text in noteTexts {
                 let category = ProvenanceCategory.from(parser.parse(text))
                 acc.counts[category, default: 0] += 1
+                volumeCounts[category, default: 0] += 1
                 acc.totalNotes += 1
             }
             acc.volumeIds.insert(volumeId)
             accumulators[decade] = acc
+            volumeBuckets.append(SourceProvenanceIndex.VolumeBucket(
+                volumeId: volumeId, decade: decade, totalNotes: noteTexts.count,
+                counts: volumeCounts.reduce(into: [:]) { $0[$1.key.rawValue] = $1.value }))
             totalNotes += noteTexts.count
             volumesCovered += 1
         }
@@ -102,12 +114,16 @@ public enum SourceProvenanceIndexRunner {
             }
 
         let output = SourceProvenanceIndex(
-            schemaVersion: 1,
+            schemaVersion: 2,
             generated: generated,
             totalSourceNotes: totalNotes,
             volumesCovered: volumesCovered,
             categories: ProvenanceCategory.orderedCases.map(\.rawValue),
-            byDecade: byDecade)
+            byDecade: byDecade,
+            // Sorted by id, not by scan order: the scan is already filename-sorted, but stating
+            // the sort makes the artifact's determinism a property of the writer rather than of
+            // the directory listing.
+            byVolume: volumeBuckets.sorted { $0.volumeId < $1.volumeId })
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -115,6 +131,7 @@ public enum SourceProvenanceIndexRunner {
 
         log("""
         source-provenance-index.json written to \(outputPath)
+          schema:               2 (byDecade + byVolume)
           volumes covered:      \(volumesCovered) / \(xmls.count)
           total source notes:   \(totalNotes)
           decades:              \(byDecade.count)
