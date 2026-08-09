@@ -170,9 +170,19 @@ public struct CrossReferenceGraph: Sendable {
     /// References whose source is the central document (degree 1 only).
     public let outboundEdges: [CrossReferenceEdge]
     /// `true` when at least one inbound edge has a source volume absent from the
-    /// caller-supplied `downloadedVolumeIds` set — indicating potentially incomplete
-    /// inbound data (e.g. the DB was seeded externally or a volume was de-indexed).
+    /// caller-supplied `downloadedVolumeIds` set.
+    ///
+    /// Before #262 this was almost always `false` and its own comment said so: the local table
+    /// only ever held edges from indexed volumes, so an edge from a volume you did not have was
+    /// not in the table to be flagged. The bundled resolved-edge index supplies those edges, and
+    /// this flag now means what it says.
     public let hasUndownloadedSources: Bool
+    /// Volumes that cite this document but are not downloaded, sorted — what the reader would
+    /// have to fetch to read the citing documents themselves.
+    ///
+    /// Empty when everything citing this document is already local. Populated only from the
+    /// bundled index, so it is corpus-complete rather than a function of the current library.
+    public let undownloadedCitingVolumeIds: [String]
     /// Metadata for all nodes reachable from the central document, keyed by `nodeKey`.
     public let nodeMetadata: [String: CrossReferenceNodeMetadata]
     /// Degree-2+ edges loaded by `expandedGraph(degree:)`.
@@ -189,7 +199,8 @@ public struct CrossReferenceGraph: Sendable {
         hasUndownloadedSources: Bool,
         nodeMetadata: [String: CrossReferenceNodeMetadata],
         extendedEdges: [CrossReferenceEdge] = [],
-        fetchedDegree: Int = 1
+        fetchedDegree: Int = 1,
+        undownloadedCitingVolumeIds: [String] = []
     ) {
         self.centralDocumentId = centralDocumentId
         self.centralVolumeId = centralVolumeId
@@ -199,6 +210,7 @@ public struct CrossReferenceGraph: Sendable {
         self.nodeMetadata = nodeMetadata
         self.extendedEdges = extendedEdges
         self.fetchedDegree = fetchedDegree
+        self.undownloadedCitingVolumeIds = undownloadedCitingVolumeIds
     }
 
     /// Total number of degree-1 edges (inbound + outbound).

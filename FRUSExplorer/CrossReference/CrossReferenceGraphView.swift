@@ -1452,10 +1452,19 @@ struct CrossReferenceGraphView: View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.circle")
                 .foregroundStyle(.orange)
-            Text(String(localized: "graph.banner.undownloaded",
-                        defaultValue: "Some volumes that may reference this document have not been downloaded."))
+            // #262: this used to hedge — "some volumes that MAY reference this document" — because
+            // the app could not know. The bundled resolved-edge index makes the count exact, and
+            // naming the volumes is what tells a reader which one to download.
+            Text(vm.undownloadedCitingVolumeIds.isEmpty
+                 ? String(localized: "graph.banner.undownloaded",
+                          defaultValue: "Some volumes that may reference this document have not been downloaded.")
+                 : String(format: String(localized: "graph.banner.undownloaded.v2 %lld %lld",
+                                         defaultValue: "%1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them."),
+                          Int64(vm.undownloadedCitingCount),
+                          Int64(vm.undownloadedCitingVolumeIds.count)))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
