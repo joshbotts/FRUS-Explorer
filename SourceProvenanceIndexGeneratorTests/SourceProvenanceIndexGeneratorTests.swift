@@ -194,3 +194,113 @@ struct SourceNoteExtractorTests {
         #expect(notes[0] == "Source: RG 59, Central Files")
     }
 }
+
+// MARK: - VolumeBucketTests
+
+/// The per-volume table schema 2 adds (#267), driven over a fixture corpus.
+///
+/// The decade table was already covered; nothing exercised `byVolume`, and a mutation sweep
+/// confirmed it — dropping the field entirely, and dropping its per-category counting, both left
+/// the suite green. These run the real scan so the parse, the category mapping and the bucketing
+/// are the shipping ones.
+///
+/// Version history:
+///   1.0 — Session 2026-08-08: #267
+@Suite("Source provenance — per-volume buckets")
+struct VolumeBucketTests {
+
+    /// A volume whose documents carry `notes` as their source notes.
+    private func volume(_ id: String, notes: [String], in directory: URL) throws -> URL {
+        let body = notes.map { "<note type=\"source\">\($0)</note>" }.joined(separator: "\n")
+        let xml = "<TEI><text><body>\n\(body)\n</body></text></TEI>"
+        let url = directory.appendingPathComponent("\(id).xml")
+        try Data(xml.utf8).write(to: url)
+        return url
+    }
+
+    private func corpus() throws -> (files: [URL], decades: [String: Int]) {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("prov-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let files = [
+            try volume("frus1952-54v01", notes: [
+                "Source: Department of State, Central Files, 611.41/3–553. Secret.",
+                "Source: Department of State, Central Files, 788.5/9–1361. Top Secret.",
+                "Source: Department of State, Conference Files: Lot 64 D 199, CF 100.",
+            ], in: root),
+            try volume("frus1952-54v02", notes: [
+                "Source: Department of State, Conference Files: Lot 64 D 199, CF 200.",
+            ], in: root),
+            try volume("frus1964-68v01", notes: [
+                "Source: Johnson Library, National Security File, Country File, Vietnam.",
+            ], in: root),
+            // Has a decade but no notes — must be skipped, not emitted as an empty bucket.
+            try volume("frus1969-76v01", notes: [], in: root),
+        ]
+        return (files, ["frus1952-54v01": 1950, "frus1952-54v02": 1950,
+                        "frus1964-68v01": 1960, "frus1969-76v01": 1970])
+    }
+
+    @Test("Every scanned volume with notes gets a bucket carrying its own counts")
+    func perVolumeCounts() throws {
+        let (files, decades) = try corpus()
+        let index = SourceProvenanceIndexRunner
+            .build(xmls: files, decadeByVolume: decades, generated: "2026-08-08").index
+        let volumes = try #require(index.byVolume, "schema 2 must emit byVolume")
+
+        #expect(volumes.map(\.volumeId) == ["frus1952-54v01", "frus1952-54v02", "frus1964-68v01"],
+                "a volume with no source notes must not appear as an empty bucket")
+        let first = try #require(volumes.first)
+        #expect(first.decade == 1950)
+        #expect(first.totalNotes == 3)
+        #expect(first.counts["centralDecimalFile"] == 2, """
+            The volume's own category counts are wrong: \(first.counts). A bucket that carried \
+            the decade's counts, or none at all, would still pass every decade-level assertion.
+            """)
+        #expect(first.counts["lotFile"] == 1)
+        #expect(first.counts["presidentialLibrary"] == nil, "zero counts are omitted")
+    }
+
+    @Test("The per-volume table sums to the decade table it ships beside")
+    func volumesRollUpToDecades() throws {
+        let (files, decades) = try corpus()
+        let index = SourceProvenanceIndexRunner
+            .build(xmls: files, decadeByVolume: decades, generated: "2026-08-08").index
+        let volumes = try #require(index.byVolume)
+
+        for bucket in index.byDecade {
+            let members = volumes.filter { $0.decade == bucket.decade }
+            #expect(members.reduce(0) { $0 + $1.totalNotes } == bucket.totalNotes,
+                    "\(bucket.decade): volumes and decade disagree on the note total")
+            #expect(members.count == bucket.volumeCount,
+                    "\(bucket.decade): \(members.count) volume buckets vs volumeCount \(bucket.volumeCount)")
+            var summed: [String: Int] = [:]
+            for member in members {
+                for (category, count) in member.counts { summed[category, default: 0] += count }
+            }
+            #expect(summed == bucket.counts, "\(bucket.decade): category counts disagree")
+        }
+        #expect(volumes.reduce(0) { $0 + $1.totalNotes } == index.totalSourceNotes)
+        #expect(volumes.count == index.volumesCovered)
+    }
+
+    @Test("Buckets are sorted by volume id whatever order the scan saw them in")
+    func bucketsAreSorted() throws {
+        let (files, decades) = try corpus()
+        let index = SourceProvenanceIndexRunner
+            .build(xmls: files.reversed(), decadeByVolume: decades, generated: "2026-08-08").index
+        let volumes = try #require(index.byVolume)
+        #expect(volumes.map(\.volumeId) == volumes.map(\.volumeId).sorted(), """
+            Reversing the scan order changed the output order, so the artifact's determinism \
+            depends on the directory listing rather than on the writer.
+            """)
+    }
+
+    @Test("The artifact declares schema 2")
+    func schemaVersion() throws {
+        let (files, decades) = try corpus()
+        let index = SourceProvenanceIndexRunner
+            .build(xmls: files, decadeByVolume: decades, generated: "2026-08-08").index
+        #expect(index.schemaVersion == 2)
+    }
+}

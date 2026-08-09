@@ -220,6 +220,52 @@ struct SourceProvenanceScopeTests {
         #expect(volumes.count == index.volumesCovered)
     }
 
+    // MARK: - The dashboard mounts it
+
+    @Test("The dashboard mounts the scope bar, gated on the artifact supporting it")
+    func dashboardMountsTheScopeBar() throws {
+        // A SwiftUI view cannot be evaluated in this target, and every derivation test above
+        // passes over a dashboard that never shows the control — measured, deleting the bar from
+        // the body left the whole suite green. Scoped to `body` and to code lines, and the gate is
+        // checked by adjacency so a `supportsVolumeScope` mentioned elsewhere cannot stand in.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
+            encoding: .utf8)
+        #expect(source.count > 5_000, "SourceProvenanceDashboard.swift is implausibly small")
+
+        let start = try #require(source.range(of: "var body: some View {"))
+        let rest = source[start.upperBound...]
+        let end = try #require(rest.range(of: "// MARK: -"))
+        let body = String(rest[..<end.lowerBound])
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") && !$0.hasPrefix("///") }
+
+        let index = try #require(body.firstIndex { $0.contains("SeriesScopeBar(") }, """
+            The scope bar is not mounted in the dashboard's body. #267 is the control, not the \
+            data — an artifact that supports scoping and a dashboard that never offers it leaves \
+            the issue exactly where it started.
+            """)
+        #expect(index > 0)
+        #expect(body[index - 1] == "if data.supportsVolumeScope {", """
+            The scope bar is not gated on the artifact carrying the per-volume table. Ungated, a \
+            schema-1 artifact would show a control whose selections change nothing — which is \
+            worse than the missing control Session 3 chose. The line before it reads: \
+            \(body[index - 1])
+            """)
+        // The data is built in a computed property, not in `body` — so this one is file-scoped.
+        let code = source
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") && !$0.hasPrefix("///") }
+        #expect(code.contains { $0.contains("scopeVolumeIds: scope.volumeIds") }, """
+            The dashboard builds its data without passing the scope, so the bar would move and \
+            the charts would not.
+            """)
+    }
+
     @Test("Scoping the shipped artifact to a real subseries narrows it")
     func shippedArtifactScopes() throws {
         let url = try #require(Bundle.main.url(forResource: "source-provenance-index",

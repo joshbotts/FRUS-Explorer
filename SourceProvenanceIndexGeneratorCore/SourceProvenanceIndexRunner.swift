@@ -60,6 +60,52 @@ public enum SourceProvenanceIndexRunner {
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
         guard !xmls.isEmpty else { throw RunError.noVolumes(volumesDir.path) }
 
+        let scan = build(xmls: xmls, decadeByVolume: decadeByVolume, generated: generated)
+        let output = scan.index
+        let totalNotes = output.totalSourceNotes
+        let volumesCovered = output.volumesCovered
+        let byDecade = output.byDecade
+        let skippedNoDecade = scan.skippedNoDecade
+        let skippedNoNotes = scan.skippedNoNotes
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(output).write(to: URL(fileURLWithPath: outputPath))
+
+        log("""
+        source-provenance-index.json written to \(outputPath)
+          schema:               2 (byDecade + byVolume)
+          volumes covered:      \(volumesCovered) / \(xmls.count)
+          total source notes:   \(totalNotes)
+          decades:              \(byDecade.count)
+          skipped (no decade):  \(skippedNoDecade)
+          skipped (no notes):   \(skippedNoNotes)
+        """)
+    }
+
+    /// What one scan produced.
+    public struct ScanResult: Sendable {
+        /// The assembled artifact.
+        public let index: SourceProvenanceIndex
+        /// Volumes on disk with no manifest coverage decade.
+        public let skippedNoDecade: Int
+        /// Volumes with a decade but no source notes at all.
+        public let skippedNoNotes: Int
+    }
+
+    /// Scans the given volume files and assembles the artifact.
+    ///
+    /// Split out of ``run()`` so the aggregation is callable from tests over a fixture corpus.
+    /// Everything that decides what the artifact *says* lives here; `run()` only resolves paths,
+    /// encodes, and logs.
+    ///
+    /// - Parameters:
+    ///   - xmls: Volume files, in scan order (the caller sorts; the output is sorted regardless).
+    ///   - decadeByVolume: Volume id → coverage decade, from the manifest. A volume absent from
+    ///     this map is skipped — it is not in the shippable set.
+    ///   - generated: The `generated` stamp to record.
+    public static func build(xmls: [URL], decadeByVolume: [String: Int],
+                             generated: String) -> ScanResult {
         let parser = SourceNoteParser()
         var accumulators: [Int: DecadeAccumulator] = [:]
         var volumeBuckets: [SourceProvenanceIndex.VolumeBucket] = []
@@ -125,19 +171,8 @@ public enum SourceProvenanceIndexRunner {
             // the directory listing.
             byVolume: volumeBuckets.sorted { $0.volumeId < $1.volumeId })
 
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(output).write(to: URL(fileURLWithPath: outputPath))
-
-        log("""
-        source-provenance-index.json written to \(outputPath)
-          schema:               2 (byDecade + byVolume)
-          volumes covered:      \(volumesCovered) / \(xmls.count)
-          total source notes:   \(totalNotes)
-          decades:              \(byDecade.count)
-          skipped (no decade):  \(skippedNoDecade)
-          skipped (no notes):   \(skippedNoNotes)
-        """)
+        return ScanResult(index: output, skippedNoDecade: skippedNoDecade,
+                          skippedNoNotes: skippedNoNotes)
     }
 
     // MARK: - Helpers

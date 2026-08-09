@@ -24,8 +24,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   2.0 — Session 2026-08-08 (#267): mirrors artifact schema 2's `byVolume`
 struct SourceProvenanceIndex: Codable, Sendable {
-    /// The artifact schema version (currently `1`).
+    /// The artifact schema version (`2` since #267; `1` files still decode).
     let schemaVersion: Int
     /// The generation date (`yyyy-MM-dd`), for provenance display.
     let generated: String
