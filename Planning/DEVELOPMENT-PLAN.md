@@ -3787,3 +3787,70 @@ them, and every fact in those passages is unchanged, so they needed no edit. The
 `EditableContent.md` archives are snapshots and were deliberately left alone.
 
 **Verification.** Both schemes build clean; **3,139 tests in 409 suites** pass, plus the UI suite.
+
+---
+
+## Session 2026-08-09 — Manual review, and 25 screenshots per document
+
+**The ask.** Review both user manuals, and cut each to 25 screenshots or fewer.
+
+**The arithmetic.** The manuals carried **77 + 7** and **72 + 13** — placeholders the owner still
+has to capture, plus images already captured — so 84 and 85 against a budget of 25. Two in three
+had to go, and the question for each stopped being "is this nice" and became "can a reader follow
+the prose without it".
+
+**Three independent lenses ranked all 149 placeholders** — a newcomer learning the app, an
+experienced researcher using the manual as reference, and the owner who re-captures every image
+each time the UI moves. Consensus was strong: **18 drew a unanimous *essential***, **101 a
+unanimous *droppable***. What survived is what a picture does and prose cannot: a **visual
+encoding** (the citation graph's position/size/arrows, bar colour meaning custodian, the
+grey-and-dagger treatment of a dead cross-reference), a **layout the reader must recognise on
+screen** (the Research rail, the iPad Composer's two columns, the annotated main window), or a
+**surface unlike anything else in the app** (Source Explorer). What went is what the prose already
+enumerates: settings panes, menus whose items are quoted verbatim beside them, forms whose fields
+are bulleted below them, stock OS surfaces, near-duplicates.
+
+**Two placeholders were retired by images that already existed.** Eleven captured screenshots sat
+in `Docs/screenshots/` referenced by neither manual. Most are stale — `macos/collections.png`
+predates the composer redesign, `ios/settings.png` the Settings reorganisation, the iPad captures
+are rotated — but `macos/series-production.png` and `macos/person-analytics-network.png` are
+current and matched two surviving placeholders exactly. Final: **iOS 18 + 7, macOS 10 + 15**.
+
+**The review found 70 code-checked defects**, each verified by an adversarial second pass whose
+default was that the reviewer had misread something. One was rejected. A sample:
+
+- **⌘[ / ⌘] do not exist.** The Mac manual claimed browser-style Back/Forward in three places and
+  in its shortcut table. There is no `keyboardShortcut("[")` anywhere, and a path-based
+  `NavigationStack` has no forward history at all. The shortcut section was rebuilt against the
+  app's 20 real declarations — the "In a Document" table had **all three rows wrong**, including
+  ⌘⌥N for Add Note, which is **New Collection**.
+- **iOS search does not run as you type** — `.onSubmit(of: .search)` is the only keystroke path.
+- **The unindexed-volumes badge is on Settings**, not Browse.
+- **The onboarding "Ready" step has no project form**; the app silently creates *My Research*.
+- **There is no top-level History menu** — folded into Research (#363 #4).
+- **"Reset iCloud Sync", "Link Search", "Use as Draft", "View Others"** name controls that do not
+  exist; **"General Summary" / "Structured Summary"** are not the shipped prompt names.
+- **The Network graph has no 32-node cap** — six per custodian quadrant, a different rule.
+- **The Mac Settings sidebar has fifteen panes, not thirteen**, as its own table already said.
+
+**Then the repair pass had to be repaired.** The reviewers' fixes replaced sentence *fragments*
+with whole sentences, so **21 lines** carried half the old sentence as well as all of the new one.
+A 40-character repeated-substring scan found every one; each was rewritten by hand. **A mechanical
+fix pass needs a mechanical damage check — "an agent proposed it" is not that check.**
+
+**A second adversarial pass over the repaired files found 41 more**, about half pre-existing: a
+**five-row tab table with four prose paragraphs wedged inside it**, rendering its last four rows
+as literal pipe text; two dead TOC anchors; ten section cross-references pointing at the wrong
+section (`My Volume Scopes` cited as 5.8 when it is 5.11, and 16.1 when it is 16.2); and surfaces
+described twice in contradictory terms — a **Graph button in the toolbar** §3.1 says was removed,
+a **research strip** §3.2 says was retired.
+
+**Verification is structural, not a re-read.** Both files pass: zero duplicated 40-char fragments
+(one legitimate repetition excepted and checked by hand), zero dead TOC anchors, 30 markdown
+tables well-formed with consistent column counts, every referenced image present on disk, exactly
+25 screenshots each.
+
+**Process note.** These commits initially landed on local `v2` — I had checked it out to pull and
+never branched. Caught before any push; `v2` was reset to `origin/v2` and the work moved to
+`manual-review-screenshot-cut`. The rule is on file; **`git pull` on `v2` is exactly the moment it
+gets forgotten.**
