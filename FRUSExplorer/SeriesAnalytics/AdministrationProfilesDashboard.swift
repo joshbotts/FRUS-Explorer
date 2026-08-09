@@ -204,7 +204,7 @@ struct AdministrationProfilesDashboard: View {
                         defaultValue: "No administrations in view"))
                 .font(.headline)
             Text(String(localized: "series.admin.narrowedEmpty.message",
-                        defaultValue: "No presidential administration matches the current scope and year range — the selected subseries' volumes may carry no attributed documents, or the years may fall outside every term. Reset the scope or year range above for the whole series."))
+                        defaultValue: "No administration matches your current scope and year range. The subseries you selected may carry no attributed documents, or your years may fall outside every presidential term. Reset the scope or year range above to see the whole series."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -238,7 +238,7 @@ struct AdministrationProfilesDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.admin.intro",
-                    defaultValue: "Whose foreign policy does Foreign Relations of the United States document? Every dated document is attributed to the presidential administration in office when the events it records took place. These charts trace how the series' coverage is distributed across administrations — how many documents each one draws, and how densely the series covers each term — and let you drill into any single administration to see which volumes carry its record."))
+                    defaultValue: "Whose foreign policy does Foreign Relations of the United States document? Every dated document is assigned to the presidential administration in office when the events it records took place. These charts show how many documents each administration draws, and how densely the series covers each term. Select any administration to see which volumes carry its record."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -277,7 +277,7 @@ struct AdministrationProfilesDashboard: View {
             title: String(localized: "series.admin.docs.title",
                           defaultValue: "Documents per administration"),
             caption: String(localized: "series.admin.docs.caption",
-                            defaultValue: "How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both.\n\nNote that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
+                            defaultValue: "How many published documents concern each administration's foreign policy, in chronological order. Any date overlap counts, so a volume spanning two terms counts in both.\n\nVolumes covering the 1970s, 1980s, and 1990s are still in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
             inspector: ChartInspectorAdapters.administrationDocumentsTable(profiles),
             provenance: SeriesAnalyticsExport.administration(
                 figureTitle: String(localized: "series.admin.docs.title",
@@ -338,7 +338,7 @@ struct AdministrationProfilesDashboard: View {
             title: String(localized: "series.admin.perYear.title",
                           defaultValue: "Volumes per administration-year"),
             caption: String(localized: "series.admin.perYear.caption",
-                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted.\n\nNote that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
+                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years. This measures how densely the series covers each presidency. The sitting administration has no end date, so it is left out.\n\nVolumes covering the 1970s, 1980s, and 1990s are still in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
             inspector: ChartInspectorAdapters.administrationVolumesPerYearTable(profiles),
             provenance: SeriesAnalyticsExport.administration(
                 figureTitle: String(localized: "series.admin.perYear.title",
@@ -552,14 +552,14 @@ struct AdministrationProfilesDashboard: View {
                 .foregroundStyle(.secondary)
             if let label = scope.label {
                 Text(String(format: String(localized: "series.admin.caveats.scope %@",
-                                           defaultValue: "Scoped to the %@ subseries — counts and proportions are recomputed from that subseries' volumes only, and the per-administration coverage span (which the source data pre-aggregates for the whole series) is hidden. Reset the scope above for the whole series."),
+                                           defaultValue: "Scoped to the %@ subseries. Counts and proportions come from that subseries' volumes alone. The coverage span for each administration is hidden here, because the source data pre-aggregates it for the whole series. Reset the scope above to see the whole series."),
                             label))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.admin.caveats.body",
-                        defaultValue: "Documents are attributed to an administration by any overlap between the document's date and the president's term, so a volume spanning two administrations is counted in both — which is why the summed volume counts exceed the 552-volume corpus and a volume's proportions can sum to over 100% across administrations. These counts measure which administration's foreign policy the documents cover, not when the volumes were published. Editorial-note documents carry a range of dates rather than a single date; their inclusion is controlled by the toggle above (off by default). Pre-1861 retrospective compilations concern no single administration and are omitted. Administrations are counted per president — Nixon and Ford are separate, as are Grover Cleveland's two non-consecutive terms — and administrations for which the series is not yet published do not appear."))
+                        defaultValue: "A document counts toward an administration if its dates overlap that president's term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series' 552 volumes. It is also why one volume's proportions can total over 100% across administrations. These counts measure whose foreign policy the documents cover, not when the volumes were published. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Retrospective compilations covering years before 1861 concern no single administration and are left out. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland's two non-consecutive terms. Administrations the series has not yet published do not appear."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

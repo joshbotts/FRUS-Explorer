@@ -40,7 +40,7 @@ enum SeriesAnalyticsExport {
     static func corpusStatement(volumeCount: Int) -> String {
         String(format: String(
             localized: "series.export.caveat.corpus %lld",
-            defaultValue: "Corpus: these figures come from a bundled aggregate covering the %lld catalogued volumes of the series, not from the volumes indexed on this device. They are identical on every device and are available before anything is downloaded."),
+            defaultValue: "Corpus: these figures come from a data file that ships with the app and covers all %lld catalogued volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything."),
             Int64(volumeCount))
     }
 
@@ -73,7 +73,7 @@ enum SeriesAnalyticsExport {
             valueMode: nil,
             countingUnit: String(localized: "series.export.unit.volumes", defaultValue: "Volumes"),
             datingRule: String(localized: "series.export.dating.production",
-                               defaultValue: "Dating: no document date is read. A volume is placed at its print year — the text of its TEI publication-date — and the publication lag is that year minus the last year of the coverage range declared in the same header. Neither is a maximum over the volume's documents."),
+                               defaultValue: "Dating: no document date is read. A volume sits at its print year, taken from the publication-date in its TEI header. Its publication lag is that print year minus the last year of the coverage range in the same header. Neither figure is derived from the dates of the volume's own documents."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: [scopeCaveat(scopeLabel)].compactMap { $0 } + extra)
     }
@@ -94,7 +94,7 @@ enum SeriesAnalyticsExport {
             valueMode: nil,
             countingUnit: String(localized: "series.export.unit.volumes", defaultValue: "Volumes"),
             datingRule: String(localized: "series.export.dating.geography",
-                               defaultValue: "Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header, and its regions come from the volume's own subject tags — so a figure counts volumes concerned with a region, not documents about it."),
+                               defaultValue: "Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume's own subject tags. So these figures count volumes concerned with a region, not documents about it."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: [scopeCaveat(scopeLabel)].compactMap { $0 } + extra)
     }
@@ -118,7 +118,7 @@ enum SeriesAnalyticsExport {
         }
         caveats.append(String(format: String(
             localized: "series.export.caveat.provenanceNotes %lld",
-            defaultValue: "Unit: %lld parsed source notes. A source note is the citation naming where a document's archival original was found; \"Other / Unclassified\" is a citation form the parser could not classify, not the absence of a note."),
+            defaultValue: "Unit: %lld parsed source notes. A source note is the citation naming where a document's archival original was found. \"Other / Unclassified\" means a citation the parser could not classify, not a missing note."),
             Int64(noteCount)))
         return AnalyticsProvenance(
             figureTitle: figureTitle,
@@ -131,12 +131,30 @@ enum SeriesAnalyticsExport {
             countingUnit: String(localized: "series.export.unit.notes",
                                  defaultValue: "Source notes"),
             datingRule: String(localized: "series.export.dating.provenance",
-                               defaultValue: "Dating: no document date is read. Each source note is placed in the coverage decade of the volume that printed it, taken from that volume's declared date range. The trend begins around 1900 because earlier volumes are published correspondence carrying no archival source notes."),
+                               defaultValue: "Dating: no document date is read. Each source note sits in the coverage decade of the volume that printed it, taken from that volume's declared date range. The trend starts around 1900. Earlier volumes are published correspondence and carry no archival source notes."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: caveats + extra)
     }
 
     // MARK: - Administration profiles (SA-2b)
+
+    /// What the year control actually does: it filters which presidents appear, and never
+    /// re-counts a document.
+    ///
+    /// Named rather than inlined so the test that requires it can match the sentence the builder
+    /// really appends. A test quoting a fragment of it instead passes for the wrong reason the
+    /// first time the wording changes.
+    static var adminYearsCaveat: String {
+        String(localized: "series.export.caveat.adminYears",
+               defaultValue: "Year range: this selects which administrations appear, by whether the president's term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.")
+    }
+
+    /// What any-overlap attribution costs: the per-administration counts are not exclusive, so
+    /// they sum past the corpus.
+    static var adminOverlapCaveat: String {
+        String(localized: "series.export.caveat.adminOverlap",
+               defaultValue: "Attribution: a document counts toward every administration its date range overlaps. The counts therefore overlap each other and add up to more than the whole series. A term ends on the day the next president takes office. A document dated on a succession day therefore belongs to the incoming president. These counts measure whose foreign policy the documents cover, not when the volumes were published.")
+    }
 
     /// Coverage by presidential administration — the one dashboard that *does* read document
     /// dates, and the one whose year control does not mean what it looks like.
@@ -151,13 +169,8 @@ enum SeriesAnalyticsExport {
                                includesEditorialNotes: Bool,
                                extra: [String] = []) -> AnalyticsProvenance {
         var caveats = [scopeCaveat(scopeLabel)].compactMap { $0 }
-        // The year control filters which presidents appear by their term years; it does NOT
-        // re-count documents. A preamble that printed the range without saying so would read as
-        // "documents in these years", which is not what any number here is.
-        caveats.append(String(localized: "series.export.caveat.adminYears",
-                              defaultValue: "Year range: selects which administrations appear, by whether the president's term overlaps the range. It does not re-count documents — a listed administration carries its full count even when only part of its term falls inside."))
-        caveats.append(String(localized: "series.export.caveat.adminOverlap",
-                              defaultValue: "Attribution: a document is attributed to every administration its date range overlaps, so the counts are not mutually exclusive and sum past the corpus. Terms are half-open, so a document dated on a succession day belongs to the incoming president. Counts measure whose foreign policy the documents cover, not when the volumes were published."))
+        caveats.append(adminYearsCaveat)
+        caveats.append(adminOverlapCaveat)
         caveats.append(String(format: String(
             localized: "series.export.caveat.adminNotes.v2 %@",
             defaultValue: "Editorial notes: %@. Editorial-note documents carry a span of dates rather than a single date; excluding them also withholds a volume whose only tie to an administration is such a note."),
@@ -177,7 +190,7 @@ enum SeriesAnalyticsExport {
             countingUnit: String(localized: "series.export.unit.documents",
                                  defaultValue: "Documents"),
             datingRule: String(localized: "series.export.dating.administration",
-                               defaultValue: "Dating: each document is placed by its own editorial date bounds (frus:doc-dateTime-min / -max on the document element), not by a TEI <date> and with no volume-start-year fallback — an undated document is attributed to no administration and simply drops out."),
+                               defaultValue: "Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. A TEI <date> is not used, and there is no fallback to the volume's start year. An undated document is attributed to no administration and drops out."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: caveats + extra)
     }

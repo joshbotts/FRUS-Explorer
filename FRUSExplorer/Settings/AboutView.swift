@@ -241,19 +241,17 @@ struct AboutView: View {
     /// "Internal so they are testable" rationale documented on `AboutLinks`.
     static var frusDescriptionRaw: String {
         String(localized: "about.frus.description", defaultValue: """
-The **Foreign Relations of the United States** (FRUS) series is the official \
-documentary record of U.S. foreign policy. The Department of State has \
-published FRUS continuously since 1861. The series now comprises more than \
-550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
+The **Foreign Relations of the United States** (FRUS) series is the official documentary \
+record of U.S. foreign policy. The Department of State has published it continuously since \
+1861. The series now runs to more than 550 volumes, covering 1861 through the early 1990s.
 
-While the content of the series has shifted over time, recent FRUS volumes \
-cover U.S. bilateral and regional relations across the globe; U.S. \
-policymakers' responses to unfolding crises; engagement with global issues \
-like human rights, terrorism, narcotics, health, and the environment; and \
-thematic topics including national security policy, foreign economic policy, \
-and foreign affairs organization and management. It is an invaluable resource \
-for scholars, policymakers, and citizens seeking to understand the origins of \
-contemporary challenges and the United States's role in the world.
+What the series covers has changed over time. Recent volumes document U.S. bilateral and \
+regional relations around the world, and how U.S. policymakers responded to unfolding crises. \
+They cover global issues such as human rights, terrorism, narcotics, health, and the \
+environment. They also cover thematic topics such as national security policy, foreign \
+economic policy, and foreign affairs organization and management. Scholars, policymakers, and \
+citizens use FRUS to trace the origins of today's challenges and the United States's role in \
+the world.
 """)
     }
 
@@ -592,12 +590,10 @@ to their terms of use.
                        defaultValue: "Department of State")) {
             Text(String(localized: "about.dos.disclaimer",
                         defaultValue: """
-FRUS Explorer is an independently-developed research tool and is not an \
-official product of the Office of the Historian or the U.S. Department of \
-State. Commentary, advice, and guidance about the FRUS series contained in \
-the application reflect personal views and not necessarily those of the \
-Department of State or the U.S. Government. The FRUS series itself is a \
-public domain resource.
+FRUS Explorer is an independent research tool. It is not an official product of the Office of \
+the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the \
+FRUS series in this app reflects personal views. Those views are not necessarily those of the \
+Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 """))
             .font(.caption)
             .foregroundStyle(.secondary)

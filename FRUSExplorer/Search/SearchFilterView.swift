@@ -916,7 +916,7 @@ struct SearchFilterView: View {
                 summary: subjectFacetLabel ?? selectionSummary(0),
                 forced: customScopes.isEmpty && scopeWarningName != nil,
                 footer: Text(String(localized: "search.subject.facet.footer",
-                                    defaultValue: "Experimental. These are automatically detected topics, not editorial subject headings, and may include mistags. Filters to volumes where a category is among their most characteristic detected topics, filling the volume picker with the indexed matches."))
+                                    defaultValue: "Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choosing a category finds volumes where that topic is one of their most distinctive. The volume picker then fills with the matches you have indexed."))
             ) {
                 Button {
                     showSubjectFacet = true
@@ -1426,7 +1426,7 @@ private struct SubjectCategoryFacetPicker: View {
                 }
             } footer: {
                 Text(String(localized: "search.subject.facet.picker.footer",
-                            defaultValue: "Detected topics (experimental) — automatically inferred from the text, not editorial subject headings, so some may be mistagged. A volume appears where a topic is among its most distinctive, not merely mentioned. Category filters are broad; drill into a sub-category to narrow."))
+                            defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when a topic is among its most distinctive, not merely mentioned. Categories are broad. Open a sub-category to narrow the list."))
                     // Let the long explanation wrap to its full height rather than truncating to
                     // one clipped line in the macOS inset list footer (#361).
                     .fixedSize(horizontal: false, vertical: true)

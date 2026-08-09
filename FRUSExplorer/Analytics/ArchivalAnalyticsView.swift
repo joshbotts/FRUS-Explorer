@@ -275,7 +275,7 @@ struct ArchivalAnalyticsView: View {
 
     private var collectionsIntro: some View {
         Text(String(localized: "archival.collections.intro",
-                    defaultValue: "Every published FRUS document carries a source note naming the archival file it came from. Clustered across the whole series, those notes show which bodies of records each era's editors actually worked in — and how the documentary base of American foreign relations moved out of the State Department's own filing rooms and into the White House."))
+                    defaultValue: "Every published FRUS document carries a source note naming the archival file it came from. Grouped across the whole series, those notes show which bodies of records each era's editors actually worked in. They also track how the documentary base of American foreign relations moved from the State Department's filing rooms to the White House."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -500,7 +500,7 @@ struct ArchivalAnalyticsView: View {
             title: String(localized: "archival.lifecycle.title",
                           defaultValue: "Collection lifecycles in FRUS sourcing"),
             caption: String(localized: "archival.lifecycle.caption",
-                            defaultValue: "The coverage years spanned by the volumes that cite each of the most widely-drawn-on collections — where a body of records enters the published record and how long the editors keep returning to it. This card does not change with the era filter."),
+                            defaultValue: "Each collection here is one of those cited by the most volumes. Its bar runs from the earliest to the latest coverage year of those volumes, so it shows when a body of records enters the published record and how long the editors keep returning to it. This card does not change with the era filter."),
             inspector: lifecycleTable(spans),
             onInspect: { inspectorData = $0 },
             controls: {
@@ -608,7 +608,7 @@ struct ArchivalAnalyticsView: View {
             if let hidden = ranking.hiddenUmbrellaValue {
                 Text(String(format: String(
                     localized: "archival.caveats.umbrella %lld %@ %@",
-                    defaultValue: "The Central Files umbrella record is hidden here: it accounts for %1$lld %2$@ in the %3$@ volumes on its own, and its bar would flatten the scale. The era-specific Central Files records are not hidden."),
+                    defaultValue: "The Central Files umbrella record is hidden here. On its own it accounts for %1$lld %2$@ in the %3$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown."),
                     Int64(hidden), weight.title.lowercased(), band.title))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
@@ -622,7 +622,7 @@ struct ArchivalAnalyticsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "archival.caveats.body",
-                        defaultValue: "These figures are parsed out of document source notes, not read from an archive's catalog: they say where the editors drew documents from, which is an editorial and archival signal rather than a census of the records themselves. The two weights count different populations. Documents come from the usage index, which resolves a note to a collection only when the citation names one; volumes come from the collection authority, where a volume counts if its front matter or any document note names the collection — so a collection can have volumes and no documents. Coverage is uneven by era on purpose, and the unit switch is the way through it: named collections are scarce before 1948, where the central-file classes carry almost the whole record, and classes all but disappear after 1976, where the presidential libraries carry it. Class keys hold two filing systems — the decimal classes of the pre-1963 central files and the subject-numeric designators that replaced them — because FRUS cites both. Collections are clustered across volumes by name, so an under-merge leaves the same body of records under two nearby names rather than combining them."))
+                        defaultValue: "These figures are parsed from document source notes, not read from an archive's catalog. They say where the editors drew documents from. That is an editorial and archival signal, not a census of the records themselves. The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection can have volumes and no documents. Coverage is uneven by era, and switching the unit is the way through it. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. The class list holds two filing systems, because FRUS cites both: the decimal classes of the pre-1963 central files, and the subject-numeric designators that replaced them. Collections are grouped across volumes by name. When two spellings of one name fail to merge, the same body of records appears twice under nearby names."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -804,7 +804,7 @@ struct ArchivalAnalyticsView: View {
                           defaultValue: "Your most-cited collections"),
             caption: String(format: String(
                 localized: "archival.library.collections.caption %lld %lld",
-                defaultValue: "Resolved from your own source notes against the bundled archival authority. %1$lld notes cite the central files, which are a filing system rather than a collection, and %2$lld more name something the authority does not recognise; neither is listed here."),
+                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognise. Neither group is listed here."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)),
             inspector: libraryCollectionsTable(profile),
@@ -883,14 +883,14 @@ struct ArchivalAnalyticsView: View {
                 .foregroundStyle(.secondary)
             Text(String(format: String(
                 localized: "archival.library.footer %lld %lld",
-                defaultValue: "Counted from the %1$lld volumes you have indexed; %2$lld more exist in the series. Index more volumes and these charts change with you — the Collections mode is independent of what you have downloaded."),
+                defaultValue: "Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series. Index more and these charts change with you. The Collections mode is different: it does not depend on what you have downloaded."),
                 Int64(indexed), Int64(max(total - indexed, 0))))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.library.footer.detail %lld %lld",
-                defaultValue: "A source note is not a document: only documents whose editors recorded where the original was found appear here, so this total is smaller than your indexed document count, and volumes carrying no source notes contribute nothing. The collections list resolves a citation to a named body of records; %1$lld notes cite the central files, which are a filing system rather than a collection and are counted in the composition above, and %2$lld more name something the bundled authority does not recognise."),
+                defaultValue: "A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognise."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)))
                 .font(.footnote)

@@ -116,7 +116,7 @@ struct StoreSchemaDiagnostic: Sendable, Equatable {
         }
         parts.append(String(
             localized: "storeSchema.summary.consequence",
-            defaultValue: "A store that disagrees with the running build is the usual cause of this failure. The data in it is intact — it is iCloud's copy too — but this build cannot open it, so it is running on a separate local-only store and nothing you do here will sync."
+            defaultValue: "This usually happens when your stored data does not match the build you are running. The data is safe, and iCloud still has its copy. This build cannot open it, so it is using a separate local store. Nothing you do here will sync."
         ))
         return parts.joined(separator: " ")
     }

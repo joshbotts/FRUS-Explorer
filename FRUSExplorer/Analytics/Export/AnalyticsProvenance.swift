@@ -135,7 +135,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var datingCaveat: String {
         if let datingRule { return datingRule }
         return String(localized: "analytics.export.caveat.dating",
-               defaultValue: "Dating: each document is placed at its TEI <date> (the date of authorship). A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. Documents lacking month or day precision are excluded from the By Month and By Day charts.")
+               defaultValue: "Dating: each document sits at its TEI <date>, the date it was written. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")
     }
 
     /// What corpus the figure covers — the surface's own statement where it supplied one, else

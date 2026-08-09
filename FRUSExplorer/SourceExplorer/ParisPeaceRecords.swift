@@ -184,10 +184,10 @@ enum ParisPeaceRecords {
     static var rollNote: String {
         String(localized: "source.explorer.parisPeace.rolls",
                defaultValue: """
-               The series is reproduced as microfilm publication M820 and most of its 538 \
-               file units are digitised, each covering a range of decimal numbers. This \
-               panel does not identify which one holds this document — the ranges overlap \
-               and are not always continuous, so use the index below to find it.
+               Microfilm publication M820 reproduces the series. Most of its 538 file units \
+               are digitised, each covering a range of decimal numbers. This panel does not \
+               say which one holds this document. The ranges overlap and are not always \
+               continuous, so use the index below to find it.
                """)
     }
 

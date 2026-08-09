@@ -120,7 +120,7 @@ struct DataExportSections: View {
                 // before sharing the file, since it includes the text of every search they ran.
                 Text(String(
                     localized: "settings.export.json.footer.trail",
-                    defaultValue: "A single JSON file containing your notes, tags, highlights, collections, custom prompts and projects, plus your research trail — every document you opened, every search you ran with the number of results it returned, and every collection you exported."
+                    defaultValue: "One JSON file with your notes, tags, highlights, collections, custom prompts, and projects. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported."
                 ))
             }
 
@@ -138,7 +138,7 @@ struct DataExportSections: View {
             } footer: {
                 Text(String(
                     localized: "settings.export.appendix.footer",
-                    defaultValue: "Every search you ran, with the scope it ran under and how many volumes were indexed at the time — as a Markdown table and a CSV. Counts that hit the app's row ceiling are shown as \"at least N\", so a partial result is never printed as a total."
+                    defaultValue: "Every search you ran, in a Markdown table and a CSV. Each row gives the scope the search ran under and how many volumes were indexed at the time. Counts that hit the app's row ceiling appear as \"at least N\", so a partial result is never printed as a total."
                 ))
             }
 

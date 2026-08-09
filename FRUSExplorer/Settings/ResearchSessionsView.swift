@@ -148,7 +148,7 @@ struct ResearchSessionsView: View {
             // delete is allowed to promise. No String Catalog ships, so rewriting the old key's
             // text in place would be a silent collision.
             Text(String(format: String(localized: "settings.sessions.delete.message.trail.v2 %@",
-                                       defaultValue: "%@ will be permanently deleted from this device and, if iCloud sync is on, from iCloud — every document you opened, every search you ran, and every collection you exported, since that is what a session is made of. Your notes, highlights, tags and collections are not affected."),
+                                       defaultValue: "%@ will be permanently deleted from this device. If iCloud sync is on, the same records go from iCloud too. A session is made of every document you opened, every search you ran, and every collection you exported. Your notes, highlights, tags, and collections are not affected."),
                         ResearchSessionsSummary.events(summary.eventCount)))
         }
     }
@@ -184,10 +184,10 @@ struct ResearchSessionsView: View {
             // now there is one record of each kind and one sentence describing it.
             #if os(macOS)
             Text(String(localized: "settings.sessions.logging.footer.trail.mac.v2",
-                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, the text of the searches you run, and the collections you export. There is one record of each, shared by the History window, a project's Recents, and the Session Log, which groups them into sessions that end after 30 minutes of inactivity. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so History and Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History window, a project's Recents, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. History and Recents will thin out and eventually be empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #else
             Text(String(localized: "settings.sessions.logging.footer.trail.v3",
-                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, the text of the searches you run, and the collections you export. There is one record of each, shared by the History screen, a project's Recently Read and Recent Searches cards and its Documents Visited and Searches Run counts, and the Session Log, which groups them into sessions that end after 30 minutes of inactivity. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so those will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History screen, a project's Recently Read and Recent Searches cards, its Documents Visited and Searches Run counts, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. Those surfaces will thin out and eventually be empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #endif
         }
     }
@@ -233,7 +233,7 @@ struct ResearchSessionsView: View {
                 // log now reads: the same reading, search and export history the History surface
                 // and Project Home are built from.
                 Text(String(localized: "settings.sessions.activity.footer.derived",
-                            defaultValue: "Sessions are not stored — they are worked out from the times you opened documents, ran searches and exported collections, with a gap of 30 minutes starting a new one. The same records fill the History screen and a project's Recents."))
+                            defaultValue: "The app does not store sessions. It works them out from the times you opened documents, ran searches, and exported collections. A gap of 30 minutes starts a new session. The same records fill the History screen and a project's Recents."))
             }
         }
     }
@@ -261,7 +261,7 @@ struct ResearchSessionsView: View {
             // had to be honest about is closed, and the copy has to say so or it under-warns
             // about a destructive action.
             Text(String(localized: "settings.sessions.manage.footer.whole",
-                        defaultValue: "Deletes the whole record of your work: every document you opened, every search you ran, and every collection you exported, on this device and — if iCloud sync is on — in your iCloud database. Your notes, highlights, tags and collections are not touched. You can also delete single entries from the History screen."))
+                        defaultValue: "This deletes the whole record of your work: every document you opened, every search you ran, and every collection you exported. It goes from this device, and from your iCloud database if iCloud sync is on. Your notes, highlights, tags, and collections are not touched. To delete single entries instead, use the History screen."))
         }
     }
 

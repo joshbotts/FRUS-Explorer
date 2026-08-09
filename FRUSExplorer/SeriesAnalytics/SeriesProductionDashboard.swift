@@ -127,7 +127,7 @@ struct SeriesProductionDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.production.intro",
-                    defaultValue: "How long does the official record take to reach print? These charts trace the timeliness of Foreign Relations of the United States across its whole span — the lag between the events a volume documents and its publication (against the evolving publication-timeliness target), the pace of publication over time, and the steady growth of the digitized corpus."))
+                    defaultValue: "How long does the official record take to reach print? These charts trace the timeliness of Foreign Relations of the United States across its whole span. They show the lag between the events a volume documents and its publication. That lag is measured against the publication-timeliness target in force at the time. They also show the pace of publication over time and the steady growth of the digitized series."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -169,7 +169,7 @@ struct SeriesProductionDashboard: View {
             title: String(localized: "series.chart.lag.title",
                           defaultValue: "Publication lag over time"),
             caption: String(localized: "series.chart.lag.caption",
-                            defaultValue: "Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute)."),
+                            defaultValue: "Each point is a volume. The horizontal axis is its publication year. The vertical axis is the lag: how many years earlier its latest document was written. The dashed step line is the timeliness target in force when the volume appeared. That target was 15 years from the 1961 directive, 20 years from 1972, and 30 years from 1985, codified by the 1991 statute."),
             inspector: ChartInspectorAdapters.lagTable(points),
             provenance: SeriesAnalyticsExport.production(
                 figureTitle: String(localized: "series.chart.lag.title",
@@ -383,7 +383,7 @@ struct SeriesProductionDashboard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.caveats.body",
-                        defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's publication year, so it shows exactly the target in force when the volume was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
+                        defaultValue: "These figures cover only published, digitized volumes. A volume's publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero or negative. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume's publication year, so it shows exactly the target in force when that volume was published. These charts cover the 552 volumes the app currently catalogs, so the newest volumes may not appear yet."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

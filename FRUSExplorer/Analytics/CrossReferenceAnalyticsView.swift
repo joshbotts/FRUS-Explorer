@@ -430,7 +430,7 @@ struct CrossReferenceAnalyticsView: View {
             Int64(excludedBrokenCount))
         let sameVolume = String(
             localized: "crossRefAnalytics.export.caveat.sameVolume",
-            defaultValue: "Attribution: the document-level figures attribute same-volume references (including resolved page references) to the document's own volume. The volume heat matrix is inherently cross-volume and excludes same-volume citations.")
+            defaultValue: "Attribution: the document-level figures count same-volume references, including resolved page references, toward the document's own volume. The volume heat matrix counts only citations between different volumes, so it leaves same-volume references out.")
         return AnalyticsProvenance(
             figureTitle: figureTitle,
             axisLabel: axisLabel,
@@ -568,7 +568,7 @@ struct CrossReferenceAnalyticsView: View {
     private var matrixCaveats: [String] {
         [
             String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
-                                  defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references. The CSV lists only pairs that have references between them; the figure draws the whole grid and leaves those pairs blank."),
+                                  defaultValue: "Selection: the matrix covers the %lld volumes with the most references in and out. The CSV lists only pairs with at least one reference between them. The figure draws the whole grid and leaves the rest of the cells blank."),
                    Int64(Self.matrixVolumeLimit)),
             String(localized: "crossRefAnalytics.export.caveat.matrixAxes",
                    defaultValue: "Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes' full titles appear in this CSV.")
@@ -651,7 +651,7 @@ struct CrossReferenceAnalyticsView: View {
     private var resolvedCaption: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "crossRefAnalytics.resolvedCaption",
-                        defaultValue: "The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
+                        defaultValue: "The most-referenced, degree, and PageRank charts count same-volume references, including resolved page references, toward the document's own volume. Set a year range or scope and they count citations made by documents in that era or scope. The heat matrix counts only connections between different volumes, so it leaves same-volume citations out."))
             // No accessibilityLabel override: the explanatory clause exists nowhere else in the
             // view, so VoiceOver must read the full visible caption.
             if excludedBrokenCount > 0 {
@@ -848,7 +848,7 @@ struct CrossReferenceAnalyticsView: View {
     private var matrixSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionSubtitle(String(localized: "crossRefAnalytics.matrix.subtitle",
-                                   defaultValue: "Cross-volume citation counts among the \(Self.matrixVolumeLimit) most-connected volumes (by total inbound + outbound references). Rows cite columns; darker cells are more references. Tap a volume label to open it."))
+                                   defaultValue: "Citations between the \(Self.matrixVolumeLimit) volumes with the most references in and out. Rows cite columns. Darker cells mean more references. Tap a volume label to open it."))
 
             if isLoading {
                 loadingRow
@@ -1055,7 +1055,7 @@ struct CrossReferenceAnalyticsView: View {
     private var landmarkSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionSubtitle(String(localized: "crossRefAnalytics.landmarks.subtitle",
-                                   defaultValue: "Ranked by an offline PageRank influence score over the resolved citation graph — documents a citation-following reader keeps returning to. This is a structural influence measure, not a claim of historical importance. Tap to open."))
+                                   defaultValue: "Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader following citations keeps returning to. The score measures position in the citation network, not historical importance. Tap to open."))
 
             if isLoading {
                 loadingRow

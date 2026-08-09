@@ -197,7 +197,7 @@ struct ParisPeaceRecordsTests {
     @Test("The roll note declines to name a roll")
     func rollNoteDeclinesToNameARoll() {
         let note = ParisPeaceRecords.rollNote
-        #expect(note.localizedCaseInsensitiveContains("does not identify"),
+        #expect(note.localizedCaseInsensitiveContains("does not say which one holds this document"),
                 "the roll caveat no longer says the roll is unidentified: \(note)")
         #expect(note.contains("M820"), "the microfilm publication is no longer named")
     }

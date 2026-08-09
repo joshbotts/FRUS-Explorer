@@ -111,18 +111,31 @@ struct SeriesAnalyticsExportTests {
         ]
     }
 
+    /// The same statement with its overrides removed — i.e. exactly what the shared default
+    /// would have printed here.
+    ///
+    /// Matched against, rather than a quoted phrase from the default. A quoted phrase decays
+    /// into a test that passes for the wrong reason the first time anyone rewords the default:
+    /// the negative assertion goes on succeeding while no longer guarding anything.
+    private func withoutOverrides(_ statement: AnalyticsProvenance) -> AnalyticsProvenance {
+        var bare = statement
+        bare.datingRule = nil
+        bare.corpusStatement = nil
+        return bare
+    }
+
     @Test("Not one of the four inherits the corpus-analytics dating sentence")
     func noneInheritsTheDefaultDatingRule() {
         for statement in all {
             let text = statement.csvPreambleLines.joined(separator: "\n")
-            #expect(!text.contains("falls back to the start year of its volume"), """
+            #expect(!text.contains(withoutOverrides(statement).datingCaveat), """
                 \(statement.figureTitle) inherited the default dating rule. No dashboard here has \
                 a volume-start-year fallback, and three of the four never read a document date.
                 """)
-            #expect(!text.contains("By Month and By Day"),
-                    "\(statement.figureTitle) claims axes it does not have")
             #expect(statement.datingRule != nil,
                     "\(statement.figureTitle) states no dating rule at all")
+            #expect(text.contains(statement.datingCaveat),
+                    "\(statement.figureTitle) states a rule that never reaches the file")
         }
         #expect(all.count == 4, "every builder must be in this sweep")
     }
@@ -131,13 +144,14 @@ struct SeriesAnalyticsExportTests {
     func noneClaimsTheDeviceCorpus() {
         for statement in all {
             let text = statement.csvPreambleLines.joined(separator: "\n")
-            #expect(!text.contains("counts cover only the"), """
+            #expect(!text.contains(withoutOverrides(statement).corpusCaveat), """
                 \(statement.figureTitle) understates its own coverage with the default corpus \
                 caveat. These dashboards read bundled aggregates and render before anything is \
-                downloaded — their own statement says so explicitly, which is why this matches \
-                the default's phrasing rather than the words "this device", which both use.
+                downloaded, and their own statement has to say so instead.
                 """)
-            #expect(text.contains("bundled aggregate"))
+            #expect(text.contains(
+                SeriesAnalyticsExport.corpusStatement(volumeCount: statement.indexedVolumeCount)),
+                    "\(statement.figureTitle) does not carry the Series corpus statement")
         }
     }
 
@@ -191,12 +205,11 @@ struct SeriesAnalyticsExportTests {
         let statement = SeriesAnalyticsExport.administration(
             figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: 1945...1976,
             volumeCount: 552, includesEditorialNotes: false)
-        let text = statement.extraCaveats.joined(separator: " ")
         // The year control filters which presidents appear; it never re-counts documents. A
         // preamble printing "1945–1976" without this reads as "documents in those years".
-        #expect(text.contains("does not re-count documents"))
-        // Any-overlap attribution means the counts are not mutually exclusive.
-        #expect(text.contains("not mutually exclusive"))
+        #expect(statement.extraCaveats.contains(SeriesAnalyticsExport.adminYearsCaveat))
+        // Any-overlap attribution means the counts are not exclusive and sum past the corpus.
+        #expect(statement.extraCaveats.contains(SeriesAnalyticsExport.adminOverlapCaveat))
     }
 
     @Test("The editorial-notes setting is stated, in whichever state it is in")
@@ -226,15 +239,16 @@ struct SeriesAnalyticsExportTests {
             id: "sa3.mix", title: "Archival provenance over time",
             columns: ["Coverage decade", "Provenance", "Share"],
             rowCells: [["1950", "Central Decimal File", "62%"]])
-        let csv = table.provenancedCSV(SeriesAnalyticsExport.provenance(
+        let statement = SeriesAnalyticsExport.provenance(
             figureTitle: "Archival provenance over time", axisLabel: "By coverage decade",
             scopeLabel: nil, yearRange: 1900...1993, volumeCount: 522, noteCount: 268_757,
-            hiddenCategories: []))
+            hiddenCategories: [])
+        let csv = table.provenancedCSV(statement)
         #expect(csv.hasPrefix("#"))
         #expect(csv.contains("Central Decimal File"))
         #expect(csv.contains("Year range"), "the range applies here and must be stated")
-        #expect(!csv.contains("counts cover only the"))
-        #expect(!csv.contains("falls back to the start year"))
+        #expect(!csv.contains(withoutOverrides(statement).corpusCaveat))
+        #expect(!csv.contains(withoutOverrides(statement).datingCaveat))
     }
 }
 

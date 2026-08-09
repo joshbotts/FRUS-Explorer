@@ -50,7 +50,7 @@ enum ArchivalAnalyticsExport {
     /// are not.
     static var baseCaveat: String {
         String(localized: "archival.export.caveat.base",
-               defaultValue: "Method: these figures are parsed from the source note each published FRUS document carries — the citation naming where its archival original was found. They record where the editors drew documents from, an editorial and archival signal, not a census of the archives themselves. Collections are clustered across volumes by name, so an under-merge leaves one body of records under two nearby names rather than combining them.")
+               defaultValue: "Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. So they record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.")
     }
 
     /// The Collections ranking's statement.
@@ -70,7 +70,7 @@ enum ArchivalAnalyticsExport {
         if let hiddenUmbrella {
             caveats.append(String(format: String(
                 localized: "archival.export.caveat.umbrella %lld %@",
-                defaultValue: "Withheld: the Central Files umbrella record is excluded from this ranking. It accounts for %1$lld %2$@ in this era on its own, and its bar would flatten the scale. The era-specific Central Files records are included."),
+                defaultValue: "Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %1$lld %2$@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included."),
                 Int64(hiddenUmbrella), weight.title.lowercased()))
         }
         caveats.append(String(format: String(
@@ -112,7 +112,7 @@ enum ArchivalAnalyticsExport {
                 baseCaveat,
                 String(format: String(
                     localized: "archival.export.caveat.lifecycle %lld",
-                    defaultValue: "Scope: the %lld most widely cited collections in the series, ranked by how many volumes cite them. A span runs from the earliest to the latest coverage year of those volumes and says nothing about how densely the years between are covered."),
+                    defaultValue: "Scope: the %lld most widely cited collections in the series, ranked by how many volumes cite them. Each span runs from the earliest to the latest coverage year of those volumes. It says nothing about how densely the years in between are covered."),
                     Int64(spanCount)),
             ])
     }
@@ -142,7 +142,7 @@ enum ArchivalAnalyticsExport {
                 baseCaveat,
                 String(format: String(
                     localized: "archival.export.caveat.library %lld %lld %lld",
-                    defaultValue: "Scope: counted from this device's own index — %1$lld source notes across the %2$lld indexed volumes that carry them, out of %3$lld volumes in the series. These figures change as more volumes are indexed and are not comparable with the corpus-wide archival figures."),
+                    defaultValue: "Scope: counted from what you have indexed on this device. That is %1$lld source notes across the %2$lld indexed volumes that carry them, out of %3$lld volumes in the series. These figures change as you index more volumes. Do not compare them with the figures for the whole series."),
                     Int64(profile.noteCount), Int64(profile.volumeCount),
                     Int64(corpusVolumeCount)),
                 String(localized: "archival.export.caveat.notes",
@@ -168,10 +168,10 @@ enum ArchivalAnalyticsExport {
             extraCaveats: [
                 baseCaveat,
                 String(localized: "archival.export.caveat.network.grain",
-                       defaultValue: "Grain: a link is volume-grain — the same volumes drew on both collections. A document has exactly one source note, so there is no document-level co-citation; the shared-documents measure is how much material the two jointly supplied to the volumes they share, not documents citing both."),
+                       defaultValue: "What a link means: two collections are linked because the same volumes drew on both. Each document carries exactly one source note, so no document can cite two collections. The shared-documents measure counts how much material the two collections supplied together to the volumes they share. It does not count documents citing both."),
                 String(format: String(
                     localized: "archival.export.caveat.network.scope %lld %lld %lld",
-                    defaultValue: "Scope: %1$lld of the %2$lld units above the current threshold are listed, and %3$lld collections share two or more volumes with the focus in total. The graph draws at most six per custodian so each quadrant stays readable; this table lists exactly what the graph drew."),
+                    defaultValue: "Scope: this table lists %1$lld of the %2$lld units above the current threshold. In all, %3$lld collections share two or more volumes with the focus. The graph draws at most six per custodian so each quadrant stays readable. This table lists exactly what the graph drew."),
                     Int64(drawn), Int64(aboveThreshold), Int64(partnersTotal)),
             ])
     }
@@ -182,11 +182,11 @@ enum ArchivalAnalyticsExport {
         var caveats = [
             String(format: String(
                 localized: "archival.export.caveat.flows.footnotes %@",
-                defaultValue: "Read this first: %@ of these references are footnotes. A row describes the editors' annotation practice — annotating material from one collection, they sent the reader to material from another — and not a relationship between the archives themselves."),
+                defaultValue: "Read this first: %@ of these references are footnotes. A row describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves."),
                 data.footnoteShare.formatted(.percent.precision(.fractionLength(1)))),
             String(format: String(
                 localized: "archival.export.caveat.flows.coverage %lld %lld",
-                defaultValue: "Coverage: only %1$lld of the %2$lld volumes in the series contribute a single one of these references, because the cross-reference idiom they are harvested from postdates 1945. The figures carry no dates — the source aggregate stores a pair of archival units and a count — so they cannot be narrowed to a period."),
+                defaultValue: "Coverage: only %1$lld of the %2$lld volumes in the series contribute any of these references. The cross-reference style they come from postdates 1945. The figures carry no dates: the stored data is a pair of archival units and a count. You cannot narrow this view to a period."),
                 Int64(data.volumesWithEdges), Int64(data.volumesScanned)),
             String(format: String(
                 localized: "archival.export.caveat.flows.classes %lld %lld",
@@ -215,14 +215,18 @@ enum ArchivalAnalyticsExport {
     // MARK: - Shared caveats
 
     /// Why the two Collections weights disagree — the single most misreadable thing on the surface.
-    private static var weightCaveat: String {
+    ///
+    /// Internal rather than private so the test requiring it can match the sentence the builder
+    /// really appends. A test quoting a fragment instead keeps passing once the wording changes,
+    /// which is a guard that has quietly stopped guarding.
+    static var weightCaveat: String {
         String(localized: "archival.export.caveat.weight",
-               defaultValue: "Weights count different populations. Documents come from the usage index, which resolves a source note to a collection only when the citation names one. Volumes come from the collection authority, where a volume counts if its front matter or any document note names the collection — so a collection named only in front matter has volumes and no documents, and switching the weight changes the membership of the ranking as well as its order.")
+               defaultValue: "The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Switching the weight changes which collections appear in the ranking, not just their order.")
     }
 
     /// The era asymmetry, which decides whether a reader should have switched lenses.
     private static var coverageCaveat: String {
         String(localized: "archival.export.caveat.coverage",
-               defaultValue: "Coverage is uneven by era. Named collections are scarce before 1948, where central-file classes carry almost the whole record; classes all but disappear after 1976, where the presidential libraries carry it. A thin ranking in either direction is usually the wrong unit rather than a thin era.")
+               defaultValue: "Coverage is uneven by era. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. A thin ranking usually means you have the wrong unit selected, not a thin era.")
     }
 }

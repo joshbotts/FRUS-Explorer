@@ -3723,3 +3723,67 @@ a sweep.
 **Verification.** Three new tests, each verified against the pre-fix code: they fail with exactly
 the wrong numbers (4 where 3 is right; a volumes-per-year ratio identical across both toggle
 states). Full suite 3,139 in 409 suites; both schemes build clean.
+
+---
+
+## Session 2026-08-09 — Plain-language pass across the app's user-facing prose
+
+**The ask.** Review the app's user-facing text and make it plainer, then produce a fresh
+`Docs/EditableContent.md` for the owner to edit.
+
+**What was actually wrong.** Not the content — the packing. Measured over all **3,948**
+`String(localized:)` defaults, **126 strings run past 200 characters**, topping out at 1,153
+(`archival.caveats.body`). The pattern in every one of them was the same: a load-bearing
+limitation riding in a subordinate clause after an em-dash, three facts fused into one 40-word
+sentence, and vocabulary that belongs in a code comment — *volume-grain*, *re-based*, *the usage
+index*, *an under-merge*, *bundled aggregate*, *document chrome*, *higher-signal*.
+
+**The rule.** Plainer must not mean vaguer. Every number, every stated limitation, and every
+refusal to claim more than the data supports had to survive — in practice by being promoted out of
+a trailing clause into a sentence of its own, which is where most of the added length went and why
+several rewrites are barely shorter than what they replace.
+
+**122 of 126 strings changed.** Four were already plain and were left alone, which is a useful
+signal that the pass was not rewriting for its own sake.
+
+**Mechanical guards, because Swift checks none of this.** The applying script refuses a revision
+whose format-specifier list or Swift-interpolation list differs from the original **at any call
+site**, applies multi-site keys to every site (aligning interpolation identifiers per site — the
+iOS/macOS pair of `source.explorer.nara.outsideCustody` spells the same value `\(repository)` and
+`\(library)`), and preserves each literal's style, rewrapping `"""` blocks with Swift's `\`
+continuations. A round-trip re-extract of all 3,948 keys afterwards matched the intended text
+**exactly, 0 mismatches**.
+
+**Five rewrites were rejected on review and repaired**, each because the plainer wording claimed
+*more* than the original: "most heavily used" for a ranking that measures how many volumes cite a
+collection; "covers the whole series" for what was only an independence claim; "exact phrase" for
+a stemmed index that has a separate exact-word mode; "the collections cited alongside it" for a
+graph that also draws class nodes; and "arrangement" for the app's own named Composition setting.
+That is the failure mode of this kind of pass and it is worth naming: the rewrite reads better and
+asserts something the data does not support.
+
+**Four tests were pinning the old prose by quoting a fragment of it**, and would have gone on
+passing — for the wrong reason — the moment the wording moved. They now match **the real emitter**:
+`AnalyticsProvenance` with its overrides stripped (so "does not inherit the default" means exactly
+that, whatever the default says), `SeriesAnalyticsExport.adminYearsCaveat` / `.adminOverlapCaveat`,
+and `ArchivalAnalyticsExport.weightCaveat`. Two caveats were lifted out of a builder body and
+`weightCaveat` moved from `private` to internal to make it possible. This is the same lesson as
+#790's fixture note, one step further on: matching a phrase is a guard with a shelf life.
+
+**`Docs/EditableContent.md` regenerated — 214 blocks to 373.** Every `lines:` field recomputed;
+**16 blocks named a source file that no longer held the key** and were corrected; one genuinely
+stale body fixed (`wordcloud.info.shows.detail.v2`, which still described the surface before
+"Size words by" shipped); typographic quotes synced so blocks round-trip byte-for-byte. Four new
+sections cover surfaces the file had never carried at all — **§9 Archival Analytics** (all four
+modes), **§10 Export method statements** (archival + the four About-the-Series dashboards),
+**§11 Source Explorer panels**, **§12 Word Cloud keyness** — plus a **Display & Reading**
+subsection in §6 and smaller additions in §5 and §7. §7.11 was moved back inside §7, where it had
+never been. Verified afterwards: 373 SOURCE/END pairs, no key documented twice, and every
+documented body matches the source (339 exactly, 15 rendering `\(…)` as `%lld`/`%@` placeholders
+per the file's own convention).
+
+**Docs pass.** The two user manuals paraphrase five of the revised strings rather than quoting
+them, and every fact in those passages is unchanged, so they needed no edit. The dated
+`EditableContent.md` archives are snapshots and were deliberately left alone.
+
+**Verification.** Both schemes build clean; **3,139 tests in 409 suites** pass, plus the UI suite.

@@ -107,7 +107,7 @@ struct ArchivalFlowsView: View {
 
     private func intro(_ data: ArchivalFlowsData) -> some View {
         Text(String(localized: "archival.flows.intro",
-                    defaultValue: "When a FRUS editor annotated one published document by pointing at another, the two documents usually came out of different archives. Aggregated across the series, those pointers map the paths the editors themselves walked between bodies of records."))
+                    defaultValue: "When a FRUS editor annotated one published document by pointing to another, the two documents usually came from different archives. Added up across the series, those pointers map the paths the editors walked between bodies of records."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -492,7 +492,7 @@ struct ArchivalFlowsView: View {
             systemImage: "arrow.triangle.branch",
             description: Text(String(format: String(
                 localized: "archival.flows.none.detail %@ %lld %lld",
-                defaultValue: "No cross-reference runs between %1$@ and another collection in this direction. The `dN` cross-reference idiom postdates 1945, and only %2$lld of the %3$lld volumes in the series carry any of these references at all."),
+                defaultValue: "No cross-reference runs between %1$@ and another collection in this direction. The cross-reference style these come from postdates 1945. Only %2$lld of the %3$lld volumes in the series carry any of these references."),
                 data.focus?.name ?? "", Int64(data.volumesWithEdges),
                 Int64(data.volumesScanned)))
         )
@@ -507,21 +507,21 @@ struct ArchivalFlowsView: View {
                 .foregroundStyle(.secondary)
             Text(String(format: String(
                 localized: "archival.flows.caveats.footnotes %@",
-                defaultValue: "%@ of these references are footnotes. A ribbon therefore describes the editors' annotation practice — annotating material from one collection, they sent the reader to material from another — and not a relationship between the archives themselves."),
+                defaultValue: "%@ of these references are footnotes. A ribbon therefore describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves."),
                 data.footnoteShare.formatted(.percent.precision(.fractionLength(1)))))
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.flows.caveats.body.v2 %lld %lld %lld %lld",
-                defaultValue: "Coverage is uneven and the gap is the finding: only %1$lld of the %2$lld volumes in the series contribute a single reference, because the cross-reference idiom these are harvested from postdates 1945. The figures are corpus-wide and independent of what you have downloaded, but they carry no dates — the bundled aggregate stores a pair of archival units and a count, with no volume or year attached, so this mode cannot be narrowed to a period. Central-file classes are excluded on purpose: between them the whole series carries %3$lld references over %4$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with."),
+                defaultValue: "Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld volumes in the series contribute a single reference. The cross-reference style these come from postdates 1945. The figures cover the whole series whatever you have downloaded, but they carry no dates. The stored data is a pair of archival units and a count, with no volume or year attached. So you cannot narrow this mode to a period. Central-file classes are left out on purpose. Across the whole series they carry %3$lld references over %4$lld pairs, which is under two per pair. That is too thin to rank, and there are no labels to rank it with."),
                 Int64(data.volumesWithEdges), Int64(data.volumesScanned),
                 Int64(data.classBetweenReferences), Int64(data.classBetweenPairs)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(localized: "archival.flows.caveats.browse",
-                        defaultValue: "Per-citation browsing is not offered here. The app can list the references inside the volumes you have indexed, but it cannot tell which of them are the footnotes this measure is built on, so a list would disagree with the diagram above it without saying why."))
+                        defaultValue: "You cannot browse the individual citations here. The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -486,7 +486,7 @@ struct ZoteroConnectionView: View {
 
             Section {
                 Text(String(localized: "settings.zotero.about.body",
-                            defaultValue: "Send FRUS documents — with your tags and research notes — straight into your Zotero library, where they sync to all your devices including the Zotero iOS app. This is the only way to get FRUS annotations into Zotero on iPhone and iPad."))
+                            defaultValue: "Send FRUS documents to your Zotero library with your tags and research notes attached. Zotero syncs them to all your devices, including the Zotero iOS app. This is the only way to get FRUS annotations into Zotero on iPhone and iPad."))
                     .foregroundStyle(.secondary)
                 if !isConnected, let getKeyURL {
                     Link(destination: getKeyURL) {

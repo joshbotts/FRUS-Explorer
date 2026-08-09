@@ -144,7 +144,7 @@ struct SeriesGeographyDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.geography.intro",
-                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve approximately to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most."))
+                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department's six regional bureaus. These charts show how the series' geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -181,7 +181,7 @@ struct SeriesGeographyDashboard: View {
             title: String(localized: "series.geography.trend.title",
                           defaultValue: "Regional emphasis over time"),
             caption: String(localized: "series.geography.trend.caption",
-                            defaultValue: "Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint."),
+                            defaultValue: "Each decade's volumes divided among the regions they cover. A volume spanning several regions splits evenly between them, so every decade totals 100%. A volume's decade is set by the midpoint of its coverage."),
             inspector: ChartInspectorAdapters.regionTrendTable(shares),
             provenance: SeriesAnalyticsExport.geography(
                 figureTitle: String(localized: "series.geography.trend.title",
@@ -352,7 +352,7 @@ struct SeriesGeographyDashboard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.geography.caveats.body",
-                        defaultValue: "Place tags are volume-level editorial tags: a volume \"touches\" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear."))
+                        defaultValue: "Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

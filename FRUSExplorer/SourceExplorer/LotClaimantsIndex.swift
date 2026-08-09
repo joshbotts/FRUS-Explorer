@@ -141,7 +141,7 @@ extension LotClaimantsIndex {
         }
         let rationale = String(
             format: String(localized: "source.explorer.dividedLot.rationale %lld",
-                           defaultValue: "NARA divided this lot file across %lld series. Each one lists the lot among its own control numbers, so each is a genuine part of the records this citation names — the citation alone does not say which."),
+                           defaultValue: "NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one."),
             claimants.count)
         return .candidates(series, rationale: rationale, creatorName: nil, seeAllURL: nil)
     }

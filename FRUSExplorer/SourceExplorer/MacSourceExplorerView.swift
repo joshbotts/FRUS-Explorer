@@ -424,7 +424,7 @@ struct MacSourceExplorerView: View {
                     }
                     // #315: citation guidance — mirrors the iOS centralFilesPanel note.
                     Text(String(localized: "source.explorer.centralFiles.cite.note",
-                                defaultValue: "When requesting the original record from NARA, provide the decimal file number above together with any telegram serial number, the from/to information, and the document's date from the source note — archivists use these to locate the record within the file."))
+                                defaultValue: "To request the original record from NARA, give them the decimal file number above. Add any telegram serial number, the from/to information, and the document's date from the source note. Archivists use these details to find the record within the file."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -523,10 +523,11 @@ struct MacSourceExplorerView: View {
                         Label {
                             Text(String(localized: "source.explorer.nara.outsideCustody",
                                         defaultValue: """
-                                        \(library) is not a National Archives repository, so the \
-                                        NARA Catalog has no record of this collection. Searching \
-                                        it on the collection name alone returns results that look \
-                                        authoritative and are not, so none is shown.
+                                        \(library) is not a National Archives repository, so \
+                                        the NARA Catalog has no record of this collection. A \
+                                        search on the collection name alone returns results \
+                                        that look authoritative but are not. None are shown \
+                                        here.
                                         """))
                             .font(.callout)
                             .foregroundStyle(.secondary)
@@ -577,7 +578,7 @@ struct MacSourceExplorerView: View {
                     }
                     // #315: CFPF citation guidance — mirrors the iOS cfpfPanel note.
                     Text(String(localized: "source.explorer.cfpf.cite.note",
-                                defaultValue: "When requesting the original record from NARA, provide the file identifier above together with any telegram channel and serial numbers, the from/to information, and the document's date from the source note."))
+                                defaultValue: "To request the original record from NARA, give them the file identifier above. Add any telegram channel and serial numbers, the from/to information, and the document's date from the source note."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1767,10 +1768,10 @@ struct MacSourceExplorerView: View {
                 case .multipleRanges(let ranges):
                     Text(String(localized: "source.explorer.scans.multiple",
                                 defaultValue: """
-                                \(ranges.count) scanned file ranges contain \(fileIdentifier), \
-                                listed narrowest first. NARA digitised this file in overlapping \
-                                sets, so the widest is not wrong — the narrowest is simply the \
-                                most specific.
+                                \(ranges.count) scanned file ranges contain \(fileIdentifier). \
+                                They are listed narrowest first. NARA digitised this file in \
+                                overlapping sets, so the widest range is not wrong. The \
+                                narrowest is simply the most specific.
                                 """))
                         .font(.caption)
                         .foregroundStyle(.secondary)

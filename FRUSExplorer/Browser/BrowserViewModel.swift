@@ -488,7 +488,7 @@ public enum BrowserIndexingError: LocalizedError, Equatable {
             // which is expressible by a literal but has no `+`.
             return String(
                 localized: "browser.indexing.pipelineUnavailable",
-                defaultValue: "FRUS Explorer could not open its search index, so this volume cannot be indexed or checked in this session. Relaunch the app; if the message returns, the index database is damaged and reinstalling is the only way to rebuild it."
+                defaultValue: "FRUS Explorer could not open its search index. This volume cannot be indexed or checked until you restart. Relaunch the app. If the message comes back, the index database is damaged and only reinstalling will rebuild it."
             )
         }
     }
