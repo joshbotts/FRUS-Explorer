@@ -1,6 +1,6 @@
 # Archival Analytics — Feasibility Assessment
 
-**Date:** 2026-08-08 · **Version:** 1.5 · **Status:** plan of record with design integrated
+**Date:** 2026-08-08 · **Version:** 1.6 · **Status:** plan of record with design integrated
 (§7); no code changes ride this document. Design contract: `Archival-Analytics-Design-Handoff.md`
 (in this folder — the verbatim handoff README; annotated HTML mock + PNGs stay with the owner's
 zip).
@@ -340,7 +340,7 @@ existing `ResearchGuideLinkButton` / Source Explorer routing.
 |---|---|---|---|---|
 | 1 | A (Related Collections section) + C-timeline on `CollectionDetailView`; F rider | No | 1 session | **#762 — shipped 2026-08-08** |
 | 2 | D: `collection-usage-index.json` generator; **class × volume counts ride the same scan (I)**. #267 re-scoped — see §7.7 | **Yes** (one artifact, 628 KB measured) | 1 generator session | **#763 — artifact shipped 2026-08-08; #267 follows** |
-| 2b | H/I flow matrix: `CrossRefValidationGenerator` harvest × export provenance-unit join → bundled aggregate; class labels table rider | **Yes** (small aggregate + label table) | 1 generator session | **#764** |
+| 2b | H flow matrix shipped (collections viable, classes measured-and-thin); **I's flow half refuted**; class-label rider **not built** — see §7.8 | **Yes** (254 KB) | 1 generator session | **#764 — flow matrix shipped 2026-08-08; label table refiled** |
 | 3 | B (ego graph) + era × collection dashboard views consuming D; class lens (I) on the same views; E rider | No | 1–2 sessions | **#765** |
 | — | G after N-7 settles; numerical-file case grain (I) behind its own eval; per-edge flow browsing behind #262 | — | — | recorded here only |
 
@@ -552,6 +552,80 @@ architecture for the same data. **#267 therefore lands as its own change** — p
 plus the scope bar — and this artifact does not carry per-volume category counts for SA-3's benefit
 (it carries them for the Your Library and Collections modes, which is a different consumer).
 
+### 7.8 What #764 measured — two of its premises did not survive
+
+**The flow matrix, as built (2026-08-08).** `provenance-flow-index.json`, 254 KB. The funnel, which
+is the whole story:
+
+| | |
+|---|---|
+| `<ref target>` in the corpus | 2,713,592 |
+| …inside a `<div type="document">` | 181,807 |
+| …resolving to a real document div | **77,792** |
+| …carried by a **footnote** rather than body text | **74,146 (95.3%)** |
+| volumes contributing any edge | **254 of 552** |
+
+**Finding 1 — the matrix measures editorial practice, not archival relationship.** 95.3% of
+document-to-document references are the editor's annotation on document A pointing at document B;
+3,646 sit in document text. So a cell says *the editors, annotating material from this collection,
+sent the reader to material from that one*. That is real, unmapped, and worth showing — and it is
+not what "reference flow between archives" implies. Every surface owes the sentence; the artifact
+carries `footnoteEdges` so the number cannot go stale in prose.
+
+**Finding 2 — §4-I's flow half is refuted. The class axis has no signal.**
+
+| axis | joined | between units | pairs | refs/pair | top cell | top-100 pairs |
+|---|---|---|---|---|---|---|
+| collections | 48,755 | **20,837** | 4,356 | 4.78 | 449 | 42.5% |
+| classes | 15,565 | **4,663** | 2,730 | 1.71 | **31** | 18.6% |
+
+The class axis's heaviest cell is `740.00119 → 740.0011-EW` — one wartime file cited two ways —
+and there is no head to the distribution at all. The cause is structural and not a parser problem:
+**the `dN` cross-reference idiom postdates 1945**, so pre-1940 coverage contributes 33 references
+corpus-wide and 298 volumes contribute none, while the decades that *do* cross-reference heavily
+(1960s–80s) cite lot files and libraries rather than decimal classes. §4-I called the class↔class
+flow "genuinely novel; no equivalent exists anywhere" — the reason no equivalent exists is that
+there is almost nothing to map. **#765 should render the collection axis only.** The class axis is
+shipped so the thinness can be confirmed rather than rediscovered, and an artifact test fails if it
+ever stops being thin.
+
+The collection axis, by contrast, is legible and historically meaningful:
+`Nixon NSC Files → Central Files 1970-73` (449), `Kennedy National Security File → Central Files`
+(365), the Whitman File and Central Files in both directions (287 / 276), `Nixon White House Tapes
+→ NSC Files` (261).
+
+**Finding 3 — the class-label rider (D-2) cannot be built, and its stated source does not exist.**
+§4-I says labels are "partially available from the authority's class-keyed sub-series children
+(front-matter names)". Measured: **2,550 of 2,550 class-keyed children have `name` equal to
+`decimalClass` verbatim** — zero label material, because `AuthorityBuilder` sets
+`childName = ref.subDecimalClass ?? …`, so a class child's name is definitionally its own key.
+
+What *does* exist, none of it sufficient:
+
+- **FRUS's own front-matter gloss lists** (`<item>746E.00: Ceylon political affairs</item>`) — 819
+  rows over 44 volumes, 454 classes that documents actually cite, **28,315 documents (15.4%)**. Its
+  era coverage is the **inverse of D-2's priority**: editors began writing Sources essays in the
+  mid-1950s, so 415 of the rows are 1950s and 394 are 1960s against **10 for the 1910s**. Of the
+  top 50 decimal classes by document count, 9 have a gloss.
+- **Subject-numeric** is the strong case — 642 validated rows reaching **50.2%** of subject-numeric
+  documents, in schedule voice rather than volume-scoped paraphrase.
+- **NARA RG 59 series titles** — 806 classes, but the record group holds at least three different
+  decimal schedules (State, War Department, Foreign Service post), so `320` carries both
+  "Argentina & American Republics" and "Japan". Restricted to unambiguous State-shaped titles: 65
+  classes, 1.4% of documents.
+
+The blocker is not extraction effort, it is that **the semantic key is not in the repo**: the
+country-number table (322 codes), the class-8 subject-suffix table (~1,078), the
+relations-between-vs-subdivision disambiguation (`738.11` and `768.11` are the same shape with
+opposite readings), and the 1910-vs-1950 schedule boundary. D-2's premise that the schedule is
+public domain holds; the repo simply has no copy. **Refiled** — the seed harvest (glosses +
+subject-numeric + the RG 59 remainder, each row stamped with its source, which is exactly D-2's
+rule) is worth doing, but it needs the owner-supplied schedule to become the 1910–49 table D-2
+names first.
+
+**Also worth knowing:** a compositional label table beats a flat one 3–5×. 200 rows of country
+codes + class-8 suffixes cover 87.7% of classed documents, against 1,000 flat leaf rows for 79.4%.
+
 ### 7.5 Decisions log
 
 | # | Decision | Status |
@@ -565,6 +639,11 @@ plus the scope bar — and this artifact does not carry per-volume category coun
 
 ## Version history
 
+- 1.6 (2026-08-08) — Phase 2b (#764): the flow matrix shipped, and two of the phase's premises
+  refuted. §7.8 records the funnel (2.7M references → 77,792 edges, 95.3% of them footnotes), the
+  measured collapse of the class-flow axis (4,663 between-class references, top cell 31, no head)
+  and why it is structural, and the finding that D-2's class-label source does not exist — the
+  authority's class children carry the key as their name. Label table refiled.
 - 1.5 (2026-08-08) — Phase 2 artifact shipped (#763): §7.7 records the built artifact (628 KB,
   1,828 of 4,423 authority records reached), the three design changes the build settled (compact
   wire names, no era rollups, never rebuild from an export), the Documents↔Volumes reordering and

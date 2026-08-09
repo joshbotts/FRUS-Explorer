@@ -20,13 +20,23 @@ public struct HarvestedRef: Equatable, Sendable {
     public let line: Int
     /// The nearest enclosing `<div type="document">` xml:id, or `nil` for front/back-matter refs.
     public let enclosingDocument: String?
+    /// Whether the ref sits inside a `<note>` — the editor's annotation on the document rather
+    /// than the document's own text (#764).
+    ///
+    /// This distinction is the whole reading of a reference-flow matrix: measured over the
+    /// corpus, 74,146 of 77,792 document-to-document references are footnotes and only 3,646 are
+    /// body text, so such a matrix charts *editorial cross-referencing practice*, not a relation
+    /// between the documents themselves. Defaulted so existing constructions are unaffected.
+    public let isInsideNote: Bool
 
     /// Memberwise initializer (fields documented on the properties).
-    public init(rawTarget: String, byteOffset: Int, line: Int, enclosingDocument: String?) {
+    public init(rawTarget: String, byteOffset: Int, line: Int, enclosingDocument: String?,
+                isInsideNote: Bool = false) {
         self.rawTarget = rawTarget
         self.byteOffset = byteOffset
         self.line = line
         self.enclosingDocument = enclosingDocument
+        self.isInsideNote = isInsideNote
     }
 }
 
@@ -61,6 +71,7 @@ public enum RefHarvester {
         var i = 0
         var line = 1
         var divStack: [(isDocument: Bool, id: String?)] = []
+        var noteDepth = 0
         var refs: [HarvestedRef] = []
 
         while i < n {
@@ -106,6 +117,9 @@ public enum RefHarvester {
 
             if isClose {
                 if name == "div", !divStack.isEmpty { divStack.removeLast() }
+                if name == "note", noteDepth > 0 { noteDepth -= 1 }
+            } else if name == "note" {
+                if !selfClose { noteDepth += 1 }
             } else if name == "div" {
                 if !selfClose {
                     let tag = String(decoding: b[start..<min(tagEnd + 1, n)], as: UTF8.self)
@@ -120,7 +134,8 @@ public enum RefHarvester {
                     refs.append(HarvestedRef(rawTarget: target,
                                              byteOffset: start,
                                              line: startLine,
-                                             enclosingDocument: enclosing))
+                                             enclosingDocument: enclosing,
+                                             isInsideNote: noteDepth > 0))
                 }
             }
 

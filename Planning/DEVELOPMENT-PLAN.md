@@ -3252,3 +3252,69 @@ true now; the bullets gained a sentence saying the narrowing is exact rather tha
 counts notes **paired with a document id** (`DocumentNoteExtractor`): 264,464 over 501. The 4,293-note,
 21-volume gap is source notes with no resolvable enclosing document. Two different questions, both
 correctly answered; recorded here so nobody "fixes" one to match the other.
+
+---
+
+## Session 2026-08-08 — #764: the flow matrix, and two premises that did not survive
+
+Archival analytics Phase 2b. `provenance-flow-index.json` (254 KB) records where FRUS's editors
+sent the reader when they cross-referenced one document from another, aggregated to
+(source unit → target unit) pairs on two axes. Two passes over the corpus reusing the validator's
+`RefHarvester` + `CrossRefGrammar` for the references and the export generator's parse/authority/
+class surfaces for each document's unit — so an edge here is an edge in the cross-ref report, and a
+unit here is a unit in `collection-usage-index.json`.
+
+**The funnel is the story.** 2,713,592 references in the corpus → 181,807 sit inside a document div
+→ **77,792 resolve to a real document**. The rest are page citations and back-of-book index
+entries, which have no archival provenance at either end. Of the survivors, **74,146 (95.3%) are
+footnotes**.
+
+**Premise 1 refuted: this is not archival relationship, it is editorial practice.** A cell says
+*the editors, annotating material from this collection, sent the reader to material from that one*
+— 3,646 of 77,792 references are in document text. That is a real and unmapped thing and worth
+showing, but it is not what "reference flow between archives" implies. The artifact carries
+`footnoteEdges` so the disclosure is a measured field rather than a sentence that goes stale, and a
+test fails if the share ever drops below 90%.
+
+**Premise 2 refuted: §4-I's class-flow half has no signal.** The issue calls the class↔class matrix
+"genuinely novel; no equivalent exists anywhere". Measured:
+
+| axis | between units | pairs | refs/pair | top cell | top-100 pairs |
+|---|---|---|---|---|---|
+| collections | 20,837 | 4,356 | 4.78 | 449 | 42.5% |
+| classes | 4,663 | 2,730 | 1.71 | **31** | 18.6% |
+
+The class axis's largest cell is `740.00119 → 740.0011-EW` — one wartime file cited two ways — and
+the distribution has no head. The cause is structural, not a parser gap: **the `dN`
+cross-reference idiom postdates 1945**. Pre-1940 coverage contributes 33 references corpus-wide;
+298 of 552 volumes contribute none; and the decades that do cross-reference heavily cite lot files
+and libraries, not decimal classes. The reason no equivalent exists anywhere is that there is
+almost nothing to map. Shipped as a measurement so #765 can confirm the thinness rather than
+rediscover it, with a test that fails if it stops being thin.
+
+The collection axis is the opposite — legible and historically meaningful: Nixon NSC Files →
+Central Files 1970-73 (449), Kennedy NSF → Central Files (365), the Whitman File and Central Files
+in both directions (287 / 276), Nixon White House Tapes → NSC Files (261).
+
+**Premise 3 refuted: D-2's label source does not exist.** §4-I says class labels are "partially
+available from the authority's class-keyed sub-series children (front-matter names)". All **2,550
+of 2,550** such children have `name` equal to `decimalClass` character for character, because
+`AuthorityBuilder` sets `childName = ref.subDecimalClass ?? …` — the name *is* the key by
+construction. What does exist: FRUS's own front-matter gloss lists (819 rows, 454 cited classes,
+15.4% of classed documents) whose era coverage is the **inverse** of D-2's stated priority — 415
+rows from the 1950s and 394 from the 1960s against **10 from the 1910s**, because editors only
+began writing Sources essays in the mid-1950s. The 1910–49 schedule D-2 names first is precisely
+where the corpus is silent. The missing pieces are semantic, not extractive: the country-number
+table, the class-8 suffix table, and the rule distinguishing `738.11` (relations with Haiti) from
+`768.11` (a Yugoslav subdivision) — identical shapes, opposite readings. Refiled rather than
+guessed at; a generator that composed labels without the schedule would emit confident wrong ones.
+
+**Two small mechanisms worth noting.** The join needs a *narrower* inventory than the validator's:
+`AnchorInventory` collects every xml:id, and 49,799 index-entry anchors (`inN`) resolve as
+documents under the grammar, so `DocumentIdInventory` restricts to document divs or the matrix
+mints phantom nodes. And `RefHarvester` gained note-depth tracking — six lines, additive, defaulted
+— so the footnote share is measured rather than asserted.
+
+Same-unit flows are stored, not dropped. They are 56% of the joined collection references; the
+design excludes them from display, and an artifact that had already dropped them could not disclose
+what the exclusion removed.
