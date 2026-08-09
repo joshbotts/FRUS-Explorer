@@ -43,6 +43,13 @@ import Foundation
 ///          on tap, identical to explicit `<gloss ref="…">` elements.
 ///   1.5 — Session 7 / #240B: `brokenRefLookup` added; `crossRefLink` carries the
 ///          broken-ref payload so validated-dead references render as explained spans.
+///   1.6 — Session 2026-08-09 / #659: upstream autolink noise (a bare-host `http(s)` target
+///          under prose link text) renders as plain text instead of a link — see
+///          `isSpuriousAutolink`. **`kVersion` is deliberately NOT bumped**: `flatText`
+///          already recurses `.crossRefLink`'s children exactly as it would `.plainText`, so
+///          the flat text is byte-identical and no stored highlight goes stale. A reflexive
+///          bump here would mark every highlight in every indexed volume stale for a change
+///          that moved no characters.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -67,6 +74,41 @@ public struct ASTToRenderNodeConverter {
         let digest = SHA256.hash(data: data)
         let hex = digest.map { String(format: "%02x", $0) }.joined()
         return String(hex.prefix(16))
+    }
+
+    // MARK: - Spurious autolinks (#659)
+
+    /// Whether a `<ref>` is upstream autolink noise rather than a link an editor wrote.
+    ///
+    /// Two clauses, and **both are load-bearing**. Measured over all 552 shippable volumes there
+    /// are 619 `http(s)` refs inside documents; this predicate de-links exactly 22 and keeps 597.
+    ///
+    /// 1. **The target is a bare host** — no path, no query, no fragment. Every one of the 22 is
+    ///    (`http://must.be`); every deep link in the corpus is real. This clause alone is not
+    ///    enough: thirty genuine bare-host links exist (`http://bookstore.gpo.gov`,
+    ///    `http://www.un.org`, `http://uwdc.library.wisc.edu/`).
+    /// 2. **The link text does not announce itself as a URL.** All thirty genuine bare-host links
+    ///    are written with the URL as their own link text; all twenty-two autolinks are written
+    ///    over prose. This clause alone is not enough either: five real links — the
+    ///    `frus1917-72PubDip` supplement PDFs — carry prose text ("a high resolution color PDF")
+    ///    over a deep `static.history.state.gov` target, and clause 1 is what saves them.
+    ///
+    /// The deliberate cost: a future volume writing `<ref target="http://example.org">example.org
+    /// </ref>` — a bare host whose text is the domain without a scheme — would be de-linked. That
+    /// is the same shape as `<ref target="http://would.be">would.be</ref>`, which IS noise, and no
+    /// predicate can separate them. Losing a tap on text that already reads as its own URL is the
+    /// cheaper error; the alternative re-admits a link to a domain that does not exist.
+    ///
+    /// Scheme-gated to `http(s)` on purpose: `mailto:history@state.gov` refs are real, and their
+    /// link text is never a URL.
+    private static func isSpuriousAutolink(target: String, linkText: String) -> Bool {
+        let lowered = target.lowercased()
+        guard lowered.hasPrefix("http://") || lowered.hasPrefix("https://") else { return false }
+        guard let url = URL(string: target),
+              url.path.isEmpty || url.path == "/",
+              url.query == nil, url.fragment == nil else { return false }
+        let text = linkText.lowercased()
+        return !text.contains("http://") && !text.contains("https://")
     }
 
     /// DFS flat-text extraction per the Session 102 offset model spec.
@@ -248,11 +290,20 @@ public struct ASTToRenderNodeConverter {
             return [.glossLink(ref: normRef, children: convertNodes(children), entry: entry)]
 
         case .crossReference(let target, let volumeId, let children):
+            let inner = convertNodes(children)
+            // #659: twenty-two `<ref>`s across twelve 1863–1868 volumes are upstream autolink
+            // noise — an ordinary prose phrase whose final letters happen to form a country TLD,
+            // turned into a link to a host that does not exist ("Shall" → `http://pha.ll`,
+            // "must be" → `http://must.be`). They are indistinguishable from working links on
+            // screen and take the reader out of the app to a dead domain. Rendered as plain text.
+            if Self.isSpuriousAutolink(target: target, linkText: Self.flatText(inner)) {
+                return inner
+            }
             // `target` is the verbatim `@target` attribute — the exact key the broken-refs index
             // is keyed on. A non-nil result renders as a non-navigable explained span.
             let broken = brokenRefLookup?(target)
             return [.crossRefLink(target: target, volumeId: volumeId, broken: broken,
-                                  children: convertNodes(children))]
+                                  children: inner)]
 
         case .emphasis(let style, let children):
             let inner = convertNodes(children)

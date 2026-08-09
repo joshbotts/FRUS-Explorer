@@ -48,10 +48,16 @@ ENRICH_LOTS=1 swift run CentralFilesIndexGenerator
   manual NAID curation (the top-10 = 54% of the gap **— 55.8% as re-measured 2026-07-29**), not a
   keyed control-number pass.
 
-**Still deferred (needs the key):** `volume-sources-index.json`'s 9 fileUnit lot entries stay in the
-data (its self-contained #351 render guard suppresses them, so no wrong links show); a full keyed
-`VolumeSourcesIndexGenerator` run (reads the `rgs` cache → preserves the 31 record-groups, resolves
-lots against the clean central-files) would clean them too — do this when convenient.
+**[2026-07-29] Executed — this run-book owes no keyed run.** (#376, commit `2496472f`, PR #563.)
+The keyed `VolumeSourcesIndexGenerator` pass ran with the warm `rgs` cache: `volume-sources-index.json`
+went 767 → 758 lots, **0 `fileUnit` / 751 `series`**, and all 31 record groups were preserved. The nine
+fileUnit entries the deferred note named are gone — 58D528, 59D27, 60D627, 65D285, 72D170, 74D471,
+90D192, 91D257, 92D252 — so the #351 render guard is a no-op for this artifact. Reproduce the check
+with `git diff 2496472f^ 2496472f -- FRUSExplorer/Resources/volume-sources-index.json`.
+
+*Read that as the outcome of the 2026-07-29 run, not as a description of the bundle today:* #694
+(commit `1825ce44`, 2026-08-05) pruned the map from 758 lots to the **7** that
+`central-files-index.json` cannot answer, which is where the app now resolves the rest.
 
 The original full-harvest run-book below stays valid for a machine with a warm cache.
 
@@ -196,6 +202,30 @@ responses, one per record group) — the key enables the pass, it does not spend
 **Go/no-go:** the summary must say `record groups: 31`, not 0. The first line of output
 (`Distinct keys: … 31 record groups`) is the *harvest* and says nothing about what was
 written — do not read it as confirmation.
+
+**[2026-07-29] The same regen re-resolved fifteen lots to different NAIDs**, propagating the
+2026-07-17 keyed central-files re-harvest. It is a user-visible change to the catalog links in a
+volume's Sources rows, and no other document records it. Reproduce with
+`git diff 2496472f^ 2496472f -- FRUSExplorer/Resources/volume-sources-index.json`; all fifteen are
+series-level before and after, and all fifteen carry the new NAID in today's `central-files-index.json`:
+
+| lot | before → after | what changed |
+|---|---|---|
+| 54D341 | 2240960 → 2240958 | Ceylonese Affairs → South Asian Regional Affairs |
+| 59D448 | 2194823 → 2255070 | East Asian → Western European Country Files |
+| 60D330 | 2092771 → 2092772 | Korea → International Conferences |
+| 60D530 | 602119 → 602131 | Daily Summaries → Daily Staff Summaries |
+| 65D142 | 602119 → 602131 | (same pair) |
+| 65D5 | 2068429 → 2068452 | Israel and Lebanon → Records Relating to Greece |
+| 68D349 | 26309374 → 619592 | |
+| 69D528 | 2642156 → 4488918 | Nicaragua → British Honduras |
+| 71D440 | 26309422 → 2125425 | |
+| 71D87 | 2637638 → 631403 | → Vietnam Working Group |
+| 75D303 | 2637638 → 631403 | (same pair) |
+| 72D192 | 631707 → 631695 | |
+| 76D284 | 27022982 → 604773 | |
+| 81D208 | 27499754 → 109272536 | |
+| 81D286 | 3475539 → 3493168 | |
 
 ```bash
 swift run -c release CollectionAuthorityGenerator         # offline; NAIDs resolve against central-files

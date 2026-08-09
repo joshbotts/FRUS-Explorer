@@ -236,4 +236,31 @@ struct ArchivalAnalyticsEntryPointTests {
             closed host keeps capturing this window's document opens.
             """)
     }
+
+    @Test("The main window's toolbar Analytics menu offers it too")
+    func macOSToolbarEntryPoint() throws {
+        // A SECOND file, deliberately. `macOSEntryPoint` reads FRUSExplorerApp.swift, where the
+        // menu-bar item has always lived — which is exactly why it passed for the whole of #795
+        // while the toolbar menu, the door a reader actually finds, had no row at all.
+        let source = try Self.source("App/MainWindowView.swift")
+        #expect(source.contains("openWindow.fronting(id: \"frus.archivalAnalytics\")"), """
+            The toolbar Analytics menu lists every other analytics window and must list this one \
+            (#795). The menu-bar assertion above cannot see this file.
+            """)
+        #expect(source.contains("appState.bindTool(.archivalAnalytics, to: hostID)"), """
+            A toolbar launch binds THIS window as provenance (hostID), unlike the menu-bar item, \
+            which clears it — a menu-bar launch has no spawning window to inherit.
+            """)
+    }
+
+    @Test("The SA-3 dashboard points at it")
+    func seriesDashboardCrossLink() throws {
+        // The #765 D-1 rider: the provenance dashboard's ten categories are the coarse view of
+        // what Archival Analytics names collection by collection.
+        let source = try Self.source("SeriesAnalytics/SourceProvenanceDashboard.swift")
+        #expect(source.contains("openWindow.fronting(id: \"frus.archivalAnalytics\")"),
+                "the SA-3 dashboard has no cross-link into Archival Analytics (#795)")
+        #expect(source.contains("series.provenance.archivalLink"),
+                "the cross-link needs a named, localized label")
+    }
 }

@@ -230,3 +230,48 @@ struct BootStateHonestyTests {
         }
     }
 }
+
+// MARK: - TabBadgeTests
+
+/// #657, first step: the Settings tab's unindexed-volumes badge is absent at zero, not empty.
+///
+/// A source assertion because there is nothing else to assert against — `Tab` builds no inspectable
+/// value, and the badge's effect is a `UILabel` inside UIKit's tab-item layout. What is checkable is
+/// that the zero branch is `nil`, and that is the whole of the change.
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #657 first step
+@Suite("Tab badges")
+struct TabBadgeTests {
+
+    private static func source(_ relative: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/\(relative)")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("The zero case is no badge, not an empty one")
+    func zeroMeansNoBadge() throws {
+        let source = try Self.source("App/MainTabView.swift")
+        let badge = try #require(
+            source.split(separator: "\n").first(where: { $0.contains(".badge(") }),
+            "MainTabView no longer carries a badge at all")
+
+        #expect(badge.contains(": nil)"), """
+            The zero case must pass `nil`. An empty string is still a badge — it materialises a \
+            label in the tab item's layout, which is the stack #657's crash log names. \
+            Found: \(badge.trimmingCharacters(in: .whitespaces))
+            """)
+        #expect(!badge.contains(": \"\")"), """
+            The empty-string badge is back (#657). It reads as harmless and is not: `""` and `nil` \
+            are different badges to UIKit, which is the entire point of the change.
+            """)
+        #expect(badge.contains("Text("), """
+            The badge must be spelled `Text?`. `Tab` conforms to `TabContent`, not `View`, and \
+            `TabContent.badge` has no optional-String overload — a `String?` here does not compile, \
+            which is how this gets reverted to `""` by someone fixing a build error.
+            """)
+    }
+}
