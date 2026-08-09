@@ -3624,3 +3624,61 @@ an `ArchivalExportRequest` up to the shell rather than inheriting its share-shee
 negative that matters: the string `TEI` must **not** appear in an archival CSV. The wiring suite
 counts five mounted controls and checks the share sheet is anchored outside the mode switch — a
 `.sheet` on a `Group` mounts once per child.
+
+---
+
+## Session 2026-08-09 — #790: the four About-the-Series dashboards join the D3 export
+
+**The gap, and why it survived so long.** The D3 program (#474–#479) ran Corpus → Person and
+Cross-Reference → figures → heat matrix → word cloud. The Series dashboards were never in scope,
+and #474's own body is the giveaway: it "reuses the **tested** `ChartInspectorData` CSV writer
+**from the Series dashboards**". They supplied the writer the whole export program was built on
+and never received the export. Meanwhile all eleven of their charts pass a `ChartInspectorData`,
+so "View as table → Copy CSV" has always been reachable, emitting the bare table with no method.
+
+**Investigating first changed the shape of the work.** A four-agent read of the dashboards found
+that cloning the archival provenance onto them would have printed **two false sentences on every
+file**, and that both faults were in the shared type rather than in the new code:
+
+1. `appliesDocumentDating` gated **two independent things** — the dating caveat *and* the
+   year-range line. Three of these four dashboards never read a document's date (Production
+   places *volumes* by print year, Geography counts *volumes* by subject tag, Provenance buckets
+   by the *volume's* coverage decade), yet all three have a year control that filters rows. `true`
+   prints a false rule; `false` drops the line a reader most needs.
+2. `corpusCaveat` unconditionally said counts "cover only the N volume(s) indexed on this device".
+   These four read bundled aggregates and render **before anything is downloaded** — that is their
+   whole purpose. The default does not merely over-caveat, it understates every figure.
+
+So `AnalyticsProvenance` gained `datingRule` and `corpusStatement` overrides, and the year-range
+line now follows `yearRange != nil || appliesDocumentDating`. All three changes are strictly
+additive — the four shipped surfaces produce byte-identical preambles, and tests pin that.
+
+**Four builders, not one.** Each states its own dating rule and its own corpus. Administration is
+the one that genuinely *is* document-dated (`frus:doc-dateTime-min/-max`, no fallback), and it
+carries the two corrections its own controls otherwise imply wrongly: the year range **selects
+which presidents appear** rather than re-counting documents, and any-overlap attribution means the
+counts are **not mutually exclusive**. Provenance discloses that hiding a category **re-bases every
+share**.
+
+**One live defect found, filed rather than fixed (#791).** The volumes-per-administration-year
+chart counts range-dated-only volumes whatever the editorial-notes toggle says, while that
+toggle's subtitle promises it affects "every count and proportion". The artifact already ships
+`volumeCountPointOnly` for exactly this and **nothing in the app reads it**; measured, 14 of 26
+populated administrations differ. Fixing it moves numbers on a shipped chart, which is a separate
+decision — so this session made the *export* honest instead: that figure's statement says it is
+unaffected by the setting rather than inheriting the toggle's claim.
+
+**One shared helper, four small diffs.** `SeriesExportBox` (an `@Observable` holding the share item
+and the error) plus a `seriesExportPresentation` modifier, so each dashboard added one property,
+one modifier, and a `provenance:` argument per chart. The figure is built from **the card's own
+content closure**, so an exported plate cannot drift from the chart on screen.
+
+**Verification.** 14 tests in 3 suites: the override behaviour and its non-regression, the four
+statements, and a wiring suite asserting all eleven charts pass a provenance, each dashboard mounts
+the presentation exactly once, and every figure is built from the card's content. Full suite 3,136
+in 409 suites.
+
+**A note on test fixtures, again.** Two assertions failed at first because they matched the phrase
+"indexed on this device" — which the *new, correct* copy also contains, in order to deny it. The
+assertion now matches the default caveat's own signature. Matching a phrase two sentences share
+tests nothing about which one was emitted.

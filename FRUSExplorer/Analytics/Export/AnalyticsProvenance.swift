@@ -72,6 +72,21 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// occurrence chart who is told only "Raw count" has been told the one thing they could have
     /// guessed and not the one they could not.
     var countingUnit: String?
+    /// A surface's own dating rule, replacing ``datingCaveat`` when set.
+    ///
+    /// The default sentence describes the corpus-analytics rule specifically — a TEI `<date>`
+    /// with a volume-start-year fallback, and By Month / By Day charts. None of that is true of
+    /// the About-the-Series dashboards (#790): three of the four never read a document date at
+    /// all, and the fourth reads `frus:doc-dateTime-min/-max` with no fallback and has no
+    /// month/day axes. Emitting the default there would state a method the export did not use,
+    /// which is the exact failure the D3 preamble exists to prevent.
+    var datingRule: String?
+    /// A surface's own corpus statement, replacing ``corpusCaveat`` when set.
+    ///
+    /// The default says counts "cover only the N volume(s) indexed on this device". For a surface
+    /// reading a bundled corpus-wide aggregate that is not a caveat, it is an untruth: those
+    /// figures cover the whole series and render with no index at all.
+    var corpusStatement: String?
     /// View-specific caveats appended verbatim (e.g. the cross-reference excluded-references note).
     var extraCaveats: [String] = []
     /// When the export was produced.
@@ -115,16 +130,19 @@ struct AnalyticsProvenance: Sendable, Equatable {
                       Int64(yearRange.lowerBound), Int64(yearRange.upperBound))
     }
 
-    /// The dating rule as implemented, including the volume-start-year fallback for undated
-    /// documents and the month/day precision exclusion.
+    /// The dating rule as implemented — the surface's own where it supplied one, else the
+    /// corpus-analytics rule with its volume-start-year fallback and month/day exclusion.
     var datingCaveat: String {
-        String(localized: "analytics.export.caveat.dating",
+        if let datingRule { return datingRule }
+        return String(localized: "analytics.export.caveat.dating",
                defaultValue: "Dating: each document is placed at its TEI <date> (the date of authorship). A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. Documents lacking month or day precision are excluded from the By Month and By Day charts.")
     }
 
-    /// The selective-corpus caveat — always true, not only in `%` mode.
+    /// What corpus the figure covers — the surface's own statement where it supplied one, else
+    /// the indexed-on-this-device caveat.
     var corpusCaveat: String {
-        String(format: String(localized: "analytics.export.caveat.corpus %lld",
+        if let corpusStatement { return corpusStatement }
+        return String(format: String(localized: "analytics.export.caveat.corpus %lld",
                               defaultValue: "Corpus: counts cover only the %lld volume(s) indexed on this device, not the entire FRUS series."),
                Int64(indexedVolumeCount))
     }
@@ -170,7 +188,12 @@ struct AnalyticsProvenance: Sendable, Equatable {
         }
         lines.append("\(String(localized: "analytics.export.field.groupedBy", defaultValue: "Grouped by")): \(axisLabel)")
         lines.append("\(String(localized: "analytics.export.field.scope", defaultValue: "Scope")): \(scopeDescription)")
-        if appliesDocumentDating {
+        // The year-range line used to be gated on `appliesDocumentDating`, which conflated two
+        // independent facts. A surface can filter by year without placing documents on a timeline
+        // — three of the four About-the-Series dashboards do exactly that — and suppressing the
+        // line there would drop the one field a reader most needs. Strictly additive: a surface
+        // with no range and no dating still prints nothing.
+        if appliesDocumentDating || yearRange != nil {
             lines.append("\(String(localized: "analytics.export.field.yearRange", defaultValue: "Year range")): \(yearRangeDescription)")
         }
         if let countingUnit {
@@ -182,7 +205,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
         lines.append("\(String(localized: "analytics.export.field.exported", defaultValue: "Exported")): \(Self.appCredit), \(formattedDate)")
         lines.append("")
         lines.append(String(localized: "analytics.export.preamble.method", defaultValue: "Method and caveats"))
-        if appliesDocumentDating { lines.append(datingCaveat) }
+        if appliesDocumentDating || datingRule != nil { lines.append(datingCaveat) }
         lines.append(corpusCaveat)
         if let valueModeCaveat { lines.append(valueModeCaveat) }
         for caveat in extraCaveats { lines.append(caveat) }

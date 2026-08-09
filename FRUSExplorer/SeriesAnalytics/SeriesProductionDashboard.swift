@@ -70,6 +70,9 @@ struct SeriesProductionDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// The share sheet and error state for this dashboard's exports (#790).
+    @State private var exportBox = SeriesExportBox()
+
     /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
     /// visit — a stale narrowed scope would misrepresent the whole-series story.
     @State private var scope = SeriesScope.whole
@@ -116,6 +119,7 @@ struct SeriesProductionDashboard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .seriesExportPresentation(exportBox)
     }
 
     // MARK: - Intro
@@ -166,7 +170,15 @@ struct SeriesProductionDashboard: View {
                           defaultValue: "Publication lag over time"),
             caption: String(localized: "series.chart.lag.caption",
                             defaultValue: "Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute)."),
-            inspector: ChartInspectorAdapters.lagTable(points)
+            inspector: ChartInspectorAdapters.lagTable(points),
+            provenance: SeriesAnalyticsExport.production(
+                figureTitle: String(localized: "series.chart.lag.title",
+                                    defaultValue: "Publication lag over time"),
+                axisLabel: String(localized: "series.export.axis.lag",
+                                  defaultValue: "By print year, lag in years"),
+                scopeLabel: scope.label, yearRange: yearStart...yearEnd,
+                volumeCount: entries.count),
+            figureHeight: 260
         ) {
             Chart {
                 ForEach(points) { point in
@@ -245,7 +257,15 @@ struct SeriesProductionDashboard: View {
                           defaultValue: "Volumes published per year"),
             caption: String(localized: "series.chart.peryear.caption",
                             defaultValue: "How many volumes reached print in each year, coloured by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication."),
-            inspector: ChartInspectorAdapters.perYearTable(buckets)
+            inspector: ChartInspectorAdapters.perYearTable(buckets),
+            provenance: SeriesAnalyticsExport.production(
+                figureTitle: String(localized: "series.chart.peryear.title",
+                                    defaultValue: "Volumes published per year"),
+                axisLabel: String(localized: "series.export.axis.perYear",
+                                  defaultValue: "By print year"),
+                scopeLabel: scope.label, yearRange: yearStart...yearEnd,
+                volumeCount: entries.count),
+            figureHeight: 240
         ) {
             Chart {
                 ForEach(buckets) { bucket in
@@ -294,7 +314,15 @@ struct SeriesProductionDashboard: View {
                           defaultValue: "Cumulative volumes published"),
             caption: String(localized: "series.chart.cumulative.caption",
                             defaultValue: "The digitized corpus has grown to the 552 volumes this app catalogs — steeply in some decades, slowly in others."),
-            inspector: ChartInspectorAdapters.cumulativeTable(points)
+            inspector: ChartInspectorAdapters.cumulativeTable(points),
+            provenance: SeriesAnalyticsExport.production(
+                figureTitle: String(localized: "series.chart.cumulative.title",
+                                    defaultValue: "Cumulative volumes published"),
+                axisLabel: String(localized: "series.export.axis.cumulative",
+                                  defaultValue: "By print year, running total"),
+                scopeLabel: scope.label, yearRange: yearStart...yearEnd,
+                volumeCount: entries.count),
+            figureHeight: 240
         ) {
             Chart {
                 ForEach(points) { point in
@@ -385,10 +413,20 @@ struct SeriesProductionDashboard: View {
     /// Thin binding of the shared `SeriesChartCard` to this dashboard's
     /// `inspectorData` sheet state. Extracted in #236 — the card body now lives in
     /// `SeriesChartCard.swift`.
+    /// A titled, captioned chart card with its D3 export control (#790).
+    ///
+    /// The `content` closure is used twice — once for the card and once, unchanged, as the plate
+    /// inside `AnalyticsFigureCanvas`. That is what keeps an exported figure identical to the one
+    /// on screen: there is no second rendering of the chart to drift.
+    ///
+    /// - Parameter figureHeight: The plate's chart area. It matches the height the closure applies
+    ///   to itself, so the exported figure is the same shape as the card's chart.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
+        provenance: AnalyticsProvenance,
+        figureHeight: CGFloat = 300,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         SeriesChartCard(
@@ -396,6 +434,14 @@ struct SeriesProductionDashboard: View {
             caption: caption,
             inspector: inspector,
             onInspect: { inspectorData = $0 },
+            controls: {
+                SeriesChartExportControl(
+                    table: inspector, provenance: provenance, box: exportBox,
+                    figure: { format in
+                        exportBox.deliverFigure(format, provenance: provenance,
+                                                chartHeight: figureHeight, chart: content)
+                    })
+            },
             content: content
         )
     }
