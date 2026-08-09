@@ -132,7 +132,7 @@ struct DataRecoveryView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "settings.dataRecovery.fixSync.message",
-                        defaultValue: "The local copy of your synced data is cleared and pulled down again. Nothing in iCloud is deleted, so nothing is lost — the app returns to onboarding while it restores. The clearing happens the next time the app starts, so you will need to quit and reopen it."))
+                        defaultValue: "This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, so nothing is lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it."))
         }
         // The reset is performed at the next launch, before any store is opened — the only moment
         // no connection is holding the files. Without this the button would appear to do nothing.
@@ -474,7 +474,7 @@ struct SchemaDeployStatusView: View {
                           defaultValue: "iCloud has to be told about each kind of record the app saves before it will accept one. Everything this version saves has been published, so nothing is being held back for this reason.")
         }
         return String(localized: "settings.dataRecovery.schema.about.pending",
-                      defaultValue: "iCloud has to be told about each kind of record the app saves before it will accept one, and some additions in this version have not been published yet. Records that use them will not upload until they are — everything else keeps syncing. This is a problem with the app, not with your account, and there is nothing to do from here except report it.")
+                      defaultValue: "iCloud has to be told about each kind of record the app saves before it will accept one. Some additions in this version have not been published yet. Records that use them will not upload until they are. Everything else keeps syncing. This is a problem with the app, not with your account. There is nothing you can do here except report it.")
     }
 
     /// The copyable report: the state, the marker, and the outstanding identifiers. Only names
@@ -531,7 +531,7 @@ struct BrokenReferencesReportView: View {
         Form {
             Section {
                 Text(String(localized: "settings.export.brokenRefs.footer",
-                            defaultValue: "The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline."))
+                            defaultValue: "Every cross-reference in the printed FRUS volumes that points to a document, page, or volume the corpus does not contain. The list covers the whole corpus. The CSV names each broken target once, not once for every occurrence. A fuller spreadsheet, with one row per occurrence and its source line number, is produced by a separate tool rather than in the app."))
                     .foregroundStyle(.secondary)
             } header: {
                 Text(String(localized: "settings.dataRecovery.reports.about", defaultValue: "About"))

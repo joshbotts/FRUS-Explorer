@@ -877,7 +877,7 @@ private struct CoverageFacetSheet: View {
     /// The explanatory footer, shared by both platform bodies.
     private var footerString: String {
         String(localized: "settings.scopes.facet.coverage.footer",
-               defaultValue: "Adds volumes whose document coverage intersects the years, optionally narrowed by editor. Leave both years blank to add by editor name alone. A year range does not match volumes that have no coverage dates in the manifest.")
+               defaultValue: "Adds volumes whose coverage overlaps the years you set. You can also narrow by editor. Leave both years blank to add by editor name alone. Volumes with no coverage dates in the manifest never match a year range.")
     }
 
     /// The add button's live label: match count, or an input prompt. A half-entered range

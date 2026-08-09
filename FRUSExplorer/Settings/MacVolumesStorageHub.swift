@@ -221,7 +221,7 @@ struct MacVolumesStorageHub: View {
         } message: {
             let volumes = HubCopy.volumes(storageReport?.perVolume.count ?? 0)
             Text(String(localized: "settings.hub.rebuild.message",
-                        defaultValue: "This deletes the entire search index — full-text rows, cross-references, page ranges, document dates, person mentions, and the document cache — then rebuilds it by re-parsing all \(volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately and are not affected."))
+                        defaultValue: "This deletes the whole search index: full-text rows, cross-references, page ranges, document dates, person mentions, and the document cache. It then rebuilds the index by re-parsing all \(volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately. They are not affected."))
         }
     }
 
@@ -1792,7 +1792,7 @@ private struct MacManageStorageSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(String(localized: "settings.hub.freeUp.estimateNote",
-                                defaultValue: "Sizes are the XML file plus an estimated 2.8× search-index contribution (measured across the full corpus: ~9–10 GB of index for ~3.4 GB of XML). Per-volume overhead ranges from roughly 2.5× to 3×, so treat these as approximate."))
+                                defaultValue: "Each size is the XML file plus an estimated 2.8× for its share of the search index. That ratio comes from the full corpus: about 9–10 GB of index for about 3.4 GB of XML. Per volume the overhead runs from roughly 2.5× to 3×, so treat these sizes as approximate."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

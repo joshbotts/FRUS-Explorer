@@ -1396,19 +1396,19 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.what.title",
                               defaultValue: "What the graph shows"),
                 body:  String(localized: "graph.info.what.body",
-                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document; orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus, and each arrow points at the document being cited.")
+                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.edges.title",
                               defaultValue: "Edge context"),
                 body:  String(localized: "graph.info.edges.body",
-                              defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared — hover over (or tap) the middle of a line to read it. Thicker lines mean the pair is linked by several separate references.")
+                              defaultValue: "Many lines carry the original footnote or editorial-note text where the reference appeared. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.timeline.title",
                               defaultValue: "Timeline and Network layouts"),
                 body:  String(localized: "graph.info.timeline.body",
-                              defaultValue: "Timeline places each document at its date along a time axis — documents this one cites usually sit to the left (earlier), documents citing it to the right (later). Documents without a recorded date park in the Undated column. Network uses a spring layout based purely on connections.")
+                              defaultValue: "Timeline places each document at its date along a time axis. Documents this one cites usually sit to the left, since they are earlier. Documents citing it sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network uses a spring layout, which arranges nodes by their connections alone.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
@@ -1426,7 +1426,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.undownloaded.title",
                               defaultValue: "Undownloaded volumes"),
                 body:  String(localized: "graph.info.undownloaded.body",
-                              defaultValue: "References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with a dashed border and a struck-through cloud icon; select one to download its volume directly from the info panel.\n\nReferences from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.")
+                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nReferences from volumes you have not indexed are not shown at all. Those volumes have never been parsed, so the app has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.")
             )
         }
         .padding(16)

@@ -144,7 +144,7 @@ struct SourceProvenanceDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.provenance.intro",
-                    defaultValue: "Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's central files until the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes."))
+                    defaultValue: "Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival base changed. The State Department's central files dominated almost completely until bureau lot files and presidential libraries appeared after the war. Modern volumes draw on a much wider range of sources."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -291,7 +291,7 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.trend.title",
                           defaultValue: "Archival provenance over time"),
             caption: String(localized: "series.provenance.trend.caption",
-                            defaultValue: "Each decade's source notes divided among the archival collections they cite, so every decade sums to 100%. Decades are set by each volume's coverage midpoint; the trend begins in 1900 because earlier volumes carry no archival source notes."),
+                            defaultValue: "Each decade's source notes divided among the archival collections they cite, so every decade totals 100%. A volume's decade is set by the midpoint of its coverage. The trend begins in 1900 because earlier volumes carry no archival source notes."),
             inspector: ChartInspectorAdapters.provenanceMixTable(shares),
             provenance: provenanceStatement(
                 figureTitle: String(localized: "series.provenance.trend.title",
@@ -353,7 +353,7 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.composition.title",
                           defaultValue: "Overall provenance composition"),
             caption: String(localized: "series.provenance.composition.caption",
-                            defaultValue: "How many source notes across the whole series (from 1900) cite each kind of archival collection. The Central Decimal File dwarfs the rest — most published FRUS documents came from the State Department's own central filing."),
+                            defaultValue: "How many source notes across the whole series, from 1900 on, cite each kind of archival collection. The Central Decimal File dwarfs the rest. Most published FRUS documents came from the State Department's own central filing."),
             inspector: ChartInspectorAdapters.compositionTable(composition),
             provenance: provenanceStatement(
                 figureTitle: String(localized: "series.provenance.composition.title",
@@ -408,7 +408,7 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.density.title",
                           defaultValue: "The documentary base by decade"),
             caption: String(localized: "series.provenance.density.caption",
-                            defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base. Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. Those decades will look different as new volumes are released."),
+                            defaultValue: "How many source notes each decade contributes. These are the counts behind the shares above. The 1940s carry the deepest base. Volumes covering the 1970s, 1980s, and 1990s are still in production, so those decades will look different as new volumes are released."),
             inspector: ChartInspectorAdapters.densityTable(density),
             provenance: provenanceStatement(
                 figureTitle: String(localized: "series.provenance.density.title",
@@ -464,13 +464,13 @@ struct SourceProvenanceDashboard: View {
                 // New key (.v2): the zero-decade sentence changed this string's meaning
                 // when the review pass made gap decades collapse to zero (1.5).
                 Text(String(localized: "series.provenance.caveats.filtered.v2",
-                            defaultValue: "Some categories are hidden — the shares shown are re-based to the shown categories, not the full mix. A decade with no notes in any shown category collapses to zero rather than being skipped. Use the Categories menu above to show all."))
+                            defaultValue: "Some categories are hidden. Each share below is a share of the categories still shown, not of all source notes. A decade with no notes in any shown category reads as zero rather than being skipped. Use the Categories menu above to show them all."))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.provenance.caveats.body",
-                        defaultValue: "These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. \"Other / Unclassified\" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1963 central filing system; the Central Foreign Policy File its post-1963 successor; lot files were maintained by individual bureaus, offices, and posts; and presidential libraries hold the White House records that dominate modern volumes. Remember that these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives."))
+                        defaultValue: "These figures come from parsing each document's source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. \"Other / Unclassified\" means a citation the parser could not classify, not a missing source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. Those early retrospective compilations are left out of the charts. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system, and the Central Foreign Policy File is its post-1963 successor. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors drew their documents. That is an editorial and archival signal, not a full census of the underlying archives."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

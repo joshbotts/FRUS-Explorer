@@ -346,7 +346,7 @@ struct CollectionDetailView: View {
                         defaultValue: "Related Collections"))
         } footer: {
             Text(String(localized: "collection.detail.related.footer",
-                        defaultValue: "Cited alongside this collection in the same volumes' source lists — ranked by overlap coefficient to damp umbrella records. Volume-grain: shared volumes co-fed one compilation, not document-level affinity."))
+                        defaultValue: "These collections appear alongside this one in the same volumes' source lists. Ranking uses the overlap coefficient, so a broad umbrella record does not dominate. The link is at volume level: both collections fed the same compilation. It does not mean the same documents cite both."))
         }
     }
 

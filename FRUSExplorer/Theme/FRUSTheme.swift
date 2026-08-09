@@ -185,11 +185,11 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
                     detail: String(localized: "analytics.info.multiword.body",
-                                   defaultValue: "Words separated by spaces are combined with AND: national security matches documents containing both words. OR (either term) and NOT / leading - (exclude a term) work too, exactly as in the Search box.")),
+                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term. All of this works exactly as it does in the Search box.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body",
-                                   defaultValue: "Wrap words in quotes for an ordered phrase: \"missile crisis\" matches only documents where those words appear together, in that order. Analytics and Search interpret the same query identically, so the counts here match what Search returns.")),
+                                   defaultValue: "Wrap words in quotes for an ordered phrase. \"missile crisis\" matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
                     detail: String(localized: "analytics.info.stemming.body",
@@ -197,7 +197,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
                     detail: String(localized: "analytics.info.dating.body",
-                                   defaultValue: "Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. Documents lacking month or day precision are excluded from the By Month and By Day charts.")),
+                                   defaultValue: "Each document sits at its TEI <date> attribute, the date it was written, not the volume's publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")),
             ]
         )
     }
@@ -211,11 +211,11 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "personAnalytics.info.shows.detail",
-                                   defaultValue: "Trends ranks the people most mentioned in an era, as tagged by FRUS editors, and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.")),
+                                   defaultValue: "Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is mentioned across FRUS documents over time. Network maps who is named alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.counting.title", defaultValue: "How people are counted"),
                     detail: String(localized: "personAnalytics.info.counting.detail",
-                                   defaultValue: "Counts are mentions of a person across indexed documents, grouped by the app's person authority so spelling variants, honorifics, and name forms for the same individual merge into one identity rather than splitting into several.")),
+                                   defaultValue: "Counts are mentions of a person across the documents you have indexed. The app's person authority groups them, so spelling variants, honorifics, and different name forms for one individual merge into a single identity instead of splitting into several.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.compare.title", defaultValue: "Comparing people"),
                     detail: String(localized: "personAnalytics.info.compare.detail",
@@ -233,23 +233,23 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "archival.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "archival.info.shows.detail.v2",
-                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file classes each era's volumes drew on. Network puts one collection at the centre and arranges everything co-cited with it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
+                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file classes each era's volumes drew on. Network puts one collection at the centre and groups everything cited alongside it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.weights.title", defaultValue: "Documents and volumes count different things"),
                     detail: String(localized: "archival.info.weights.detail",
-                                   defaultValue: "Documents counts how many published documents came out of a collection; Volumes counts how many volumes drew on it at all. A collection can supply a thousand documents to five volumes, or six hundred to ninety-eight. Both lists are correct, and switching the weight changes the order — and sometimes the membership, because a collection named only in a volume's front matter has volumes but no documents.")),
+                                   defaultValue: "Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. A collection can supply a thousand documents to five volumes, or six hundred to ninety-eight. Both lists are correct. Switching the weight changes the order, and sometimes which collections appear at all. A collection named only in a volume's front matter has volumes but no documents.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.umbrella.title", defaultValue: "Why Central Files is hidden"),
                     detail: String(localized: "archival.info.umbrella.detail",
-                                   defaultValue: "The State Department's Central Files are cited by 157 volumes and supply more than seventeen thousand documents — over twice the next-largest collection. Its bar would flatten every other one, so it is hidden by default and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
+                                   defaultValue: "The State Department's Central Files are cited by 157 volumes and supply more than seventeen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.flows.title", defaultValue: "A flow is an editor's footnote, not an archive's"),
                     detail: String(localized: "archival.info.flows.detail",
-                                   defaultValue: "About 95% of the references behind the Flows mode are footnotes. A ribbon says the editors, annotating material from one collection, sent the reader to material from another — it does not say the two archives cite each other. Coverage is also uneven, and that is itself a finding: only 254 of the 552 volumes carry any of these references, because the cross-reference style they are harvested from postdates 1945.")),
+                                   defaultValue: "About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding. Only 254 of the 552 volumes carry any of these references, because the cross-reference style they come from postdates 1945.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.units.title", defaultValue: "Collections and classes are different things"),
                     detail: String(localized: "archival.info.units.detail",
-                                   defaultValue: "A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. They are never mixed in one ranking. Before 1948 the series cites classes far more than collections; after 1976 it barely cites classes at all.")),
+                                   defaultValue: "A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. The two are never mixed in one ranking. Before 1948 the series cites classes far more than collections. After 1976 it barely cites classes at all.")),
             ]
         )
     }
@@ -263,15 +263,15 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "crossRefAnalytics.info.shows.detail",
-                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents; the heat matrix shows citation flow between whole volumes; landmarks are the documents a citation-following reader keeps returning to. Remember that FRUS editorial practices around cross-referencing have evolved over time. Subseries or administration-level scoping will carry a more consistent signal than broader scopes that reflect more diverse editorial practices.")),
+                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broad scope, which mixes several editorial practices.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.matrix.title", defaultValue: "Reading the heat matrix"),
                     detail: String(localized: "crossRefAnalytics.info.matrix.detail",
-                                   defaultValue: "Rows cite columns — a darker cell means the row's volume cites the column's volume more often. Column labels are a short code of the volume's years and number (e.g. '55–57 II); hover, or use VoiceOver, for the full title on either axis.")),
+                                   defaultValue: "Rows cite columns. A darker cell means the row's volume cites the column's volume more often. Column labels are a short code of the volume's years and number, such as '55–57 II. Hover over a label, or use VoiceOver, for the full title on either axis.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.influence.title", defaultValue: "About the influence score"),
                     detail: String(localized: "crossRefAnalytics.info.influence.detail",
-                                   defaultValue: "Landmark documents are ranked by an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.")),
+                                   defaultValue: "Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is not a claim of historical importance.")),
             ]
         )
     }

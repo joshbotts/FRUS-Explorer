@@ -59,7 +59,7 @@ struct WorkingCorporaView: View {
 
                 Section {
                     Text(String(localized: "corpora.footer",
-                                defaultValue: "A working corpus is a fixed set of documents, captured once. It syncs to your other devices whole, so a count taken inside it means the same thing everywhere — even where fewer of its volumes are indexed."))
+                                defaultValue: "A working corpus is a fixed set of documents, captured once. The whole set syncs to your other devices. A count taken inside it therefore means the same thing on every device, even where fewer of its volumes are indexed."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -1303,7 +1303,7 @@ struct EraseEverythingView: View {
                 // collision. The retention is stated too: a promise with an unlisted exception is
                 // the fault this screen keeps repeating.
                 Text(String(localized: "settings.erase.warning.inventory",
-                            defaultValue: "This deletes every downloaded volume, the search index, and all of your research notes, projects, tags, collections, highlights, and AI-generated summaries — plus your saved searches, working corpora, custom volume scopes, project leads, and any person-identity corrections you have made — along with your whole research trail: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
+                            defaultValue: "This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
                     .foregroundStyle(.secondary)
             } header: {
                 Text(String(localized: "settings.erase.header", defaultValue: "What This Removes"))
@@ -1490,7 +1490,7 @@ struct SyncSettingsSection<Leading: View>: View {
 
     private var footerText: Text {
         Text(String(localized: "settings.sync.footer",
-                    defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
+                    defaultValue: "When this is on, the device shares the settings above with your other devices that also have it on. Turning it on adopts the settings already in iCloud. Leave it off to keep this device's settings separate."))
     }
 }
 
@@ -1671,10 +1671,10 @@ struct DisplaySettingsView: View {
             } footer: {
                 if isPhone {
                     Text(String(localized: "settings.display.reading.footer.iphone",
-                                defaultValue: "The Research rail opens as a bottom sheet from the toolbar's Research button — it is never shown automatically, so it can't cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed."))
+                                defaultValue: "The Research rail opens as a bottom sheet from the toolbar's Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed."))
                 } else {
                     Text(String(localized: "settings.display.reading.footer",
-                                defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail in a side panel beside the document; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document."))
+                                defaultValue: "\"Remember Last\" reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document."))
                 }
             }
 

@@ -455,7 +455,7 @@ struct PersonAnalyticsView: View {
             valueMode: valueMode,
             extraCaveats: [
                 String(localized: "personAnalytics.export.caveat.dated",
-                       defaultValue: "Population: person mentions are counted over DATED documents only — unlike the Corpus Analytics charts, no volume-start-year fallback is applied, so absolute counts are not directly comparable between the two views."),
+                       defaultValue: "Population: person mentions are counted in dated documents only. The Corpus Analytics charts fall back to the volume's start year for undated documents; these charts do not. Counts from the two views are therefore not directly comparable."),
                 String(localized: "personAnalytics.export.caveat.identity",
                        defaultValue: "Identity: mentions are grouped by the app's person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity."),
             ] + extra
@@ -474,7 +474,7 @@ struct PersonAnalyticsView: View {
     private var decadeShareCaveat: [String] {
         guard byDecade, isNormalized else { return [] }
         return [String(localized: "personAnalytics.export.caveat.decadeShare",
-                       defaultValue: "Decade shares: a decade's plotted share is the MEAN of the yearly shares for the years in which this person was mentioned. Years with no mentions are omitted from that average rather than counted as zero, while the \"Dated documents in period\" column sums every year of the decade. Dividing this file's columns therefore gives the decade's own share, which can be far LOWER than the plotted value — a person mentioned in only one year of a decade plots that year's share for the whole decade. Use the columns for the decade's share and the plotted value for the mentioned years' average; they answer different questions.")]
+                       defaultValue: "Decade shares: the share plotted for a decade is the average of the yearly shares for the years this person was mentioned. Years with no mentions are dropped from that average rather than counted as zero. The \"Dated documents in period\" column, by contrast, sums every year of the decade. So dividing this file's columns gives the decade's own share, which can be far lower than the plotted value. Someone mentioned in one year of a decade plots that single year's share for the whole decade. Use the columns for the decade's share and the plotted value for the average across the mentioned years. They answer different questions.")]
     }
 
     /// The period grain label for the trajectory/relationship charts.

@@ -191,8 +191,9 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
         return String(localized: "source.explorer.presLib.offline.candidates",
                       defaultValue: """
                       The collection is identified. The series named in the citation matches \
-                      \(candidates.count) of its records — \(shown) shown below — so none of \
-                      them is the answer on its own. Check the titles and dates before citing.
+                      \(candidates.count) of its records, and \(shown) of those are listed \
+                      below. No single record is the answer on its own, so check the titles \
+                      and dates before citing.
                       """)
     }
 

@@ -390,7 +390,7 @@ struct BackgroundSummarizationSettingsView: View {
             // hide per-call turnaround when the machine is busy — which is the case a background
             // run is by definition in.
             Text(String(localized: "bg.summarizer.concurrency.hint.v2",
-                        defaultValue: "Apple Intelligence generates one summary at a time, so a higher number does not speed up the model itself. It helps when your Mac is busy with other work, and it makes the first summary take longer to appear."))
+                        defaultValue: "Apple Intelligence generates one summary at a time, so a higher number does not make the model faster. It helps when your Mac is busy with other work. It also makes the first summary take longer to appear."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             #if os(iOS)

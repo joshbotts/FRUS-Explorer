@@ -548,7 +548,7 @@ struct WordCloudView: View {
         case .lensNotPriced(let lens):
             detail = String(format: String(
                 localized: "wordcloud.keyness.unavailable.lens %@",
-                defaultValue: "The “%@” lens has no corpus reference. Names of people, places and organizations aren’t counted corpus-wide, so there is no baseline to compare them with. Switch to another lens, or size words by frequency."),
+                defaultValue: "The “%@” lens has no corpus reference. Names of people, places, and organizations are not counted across the whole corpus, so there is nothing to compare this scope against. Switch to another lens, or size words by frequency."),
                 lens.label)
         case .configurationMismatch(let mismatches):
             detail = String(format: String(
@@ -665,7 +665,7 @@ struct WordCloudView: View {
             // counts words that pass the lens gate, so this total — and every share computed from
             // it — describes that lens's vocabulary, not the scope's whole text.
             String(format: String(localized: "wordcloud.export.caveat.population %lld %lld %@",
-                                  defaultValue: "Population: counts cover the %lld document(s) this scope resolved to. The share column's denominator is %lld — every word counted under the \"%@\" lens after all of the filters below. It is not the scope's total word count, and shares from two different lenses are not comparable."),
+                                  defaultValue: "Population: these counts cover the %lld document(s) in this scope. The share column divides by %lld, which is every word counted under the \"%@\" lens after the filters below. That is not the scope's total word count. Shares from two different lenses cannot be compared."),
                    Int64(result.documentCount), Int64(result.totalTokenCount), lens.label),
             String(format: String(localized: "wordcloud.export.caveat.stopwords %@ %@",
                                   defaultValue: "Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@."),
@@ -696,13 +696,13 @@ struct WordCloudView: View {
         }
         if globalStops + lensStops > 0 {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.stopLists %lld %lld %@",
-                                                 defaultValue: "Your stop lists: %lld word(s) on your global hidden-word list and %lld on your list for the \"%@\" lens were removed before counting, so they appear neither in this table nor in its denominator. Both lists are editable in Settings → Word Cloud."),
+                                                 defaultValue: "Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the \"%@\" lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
                                   Int64(globalStops), Int64(lensStops), lens.label))
         }
         if let ranking {
             caveats.append(String(format: String(
                 localized: "wordcloud.export.caveat.keyness %lld %lld %@",
-                defaultValue: "Keyness: each word is scored against a bundled reference of the whole FRUS corpus (%lld of that corpus's %lld distinct words for this lens, generated %@). Only words used MORE here than corpus-wide are listed; a word used conspicuously less is a real finding this table does not carry."),
+                defaultValue: "Keyness: each word is scored against a built-in reference for the whole FRUS corpus. That reference covers %lld of the corpus's %lld distinct words for this lens, and was generated %@. Only words used more here than in the corpus are listed. A word this scope conspicuously avoids is a real finding, and this table does not carry it."),
                 Int64(ranking.referenceRetained), Int64(ranking.referenceDistinct),
                 ranking.generated ?? String(localized: "common.unknown", defaultValue: "unknown")))
             caveats.append(ranking.rankedAmongTopFrequent
@@ -717,7 +717,7 @@ struct WordCloudView: View {
             if ranking.referenceCutoffCount > 1 {
                 caveats.append(String(format: String(
                     localized: "wordcloud.export.caveat.keyness.cutoff %lld",
-                    defaultValue: "Reference coverage: the reference prices words occurring at least %lld times corpus-wide. A rarer word is UNPRICED, not absent, and is scored as though the corpus never used it — treat a high score on a rare word with care."),
+                    defaultValue: "Reference coverage: the reference counts only words occurring at least %lld times across the corpus. A rarer word is marked unpriced rather than absent. It is scored as though the corpus never used it. Treat a high score on a rare word with care."),
                     Int64(ranking.referenceCutoffCount)))
             }
         }
@@ -1080,12 +1080,12 @@ struct WordCloudView: View {
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.measure.title", defaultValue: "Frequency vs. Distinctive"),
                         detail: String(localized: "wordcloud.info.measure.detail",
-                                       defaultValue: "Frequency sizes each word by how often it appears here — which tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a bundled reference of the whole corpus and sizes each word by how much MORE it is used here than across the series, using log-likelihood keyness, the corpus-linguistics standard. It lists only words used more here than corpus-wide; a word this scope conspicuously avoids is a real finding it does not show. Words occurring fewer than three times here are never ranked, because one or two mentions can top a keyness list without saying anything about the documents.")),
+                                       defaultValue: "Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a built-in reference for the whole corpus. It sizes each word by how much more it is used here than across the series. The measure is log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus. A word this scope conspicuously avoids is a real finding, and it will not appear. Words occurring fewer than three times here are never ranked. One or two mentions can top a keyness list without telling you anything about the documents.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.keyness.numbers.title",
                                       defaultValue: "Reading the Distinctive list"),
                         detail: String(localized: "wordcloud.info.keyness.numbers.detail",
-                                       defaultValue: "Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²) — the strength of the evidence that the difference is real — and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume produces larger scores than a short collection for the same effect; when you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely corpus-wide to be counted in the reference, so its multiple is an upper bound.")),
+                                       defaultValue: "Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²). It measures how strong the evidence is that the difference is real, and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume scores higher than a short collection for the same effect. When you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely across the corpus to be counted in the reference, so its multiple is an upper bound.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.lenses.title", defaultValue: "Lenses"),
                         detail: String(localized: "wordcloud.info.lenses.detail",
@@ -1093,7 +1093,7 @@ struct WordCloudView: View {
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.filters.title", defaultValue: "What's filtered out"),
                         detail: String(localized: "wordcloud.info.filters.detail",
-                                       defaultValue: "Common stopwords are always removed. A word's menu can hide it just from this cloud (temporary — it comes back next time), or add it to your hidden-word lists (globally or per lens) that you manage in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.")),
+                                       defaultValue: "Common stopwords are always removed. A word's own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.tap.title", defaultValue: "Tapping a word"),
                         detail: String(localized: "wordcloud.info.tap.detail",

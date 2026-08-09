@@ -334,9 +334,9 @@ struct QueryMethodAppendix: Sendable, Equatable {
         if unrecordedRowCount > 0 {
             caveats.append(unrecordedRowCount == 1
                 ? String(localized: "appendix.caveat.unrecorded.one",
-                         defaultValue: "One search predates this app version and recorded only a result count, with no record of the scope, the ceiling, or how many volumes were indexed. It is marked \"as reported\" and cannot be checked against the others.")
+                         defaultValue: "One search predates this app version. It saved only a result count — not the scope, the row ceiling, or how many volumes were indexed. It is marked \"as reported\" and cannot be checked against the others.")
                 : String(localized: "appendix.caveat.unrecorded.many %lld",
-                         defaultValue: "\(unrecordedRowCount) searches predate this app version and recorded only a result count, with no record of the scope, the ceiling, or how many volumes were indexed. They are marked \"as reported\" and cannot be checked against the others."))
+                         defaultValue: "\(unrecordedRowCount) searches predate this app version. They saved only a result count — not the scope, the row ceiling, or how many volumes were indexed. They are marked \"as reported\" and cannot be checked against the others."))
         }
         return caveats
     }

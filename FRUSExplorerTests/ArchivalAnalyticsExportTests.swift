@@ -103,7 +103,7 @@ struct ArchivalAnalyticsExportTests {
                     band: ArchivalEraBand.all[2], lens: lens, weight: weight,
                     hiddenUmbrella: nil, unitsReached: 5, bandVolumeCount: 64,
                     indexedVolumeCount: 5)
-                #expect(statement.extraCaveats.contains { $0.contains("different populations") },
+                #expect(statement.extraCaveats.contains(ArchivalAnalyticsExport.weightCaveat),
                         "\(lens.title)/\(weight.title) omits the weight caveat")
                 #expect(statement.countingUnit == weight.title,
                         "the unit is a fact about every figure and must be stated")
@@ -178,7 +178,8 @@ struct ArchivalAnalyticsExportTests {
         #expect(csv.hasPrefix("#"), "the method must precede the numbers, not follow them")
         #expect(csv.contains("Whitman File"), "the table itself must survive the stamping")
         #expect(csv.contains("Archival unit,Custodian,Documents"))
-        #expect(csv.contains("different populations"), "the weight caveat reaches the file")
+        #expect(csv.contains(ArchivalAnalyticsExport.weightCaveat),
+                "the weight caveat reaches the file")
         // The one line that must NOT be there.
         #expect(!csv.contains("TEI"), """
             The dating caveat reached an archival CSV. Nothing on this surface reads a document \

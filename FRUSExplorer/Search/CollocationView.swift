@@ -250,7 +250,7 @@ struct CollocationView: View {
         case .noNeighboursAboveFloor(let minimum):
             detail = String(format: String(
                 localized: "search.collocation.unavailable.floor %lld",
-                defaultValue: "No word appears at least %lld times near your matches. A word occurring once or twice can top a ranking without saying anything about the documents, so nothing is ranked. Widening the window, or a broader search, will give it more to read."),
+                defaultValue: "No word appears at least %lld times near your matches. A word used once or twice can top a ranking while telling you nothing about the documents, so nothing is ranked. Widen the window or run a broader search to give this more text to read."),
                 Int64(minimum))
         case .nothingDistinctive:
             detail = String(localized: "search.collocation.unavailable.nothingDistinctive",
