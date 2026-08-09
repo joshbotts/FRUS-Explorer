@@ -674,6 +674,47 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - ProvenanceFlowIndexGenerator
+
+        /// Builds `provenance-flow-index.json` (#764) — the archival units FRUS's editors sent
+        /// readers *between* when they cross-referenced one document from another, aggregated to
+        /// collection-to-collection and class-to-class pairs.
+        ///
+        /// Reuses the validator's `RefHarvester` + `CrossRefGrammar` for the references and the
+        /// export generator's parse/authority/class surfaces for each document's archival unit, so
+        /// an edge here is an edge there and a unit here is a unit in collection-usage-index.json.
+        /// Entirely offline & deterministic; throws rather than writing an empty index.
+        .target(
+            name: "ProvenanceFlowIndexGeneratorCore",
+            dependencies: [
+                .target(name: "SourceNoteKit"),
+                .target(name: "GeneratorKit"),
+                .target(name: "CrossRefKit"),
+                .target(name: "CrossRefValidationGeneratorCore"),
+                .target(name: "CollectionAuthorityGeneratorCore"),
+                .target(name: "SourceExplorerExportGeneratorCore"),
+            ],
+            path: "ProvenanceFlowIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls ProvenanceFlowIndexRunner.run() and exits.
+        .executableTarget(
+            name: "ProvenanceFlowIndexGenerator",
+            dependencies: [.target(name: "ProvenanceFlowIndexGeneratorCore")],
+            path: "ProvenanceFlowIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit + fixture tests for ProvenanceFlowIndexGeneratorCore (the document-id inventory,
+        /// the edge join, the same-unit accounting, determinism, and the empty-result refusal).
+        .testTarget(
+            name: "ProvenanceFlowIndexGeneratorTests",
+            dependencies: [.target(name: "ProvenanceFlowIndexGeneratorCore")],
+            path: "ProvenanceFlowIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - CollectionUsageIndexGenerator
 
         /// Builds `collection-usage-index.json` (#763) — document-grain usage counts for the
