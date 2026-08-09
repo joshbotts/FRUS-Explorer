@@ -95,15 +95,19 @@ public actor CrossReferenceStore {
         volumeId: String,
         downloadedVolumeIds: Set<String>
     ) throws -> CrossReferenceGraph {
-        let inbound  = try inboundEdges(forDocumentId: documentId, volumeId: volumeId)
+        let local    = try inboundEdges(forDocumentId: documentId, volumeId: volumeId)
         let outbound = try outboundEdges(forDocumentId: documentId, volumeId: volumeId)
 
-        // `hasUndownloadedSources`: true when any inbound edge originates from a volume
-        // that is absent from the caller's downloaded set. In the common case every edge
-        // comes from an indexed (and therefore downloaded) volume, so this is normally
-        // false. It can be true when the DB was seeded externally or when a volume was
-        // de-indexed after its edges were written.
-        let hasUndownloaded = inbound.contains { !downloadedVolumeIds.contains($0.sourceVolumeId) }
+        // #262: complete the inbound half from the bundled corpus-wide index. Without it the
+        // answer to "what cites this?" was a function of what the reader happened to have
+        // downloaded, and the flag below could never fire for the case it was written for —
+        // an edge from a volume you do not have was not in the table to be flagged.
+        let inbound = Self.completingInboundEdges(
+            local: local, documentId: documentId, volumeId: volumeId, index: resolvedEdgeIndex)
+        let undownloadedCiting = inbound
+            .filter { !downloadedVolumeIds.contains($0.sourceVolumeId) }
+            .map(\.sourceVolumeId)
+        let hasUndownloaded = !undownloadedCiting.isEmpty
 
         var meta: [String: CrossReferenceNodeMetadata] = [:]
 
@@ -133,8 +137,46 @@ public actor CrossReferenceStore {
             inboundEdges: inbound,
             outboundEdges: outbound,
             hasUndownloadedSources: hasUndownloaded,
-            nodeMetadata: meta
+            nodeMetadata: meta,
+            undownloadedCitingVolumeIds: Set(undownloadedCiting).sorted()
         )
+    }
+
+    /// The local inbound edges, plus every cross-volume citation the bundled index knows about
+    /// that the local table does not already hold.
+    ///
+    /// A local edge always wins: it carries the context text and the real reference type, which
+    /// the bundled index does not store. The completion only adds pairs, never replaces one.
+    ///
+    /// The synthesised edges are typed `.footnote`, and that is a deliberate approximation rather
+    /// than a guess: 95.3% of document-to-document references in the corpus are an editor's
+    /// annotation, and the index stores the footnote count per target instead of a flag per edge.
+    /// Any surface that distinguishes the two must read `ResolvedEdgeIndex.footnoteSourceCount`
+    /// rather than trusting an individual synthesised edge's type.
+    ///
+    /// `nonisolated` and `static` so it is a pure function of its inputs, testable without a
+    /// database.
+    nonisolated static func completingInboundEdges(
+        local: [CrossReferenceEdge],
+        documentId: String,
+        volumeId: String,
+        index: ResolvedEdgeIndex?
+    ) -> [CrossReferenceEdge] {
+        guard let index else { return local }
+        var seen = Set(local.map { "\($0.sourceVolumeId)/\($0.sourceDocumentId)" })
+        var result = local
+        for source in index.inboundSources(volumeId: volumeId, documentId: documentId) {
+            let key = "\(source.volumeId)/\(source.documentId)"
+            guard seen.insert(key).inserted else { continue }
+            result.append(CrossReferenceEdge(
+                sourceDocumentId: source.documentId,
+                sourceVolumeId: source.volumeId,
+                targetDocumentId: documentId,
+                targetVolumeId: volumeId,
+                context: nil,
+                referenceType: .footnote))
+        }
+        return result
     }
 
     /// Builds a multi-degree ego graph centred on a single document.
@@ -350,6 +392,12 @@ public actor CrossReferenceStore {
         }
         return result
     }
+
+    /// The bundled corpus-wide citation index, or `nil` when it failed to load — in which case
+    /// the graph falls back to the local table alone, which is what shipped before #262.
+    ///
+    /// Read through a property rather than the store directly so a test can substitute a fixture.
+    var resolvedEdgeIndex: ResolvedEdgeIndex? { ResolvedEdgeIndexStore.shared }
 
     /// Returns all edges whose target is `(documentId, volumeId)`.
     public func inboundEdges(

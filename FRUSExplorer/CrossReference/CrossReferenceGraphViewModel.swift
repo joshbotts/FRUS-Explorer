@@ -574,6 +574,17 @@ final class CrossReferenceGraphViewModel {
     // MARK: - Derived
 
     var hasUndownloadedSources: Bool { graph?.hasUndownloadedSources ?? false }
+
+    /// Volumes citing the central document that the reader has not downloaded (#262), sorted.
+    var undownloadedCitingVolumeIds: [String] { graph?.undownloadedCitingVolumeIds ?? [] }
+
+    /// How many citing documents live in those volumes — the figure the banner leads with,
+    /// because it is what tells the reader how much is missing rather than merely that some is.
+    var undownloadedCitingCount: Int {
+        guard let graph else { return 0 }
+        let missing = Set(graph.undownloadedCitingVolumeIds)
+        return graph.inboundEdges.count { missing.contains($0.sourceVolumeId) }
+    }
     var centralKey: String { "\(centralVolumeId)/\(centralDocumentId)" }
 
     // MARK: - Public API

@@ -706,6 +706,46 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - ResolvedEdgeIndexGenerator
+
+        /// Builds `resolved-edge-index.json` (#262) — every CROSS-VOLUME document-to-document
+        /// citation in the shippable corpus, grouped by the document cited, so inbound-citation
+        /// views are complete even when the citing volume was never downloaded.
+        ///
+        /// Reuses the validator's RefHarvester + CrossRefGrammar and #764's DocumentIdInventory,
+        /// so an edge here is an edge there. Same-volume edges are deliberately excluded: the
+        /// local `cross_references` table already holds every one of them whenever the reader can
+        /// see the document at all. Entirely offline & deterministic; throws rather than writing
+        /// an empty index.
+        .target(
+            name: "ResolvedEdgeIndexGeneratorCore",
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "CrossRefKit"),
+                .target(name: "CrossRefValidationGeneratorCore"),
+                .target(name: "ProvenanceFlowIndexGeneratorCore"),
+            ],
+            path: "ResolvedEdgeIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls ResolvedEdgeIndexRunner.run() and exits.
+        .executableTarget(
+            name: "ResolvedEdgeIndexGenerator",
+            dependencies: [.target(name: "ResolvedEdgeIndexGeneratorCore")],
+            path: "ResolvedEdgeIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit + fixture tests for ResolvedEdgeIndexGeneratorCore (the same-volume exclusion, the
+        /// endpoint interning, determinism, and the empty-result refusal).
+        .testTarget(
+            name: "ResolvedEdgeIndexGeneratorTests",
+            dependencies: [.target(name: "ResolvedEdgeIndexGeneratorCore")],
+            path: "ResolvedEdgeIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Unit + fixture tests for ProvenanceFlowIndexGeneratorCore (the document-id inventory,
         /// the edge join, the same-unit accounting, determinism, and the empty-result refusal).
         .testTarget(

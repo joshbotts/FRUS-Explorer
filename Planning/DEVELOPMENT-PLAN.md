@@ -3527,3 +3527,59 @@ reading the code as a renderer would execute it. Both new wiring tests exist bec
 
 **Verification.** 37 tests in 3 suites; six assert against the shipped artifacts. A 27-mutant
 sweep covers both derivations and the two view invariants.
+
+---
+
+## Session 2026-08-09 — #262: inbound citations stop depending on what you downloaded
+
+**The defect.** `cross_references` holds only the edges harvested from volumes the reader has
+**indexed**. So the inbound half of every citation graph was a function of the library: a reader
+with ten volumes was shown the citations from those ten and told nothing about the rest. The
+graph's `hasUndownloadedSources` flag could not help — its own comment said it "is normally
+false", because an edge from a volume you do not have was never in the table to be flagged. The
+banner it drove hedged accordingly: "Some volumes that **may** reference this document have not
+been downloaded."
+
+**The artifact is 281 KB, not the "big artifact" the issue expected.** #262 sized it from the
+validator's ~2.70M resolved references. Two filters remove three orders of magnitude, and both
+are properties of the question rather than compression:
+
+1. **Document-to-document only.** Of 2,713,592 references, 181,807 sit inside a document div (so
+   they have a source document at all) and 77,792 resolve to a document div in a shippable
+   volume. The rest are page anchors, index entries, and targets outside the manifest.
+2. **Cross-volume only.** 69,164 of those 77,792 are same-volume — and if you can see a document
+   you have its volume, so the local table already holds every one. Shipping them again would
+   duplicate `cross_references` and be merged as duplicate arrows.
+
+What remains is exactly the set that is *structurally* unreachable locally: **8,628 edges into
+5,740 documents from 184 volumes.**
+
+**Design decisions worth their comments.** Grouped by target, because the question is always
+"what cites this document". Endpoints are two-level `(volume, document)` indices so a document id
+is stored once per volume rather than once per edge. The footnote share is a **per-target scalar,
+not a per-edge flag**: 95.3% of these references are an editor's annotation, so the scalar says
+the honest thing at half the size — and the merge documents that a synthesised edge's
+`referenceType` is therefore an approximation, with `footnoteSourceCount` as the number to trust.
+The artifact carries **no titles or dates**: those live in the volume's TEI, and a surface built
+on this may say how many documents cite one and which volumes they are in, never what they are.
+
+**The merge is additive and local always wins.** `completingInboundEdges` adds only pairs the
+local table lacks; a local edge keeps its context text and its real reference type. With no
+index, the function is the identity — which is exactly what shipped before.
+
+**The banner can finally say what it knows.** It now reads "N documents in M volumes you have not
+downloaded also cite this one", naming a real count instead of a hedge, and
+`undownloadedCitingVolumeIds` carries the list so a future affordance can offer the downloads.
+
+**Two process notes, both cheap and both caught something.**
+- The generator's fixtures used `volume:anchor` for a cross-volume reference; the grammar wants
+  `volume#anchor`. Four tests failed loudly — but one, the phantom-target rejection, had
+  *passed* on the broken syntax for the wrong reason (it threw "no edges" because nothing
+  resolved at all, not because the index-entry anchor was rejected). Fixing the syntax is what
+  made it a real test.
+- The new app test file ran **zero tests** until `xcodegen generate` enrolled it. `TEST SUCCEEDED`
+  with "Executed 0 tests" is the quietest possible green.
+
+**Verification.** 7 generator tests, 10 app tests across 2 suites. Four assert against the shipped
+artifact, including that its funnel matches the number #764 reports from the same harvester — two
+artifacts disagreeing about the corpus would mean one of them reads it differently.
