@@ -472,14 +472,29 @@ struct AdministrationProfilesData: Sendable {
         // One administration's contribution under the active scope. Whole-series scope
         // uses the pre-aggregated counts directly; a subseries scope re-sums the
         // per-volume breakdown over the in-scope volumes only.
+        //
+        // The volume count follows `includeEditorialNotes` (#791). It did not until then: a
+        // volume whose only tie to an administration was a range-dated editorial note was
+        // counted as covering it even with the toggle off — the state the dashboard's own
+        // caveats call "the firmer point-dated data". Measured on the shipped artifact, 14 of
+        // the 26 populated administrations were affected and the series total fell from 879 to
+        // 856, so the volumes-per-administration-year chart read high for more than half of them
+        // while the toggle above it promised to govern "every count and proportion".
+        //
+        // The artifact has shipped `volumeCountPointOnly` for exactly this since SA-2a and
+        // nothing read it. The two branches agree by construction — verified on the shipped
+        // artifact, every administration's per-volume rows reproduce both of its scalars exactly.
         func contribution(_ admin: AdministrationProfile) -> (point: Int, range: Int, volumeCount: Int) {
             guard let scope = scopeVolumeIds else {
-                return (admin.pointDocCount, admin.rangeDocCount, admin.volumeCount)
+                return (admin.pointDocCount, admin.rangeDocCount,
+                        includeEditorialNotes ? admin.volumeCount : admin.volumeCountPointOnly)
             }
             let inScope = admin.volumes.filter { scope.contains($0.volumeId) }
             let point = inScope.reduce(0) { $0 + $1.pointDocs }
             let range = inScope.reduce(0) { $0 + $1.rangeDocs }
-            let vCount = inScope.reduce(0) { $0 + (($1.pointDocs > 0 || $1.rangeDocs > 0) ? 1 : 0) }
+            let vCount = inScope.reduce(0) {
+                $0 + (($1.pointDocs > 0 || (includeEditorialNotes && $1.rangeDocs > 0)) ? 1 : 0)
+            }
             return (point, range, vCount)
         }
 

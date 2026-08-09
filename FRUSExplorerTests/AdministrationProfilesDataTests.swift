@@ -128,6 +128,103 @@ struct AdministrationProfilesDataTests {
         #expect(on.includesEditorialNotes == true)
     }
 
+    // MARK: The editorial-notes toggle reaches the volume count (#791)
+
+    /// An index where the two volume counts differ — the shape every other fixture here lacks.
+    ///
+    /// `delta` covers four volumes, but one of them (`volD`) ties to it only through a
+    /// range-dated editorial note. With the toggle off that volume is not evidence the
+    /// administration is covered, so the count is three.
+    private func editorialNotesFixture() -> AdministrationProfilesIndex {
+        AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-08-09",
+            totalDocumentsPointDated: 30, totalDocumentsRangeDated: 6,
+            totalDocumentsUndated: 0, volumesCovered: 4,
+            administrations: [
+                AdministrationProfile(
+                    id: "delta", number: 50, president: "Dana Delta", party: "Democratic",
+                    start: "1970-01-01", end: "1972-01-01",
+                    pointDocCount: 30, rangeDocCount: 6,
+                    volumeCount: 4, volumeCountPointOnly: 3,
+                    coverageEarliest: 1970, coverageLatest: 1972,
+                    volumes: [
+                        AdministrationVolume(volumeId: "volA", pointDocs: 10, rangeDocs: 2),
+                        AdministrationVolume(volumeId: "volB", pointDocs: 10, rangeDocs: 2),
+                        AdministrationVolume(volumeId: "volC", pointDocs: 10, rangeDocs: 0),
+                        // The one that only an editorial note ties to this administration.
+                        AdministrationVolume(volumeId: "volD", pointDocs: 0, rangeDocs: 2),
+                    ]
+                ),
+            ],
+            volumeTotals: [
+                "volA": VolumeTotals(pointDocs: 10, rangeDocs: 2, undatedDocs: 0),
+                "volB": VolumeTotals(pointDocs: 10, rangeDocs: 2, undatedDocs: 0),
+                "volC": VolumeTotals(pointDocs: 10, rangeDocs: 0, undatedDocs: 0),
+                "volD": VolumeTotals(pointDocs: 0, rangeDocs: 2, undatedDocs: 0),
+            ])
+    }
+
+    @Test("The volume count follows the editorial-notes toggle, whole-series")
+    func volumeCountFollowsTheToggle() throws {
+        // #791. Before the fix this chart read `volumeCount` unconditionally, so a volume tied to
+        // an administration only by a range-dated editorial note counted toward it even with the
+        // toggle off — the state the dashboard's own caveats call "the firmer point-dated data".
+        // Measured on the shipped artifact, 14 of 26 populated administrations were affected and
+        // the series total fell from 879 to 856.
+        let index = editorialNotesFixture()
+
+        let excluded = AdministrationProfilesData(index: index, includeEditorialNotes: false)
+        let withoutNotes = try #require(excluded.profiles.first)
+        #expect(withoutNotes.volumeCount == 3, """
+            With editorial notes excluded the volume count is \(withoutNotes.volumeCount). volD \
+            reaches this administration only through a range-dated note, so it is not evidence \
+            of coverage under the point-dated reading.
+            """)
+
+        let included = AdministrationProfilesData(index: index, includeEditorialNotes: true)
+        let withNotes = try #require(included.profiles.first)
+        #expect(withNotes.volumeCount == 4)
+        #expect(withNotes.volumesPerAdministrationYear
+                > withoutNotes.volumesPerAdministrationYear, """
+                The volumes-per-year figure did not move with the toggle. That ratio is the whole \
+                chart #791 was about, and the toggle's own subtitle promises it governs every \
+                count and proportion.
+                """)
+    }
+
+    @Test("A scoped volume count follows the toggle the same way")
+    func scopedVolumeCountFollowsTheToggle() throws {
+        // The scoped path re-sums the per-volume rows rather than reading the scalars, so it is a
+        // second implementation of the same rule and can drift from the first.
+        let index = editorialNotesFixture()
+        let scope: Set<String> = ["volC", "volD"]
+
+        let excluded = AdministrationProfilesData(index: index, includeEditorialNotes: false,
+                                                  scopeVolumeIds: scope)
+        #expect(try #require(excluded.profiles.first).volumeCount == 1,
+                "only volC carries a point-dated document in scope")
+
+        let included = AdministrationProfilesData(index: index, includeEditorialNotes: true,
+                                                  scopeVolumeIds: scope)
+        #expect(try #require(included.profiles.first).volumeCount == 2)
+    }
+
+    @Test("The scoped and unscoped paths agree when the scope is everything")
+    func scopedAndUnscopedAgree() throws {
+        // The two branches read different fields — the scalars versus the per-volume rows — so
+        // nothing but a test keeps them saying the same thing.
+        let index = editorialNotesFixture()
+        let everything: Set<String> = ["volA", "volB", "volC", "volD"]
+        for toggle in [false, true] {
+            let unscoped = AdministrationProfilesData(index: index, includeEditorialNotes: toggle)
+            let scoped = AdministrationProfilesData(index: index, includeEditorialNotes: toggle,
+                                                    scopeVolumeIds: everything)
+            #expect(try #require(unscoped.profiles.first).volumeCount
+                    == (try #require(scoped.profiles.first).volumeCount),
+                    "the two paths disagree with editorial notes \(toggle ? "on" : "off")")
+        }
+    }
+
     // MARK: volumesPerAdministrationYear
 
     @Test("AdministrationProfilesData: volumesPerAdministrationYear = volumeCount / termYears")

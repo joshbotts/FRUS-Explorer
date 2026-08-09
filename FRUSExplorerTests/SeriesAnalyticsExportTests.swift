@@ -107,8 +107,7 @@ struct SeriesAnalyticsExportTests {
                 hiddenCategories: []),
             SeriesAnalyticsExport.administration(
                 figureTitle: "Documents per administration", axisLabel: "A", scopeLabel: nil,
-                yearRange: 1861...2026, volumeCount: 552, includesEditorialNotes: false,
-                affectedByEditorialNotes: true),
+                yearRange: 1861...2026, volumeCount: 552, includesEditorialNotes: false),
         ]
     }
 
@@ -191,7 +190,7 @@ struct SeriesAnalyticsExportTests {
     func administrationCorrectsItsControls() {
         let statement = SeriesAnalyticsExport.administration(
             figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: 1945...1976,
-            volumeCount: 552, includesEditorialNotes: false, affectedByEditorialNotes: true)
+            volumeCount: 552, includesEditorialNotes: false)
         let text = statement.extraCaveats.joined(separator: " ")
         // The year control filters which presidents appear; it never re-counts documents. A
         // preamble printing "1945–1976" without this reads as "documents in those years".
@@ -200,25 +199,25 @@ struct SeriesAnalyticsExportTests {
         #expect(text.contains("not mutually exclusive"))
     }
 
-    @Test("A figure the editorial-notes toggle does not reach says so, rather than inheriting it")
-    func toggleClaimIsPerFigure() {
-        // #791: the volumes-per-year chart counts range-dated-only volumes whatever the toggle
-        // says, while the toggle's subtitle promises it affects "every count and proportion".
-        // The export must not repeat a claim that is false of the figure it is stamping.
-        let affected = SeriesAnalyticsExport.administration(
+    @Test("The editorial-notes setting is stated, in whichever state it is in")
+    func toggleStateIsStated() {
+        // Until #791 this builder took a second parameter, because the volumes-per-year chart
+        // ignored the toggle its own subtitle promised to obey and the export had to say so.
+        // With the chart fixed, one sentence is true of both figures — and it now also names the
+        // consequence for the volume count, which is the part that had been silently wrong.
+        let excluded = SeriesAnalyticsExport.administration(
             figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: 1861...2026,
-            volumeCount: 552, includesEditorialNotes: false, affectedByEditorialNotes: true)
-        #expect(affected.extraCaveats.contains { $0.contains("excluded") })
+            volumeCount: 552, includesEditorialNotes: false)
+        #expect(excluded.extraCaveats.contains { $0.contains("Editorial notes: excluded") })
+        #expect(excluded.extraCaveats.contains { $0.contains("only tie to an administration") },
+                "the export must say that excluding notes also withholds volumes")
 
-        let unaffected = SeriesAnalyticsExport.administration(
+        let included = SeriesAnalyticsExport.administration(
             figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: 1861...2026,
-            volumeCount: 552, includesEditorialNotes: false, affectedByEditorialNotes: false)
-        #expect(unaffected.extraCaveats.contains { $0.contains("unaffected by the editorial-notes") },
-                """
-                The volumes-per-year figure inherited the toggle's claim. Its numbers do not \
-                respond to the setting, so stating "Editorial notes: excluded" would be false.
-                """)
-        #expect(!unaffected.extraCaveats.contains { $0.hasPrefix("Editorial notes: excluded") })
+            volumeCount: 552, includesEditorialNotes: true)
+        #expect(included.extraCaveats.contains { $0.contains("Editorial notes: included") })
+        #expect(!included.extraCaveats.contains { $0.contains("unaffected by the editorial-notes") },
+                "that sentence described a defect #791 fixed and must not survive it")
     }
 
     @Test("The delivered CSV carries the preamble above the table")

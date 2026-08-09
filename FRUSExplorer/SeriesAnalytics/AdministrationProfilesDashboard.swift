@@ -286,8 +286,7 @@ struct AdministrationProfilesDashboard: View {
                                   defaultValue: "By administration, documents"),
                 scopeLabel: scope.label, yearRange: yearStart...yearEnd,
                 volumeCount: data.volumesCovered,
-                includesEditorialNotes: includeEditorialNotes,
-                affectedByEditorialNotes: true),
+                includesEditorialNotes: includeEditorialNotes),
             figureHeight: 320
         ) {
             Chart {
@@ -348,11 +347,7 @@ struct AdministrationProfilesDashboard: View {
                                   defaultValue: "By administration, volumes per term-year"),
                 scopeLabel: scope.label, yearRange: yearStart...yearEnd,
                 volumeCount: data.volumesCovered,
-                includesEditorialNotes: includeEditorialNotes,
-                // This chart's volume count includes range-dated documents whatever the toggle
-                // says (its denominator is a term length, not a document count), so it must not
-                // inherit the toggle's claim. See #791.
-                affectedByEditorialNotes: false),
+                includesEditorialNotes: includeEditorialNotes),
             figureHeight: 320
         ) {
             Chart {
