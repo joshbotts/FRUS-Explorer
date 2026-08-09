@@ -3318,3 +3318,52 @@ mints phantom nodes. And `RefHarvester` gained note-depth tracking — six lines
 Same-unit flows are stored, not dropped. They are 56% of the joined collection references; the
 design excludes them from display, and an artifact that had already dropped them could not disclose
 what the exclusion removed.
+
+---
+
+## Session 2026-08-08 — footnote citations: assessed, and a live count contained
+
+The owner asked whether the archival analytics could extend past cross-references between
+*printed* documents to editorial footnotes citing archival documents FRUS did **not** print. The
+assessment is §7.9 of the plan. The answer is yes, narrower than it sounds — and looking for it
+surfaced something already shipping.
+
+**The material is real and reaches the era nothing else does.** 502,601 editorial footnotes,
+~66,500 carrying a well-formed archival citation. Against the `#dN` cross-reference idiom's **7 /
+0 / 0** references for the 1910s / 1920s / 1930s, footnote citations give **640 / 523 / 1,183** —
+verbatim, `(file No. 711.684/11)` and `(811.114 Guatemala/90)`. §7.8 had just established that the
+flow matrix is empty before 1945; this is the only thing that fills it.
+
+**But it is ~37% novel, not ~80%.** The 80% figure is document grain. At *volume* grain — what the
+analytics actually consume — it is 36.2% for lots and 37.8% for classes.
+
+**And it is only safe for two of the three units.** Lots and library+collection: 0 false positives
+in 80 read samples. Subject-numeric: **87.2% out-of-vocabulary** at the strictest gate — `A10` is a
+newspaper page, `CF 341` a Conference-File folder, `NSDD 104` a directive. The parser says why in
+its own comment: a bare `PRC nn` candidate "is already unreachable from citation scans, which are
+sentence-bounded". **The exclusion list is calibrated to the bound.** Remove the bound to read
+footnote prose and the reasoning behind it is void, so footnote text needs an anchor-first grammar
+of its own and must never route through `decimalClassLocation`.
+
+**What this session actually fixed.** Editorial-note body citations were already being written into
+`document_sources` with `citation_era = "footnote"` — and every provenance query over that table
+counts rows without filtering the era. `localCollectionStats` is one of them, so **"N documents in
+M of your indexed volumes cite this collection"** — the In Your Library line #762 sits directly
+above — was blending two different claims: documents *drawn from* an archive, and documents whose
+editor merely *mentioned* one. Bounded at ~2,026 rows across 8,700 editorial-note documents, and
+the same code kept only `citations.first`, discarding ~1,182 of the 3,208 citations it found.
+
+**Contained by removal, not by filtering.** The obvious fix — add a `citation_era` predicate to the
+provenance queries — has twelve call sites and therefore twelve chances to miss one. Instead the
+write is gone, and a one-shot `DELETE ... WHERE citation_era = 'footnote'` in the schema pass
+repairs an already-built index on its next open. No reindex, no query to review, nothing to miss.
+The capability is wanted; the storage was wrong — `document_sources` has a primary key of
+(volume_id, document_id), one row per document, and cannot hold the several archives a footnote may
+cite.
+
+**Both tests were verified against the pre-fix code**, not just against the fix: restoring the old
+write and removing the cleanup makes each fail with `documentCount → 2` — the exact inflation a
+user would have seen. The first version of the write-path test passed in both directions, because
+its fixture cited a bare lot number and `extractCitations` matches only "National Archives, RG N…"
+and "<Name> Library, <collection>…". **A fixture that does not trigger the code under test proves
+nothing about it** — the same lesson as the tie-break naming, in a different costume.

@@ -3818,22 +3818,20 @@ public actor IndexingPipeline {
             return sourceRow
         }
 
-        // Extract embedded archival citations from editorial note body text.
-        let footnoteSourceRows: [DocumentSourceRow] = cacheRows.compactMap { row in
-            guard row.isEditorialNote, !row.bodyText.isEmpty else { return nil }
-            let citations = sourceNoteParser.extractCitations(from: row.bodyText)
-            guard let first = citations.first else { return nil }
-            return DocumentSourceRow(
-                volumeId: volumeId,
-                documentId: row.documentId,
-                repository: first.repository,
-                recordGroup: first.recordGroup,
-                lotFile: first.lotFile,
-                seriesName: first.seriesName,
-                citationEra: "footnote",
-                rawText: first.rawText
-            )
-        }
+        // NOTE (2026-08-08): editorial-note body citations are deliberately NOT written here
+        // any more. They used to land in `document_sources` with `citation_era = "footnote"`,
+        // and every provenance query over that table counts rows without filtering the era —
+        // `localCollectionStats`, the archival-neighbour clauses, the search facet's provenance
+        // section. So "N documents in M of your indexed volumes cite this collection" was
+        // blending two different claims: documents *drawn from* an archive, and documents whose
+        // editor *mentioned* one in a footnote. The table cannot hold both, for a structural
+        // reason as well as a semantic one: its primary key is (volume_id, document_id), one row
+        // per document, while a footnote may cite several archives — the old code kept
+        // `citations.first` and dropped the rest (measured: 1,182 of 3,208 discarded).
+        //
+        // The capability is wanted; the storage was wrong. It returns in its own table, keyed to
+        // allow many citations per document and never counted as provenance. See
+        // `Planning/Archival-Analytics-Feasibility.md` §7.9.
 
         // Volume-level sources from front-matter (parsed by SourcesParserDelegate).
         let volumeSourceRows: [VolumeSourceRow] = fullResult.volumeSources
@@ -3867,7 +3865,7 @@ public actor IndexingPipeline {
             personMentions: personMentionRows,
             persons: personRows,
             terms: termRows,
-            documentSources: documentSourceRows + footnoteSourceRows,
+            documentSources: documentSourceRows,
             volumeSources: volumeSourceRows,
             structureJSON: structureJSON
         )
@@ -5079,6 +5077,15 @@ public actor IndexingPipeline {
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot_norm ON document_sources(lot_file_norm)")
         // Source Explorer Phase 3 verification: class-leaf equality/prefix lookups
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_class ON document_sources(decimal_class)")
+
+        // One-shot cleanup for indexes built before 2026-08-08, when editorial-note body
+        // citations were written here as `citation_era = 'footnote'`. Every provenance query
+        // over this table counts rows without filtering the era, so those rows inflated
+        // "N documents cite this collection" with documents that merely *mention* an archive in
+        // a footnote. Deleting them here rather than filtering at twelve call sites means an
+        // existing index is corrected on the next open, with no reindex and no query to miss.
+        // Cheap and idempotent: the rows are gone after the first run, and none are written now.
+        try exec("DELETE FROM document_sources WHERE citation_era = 'footnote'")
 
         // Session 170: volume_sources rewritten to a prose + collection-outline model
         // (kind / depth / is_heading), and the primary key changed from
