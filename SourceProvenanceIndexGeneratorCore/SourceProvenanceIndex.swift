@@ -16,6 +16,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — SA-3a (Session 2026-07-04): initial implementation
+///   2.0 — Session 2026-08-08 (#267): adds `byVolume`, the per-volume breakdown the runner
+///          already accumulated and discarded. `byDecade` is unchanged and still authoritative
+///          for the whole series
 public struct SourceProvenanceIndex: Codable, Sendable, Equatable {
 
     /// One coverage decade's provenance breakdown.
@@ -39,6 +42,32 @@ public struct SourceProvenanceIndex: Codable, Sendable, Equatable {
         }
     }
 
+    /// One volume's provenance breakdown (schema 2, #267).
+    ///
+    /// The decade axis is *derived* from this: every volume belongs to exactly one coverage
+    /// decade, so a decade bucket is the sum of its volumes and any subset of volumes rolls up
+    /// exactly. That is what makes true subseries scope possible on a dashboard whose data is
+    /// otherwise pre-aggregated — the Session-3 decision was to withhold the scope control rather
+    /// than fake it against a decade×category table, and this is the table that ends the trade.
+    public struct VolumeBucket: Codable, Sendable, Equatable {
+        /// The manifest volume id.
+        public let volumeId: String
+        /// The volume's coverage decade — the bucket it contributes to.
+        public let decade: Int
+        /// Total source notes parsed in this volume.
+        public let totalNotes: Int
+        /// Per-category note counts, keyed by `ProvenanceCategory.rawValue`; zeros omitted.
+        public let counts: [String: Int]
+
+        /// Creates a volume bucket.
+        public init(volumeId: String, decade: Int, totalNotes: Int, counts: [String: Int]) {
+            self.volumeId = volumeId
+            self.decade = decade
+            self.totalNotes = totalNotes
+            self.counts = counts
+        }
+    }
+
     /// The artifact schema version.
     public let schemaVersion: Int
     /// The generation date stamp (`yyyy-MM-dd`).
@@ -51,16 +80,22 @@ public struct SourceProvenanceIndex: Codable, Sendable, Equatable {
     public let categories: [String]
     /// The per-decade breakdown, sorted ascending by `decade`.
     public let byDecade: [DecadeBucket]
+    /// The per-volume breakdown, sorted ascending by `volumeId` (schema 2, #267). Optional so a
+    /// schema-1 file still decodes; `byDecade` remains the whole-series answer and is *not*
+    /// derived from this at read time, so the unscoped dashboard is byte-for-byte unchanged.
+    public let byVolume: [VolumeBucket]?
 
     /// Creates a source-provenance index.
     public init(schemaVersion: Int, generated: String, totalSourceNotes: Int,
-                volumesCovered: Int, categories: [String], byDecade: [DecadeBucket]) {
+                volumesCovered: Int, categories: [String], byDecade: [DecadeBucket],
+                byVolume: [VolumeBucket]? = nil) {
         self.schemaVersion = schemaVersion
         self.generated = generated
         self.totalSourceNotes = totalSourceNotes
         self.volumesCovered = volumesCovered
         self.categories = categories
         self.byDecade = byDecade
+        self.byVolume = byVolume
     }
 }
 

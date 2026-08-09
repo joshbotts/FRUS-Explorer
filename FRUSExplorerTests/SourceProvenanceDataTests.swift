@@ -231,9 +231,13 @@ struct SourceProvenanceDataTests {
         )
         let data = try Data(contentsOf: url)
         let index = try JSONDecoder().decode(SourceProvenanceIndex.self, from: data)
-        #expect(index.schemaVersion == 1)
+        #expect(index.schemaVersion == 2, "schema 2 adds byVolume (#267)")
+        // Unchanged across the schema-2 regeneration, which is the evidence that adding the
+        // per-volume table was additive: the same scan, one more view of it.
         #expect(index.totalSourceNotes == 268757)
         #expect(index.volumesCovered == 522)
+        #expect(index.byVolume?.count == 522,
+                "schema 2 must carry one row per covered volume; got \(index.byVolume?.count ?? -1)")
         #expect(index.byDecade.count == 16, "SA-3a ships 16 coverage decades; got \(index.byDecade.count)")
         #expect(index.categories.count == 10)
 

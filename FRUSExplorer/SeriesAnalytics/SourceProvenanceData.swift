@@ -24,8 +24,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   2.0 — Session 2026-08-08 (#267): mirrors artifact schema 2's `byVolume`
 struct SourceProvenanceIndex: Codable, Sendable {
-    /// The artifact schema version (currently `1`).
+    /// The artifact schema version (`2` since #267; `1` files still decode).
     let schemaVersion: Int
     /// The generation date (`yyyy-MM-dd`), for provenance display.
     let generated: String
@@ -38,6 +39,52 @@ struct SourceProvenanceIndex: Codable, Sendable {
     let categories: [String]
     /// Per-decade aggregates, ascending by decade.
     let byDecade: [DecadeProvenance]
+    /// Per-volume aggregates, ascending by volume id (schema 2, #267). **Optional on purpose:**
+    /// a schema-1 artifact still decodes, and the dashboard withholds its scope control rather
+    /// than scoping against data it does not have — which is the Session-3 decision, preserved as
+    /// the fallback rather than replaced by an approximation.
+    let byVolume: [VolumeProvenance]?
+
+    /// Memberwise initializer with `byVolume` defaulted, so a schema-1 fixture stays a one-line
+    /// construction. Written out rather than synthesized because the synthesized one would make
+    /// the new field required at every existing call site.
+    init(schemaVersion: Int, generated: String, totalSourceNotes: Int, volumesCovered: Int,
+         categories: [String], byDecade: [DecadeProvenance],
+         byVolume: [VolumeProvenance]? = nil) {
+        self.schemaVersion = schemaVersion
+        self.generated = generated
+        self.totalSourceNotes = totalSourceNotes
+        self.volumesCovered = volumesCovered
+        self.categories = categories
+        self.byDecade = byDecade
+        self.byVolume = byVolume
+    }
+}
+
+// MARK: - VolumeProvenance
+
+/// One volume's provenance aggregate (schema 2, #267).
+///
+/// Every volume belongs to exactly one coverage decade, so a decade bucket is the sum of its
+/// volumes — which means any subset of volumes rolls up to an *exact* decade table rather than an
+/// approximated one. That is the whole reason this exists.
+///
+/// Version history:
+///   1.0 — Session 2026-08-08 (#267)
+struct VolumeProvenance: Codable, Sendable {
+    /// The manifest volume id.
+    let volumeId: String
+    /// The volume's coverage decade.
+    let decade: Int
+    /// Total source notes parsed in this volume.
+    let totalNotes: Int
+    /// Category-raw-key → note count. Zero-count categories are omitted.
+    let counts: [String: Int]
+
+    /// The note count for a category, treating an omitted key as `0`.
+    func count(for category: SourceProvenanceCategory) -> Int {
+        counts[category.rawValue] ?? 0
+    }
 }
 
 // MARK: - DecadeProvenance
@@ -283,6 +330,11 @@ struct SourceProvenanceData: Sendable {
     /// *exactly* from counts rather than rescaling the pre-divided shares (#236).
     let shownDecadeCategoryCounts: [Int: [SourceProvenanceCategory: Int]]
 
+    /// Whether the artifact carries the per-volume table a real subseries scope needs (#267).
+    /// `false` for a schema-1 artifact, and the dashboard then shows no scope control at all —
+    /// the Session-3 position, which was that an approximated scope is worse than none.
+    let supportsVolumeScope: Bool
+
     // MARK: Init
 
     /// Computes every derived collection and statistic from the decoded index.
@@ -292,8 +344,13 @@ struct SourceProvenanceData: Sendable {
     /// `trendStartDecade` are floored out and their notes counted into
     /// `prewarExcludedNoteCount`.
     ///
-    /// - Parameter index: The decoded `source-provenance-index.json`, or `nil`.
-    init(index: SourceProvenanceIndex?) {
+    /// - Parameters:
+    ///   - index: The decoded `source-provenance-index.json`, or `nil`.
+    ///   - scopeVolumeIds: Volume ids to restrict every figure to, or `nil` for the whole series
+    ///     (#267). Honoured only when the artifact carries `byVolume`; a narrowing scope against a
+    ///     schema-1 artifact would have to be approximated, so it is ignored and
+    ///     ``supportsVolumeScope`` reports `false` so the caller can withhold the control.
+    init(index: SourceProvenanceIndex?, scopeVolumeIds: Set<String>? = nil) {
         guard let index else {
             shareByDecade = []
             overallComposition = []
@@ -304,17 +361,31 @@ struct SourceProvenanceData: Sendable {
             prewarExcludedNoteCount = 0
             shownNoteCount = 0
             shownDecadeCategoryCounts = [:]
+            supportsVolumeScope = false
             return
         }
 
-        totalSourceNotes = index.totalSourceNotes
-        volumesCovered = index.volumesCovered
+        supportsVolumeScope = index.byVolume != nil
+
+        // A narrowing scope re-derives the decade table from the volumes in it. Unscoped, the
+        // artifact's own `byDecade` is used verbatim rather than re-summed from `byVolume`: the
+        // two agree (an artifact test pins that), and using the stated aggregate keeps the
+        // whole-series dashboard byte-identical to what shipped before this change.
+        let scopedVolumes = index.byVolume.flatMap { volumes -> [VolumeProvenance]? in
+            guard let scopeVolumeIds else { return nil }
+            return volumes.filter { scopeVolumeIds.contains($0.volumeId) }
+        }
+        let decades = scopedVolumes.map(Self.rollUp) ?? index.byDecade
+
+        totalSourceNotes = scopedVolumes.map { $0.reduce(0) { $0 + $1.totalNotes } }
+            ?? index.totalSourceNotes
+        volumesCovered = scopedVolumes.map { $0.count } ?? index.volumesCovered
 
         // Partition decades at the trend-start floor.
-        let shownDecades = index.byDecade
+        let shownDecades = decades
             .filter { $0.decade >= Self.trendStartDecade }
             .sorted { $0.decade < $1.decade }
-        let excludedDecades = index.byDecade
+        let excludedDecades = decades
             .filter { $0.decade < Self.trendStartDecade }
 
         prewarExcludedNoteCount = excludedDecades.reduce(0) { $0 + $1.totalNotes }
@@ -378,6 +449,31 @@ struct SourceProvenanceData: Sendable {
         } else {
             decadeRangeShown = nil
         }
+    }
+
+    /// Sums a set of volumes into the decade table their counts imply.
+    ///
+    /// Exact, not approximate: a volume contributes to exactly one decade, so no note is split or
+    /// double-counted, and `volumeCount` is the number of in-scope volumes rather than a
+    /// proportion of the whole-series figure.
+    ///
+    /// - Parameter volumes: The in-scope volume aggregates.
+    /// - Returns: Decade aggregates, ascending by decade. Empty when `volumes` is empty.
+    static func rollUp(_ volumes: [VolumeProvenance]) -> [DecadeProvenance] {
+        var totals: [Int: (notes: Int, volumes: Int, counts: [String: Int])] = [:]
+        for volume in volumes {
+            var bucket = totals[volume.decade] ?? (0, 0, [:])
+            bucket.notes += volume.totalNotes
+            bucket.volumes += 1
+            for (category, count) in volume.counts {
+                bucket.counts[category, default: 0] += count
+            }
+            totals[volume.decade] = bucket
+        }
+        return totals
+            .map { DecadeProvenance(decade: $0.key, totalNotes: $0.value.notes,
+                                    volumeCount: $0.value.volumes, counts: $0.value.counts) }
+            .sorted { $0.decade < $1.decade }
     }
 
     // MARK: Year-range filtering

@@ -49,6 +49,11 @@ import Charts
 ///          state is voiced (the icon-swapped Buttons read identically under
 ///          VoiceOver); the last shown category's items disable instead of the tap
 ///          silently dead-ending
+///   1.6 — Session 2026-08-08 (#267): the subseries scope bar the other three "About the
+///          Series" dashboards already carry. Session 3 withheld it because the bundled
+///          aggregate was decade × category and a scope would have had to be approximated;
+///          schema 2 adds the per-volume table, so the narrowing is now exact. The bar is
+///          still withheld — not approximated — if the artifact lacks that table
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -74,16 +79,26 @@ struct SourceProvenanceDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
-    /// Provenance categories hidden from the mix + composition charts (#236). The
-    /// bundled aggregate is decade × category only — no volume/subseries dimension —
-    /// so this category include/exclude filter is the one narrowing the data supports;
-    /// shares renormalize over the shown categories. `@State`, resets per visit.
+    /// Provenance categories hidden from the mix + composition charts (#236). Shares
+    /// renormalize over the shown categories. `@State`, resets per visit.
     @State private var hiddenCategories: Set<SourceProvenanceCategory> = []
 
-    /// The pure derivation driving every chart, built from the bundled aggregate
-    /// (empty/zeroed when `AppState` or the resource is absent).
+    /// The active subseries scope (#267). `@State`, resets per visit like the sibling
+    /// dashboards — re-opening on a stale narrowed scope would misrepresent the series.
+    @State private var scope = SeriesScope.whole
+
+    /// The manifest entries the scope bar derives its subseries menu from: the diff's known set
+    /// when a live refresh has happened, else the bundled set, else empty.
+    private var entries: [VolumeManifestEntry] {
+        guard let store = appState?.manifestStore else { return [] }
+        return store.diffResult?.known ?? store.bundledEntries
+    }
+
+    /// The pure derivation driving every chart, over the in-scope volumes (empty/zeroed when
+    /// `AppState` or the resource is absent).
     private var data: SourceProvenanceData {
-        SourceProvenanceData(index: appState?.sourceProvenanceStore.index)
+        SourceProvenanceData(index: appState?.sourceProvenanceStore.index,
+                             scopeVolumeIds: scope.volumeIds)
     }
 
     /// `true` on compact-width (iPhone); always `false` on macOS / regular-width.
@@ -100,6 +115,14 @@ struct SourceProvenanceDashboard: View {
                 emptyState
             } else {
                 intro
+                // Withheld rather than approximated when the artifact predates #267's
+                // per-volume table — the Session-3 position, kept as the fallback.
+                if data.supportsVolumeScope {
+                    SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                        yearStart = SeriesChartKind.floorYear
+                        yearEnd = Self.defaultEnd
+                    })
+                }
                 yearRangeBar
                 categoryFilterBar
                 mixOverTimeChart

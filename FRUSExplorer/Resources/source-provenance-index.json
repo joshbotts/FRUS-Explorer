@@ -69,12 +69,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 30730,
+        "centralDecimalFile" : 30881,
         "namedFileSeries" : 636,
         "naraCollection" : 34,
         "presidentialLibrary" : 4,
-        "previouslyPublished" : 118,
-        "unrecognized" : 521
+        "previouslyPublished" : 153,
+        "unrecognized" : 335
       },
       "decade" : 1910,
       "totalNotes" : 32043,
@@ -82,10 +82,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 13122,
+        "centralDecimalFile" : 13156,
         "namedFileSeries" : 19,
-        "previouslyPublished" : 154,
-        "unrecognized" : 117
+        "previouslyPublished" : 165,
+        "unrecognized" : 72
       },
       "decade" : 1920,
       "totalNotes" : 13412,
@@ -93,9 +93,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 40370,
-        "previouslyPublished" : 59,
-        "unrecognized" : 361
+        "centralDecimalFile" : 40379,
+        "presidentialLibrary" : 7,
+        "previouslyPublished" : 265,
+        "unrecognized" : 139
       },
       "decade" : 1930,
       "totalNotes" : 40790,
@@ -103,14 +104,14 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 63853,
+        "centralDecimalFile" : 63906,
         "intelligence" : 198,
-        "lotFile" : 2630,
-        "namedFileSeries" : 3604,
+        "lotFile" : 2678,
+        "namedFileSeries" : 3597,
         "naraCollection" : 161,
-        "presidentialLibrary" : 170,
-        "previouslyPublished" : 3,
-        "unrecognized" : 1160
+        "presidentialLibrary" : 444,
+        "previouslyPublished" : 67,
+        "unrecognized" : 728
       },
       "decade" : 1940,
       "totalNotes" : 71779,
@@ -118,15 +119,15 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 31995,
+        "centralDecimalFile" : 32305,
         "foreignArchive" : 21,
-        "intelligence" : 575,
-        "lotFile" : 7297,
-        "namedFileSeries" : 1112,
-        "naraCollection" : 466,
-        "presidentialLibrary" : 3467,
-        "previouslyPublished" : 6,
-        "unrecognized" : 2033
+        "intelligence" : 576,
+        "lotFile" : 7060,
+        "namedFileSeries" : 1118,
+        "naraCollection" : 468,
+        "presidentialLibrary" : 3396,
+        "previouslyPublished" : 32,
+        "unrecognized" : 1996
       },
       "decade" : 1950,
       "totalNotes" : 46972,
@@ -134,15 +135,15 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 7120,
+        "centralDecimalFile" : 7474,
         "foreignArchive" : 11,
-        "intelligence" : 1236,
-        "lotFile" : 2509,
-        "namedFileSeries" : 30,
-        "naraCollection" : 4507,
-        "presidentialLibrary" : 8432,
+        "intelligence" : 1241,
+        "lotFile" : 2246,
+        "namedFileSeries" : 107,
+        "naraCollection" : 4568,
+        "presidentialLibrary" : 8271,
         "previouslyPublished" : 30,
-        "unrecognized" : 581
+        "unrecognized" : 508
       },
       "decade" : 1960,
       "totalNotes" : 24456,
@@ -151,15 +152,15 @@
     {
       "counts" : {
         "centralDecimalFile" : 160,
-        "centralForeignPolicyFile" : 2458,
+        "centralForeignPolicyFile" : 2465,
         "foreignArchive" : 20,
         "intelligence" : 684,
-        "lotFile" : 1102,
-        "namedFileSeries" : 27,
-        "naraCollection" : 4760,
-        "presidentialLibrary" : 14199,
-        "previouslyPublished" : 95,
-        "unrecognized" : 3164
+        "lotFile" : 1067,
+        "namedFileSeries" : 295,
+        "naraCollection" : 4771,
+        "presidentialLibrary" : 14214,
+        "previouslyPublished" : 115,
+        "unrecognized" : 2878
       },
       "decade" : 1970,
       "totalNotes" : 26669,
@@ -167,19 +168,5851 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 30,
-        "centralForeignPolicyFile" : 673,
+        "centralDecimalFile" : 31,
+        "centralForeignPolicyFile" : 674,
         "foreignArchive" : 20,
         "intelligence" : 82,
-        "lotFile" : 1105,
+        "lotFile" : 1063,
+        "namedFileSeries" : 176,
         "naraCollection" : 135,
-        "presidentialLibrary" : 2007,
+        "presidentialLibrary" : 2043,
         "previouslyPublished" : 57,
-        "unrecognized" : 298
+        "unrecognized" : 126
       },
       "decade" : 1980,
       "totalNotes" : 4407,
       "volumeCount" : 13
+    }
+  ],
+  "byVolume" : [
+    {
+      "counts" : {
+        "unrecognized" : 142
+      },
+      "decade" : 1860,
+      "totalNotes" : 142,
+      "volumeId" : "frus1861"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 36
+      },
+      "decade" : 1860,
+      "totalNotes" : 36,
+      "volumeId" : "frus1862"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 17
+      },
+      "decade" : 1860,
+      "totalNotes" : 17,
+      "volumeId" : "frus1863p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 50
+      },
+      "decade" : 1860,
+      "totalNotes" : 50,
+      "volumeId" : "frus1863p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "unrecognized" : 18
+      },
+      "decade" : 1860,
+      "totalNotes" : 19,
+      "volumeId" : "frus1864p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 11
+      },
+      "decade" : 1860,
+      "totalNotes" : 11,
+      "volumeId" : "frus1864p2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 75
+      },
+      "decade" : 1860,
+      "totalNotes" : 75,
+      "volumeId" : "frus1864p3"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 9
+      },
+      "decade" : 1860,
+      "totalNotes" : 9,
+      "volumeId" : "frus1864p4"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 12
+      },
+      "decade" : 1860,
+      "totalNotes" : 12,
+      "volumeId" : "frus1865p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 59
+      },
+      "decade" : 1860,
+      "totalNotes" : 59,
+      "volumeId" : "frus1865p2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 43
+      },
+      "decade" : 1860,
+      "totalNotes" : 43,
+      "volumeId" : "frus1865p3"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 497
+      },
+      "decade" : 1860,
+      "totalNotes" : 497,
+      "volumeId" : "frus1865p4"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 106
+      },
+      "decade" : 1860,
+      "totalNotes" : 106,
+      "volumeId" : "frus1866p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 124
+      },
+      "decade" : 1860,
+      "totalNotes" : 124,
+      "volumeId" : "frus1866p2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 201
+      },
+      "decade" : 1860,
+      "totalNotes" : 201,
+      "volumeId" : "frus1866p3"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 17
+      },
+      "decade" : 1860,
+      "totalNotes" : 17,
+      "volumeId" : "frus1867p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 61
+      },
+      "decade" : 1860,
+      "totalNotes" : 61,
+      "volumeId" : "frus1867p2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 53
+      },
+      "decade" : 1860,
+      "totalNotes" : 53,
+      "volumeId" : "frus1868p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 54
+      },
+      "decade" : 1860,
+      "totalNotes" : 54,
+      "volumeId" : "frus1868p2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 302
+      },
+      "decade" : 1860,
+      "totalNotes" : 302,
+      "volumeId" : "frus1870"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 22
+      },
+      "decade" : 1870,
+      "totalNotes" : 22,
+      "volumeId" : "frus1871"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1840,
+      "totalNotes" : 1,
+      "volumeId" : "frus1872p2v1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 2
+      },
+      "decade" : 1830,
+      "totalNotes" : 2,
+      "volumeId" : "frus1872p2v2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 87
+      },
+      "decade" : 1740,
+      "totalNotes" : 87,
+      "volumeId" : "frus1872p2v5"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 3
+      },
+      "decade" : 1870,
+      "totalNotes" : 3,
+      "volumeId" : "frus1873p1v1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1830,
+      "totalNotes" : 1,
+      "volumeId" : "frus1873p1v2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 3
+      },
+      "decade" : 1830,
+      "totalNotes" : 3,
+      "volumeId" : "frus1873p2v3"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1870,
+      "totalNotes" : 1,
+      "volumeId" : "frus1874"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 2
+      },
+      "decade" : 1870,
+      "totalNotes" : 2,
+      "volumeId" : "frus1875v01"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1870,
+      "totalNotes" : 1,
+      "volumeId" : "frus1875v02"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 3
+      },
+      "decade" : 1870,
+      "totalNotes" : 3,
+      "volumeId" : "frus1876"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 2
+      },
+      "decade" : 1860,
+      "totalNotes" : 2,
+      "volumeId" : "frus1879"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1870,
+      "totalNotes" : 1,
+      "volumeId" : "frus1880"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1880,
+      "totalNotes" : 1,
+      "volumeId" : "frus1883"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1880,
+      "totalNotes" : 1,
+      "volumeId" : "frus1884"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1880,
+      "totalNotes" : 1,
+      "volumeId" : "frus1886"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 4
+      },
+      "decade" : 1880,
+      "totalNotes" : 4,
+      "volumeId" : "frus1887"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 3
+      },
+      "decade" : 1880,
+      "totalNotes" : 3,
+      "volumeId" : "frus1888p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1880,
+      "totalNotes" : 1,
+      "volumeId" : "frus1890"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1890,
+      "totalNotes" : 1,
+      "volumeId" : "frus1894"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1860,
+      "totalNotes" : 1,
+      "volumeId" : "frus1894app2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1890,
+      "totalNotes" : 1,
+      "volumeId" : "frus1898"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1890,
+      "totalNotes" : 1,
+      "volumeId" : "frus1900"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1890,
+      "totalNotes" : 1,
+      "volumeId" : "frus1902"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1900,
+      "totalNotes" : 1,
+      "volumeId" : "frus1904"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 443
+      },
+      "decade" : 1900,
+      "totalNotes" : 443,
+      "volumeId" : "frus1907p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 411
+      },
+      "decade" : 1900,
+      "totalNotes" : 411,
+      "volumeId" : "frus1907p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 613,
+        "unrecognized" : 1
+      },
+      "decade" : 1900,
+      "totalNotes" : 614,
+      "volumeId" : "frus1908"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 565,
+        "unrecognized" : 2
+      },
+      "decade" : 1900,
+      "totalNotes" : 567,
+      "volumeId" : "frus1909"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 514,
+        "unrecognized" : 2
+      },
+      "decade" : 1910,
+      "totalNotes" : 516,
+      "volumeId" : "frus1910"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1001,
+        "unrecognized" : 1
+      },
+      "decade" : 1900,
+      "totalNotes" : 1002,
+      "volumeId" : "frus1911"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1765,
+        "unrecognized" : 17
+      },
+      "decade" : 1900,
+      "totalNotes" : 1782,
+      "volumeId" : "frus1912"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1679,
+        "unrecognized" : 16
+      },
+      "decade" : 1910,
+      "totalNotes" : 1695,
+      "volumeId" : "frus1913"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1827,
+        "previouslyPublished" : 22,
+        "unrecognized" : 12
+      },
+      "decade" : 1910,
+      "totalNotes" : 1861,
+      "volumeId" : "frus1914"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 703,
+        "unrecognized" : 3
+      },
+      "decade" : 1910,
+      "totalNotes" : 706,
+      "volumeId" : "frus1914-20v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 413
+      },
+      "decade" : 1910,
+      "totalNotes" : 413,
+      "volumeId" : "frus1914-20v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1205,
+        "unrecognized" : 27
+      },
+      "decade" : 1910,
+      "totalNotes" : 1232,
+      "volumeId" : "frus1914Supp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1874,
+        "previouslyPublished" : 24,
+        "unrecognized" : 5
+      },
+      "decade" : 1910,
+      "totalNotes" : 1903,
+      "volumeId" : "frus1915"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1397,
+        "unrecognized" : 7
+      },
+      "decade" : 1910,
+      "totalNotes" : 1404,
+      "volumeId" : "frus1915Supp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1311,
+        "previouslyPublished" : 10,
+        "unrecognized" : 5
+      },
+      "decade" : 1910,
+      "totalNotes" : 1326,
+      "volumeId" : "frus1916"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1209,
+        "unrecognized" : 1
+      },
+      "decade" : 1910,
+      "totalNotes" : 1210,
+      "volumeId" : "frus1916Supp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1369,
+        "previouslyPublished" : 3,
+        "unrecognized" : 4
+      },
+      "decade" : 1900,
+      "totalNotes" : 1376,
+      "volumeId" : "frus1917"
+    },
+    {
+      "counts" : {
+        "naraCollection" : 34,
+        "presidentialLibrary" : 4,
+        "unrecognized" : 9
+      },
+      "decade" : 1910,
+      "totalNotes" : 47,
+      "volumeId" : "frus1917-72PubDip"
+    },
+    {
+      "counts" : {
+        "naraCollection" : 101,
+        "presidentialLibrary" : 52,
+        "previouslyPublished" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 154,
+      "volumeId" : "frus1917-72PubDipv06"
+    },
+    {
+      "counts" : {
+        "intelligence" : 1,
+        "naraCollection" : 119,
+        "presidentialLibrary" : 58,
+        "previouslyPublished" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 180,
+      "volumeId" : "frus1917-72PubDipv07"
+    },
+    {
+      "counts" : {
+        "naraCollection" : 121,
+        "presidentialLibrary" : 56,
+        "previouslyPublished" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 179,
+      "volumeId" : "frus1917-72PubDipv08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 960,
+        "previouslyPublished" : 1,
+        "unrecognized" : 2
+      },
+      "decade" : 1910,
+      "totalNotes" : 963,
+      "volumeId" : "frus1917Supp01v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 710,
+        "namedFileSeries" : 9,
+        "previouslyPublished" : 3,
+        "unrecognized" : 2
+      },
+      "decade" : 1910,
+      "totalNotes" : 724,
+      "volumeId" : "frus1917Supp02v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 427,
+        "namedFileSeries" : 8,
+        "previouslyPublished" : 6,
+        "unrecognized" : 1
+      },
+      "decade" : 1920,
+      "totalNotes" : 442,
+      "volumeId" : "frus1917Supp02v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 700,
+        "previouslyPublished" : 4,
+        "unrecognized" : 2
+      },
+      "decade" : 1910,
+      "totalNotes" : 706,
+      "volumeId" : "frus1918"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 698,
+        "namedFileSeries" : 1,
+        "unrecognized" : 2
+      },
+      "decade" : 1910,
+      "totalNotes" : 701,
+      "volumeId" : "frus1918Russiav01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1028,
+        "unrecognized" : 1
+      },
+      "decade" : 1910,
+      "totalNotes" : 1029,
+      "volumeId" : "frus1918Russiav02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 478
+      },
+      "decade" : 1910,
+      "totalNotes" : 478,
+      "volumeId" : "frus1918Russiav03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 881,
+        "namedFileSeries" : 33,
+        "unrecognized" : 6
+      },
+      "decade" : 1910,
+      "totalNotes" : 920,
+      "volumeId" : "frus1918Supp01v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 875,
+        "namedFileSeries" : 23,
+        "previouslyPublished" : 4,
+        "unrecognized" : 4
+      },
+      "decade" : 1910,
+      "totalNotes" : 906,
+      "volumeId" : "frus1918Supp01v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 913,
+        "previouslyPublished" : 9,
+        "unrecognized" : 3
+      },
+      "decade" : 1910,
+      "totalNotes" : 925,
+      "volumeId" : "frus1918Supp02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 327,
+        "namedFileSeries" : 69,
+        "previouslyPublished" : 12,
+        "unrecognized" : 14
+      },
+      "decade" : 1910,
+      "totalNotes" : 422,
+      "volumeId" : "frus1919Parisv01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 670,
+        "namedFileSeries" : 20,
+        "previouslyPublished" : 5,
+        "unrecognized" : 8
+      },
+      "decade" : 1910,
+      "totalNotes" : 703,
+      "volumeId" : "frus1919Parisv02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 67,
+        "namedFileSeries" : 44,
+        "unrecognized" : 6
+      },
+      "decade" : 1910,
+      "totalNotes" : 117,
+      "volumeId" : "frus1919Parisv03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 57,
+        "namedFileSeries" : 48,
+        "unrecognized" : 16
+      },
+      "decade" : 1910,
+      "totalNotes" : 121,
+      "volumeId" : "frus1919Parisv04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 82,
+        "namedFileSeries" : 88,
+        "unrecognized" : 9
+      },
+      "decade" : 1910,
+      "totalNotes" : 179,
+      "volumeId" : "frus1919Parisv05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 91,
+        "namedFileSeries" : 106,
+        "unrecognized" : 19
+      },
+      "decade" : 1910,
+      "totalNotes" : 216,
+      "volumeId" : "frus1919Parisv06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 44,
+        "namedFileSeries" : 61,
+        "unrecognized" : 24
+      },
+      "decade" : 1910,
+      "totalNotes" : 129,
+      "volumeId" : "frus1919Parisv07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 43,
+        "namedFileSeries" : 42,
+        "unrecognized" : 3
+      },
+      "decade" : 1910,
+      "totalNotes" : 88,
+      "volumeId" : "frus1919Parisv08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 53,
+        "namedFileSeries" : 53,
+        "unrecognized" : 2
+      },
+      "decade" : 1910,
+      "totalNotes" : 108,
+      "volumeId" : "frus1919Parisv09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 30,
+        "unrecognized" : 3
+      },
+      "decade" : 1910,
+      "totalNotes" : 33,
+      "volumeId" : "frus1919Parisv10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 350,
+        "namedFileSeries" : 34,
+        "unrecognized" : 24
+      },
+      "decade" : 1910,
+      "totalNotes" : 408,
+      "volumeId" : "frus1919Parisv11"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 372,
+        "unrecognized" : 9
+      },
+      "decade" : 1910,
+      "totalNotes" : 381,
+      "volumeId" : "frus1919Parisv12"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 917,
+        "unrecognized" : 1
+      },
+      "decade" : 1910,
+      "totalNotes" : 918,
+      "volumeId" : "frus1919Russia"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 910,
+        "namedFileSeries" : 1,
+        "previouslyPublished" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1910,
+      "totalNotes" : 913,
+      "volumeId" : "frus1919v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 823,
+        "namedFileSeries" : 3,
+        "previouslyPublished" : 4,
+        "unrecognized" : 5
+      },
+      "decade" : 1910,
+      "totalNotes" : 835,
+      "volumeId" : "frus1919v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 886,
+        "namedFileSeries" : 1,
+        "previouslyPublished" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1910,
+      "totalNotes" : 892,
+      "volumeId" : "frus1920v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 799,
+        "previouslyPublished" : 1,
+        "unrecognized" : 3
+      },
+      "decade" : 1910,
+      "totalNotes" : 803,
+      "volumeId" : "frus1920v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 949,
+        "previouslyPublished" : 1,
+        "unrecognized" : 9
+      },
+      "decade" : 1910,
+      "totalNotes" : 959,
+      "volumeId" : "frus1920v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 871,
+        "previouslyPublished" : 4,
+        "unrecognized" : 3
+      },
+      "decade" : 1920,
+      "totalNotes" : 878,
+      "volumeId" : "frus1921v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 890,
+        "previouslyPublished" : 9,
+        "unrecognized" : 7
+      },
+      "decade" : 1910,
+      "totalNotes" : 906,
+      "volumeId" : "frus1921v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 831,
+        "previouslyPublished" : 16,
+        "unrecognized" : 31
+      },
+      "decade" : 1910,
+      "totalNotes" : 878,
+      "volumeId" : "frus1922v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 884,
+        "previouslyPublished" : 7,
+        "unrecognized" : 16
+      },
+      "decade" : 1910,
+      "totalNotes" : 907,
+      "volumeId" : "frus1922v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 792,
+        "previouslyPublished" : 12,
+        "unrecognized" : 1
+      },
+      "decade" : 1920,
+      "totalNotes" : 805,
+      "volumeId" : "frus1923v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1003,
+        "previouslyPublished" : 14,
+        "unrecognized" : 4
+      },
+      "decade" : 1920,
+      "totalNotes" : 1021,
+      "volumeId" : "frus1923v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 670,
+        "previouslyPublished" : 16,
+        "unrecognized" : 5
+      },
+      "decade" : 1920,
+      "totalNotes" : 691,
+      "volumeId" : "frus1924v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 644,
+        "previouslyPublished" : 5,
+        "unrecognized" : 4
+      },
+      "decade" : 1920,
+      "totalNotes" : 653,
+      "volumeId" : "frus1924v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 770,
+        "previouslyPublished" : 8,
+        "unrecognized" : 1
+      },
+      "decade" : 1920,
+      "totalNotes" : 779,
+      "volumeId" : "frus1925v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 586,
+        "previouslyPublished" : 12,
+        "unrecognized" : 12
+      },
+      "decade" : 1910,
+      "totalNotes" : 610,
+      "volumeId" : "frus1925v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 847,
+        "previouslyPublished" : 5,
+        "unrecognized" : 6
+      },
+      "decade" : 1920,
+      "totalNotes" : 858,
+      "volumeId" : "frus1926v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 651,
+        "previouslyPublished" : 10,
+        "unrecognized" : 12
+      },
+      "decade" : 1920,
+      "totalNotes" : 673,
+      "volumeId" : "frus1926v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 409,
+        "previouslyPublished" : 2,
+        "unrecognized" : 3
+      },
+      "decade" : 1920,
+      "totalNotes" : 414,
+      "volumeId" : "frus1927v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 766,
+        "previouslyPublished" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1920,
+      "totalNotes" : 768,
+      "volumeId" : "frus1927v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 749,
+        "previouslyPublished" : 8,
+        "unrecognized" : 22
+      },
+      "decade" : 1920,
+      "totalNotes" : 779,
+      "volumeId" : "frus1927v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 823,
+        "previouslyPublished" : 18,
+        "unrecognized" : 2
+      },
+      "decade" : 1920,
+      "totalNotes" : 843,
+      "volumeId" : "frus1928v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 942,
+        "previouslyPublished" : 12,
+        "unrecognized" : 2
+      },
+      "decade" : 1920,
+      "totalNotes" : 956,
+      "volumeId" : "frus1928v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 803,
+        "previouslyPublished" : 16,
+        "unrecognized" : 4
+      },
+      "decade" : 1920,
+      "totalNotes" : 823,
+      "volumeId" : "frus1928v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 845,
+        "previouslyPublished" : 7
+      },
+      "decade" : 1910,
+      "totalNotes" : 852,
+      "volumeId" : "frus1929v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1071,
+        "namedFileSeries" : 11,
+        "previouslyPublished" : 12,
+        "unrecognized" : 1
+      },
+      "decade" : 1920,
+      "totalNotes" : 1095,
+      "volumeId" : "frus1929v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 918,
+        "previouslyPublished" : 16
+      },
+      "decade" : 1920,
+      "totalNotes" : 934,
+      "volumeId" : "frus1929v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 564,
+        "previouslyPublished" : 13
+      },
+      "decade" : 1930,
+      "totalNotes" : 577,
+      "volumeId" : "frus1930v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 879,
+        "previouslyPublished" : 6
+      },
+      "decade" : 1930,
+      "totalNotes" : 885,
+      "volumeId" : "frus1930v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 784,
+        "previouslyPublished" : 16,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 802,
+      "volumeId" : "frus1930v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 634,
+        "previouslyPublished" : 35,
+        "unrecognized" : 7
+      },
+      "decade" : 1930,
+      "totalNotes" : 676,
+      "volumeId" : "frus1931-41v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 365,
+        "previouslyPublished" : 51,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 418,
+      "volumeId" : "frus1931-41v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 829,
+        "previouslyPublished" : 3,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 834,
+      "volumeId" : "frus1931v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1096,
+        "previouslyPublished" : 20
+      },
+      "decade" : 1930,
+      "totalNotes" : 1116,
+      "volumeId" : "frus1931v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1008,
+        "previouslyPublished" : 5
+      },
+      "decade" : 1930,
+      "totalNotes" : 1013,
+      "volumeId" : "frus1931v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 677,
+        "previouslyPublished" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 678,
+      "volumeId" : "frus1932v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 606,
+        "previouslyPublished" : 33,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 641,
+      "volumeId" : "frus1932v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 799
+      },
+      "decade" : 1930,
+      "totalNotes" : 799,
+      "volumeId" : "frus1932v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 793,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 794,
+      "volumeId" : "frus1932v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 939,
+        "previouslyPublished" : 2,
+        "unrecognized" : 3
+      },
+      "decade" : 1930,
+      "totalNotes" : 944,
+      "volumeId" : "frus1932v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 747,
+        "previouslyPublished" : 1,
+        "unrecognized" : 88
+      },
+      "decade" : 1930,
+      "totalNotes" : 836,
+      "volumeId" : "frus1933-39"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 802,
+        "previouslyPublished" : 13
+      },
+      "decade" : 1930,
+      "totalNotes" : 815,
+      "volumeId" : "frus1933v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 754,
+        "previouslyPublished" : 21
+      },
+      "decade" : 1930,
+      "totalNotes" : 775,
+      "volumeId" : "frus1933v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 837
+      },
+      "decade" : 1930,
+      "totalNotes" : 837,
+      "volumeId" : "frus1933v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 787,
+        "previouslyPublished" : 5
+      },
+      "decade" : 1930,
+      "totalNotes" : 792,
+      "volumeId" : "frus1933v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 762,
+        "previouslyPublished" : 5,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 768,
+      "volumeId" : "frus1933v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 760,
+        "previouslyPublished" : 8,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 770,
+      "volumeId" : "frus1934v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 819,
+        "previouslyPublished" : 3
+      },
+      "decade" : 1930,
+      "totalNotes" : 822,
+      "volumeId" : "frus1934v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 749
+      },
+      "decade" : 1930,
+      "totalNotes" : 749,
+      "volumeId" : "frus1934v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 698,
+        "previouslyPublished" : 4
+      },
+      "decade" : 1930,
+      "totalNotes" : 702,
+      "volumeId" : "frus1934v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 632,
+        "previouslyPublished" : 9
+      },
+      "decade" : 1930,
+      "totalNotes" : 641,
+      "volumeId" : "frus1934v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 910,
+        "previouslyPublished" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 911,
+      "volumeId" : "frus1935v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 658,
+        "previouslyPublished" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 660,
+      "volumeId" : "frus1935v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1071,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 1072,
+      "volumeId" : "frus1935v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 928,
+        "previouslyPublished" : 3,
+        "unrecognized" : 4
+      },
+      "decade" : 1930,
+      "totalNotes" : 935,
+      "volumeId" : "frus1935v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 689,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 691,
+      "volumeId" : "frus1936v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 884,
+        "unrecognized" : 3
+      },
+      "decade" : 1930,
+      "totalNotes" : 887,
+      "volumeId" : "frus1936v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 586
+      },
+      "decade" : 1930,
+      "totalNotes" : 586,
+      "volumeId" : "frus1936v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 937,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 939,
+      "volumeId" : "frus1936v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 857
+      },
+      "decade" : 1930,
+      "totalNotes" : 857,
+      "volumeId" : "frus1936v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 980,
+        "unrecognized" : 3
+      },
+      "decade" : 1930,
+      "totalNotes" : 983,
+      "volumeId" : "frus1937v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 752
+      },
+      "decade" : 1930,
+      "totalNotes" : 752,
+      "volumeId" : "frus1937v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1112
+      },
+      "decade" : 1930,
+      "totalNotes" : 1112,
+      "volumeId" : "frus1937v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1024,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 1025,
+      "volumeId" : "frus1937v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 776,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 777,
+      "volumeId" : "frus1937v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 955
+      },
+      "decade" : 1930,
+      "totalNotes" : 955,
+      "volumeId" : "frus1938v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 902,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 904,
+      "volumeId" : "frus1938v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 813
+      },
+      "decade" : 1930,
+      "totalNotes" : 813,
+      "volumeId" : "frus1938v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 823
+      },
+      "decade" : 1930,
+      "totalNotes" : 823,
+      "volumeId" : "frus1938v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 892,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 894,
+      "volumeId" : "frus1938v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1156,
+        "previouslyPublished" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 1157,
+      "volumeId" : "frus1939v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 867,
+        "presidentialLibrary" : 1,
+        "previouslyPublished" : 1,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 871,
+      "volumeId" : "frus1939v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 869,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 871,
+      "volumeId" : "frus1939v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 949,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 950,
+      "volumeId" : "frus1939v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 740,
+        "presidentialLibrary" : 1,
+        "previouslyPublished" : 2,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 744,
+      "volumeId" : "frus1939v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 890,
+        "presidentialLibrary" : 2,
+        "previouslyPublished" : 2,
+        "unrecognized" : 2
+      },
+      "decade" : 1930,
+      "totalNotes" : 896,
+      "volumeId" : "frus1940v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1011,
+        "presidentialLibrary" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 1012,
+      "volumeId" : "frus1940v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 924,
+        "presidentialLibrary" : 3,
+        "previouslyPublished" : 2,
+        "unrecognized" : 1
+      },
+      "decade" : 1930,
+      "totalNotes" : 930,
+      "volumeId" : "frus1940v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1105,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 1106,
+      "volumeId" : "frus1940v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1267
+      },
+      "decade" : 1940,
+      "totalNotes" : 1267,
+      "volumeId" : "frus1940v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 37,
+        "namedFileSeries" : 314,
+        "unrecognized" : 6
+      },
+      "decade" : 1940,
+      "totalNotes" : 357,
+      "volumeId" : "frus1941-43"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 974,
+        "presidentialLibrary" : 2,
+        "previouslyPublished" : 3,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 981,
+      "volumeId" : "frus1941v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 981,
+        "lotFile" : 1,
+        "presidentialLibrary" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 983,
+      "volumeId" : "frus1941v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1043
+      },
+      "decade" : 1940,
+      "totalNotes" : 1043,
+      "volumeId" : "frus1941v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 848,
+        "presidentialLibrary" : 11
+      },
+      "decade" : 1940,
+      "totalNotes" : 859,
+      "volumeId" : "frus1941v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1006,
+        "presidentialLibrary" : 4
+      },
+      "decade" : 1940,
+      "totalNotes" : 1010,
+      "volumeId" : "frus1941v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 626
+      },
+      "decade" : 1940,
+      "totalNotes" : 626,
+      "volumeId" : "frus1941v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 522
+      },
+      "decade" : 1940,
+      "totalNotes" : 522,
+      "volumeId" : "frus1941v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 625,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 24,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 654,
+      "volumeId" : "frus1942China"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 814,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 13,
+        "previouslyPublished" : 2,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 833,
+      "volumeId" : "frus1942v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 828,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 830,
+      "volumeId" : "frus1942v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 675,
+        "lotFile" : 30,
+        "presidentialLibrary" : 19,
+        "previouslyPublished" : 2,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 728,
+      "volumeId" : "frus1942v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 950,
+        "presidentialLibrary" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 953,
+      "volumeId" : "frus1942v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 787,
+        "namedFileSeries" : 4,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 793,
+      "volumeId" : "frus1942v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 705,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 2,
+        "previouslyPublished" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 710,
+      "volumeId" : "frus1942v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 110,
+        "lotFile" : 12,
+        "namedFileSeries" : 418,
+        "unrecognized" : 14
+      },
+      "decade" : 1940,
+      "totalNotes" : 554,
+      "volumeId" : "frus1943"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 89,
+        "namedFileSeries" : 441,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 532,
+      "volumeId" : "frus1943CairoTehran"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 787,
+        "lotFile" : 1,
+        "presidentialLibrary" : 21
+      },
+      "decade" : 1940,
+      "totalNotes" : 809,
+      "volumeId" : "frus1943China"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 927,
+        "lotFile" : 15,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 19,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 964,
+      "volumeId" : "frus1943v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 865,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 42,
+        "previouslyPublished" : 2,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 913,
+      "volumeId" : "frus1943v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 956,
+        "lotFile" : 10,
+        "presidentialLibrary" : 19,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 988,
+      "volumeId" : "frus1943v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1227,
+        "lotFile" : 1,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 1232,
+      "volumeId" : "frus1943v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 875,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 876,
+      "volumeId" : "frus1943v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 715,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 717,
+      "volumeId" : "frus1943v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 38,
+        "lotFile" : 1,
+        "namedFileSeries" : 219,
+        "unrecognized" : 7
+      },
+      "decade" : 1940,
+      "totalNotes" : 265,
+      "volumeId" : "frus1944Quebec"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 917,
+        "lotFile" : 86,
+        "namedFileSeries" : 5,
+        "presidentialLibrary" : 17,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 1026,
+      "volumeId" : "frus1944v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 896,
+        "lotFile" : 1,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 10,
+        "previouslyPublished" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1940,
+      "totalNotes" : 914,
+      "volumeId" : "frus1944v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1251,
+        "lotFile" : 6,
+        "presidentialLibrary" : 55,
+        "previouslyPublished" : 2,
+        "unrecognized" : 6
+      },
+      "decade" : 1940,
+      "totalNotes" : 1320,
+      "volumeId" : "frus1944v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1301,
+        "lotFile" : 3,
+        "presidentialLibrary" : 32,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 1339,
+      "volumeId" : "frus1944v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1203,
+        "lotFile" : 28,
+        "presidentialLibrary" : 15,
+        "unrecognized" : 6
+      },
+      "decade" : 1940,
+      "totalNotes" : 1252,
+      "volumeId" : "frus1944v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 856,
+        "lotFile" : 3,
+        "presidentialLibrary" : 19,
+        "unrecognized" : 11
+      },
+      "decade" : 1940,
+      "totalNotes" : 889,
+      "volumeId" : "frus1944v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1545,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 7,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 1556,
+      "volumeId" : "frus1944v07"
+    },
+    {
+      "counts" : {
+        "intelligence" : 198,
+        "lotFile" : 29,
+        "naraCollection" : 161,
+        "presidentialLibrary" : 41,
+        "previouslyPublished" : 3,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 435,
+      "volumeId" : "frus1945-50Intel"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 510,
+        "namedFileSeries" : 176,
+        "unrecognized" : 22
+      },
+      "decade" : 1940,
+      "totalNotes" : 708,
+      "volumeId" : "frus1945Berlinv01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 527,
+        "namedFileSeries" : 292,
+        "unrecognized" : 25
+      },
+      "decade" : 1950,
+      "totalNotes" : 844,
+      "volumeId" : "frus1945Berlinv02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 98,
+        "namedFileSeries" : 388,
+        "previouslyPublished" : 3,
+        "unrecognized" : 5
+      },
+      "decade" : 1940,
+      "totalNotes" : 494,
+      "volumeId" : "frus1945Malta"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 230,
+        "lotFile" : 149,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 7,
+        "previouslyPublished" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1940,
+      "totalNotes" : 393,
+      "volumeId" : "frus1945v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 669,
+        "lotFile" : 81,
+        "namedFileSeries" : 40,
+        "presidentialLibrary" : 3,
+        "previouslyPublished" : 1,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 797,
+      "volumeId" : "frus1945v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1142,
+        "lotFile" : 6,
+        "namedFileSeries" : 31,
+        "presidentialLibrary" : 13,
+        "previouslyPublished" : 2,
+        "unrecognized" : 11
+      },
+      "decade" : 1940,
+      "totalNotes" : 1205,
+      "volumeId" : "frus1945v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1182,
+        "lotFile" : 5,
+        "namedFileSeries" : 16,
+        "previouslyPublished" : 1,
+        "unrecognized" : 10
+      },
+      "decade" : 1940,
+      "totalNotes" : 1214,
+      "volumeId" : "frus1945v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1017,
+        "lotFile" : 2,
+        "namedFileSeries" : 28,
+        "presidentialLibrary" : 37,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 1087,
+      "volumeId" : "frus1945v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 987,
+        "lotFile" : 25,
+        "namedFileSeries" : 4,
+        "presidentialLibrary" : 2,
+        "previouslyPublished" : 1,
+        "unrecognized" : 22
+      },
+      "decade" : 1940,
+      "totalNotes" : 1041,
+      "volumeId" : "frus1945v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1052,
+        "lotFile" : 62,
+        "namedFileSeries" : 13,
+        "unrecognized" : 27
+      },
+      "decade" : 1940,
+      "totalNotes" : 1154,
+      "volumeId" : "frus1945v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1268,
+        "lotFile" : 7,
+        "namedFileSeries" : 11,
+        "presidentialLibrary" : 1,
+        "previouslyPublished" : 4,
+        "unrecognized" : 3
+      },
+      "decade" : 1950,
+      "totalNotes" : 1294,
+      "volumeId" : "frus1945v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1204,
+        "unrecognized" : 10
+      },
+      "decade" : 1940,
+      "totalNotes" : 1214,
+      "volumeId" : "frus1945v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 469,
+        "lotFile" : 15,
+        "namedFileSeries" : 262,
+        "unrecognized" : 22
+      },
+      "decade" : 1940,
+      "totalNotes" : 768,
+      "volumeId" : "frus1946v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 142,
+        "lotFile" : 275
+      },
+      "decade" : 1940,
+      "totalNotes" : 417,
+      "volumeId" : "frus1946v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 17,
+        "namedFileSeries" : 313,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 333,
+      "volumeId" : "frus1946v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 27,
+        "namedFileSeries" : 64,
+        "unrecognized" : 257
+      },
+      "decade" : 1940,
+      "totalNotes" : 348,
+      "volumeId" : "frus1946v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 713,
+        "lotFile" : 12,
+        "namedFileSeries" : 8,
+        "unrecognized" : 13
+      },
+      "decade" : 1940,
+      "totalNotes" : 746,
+      "volumeId" : "frus1946v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 671,
+        "lotFile" : 9,
+        "namedFileSeries" : 10,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 691,
+      "volumeId" : "frus1946v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 722,
+        "lotFile" : 2,
+        "previouslyPublished" : 3,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 729,
+      "volumeId" : "frus1946v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 870,
+        "lotFile" : 6,
+        "unrecognized" : 5
+      },
+      "decade" : 1940,
+      "totalNotes" : 881,
+      "volumeId" : "frus1946v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 152,
+        "lotFile" : 600,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 753,
+      "volumeId" : "frus1946v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 658,
+        "lotFile" : 449,
+        "namedFileSeries" : 2,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 1111,
+      "volumeId" : "frus1946v10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1132,
+        "namedFileSeries" : 1,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 1135,
+      "volumeId" : "frus1946v11"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 244,
+        "lotFile" : 42,
+        "namedFileSeries" : 208,
+        "unrecognized" : 20
+      },
+      "decade" : 1940,
+      "totalNotes" : 514,
+      "volumeId" : "frus1947v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 457,
+        "lotFile" : 71,
+        "namedFileSeries" : 11,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 541,
+      "volumeId" : "frus1947v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 656,
+        "lotFile" : 26,
+        "namedFileSeries" : 16,
+        "unrecognized" : 13
+      },
+      "decade" : 1940,
+      "totalNotes" : 711,
+      "volumeId" : "frus1947v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 532,
+        "namedFileSeries" : 16,
+        "unrecognized" : 4
+      },
+      "decade" : 1940,
+      "totalNotes" : 552,
+      "volumeId" : "frus1947v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 812,
+        "lotFile" : 45,
+        "namedFileSeries" : 7,
+        "previouslyPublished" : 6,
+        "unrecognized" : 7
+      },
+      "decade" : 1940,
+      "totalNotes" : 877,
+      "volumeId" : "frus1947v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 890,
+        "lotFile" : 1,
+        "namedFileSeries" : 6,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 899,
+      "volumeId" : "frus1947v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1150,
+        "lotFile" : 14
+      },
+      "decade" : 1940,
+      "totalNotes" : 1164,
+      "volumeId" : "frus1947v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 910,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 913,
+      "volumeId" : "frus1947v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 114,
+        "lotFile" : 5,
+        "namedFileSeries" : 131,
+        "unrecognized" : 5
+      },
+      "decade" : 1940,
+      "totalNotes" : 255,
+      "volumeId" : "frus1948v01p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 142,
+        "lotFile" : 43,
+        "namedFileSeries" : 49,
+        "unrecognized" : 4
+      },
+      "decade" : 1940,
+      "totalNotes" : 238,
+      "volumeId" : "frus1948v01p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 715,
+        "lotFile" : 67,
+        "namedFileSeries" : 17,
+        "unrecognized" : 9
+      },
+      "decade" : 1940,
+      "totalNotes" : 808,
+      "volumeId" : "frus1948v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 604,
+        "lotFile" : 36,
+        "namedFileSeries" : 8,
+        "unrecognized" : 5
+      },
+      "decade" : 1940,
+      "totalNotes" : 653,
+      "volumeId" : "frus1948v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 660,
+        "lotFile" : 22,
+        "namedFileSeries" : 4,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 689,
+      "volumeId" : "frus1948v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 391,
+        "previouslyPublished" : 2,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 394,
+      "volumeId" : "frus1948v05p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 709,
+        "lotFile" : 12,
+        "namedFileSeries" : 52,
+        "previouslyPublished" : 17,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 792,
+      "volumeId" : "frus1948v05p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 919,
+        "lotFile" : 1,
+        "namedFileSeries" : 4,
+        "unrecognized" : 3
+      },
+      "decade" : 1940,
+      "totalNotes" : 927,
+      "volumeId" : "frus1948v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 786,
+        "lotFile" : 2,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 789,
+      "volumeId" : "frus1948v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 865,
+        "lotFile" : 10,
+        "namedFileSeries" : 15,
+        "unrecognized" : 1
+      },
+      "decade" : 1940,
+      "totalNotes" : 891,
+      "volumeId" : "frus1948v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 520,
+        "lotFile" : 4,
+        "previouslyPublished" : 2,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 528,
+      "volumeId" : "frus1948v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 99,
+        "lotFile" : 32,
+        "namedFileSeries" : 155,
+        "previouslyPublished" : 1,
+        "unrecognized" : 16
+      },
+      "decade" : 1950,
+      "totalNotes" : 303,
+      "volumeId" : "frus1949v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 379,
+        "lotFile" : 6,
+        "namedFileSeries" : 60,
+        "unrecognized" : 15
+      },
+      "decade" : 1940,
+      "totalNotes" : 460,
+      "volumeId" : "frus1949v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 526,
+        "lotFile" : 47,
+        "namedFileSeries" : 27,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 602,
+      "volumeId" : "frus1949v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 353,
+        "lotFile" : 18,
+        "namedFileSeries" : 3,
+        "previouslyPublished" : 4,
+        "unrecognized" : 39
+      },
+      "decade" : 1940,
+      "totalNotes" : 417,
+      "volumeId" : "frus1949v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 486,
+        "lotFile" : 53,
+        "namedFileSeries" : 9,
+        "previouslyPublished" : 2,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 552,
+      "volumeId" : "frus1949v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1093,
+        "lotFile" : 19,
+        "namedFileSeries" : 18,
+        "previouslyPublished" : 3,
+        "unrecognized" : 9
+      },
+      "decade" : 1940,
+      "totalNotes" : 1142,
+      "volumeId" : "frus1949v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 423
+      },
+      "decade" : 1940,
+      "totalNotes" : 423,
+      "volumeId" : "frus1949v07p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 366,
+        "lotFile" : 1,
+        "namedFileSeries" : 8,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 377,
+      "volumeId" : "frus1949v07p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1671,
+        "lotFile" : 1,
+        "unrecognized" : 26
+      },
+      "decade" : 1940,
+      "totalNotes" : 1698,
+      "volumeId" : "frus1949v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1418,
+        "lotFile" : 2,
+        "namedFileSeries" : 36,
+        "unrecognized" : 2
+      },
+      "decade" : 1940,
+      "totalNotes" : 1458,
+      "volumeId" : "frus1949v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "intelligence" : 73,
+        "lotFile" : 78,
+        "namedFileSeries" : 9,
+        "naraCollection" : 28,
+        "presidentialLibrary" : 31,
+        "unrecognized" : 12
+      },
+      "decade" : 1950,
+      "totalNotes" : 236,
+      "volumeId" : "frus1950-55Intel"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 135,
+        "lotFile" : 68,
+        "namedFileSeries" : 82,
+        "unrecognized" : 14
+      },
+      "decade" : 1950,
+      "totalNotes" : 299,
+      "volumeId" : "frus1950v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 377,
+        "lotFile" : 15,
+        "namedFileSeries" : 87,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 6
+      },
+      "decade" : 1950,
+      "totalNotes" : 486,
+      "volumeId" : "frus1950v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 613,
+        "lotFile" : 94,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1940,
+      "totalNotes" : 715,
+      "volumeId" : "frus1950v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 702,
+        "lotFile" : 75,
+        "namedFileSeries" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1950,
+      "totalNotes" : 779,
+      "volumeId" : "frus1950v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 845,
+        "lotFile" : 66,
+        "namedFileSeries" : 8,
+        "presidentialLibrary" : 1,
+        "previouslyPublished" : 1,
+        "unrecognized" : 3
+      },
+      "decade" : 1950,
+      "totalNotes" : 924,
+      "volumeId" : "frus1950v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 726,
+        "lotFile" : 48,
+        "namedFileSeries" : 19,
+        "unrecognized" : 7
+      },
+      "decade" : 1950,
+      "totalNotes" : 800,
+      "volumeId" : "frus1950v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 979,
+        "lotFile" : 4,
+        "namedFileSeries" : 26,
+        "unrecognized" : 5
+      },
+      "decade" : 1950,
+      "totalNotes" : 1014,
+      "volumeId" : "frus1950v07"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 3,
+        "intelligence" : 192,
+        "naraCollection" : 142,
+        "presidentialLibrary" : 12,
+        "unrecognized" : 9
+      },
+      "decade" : 1950,
+      "totalNotes" : 358,
+      "volumeId" : "frus1951-54Iran"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 3,
+        "intelligence" : 192,
+        "naraCollection" : 144,
+        "presidentialLibrary" : 12,
+        "unrecognized" : 8
+      },
+      "decade" : 1950,
+      "totalNotes" : 359,
+      "volumeId" : "frus1951-54IranEd2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 454,
+        "lotFile" : 248,
+        "namedFileSeries" : 8,
+        "presidentialLibrary" : 7,
+        "unrecognized" : 18
+      },
+      "decade" : 1950,
+      "totalNotes" : 735,
+      "volumeId" : "frus1951v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 591,
+        "lotFile" : 111,
+        "namedFileSeries" : 115,
+        "unrecognized" : 27
+      },
+      "decade" : 1940,
+      "totalNotes" : 844,
+      "volumeId" : "frus1951v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 528,
+        "lotFile" : 64,
+        "namedFileSeries" : 25,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 16
+      },
+      "decade" : 1950,
+      "totalNotes" : 634,
+      "volumeId" : "frus1951v03p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 287,
+        "lotFile" : 37,
+        "unrecognized" : 5
+      },
+      "decade" : 1950,
+      "totalNotes" : 329,
+      "volumeId" : "frus1951v03p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 336,
+        "lotFile" : 46,
+        "namedFileSeries" : 27,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 2
+      },
+      "decade" : 1950,
+      "totalNotes" : 412,
+      "volumeId" : "frus1951v04p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 383,
+        "lotFile" : 30,
+        "namedFileSeries" : 9,
+        "unrecognized" : 8
+      },
+      "decade" : 1950,
+      "totalNotes" : 430,
+      "volumeId" : "frus1951v04p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 624,
+        "lotFile" : 104,
+        "namedFileSeries" : 12,
+        "unrecognized" : 7
+      },
+      "decade" : 1950,
+      "totalNotes" : 747,
+      "volumeId" : "frus1951v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 599,
+        "lotFile" : 123,
+        "namedFileSeries" : 32,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 9
+      },
+      "decade" : 1950,
+      "totalNotes" : 764,
+      "volumeId" : "frus1951v06p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 437,
+        "lotFile" : 37,
+        "namedFileSeries" : 11,
+        "unrecognized" : 4
+      },
+      "decade" : 1950,
+      "totalNotes" : 489,
+      "volumeId" : "frus1951v06p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 540,
+        "lotFile" : 312,
+        "namedFileSeries" : 25,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 2
+      },
+      "decade" : 1950,
+      "totalNotes" : 880,
+      "volumeId" : "frus1951v07p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 245,
+        "lotFile" : 59,
+        "namedFileSeries" : 10,
+        "unrecognized" : 1
+      },
+      "decade" : 1950,
+      "totalNotes" : 315,
+      "volumeId" : "frus1951v07p2"
+    },
+    {
+      "counts" : {
+        "intelligence" : 268,
+        "presidentialLibrary" : 5,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 275,
+      "volumeId" : "frus1952-54Guat"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 87,
+        "lotFile" : 78,
+        "namedFileSeries" : 17,
+        "presidentialLibrary" : 24,
+        "unrecognized" : 46
+      },
+      "decade" : 1950,
+      "totalNotes" : 252,
+      "volumeId" : "frus1952-54v01p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 159,
+        "lotFile" : 77,
+        "namedFileSeries" : 5,
+        "presidentialLibrary" : 87,
+        "unrecognized" : 40
+      },
+      "decade" : 1950,
+      "totalNotes" : 368,
+      "volumeId" : "frus1952-54v01p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 3,
+        "lotFile" : 82,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 36,
+        "unrecognized" : 78
+      },
+      "decade" : 1950,
+      "totalNotes" : 200,
+      "volumeId" : "frus1952-54v02p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 159,
+        "lotFile" : 119,
+        "presidentialLibrary" : 51,
+        "unrecognized" : 84
+      },
+      "decade" : 1950,
+      "totalNotes" : 413,
+      "volumeId" : "frus1952-54v02p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 639,
+        "lotFile" : 257,
+        "namedFileSeries" : 35,
+        "presidentialLibrary" : 2,
+        "unrecognized" : 64
+      },
+      "decade" : 1950,
+      "totalNotes" : 997,
+      "volumeId" : "frus1952-54v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 525,
+        "lotFile" : 107,
+        "namedFileSeries" : 13,
+        "presidentialLibrary" : 32,
+        "unrecognized" : 40
+      },
+      "decade" : 1950,
+      "totalNotes" : 717,
+      "volumeId" : "frus1952-54v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 455,
+        "lotFile" : 59,
+        "presidentialLibrary" : 5,
+        "unrecognized" : 17
+      },
+      "decade" : 1950,
+      "totalNotes" : 536,
+      "volumeId" : "frus1952-54v05p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 206,
+        "lotFile" : 104,
+        "presidentialLibrary" : 7,
+        "previouslyPublished" : 3,
+        "unrecognized" : 11
+      },
+      "decade" : 1950,
+      "totalNotes" : 331,
+      "volumeId" : "frus1952-54v05p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 264,
+        "lotFile" : 126,
+        "presidentialLibrary" : 30,
+        "unrecognized" : 52
+      },
+      "decade" : 1950,
+      "totalNotes" : 472,
+      "volumeId" : "frus1952-54v06p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 291,
+        "lotFile" : 119,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 18,
+        "unrecognized" : 29
+      },
+      "decade" : 1950,
+      "totalNotes" : 458,
+      "volumeId" : "frus1952-54v06p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 318,
+        "lotFile" : 126,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 13,
+        "previouslyPublished" : 13,
+        "unrecognized" : 44
+      },
+      "decade" : 1950,
+      "totalNotes" : 515,
+      "volumeId" : "frus1952-54v07p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 320,
+        "lotFile" : 36,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 10,
+        "previouslyPublished" : 1,
+        "unrecognized" : 16
+      },
+      "decade" : 1950,
+      "totalNotes" : 385,
+      "volumeId" : "frus1952-54v07p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 505,
+        "lotFile" : 88,
+        "namedFileSeries" : 24,
+        "presidentialLibrary" : 40,
+        "previouslyPublished" : 1,
+        "unrecognized" : 26
+      },
+      "decade" : 1950,
+      "totalNotes" : 684,
+      "volumeId" : "frus1952-54v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 751,
+        "lotFile" : 92,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 3,
+        "previouslyPublished" : 1,
+        "unrecognized" : 59
+      },
+      "decade" : 1950,
+      "totalNotes" : 909,
+      "volumeId" : "frus1952-54v09p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 541,
+        "lotFile" : 38,
+        "presidentialLibrary" : 4,
+        "unrecognized" : 10
+      },
+      "decade" : 1950,
+      "totalNotes" : 593,
+      "volumeId" : "frus1952-54v09p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 449,
+        "lotFile" : 17,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 16,
+        "unrecognized" : 13
+      },
+      "decade" : 1950,
+      "totalNotes" : 496,
+      "volumeId" : "frus1952-54v10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 492,
+        "lotFile" : 63,
+        "namedFileSeries" : 9,
+        "presidentialLibrary" : 2,
+        "unrecognized" : 9
+      },
+      "decade" : 1950,
+      "totalNotes" : 575,
+      "volumeId" : "frus1952-54v11p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 487,
+        "lotFile" : 22,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 6,
+        "unrecognized" : 22
+      },
+      "decade" : 1950,
+      "totalNotes" : 540,
+      "volumeId" : "frus1952-54v11p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 232,
+        "lotFile" : 136,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 27,
+        "unrecognized" : 83
+      },
+      "decade" : 1950,
+      "totalNotes" : 481,
+      "volumeId" : "frus1952-54v12p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 384,
+        "lotFile" : 26,
+        "namedFileSeries" : 5,
+        "presidentialLibrary" : 8,
+        "unrecognized" : 23
+      },
+      "decade" : 1950,
+      "totalNotes" : 446,
+      "volumeId" : "frus1952-54v12p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 623,
+        "lotFile" : 78,
+        "namedFileSeries" : 12,
+        "presidentialLibrary" : 31,
+        "unrecognized" : 87
+      },
+      "decade" : 1950,
+      "totalNotes" : 831,
+      "volumeId" : "frus1952-54v13p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 499,
+        "lotFile" : 38,
+        "namedFileSeries" : 8,
+        "presidentialLibrary" : 44,
+        "unrecognized" : 41
+      },
+      "decade" : 1950,
+      "totalNotes" : 630,
+      "volumeId" : "frus1952-54v13p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 317,
+        "lotFile" : 56,
+        "namedFileSeries" : 13,
+        "presidentialLibrary" : 47,
+        "unrecognized" : 33
+      },
+      "decade" : 1950,
+      "totalNotes" : 466,
+      "volumeId" : "frus1952-54v14p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 297,
+        "lotFile" : 40,
+        "namedFileSeries" : 9,
+        "presidentialLibrary" : 12,
+        "unrecognized" : 44
+      },
+      "decade" : 1950,
+      "totalNotes" : 402,
+      "volumeId" : "frus1952-54v14p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 339,
+        "lotFile" : 179,
+        "namedFileSeries" : 9,
+        "presidentialLibrary" : 24,
+        "previouslyPublished" : 1,
+        "unrecognized" : 48
+      },
+      "decade" : 1950,
+      "totalNotes" : 600,
+      "volumeId" : "frus1952-54v15p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 249,
+        "lotFile" : 84,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 37,
+        "unrecognized" : 38
+      },
+      "decade" : 1950,
+      "totalNotes" : 411,
+      "volumeId" : "frus1952-54v15p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 885,
+        "lotFile" : 123,
+        "presidentialLibrary" : 8,
+        "unrecognized" : 40
+      },
+      "decade" : 1950,
+      "totalNotes" : 1056,
+      "volumeId" : "frus1952-54v16"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 283,
+        "foreignArchive" : 1,
+        "lotFile" : 42,
+        "namedFileSeries" : 21,
+        "presidentialLibrary" : 44,
+        "previouslyPublished" : 1,
+        "unrecognized" : 20
+      },
+      "decade" : 1950,
+      "totalNotes" : 412,
+      "volumeId" : "frus1955-57v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 198,
+        "intelligence" : 3,
+        "lotFile" : 24,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 71,
+        "previouslyPublished" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1950,
+      "totalNotes" : 303,
+      "volumeId" : "frus1955-57v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 223,
+        "intelligence" : 2,
+        "lotFile" : 41,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 19,
+        "unrecognized" : 2
+      },
+      "decade" : 1950,
+      "totalNotes" : 289,
+      "volumeId" : "frus1955-57v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 693,
+        "lotFile" : 166,
+        "unrecognized" : 8
+      },
+      "decade" : 1950,
+      "totalNotes" : 867,
+      "volumeId" : "frus1955-57v03mSupp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 155,
+        "lotFile" : 53,
+        "presidentialLibrary" : 16,
+        "unrecognized" : 7
+      },
+      "decade" : 1950,
+      "totalNotes" : 231,
+      "volumeId" : "frus1955-57v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 233,
+        "lotFile" : 64,
+        "presidentialLibrary" : 38,
+        "unrecognized" : 8
+      },
+      "decade" : 1950,
+      "totalNotes" : 343,
+      "volumeId" : "frus1955-57v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 197,
+        "intelligence" : 3,
+        "lotFile" : 75,
+        "presidentialLibrary" : 27,
+        "unrecognized" : 42
+      },
+      "decade" : 1950,
+      "totalNotes" : 344,
+      "volumeId" : "frus1955-57v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 392,
+        "intelligence" : 6,
+        "lotFile" : 91,
+        "presidentialLibrary" : 33,
+        "unrecognized" : 12
+      },
+      "decade" : 1950,
+      "totalNotes" : 534,
+      "volumeId" : "frus1955-57v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 165,
+        "lotFile" : 26,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 9,
+        "unrecognized" : 3
+      },
+      "decade" : 1950,
+      "totalNotes" : 205,
+      "volumeId" : "frus1955-57v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 88,
+        "lotFile" : 60,
+        "presidentialLibrary" : 39,
+        "unrecognized" : 21
+      },
+      "decade" : 1950,
+      "totalNotes" : 208,
+      "volumeId" : "frus1955-57v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 123,
+        "lotFile" : 43,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 79,
+        "unrecognized" : 34
+      },
+      "decade" : 1950,
+      "totalNotes" : 281,
+      "volumeId" : "frus1955-57v10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 241,
+        "lotFile" : 50,
+        "namedFileSeries" : 31,
+        "presidentialLibrary" : 19,
+        "unrecognized" : 37
+      },
+      "decade" : 1950,
+      "totalNotes" : 378,
+      "volumeId" : "frus1955-57v11"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 286,
+        "foreignArchive" : 4,
+        "intelligence" : 7,
+        "lotFile" : 86,
+        "presidentialLibrary" : 36,
+        "unrecognized" : 31
+      },
+      "decade" : 1950,
+      "totalNotes" : 450,
+      "volumeId" : "frus1955-57v12"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 297,
+        "foreignArchive" : 3,
+        "intelligence" : 2,
+        "lotFile" : 44,
+        "presidentialLibrary" : 27,
+        "unrecognized" : 13
+      },
+      "decade" : 1950,
+      "totalNotes" : 386,
+      "volumeId" : "frus1955-57v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 355,
+        "intelligence" : 2,
+        "lotFile" : 73,
+        "presidentialLibrary" : 25,
+        "unrecognized" : 28
+      },
+      "decade" : 1950,
+      "totalNotes" : 483,
+      "volumeId" : "frus1955-57v14"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 333,
+        "intelligence" : 1,
+        "lotFile" : 130,
+        "presidentialLibrary" : 35,
+        "unrecognized" : 20
+      },
+      "decade" : 1960,
+      "totalNotes" : 519,
+      "volumeId" : "frus1955-57v15"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 354,
+        "intelligence" : 12,
+        "lotFile" : 55,
+        "namedFileSeries" : 7,
+        "presidentialLibrary" : 169,
+        "previouslyPublished" : 2,
+        "unrecognized" : 16
+      },
+      "decade" : 1950,
+      "totalNotes" : 615,
+      "volumeId" : "frus1955-57v16"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 279,
+        "intelligence" : 1,
+        "lotFile" : 26,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 78,
+        "unrecognized" : 15
+      },
+      "decade" : 1950,
+      "totalNotes" : 401,
+      "volumeId" : "frus1955-57v17"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 242,
+        "intelligence" : 3,
+        "lotFile" : 45,
+        "presidentialLibrary" : 12,
+        "unrecognized" : 7
+      },
+      "decade" : 1950,
+      "totalNotes" : 309,
+      "volumeId" : "frus1955-57v18"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "intelligence" : 1,
+        "lotFile" : 24,
+        "presidentialLibrary" : 106,
+        "unrecognized" : 10
+      },
+      "decade" : 1950,
+      "totalNotes" : 146,
+      "volumeId" : "frus1955-57v19"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 120,
+        "lotFile" : 60,
+        "presidentialLibrary" : 101,
+        "unrecognized" : 26
+      },
+      "decade" : 1950,
+      "totalNotes" : 307,
+      "volumeId" : "frus1955-57v20"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 399,
+        "intelligence" : 1,
+        "lotFile" : 61,
+        "namedFileSeries" : 7,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 16,
+        "unrecognized" : 26
+      },
+      "decade" : 1950,
+      "totalNotes" : 511,
+      "volumeId" : "frus1955-57v21"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 408,
+        "intelligence" : 2,
+        "lotFile" : 58,
+        "namedFileSeries" : 6,
+        "presidentialLibrary" : 17,
+        "unrecognized" : 10
+      },
+      "decade" : 1950,
+      "totalNotes" : 501,
+      "volumeId" : "frus1955-57v22"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 172,
+        "foreignArchive" : 1,
+        "lotFile" : 37,
+        "presidentialLibrary" : 30,
+        "unrecognized" : 11
+      },
+      "decade" : 1950,
+      "totalNotes" : 251,
+      "volumeId" : "frus1955-57v23p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 155,
+        "lotFile" : 64,
+        "namedFileSeries" : 3,
+        "naraCollection" : 5,
+        "presidentialLibrary" : 20,
+        "unrecognized" : 13
+      },
+      "decade" : 1950,
+      "totalNotes" : 260,
+      "volumeId" : "frus1955-57v23p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 229,
+        "intelligence" : 1,
+        "lotFile" : 52,
+        "presidentialLibrary" : 41,
+        "unrecognized" : 9
+      },
+      "decade" : 1950,
+      "totalNotes" : 332,
+      "volumeId" : "frus1955-57v24"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 149,
+        "intelligence" : 3,
+        "lotFile" : 53,
+        "presidentialLibrary" : 33,
+        "previouslyPublished" : 1,
+        "unrecognized" : 10
+      },
+      "decade" : 1950,
+      "totalNotes" : 249,
+      "volumeId" : "frus1955-57v25"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 166,
+        "intelligence" : 6,
+        "lotFile" : 86,
+        "presidentialLibrary" : 38,
+        "unrecognized" : 6
+      },
+      "decade" : 1950,
+      "totalNotes" : 302,
+      "volumeId" : "frus1955-57v26"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 157,
+        "intelligence" : 2,
+        "lotFile" : 121,
+        "presidentialLibrary" : 49,
+        "unrecognized" : 3
+      },
+      "decade" : 1950,
+      "totalNotes" : 332,
+      "volumeId" : "frus1955-57v27"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 123,
+        "foreignArchive" : 4,
+        "lotFile" : 70,
+        "namedFileSeries" : 1,
+        "naraCollection" : 23,
+        "presidentialLibrary" : 35,
+        "unrecognized" : 18
+      },
+      "decade" : 1950,
+      "totalNotes" : 274,
+      "volumeId" : "frus1958-60v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 354,
+        "lotFile" : 39,
+        "naraCollection" : 17,
+        "presidentialLibrary" : 18
+      },
+      "decade" : 1950,
+      "totalNotes" : 428,
+      "volumeId" : "frus1958-60v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 18,
+        "intelligence" : 5,
+        "lotFile" : 24,
+        "naraCollection" : 3,
+        "presidentialLibrary" : 163,
+        "unrecognized" : 19
+      },
+      "decade" : 1950,
+      "totalNotes" : 232,
+      "volumeId" : "frus1958-60v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 89,
+        "lotFile" : 133,
+        "presidentialLibrary" : 348,
+        "unrecognized" : 38
+      },
+      "decade" : 1950,
+      "totalNotes" : 608,
+      "volumeId" : "frus1958-60v03mSupp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 57,
+        "intelligence" : 1,
+        "lotFile" : 30,
+        "namedFileSeries" : 2,
+        "naraCollection" : 32,
+        "presidentialLibrary" : 132,
+        "unrecognized" : 28
+      },
+      "decade" : 1950,
+      "totalNotes" : 282,
+      "volumeId" : "frus1958-60v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 166,
+        "intelligence" : 6,
+        "lotFile" : 91,
+        "presidentialLibrary" : 31,
+        "unrecognized" : 12
+      },
+      "decade" : 1950,
+      "totalNotes" : 306,
+      "volumeId" : "frus1958-60v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 358,
+        "intelligence" : 5,
+        "lotFile" : 129,
+        "namedFileSeries" : 3,
+        "presidentialLibrary" : 42
+      },
+      "decade" : 1950,
+      "totalNotes" : 537,
+      "volumeId" : "frus1958-60v05mSupp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 347,
+        "intelligence" : 10,
+        "lotFile" : 86,
+        "naraCollection" : 9,
+        "presidentialLibrary" : 93,
+        "unrecognized" : 2
+      },
+      "decade" : 1950,
+      "totalNotes" : 547,
+      "volumeId" : "frus1958-60v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 169,
+        "lotFile" : 44,
+        "presidentialLibrary" : 63,
+        "unrecognized" : 15
+      },
+      "decade" : 1950,
+      "totalNotes" : 291,
+      "volumeId" : "frus1958-60v07p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 150,
+        "lotFile" : 108,
+        "naraCollection" : 3,
+        "presidentialLibrary" : 74,
+        "unrecognized" : 15
+      },
+      "decade" : 1950,
+      "totalNotes" : 350,
+      "volumeId" : "frus1958-60v07p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 268,
+        "lotFile" : 143,
+        "namedFileSeries" : 1,
+        "naraCollection" : 3,
+        "presidentialLibrary" : 54,
+        "previouslyPublished" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1950,
+      "totalNotes" : 474,
+      "volumeId" : "frus1958-60v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 165,
+        "lotFile" : 92,
+        "naraCollection" : 5,
+        "presidentialLibrary" : 38,
+        "unrecognized" : 16
+      },
+      "decade" : 1950,
+      "totalNotes" : 316,
+      "volumeId" : "frus1958-60v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 182,
+        "foreignArchive" : 1,
+        "intelligence" : 2,
+        "lotFile" : 69,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 48,
+        "unrecognized" : 14
+      },
+      "decade" : 1950,
+      "totalNotes" : 317,
+      "volumeId" : "frus1958-60v10p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 186,
+        "intelligence" : 4,
+        "lotFile" : 79,
+        "naraCollection" : 4,
+        "presidentialLibrary" : 31,
+        "unrecognized" : 13
+      },
+      "decade" : 1950,
+      "totalNotes" : 317,
+      "volumeId" : "frus1958-60v10p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 295,
+        "intelligence" : 2,
+        "lotFile" : 22,
+        "naraCollection" : 8,
+        "presidentialLibrary" : 50,
+        "unrecognized" : 2
+      },
+      "decade" : 1950,
+      "totalNotes" : 379,
+      "volumeId" : "frus1958-60v11"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 158,
+        "lotFile" : 66,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 68,
+        "unrecognized" : 32
+      },
+      "decade" : 1950,
+      "totalNotes" : 325,
+      "volumeId" : "frus1958-60v12"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 304,
+        "lotFile" : 47,
+        "naraCollection" : 3,
+        "presidentialLibrary" : 36
+      },
+      "decade" : 1950,
+      "totalNotes" : 390,
+      "volumeId" : "frus1958-60v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 215,
+        "intelligence" : 8,
+        "lotFile" : 30,
+        "presidentialLibrary" : 35,
+        "unrecognized" : 6
+      },
+      "decade" : 1950,
+      "totalNotes" : 294,
+      "volumeId" : "frus1958-60v14"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 416,
+        "intelligence" : 3,
+        "lotFile" : 71,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 18,
+        "unrecognized" : 1
+      },
+      "decade" : 1950,
+      "totalNotes" : 510,
+      "volumeId" : "frus1958-60v15"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 296,
+        "foreignArchive" : 1,
+        "lotFile" : 69,
+        "naraCollection" : 16,
+        "presidentialLibrary" : 46,
+        "unrecognized" : 1
+      },
+      "decade" : 1950,
+      "totalNotes" : 429,
+      "volumeId" : "frus1958-60v16"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 212,
+        "lotFile" : 23,
+        "naraCollection" : 3,
+        "presidentialLibrary" : 20,
+        "unrecognized" : 2
+      },
+      "decade" : 1950,
+      "totalNotes" : 260,
+      "volumeId" : "frus1958-60v17"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 219,
+        "lotFile" : 34,
+        "naraCollection" : 8,
+        "presidentialLibrary" : 28,
+        "unrecognized" : 36
+      },
+      "decade" : 1950,
+      "totalNotes" : 325,
+      "volumeId" : "frus1958-60v18"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 222,
+        "intelligence" : 16,
+        "lotFile" : 58,
+        "naraCollection" : 8,
+        "presidentialLibrary" : 40,
+        "unrecognized" : 12
+      },
+      "decade" : 1950,
+      "totalNotes" : 356,
+      "volumeId" : "frus1958-60v19"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 124,
+        "intelligence" : 1,
+        "lotFile" : 36,
+        "naraCollection" : 51,
+        "presidentialLibrary" : 92,
+        "unrecognized" : 11
+      },
+      "decade" : 1960,
+      "totalNotes" : 315,
+      "volumeId" : "frus1961-63v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 118,
+        "lotFile" : 59,
+        "namedFileSeries" : 3,
+        "naraCollection" : 47,
+        "presidentialLibrary" : 81,
+        "unrecognized" : 19
+      },
+      "decade" : 1960,
+      "totalNotes" : 327,
+      "volumeId" : "frus1961-63v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 151,
+        "intelligence" : 3,
+        "lotFile" : 41,
+        "naraCollection" : 29,
+        "presidentialLibrary" : 70,
+        "unrecognized" : 7
+      },
+      "decade" : 1960,
+      "totalNotes" : 301,
+      "volumeId" : "frus1961-63v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 180,
+        "lotFile" : 32,
+        "naraCollection" : 20,
+        "presidentialLibrary" : 130,
+        "previouslyPublished" : 1,
+        "unrecognized" : 18
+      },
+      "decade" : 1960,
+      "totalNotes" : 381,
+      "volumeId" : "frus1961-63v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 144,
+        "intelligence" : 33,
+        "lotFile" : 32,
+        "presidentialLibrary" : 49,
+        "previouslyPublished" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 260,
+      "volumeId" : "frus1961-63v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "lotFile" : 83,
+        "presidentialLibrary" : 25,
+        "unrecognized" : 3
+      },
+      "decade" : 1960,
+      "totalNotes" : 117,
+      "volumeId" : "frus1961-63v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 109,
+        "intelligence" : 22,
+        "lotFile" : 48,
+        "naraCollection" : 23,
+        "presidentialLibrary" : 113,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 316,
+      "volumeId" : "frus1961-63v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 159,
+        "foreignArchive" : 1,
+        "intelligence" : 30,
+        "lotFile" : 71,
+        "namedFileSeries" : 2,
+        "naraCollection" : 34,
+        "presidentialLibrary" : 181,
+        "unrecognized" : 17
+      },
+      "decade" : 1960,
+      "totalNotes" : 495,
+      "volumeId" : "frus1961-63v07-09mSupp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "intelligence" : 8,
+        "lotFile" : 28,
+        "naraCollection" : 18,
+        "presidentialLibrary" : 67
+      },
+      "decade" : 1960,
+      "totalNotes" : 126,
+      "volumeId" : "frus1961-63v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 120,
+        "intelligence" : 1,
+        "lotFile" : 49,
+        "namedFileSeries" : 1,
+        "naraCollection" : 29,
+        "presidentialLibrary" : 110,
+        "unrecognized" : 5
+      },
+      "decade" : 1960,
+      "totalNotes" : 315,
+      "volumeId" : "frus1961-63v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 76,
+        "intelligence" : 65,
+        "lotFile" : 50,
+        "namedFileSeries" : 1,
+        "naraCollection" : 34,
+        "presidentialLibrary" : 172,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 399,
+      "volumeId" : "frus1961-63v10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 183,
+        "intelligence" : 135,
+        "lotFile" : 90,
+        "namedFileSeries" : 15,
+        "naraCollection" : 48,
+        "presidentialLibrary" : 226,
+        "unrecognized" : 160
+      },
+      "decade" : 1960,
+      "totalNotes" : 857,
+      "volumeId" : "frus1961-63v10-12mSupp"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 65,
+        "intelligence" : 46,
+        "lotFile" : 68,
+        "namedFileSeries" : 7,
+        "naraCollection" : 10,
+        "presidentialLibrary" : 166,
+        "unrecognized" : 23
+      },
+      "decade" : 1960,
+      "totalNotes" : 385,
+      "volumeId" : "frus1961-63v11"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 196,
+        "intelligence" : 14,
+        "lotFile" : 53,
+        "naraCollection" : 5,
+        "presidentialLibrary" : 130,
+        "unrecognized" : 4
+      },
+      "decade" : 1960,
+      "totalNotes" : 402,
+      "volumeId" : "frus1961-63v12"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 272,
+        "lotFile" : 95,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 67,
+        "unrecognized" : 5
+      },
+      "decade" : 1960,
+      "totalNotes" : 440,
+      "volumeId" : "frus1961-63v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 170,
+        "lotFile" : 44,
+        "presidentialLibrary" : 78
+      },
+      "decade" : 1960,
+      "totalNotes" : 292,
+      "volumeId" : "frus1961-63v14"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 150,
+        "lotFile" : 40,
+        "naraCollection" : 2,
+        "presidentialLibrary" : 50
+      },
+      "decade" : 1960,
+      "totalNotes" : 242,
+      "volumeId" : "frus1961-63v15"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 294,
+        "lotFile" : 73,
+        "presidentialLibrary" : 16,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 385,
+      "volumeId" : "frus1961-63v16"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 189,
+        "intelligence" : 6,
+        "lotFile" : 37,
+        "naraCollection" : 8,
+        "presidentialLibrary" : 52,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 293,
+      "volumeId" : "frus1961-63v17"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 215,
+        "intelligence" : 7,
+        "lotFile" : 40,
+        "naraCollection" : 21,
+        "presidentialLibrary" : 101
+      },
+      "decade" : 1960,
+      "totalNotes" : 384,
+      "volumeId" : "frus1961-63v18"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 217,
+        "intelligence" : 8,
+        "lotFile" : 12,
+        "naraCollection" : 5,
+        "presidentialLibrary" : 98,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 341,
+      "volumeId" : "frus1961-63v19"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 333,
+        "intelligence" : 4,
+        "lotFile" : 13,
+        "namedFileSeries" : 1,
+        "naraCollection" : 2,
+        "presidentialLibrary" : 50,
+        "unrecognized" : 6
+      },
+      "decade" : 1960,
+      "totalNotes" : 409,
+      "volumeId" : "frus1961-63v20"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 206,
+        "intelligence" : 8,
+        "lotFile" : 33,
+        "naraCollection" : 33,
+        "presidentialLibrary" : 125,
+        "unrecognized" : 4
+      },
+      "decade" : 1960,
+      "totalNotes" : 409,
+      "volumeId" : "frus1961-63v21"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 167,
+        "intelligence" : 15,
+        "lotFile" : 46,
+        "naraCollection" : 9,
+        "presidentialLibrary" : 100,
+        "unrecognized" : 10
+      },
+      "decade" : 1960,
+      "totalNotes" : 347,
+      "volumeId" : "frus1961-63v22"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 246,
+        "intelligence" : 5,
+        "lotFile" : 24,
+        "naraCollection" : 17,
+        "presidentialLibrary" : 161,
+        "unrecognized" : 4
+      },
+      "decade" : 1960,
+      "totalNotes" : 457,
+      "volumeId" : "frus1961-63v23"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 216,
+        "intelligence" : 6,
+        "lotFile" : 14,
+        "naraCollection" : 12,
+        "presidentialLibrary" : 212,
+        "unrecognized" : 33
+      },
+      "decade" : 1960,
+      "totalNotes" : 493,
+      "volumeId" : "frus1961-63v24"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 3,
+        "intelligence" : 17,
+        "lotFile" : 75,
+        "namedFileSeries" : 1,
+        "naraCollection" : 202,
+        "presidentialLibrary" : 152,
+        "unrecognized" : 3
+      },
+      "decade" : 1960,
+      "totalNotes" : 453,
+      "volumeId" : "frus1961-63v25"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 213,
+        "lotFile" : 55,
+        "naraCollection" : 37,
+        "presidentialLibrary" : 145,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 451,
+      "volumeId" : "frus1964-68v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 129,
+        "intelligence" : 13,
+        "lotFile" : 33,
+        "naraCollection" : 9,
+        "presidentialLibrary" : 136
+      },
+      "decade" : 1960,
+      "totalNotes" : 320,
+      "volumeId" : "frus1964-68v02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 84,
+        "intelligence" : 3,
+        "lotFile" : 18,
+        "naraCollection" : 11,
+        "presidentialLibrary" : 148
+      },
+      "decade" : 1960,
+      "totalNotes" : 264,
+      "volumeId" : "frus1964-68v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 109,
+        "intelligence" : 18,
+        "lotFile" : 25,
+        "namedFileSeries" : 2,
+        "naraCollection" : 13,
+        "presidentialLibrary" : 160
+      },
+      "decade" : 1960,
+      "totalNotes" : 327,
+      "volumeId" : "frus1964-68v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 4,
+        "intelligence" : 10,
+        "lotFile" : 15,
+        "namedFileSeries" : 4,
+        "naraCollection" : 182,
+        "presidentialLibrary" : 190,
+        "unrecognized" : 7
+      },
+      "decade" : 1960,
+      "totalNotes" : 412,
+      "volumeId" : "frus1964-68v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "intelligence" : 13,
+        "lotFile" : 19,
+        "namedFileSeries" : 8,
+        "naraCollection" : 74,
+        "presidentialLibrary" : 189,
+        "unrecognized" : 15
+      },
+      "decade" : 1960,
+      "totalNotes" : 320,
+      "volumeId" : "frus1964-68v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 5,
+        "lotFile" : 66,
+        "naraCollection" : 24,
+        "presidentialLibrary" : 169,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 267,
+      "volumeId" : "frus1964-68v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 73,
+        "lotFile" : 6,
+        "naraCollection" : 36,
+        "presidentialLibrary" : 233,
+        "unrecognized" : 4
+      },
+      "decade" : 1960,
+      "totalNotes" : 352,
+      "volumeId" : "frus1964-68v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 138,
+        "lotFile" : 26,
+        "naraCollection" : 68,
+        "presidentialLibrary" : 112,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 346,
+      "volumeId" : "frus1964-68v09"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "foreignArchive" : 1,
+        "intelligence" : 10,
+        "lotFile" : 8,
+        "naraCollection" : 100,
+        "presidentialLibrary" : 88,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 215,
+      "volumeId" : "frus1964-68v10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 59,
+        "foreignArchive" : 1,
+        "intelligence" : 2,
+        "lotFile" : 32,
+        "namedFileSeries" : 1,
+        "naraCollection" : 45,
+        "presidentialLibrary" : 117,
+        "unrecognized" : 12
+      },
+      "decade" : 1960,
+      "totalNotes" : 269,
+      "volumeId" : "frus1964-68v11"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 4,
+        "lotFile" : 41,
+        "naraCollection" : 183,
+        "presidentialLibrary" : 106,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 335,
+      "volumeId" : "frus1964-68v12"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 246,
+        "intelligence" : 1,
+        "lotFile" : 52,
+        "presidentialLibrary" : 33
+      },
+      "decade" : 1960,
+      "totalNotes" : 332,
+      "volumeId" : "frus1964-68v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 12,
+        "lotFile" : 18,
+        "naraCollection" : 165,
+        "presidentialLibrary" : 115
+      },
+      "decade" : 1960,
+      "totalNotes" : 311,
+      "volumeId" : "frus1964-68v14"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 154,
+        "intelligence" : 2,
+        "lotFile" : 37,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 105
+      },
+      "decade" : 1960,
+      "totalNotes" : 299,
+      "volumeId" : "frus1964-68v15"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 314,
+        "intelligence" : 3,
+        "lotFile" : 24,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 27,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 370,
+      "volumeId" : "frus1964-68v16"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 134,
+        "intelligence" : 4,
+        "lotFile" : 25,
+        "presidentialLibrary" : 45
+      },
+      "decade" : 1960,
+      "totalNotes" : 208,
+      "volumeId" : "frus1964-68v17"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "intelligence" : 10,
+        "lotFile" : 7,
+        "naraCollection" : 274,
+        "presidentialLibrary" : 114,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 409,
+      "volumeId" : "frus1964-68v18"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "foreignArchive" : 4,
+        "intelligence" : 11,
+        "lotFile" : 7,
+        "namedFileSeries" : 5,
+        "naraCollection" : 271,
+        "presidentialLibrary" : 215,
+        "unrecognized" : 5
+      },
+      "decade" : 1960,
+      "totalNotes" : 524,
+      "volumeId" : "frus1964-68v19"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 4,
+        "lotFile" : 9,
+        "naraCollection" : 206,
+        "presidentialLibrary" : 151,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 372,
+      "volumeId" : "frus1964-68v20"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "intelligence" : 18,
+        "lotFile" : 27,
+        "naraCollection" : 335,
+        "presidentialLibrary" : 91
+      },
+      "decade" : 1960,
+      "totalNotes" : 473,
+      "volumeId" : "frus1964-68v21"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 179,
+        "intelligence" : 13,
+        "lotFile" : 22,
+        "naraCollection" : 16,
+        "presidentialLibrary" : 93
+      },
+      "decade" : 1960,
+      "totalNotes" : 323,
+      "volumeId" : "frus1964-68v22"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "intelligence" : 168,
+        "lotFile" : 7,
+        "namedFileSeries" : 25,
+        "naraCollection" : 222,
+        "presidentialLibrary" : 100,
+        "unrecognized" : 4
+      },
+      "decade" : 1960,
+      "totalNotes" : 531,
+      "volumeId" : "frus1964-68v23"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 300,
+        "intelligence" : 24,
+        "lotFile" : 24,
+        "namedFileSeries" : 3,
+        "naraCollection" : 29,
+        "presidentialLibrary" : 254,
+        "unrecognized" : 17
+      },
+      "decade" : 1960,
+      "totalNotes" : 651,
+      "volumeId" : "frus1964-68v24"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 9,
+        "lotFile" : 6,
+        "naraCollection" : 259,
+        "presidentialLibrary" : 255,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 531,
+      "volumeId" : "frus1964-68v25"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "intelligence" : 7,
+        "lotFile" : 15,
+        "namedFileSeries" : 6,
+        "naraCollection" : 186,
+        "presidentialLibrary" : 135,
+        "unrecognized" : 6
+      },
+      "decade" : 1960,
+      "totalNotes" : 360,
+      "volumeId" : "frus1964-68v26"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 198,
+        "intelligence" : 3,
+        "lotFile" : 30,
+        "namedFileSeries" : 5,
+        "naraCollection" : 26,
+        "presidentialLibrary" : 129,
+        "unrecognized" : 7
+      },
+      "decade" : 1960,
+      "totalNotes" : 398,
+      "volumeId" : "frus1964-68v27"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 186,
+        "intelligence" : 20,
+        "lotFile" : 30,
+        "naraCollection" : 34,
+        "presidentialLibrary" : 117,
+        "unrecognized" : 2
+      },
+      "decade" : 1960,
+      "totalNotes" : 389,
+      "volumeId" : "frus1964-68v28"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "intelligence" : 4,
+        "lotFile" : 7,
+        "naraCollection" : 210,
+        "presidentialLibrary" : 103,
+        "unrecognized" : 9
+      },
+      "decade" : 1960,
+      "totalNotes" : 338,
+      "volumeId" : "frus1964-68v29p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 4,
+        "lotFile" : 4,
+        "naraCollection" : 70,
+        "presidentialLibrary" : 28,
+        "unrecognized" : 16
+      },
+      "decade" : 1960,
+      "totalNotes" : 122,
+      "volumeId" : "frus1964-68v29p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 187,
+        "intelligence" : 11,
+        "lotFile" : 31,
+        "naraCollection" : 5,
+        "presidentialLibrary" : 101,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 336,
+      "volumeId" : "frus1964-68v30"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 10,
+        "intelligence" : 33,
+        "lotFile" : 26,
+        "namedFileSeries" : 4,
+        "naraCollection" : 193,
+        "presidentialLibrary" : 232,
+        "unrecognized" : 7
+      },
+      "decade" : 1960,
+      "totalNotes" : 505,
+      "volumeId" : "frus1964-68v31"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 49,
+        "intelligence" : 43,
+        "lotFile" : 18,
+        "namedFileSeries" : 4,
+        "naraCollection" : 124,
+        "presidentialLibrary" : 170,
+        "unrecognized" : 7
+      },
+      "decade" : 1960,
+      "totalNotes" : 415,
+      "volumeId" : "frus1964-68v32"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 12,
+        "intelligence" : 51,
+        "lotFile" : 27,
+        "namedFileSeries" : 2,
+        "naraCollection" : 61,
+        "presidentialLibrary" : 256,
+        "unrecognized" : 9
+      },
+      "decade" : 1960,
+      "totalNotes" : 418,
+      "volumeId" : "frus1964-68v33"
+    },
+    {
+      "counts" : {
+        "lotFile" : 28,
+        "naraCollection" : 181,
+        "presidentialLibrary" : 80
+      },
+      "decade" : 1960,
+      "totalNotes" : 289,
+      "volumeId" : "frus1964-68v34"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "lotFile" : 2,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 42,
+        "previouslyPublished" : 26,
+        "unrecognized" : 4
+      },
+      "decade" : 1960,
+      "totalNotes" : 76,
+      "volumeId" : "frus1969-76v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "foreignArchive" : 1,
+        "intelligence" : 24,
+        "lotFile" : 18,
+        "namedFileSeries" : 12,
+        "naraCollection" : 80,
+        "presidentialLibrary" : 196,
+        "previouslyPublished" : 1,
+        "unrecognized" : 4
+      },
+      "decade" : 1970,
+      "totalNotes" : 342,
+      "volumeId" : "frus1969-76v02"
+    },
+    {
+      "counts" : {
+        "lotFile" : 17,
+        "naraCollection" : 90,
+        "presidentialLibrary" : 85
+      },
+      "decade" : 1970,
+      "totalNotes" : 192,
+      "volumeId" : "frus1969-76v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "lotFile" : 92,
+        "namedFileSeries" : 5,
+        "naraCollection" : 57,
+        "presidentialLibrary" : 223,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 379,
+      "volumeId" : "frus1969-76v04"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "lotFile" : 6,
+        "naraCollection" : 287,
+        "presidentialLibrary" : 150
+      },
+      "decade" : 1970,
+      "totalNotes" : 444,
+      "volumeId" : "frus1969-76v05"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 3,
+        "foreignArchive" : 4,
+        "intelligence" : 4,
+        "lotFile" : 3,
+        "namedFileSeries" : 3,
+        "naraCollection" : 20,
+        "presidentialLibrary" : 278,
+        "unrecognized" : 1
+      },
+      "decade" : 1960,
+      "totalNotes" : 316,
+      "volumeId" : "frus1969-76v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "foreignArchive" : 1,
+        "intelligence" : 3,
+        "namedFileSeries" : 2,
+        "naraCollection" : 16,
+        "presidentialLibrary" : 251,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 282,
+      "volumeId" : "frus1969-76v07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 7,
+        "namedFileSeries" : 3,
+        "naraCollection" : 40,
+        "presidentialLibrary" : 208,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 261,
+      "volumeId" : "frus1969-76v08"
+    },
+    {
+      "counts" : {
+        "intelligence" : 1,
+        "naraCollection" : 31,
+        "presidentialLibrary" : 296,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 331,
+      "volumeId" : "frus1969-76v09"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 10,
+        "foreignArchive" : 2,
+        "intelligence" : 10,
+        "namedFileSeries" : 5,
+        "naraCollection" : 25,
+        "presidentialLibrary" : 245,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 298,
+      "volumeId" : "frus1969-76v10"
+    },
+    {
+      "counts" : {
+        "intelligence" : 2,
+        "lotFile" : 3,
+        "namedFileSeries" : 1,
+        "naraCollection" : 95,
+        "presidentialLibrary" : 203,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 305,
+      "volumeId" : "frus1969-76v11"
+    },
+    {
+      "counts" : {
+        "intelligence" : 8,
+        "namedFileSeries" : 3,
+        "naraCollection" : 17,
+        "presidentialLibrary" : 185
+      },
+      "decade" : 1960,
+      "totalNotes" : 213,
+      "volumeId" : "frus1969-76v12"
+    },
+    {
+      "counts" : {
+        "intelligence" : 1,
+        "lotFile" : 5,
+        "namedFileSeries" : 1,
+        "naraCollection" : 23,
+        "presidentialLibrary" : 285,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 316,
+      "volumeId" : "frus1969-76v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 2,
+        "lotFile" : 7,
+        "namedFileSeries" : 2,
+        "naraCollection" : 15,
+        "presidentialLibrary" : 215
+      },
+      "decade" : 1970,
+      "totalNotes" : 242,
+      "volumeId" : "frus1969-76v14"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 5,
+        "intelligence" : 3,
+        "namedFileSeries" : 1,
+        "naraCollection" : 6,
+        "presidentialLibrary" : 177,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 193,
+      "volumeId" : "frus1969-76v15"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 19,
+        "centralForeignPolicyFile" : 1,
+        "naraCollection" : 122,
+        "presidentialLibrary" : 156,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 299,
+      "volumeId" : "frus1969-76v16"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "foreignArchive" : 1,
+        "intelligence" : 7,
+        "lotFile" : 22,
+        "namedFileSeries" : 3,
+        "naraCollection" : 42,
+        "presidentialLibrary" : 185,
+        "previouslyPublished" : 1,
+        "unrecognized" : 5
+      },
+      "decade" : 1970,
+      "totalNotes" : 268,
+      "volumeId" : "frus1969-76v17"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 1,
+        "intelligence" : 3,
+        "lotFile" : 6,
+        "naraCollection" : 5,
+        "presidentialLibrary" : 136,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 152,
+      "volumeId" : "frus1969-76v18"
+    },
+    {
+      "counts" : {
+        "intelligence" : 5,
+        "lotFile" : 1,
+        "namedFileSeries" : 1,
+        "naraCollection" : 31,
+        "presidentialLibrary" : 131,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 170,
+      "volumeId" : "frus1969-76v19p1"
+    },
+    {
+      "counts" : {
+        "intelligence" : 2,
+        "lotFile" : 1,
+        "naraCollection" : 27,
+        "presidentialLibrary" : 100,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 131,
+      "volumeId" : "frus1969-76v19p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 10,
+        "intelligence" : 1,
+        "lotFile" : 12,
+        "namedFileSeries" : 5,
+        "naraCollection" : 114,
+        "presidentialLibrary" : 162,
+        "unrecognized" : 16
+      },
+      "decade" : 1970,
+      "totalNotes" : 320,
+      "volumeId" : "frus1969-76v20"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 19,
+        "centralForeignPolicyFile" : 3,
+        "foreignArchive" : 1,
+        "intelligence" : 21,
+        "lotFile" : 3,
+        "namedFileSeries" : 61,
+        "naraCollection" : 96,
+        "presidentialLibrary" : 149,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 355,
+      "volumeId" : "frus1969-76v21"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 15,
+        "intelligence" : 3,
+        "lotFile" : 1,
+        "naraCollection" : 94,
+        "presidentialLibrary" : 33,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 147,
+      "volumeId" : "frus1969-76v22"
+    },
+    {
+      "counts" : {
+        "naraCollection" : 19,
+        "presidentialLibrary" : 273
+      },
+      "decade" : 1970,
+      "totalNotes" : 292,
+      "volumeId" : "frus1969-76v23"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 1,
+        "intelligence" : 8,
+        "naraCollection" : 137,
+        "presidentialLibrary" : 179,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 326,
+      "volumeId" : "frus1969-76v24"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 4,
+        "intelligence" : 5,
+        "naraCollection" : 36,
+        "presidentialLibrary" : 366,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 414,
+      "volumeId" : "frus1969-76v25"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 2,
+        "intelligence" : 1,
+        "naraCollection" : 51,
+        "presidentialLibrary" : 235,
+        "previouslyPublished" : 1,
+        "unrecognized" : 8
+      },
+      "decade" : 1970,
+      "totalNotes" : 298,
+      "volumeId" : "frus1969-76v26"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 3,
+        "centralForeignPolicyFile" : 102,
+        "foreignArchive" : 1,
+        "intelligence" : 12,
+        "lotFile" : 4,
+        "namedFileSeries" : 8,
+        "naraCollection" : 31,
+        "presidentialLibrary" : 149,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 312,
+      "volumeId" : "frus1969-76v27"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "centralForeignPolicyFile" : 26,
+        "intelligence" : 2,
+        "namedFileSeries" : 13,
+        "naraCollection" : 57,
+        "presidentialLibrary" : 133,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 238,
+      "volumeId" : "frus1969-76v28"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 10,
+        "intelligence" : 7,
+        "lotFile" : 20,
+        "naraCollection" : 119,
+        "presidentialLibrary" : 267,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 425,
+      "volumeId" : "frus1969-76v29"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 5,
+        "intelligence" : 11,
+        "lotFile" : 13,
+        "namedFileSeries" : 1,
+        "naraCollection" : 29,
+        "presidentialLibrary" : 179,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 240,
+      "volumeId" : "frus1969-76v30"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 26,
+        "naraCollection" : 45,
+        "presidentialLibrary" : 209
+      },
+      "decade" : 1970,
+      "totalNotes" : 280,
+      "volumeId" : "frus1969-76v31"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 1,
+        "intelligence" : 4,
+        "lotFile" : 1,
+        "naraCollection" : 46,
+        "presidentialLibrary" : 261,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 314,
+      "volumeId" : "frus1969-76v32"
+    },
+    {
+      "counts" : {
+        "intelligence" : 1,
+        "lotFile" : 4,
+        "naraCollection" : 12,
+        "presidentialLibrary" : 219,
+        "previouslyPublished" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 238,
+      "volumeId" : "frus1969-76v33"
+    },
+    {
+      "counts" : {
+        "intelligence" : 16,
+        "lotFile" : 2,
+        "naraCollection" : 20,
+        "presidentialLibrary" : 161,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 202,
+      "volumeId" : "frus1969-76v34"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 3,
+        "intelligence" : 22,
+        "namedFileSeries" : 18,
+        "naraCollection" : 16,
+        "presidentialLibrary" : 140,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 201,
+      "volumeId" : "frus1969-76v35"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 2,
+        "intelligence" : 17,
+        "lotFile" : 2,
+        "naraCollection" : 101,
+        "presidentialLibrary" : 212,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 336,
+      "volumeId" : "frus1969-76v36"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 98,
+        "lotFile" : 5,
+        "namedFileSeries" : 6,
+        "naraCollection" : 21,
+        "presidentialLibrary" : 153,
+        "unrecognized" : 6
+      },
+      "decade" : 1970,
+      "totalNotes" : 289,
+      "volumeId" : "frus1969-76v37"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 3,
+        "lotFile" : 2,
+        "naraCollection" : 11,
+        "presidentialLibrary" : 27,
+        "previouslyPublished" : 29
+      },
+      "decade" : 1970,
+      "totalNotes" : 72,
+      "volumeId" : "frus1969-76v38p1"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 4,
+        "intelligence" : 12,
+        "lotFile" : 22,
+        "namedFileSeries" : 8,
+        "naraCollection" : 47,
+        "presidentialLibrary" : 109,
+        "previouslyPublished" : 2,
+        "unrecognized" : 5
+      },
+      "decade" : 1970,
+      "totalNotes" : 209,
+      "volumeId" : "frus1969-76v38p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 15,
+        "intelligence" : 1,
+        "lotFile" : 2,
+        "naraCollection" : 59,
+        "presidentialLibrary" : 217
+      },
+      "decade" : 1970,
+      "totalNotes" : 296,
+      "volumeId" : "frus1969-76v39"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "intelligence" : 1,
+        "lotFile" : 28,
+        "namedFileSeries" : 10,
+        "naraCollection" : 74,
+        "presidentialLibrary" : 209
+      },
+      "decade" : 1970,
+      "totalNotes" : 323,
+      "volumeId" : "frus1969-76v40"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 4,
+        "intelligence" : 8,
+        "naraCollection" : 58,
+        "presidentialLibrary" : 261,
+        "unrecognized" : 7
+      },
+      "decade" : 1970,
+      "totalNotes" : 338,
+      "volumeId" : "frus1969-76v41"
+    },
+    {
+      "counts" : {
+        "naraCollection" : 1,
+        "presidentialLibrary" : 68,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 70,
+      "volumeId" : "frus1969-76v42"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 3,
+        "foreignArchive" : 1,
+        "lotFile" : 19,
+        "naraCollection" : 243,
+        "presidentialLibrary" : 176,
+        "previouslyPublished" : 1,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 444,
+      "volumeId" : "frus1969-76ve01"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 1,
+        "intelligence" : 1,
+        "namedFileSeries" : 2,
+        "naraCollection" : 127,
+        "presidentialLibrary" : 201,
+        "previouslyPublished" : 16,
+        "unrecognized" : 5
+      },
+      "decade" : 1970,
+      "totalNotes" : 353,
+      "volumeId" : "frus1969-76ve02"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 82,
+        "intelligence" : 8,
+        "lotFile" : 28,
+        "naraCollection" : 45,
+        "presidentialLibrary" : 99,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 264,
+      "volumeId" : "frus1969-76ve03"
+    },
+    {
+      "counts" : {
+        "intelligence" : 17,
+        "naraCollection" : 225,
+        "presidentialLibrary" : 84,
+        "unrecognized" : 4
+      },
+      "decade" : 1970,
+      "totalNotes" : 330,
+      "volumeId" : "frus1969-76ve04"
+    },
+    {
+      "counts" : {
+        "foreignArchive" : 2,
+        "intelligence" : 13,
+        "namedFileSeries" : 4,
+        "naraCollection" : 144,
+        "presidentialLibrary" : 163,
+        "unrecognized" : 58
+      },
+      "decade" : 1970,
+      "totalNotes" : 384,
+      "volumeId" : "frus1969-76ve05p1"
+    },
+    {
+      "counts" : {
+        "intelligence" : 13,
+        "namedFileSeries" : 5,
+        "naraCollection" : 101,
+        "presidentialLibrary" : 41,
+        "unrecognized" : 25
+      },
+      "decade" : 1970,
+      "totalNotes" : 185,
+      "volumeId" : "frus1969-76ve05p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "centralForeignPolicyFile" : 21,
+        "intelligence" : 5,
+        "lotFile" : 45,
+        "naraCollection" : 114,
+        "presidentialLibrary" : 107,
+        "unrecognized" : 22
+      },
+      "decade" : 1970,
+      "totalNotes" : 319,
+      "volumeId" : "frus1969-76ve06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "intelligence" : 7,
+        "lotFile" : 18,
+        "naraCollection" : 236,
+        "presidentialLibrary" : 164,
+        "unrecognized" : 28
+      },
+      "decade" : 1970,
+      "totalNotes" : 455,
+      "volumeId" : "frus1969-76ve07"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 81,
+        "intelligence" : 11,
+        "lotFile" : 50,
+        "naraCollection" : 43,
+        "presidentialLibrary" : 78,
+        "previouslyPublished" : 1,
+        "unrecognized" : 51
+      },
+      "decade" : 1970,
+      "totalNotes" : 316,
+      "volumeId" : "frus1969-76ve08"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 128
+      },
+      "decade" : 1970,
+      "totalNotes" : 128,
+      "volumeId" : "frus1969-76ve09p1"
+    },
+    {
+      "counts" : {
+        "lotFile" : 44,
+        "presidentialLibrary" : 1,
+        "unrecognized" : 192
+      },
+      "decade" : 1970,
+      "totalNotes" : 237,
+      "volumeId" : "frus1969-76ve09p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 17,
+        "foreignArchive" : 2,
+        "intelligence" : 35,
+        "lotFile" : 17,
+        "namedFileSeries" : 7,
+        "naraCollection" : 220,
+        "presidentialLibrary" : 371,
+        "unrecognized" : 21
+      },
+      "decade" : 1970,
+      "totalNotes" : 690,
+      "volumeId" : "frus1969-76ve10"
+    },
+    {
+      "counts" : {
+        "lotFile" : 58,
+        "unrecognized" : 415
+      },
+      "decade" : 1970,
+      "totalNotes" : 473,
+      "volumeId" : "frus1969-76ve11p1"
+    },
+    {
+      "counts" : {
+        "lotFile" : 40,
+        "unrecognized" : 362
+      },
+      "decade" : 1970,
+      "totalNotes" : 402,
+      "volumeId" : "frus1969-76ve11p2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 69,
+        "intelligence" : 17,
+        "naraCollection" : 62,
+        "presidentialLibrary" : 266,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 416,
+      "volumeId" : "frus1969-76ve12"
+    },
+    {
+      "counts" : {
+        "naraCollection" : 10,
+        "presidentialLibrary" : 164,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 175,
+      "volumeId" : "frus1969-76ve13"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 107,
+        "intelligence" : 3,
+        "lotFile" : 25,
+        "naraCollection" : 14,
+        "presidentialLibrary" : 41
+      },
+      "decade" : 1970,
+      "totalNotes" : 190,
+      "volumeId" : "frus1969-76ve14p1"
+    },
+    {
+      "counts" : {
+        "lotFile" : 8,
+        "unrecognized" : 197
+      },
+      "decade" : 1970,
+      "totalNotes" : 205,
+      "volumeId" : "frus1969-76ve14p2"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 10,
+        "intelligence" : 5,
+        "namedFileSeries" : 1,
+        "naraCollection" : 22,
+        "presidentialLibrary" : 66,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 105,
+      "volumeId" : "frus1969-76ve15p1"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 343
+      },
+      "decade" : 1970,
+      "totalNotes" : 343,
+      "volumeId" : "frus1969-76ve15p2"
+    },
+    {
+      "counts" : {
+        "unrecognized" : 382
+      },
+      "decade" : 1970,
+      "totalNotes" : 382,
+      "volumeId" : "frus1969-76ve15p2Ed2"
+    },
+    {
+      "counts" : {
+        "lotFile" : 5,
+        "unrecognized" : 152
+      },
+      "decade" : 1970,
+      "totalNotes" : 157,
+      "volumeId" : "frus1969-76ve16"
+    },
+    {
+      "counts" : {
+        "lotFile" : 2,
+        "naraCollection" : 10,
+        "presidentialLibrary" : 64,
+        "previouslyPublished" : 54
+      },
+      "decade" : 1970,
+      "totalNotes" : 130,
+      "volumeId" : "frus1977-80v01"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 88,
+        "intelligence" : 9,
+        "lotFile" : 24,
+        "namedFileSeries" : 1,
+        "naraCollection" : 92,
+        "presidentialLibrary" : 122
+      },
+      "decade" : 1970,
+      "totalNotes" : 336,
+      "volumeId" : "frus1977-80v02"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 10,
+        "lotFile" : 5,
+        "namedFileSeries" : 7,
+        "naraCollection" : 62,
+        "presidentialLibrary" : 259
+      },
+      "decade" : 1970,
+      "totalNotes" : 343,
+      "volumeId" : "frus1977-80v03"
+    },
+    {
+      "counts" : {
+        "intelligence" : 4,
+        "naraCollection" : 2,
+        "presidentialLibrary" : 213,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 222,
+      "volumeId" : "frus1977-80v04"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 44,
+        "intelligence" : 1,
+        "lotFile" : 85,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 177,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 309,
+      "volumeId" : "frus1977-80v06"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 106,
+        "lotFile" : 12,
+        "presidentialLibrary" : 163
+      },
+      "decade" : 1970,
+      "totalNotes" : 281,
+      "volumeId" : "frus1977-80v08"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 93,
+        "intelligence" : 9,
+        "lotFile" : 26,
+        "namedFileSeries" : 3,
+        "naraCollection" : 19,
+        "presidentialLibrary" : 234,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 387,
+      "volumeId" : "frus1977-80v09Ed2"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 1,
+        "intelligence" : 34,
+        "lotFile" : 48,
+        "namedFileSeries" : 15,
+        "presidentialLibrary" : 230,
+        "unrecognized" : 4
+      },
+      "decade" : 1970,
+      "totalNotes" : 334,
+      "volumeId" : "frus1977-80v11p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "centralForeignPolicyFile" : 50,
+        "intelligence" : 77,
+        "lotFile" : 11,
+        "namedFileSeries" : 34,
+        "naraCollection" : 29,
+        "presidentialLibrary" : 126,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 336,
+      "volumeId" : "frus1977-80v12"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 40,
+        "intelligence" : 5,
+        "lotFile" : 11,
+        "naraCollection" : 17,
+        "presidentialLibrary" : 245
+      },
+      "decade" : 1970,
+      "totalNotes" : 318,
+      "volumeId" : "frus1977-80v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 5,
+        "centralForeignPolicyFile" : 158,
+        "intelligence" : 26,
+        "lotFile" : 24,
+        "namedFileSeries" : 12,
+        "naraCollection" : 19,
+        "presidentialLibrary" : 228,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 473,
+      "volumeId" : "frus1977-80v15"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 112,
+        "intelligence" : 5,
+        "lotFile" : 19,
+        "namedFileSeries" : 6,
+        "naraCollection" : 4,
+        "presidentialLibrary" : 229,
+        "unrecognized" : 4
+      },
+      "decade" : 1970,
+      "totalNotes" : 379,
+      "volumeId" : "frus1977-80v16"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 11,
+        "intelligence" : 6,
+        "namedFileSeries" : 2,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 89,
+        "previouslyPublished" : 1,
+        "unrecognized" : 19
+      },
+      "decade" : 1970,
+      "totalNotes" : 129,
+      "volumeId" : "frus1977-80v17p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 42,
+        "intelligence" : 4,
+        "lotFile" : 2,
+        "namedFileSeries" : 4,
+        "naraCollection" : 7,
+        "presidentialLibrary" : 115,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 176,
+      "volumeId" : "frus1977-80v17p2"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 74,
+        "intelligence" : 5,
+        "lotFile" : 2,
+        "presidentialLibrary" : 176,
+        "unrecognized" : 14
+      },
+      "decade" : 1970,
+      "totalNotes" : 271,
+      "volumeId" : "frus1977-80v17p3"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 79,
+        "intelligence" : 15,
+        "lotFile" : 3,
+        "namedFileSeries" : 3,
+        "naraCollection" : 19,
+        "presidentialLibrary" : 175,
+        "unrecognized" : 4
+      },
+      "decade" : 1970,
+      "totalNotes" : 298,
+      "volumeId" : "frus1977-80v18"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "centralForeignPolicyFile" : 242,
+        "intelligence" : 9,
+        "lotFile" : 8,
+        "naraCollection" : 12,
+        "presidentialLibrary" : 193,
+        "previouslyPublished" : 1,
+        "unrecognized" : 26
+      },
+      "decade" : 1970,
+      "totalNotes" : 497,
+      "volumeId" : "frus1977-80v19"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 80,
+        "intelligence" : 12,
+        "lotFile" : 7,
+        "namedFileSeries" : 9,
+        "naraCollection" : 28,
+        "presidentialLibrary" : 141,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 280,
+      "volumeId" : "frus1977-80v20"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 33,
+        "intelligence" : 8,
+        "lotFile" : 23,
+        "namedFileSeries" : 2,
+        "naraCollection" : 55,
+        "presidentialLibrary" : 82,
+        "unrecognized" : 3
+      },
+      "decade" : 1970,
+      "totalNotes" : 207,
+      "volumeId" : "frus1977-80v21"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 25,
+        "intelligence" : 29,
+        "lotFile" : 37,
+        "naraCollection" : 25,
+        "presidentialLibrary" : 219
+      },
+      "decade" : 1970,
+      "totalNotes" : 335,
+      "volumeId" : "frus1977-80v22"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 4,
+        "centralForeignPolicyFile" : 128,
+        "intelligence" : 13,
+        "lotFile" : 4,
+        "namedFileSeries" : 5,
+        "naraCollection" : 8,
+        "presidentialLibrary" : 215,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 379,
+      "volumeId" : "frus1977-80v23"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6,
+        "centralForeignPolicyFile" : 144,
+        "intelligence" : 23,
+        "naraCollection" : 44,
+        "presidentialLibrary" : 143,
+        "unrecognized" : 6
+      },
+      "decade" : 1970,
+      "totalNotes" : 366,
+      "volumeId" : "frus1977-80v24"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 132,
+        "intelligence" : 12,
+        "lotFile" : 29,
+        "naraCollection" : 41,
+        "presidentialLibrary" : 265,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 480,
+      "volumeId" : "frus1977-80v26"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 30,
+        "intelligence" : 1,
+        "lotFile" : 6,
+        "presidentialLibrary" : 63,
+        "unrecognized" : 299
+      },
+      "decade" : 1970,
+      "totalNotes" : 399,
+      "volumeId" : "frus1977-80v27"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 2,
+        "intelligence" : 14,
+        "lotFile" : 1,
+        "namedFileSeries" : 6,
+        "naraCollection" : 134,
+        "presidentialLibrary" : 84,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 244,
+      "volumeId" : "frus1977-80v28"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 25,
+        "intelligence" : 4,
+        "lotFile" : 20,
+        "naraCollection" : 50,
+        "presidentialLibrary" : 174,
+        "unrecognized" : 2
+      },
+      "decade" : 1970,
+      "totalNotes" : 276,
+      "volumeId" : "frus1977-80v29"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 26,
+        "intelligence" : 1,
+        "lotFile" : 2,
+        "naraCollection" : 80,
+        "presidentialLibrary" : 99,
+        "previouslyPublished" : 3,
+        "unrecognized" : 1
+      },
+      "decade" : 1970,
+      "totalNotes" : 212,
+      "volumeId" : "frus1977-80v30"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 9,
+        "lotFile" : 73,
+        "namedFileSeries" : 2,
+        "naraCollection" : 1,
+        "presidentialLibrary" : 125,
+        "previouslyPublished" : 57,
+        "unrecognized" : 2
+      },
+      "decade" : 1980,
+      "totalNotes" : 269,
+      "volumeId" : "frus1981-88v01"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 34,
+        "intelligence" : 3,
+        "lotFile" : 34,
+        "namedFileSeries" : 2,
+        "naraCollection" : 2,
+        "presidentialLibrary" : 167,
+        "unrecognized" : 2
+      },
+      "decade" : 1980,
+      "totalNotes" : 246,
+      "volumeId" : "frus1981-88v03"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 29,
+        "intelligence" : 7,
+        "lotFile" : 81,
+        "namedFileSeries" : 2,
+        "naraCollection" : 3,
+        "presidentialLibrary" : 244
+      },
+      "decade" : 1980,
+      "totalNotes" : 367,
+      "volumeId" : "frus1981-88v04"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 43,
+        "intelligence" : 9,
+        "lotFile" : 54,
+        "namedFileSeries" : 1,
+        "presidentialLibrary" : 197,
+        "unrecognized" : 1
+      },
+      "decade" : 1980,
+      "totalNotes" : 305,
+      "volumeId" : "frus1981-88v05"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 6,
+        "intelligence" : 1,
+        "lotFile" : 92,
+        "presidentialLibrary" : 77,
+        "unrecognized" : 1
+      },
+      "decade" : 1980,
+      "totalNotes" : 177,
+      "volumeId" : "frus1981-88v06"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 48,
+        "intelligence" : 16,
+        "lotFile" : 68,
+        "namedFileSeries" : 2,
+        "presidentialLibrary" : 293,
+        "unrecognized" : 104
+      },
+      "decade" : 1980,
+      "totalNotes" : 533,
+      "volumeId" : "frus1981-88v10"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 2,
+        "centralForeignPolicyFile" : 40,
+        "foreignArchive" : 4,
+        "intelligence" : 1,
+        "lotFile" : 90,
+        "namedFileSeries" : 71,
+        "presidentialLibrary" : 103
+      },
+      "decade" : 1980,
+      "totalNotes" : 311,
+      "volumeId" : "frus1981-88v11"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 108,
+        "intelligence" : 16,
+        "lotFile" : 119,
+        "namedFileSeries" : 1,
+        "naraCollection" : 42,
+        "presidentialLibrary" : 155,
+        "unrecognized" : 11
+      },
+      "decade" : 1980,
+      "totalNotes" : 452,
+      "volumeId" : "frus1981-88v13"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 16,
+        "centralForeignPolicyFile" : 194,
+        "intelligence" : 12,
+        "lotFile" : 48,
+        "naraCollection" : 30,
+        "presidentialLibrary" : 156
+      },
+      "decade" : 1980,
+      "totalNotes" : 456,
+      "volumeId" : "frus1981-88v24"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "centralForeignPolicyFile" : 17,
+        "intelligence" : 6,
+        "lotFile" : 119,
+        "namedFileSeries" : 6,
+        "naraCollection" : 42,
+        "presidentialLibrary" : 207,
+        "unrecognized" : 2
+      },
+      "decade" : 1980,
+      "totalNotes" : 400,
+      "volumeId" : "frus1981-88v38"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 76,
+        "foreignArchive" : 2,
+        "intelligence" : 10,
+        "lotFile" : 138,
+        "naraCollection" : 13,
+        "presidentialLibrary" : 132
+      },
+      "decade" : 1980,
+      "totalNotes" : 371,
+      "volumeId" : "frus1981-88v41"
+    },
+    {
+      "counts" : {
+        "centralForeignPolicyFile" : 7,
+        "foreignArchive" : 14,
+        "intelligence" : 1,
+        "lotFile" : 61,
+        "namedFileSeries" : 89,
+        "naraCollection" : 2,
+        "presidentialLibrary" : 104,
+        "unrecognized" : 2
+      },
+      "decade" : 1980,
+      "totalNotes" : 280,
+      "volumeId" : "frus1981-88v44p1"
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 7,
+        "centralForeignPolicyFile" : 63,
+        "lotFile" : 86,
+        "presidentialLibrary" : 83,
+        "unrecognized" : 1
+      },
+      "decade" : 1980,
+      "totalNotes" : 240,
+      "volumeId" : "frus1989-92v31"
     }
   ],
   "categories" : [
@@ -194,8 +6027,8 @@
     "previouslyPublished",
     "unrecognized"
   ],
-  "generated" : "2026-07-04",
-  "schemaVersion" : 1,
+  "generated" : "2026-08-08",
+  "schemaVersion" : 2,
   "totalSourceNotes" : 268757,
   "volumesCovered" : 522
 }
