@@ -73,6 +73,8 @@ struct ArchivalAnalyticsView: View {
     #if os(iOS)
     /// The iPhone fallback target for Archival Neighbors, where there are no extra windows.
     @State private var neighborsTarget: ArchivalLibraryNeighborsTarget?
+    /// The same fallback for a class-keyed neighbours query.
+    @State private var classNeighborsTarget: ArchivalClassNeighborsTarget?
     #endif
 
     private var unitLens: ArchivalUnitLens {
@@ -101,15 +103,26 @@ struct ArchivalAnalyticsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    switch mode {
-                    case .collections: collectionsMode
-                    case .yourLibrary: yourLibraryMode
+            Group {
+                // Network owns its own pinch and pan. Nesting it in the shell's ScrollView would
+                // put two gesture recognisers on the same drag, so the full-frame modes bypass
+                // the scroll container entirely rather than fighting it.
+                if mode.isFullFrameCanvas {
+                    networkMode
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 28) {
+                            switch mode {
+                            case .collections: collectionsMode
+                            case .flows: flowsMode
+                            case .yourLibrary: yourLibraryMode
+                            case .network: EmptyView()   // handled above
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             #if os(macOS)
             .navigationTitle(String(localized: "archival.title", defaultValue: "Archival Analytics"))
@@ -128,6 +141,19 @@ struct ArchivalAnalyticsView: View {
             if let appState {
                 ArchivalNeighborsSheet(appState: appState) { scopeVolumeIds in
                     await loadNeighbors(for: target.record, scopeVolumeIds: scopeVolumeIds)
+                }
+                .environment(appState)
+                .environment(\.sceneID, sceneID ?? .anyWindow)
+            }
+        }
+        .sheet(item: $classNeighborsTarget) { target in
+            if let appState {
+                ArchivalNeighborsSheet(appState: appState) { scopeVolumeIds in
+                    guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
+                    return (try? await pipeline.archivalNeighbors(
+                        forLotFile: nil, recordGroup: nil, series: nil, repository: nil,
+                        decimalClass: target.classKey,
+                        scopeVolumeIds: scopeVolumeIds)) ?? ([], 0, nil)
                 }
                 .environment(appState)
                 .environment(\.sceneID, sceneID ?? .anyWindow)
@@ -161,6 +187,46 @@ struct ArchivalAnalyticsView: View {
             Button(String(localized: "archival.done", defaultValue: "Done")) { dismiss() }
         }
         #endif
+    }
+
+    // MARK: - Network mode
+
+    @ViewBuilder
+    private var networkMode: some View {
+        if let collections = CollectionAuthorityStore.shared?.collections, !collections.isEmpty {
+            ArchivalNetworkView(
+                collections: collections,
+                usage: CollectionUsageIndexStore.shared,
+                onOpenNeighbors: { openNeighbors(for: $0) },
+                onOpenClassNeighbors: { openClassNeighbors($0) })
+        } else {
+            unavailableState(String(localized: "archival.network.unavailable",
+                                    defaultValue: "The bundled collection authority is unavailable in this build, so the network cannot be drawn."))
+        }
+    }
+
+    // MARK: - Flows mode
+
+    @ViewBuilder
+    private var flowsMode: some View {
+        if let index = ProvenanceFlowIndexStore.shared,
+           let authority = CollectionAuthorityStore.shared {
+            ArchivalFlowsView(index: index, authority: authority,
+                              onOpenNeighbors: { openNeighbors(for: $0) })
+        } else {
+            unavailableState(String(localized: "archival.flows.unavailable",
+                                    defaultValue: "The bundled reference-flow index is unavailable in this build, so hand-offs cannot be shown. This is not the same as the series having none."))
+        }
+    }
+
+    /// A missing bundled artifact reads as "unavailable", never as "there is nothing here".
+    private func unavailableState(_ message: String) -> some View {
+        ContentUnavailableView(
+            String(localized: "archival.unavailable.title", defaultValue: "Data Unavailable"),
+            systemImage: "exclamationmark.triangle",
+            description: Text(message)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Collections mode
@@ -785,6 +851,25 @@ struct ArchivalAnalyticsView: View {
         #endif
     }
 
+    /// Opens Archival Neighbors for a central-file class.
+    ///
+    /// A class routes to the class-keyed request, never to a collection detail — it is a subject
+    /// heading inside a filing system, not a body of records, and there is no record to open.
+    private func openClassNeighbors(_ classKey: String) {
+        let request = ArchivalNeighborsRequest.decimalClass(classKey)
+        #if os(iOS)
+        guard supportsMultipleWindows else {
+            classNeighborsTarget = ArchivalClassNeighborsTarget(classKey: classKey)
+            return
+        }
+        appState?.openAuxWindow(request, from: sceneID, using: openWindow)
+        #else
+        appState?.bindTool(.archivalNeighbors(request),
+                           to: appState?.provenance(of: .analytics))
+        openWindow(value: request)
+        #endif
+    }
+
     #if os(iOS)
     /// The iPhone sheet's loader — the same record-level query the collection detail runs.
     private func loadNeighbors(for record: AuthorityCollectionRecord,
@@ -809,6 +894,16 @@ struct ArchivalAnalyticsView: View {
 private struct ArchivalLibraryNeighborsTarget: Identifiable {
     /// The collection whose neighbours to show.
     let record: AuthorityCollectionRecord
+    let id = UUID()
+}
+
+// MARK: - ArchivalClassNeighborsTarget
+
+/// The same `.sheet(item:)` fallback for a central-file class, whose neighbours are a
+/// `decimal_class` query rather than a collection match.
+private struct ArchivalClassNeighborsTarget: Identifiable {
+    /// The class key.
+    let classKey: String
     let id = UUID()
 }
 
