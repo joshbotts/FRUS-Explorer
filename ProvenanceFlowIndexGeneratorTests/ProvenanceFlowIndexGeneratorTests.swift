@@ -28,14 +28,17 @@ struct DocumentIdInventoryTests {
             <div type="section" xml:id="index"><p>Back-of-book index</p></div>
             <div type="document" xml:id="d2"/>
           </div>
-          <!-- <div type="document" xml:id="dCommented"/> -->
+          <!-- editors note: 5 > 3, and this one is struck: <div type="document" xml:id="dGhost"/> -->
         </body></text></TEI>
         """
         let ids = DocumentIdInventory.documentIds(in: Data(xml.utf8))
         #expect(ids == ["d1", "d2"], """
             Got \(ids.sorted()). A section id in the inventory would let index-entry anchors — \
             49,799 of them corpus-wide — mint phantom nodes in the flow matrix, and a commented \
-            div would invent a document that does not exist.
+            div would invent a document that does not exist. The comment deliberately contains a \
+            `>` before the struck div: without it, skipping to the next `>` lands past the div by \
+            luck and the comment branch looks unnecessary (measured — the sweep's M8 survived a \
+            comment with no earlier `>`).
             """)
     }
 

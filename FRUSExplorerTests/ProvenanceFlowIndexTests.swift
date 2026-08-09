@@ -162,11 +162,22 @@ struct ProvenanceFlowIndexTests {
             #expect(flow.count > 0)
         }
 
-        // Direction is preserved: the reverse lookup on a target finds this source.
-        let target = try #require(outgoing.first?.collectionId)
+        // Direction is preserved. Asserting only that the source *appears* in the target's
+        // incoming list passes even when incoming and outgoing are the same function, because the
+        // heaviest flows run both ways (measured — the sweep's M12 survived that). The COUNT is
+        // what separates them: Nixon NSC → Central Files 1970-73 is 449 and the reverse is 317.
+        let heaviest = try #require(flows.collectionFlows
+            .filter { !$0.isSameUnit }
+            .max { $0.count < $1.count })
+        let source = flows.collectionIds[heaviest.source]
+        let target = flows.collectionIds[heaviest.target]
         let incoming = flows.incomingFlows(toCollectionId: target)
-        #expect(incoming.contains { $0.collectionId == busiest },
-                "the reverse lookup lost the edge — direction is not preserved")
+        let edge = try #require(incoming.first { $0.collectionId == source },
+                                "the reverse lookup lost the edge entirely")
+        #expect(edge.count == heaviest.count, """
+            Incoming reports \(edge.count) for \(source) → \(target), but the stored flow is \
+            \(heaviest.count). The reader is answering the outgoing question in both directions.
+            """)
     }
 
     @Test("An unknown collection reads as empty rather than resolving to something")
