@@ -160,8 +160,9 @@ struct ArchivalNetworkView: View {
             }
             .disabled(usage == nil)
         } label: {
-            chip(systemImage: "link", caption: String(localized: "archival.network.measure",
-                                                      defaultValue: "Link strength"),
+            chip(systemImage: "link",
+                 caption: String(localized: "archival.network.measure",
+                                 defaultValue: "Link strength"),
                  value: measure.title)
         }
         .buttonStyle(.bordered)
