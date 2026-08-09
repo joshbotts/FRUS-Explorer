@@ -3367,3 +3367,89 @@ user would have seen. The first version of the write-path test passed in both di
 its fixture cited a bare lot number and `extractCitations` matches only "National Archives, RG N…"
 and "<Name> Library, <collection>…". **A fixture that does not trigger the code under test proves
 nothing about it** — the same lesson as the tie-break naming, in a different costume.
+
+---
+
+## Session 2026-08-09 — #765 stage 1: Archival Analytics, the Collections and Your Library modes
+
+**Shipped:** `ArchivalAnalyticsView` in the Analytics family on both platforms — a sixth Analysis
+Tools row on iOS, a `Window(id: "frus.archivalAnalytics")` opened through `openWindow.fronting`
+from the macOS Analytics menu. Two of the design's four modes: **Collections** (era × archival
+unit rankings, plus collection lifecycles, corpus-wide from #762's authority and #763's usage
+index) and **Your Library** (rider E, from the user's own `document_sources`). **Not shipped:**
+Network and Flows, the two custom-drawn `Canvas` surfaces, which follow in their own change.
+`ArchivalAnalyticsMode` carries no case for them — a four-segment picker with two dead segments
+would be worse than a two-segment one that grows.
+
+**The mode renders the finding.** Documents weight, umbrella hidden, top collection per band:
+`Lot 54–D270` (1,063) through 1947 · Eisenhower's `Whitman File` (1,643) in 1948–1960 · Johnson's
+`National Security File` (3,917) in 1961–1968 · Nixon's `NSC Files` (**7,052**, against
+`Central Files 1970–73`'s 2,086) in 1969–1976 · Carter's `National Security Affairs` (3,489) in
+1977–1992. The documentary base of American foreign relations leaves the State Department's filing
+rooms for the White House, and nobody had to write that sentence into the code for the chart to
+say it. A test asserts it against the shipped artifacts, so a re-clustering that broke it would
+fail the suite rather than quietly re-tell the story.
+
+**Five era bands, not the mock's four, and stored as era *indices*.** `ArchivalEraBand` holds a
+`ClosedRange<Int>` into `CollectionRelations.coverageEras` and reads its own years back off them,
+so it is a *view of* the one era axis rather than a second set of boundaries — the hazard CLAUDE.md
+names for #763. Three of the mock's four boundaries are exact unions of existing eras and `1946` is
+not (the axis runs `1941–1947` as one war-years bucket). More decisive: the mock's four omit
+everything before 1946 — **261 of 552 volumes**, the band where named collections are nearly absent
+(131 reached, largest 1,063 documents) and classes dominate (`793.94` alone 4,956). That asymmetry
+is what the Units chip is *for*, so the band exists and the caveat points at it. A test asserts the
+five ranges tile indices 0…18 exactly once.
+
+**Charts merge bars that share a label — silently.** A Swift Charts categorical axis keys on the
+label string. 279 shipped authority names are carried by more than one record (`White House Central
+Files` by nine), and two of the five bands collide inside their visible top twelve: `NSC
+Institutional Files` in 1969–1976, `National Security Council` in 1977–1992, where a Ford Library
+record and a NARA record would have been drawn as **one bar carrying the sum of both**. Repeated
+names gain their repository; a suite sweeps all 40 band × lens × weight × filter combinations for
+uniqueness. This was found by measuring the shipped data before writing the view, not by seeing a
+wrong chart.
+
+**The umbrella disclosure had to be per band.** `Central Files` supplies 12,060 documents to
+1948–1960, 5,480 to 1961–1968, 47 to 1969–1976, and **none at all** before 1948 or after 1976. The
+design's fixed "the Central Files umbrella record (157 volumes) is hidden" line would be wrong in
+three bands of five, so the chart states what it actually withheld in the era on screen, or says
+nothing. The era-specific `Central Files 1970–73` / `1967–69` / `1964–66` records are never hidden:
+they are the era's real central-file bar, and suppressing them would remove the State Department
+from the very charts that show it losing ground.
+
+**A separate custodian enum, named for what it tests.** `ArchivalRepositoryCategory` classifies an
+*authority record* (repository keyword, lot key, name); SA-3's ten-way `SourceProvenanceCategory`
+classifies a *parsed source note*. Folding them would make one surface report a distinction it
+cannot draw. `Nixon` needs an explicit case beside the `" Library"` suffix — it carries `NSC Files`,
+the second-largest collection in the series, and a suffix-only rule would paint the biggest bar of
+1969–1976 the wrong colour. The blue bucket is called **Department of State**, not "central files":
+392 records reach it and the tail includes post files, so the narrower label would be a claim the
+data does not support.
+
+**Documents and Volumes count different populations.** Documents come from the usage index, which
+resolves a note to a collection only when the citation names one; Volumes come from the authority,
+where a volume counts if its front matter *or* any document note names the collection — so a
+front-matter-only record (2,595 of 4,423) ranks under Volumes and vanishes under Documents.
+Measured: the top twelve differ in **4 of 5 bands**. The caveat block and the info popover both
+say so, and a test would fail if the two weights ever stopped disagreeing.
+
+**Your Library needed two new pipeline queries, and there was nothing to reuse.** No whole-index
+aggregate over `document_sources` existed — the only `GROUP BY` on that table runs over a
+materialised search match set and needs a query. `archivalLibraryGroups()` groups by
+`(volume_id, citation_era, repository)`; `archivalLibraryCollectionGroups()` by the two keys the
+authority resolves on. Two traps closed: `citation_era` is **not** the provenance axis — NARA
+collections, presidential libraries, and CIA records all write `structured`, and the repository is
+what splits them, so `SourceProvenanceCategory.from(citationEra:repository:)` is a faithful inverse
+of `baseDocumentSourceRow` rather than a guess; and the collection query excludes the two
+central-file forms on purpose, since their `series_name` holds a file identifier such as
+`611.51/1-1558`. Those notes are reported as their own figure in the footer rather than lost. The
+#351 cross-domain guard is carried over: a presidential-library citation never resolves onto a
+State lot cluster.
+
+**Verification.** 39 tests in 7 suites; four assert the claims the UI copy makes against the
+shipped artifacts rather than a fixture. The query tests drive the **real indexer** over TEI
+fixtures, because the columns they group on are written by the source-note parser and a test that
+inserted its own rows would pass while the parser wrote something else. A 22-mutant sweep covers
+the category rule, the band axis, the umbrella filter, the sort, the disambiguation, the lifecycle
+endpoints, both weights, the category mapper, the band ordering, the #351 guard, the leading-segment
+split, and both SQL statements.

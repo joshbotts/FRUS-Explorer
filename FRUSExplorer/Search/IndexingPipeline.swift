@@ -7338,6 +7338,121 @@ public actor IndexingPipeline {
         )
     }
 
+    // MARK: - Whole-library archival profile (#765 rider E)
+
+    /// One `(volume, citation form, repository)` group and its document count — the grain the
+    /// Your Library mode's first two cards are both folded from.
+    public struct ArchivalLibraryGroup: Sendable, Equatable {
+        /// The volume the documents sit in.
+        public let volumeId: String
+        /// The stored `citation_era` — the citation *form*, not a date.
+        public let citationEra: String
+        /// The stored repository keyword, or `nil` where the citation asserts none.
+        public let repository: String?
+        /// Documents in the group.
+        public let documentCount: Int
+
+        /// Creates a group (tests and previews).
+        public init(volumeId: String, citationEra: String, repository: String?,
+                    documentCount: Int) {
+            self.volumeId = volumeId
+            self.citationEra = citationEra
+            self.repository = repository
+            self.documentCount = documentCount
+        }
+    }
+
+    /// One collection-shaped citation group, ready for authority resolution.
+    public struct ArchivalLibraryCollectionGroup: Sendable, Equatable {
+        /// Canonical compact lot key, when the citation carried one.
+        public let lotFileNorm: String?
+        /// Repository keyword, when the citation asserted one.
+        public let repository: String?
+        /// The stored series name — the citation's leading collection segment.
+        public let seriesName: String?
+        /// Documents in the group.
+        public let documentCount: Int
+
+        /// Creates a group (tests and previews).
+        public init(lotFileNorm: String?, repository: String?, seriesName: String?,
+                    documentCount: Int) {
+            self.lotFileNorm = lotFileNorm
+            self.repository = repository
+            self.seriesName = seriesName
+            self.documentCount = documentCount
+        }
+    }
+
+    /// Every source note in the user's index, grouped by volume, citation form, and repository.
+    ///
+    /// One row per document that carried a non-empty source note, so `COUNT(*)` over this is the
+    /// library's own note total — the numerator the Your Library intro line states. Documents
+    /// with no source note contribute no row, which is why that total is smaller than the
+    /// indexed document count and must never be described as one.
+    ///
+    /// Grouped rather than returned per row because the grain is bounded — volumes × eight
+    /// citation forms × repositories — while the underlying table runs to a quarter of a million
+    /// rows on a full index.
+    ///
+    /// `citation_era` is a **citation form**, not a date, and it is not the ten-way provenance
+    /// category either: `structured` covers NARA collections, presidential libraries, and CIA
+    /// records alike, which is why `repository` comes back beside it.
+    ///
+    /// - Returns: Groups in no guaranteed order; callers fold them.
+    public func archivalLibraryGroups() throws -> [ArchivalLibraryGroup] {
+        let sql = """
+            SELECT volume_id, citation_era, repository, COUNT(*)
+            FROM document_sources
+            GROUP BY volume_id, citation_era, repository
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var groups: [ArchivalLibraryGroup] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let volume = sqlite3_column_text(stmt, 0),
+                  let era = sqlite3_column_text(stmt, 1) else { continue }
+            let repository = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
+            groups.append(ArchivalLibraryGroup(
+                volumeId: String(cString: volume),
+                citationEra: String(cString: era),
+                repository: repository,
+                documentCount: Int(sqlite3_column_int64(stmt, 3))))
+        }
+        return groups
+    }
+
+    /// The user's source notes whose citation names a **collection**, grouped by the keys the
+    /// bundled authority resolves on.
+    ///
+    /// Restricted to the three citation forms whose `series_name` is a collection name —
+    /// `lot_file`, `structured`, `named_series`. The two central-file forms (`decimal`, `cfpf`)
+    /// are deliberately excluded: their `series_name` holds a file identifier such as
+    /// `763.72/1-2354`, so grouping on it would produce thousands of one-document groups that
+    /// resolve to nothing, and the count they belong to is the central-file total the
+    /// composition card already reports.
+    ///
+    /// - Returns: Groups in no guaranteed order; the caller resolves each against
+    ///   `CollectionAuthorityIndex` and sums by record.
+    public func archivalLibraryCollectionGroups() throws -> [ArchivalLibraryCollectionGroup] {
+        let sql = """
+            SELECT lot_file_norm, repository, series_name, COUNT(*)
+            FROM document_sources
+            WHERE citation_era IN ('lot_file', 'structured', 'named_series')
+            GROUP BY lot_file_norm, repository, series_name
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var groups: [ArchivalLibraryCollectionGroup] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            groups.append(ArchivalLibraryCollectionGroup(
+                lotFileNorm: sqlite3_column_text(stmt, 0).map { String(cString: $0) },
+                repository: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+                seriesName: sqlite3_column_text(stmt, 2).map { String(cString: $0) },
+                documentCount: Int(sqlite3_column_int64(stmt, 3))))
+        }
+        return groups
+    }
+
     /// Returns archival neighbors for a **whole authority record** (the Collection
     /// detail surface): the union of every match shape the record carries, via the
     /// same `collectionMatchClause` that `localCollectionStats` counts with — one

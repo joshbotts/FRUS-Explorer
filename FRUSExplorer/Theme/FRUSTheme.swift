@@ -224,6 +224,32 @@ struct FeatureInfoButton: View {
         )
     }
 
+    /// The Archival Analytics info button — explains what the two modes count, why the
+    /// Documents and Volumes weights disagree, and why one record is hidden by default.
+    static var archivalAnalytics: FeatureInfoButton {
+        FeatureInfoButton(
+            heading: String(localized: "archival.info.heading", defaultValue: "About Archival Analytics"),
+            items: [
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.shows.title", defaultValue: "What you're seeing"),
+                    detail: String(localized: "archival.info.shows.detail",
+                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file classes each era's volumes drew on, across the whole series. Your Library counts the same thing in the volumes you have indexed.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.weights.title", defaultValue: "Documents and volumes count different things"),
+                    detail: String(localized: "archival.info.weights.detail",
+                                   defaultValue: "Documents counts how many published documents came out of a collection; Volumes counts how many volumes drew on it at all. A collection can supply a thousand documents to five volumes, or six hundred to ninety-eight. Both lists are correct, and switching the weight changes the order — and sometimes the membership, because a collection named only in a volume's front matter has volumes but no documents.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.umbrella.title", defaultValue: "Why Central Files is hidden"),
+                    detail: String(localized: "archival.info.umbrella.detail",
+                                   defaultValue: "The State Department's Central Files are cited by 157 volumes and supply more than seventeen thousand documents — over twice the next-largest collection. Its bar would flatten every other one, so it is hidden by default and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.units.title", defaultValue: "Collections and classes are different things"),
+                    detail: String(localized: "archival.info.units.detail",
+                                   defaultValue: "A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. They are never mixed in one ranking. Before 1948 the series cites classes far more than collections; after 1976 it barely cites classes at all.")),
+            ]
+        )
+    }
+
     /// The Cross-Reference Analytics info button — explains the ranking, the volume citation
     /// heat matrix, and the PageRank influence score. (Copy drafted in Wave C; pending owner review.)
     static var crossReferenceAnalytics: FeatureInfoButton {

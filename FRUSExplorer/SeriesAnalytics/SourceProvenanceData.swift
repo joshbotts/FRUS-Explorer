@@ -200,6 +200,36 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
         }
     }
 
+    /// The category a stored `document_sources` row belongs to (#765 rider E).
+    ///
+    /// The bundled aggregate arrives pre-categorised; the user's own index does not. Its
+    /// `citation_era` column is the citation **form**, and three of these ten categories share
+    /// the single form `structured` — a NARA record-group citation, a presidential-library
+    /// citation, and a CIA job citation are all written that way. The repository keyword is what
+    /// separates them, and it is written in the same statement, so the pair is a faithful
+    /// inverse of the writer rather than a guess. See `IndexingPipeline.baseDocumentSourceRow`.
+    ///
+    /// An unknown form yields ``unrecognized`` — never `nil`. Every row in the table is a real
+    /// source note the user's index holds, so dropping one would understate a total the Your
+    /// Library card presents as complete.
+    static func from(citationEra: String, repository: String?) -> SourceProvenanceCategory {
+        switch citationEra {
+        case "decimal": return .centralDecimalFile
+        case "cfpf": return .centralForeignPolicyFile
+        case "lot_file": return .lotFile
+        case "foreign": return .foreignArchive
+        case "published": return .previouslyPublished
+        case "named_series": return .namedFileSeries
+        case "structured":
+            switch repository {
+            case "National Archives": return .naraCollection
+            case "Central Intelligence Agency": return .intelligence
+            default: return .presidentialLibrary
+            }
+        default: return .unrecognized
+        }
+    }
+
     /// A short label for cramped legends (falls back to `displayName`).
     var shortName: String {
         switch self {

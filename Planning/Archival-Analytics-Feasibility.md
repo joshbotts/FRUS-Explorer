@@ -678,6 +678,68 @@ editorial practice and already owns that disclosure. Two traps for whoever takes
 **stateful**, and 142 notes name an archive inside a *"Not found in Department of State files or at
 the Truman Library"* clause, where harvesting asserts the opposite of what the editor wrote.
 
+### 7.10 Phase 3 stage 1 (#765): the surface, and the four decisions the data forced
+
+**Shipped:** `ArchivalAnalyticsView` in the Analytics family with a mode picker, the
+**Collections** mode (era × unit ranking + collection lifecycles) and the **Your Library** mode
+(rider E), on both platforms. **Not yet shipped:** Network and Flows, the two custom-drawn
+`Canvas` surfaces. `ArchivalAnalyticsMode` carries no case for them, so the picker grows from two
+segments to four rather than shipping two dead ones.
+
+**The mode renders the finding the wave was built to find.** Ranked by documents with the
+umbrella hidden, the top collection per band is: `Lot 54–D270` (1,063) through 1947; the
+Eisenhower Library's `Whitman File` (1,643) in 1948–1960; the Johnson Library's
+`National Security File` (3,917) in 1961–1968; Nixon's `NSC Files` (7,052 — against
+`Central Files 1970–73`'s 2,086) in 1969–1976; and the Carter Library's
+`National Security Affairs` (3,489) in 1977–1992. The documentary base of American foreign
+relations leaves the State Department's filing rooms for the White House, and the chart shows
+it without anyone writing the sentence into the code.
+
+**Four decisions, each forced by a measurement rather than chosen:**
+
+1. **Five era bands, not the mock's four.** The bands are stored as *ranges of
+   `CollectionRelations.coverageEras` indices*, so their years are read back off the eras and the
+   two surfaces cannot drift. Three of the mock's four boundaries are exact unions of existing
+   eras; `1946` is not (the axis runs `1941–1947` as one war-years bucket). More decisive: the
+   mock's four omit everything before 1946 — **261 of 552 volumes**, where named collections are
+   nearly absent (131 reached) and classes are dominant (`793.94` alone supplies 4,956
+   documents). That band is where the Units chip earns its place, so it exists.
+2. **A separate four-way custodian enum**, `ArchivalRepositoryCategory`, not SA-3's ten-way
+   `SourceProvenanceCategory`. One classifies an authority record (repository keyword, lot key,
+   name); the other a parsed source note. `Nixon` needs an explicit case beside the `" Library"`
+   suffix — it carries `NSC Files`. The blue bucket is named `Department of State`, not "central
+   files": 392 records reach it and the tail includes post files, so the narrower label would be
+   a claim the data does not support.
+3. **Ranking labels must be disambiguated.** A Swift Charts categorical axis keys on the label
+   string and **silently merges two bars that share one**. 279 shipped authority names are
+   carried by more than one record (`White House Central Files` by nine), and two of the five
+   bands collide inside their visible top twelve — `NSC Institutional Files` in 1969–1976,
+   `National Security Council` in 1977–1992, where a Ford Library record and a NARA record would
+   have been drawn as one bar carrying the sum. Repeated names gain their repository; a suite
+   sweeps all 40 (band × lens × weight × filter) combinations for uniqueness.
+4. **The umbrella disclosure is per band.** `Central Files` supplies 12,060 documents to
+   1948–1960, 5,480 to 1961–1968, 47 to 1969–1976, and **none at all** before 1948 or after
+   1976. The design's fixed "157 volumes hidden" line would be wrong in three bands of five, so
+   the chart states what it actually withheld, or says nothing.
+
+**Documents and Volumes count different populations, and the caveat block says so.** Documents
+come from `collection-usage-index.json`, which resolves a note to a collection only when the
+citation names one; Volumes come from the authority, where a volume counts if its front matter
+*or* any document note names the collection. So a front-matter-only record — 2,595 of 4,423 —
+ranks under Volumes and vanishes under Documents. Measured: the top twelve differ in **4 of 5
+bands**.
+
+**Your Library needed two new pipeline queries**, not one: `archivalLibraryGroups()`
+(`GROUP BY volume_id, citation_era, repository`) and `archivalLibraryCollectionGroups()`. There
+was no whole-index aggregate over `document_sources` at all — the only existing `GROUP BY` on
+that table runs over a materialised search match set. `citation_era` is **not** the provenance
+axis: three categories share the form `structured` (NARA, presidential libraries, CIA), and the
+repository is what splits them, so `SourceProvenanceCategory.from(citationEra:repository:)` is
+the faithful inverse of what `baseDocumentSourceRow` writes. The collection query excludes the
+two central-file forms on purpose — their `series_name` holds a file identifier such as
+`611.51/1-1558`, so grouping on it yields one-document groups that resolve to nothing; the
+footer reports those notes as a separate figure rather than losing them.
+
 ### 7.5 Decisions log
 
 | # | Decision | Status |
@@ -691,6 +753,13 @@ the Truman Library"* clause, where harvesting asserts the opposite of what the e
 
 ## Version history
 
+- 1.8 (2026-08-09) — §7.10: Phase 3 stage 1 (#765) shipped — the `ArchivalAnalyticsView` shell
+  with the Collections and Your Library modes on both platforms. Records the finding the mode
+  renders (the record's migration from State's central files to the White House, with per-band
+  figures), the four decisions the data forced (five era bands rather than the mock's four; a
+  separate custodian enum; mandatory label disambiguation, because Swift Charts silently merges
+  bars sharing a label and 279 authority names are shared; a per-band umbrella disclosure), and
+  the two new whole-index queries Your Library needed. Network and Flows remain.
 - 1.7 (2026-08-08) — §7.9: assessed extending scope to footnote citations of unprinted archival
   material (owner question). Yes for lot and library units, no for subject-numeric, guarded for
   decimal classes; it is the only signal reaching the 1910s-1930s. Contains the live defect the
