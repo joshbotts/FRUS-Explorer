@@ -74,6 +74,10 @@ struct ArchivalAnalyticsView: View {
 
     /// The chart whose data the table inspector is showing.
     @State private var inspectorData: ChartInspectorData?
+    /// The file waiting to be shared (iOS) after an export.
+    @State private var exportShareItem: AnalyticsExportFile?
+    /// An export failure, surfaced rather than swallowed.
+    @State private var exportError: String?
     #if os(iOS)
     /// The iPhone fallback target for Archival Neighbors, where there are no extra windows.
     @State private var neighborsTarget: ArchivalLibraryNeighborsTarget?
@@ -140,6 +144,16 @@ struct ArchivalAnalyticsView: View {
         .frame(minWidth: 720, minHeight: 580)
         #endif
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        // D3 (#787): anchored on the outermost view, not on a `Group` child — see the
+        // Group-modifier gotcha, which applies the presentation once per child.
+        .sheet(item: $exportShareItem) { AnalyticsExportShareSheet(item: $0) }
+        .alert(String(localized: "analytics.export.error.title", defaultValue: "Export Failed"),
+               isPresented: Binding(get: { exportError != nil },
+                                    set: { if !$0 { exportError = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK")) { exportError = nil }
+        } message: {
+            Text(exportError ?? "")
+        }
         #if os(iOS)
         .sheet(item: $neighborsTarget) { target in
             if let appState {
@@ -200,9 +214,11 @@ struct ArchivalAnalyticsView: View {
         if let collections = CollectionAuthorityStore.shared?.collections, !collections.isEmpty {
             ArchivalNetworkView(
                 collections: collections,
+                indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                 usage: CollectionUsageIndexStore.shared,
                 onOpenNeighbors: { openNeighbors(for: $0) },
-                onOpenClassNeighbors: { openClassNeighbors($0) })
+                onOpenClassNeighbors: { openClassNeighbors($0) },
+                onExport: { deliver($0) })
         } else {
             unavailableState(String(localized: "archival.network.unavailable",
                                     defaultValue: "The bundled collection authority is unavailable in this build, so the network cannot be drawn."))
@@ -216,7 +232,9 @@ struct ArchivalAnalyticsView: View {
         if let index = ProvenanceFlowIndexStore.shared,
            let authority = CollectionAuthorityStore.shared {
             ArchivalFlowsView(index: index, authority: authority,
-                              onOpenNeighbors: { openNeighbors(for: $0) })
+                              onOpenNeighbors: { openNeighbors(for: $0) },
+                              indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+                              onExport: { deliver($0) })
         } else {
             unavailableState(String(localized: "archival.flows.unavailable",
                                     defaultValue: "The bundled reference-flow index is unavailable in this build, so hand-offs cannot be shown. This is not the same as the series having none."))
@@ -360,11 +378,25 @@ struct ArchivalAnalyticsView: View {
     @ViewBuilder
     private func rankingCard(_ ranking: ArchivalRanking, data: ArchivalCollectionsData) -> some View {
         let title = rankingTitle
+        let table = rankingInspector(ranking, title: title)
+        let provenance = ArchivalAnalyticsExport.ranking(
+            band: band, lens: unitLens, weight: weight,
+            hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
+            bandVolumeCount: ranking.bandVolumeCount,
+            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
         SeriesChartCard(
             title: title,
             caption: rankingCaption(ranking),
-            inspector: rankingInspector(ranking, title: title),
-            onInspect: { inspectorData = $0 }
+            inspector: table,
+            onInspect: { inspectorData = $0 },
+            controls: {
+                exportControl(table: table, provenance: provenance) { format in
+                    deliverFigure(format, provenance: provenance,
+                                  chartHeight: CGFloat(ranking.rows.count) * 26 + 60) {
+                        rankingChart(ranking)
+                    }
+                }
+            }
         ) {
             if ranking.rows.isEmpty {
                 Text(String(localized: "archival.ranking.empty",
@@ -374,37 +406,47 @@ struct ArchivalAnalyticsView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 12)
             } else {
-                Chart {
-                    ForEach(ranking.rows) { row in
-                        BarMark(
-                            x: .value(weight.title, row.value),
-                            y: .value(String(localized: "archival.ranking.y",
-                                             defaultValue: "Archival unit"), row.label)
-                        )
-                        .foregroundStyle(by: .value(
-                            String(localized: "archival.ranking.legend", defaultValue: "Custodian"),
-                            row.category.displayName))
-                        .annotation(position: .trailing, alignment: .leading) {
-                            Text(row.value, format: .number)
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityLabel(Text(row.label))
-                        .accessibilityValue(Text(accessibilityValue(for: row)))
-                    }
-                }
-                .chartForegroundStyleScale(
-                    domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
-                    range: ArchivalRepositoryCategory.ordered.map(\.color))
-                .chartYAxis {
-                    AxisMarks(preset: .extended, position: .leading) { _ in
-                        AxisValueLabel(horizontalSpacing: 8)
-                    }
-                }
-                .chartXAxisLabel(weight.title)
-                .frame(height: CGFloat(ranking.rows.count) * 26 + 60)
+                rankingChart(ranking)
+                    .frame(height: CGFloat(ranking.rows.count) * 26 + 60)
             }
         }
+    }
+
+    /// The ranking chart itself, separated from its card so the figure exporter can render it.
+    ///
+    /// `AnalyticsFigureCanvas` renders detached from the view hierarchy and inherits no
+    /// environment, so everything this reads — the weight's title, the category colours, the row
+    /// labels — must already be resolved by the time it is called. All of it is.
+    @ViewBuilder
+    private func rankingChart(_ ranking: ArchivalRanking) -> some View {
+        Chart {
+            ForEach(ranking.rows) { row in
+                BarMark(
+                    x: .value(weight.title, row.value),
+                    y: .value(String(localized: "archival.ranking.y",
+                                     defaultValue: "Archival unit"), row.label)
+                )
+                .foregroundStyle(by: .value(
+                    String(localized: "archival.ranking.legend", defaultValue: "Custodian"),
+                    row.category.displayName))
+                .annotation(position: .trailing, alignment: .leading) {
+                    Text(row.value, format: .number)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel(Text(row.label))
+                .accessibilityValue(Text(accessibilityValue(for: row)))
+            }
+        }
+        .chartForegroundStyleScale(
+            domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
+            range: ArchivalRepositoryCategory.ordered.map(\.color))
+        .chartYAxis {
+            AxisMarks(preset: .extended, position: .leading) { _ in
+                AxisValueLabel(horizontalSpacing: 8)
+            }
+        }
+        .chartXAxisLabel(weight.title)
     }
 
     /// The ranking card's title, which follows the unit lens — the two lenses rank different
@@ -452,67 +494,106 @@ struct ArchivalAnalyticsView: View {
 
     private func lifecycleCard(_ data: ArchivalCollectionsData) -> some View {
         let spans = data.lifecycleSpans
+        let provenance = ArchivalAnalyticsExport.lifecycles(
+            spanCount: spans.count, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
         return SeriesChartCard(
             title: String(localized: "archival.lifecycle.title",
                           defaultValue: "Collection lifecycles in FRUS sourcing"),
             caption: String(localized: "archival.lifecycle.caption",
                             defaultValue: "The coverage years spanned by the volumes that cite each of the most widely-drawn-on collections — where a body of records enters the published record and how long the editors keep returning to it. This card does not change with the era filter."),
-            inspector: ChartInspectorData(
-                id: "archival.lifecycle",
-                title: String(localized: "archival.lifecycle.title",
-                              defaultValue: "Collection lifecycles in FRUS sourcing"),
-                columns: [
-                    String(localized: "archival.table.unit", defaultValue: "Archival unit"),
-                    String(localized: "archival.table.custodian", defaultValue: "Custodian"),
-                    String(localized: "archival.table.first", defaultValue: "First coverage year"),
-                    String(localized: "archival.table.last", defaultValue: "Last coverage year"),
-                    String(localized: "archival.weight.volumes", defaultValue: "Volumes"),
-                ],
-                rowCells: spans.map {
-                    [$0.label, $0.category.displayName, "\($0.firstYear)", "\($0.lastYear)",
-                     "\($0.volumeCount)"]
-                }),
-            onInspect: { inspectorData = $0 }
+            inspector: lifecycleTable(spans),
+            onInspect: { inspectorData = $0 },
+            controls: {
+                exportControl(table: lifecycleTable(spans), provenance: provenance) { format in
+                    deliverFigure(format, provenance: provenance,
+                                  chartHeight: CGFloat(spans.count) * 24 + 60) {
+                        lifecycleChart(spans)
+                    }
+                }
+            }
         ) {
-            Chart {
-                ForEach(spans) { span in
-                    BarMark(
-                        xStart: .value(String(localized: "archival.table.first",
-                                              defaultValue: "First coverage year"), span.firstYear),
-                        xEnd: .value(String(localized: "archival.table.last",
-                                            defaultValue: "Last coverage year"), span.lastYear),
-                        y: .value(String(localized: "archival.ranking.y",
-                                         defaultValue: "Archival unit"), span.label)
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "archival.ranking.legend", defaultValue: "Custodian"),
-                        span.category.displayName))
-                    .cornerRadius(3)
-                    .accessibilityLabel(Text(span.label))
-                    .accessibilityValue(Text(String(
-                        format: String(localized: "archival.lifecycle.a11y %lld %lld %lld",
-                                       defaultValue: "%1$lld to %2$lld, cited by %3$lld volumes"),
-                        Int64(span.firstYear), Int64(span.lastYear), Int64(span.volumeCount))))
-                }
+            lifecycleChart(spans)
+                .frame(height: CGFloat(spans.count) * 24 + 60)
+        }
+    }
+
+    /// The lifecycle chart, separated from its card so the figure exporter can render it.
+    @ViewBuilder
+    private func lifecycleChart(_ spans: [ArchivalLifecycleSpan]) -> some View {
+        Chart {
+            ForEach(spans) { span in
+                BarMark(
+                    xStart: .value(String(localized: "archival.table.first",
+                                          defaultValue: "First coverage year"), span.firstYear),
+                    xEnd: .value(String(localized: "archival.table.last",
+                                        defaultValue: "Last coverage year"), span.lastYear),
+                    y: .value(String(localized: "archival.ranking.y",
+                                     defaultValue: "Archival unit"), span.label)
+                )
+                .foregroundStyle(by: .value(
+                    String(localized: "archival.ranking.legend", defaultValue: "Custodian"),
+                    span.category.displayName))
+                .cornerRadius(3)
+                .accessibilityLabel(Text(span.label))
+                .accessibilityValue(Text(String(
+                    format: String(localized: "archival.lifecycle.a11y %lld %lld %lld",
+                                   defaultValue: "%1$lld to %2$lld, cited by %3$lld volumes"),
+                    Int64(span.firstYear), Int64(span.lastYear), Int64(span.volumeCount))))
             }
-            .chartForegroundStyleScale(
-                domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
-                range: ArchivalRepositoryCategory.ordered.map(\.color))
-            .chartYAxis {
-                AxisMarks(preset: .extended, position: .leading) { _ in
-                    AxisValueLabel(horizontalSpacing: 8)
-                }
+        }
+        .chartForegroundStyleScale(
+            domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
+            range: ArchivalRepositoryCategory.ordered.map(\.color))
+        .chartYAxis {
+            AxisMarks(preset: .extended, position: .leading) { _ in
+                AxisValueLabel(horizontalSpacing: 8)
             }
-            .chartXAxis {
-                AxisMarks { _ in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
-                }
+        }
+        .chartXAxis {
+            AxisMarks { _ in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
             }
-            .chartXAxisLabel(String(localized: "archival.lifecycle.x",
-                                    defaultValue: "Coverage year"))
-            .frame(height: CGFloat(spans.count) * 24 + 60)
+        }
+        .chartXAxisLabel(String(localized: "archival.lifecycle.x",
+                                defaultValue: "Coverage year"))
+    }
+
+    /// The lifecycle card's table — one value, used by both the inspector and the export, so the
+    /// numbers a reader sees and the numbers they take away cannot drift apart.
+    private func lifecycleTable(_ spans: [ArchivalLifecycleSpan]) -> ChartInspectorData {
+        ChartInspectorData(
+            id: "archival.lifecycle",
+            title: String(localized: "archival.lifecycle.title",
+                          defaultValue: "Collection lifecycles in FRUS sourcing"),
+            columns: [
+                String(localized: "archival.table.unit", defaultValue: "Archival unit"),
+                String(localized: "archival.table.custodian", defaultValue: "Custodian"),
+                String(localized: "archival.table.first", defaultValue: "First coverage year"),
+                String(localized: "archival.table.last", defaultValue: "Last coverage year"),
+                String(localized: "archival.weight.volumes", defaultValue: "Volumes"),
+            ],
+            rowCells: spans.map {
+                [$0.label, $0.category.displayName, "\($0.firstYear)", "\($0.lastYear)",
+                 "\($0.volumeCount)"]
+            })
+    }
+
+    /// The per-card export control, in `SeriesChartCard`'s controls slot.
+    ///
+    /// Per-card rather than one control for the view, because this surface shows several charts
+    /// at once and a single control would be ambiguous about which it acts on — the same reason
+    /// Person and Cross-Reference Analytics put theirs per section.
+    @ViewBuilder
+    private func exportControl(table: ChartInspectorData?, provenance: AnalyticsProvenance,
+                               onFigure: ((AnalyticsFigureFormat) -> Void)? = nil) -> some View {
+        HStack {
+            Spacer()
+            AnalyticsSectionExportControl(
+                isEnabled: !(table?.rows.isEmpty ?? true),
+                exportCSV: { if let table { deliver(table, provenance) } },
+                exportFigure: onFigure)
         }
     }
 
@@ -580,25 +661,23 @@ struct ArchivalAnalyticsView: View {
     }
 
     private func libraryCompositionCard(_ profile: ArchivalLibraryProfile) -> some View {
-        SeriesChartCard(
+        let provenance = ArchivalAnalyticsExport.library(
+            title: String(localized: "archival.library.composition.title",
+                          defaultValue: "Where your documents come from"),
+            axisLabel: String(localized: "archival.export.axis.composition",
+                              defaultValue: "Divided by kind of archival collection"),
+            profile: profile, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+            corpusVolumeCount: corpusVolumeCount)
+        return SeriesChartCard(
             title: String(localized: "archival.library.composition.title",
                           defaultValue: "Where your documents come from"),
             caption: String(localized: "archival.library.composition.caption",
                             defaultValue: "Every source note in your index, divided among the kinds of archival collection they cite."),
-            inspector: ChartInspectorData(
-                id: "archival.library.composition",
-                title: String(localized: "archival.library.composition.title",
-                              defaultValue: "Where your documents come from"),
-                columns: [
-                    String(localized: "archival.table.provenance", defaultValue: "Provenance"),
-                    String(localized: "archival.table.documents", defaultValue: "Documents"),
-                    String(localized: "archival.table.share", defaultValue: "Share"),
-                ],
-                rowCells: profile.composition.map {
-                    [$0.category.displayName, "\($0.documentCount)",
-                     percentString($0.documentCount, of: profile.noteCount)]
-                }),
-            onInspect: { inspectorData = $0 }
+            inspector: libraryCompositionTable(profile),
+            onInspect: { inspectorData = $0 },
+            controls: {
+                exportControl(table: libraryCompositionTable(profile), provenance: provenance)
+            }
         ) {
             Chart {
                 ForEach(profile.composition) { item in
@@ -627,26 +706,23 @@ struct ArchivalAnalyticsView: View {
     }
 
     private func libraryBandsCard(_ profile: ArchivalLibraryProfile) -> some View {
-        SeriesChartCard(
+        let provenance = ArchivalAnalyticsExport.library(
+            title: String(localized: "archival.library.bands.title",
+                          defaultValue: "Citation forms across your volumes"),
+            axisLabel: String(localized: "archival.export.axis.bands",
+                              defaultValue: "Divided by coverage era and kind of collection"),
+            profile: profile, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+            corpusVolumeCount: corpusVolumeCount)
+        return SeriesChartCard(
             title: String(localized: "archival.library.bands.title",
                           defaultValue: "Citation forms across your volumes"),
             caption: String(localized: "archival.library.bands.caption",
                             defaultValue: "The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department's decimal file, through the postwar bureau lot files, to the presidential libraries."),
-            inspector: ChartInspectorData(
-                id: "archival.library.bands",
-                title: String(localized: "archival.library.bands.title",
-                              defaultValue: "Citation forms across your volumes"),
-                columns: [
-                    String(localized: "archival.filter.era", defaultValue: "Coverage era"),
-                    String(localized: "archival.table.provenance", defaultValue: "Provenance"),
-                    String(localized: "archival.table.documents", defaultValue: "Documents"),
-                ],
-                rowCells: profile.bands.flatMap { band in
-                    band.categories.map {
-                        [band.band.title, $0.category.displayName, "\($0.documentCount)"]
-                    }
-                }),
-            onInspect: { inspectorData = $0 }
+            inspector: libraryBandsTable(profile),
+            onInspect: { inspectorData = $0 },
+            controls: {
+                exportControl(table: libraryBandsTable(profile), provenance: provenance)
+            }
         ) {
             Chart {
                 ForEach(profile.bands) { band in
@@ -674,13 +750,69 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
-    @ViewBuilder
+    /// The composition card's table, shared by the inspector and the export.
+    private func libraryCompositionTable(_ profile: ArchivalLibraryProfile) -> ChartInspectorData {
+        ChartInspectorData(
+            id: "archival.library.composition",
+            title: String(localized: "archival.library.composition.title",
+                          defaultValue: "Where your documents come from"),
+            columns: [
+                String(localized: "archival.table.provenance", defaultValue: "Provenance"),
+                String(localized: "archival.table.documents", defaultValue: "Documents"),
+                String(localized: "archival.table.share", defaultValue: "Share"),
+            ],
+            rowCells: profile.composition.map {
+                [$0.category.displayName, "\($0.documentCount)",
+                 percentString($0.documentCount, of: profile.noteCount)]
+            })
+    }
+
+    /// The era-band card's table, shared by the inspector and the export.
+    private func libraryBandsTable(_ profile: ArchivalLibraryProfile) -> ChartInspectorData {
+        ChartInspectorData(
+            id: "archival.library.bands",
+            title: String(localized: "archival.library.bands.title",
+                          defaultValue: "Citation forms across your volumes"),
+            columns: [
+                String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+                String(localized: "archival.table.provenance", defaultValue: "Provenance"),
+                String(localized: "archival.table.documents", defaultValue: "Documents"),
+            ],
+            rowCells: profile.bands.flatMap { band in
+                band.categories.map {
+                    [band.band.title, $0.category.displayName, "\($0.documentCount)"]
+                }
+            })
+    }
+
+    /// Your most-cited collections.
+    ///
+    /// A `SeriesChartCard` like its siblings even though its content is a list rather than a
+    /// chart: #765 shipped it as a bare `VStack`, so it was the one card on this surface with
+    /// neither a table inspector nor an export — and it is the card whose rows a reader is most
+    /// likely to want to take away.
     private func libraryCollectionsCard(_ profile: ArchivalLibraryProfile) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "archival.library.collections.title",
-                        defaultValue: "Your most-cited collections"))
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
+        let provenance = ArchivalAnalyticsExport.library(
+            title: String(localized: "archival.library.collections.title",
+                          defaultValue: "Your most-cited collections"),
+            axisLabel: String(localized: "archival.export.axis.collections",
+                              defaultValue: "Ranked by documents drawn from the collection"),
+            profile: profile, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+            corpusVolumeCount: corpusVolumeCount)
+        return SeriesChartCard(
+            title: String(localized: "archival.library.collections.title",
+                          defaultValue: "Your most-cited collections"),
+            caption: String(format: String(
+                localized: "archival.library.collections.caption %lld %lld",
+                defaultValue: "Resolved from your own source notes against the bundled archival authority. %1$lld notes cite the central files, which are a filing system rather than a collection, and %2$lld more name something the authority does not recognise; neither is listed here."),
+                Int64(profile.centralFileNoteCount),
+                Int64(profile.unresolvedCollectionNoteCount)),
+            inspector: libraryCollectionsTable(profile),
+            onInspect: { inspectorData = $0 },
+            controls: {
+                exportControl(table: libraryCollectionsTable(profile), provenance: provenance)
+            }
+        ) {
             if profile.collections.isEmpty {
                 Text(String(localized: "archival.library.collections.empty",
                             defaultValue: "None of your volumes' source notes name a collection the bundled authority recognises."))
@@ -688,37 +820,58 @@ struct ArchivalAnalyticsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                ForEach(profile.collections) { item in
-                    Button {
-                        openNeighbors(for: item.record)
-                    } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.record.name).font(.callout)
-                                if let repository = item.record.repository {
-                                    Text(repository).font(.caption2).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(profile.collections) { item in
+                        Button {
+                            openNeighbors(for: item.record)
+                        } label: {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(item.record.name).font(.callout)
+                                    if let repository = item.record.repository {
+                                        Text(repository).font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
+                                Spacer(minLength: 8)
+                                Text(String(format: String(
+                                    localized: "archival.library.collections.count %lld",
+                                    defaultValue: "%lld docs"), Int64(item.documentCount)))
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
                             }
-                            Spacer(minLength: 8)
-                            Text(String(format: String(
-                                localized: "archival.library.collections.count %lld",
-                                defaultValue: "%lld docs"), Int64(item.documentCount)))
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .accessibilityHint(String(localized: "archival.library.collections.hint",
+                                                  defaultValue: "Shows the documents in your index drawn from this collection"))
+                        Divider()
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(String(localized: "archival.library.collections.hint",
-                                              defaultValue: "Shows the documents in your index drawn from this collection"))
-                    Divider()
                 }
             }
         }
+    }
+
+    /// The collections list's table, shared by the inspector and the export.
+    private func libraryCollectionsTable(_ profile: ArchivalLibraryProfile) -> ChartInspectorData {
+        ChartInspectorData(
+            id: "archival.library.collections",
+            title: String(localized: "archival.library.collections.title",
+                          defaultValue: "Your most-cited collections"),
+            columns: [
+                String(localized: "archival.table.unit", defaultValue: "Archival unit"),
+                String(localized: "archival.table.custodian", defaultValue: "Custodian"),
+                String(localized: "archival.table.documents", defaultValue: "Documents"),
+            ],
+            rowCells: profile.collections.map {
+                [$0.record.name,
+                 $0.record.repository ?? ArchivalRepositoryCategory.from($0.record).displayName,
+                 "\($0.documentCount)"]
+            })
     }
 
     private func libraryFooter(_ profile: ArchivalLibraryProfile) -> some View {
@@ -771,6 +924,54 @@ struct ArchivalAnalyticsView: View {
         guard total > 0 else { return "0%" }
         return (Double(value) / Double(total))
             .formatted(.percent.precision(.fractionLength(0...1)))
+    }
+
+    // MARK: - Export (D3, #787)
+
+    /// Writes one table with its methods statement above it, and shares or saves the result.
+    ///
+    /// The preamble is the whole point: an archival table that leaves the app without one carries
+    /// no scope, no weight, no era band, and none of the two caveats that make its numbers
+    /// readable — and those numbers are the ones on this surface most easily misread.
+    private func deliver(_ table: ChartInspectorData, _ provenance: AnalyticsProvenance) {
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle) + ".csv"
+        switch AnalyticsExportDelivery.deliver(text: table.provenancedCSV(provenance),
+                                               filename: filename) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// Renders one Swift Charts card as a publication figure.
+    ///
+    /// Offered only on the Swift Charts cards. The two `Canvas` modes export their data and not a
+    /// figure: nothing in this app has ever rendered a `Canvas` through `AnalyticsFigureExporter`,
+    /// and shipping an unproven render path would be worse than a CSV that works.
+    private func deliverFigure<Content: View>(_ format: AnalyticsFigureFormat,
+                                              provenance: AnalyticsProvenance,
+                                              chartHeight: CGFloat,
+                                              @ViewBuilder chart: @escaping () -> Content) {
+        let canvas = AnalyticsFigureCanvas(provenance: provenance, chartHeight: chartHeight,
+                                            content: chart)
+        guard let data = AnalyticsFigureExporter.render(canvas, format: format) else {
+            exportError = String(localized: "analytics.export.error.render",
+                                 defaultValue: "The figure could not be rendered.")
+            return
+        }
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle)
+            + "." + format.pathExtension
+        switch AnalyticsExportDelivery.deliver(data: data, filename: filename,
+                                               contentType: format.contentType) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// The export a `Canvas` mode hands up, already carrying its own provenance.
+    private func deliver(_ request: ArchivalExportRequest) {
+        deliver(request.table, request.provenance)
     }
 
     // MARK: - Data

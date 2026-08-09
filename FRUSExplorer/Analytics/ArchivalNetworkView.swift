@@ -34,12 +34,16 @@ struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
     let collections: [AuthorityCollectionRecord]
+    /// Volumes indexed on this device, for the export's provenance line.
+    let indexedVolumeCount: Int
     /// The usage index, for the document measure and the umbrella expansion.
     let usage: CollectionUsageIndex?
     /// Opens Archival Neighbors for a collection.
     let onOpenNeighbors: (AuthorityCollectionRecord) -> Void
     /// Opens Archival Neighbors for a central-file class.
     let onOpenClassNeighbors: (String) -> Void
+    /// Hands a table and its methods statement up to the shell, which owns the share sheet.
+    let onExport: (ArchivalExportRequest) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Compact height is iPhone landscape, where the fixed dock and a 240pt canvas would not both
@@ -184,6 +188,13 @@ struct ArchivalNetworkView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
+
+        if let graph, !graph.nodes.isEmpty {
+            // CSV only. Nothing in this app has ever rendered a `Canvas` through
+            // `AnalyticsFigureExporter`, so a figure here would be an unproven render path
+            // shipped as a finished feature.
+            AnalyticsSectionExportControl(exportCSV: { exportNeighbourhood(graph) })
+        }
 
         if !history.isEmpty {
             Button {
@@ -737,6 +748,44 @@ struct ArchivalNetworkView: View {
     /// The scan touches every one of the 4,423 authority records with two set intersections, and
     /// an expanded umbrella additionally walks 10,435 class keys. That is not main-thread work,
     /// and the threshold slider fires it on every step.
+    /// Exports the drawn neighbourhood — exactly what the graph shows, with the caveats that
+    /// make a link readable.
+    private func exportNeighbourhood(_ graph: ArchivalNetworkGraph) {
+        let table = ChartInspectorData(
+            id: "archival.network",
+            title: String(format: String(localized: "archival.export.title.network %@",
+                                         defaultValue: "Co-cited with %@"), graph.focus.name),
+            columns: [
+                String(localized: "archival.table.unit", defaultValue: "Archival unit"),
+                String(localized: "archival.export.column.kind", defaultValue: "Kind"),
+                String(localized: "archival.table.custodian", defaultValue: "Custodian"),
+                String(localized: "archival.export.column.sharedVolumes",
+                       defaultValue: "Shared volumes"),
+                String(localized: "archival.export.column.sharedDocuments",
+                       defaultValue: "Jointly supplied documents"),
+                String(localized: "archival.export.column.strength",
+                       defaultValue: "Share of strongest link"),
+            ],
+            rowCells: graph.nodes.map { node in
+                [node.label,
+                 node.kind == .collection
+                    ? String(localized: "archival.network.kind.collection",
+                             defaultValue: "collection")
+                    : String(localized: "archival.network.kind.class",
+                             defaultValue: "central-file class"),
+                 node.category.displayName,
+                 "\(node.sharedVolumeCount)",
+                 "\(node.sharedDocumentCount)",
+                 node.relativeStrength.formatted(.percent.precision(.fractionLength(0)))]
+            })
+        onExport(ArchivalExportRequest(
+            table: table,
+            provenance: ArchivalAnalyticsExport.network(
+                focusName: graph.focus.name, measure: measure, drawn: graph.nodes.count,
+                aboveThreshold: graph.nodesAboveThreshold, partnersTotal: graph.partnersTotal,
+                indexedVolumeCount: indexedVolumeCount)))
+    }
+
     private func rebuild() async {
         if focus == nil { focus = seedFocus() }
         guard let focus else {

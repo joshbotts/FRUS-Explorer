@@ -35,6 +35,10 @@ struct ArchivalFlowsView: View {
     let authority: CollectionAuthorityIndex
     /// Opens Archival Neighbors for a collection.
     let onOpenNeighbors: (AuthorityCollectionRecord) -> Void
+    /// Volumes indexed on this device, for the export's provenance line.
+    let indexedVolumeCount: Int
+    /// Hands a table and its methods statement up to the shell, which owns the share sheet.
+    let onExport: (ArchivalExportRequest) -> Void
 
     /// The focused collection, or `nil` for the corpus-wide view.
     @State private var focus: AuthorityCollectionRecord?
@@ -162,6 +166,56 @@ struct ArchivalFlowsView: View {
                 isRemainderExpanded = false
             }
         }
+
+        // CSV only, for the same reason as the Network: the ribbons are a `Canvas`, and no figure
+        // has ever been rendered from one in this app.
+        AnalyticsSectionExportControl(exportCSV: { export(cached) })
+    }
+
+    /// Exports the diagram's rows — every destination, including the ones folded into the
+    /// remainder block, because a CSV that stopped at the drawn blocks would be the silent
+    /// truncation the diagram itself refuses.
+    private func export(_ data: ArchivalFlowsData?) {
+        let data = data ?? ArchivalFlowsData.corpusWide(index: index, authority: authority)
+        let title: String
+        let axis: String
+        let columns: [String]
+        let rows: [[String]]
+        if let focus = data.focus {
+            title = String(format: String(localized: "archival.export.title.flows %@ %@",
+                                          defaultValue: "%1$@ — %2$@"),
+                           focus.name, direction.title)
+            axis = direction == .outgoing
+                ? String(localized: "archival.export.axis.flows.outgoing",
+                         defaultValue: "References out of this collection")
+                : String(localized: "archival.export.axis.flows.incoming",
+                         defaultValue: "References into this collection")
+            columns = [
+                String(localized: "archival.table.unit", defaultValue: "Archival unit"),
+                String(localized: "archival.table.custodian", defaultValue: "Custodian"),
+                String(localized: "archival.export.unit.references", defaultValue: "References"),
+            ]
+            rows = data.allEndpoints.map {
+                [$0.label, $0.category.displayName, "\($0.count)"]
+            }
+        } else {
+            title = String(localized: "archival.flows.top.title",
+                           defaultValue: "The heaviest hand-offs in the series")
+            axis = String(localized: "archival.export.axis.flows.top",
+                          defaultValue: "Ranked by references between the pair")
+            columns = [
+                String(localized: "archival.export.column.source", defaultValue: "From"),
+                String(localized: "archival.export.column.target", defaultValue: "To"),
+                String(localized: "archival.export.unit.references", defaultValue: "References"),
+            ]
+            rows = data.topPairs.map { [$0.source.label, $0.target.label, "\($0.source.count)"] }
+        }
+        onExport(ArchivalExportRequest(
+            table: ChartInspectorData(id: "archival.flows", title: title, columns: columns,
+                                      rowCells: rows),
+            provenance: ArchivalAnalyticsExport.flows(
+                title: title, axisLabel: axis, data: data,
+                indexedVolumeCount: indexedVolumeCount)))
     }
 
     // MARK: - Corpus-wide

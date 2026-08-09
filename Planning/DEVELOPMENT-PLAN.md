@@ -3583,3 +3583,44 @@ downloaded also cite this one", naming a real count instead of a hedge, and
 **Verification.** 7 generator tests, 10 app tests across 2 suites. Four assert against the shipped
 artifact, including that its funnel matches the number #764 reports from the same harvester — two
 artifacts disagreeing about the corpus would mean one of them reads it differently.
+
+---
+
+## Session 2026-08-09 — #787: the archival cards join the D3 provenance-stamped export
+
+**The gap.** #765 gave every archival chart card the "View as table" inspector and stopped there.
+`ChartDataInspectorView`'s only export affordance is Copy CSV, and `ChartInspectorData.csv` is the
+bare table — so an archival table that left the app carried **no method statement at all**: no
+scope, no era band, no weight, no caveats. Corpus, Person, Cross-Reference and the Word Cloud all
+carry one; the newest analytics surface was the only one that did not, and it is the one whose
+numbers most need their method attached.
+
+**All five cards export now**, through `SeriesChartCard`'s `controls` slot — which has existed
+since #236 and had **no call site anywhere in the tree** until this change. `libraryCollectionsCard`
+became a real `SeriesChartCard`: #765 shipped it as a bare `VStack`, so it was the one card with
+neither a table nor an export, and it is the one whose rows a reader is most likely to want.
+
+**Every archival provenance sets `appliesDocumentDating: false`.** Nothing on this surface reads a
+document's date — the era comes from the *volume's* coverage span and the counts are of source
+notes. The word cloud set that precedent, and a test sweeps all five builders, because printing
+"each document is placed at its TEI `<date>`…" above a table that never looked at one is a methods
+statement about work the export did not do.
+
+**The caveats carry the two things that are honest but counter-intuitive**, and they are
+per-export rather than boilerplate:
+- the ranking states **what the umbrella filter withheld, as a number**, and only in bands where
+  it withheld anything — it supplies 12,060 documents to 1948–1960 and none at all before 1948;
+- the weight caveat spells out that Documents and Volumes count **different populations**, so
+  switching changes membership as well as order;
+- the Flows export **leads** with the footnote share, computed from the data rather than written
+  down, and discloses the same-unit exclusion only when there is one.
+
+**Network and Flows export CSV only.** `AnalyticsFigureExporter` has never rendered a `Canvas` in
+this app — its own comment says the PDF path "is only proven against plain `Text`" — so a figure
+button there would ship an unproven render path as a finished feature. The two `Canvas` modes hand
+an `ArchivalExportRequest` up to the shell rather than inheriting its share-sheet plumbing.
+
+**Verification.** 11 tests in 2 suites. One is end-to-end over `provenancedCSV` and asserts a
+negative that matters: the string `TEI` must **not** appear in an archival CSV. The wiring suite
+counts five mounted controls and checks the share sheet is anchored outside the mode switch — a
+`.sheet` on a `Group` mounts once per child.
