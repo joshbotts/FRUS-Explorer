@@ -347,6 +347,31 @@ struct ArchivalCollectionsDataTests {
             """)
     }
 
+    @Test("The class lens counts citing volumes under the volume weight, not documents again")
+    func classLensVolumeWeightCountsVolumes() throws {
+        // The class lens is the one place both weights come from the same artifact, so the
+        // volume count is derived from the number of stored (class, volume) pairs. Reading the
+        // document counts there instead would make the two weights identical and the segmented
+        // control a no-op — silently, since the order would rarely change.
+        let spans = coverage([("v1", 1930), ("v2", 1935)])
+        let index = try usage(volumes: ["v1", "v2"], collections: [],
+                              classes: [("793.94", [0, 1], [4_000, 956]),
+                                        ("740.0011", [0], [3_985])])
+        let data = ArchivalCollectionsData.make(authority: [], usage: index, coverage: spans)
+
+        let byDocuments = data.ranking(band: ArchivalEraBand.all[0], lens: .centralFileClasses,
+                                       weight: .documents, hidingUmbrella: false)
+        #expect(byDocuments.rows.map(\.id) == ["793.94", "740.0011"])
+        #expect(byDocuments.rows.map(\.value) == [4_956, 3_985])
+
+        let byVolumes = data.ranking(band: ArchivalEraBand.all[0], lens: .centralFileClasses,
+                                     weight: .volumes, hidingUmbrella: false)
+        #expect(byVolumes.rows.map(\.value) == [2, 1], """
+            The volume weight returned \(byVolumes.rows.map(\.value)). 793.94 is cited by two \
+            volumes and 740.0011 by one, whatever their document counts are.
+            """)
+    }
+
     // MARK: - Label disambiguation
 
     @Test("Two collections sharing a name get distinct labels, or Charts merges their bars")
