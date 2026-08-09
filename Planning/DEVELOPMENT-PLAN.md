@@ -3787,3 +3787,28 @@ them, and every fact in those passages is unchanged, so they needed no edit. The
 `EditableContent.md` archives are snapshots and were deliberately left alone.
 
 **Verification.** Both schemes build clean; **3,139 tests in 409 suites** pass, plus the UI suite.
+
+## Session 2026-08-09 — Open-issue verification sweep + resolve-open-issues plan
+
+All 37 open issues read (bodies and comments) and verified against the tree at `9b62f33` — every
+"landed?" claim checked in code, none taken from PR prose. **Five closed as completed** with
+evidence comments: #765 (all four Archival Analytics modes + D3 export), #764 (flow index + Flows
+surface; class-flow surface declined by its own measurement, label-table rider refuted in the plan
+of record), #754 (L-45 fix + resume-reading shipped per the recorded decision; B/C deferred until
+lived-with), #597 (tip phases #630/#633/#634 + the "Show Tips Again" recall), #663 (both scan
+routes + the shared row; the three catalog-field riders carried into the new plan as F-7).
+
+**Three retitled to match their own audit comments:** #795 widened to both missing Archival
+Analytics doors (the `MainWindowView:297` toolbar menu lacks the entry the manual promises, and
+the SA-3 cross-link rider never landed — absorbed from #765); #405 narrowed to the creator-display
+feature (similarity axis measured-negative, 2.8% reachability); #358 narrowed to the two real
+Zotero dead ends (the local-app premise was wrong). **Status ledgers posted** on #751/#752 pinning
+shipped-vs-remaining per finding (verified: Research/History/leads still route through Browse;
+M-25/L-40/L-43/L-48 still in the tree; the word-cloud consumer now takes `orAnyWindow`), and on
+#651 (the consolidated plan was already corrected — only the runbook edits remain).
+
+**New plan of record: `Planning/Resolve-Open-Issues-Plan-2026-08.md`** — prioritizes the 32
+surviving issues into five tiers (quick wins → diagnosis bugs → de-risked features →
+infrastructure → owner-gated decisions), carries per-item evidence pointers and effort, defers to
+the live N-lane/People/Subjects/reading-journey docs rather than re-planning them, and records the
+one new unfiled work item (#663's catalog fields). Docs only — no code, no build bump.
