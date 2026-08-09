@@ -73,9 +73,11 @@ All five are evidence-complete in their issues; none needs a decision. Together 
 
 - **QW-1 · #795 — the two missing Archival Analytics doors** (XS). Add
   `openWindow.fronting(id: "frus.archivalAnalytics")` to the `MainWindowView.swift:297` toolbar
-  Menu (the manual at `macOS-User-Manual.md:210` already promises it) and the SA-3 dashboard
-  cross-link (`EducationDashboardView`). Extend the `ArchivalLibraryQueryTests` source assertion to
-  pin the toolbar entry so the two menus cannot drift again.
+  Menu and the SA-3 dashboard cross-link (`EducationDashboardView`). The manual promised the
+  toolbar entry until the same-day #796 review rewrote it to document the gap ("**Archival
+  Analytics** … is *not* on this menu") — when the button lands, restore that sentence and the
+  window-table row to route through the toolbar menu again. Extend the `ArchivalLibraryQueryTests`
+  source assertion to pin the toolbar entry so the two menus cannot drift again.
 - **QW-2 · #657 first step — badge `nil`, not `""`** (XS). `MainTabView.swift:154`:
   `.badge(appState.unindexedVolumeCount > 0 ? "·" : nil)`. This is the issue's own suggested first
   move; the empty-string badge materialises a contentless `UILabel` in exactly the

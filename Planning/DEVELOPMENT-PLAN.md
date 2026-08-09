@@ -3866,8 +3866,10 @@ lived-with), #597 (tip phases #630/#633/#634 + the "Show Tips Again" recall), #6
 routes + the shared row; the three catalog-field riders carried into the new plan as F-7).
 
 **Three retitled to match their own audit comments:** #795 widened to both missing Archival
-Analytics doors (the `MainWindowView:297` toolbar menu lacks the entry the manual promises, and
-the SA-3 cross-link rider never landed — absorbed from #765); #405 narrowed to the creator-display
+Analytics doors (the `MainWindowView:297` toolbar menu lacks the entry, and the SA-3 cross-link
+rider never landed — absorbed from #765; the manual promised the toolbar entry at sweep time, and
+the same-day #796 review rewrote it to document the gap instead, so the fix now restores that
+sentence too); #405 narrowed to the creator-display
 feature (similarity axis measured-negative, 2.8% reachability); #358 narrowed to the two real
 Zotero dead ends (the local-app premise was wrong). **Status ledgers posted** on #751/#752 pinning
 shipped-vs-remaining per finding (verified: Research/History/leads still route through Browse;
