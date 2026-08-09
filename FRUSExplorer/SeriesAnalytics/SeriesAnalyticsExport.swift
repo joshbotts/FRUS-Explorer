@@ -141,15 +141,14 @@ enum SeriesAnalyticsExport {
     /// Coverage by presidential administration — the one dashboard that *does* read document
     /// dates, and the one whose year control does not mean what it looks like.
     ///
-    /// - Parameters:
-    ///   - includesEditorialNotes: Whether range-dated documents are counted.
-    ///   - affectedByEditorialNotes: Whether *this figure* responds to that setting. The
-    ///     volumes-per-year chart does not, and the toggle's own subtitle says it affects "every
-    ///     count and proportion" — so a figure that silently ignores it must say so rather than
-    ///     inherit a claim from the control above it.
+    /// - Parameter includesEditorialNotes: Whether range-dated documents are counted. Both
+    ///   charts respond to it since #791 — the documents chart in its counts, the
+    ///   volumes-per-year chart in which volumes are held to cover an administration — so one
+    ///   sentence is true of both. Until #791 it was not, and this builder carried a second
+    ///   parameter to say so.
     static func administration(figureTitle: String, axisLabel: String, scopeLabel: String?,
                                yearRange: ClosedRange<Int>, volumeCount: Int,
-                               includesEditorialNotes: Bool, affectedByEditorialNotes: Bool,
+                               includesEditorialNotes: Bool,
                                extra: [String] = []) -> AnalyticsProvenance {
         var caveats = [scopeCaveat(scopeLabel)].compactMap { $0 }
         // The year control filters which presidents appear by their term years; it does NOT
@@ -159,15 +158,12 @@ enum SeriesAnalyticsExport {
                               defaultValue: "Year range: selects which administrations appear, by whether the president's term overlaps the range. It does not re-count documents — a listed administration carries its full count even when only part of its term falls inside."))
         caveats.append(String(localized: "series.export.caveat.adminOverlap",
                               defaultValue: "Attribution: a document is attributed to every administration its date range overlaps, so the counts are not mutually exclusive and sum past the corpus. Terms are half-open, so a document dated on a succession day belongs to the incoming president. Counts measure whose foreign policy the documents cover, not when the volumes were published."))
-        caveats.append(affectedByEditorialNotes
-            ? String(format: String(
-                localized: "series.export.caveat.adminNotes %@",
-                defaultValue: "Editorial notes: %@. Editorial-note documents carry a span of dates rather than a single date."),
-                includesEditorialNotes
-                    ? String(localized: "series.export.included", defaultValue: "included")
-                    : String(localized: "series.export.excluded", defaultValue: "excluded"))
-            : String(localized: "series.export.caveat.adminNotesIgnored",
-                     defaultValue: "Editorial notes: this figure is unaffected by the editorial-notes setting. A volume counts toward an administration if any of its documents fall there, range-dated ones included, whatever the toggle says."))
+        caveats.append(String(format: String(
+            localized: "series.export.caveat.adminNotes.v2 %@",
+            defaultValue: "Editorial notes: %@. Editorial-note documents carry a span of dates rather than a single date; excluding them also withholds a volume whose only tie to an administration is such a note."),
+            includesEditorialNotes
+                ? String(localized: "series.export.included", defaultValue: "included")
+                : String(localized: "series.export.excluded", defaultValue: "excluded")))
         return AnalyticsProvenance(
             figureTitle: figureTitle,
             axisLabel: axisLabel,
