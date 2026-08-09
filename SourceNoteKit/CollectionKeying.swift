@@ -489,6 +489,41 @@ public enum CollectionKeying {
         return nil
     }
 
+    /// Whether a class key is a **subject-numeric** designator (`POL 27 VIET S`) rather than a
+    /// **decimal** file number (`763.72`).
+    ///
+    /// Both filing systems reach `decimal_class` through the same grammar, because the corpus
+    /// cites both the same way — but they are different archives with different eras and
+    /// different label vocabularies, and a caller that groups or labels them must branch. The
+    /// discriminator is the first character: a decimal file number opens with its three digits,
+    /// a subject-numeric designator with its category letters.
+    public static func isSubjectNumericClass(_ classKey: String) -> Bool {
+        guard let first = classKey.first else { return false }
+        return !first.isNumber
+    }
+
+    /// A subject-numeric class key folded to its **category and number** (`POL 27 VIET S` →
+    /// `POL 27`; `AID (US) 15-4 UAR` → `AID (US) 15-4`), or `nil` for a decimal class.
+    ///
+    /// The leaf grain is too thin to rank: measured on the 2026-08-08 usage index, the corpus's
+    /// 1,362 subject-numeric leaves carry 6,876 documents, of which 691 leaves — half of them —
+    /// have exactly one, and only 8 reach a hundred. Folded, 326 groups remain, 13 of them past a
+    /// hundred documents (`POL 27` 1,197, `POL 7` 490, `DEF 12-5` 218), which is a list a reader
+    /// can actually work with. This is the grain owner decision **D-3** admits the subject-numeric
+    /// lens at.
+    public static func subjectNumericGroup(_ classKey: String) -> String? {
+        guard isSubjectNumericClass(classKey) else { return nil }
+        guard let match = subjectNumericGroupRegex?.firstMatch(
+            in: classKey, range: NSRange(classKey.startIndex..., in: classKey)),
+              let range = Range(match.range(at: 0), in: classKey) else { return nil }
+        return String(classKey[range]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Category letters, an optional parenthesised agency qualifier, then the number — which may
+    /// itself be hyphenated (`POL 23-9`, `DEF 12-5`).
+    private static let subjectNumericGroupRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^[A-Z]{2,6}(\s*\([^)]*\))?\s+\d+(-\d+)*"#)
+
     /// The `decimal_class` derivation for a parsed note — the pipeline's
     /// `decimalClassColumn` gating verbatim.
     public static func centralFilesClass(parsed: ParsedSourceNote, note: String) -> String? {
