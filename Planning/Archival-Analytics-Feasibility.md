@@ -1,6 +1,6 @@
 # Archival Analytics — Feasibility Assessment
 
-**Date:** 2026-08-08 · **Version:** 1.6 · **Status:** plan of record with design integrated
+**Date:** 2026-08-08 · **Version:** 1.7 · **Status:** plan of record with design integrated
 (§7); no code changes ride this document. Design contract: `Archival-Analytics-Design-Handoff.md`
 (in this folder — the verbatim handoff README; annotated HTML mock + PNGs stay with the owner's
 zip).
@@ -626,6 +626,58 @@ names first.
 **Also worth knowing:** a compositional label table beats a flat one 3–5×. 200 rows of country
 codes + class-8 suffixes cover 87.7% of classed documents, against 1,000 flat leaf rows for 79.4%.
 
+### 7.9 Footnote citations of unprinted material — assessed, contained, refiled
+
+**The owner's question (2026-08-08):** can the scope extend past cross-references between *printed*
+documents to editorial footnotes that cite archival documents FRUS did **not** print?
+
+**Answer: yes, but narrower than it sounds — and one part of it was already shipping, wrongly.**
+
+**The material.** 502,601 editorial footnotes; ~66,500 carry a well-formed archival citation. Two
+clean idioms measured directly: `(Ibid., <file>)` 12,487 occurrences over 226 volumes;
+parenthesised decimal files 2,708 over 158; parenthesised lots 1,746 over 183.
+
+**It reaches the era nothing else does.** Bucketed by each document's own date, the `#dN`
+cross-reference idiom yields **7 / 0 / 0** references for the 1910s / 1920s / 1930s. Footnote
+archival citations yield **640 / 523 / 1,183**. Verbatim from the corpus: `(file No. 711.684/11)`
+(frus1928v03), `(811.114 Guatemala/90)` (frus1935v01). This is the only signal that reaches the
+pre-war decades at all, which is exactly where §7.8 found the flow matrix empty.
+
+**But the novelty is ~37%, not ~80%.** At *document* grain 80% of footnote-cited lots differ from
+the citing document's own source note; at **volume** grain — the grain the analytics consume — it
+is **36.2% for lots and 37.8% for decimal classes**. Most of the document-grain "novelty" is the
+weak case where the citing document has no lot at all.
+
+**Safety splits three ways, and only one way is clean.**
+
+| unit | verdict | evidence |
+|---|---|---|
+| lot files, library + collection | **safe** | 0 false positives in 80 read samples; self-identifying tokens |
+| decimal classes | guarded | 56% of hits are the printed document's *own* class, not unprinted material |
+| subject-numeric (`POL`/`DEF`) | **no** | at the strictest gate **87.2% are out-of-vocabulary** — `A10` is a newspaper page, `CF 341` a folder, `NSDD 104` a directive |
+
+The reason is recorded in the parser itself: `SourceNoteParser.swift:425-427` says a bare
+`PRC nn` candidate "is already unreachable from citation scans, which are sentence-bounded". **The
+exclusion list is calibrated to the sentence bound.** Remove the bound and its reasoning is void —
+so footnote prose needs its own **anchor-first** grammar (repository phrase, then identifier), the
+shape `extractCitations` already uses, and must never route through `decimalClassLocation`.
+
+**What was already shipping, and is now contained.** Editorial-note body citations were being
+written into `document_sources` with `citation_era = "footnote"`, and every provenance query over
+that table counts rows without filtering the era. So "N documents in M of your indexed volumes cite
+this collection" — the In Your Library line #762 sits above — blended documents *drawn from* an
+archive with documents whose editor *mentioned* one. Bounded at ~2,026 rows over 8,700
+editorial-note documents, and it also kept only `citations.first`, discarding ~1,182 of 3,208.
+Fixed by removing the write and deleting legacy rows on the next index open (no reindex needed),
+rather than by filtering twelve call sites — the filter approach has twelve chances to miss one.
+
+**Refiled, not built.** The feature proper wants its own table (`external_citations`, many rows per
+document), an anchor-first grammar, a document-ordered pass (12,482 notes inherit their repository
+from a preceding citation via `Ibid.`), and a Flows-mode consumer — which already measures
+editorial practice and already owns that disclosure. Two traps for whoever takes it: `Ibid.` is
+**stateful**, and 142 notes name an archive inside a *"Not found in Department of State files or at
+the Truman Library"* clause, where harvesting asserts the opposite of what the editor wrote.
+
 ### 7.5 Decisions log
 
 | # | Decision | Status |
@@ -639,6 +691,11 @@ codes + class-8 suffixes cover 87.7% of classed documents, against 1,000 flat le
 
 ## Version history
 
+- 1.7 (2026-08-08) — §7.9: assessed extending scope to footnote citations of unprinted archival
+  material (owner question). Yes for lot and library units, no for subject-numeric, guarded for
+  decimal classes; it is the only signal reaching the 1910s-1930s. Contains the live defect the
+  assessment surfaced — editorial-note citations were being counted as document provenance — and
+  refiles the feature.
 - 1.6 (2026-08-08) — Phase 2b (#764): the flow matrix shipped, and two of the phase's premises
   refuted. §7.8 records the funnel (2.7M references → 77,792 edges, 95.3% of them footnotes), the
   measured collapse of the class-flow axis (4,663 between-class references, top cell 31, no head)
