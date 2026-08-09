@@ -178,6 +178,40 @@ struct CollectionUsageIndexGeneratorTests {
         #expect(index.volumeNoteCounts.count == index.volumes.count)
     }
 
+    @Test("Vocabularies come out sorted even when the accumulator fills in reverse")
+    func vocabulariesAreSortedNotHashOrdered() throws {
+        // The three-volume fixture above cannot see this: with two collection ids, an unsorted
+        // dictionary order is sorted half the time, and two builds inside one process share a hash
+        // seed so the determinism test agrees with itself either way (measured — the sweep's M4
+        // survived both). Twenty-four ids inserted in descending order make hash order and sorted
+        // order coincide only by accident that will not happen.
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("usage-wide-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let lots = (10...33).reversed().map { "\($0)D100" }
+        let authority = AuthorityLookup(collections: lots.map {
+            AuthorityCollection(id: "lot:\($0)", name: "Lot \($0)", lotFileNorm: $0)
+        })
+        let notes = lots.map { "Source: Department of State, Files: Lot \($0), CF 1." }
+            + ["Source: Department of State, Central Files, 611.41/3–553. Secret."]
+        let file = try volume("frus1955-57v01", notes: notes, in: root)
+
+        let index = try CollectionUsageIndexRunner.build(
+            files: [file], authority: authority, authorityCollectionCount: lots.count,
+            generated: "2026-08-08")
+
+        #expect(index.collectionIds.count > 20, "fixture did not resolve — the guard would be vacuous")
+        #expect(index.collectionIds == index.collectionIds.sorted(), """
+            The collection vocabulary is in hash order, not sorted order. Every rebuild would then \
+            renumber every row key and produce a whole-file diff nobody can review.
+            """)
+        // …and the row keys must still name the right collections after that ordering.
+        for row in index.collections {
+            let id = index.collectionIds[row.key]
+            #expect(id.hasPrefix("lot:"), "row \(row.key) points at \(id)")
+        }
+    }
+
     @Test("The same corpus in a different file order produces the same bytes")
     func buildIsDeterministic() throws {
         let files = try fixtureCorpus()

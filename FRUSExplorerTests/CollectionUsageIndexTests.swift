@@ -196,6 +196,34 @@ struct CollectionUsageIndexTests {
                 "an unscanned volume must be nil, distinguishable from a scanned volume with none")
     }
 
+    // MARK: - The invariant the encoding rests on
+
+    @Test("A ragged row is refused on decode rather than read short")
+    func raggedRowIsRefused() throws {
+        // The shipped artifact has no ragged row, so nothing else in this suite exercises the
+        // guard — measured, removing it left every other test green. The failure it prevents is
+        // silent and wrong rather than loud: a short read attributes one collection's counts to
+        // another collection's volumes.
+        let json = """
+        {"categories":["lotFile"],"classKeys":[],"classes":[],"collectionIds":["lot:1"],
+         "collections":[{"k":0,"n":[1],"v":[0,1]}],
+         "coverage":{"authorityCollectionCount":1,"authorityCollectionsReached":1,
+           "noteCount":1,"notesInACollection":1,"notesWithAClassKey":0,
+           "volumesScanned":2,"volumesWithNotes":1},
+         "generated":"2026-08-08","schemaVersion":1,"volumeCategories":[],
+         "volumeNoteCounts":[1,0],"volumes":["v1","v2"]}
+        """
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(CollectionUsageIndex.self, from: Data(json.utf8))
+        }
+
+        // The same document with the arrays paired decodes, so the refusal above is the ragged
+        // arrays and not some other malformation in the fixture.
+        let sound = json.replacingOccurrences(of: "\"v\":[0,1]", with: "\"v\":[0]")
+        let decoded = try JSONDecoder().decode(CollectionUsageIndex.self, from: Data(sound.utf8))
+        #expect(decoded.documentCount(forCollectionId: "lot:1") == 1)
+    }
+
     // MARK: - The two filing systems in one vocabulary
 
     @Test("Class keys carry both filing systems, and the subject-numeric fold is usable")
