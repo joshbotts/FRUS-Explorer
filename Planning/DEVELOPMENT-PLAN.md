@@ -3682,3 +3682,44 @@ in 409 suites.
 "indexed on this device" — which the *new, correct* copy also contains, in order to deny it. The
 assertion now matches the default caveat's own signature. Matching a phrase two sentences share
 tests nothing about which one was emitted.
+
+---
+
+## Session 2026-08-09 — #791: the editorial-notes toggle reaches the volume count
+
+**The defect.** `AdministrationProfilesDashboard`'s toggle says including editorial notes "adds
+them to every count and proportion". True of the documents chart and the detail card's shares;
+false of *Volumes per administration-year*, whose numerator counted a volume toward an
+administration whenever any of its documents landed there — range-dated ones included, whatever
+the toggle said.
+
+Measured: **14 of 26 populated administrations** affected (Ford 46→42, L. Johnson 77→74, Lincoln
+21→19, Kennedy 31→29), series total 879 → 856. With the toggle **off** — the default, the state
+the caveats call "the firmer point-dated data" — that chart read high for more than half its bars.
+
+**The field was already there.** `administration-profiles-index.json` has shipped
+`volumeCountPointOnly` since SA-2a and nothing in the app read it. The unscoped branch now picks
+between the two scalars; the scoped branch applies the same rule to the per-volume rows it
+re-sums.
+
+**Two checks before touching anything**, both from the shipped artifact:
+- **No administration is range-only** (0 of 26), so nothing gains a zero bar or drops out.
+- **Every administration's per-volume rows reproduce both of its scalars exactly** (0 of 32
+  disagree), so the two branches — which read different fields — cannot diverge on this data. A
+  test pins that they agree when the scope is everything.
+
+**#790's caveat went with the defect.** The `affectedByEditorialNotes` parameter existed only so
+the volumes-per-year figure could disclaim a claim it could not honour. Both charts respond now,
+so the parameter is gone and the surviving sentence gained the consequence that had been silently
+wrong: excluding notes also withholds a volume whose only tie to an administration is such a note.
+
+**Process note, and it is one already on file.** I ran the pre-fix verification by editing the
+working copy and then `git checkout --` to restore — with the fix **uncommitted**. That reverted
+to HEAD and discarded it; the next full-suite run failed with the three pre-fix failures, which is
+how I caught it. The rule is written down — *commit before mutation testing, because
+`git checkout --` reverts to HEAD* — and it applies to a one-off pre-fix check just as much as to
+a sweep.
+
+**Verification.** Three new tests, each verified against the pre-fix code: they fail with exactly
+the wrong numbers (4 where 3 is right; a volumes-per-year ratio identical across both toggle
+states). Full suite 3,139 in 409 suites; both schemes build clean.
