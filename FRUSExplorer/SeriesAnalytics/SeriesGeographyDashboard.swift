@@ -67,6 +67,9 @@ struct SeriesGeographyDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// The share sheet and error state for this dashboard's exports (#790).
+    @State private var exportBox = SeriesExportBox()
+
     /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
     /// visit. Scoping rebuilds every chart — including the two categorical bar charts
     /// (region totals, top countries) the year-range bar cannot narrow, so scope
@@ -133,6 +136,7 @@ struct SeriesGeographyDashboard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .seriesExportPresentation(exportBox)
     }
 
     // MARK: - Intro
@@ -178,7 +182,15 @@ struct SeriesGeographyDashboard: View {
                           defaultValue: "Regional emphasis over time"),
             caption: String(localized: "series.geography.trend.caption",
                             defaultValue: "Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint."),
-            inspector: ChartInspectorAdapters.regionTrendTable(shares)
+            inspector: ChartInspectorAdapters.regionTrendTable(shares),
+            provenance: SeriesAnalyticsExport.geography(
+                figureTitle: String(localized: "series.geography.trend.title",
+                                    defaultValue: "Regional emphasis over time"),
+                axisLabel: String(localized: "series.export.axis.regionTrend",
+                                  defaultValue: "By coverage decade, share of volumes"),
+                scopeLabel: scope.label, yearRange: yearStart...yearEnd,
+                volumeCount: entries.count),
+            figureHeight: 280
         ) {
             Chart {
                 ForEach(shares) { point in
@@ -232,7 +244,14 @@ struct SeriesGeographyDashboard: View {
                           defaultValue: "Overall regional emphasis"),
             caption: String(localized: "series.geography.totals.caption",
                             defaultValue: "How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap."),
-            inspector: ChartInspectorAdapters.regionTotalsTable(data.regionTotals)
+            inspector: ChartInspectorAdapters.regionTotalsTable(data.regionTotals),
+            provenance: SeriesAnalyticsExport.geography(
+                figureTitle: String(localized: "series.geography.totals.title",
+                                    defaultValue: "Volumes by region"),
+                axisLabel: String(localized: "series.export.axis.regionTotals",
+                                  defaultValue: "By region, across the whole span"),
+                scopeLabel: scope.label, yearRange: nil, volumeCount: entries.count),
+            figureHeight: 260
         ) {
             Chart {
                 ForEach(data.regionTotals) { total in
@@ -280,7 +299,14 @@ struct SeriesGeographyDashboard: View {
             inspector: ChartInspectorAdapters.topCountriesTable(
                 data.topCountries,
                 displayName: { displayName(forSlug: $0) }
-            )
+            ),
+            provenance: SeriesAnalyticsExport.geography(
+                figureTitle: String(localized: "series.geography.countries.title",
+                                    defaultValue: "Most-covered countries"),
+                axisLabel: String(localized: "series.export.axis.topCountries",
+                                  defaultValue: "By country, volumes tagged"),
+                scopeLabel: scope.label, yearRange: nil, volumeCount: entries.count),
+            figureHeight: CGFloat(max(data.topCountries.count, 1)) * 24 + 40
         ) {
             Chart {
                 ForEach(data.topCountries) { country in
@@ -357,10 +383,20 @@ struct SeriesGeographyDashboard: View {
     /// sections visually consistent (mirrors the SA-1b dashboard card). When
     /// `inspector` is non-nil, the header gains a trailing "View as table" button
     /// that opens the data pop-up.
+    /// A titled, captioned chart card with its D3 export control (#790).
+    ///
+    /// The `content` closure is used twice — once for the card and once, unchanged, as the plate
+    /// inside `AnalyticsFigureCanvas`. That is what keeps an exported figure identical to the one
+    /// on screen: there is no second rendering of the chart to drift.
+    ///
+    /// - Parameter figureHeight: The plate's chart area. It matches the height the closure applies
+    ///   to itself, so the exported figure is the same shape as the card's chart.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
+        provenance: AnalyticsProvenance,
+        figureHeight: CGFloat = 300,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         SeriesChartCard(
@@ -368,6 +404,14 @@ struct SeriesGeographyDashboard: View {
             caption: caption,
             inspector: inspector,
             onInspect: { inspectorData = $0 },
+            controls: {
+                SeriesChartExportControl(
+                    table: inspector, provenance: provenance, box: exportBox,
+                    figure: { format in
+                        exportBox.deliverFigure(format, provenance: provenance,
+                                                chartHeight: figureHeight, chart: content)
+                    })
+            },
             content: content
         )
     }

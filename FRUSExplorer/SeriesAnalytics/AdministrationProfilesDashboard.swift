@@ -83,6 +83,9 @@ struct AdministrationProfilesDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// The share sheet and error state for this dashboard's exports (#790).
+    @State private var exportBox = SeriesExportBox()
+
     /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
     /// visit. Under a scope every count/proportion is recomputed from each
     /// administration's per-volume breakdown, and the coverage-span stat is hidden
@@ -184,6 +187,7 @@ struct AdministrationProfilesDashboard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .seriesExportPresentation(exportBox)
         .onAppear {
             if selectedAdministrationID == nil {
                 selectedAdministrationID = data.mostDocumentedProfile?.id
@@ -274,7 +278,17 @@ struct AdministrationProfilesDashboard: View {
                           defaultValue: "Documents per administration"),
             caption: String(localized: "series.admin.docs.caption",
                             defaultValue: "How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both.\n\nNote that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
-            inspector: ChartInspectorAdapters.administrationDocumentsTable(profiles)
+            inspector: ChartInspectorAdapters.administrationDocumentsTable(profiles),
+            provenance: SeriesAnalyticsExport.administration(
+                figureTitle: String(localized: "series.admin.docs.title",
+                                    defaultValue: "Documents per administration"),
+                axisLabel: String(localized: "series.export.axis.adminDocuments",
+                                  defaultValue: "By administration, documents"),
+                scopeLabel: scope.label, yearRange: yearStart...yearEnd,
+                volumeCount: data.volumesCovered,
+                includesEditorialNotes: includeEditorialNotes,
+                affectedByEditorialNotes: true),
+            figureHeight: 320
         ) {
             Chart {
                 ForEach(profiles) { profile in
@@ -326,7 +340,20 @@ struct AdministrationProfilesDashboard: View {
                           defaultValue: "Volumes per administration-year"),
             caption: String(localized: "series.admin.perYear.caption",
                             defaultValue: "How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted.\n\nNote that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
-            inspector: ChartInspectorAdapters.administrationVolumesPerYearTable(profiles)
+            inspector: ChartInspectorAdapters.administrationVolumesPerYearTable(profiles),
+            provenance: SeriesAnalyticsExport.administration(
+                figureTitle: String(localized: "series.admin.perYear.title",
+                                    defaultValue: "Volumes per administration-year"),
+                axisLabel: String(localized: "series.export.axis.adminPerYear",
+                                  defaultValue: "By administration, volumes per term-year"),
+                scopeLabel: scope.label, yearRange: yearStart...yearEnd,
+                volumeCount: data.volumesCovered,
+                includesEditorialNotes: includeEditorialNotes,
+                // This chart's volume count includes range-dated documents whatever the toggle
+                // says (its denominator is a term length, not a document count), so it must not
+                // inherit the toggle's claim. See #791.
+                affectedByEditorialNotes: false),
+            figureHeight: 320
         ) {
             Chart {
                 ForEach(profiles) { profile in
@@ -568,10 +595,20 @@ struct AdministrationProfilesDashboard: View {
     /// visually consistent (mirrors the SA-1b/SA-2/SA-3b dashboard card). When
     /// `inspector` is non-nil, the header gains a trailing "View as table" button
     /// that opens the data pop-up.
+    /// A titled, captioned chart card with its D3 export control (#790).
+    ///
+    /// The `content` closure is used twice — once for the card and once, unchanged, as the plate
+    /// inside `AnalyticsFigureCanvas`. That is what keeps an exported figure identical to the one
+    /// on screen: there is no second rendering of the chart to drift.
+    ///
+    /// - Parameter figureHeight: The plate's chart area. It matches the height the closure applies
+    ///   to itself, so the exported figure is the same shape as the card's chart.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
+        provenance: AnalyticsProvenance,
+        figureHeight: CGFloat = 300,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         SeriesChartCard(
@@ -579,6 +616,14 @@ struct AdministrationProfilesDashboard: View {
             caption: caption,
             inspector: inspector,
             onInspect: { inspectorData = $0 },
+            controls: {
+                SeriesChartExportControl(
+                    table: inspector, provenance: provenance, box: exportBox,
+                    figure: { format in
+                        exportBox.deliverFigure(format, provenance: provenance,
+                                                chartHeight: figureHeight, chart: content)
+                    })
+            },
             content: content
         )
     }

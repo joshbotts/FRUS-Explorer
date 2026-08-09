@@ -79,6 +79,9 @@ struct SourceProvenanceDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// The share sheet and error state for this dashboard's exports (#790).
+    @State private var exportBox = SeriesExportBox()
+
     /// Provenance categories hidden from the mix + composition charts (#236). Shares
     /// renormalize over the shown categories. `@State`, resets per visit.
     @State private var hiddenCategories: Set<SourceProvenanceCategory> = []
@@ -133,6 +136,7 @@ struct SourceProvenanceDashboard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .seriesExportPresentation(exportBox)
     }
 
     // MARK: - Intro
@@ -257,6 +261,25 @@ struct SourceProvenanceDashboard: View {
             && hiddenCategories.count == SourceProvenanceCategory.ordered.count - 1
     }
 
+    // MARK: - Export provenance
+
+    /// This dashboard's methods statement, shared by its three charts.
+    ///
+    /// The hidden-category list is the part that matters: hiding a category **re-bases every
+    /// share** over what is left (#236), so a table exported under a filter is not a table of
+    /// shares of all source notes, and only the preamble can say so.
+    private func provenanceStatement(figureTitle: String, axisLabel: String,
+                                     yearRange: ClosedRange<Int>?) -> AnalyticsProvenance {
+        SeriesAnalyticsExport.provenance(
+            figureTitle: figureTitle,
+            axisLabel: axisLabel,
+            scopeLabel: scope.label,
+            yearRange: yearRange,
+            volumeCount: data.volumesCovered,
+            noteCount: data.totalSourceNotes,
+            hiddenCategories: hiddenCategories.map(\.displayName))
+    }
+
     // MARK: - Chart 1: Provenance mix over time (stacked area, the anchor)
 
     /// Stacked area of each provenance category's share of a decade's source
@@ -269,7 +292,14 @@ struct SourceProvenanceDashboard: View {
                           defaultValue: "Archival provenance over time"),
             caption: String(localized: "series.provenance.trend.caption",
                             defaultValue: "Each decade's source notes divided among the archival collections they cite, so every decade sums to 100%. Decades are set by each volume's coverage midpoint; the trend begins in 1900 because earlier volumes carry no archival source notes."),
-            inspector: ChartInspectorAdapters.provenanceMixTable(shares)
+            inspector: ChartInspectorAdapters.provenanceMixTable(shares),
+            provenance: provenanceStatement(
+                figureTitle: String(localized: "series.provenance.trend.title",
+                                    defaultValue: "Archival provenance over time"),
+                axisLabel: String(localized: "series.export.axis.provenanceMix",
+                                  defaultValue: "By coverage decade, share of source notes"),
+                yearRange: domain.lowerBound...domain.upperBound),
+            figureHeight: 300
         ) {
             Chart {
                 ForEach(shares) { point in
@@ -324,7 +354,14 @@ struct SourceProvenanceDashboard: View {
                           defaultValue: "Overall provenance composition"),
             caption: String(localized: "series.provenance.composition.caption",
                             defaultValue: "How many source notes across the whole series (from 1900) cite each kind of archival collection. The Central Decimal File dwarfs the rest — most published FRUS documents came from the State Department's own central filing."),
-            inspector: ChartInspectorAdapters.compositionTable(composition)
+            inspector: ChartInspectorAdapters.compositionTable(composition),
+            provenance: provenanceStatement(
+                figureTitle: String(localized: "series.provenance.composition.title",
+                                    defaultValue: "Overall provenance composition"),
+                axisLabel: String(localized: "series.export.axis.composition",
+                                  defaultValue: "By provenance, across the whole span"),
+                yearRange: nil),
+            figureHeight: 300
         ) {
             Chart {
                 ForEach(composition) { item in
@@ -372,7 +409,14 @@ struct SourceProvenanceDashboard: View {
                           defaultValue: "The documentary base by decade"),
             caption: String(localized: "series.provenance.density.caption",
                             defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base. Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. Those decades will look different as new volumes are released."),
-            inspector: ChartInspectorAdapters.densityTable(density)
+            inspector: ChartInspectorAdapters.densityTable(density),
+            provenance: provenanceStatement(
+                figureTitle: String(localized: "series.provenance.density.title",
+                                    defaultValue: "The documentary base by decade"),
+                axisLabel: String(localized: "series.export.axis.density",
+                                  defaultValue: "By coverage decade, source notes"),
+                yearRange: domain.lowerBound...domain.upperBound),
+            figureHeight: 240
         ) {
             Chart {
                 ForEach(density) { item in
@@ -457,10 +501,20 @@ struct SourceProvenanceDashboard: View {
     /// sections visually consistent (mirrors the SA-1b/SA-2 dashboard card). When
     /// `inspector` is non-nil, the header gains a trailing "View as table" button
     /// that opens the data pop-up.
+    /// A titled, captioned chart card with its D3 export control (#790).
+    ///
+    /// The `content` closure is used twice — once for the card and once, unchanged, as the plate
+    /// inside `AnalyticsFigureCanvas`. That is what keeps an exported figure identical to the one
+    /// on screen: there is no second rendering of the chart to drift.
+    ///
+    /// - Parameter figureHeight: The plate's chart area. It matches the height the closure applies
+    ///   to itself, so the exported figure is the same shape as the card's chart.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
+        provenance: AnalyticsProvenance,
+        figureHeight: CGFloat = 300,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         SeriesChartCard(
@@ -468,6 +522,14 @@ struct SourceProvenanceDashboard: View {
             caption: caption,
             inspector: inspector,
             onInspect: { inspectorData = $0 },
+            controls: {
+                SeriesChartExportControl(
+                    table: inspector, provenance: provenance, box: exportBox,
+                    figure: { format in
+                        exportBox.deliverFigure(format, provenance: provenance,
+                                                chartHeight: figureHeight, chart: content)
+                    })
+            },
             content: content
         )
     }
