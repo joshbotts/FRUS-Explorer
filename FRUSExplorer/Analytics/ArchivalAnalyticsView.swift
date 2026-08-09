@@ -78,8 +78,25 @@ struct ArchivalAnalyticsView: View {
     private var unitLens: ArchivalUnitLens {
         ArchivalUnitLens(rawValue: unitLensRaw) ?? .namedCollections
     }
+
+    /// The weight actually in force.
+    ///
+    /// Falls back to volumes when the usage index did not load, because the stored preference
+    /// outlives the artifact: a reader who last chose Documents would otherwise open onto an
+    /// empty chart with no indication that the weight, not the era, was the reason. The caveat
+    /// block says which fallback happened.
     private var weight: ArchivalWeight {
-        ArchivalWeight(rawValue: weightRaw) ?? .documents
+        let stored = ArchivalWeight(rawValue: weightRaw) ?? .documents
+        guard stored == .documents else { return stored }
+        return (collectionsData?.supportsDocumentWeight ?? true) ? .documents : .volumes
+    }
+
+    /// Re-runs the library query when the mode changes **or** the search infrastructure finishes
+    /// booting. Without the second half, a view that appeared before `indexingPipeline` existed
+    /// would show an empty library for the rest of the session — the macOS window and the iOS
+    /// sheet can both open mid-boot.
+    private var libraryLoadToken: String {
+        "\(mode.rawValue)|\(appState?.indexingPipeline == nil ? "waiting" : "ready")"
     }
 
     var body: some View {
@@ -117,13 +134,8 @@ struct ArchivalAnalyticsView: View {
             }
         }
         #endif
-        .task {
-            await loadCollections()
-            await loadLibraryIfNeeded()
-        }
-        .onChange(of: mode) { _, _ in
-            Task { await loadLibraryIfNeeded() }
-        }
+        .task { await loadCollections() }
+        .task(id: libraryLoadToken) { await loadLibraryIfNeeded() }
     }
 
     // MARK: - Toolbar
@@ -161,7 +173,9 @@ struct ArchivalAnalyticsView: View {
             collectionsIntro
             filterRow(data: data)
             rankingCard(ranking, data: data)
-            if unitLens == .namedCollections {
+            // Lifecycles are a property of a *collection* — a class has no custodian and no
+            // arrival in the record — and the card is only meaningful with bars in it.
+            if unitLens == .namedCollections, !data.lifecycleSpans.isEmpty {
                 lifecycleCard(data)
             }
             collectionsCaveats(data: data, ranking: ranking)
@@ -224,9 +238,9 @@ struct ArchivalAnalyticsView: View {
                     Text(w.title).tag(w.rawValue)
                 }
             }
-            // Documents needs the usage index. Disabling the whole menu would also strand the
-            // user on whichever weight they last chose, so the menu stays and the unavailable
-            // option is the thing that dims.
+            // Documents needs the usage index. The picker dims whole rather than per-option,
+            // because a stored Documents preference has already been overridden by `weight` —
+            // an enabled control whose selection the view ignores is worse than a disabled one.
             .disabled(!data.supportsDocumentWeight)
         } label: {
             chipLabel(systemImage: "doc.on.doc",
@@ -275,15 +289,11 @@ struct ArchivalAnalyticsView: View {
 
     @ViewBuilder
     private func rankingCard(_ ranking: ArchivalRanking, data: ArchivalCollectionsData) -> some View {
-        let title = unitLens == .namedCollections
-            ? String(localized: "archival.ranking.title.collections",
-                     defaultValue: "Top collections by era")
-            : String(localized: "archival.ranking.title.classes",
-                     defaultValue: "Top central-file classes by era")
+        let title = rankingTitle
         SeriesChartCard(
             title: title,
             caption: rankingCaption(ranking),
-            inspector: rankingInspector(ranking),
+            inspector: rankingInspector(ranking, title: title),
             onInspect: { inspectorData = $0 }
         ) {
             if ranking.rows.isEmpty {
@@ -327,6 +337,16 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
+    /// The ranking card's title, which follows the unit lens — the two lenses rank different
+    /// kinds of thing and one title for both would be wrong on one of them.
+    private var rankingTitle: String {
+        unitLens == .namedCollections
+            ? String(localized: "archival.ranking.title.collections",
+                     defaultValue: "Top collections by era")
+            : String(localized: "archival.ranking.title.classes",
+                     defaultValue: "Top central-file classes by era")
+    }
+
     private func rankingCaption(_ ranking: ArchivalRanking) -> String {
         let units = unitLens == .namedCollections
             ? String(localized: "archival.ranking.caption.units.collections",
@@ -344,12 +364,12 @@ struct ArchivalAnalyticsView: View {
                Int64(row.value), weight.title.lowercased(), row.category.displayName)
     }
 
-    private func rankingInspector(_ ranking: ArchivalRanking) -> ChartInspectorData? {
+    private func rankingInspector(_ ranking: ArchivalRanking, title: String)
+        -> ChartInspectorData? {
         guard !ranking.rows.isEmpty else { return nil }
         return ChartInspectorData(
             id: "archival.ranking",
-            title: String(localized: "archival.ranking.title.collections",
-                          defaultValue: "Top collections by era"),
+            title: title,
             columns: [
                 String(localized: "archival.table.unit", defaultValue: "Archival unit"),
                 String(localized: "archival.table.custodian", defaultValue: "Custodian"),
@@ -722,13 +742,13 @@ struct ArchivalAnalyticsView: View {
     }
 
     /// Runs the two grouped queries and folds them, once per visit.
+    ///
+    /// The "loaded" flag is set only once a pipeline actually exists, so a call that arrives
+    /// mid-boot leaves the loading state up and the next token change retries.
     private func loadLibraryIfNeeded() async {
-        guard mode == .yourLibrary, !hasLoadedLibrary else { return }
+        guard mode == .yourLibrary, !hasLoadedLibrary,
+              let pipeline = appState?.indexingPipeline else { return }
         hasLoadedLibrary = true
-        guard let pipeline = appState?.indexingPipeline else {
-            libraryProfile = .empty
-            return
-        }
         let coverage = volumeCoverage()
         let authority = CollectionAuthorityStore.shared
         do {

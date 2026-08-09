@@ -134,7 +134,7 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
 | `Summarization/` | Apple Intelligence integration, prompt management UI |
 | `SourceExplorer/` | NARA catalog integration |
 | `Downloads/` | `DownloadManager`, download queue UI |
-| `Analytics/` | Term frequency analysis with Swift Charts |
+| `Analytics/` | The Analytics family, all Swift Charts: corpus term frequency, Person, Cross-Reference, and Archival (era × archival-unit rankings + the user's own archival profile) |
 | `Theme/` | `FRUSTheme` (colors, typography constants) |
 | `Resources/` | Bundled JSON: manifest, taxonomy, subject tags, TEI config |
 

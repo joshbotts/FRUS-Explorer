@@ -87,12 +87,29 @@ struct ArchivalLibraryQueryTests {
             ]),
             (id: "frus1969-76v01", notes: [
                 (id: "d1", note: "Source: National Archives, RG 59, Central Files 1970–73, POL 27."),
+                // Deliberately the SAME citation form and repository as the early volume's first
+                // two notes. Without a form shared across volumes, a query that dropped
+                // `volume_id` from its GROUP BY would still return the right per-volume answers
+                // by accident — the first version of this fixture did exactly that, and the
+                // mutation sweep caught it rather than the test.
+                (id: "d2", note: "Source: Department of State, Central Files, 611.51/3-1071."),
             ]),
         ]) { pipeline in
             let groups = try await pipeline.archivalLibraryGroups()
             let total = groups.reduce(0) { $0 + $1.documentCount }
-            #expect(total == 5, "the five source notes produced \(total) counted documents")
+            #expect(total == 6, "the six source notes produced \(total) counted documents")
             #expect(Set(groups.map(\.volumeId)) == ["frus1958-60v01", "frus1969-76v01"])
+
+            // The grain is per volume: the shared decimal form must stay split 2 / 1, not
+            // collapse into one row of 3 attributed to whichever volume the database picked.
+            let decimalByVolume = Dictionary(
+                grouping: groups.filter { $0.citationEra == "decimal" },
+                by: \.volumeId).mapValues { $0.reduce(0) { $0 + $1.documentCount } }
+            #expect(decimalByVolume == ["frus1958-60v01": 2, "frus1969-76v01": 1], """
+                Decimal notes came back as \(decimalByVolume). Both volumes cite the central files \
+                through the same form, so a query grouping only by form would attribute one \
+                volume's documents to the other — and every era chart is built on that split.
+                """)
 
             // The two decimal notes are one group; the lot and library notes are their own.
             let early = groups.filter { $0.volumeId == "frus1958-60v01" }
