@@ -303,7 +303,13 @@ let package = Package(
         /// record-group / repository headers are reported for a later NARA Catalog API pass.
         .target(
             name: "VolumeSourcesIndexGeneratorCore",
-            dependencies: [.target(name: "CentralFilesIndexGeneratorCore")],
+            // SourceNoteKit since #733: the lot and CIA-Job grammars are shared with the app
+            // rather than re-declared here. The private D-only lot regex this replaced could not
+            // see 249 rows across 75 volumes that the app keys.
+            dependencies: [
+                .target(name: "CentralFilesIndexGeneratorCore"),
+                .target(name: "SourceNoteKit"),
+            ],
             path: "VolumeSourcesIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -319,7 +325,10 @@ let package = Package(
         /// Unit tests for VolumeSourcesIndexGeneratorCore logic.
         .testTarget(
             name: "VolumeSourcesIndexGeneratorTests",
-            dependencies: [.target(name: "VolumeSourcesIndexGeneratorCore")],
+            dependencies: [
+                .target(name: "VolumeSourcesIndexGeneratorCore"),
+                .target(name: "SourceNoteKit"),
+            ],
             path: "VolumeSourcesIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

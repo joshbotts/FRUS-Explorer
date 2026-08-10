@@ -38,6 +38,8 @@ public struct CollectionNode: Codable, Sendable, Equatable {
     public var recordGroup: String?
     public var lotFile: String?
     public var repository: String?
+    /// The CIA Job number this node cites, when it names one (#733).
+    public var jobNumber: String?
     /// The resolved NARA Catalog record, when one was found.
     public var resolved: ResolvedNAID?
     public var children: [CollectionNode]
@@ -52,6 +54,10 @@ public struct MajorCollection: Codable, Sendable, Equatable {
     public var recordGroup: String?
     public var lotFile: String?
     public var repository: String?
+    /// The CIA Job number, for collections identified by one (#733). CIA collections carry no
+    /// NARA Catalog record — the Agency's records are not described in the catalog — so
+    /// `resolved` stays nil for these and the job number IS the identity.
+    public var jobNumber: String?
     public var resolved: ResolvedNAID?
     /// Volumes whose Sources section cites this collection, sorted.
     public var volumeIds: [String]
