@@ -344,6 +344,14 @@ Choose **Facets** from the binoculars menu to open a sheet that describes your w
 
 Facet rows are also controls. Tapping a year, volume, person, or document-type row **narrows the search**, and the narrowing appears as a clearable chip above the results. Three things the panel is careful about:
 
+**Choosing more than one.** Years and Volumes let you build a selection instead of picking a single row. Tap a row once to **include** it, again to **exclude** it, and a third time to clear it — a check mark, a minus, and nothing. While you are choosing, the search does not re-run: the list stays as it is, so the row you want second is still there. When you are done, tap **Apply** and the whole selection runs as one search. This is what makes the two routes to the same result work — include 1951 and 1953, or include 1950 through 1953 and then exclude 1950 and 1952, and you land on the same documents.
+
+Excluding without including anything means *everything else in this result set*. Excluding every row you included leaves you with nothing, and the app does that rather than quietly widening back out to the whole corpus.
+
+**One thing to know about years.** The Years section counts a document under the year it *starts* in, and choosing years filters the same way — so a row reading "1948 · 7,392" gives you exactly those 7,392 documents. The **Limit by date** control in Filters asks a different question: it keeps any document whose span *touches* the dates you set, so a document running from December 1948 into January 1949 answers to both years there and to 1948 here. If you use both, both apply.
+
+People, document type, and archival provenance are unchanged: a person or document-type row narrows on the tap, and provenance is still descriptive only. Comparing several people is a different question from filtering to them, and **Person Analytics** is where it lives.
+
 - The counts describe the **whole match**, not the page you are looking at. The result list is capped while these counts are not, and the panel says so.
 - **Archival provenance is descriptive only.** It tells you how the match is sourced; it is not a filter, and the panel states how much of the match it can speak for rather than implying it covers all of it.
 - A truncated section reports that it was truncated. A shown total is never a partial one wearing a complete label.

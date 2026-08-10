@@ -6,6 +6,8 @@ claim below checked in the tree (not inferred from PR prose).
 
 **Version history:**
 - 1.0 — Session 2026-08-09: initial plan, from the full open-issue verification sweep.
+- 1.4 — Session 2026-08-10: **F-3 executed** for Years and Volumes. Two more plan lines found
+  stale or false (the #586 "ships first" sentence; the tap-twice premise) — the ninth and tenth.
 - 1.3 — Session 2026-08-10: **F-2 executed.** One of its four items (L-48) closed as
   not-reproducing and one (L-43) had the wrong remedy prescribed — the sixth and seventh plan lines
   this program has found to be claims rather than facts.
@@ -180,6 +182,15 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   Source Explorer related-doc taps), L-43 (convert `showResearchGuide` from shared bool to a
   scene-addressed Handoff), L-48 (clear `pendingAuxWindowOriginRaw` after refocus-only
   `openWindow(value:)`). Multi-window iPad test passes per the #769 pattern.
+- ~~**F-3 · #775 — facet multi-select + exclude**~~ ✅ **DONE (2026-08-10)**, Years and Volumes;
+  **People deliberately excluded** and the reason recorded on the issue. Two plan lines corrected:
+  the "reachability half can ship first" sentence below is **stale** — #586 closed on 2026-08-07
+  and its work is in the tree (`FacetRequest.fetchCeiling` = 20,000, `FacetPaging`); and the
+  premise that a user could multi-select by tapping twice was **false**, because a narrow re-runs
+  the search and invalidates every section, so the second row no longer exists. The fix is a
+  *staged* selection with one Apply. It also repaired a shipped defect found while mapping: the
+  Years facet buckets on the start year but a tap applied an interval-overlap `dateRange`, so the
+  1948 row read 7,392 and delivered 7,892.
 - **F-3 · #775 — facet multi-select + exclude** (M: design ½ + build 1). The Eight-Issue-Plan's
   re-estimate stands: sets and negation move the filter model, the chip vocabulary, and the SQL —
   the facet panel becomes a query builder. Settle the shape first (per-domain include-set +

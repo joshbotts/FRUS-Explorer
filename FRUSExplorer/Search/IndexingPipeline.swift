@@ -3170,6 +3170,28 @@ public actor IndexingPipeline {
             appendChunkedKeyCondition(excludeIds, op: "NOT IN", chunkJoin: " AND ")
         }
 
+        // #775: a set of start years, from the Years facet. Deliberately NOT the interval-overlap
+        // rule `dateRange` uses below — this predicate is `substr(date_iso, 1, 4)`, which is
+        // exactly what the Years facet aggregate buckets on (see `resultSetFacets`), so a row
+        // reading "1948 · 7,392" delivers 7,392 documents. Under the old behaviour a 1948 tap
+        // applied a `dateRange` and returned 7,892, because 7,562 dated rows span a year boundary.
+        //
+        // Contract: `nil` = no year gate; an **empty array matches nothing**, following
+        // `documentIds` above rather than `volumeIds`. An empty set is what "include three years,
+        // then exclude all three" resolves to, and widening that to the whole corpus would invert
+        // the user's request. Negation never reaches here: include-minus-exclude is resolved in
+        // Swift over the 203-value domain, which also avoids `substr(NULL,1,4) NOT IN (…)` — NULL,
+        // which SQLite drops, silently deleting every undated document.
+        if let years = filters.yearKeys {
+            if years.isEmpty {
+                conditions.append("1 = 0")
+            } else {
+                let placeholders = years.map { _ in "?" }.joined(separator: ", ")
+                conditions.append("substr(dd.date_iso, 1, 4) IN (\(placeholders))")
+                binds.append(contentsOf: years)
+            }
+        }
+
         if let range = filters.dateRange {
             // Interval overlap, matching documentKeysInDateRange: the document's
             // [date_iso, COALESCE(date_iso_max, date_iso)] range must intersect the
@@ -8284,6 +8306,11 @@ public struct SearchSQLFilters: Sendable {
     /// Restrict results to documents whose date range overlaps this range.
     /// Undated documents are excluded when non-nil.
     public var dateRange: DateRange?
+    /// Restrict results to documents whose **start year** is one of these (#775).
+    ///
+    /// `nil` = no year gate. An **empty array matches nothing** — see the predicate in
+    /// `filterConditions` for why this convention and not `volumeIds`'.
+    public var yearKeys: [String]?
     /// When `false`, front-matter documents are excluded.
     public var includeFrontMatter: Bool
     /// Restrict results to documents mentioning this person ref.
@@ -8320,6 +8347,7 @@ public struct SearchSQLFilters: Sendable {
         documentIds: [String]? = nil,
         excludeDocumentIds: [String]? = nil,
         dateRange: DateRange? = nil,
+        yearKeys: [String]? = nil,
         includeFrontMatter: Bool = true,
         personRef: String? = nil,
         personRollupId: Int? = nil,
@@ -8333,6 +8361,7 @@ public struct SearchSQLFilters: Sendable {
         self.documentIds = documentIds
         self.excludeDocumentIds = excludeDocumentIds
         self.dateRange = dateRange
+        self.yearKeys = yearKeys
         self.includeFrontMatter = includeFrontMatter
         self.personRef = personRef
         self.personRollupId = personRollupId

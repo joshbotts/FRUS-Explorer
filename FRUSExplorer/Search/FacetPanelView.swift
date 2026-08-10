@@ -154,6 +154,50 @@ final class FacetPanelController {
     /// pending slot is what tells them apart.
     private var pendingNarrowedFrom: Int?
 
+    /// The staged, not-yet-applied selection in each multi-select section (#775).
+    ///
+    /// Here rather than in the view for the same reason the display state is: `FacetPanelView`
+    /// keeps its identity across searches, so `@State` would carry a selection into a result set
+    /// that no longer contains those rows.
+    private(set) var selection: [FacetSection: FacetSelection] = [:]
+
+    /// The sections that stage a selection instead of narrowing on the first tap.
+    ///
+    /// Years is here because its filter has no other representation — `dateRange` is one
+    /// contiguous interval and `{1951, 1953}` cannot be written in it, which is #775 exactly.
+    /// Volumes is here because `volumeIds` is already a set end to end and the panel was the only
+    /// thing collapsing it to one. Document type is not: it is a three-valued enum whose `.all`
+    /// case already means "neither excluded", so a second control would be two ways to say one
+    /// thing. People is not, this wave — see the section footer.
+    static let stagedSections: Set<FacetSection> = [.years, .volumes]
+
+    /// The staged selection for `section`.
+    func selection(for section: FacetSection) -> FacetSelection {
+        selection[section] ?? FacetSelection()
+    }
+
+    /// Cycles one row neutral → included → excluded → neutral, staging it.
+    func cycleSelection(_ key: String, in section: FacetSection) {
+        var current = selection(for: section)
+        current.cycle(key)
+        selection[section] = current
+    }
+
+    /// Drops the staged selection for one section.
+    func clearSelection(in section: FacetSection) {
+        selection[section] = nil
+    }
+
+    /// Seeds a section's staged selection from a filter already in force, so opening the panel
+    /// shows what is filtering rather than an empty slate the Apply button would then undo.
+    func seedSelection(_ keys: [String]?, in section: FacetSection) {
+        guard let keys, !keys.isEmpty else {
+            selection[section] = nil
+            return
+        }
+        selection[section] = FacetSelection(included: Set(keys))
+    }
+
     /// The match this data describes. Changing it clears everything.
     private var signature: String?
 
@@ -181,6 +225,10 @@ final class FacetPanelController {
             display[key]?.pageIndex = 0
             display[key]?.filterText = ""
         }
+        // #775: a staged selection describes the rows of the result set it was made in. Carrying
+        // it into a new one would leave the panel showing checkmarks against buckets that may not
+        // exist, and an Apply that filtered to years the new search never matched.
+        selection.removeAll()
     }
 
     /// The display state for `section`, defaulted on first use.
@@ -321,6 +369,14 @@ struct FacetPanelView: View {
 
     /// Called when a facet row is clicked, for the sections that can narrow.
     let onNarrow: (FacetNarrowing) -> Void
+
+    /// Called when a staged multi-select is applied (#775).
+    ///
+    /// The payload is the RESOLVED key set — include minus exclude, over the section's own
+    /// buckets — so the host never has to reproduce the resolution and the two cannot disagree.
+    /// An **empty array is a real value** meaning "the user excluded everything they included";
+    /// hosts must pass it through rather than treating it as no filter.
+    let onApplySelection: (FacetSection, [String]?) -> Void
 
     /// Called when a section is first disclosed, so the controller can compute it.
     let onDiscloseSection: (FacetSection) -> Void
@@ -576,6 +632,11 @@ struct FacetPanelView: View {
                         row(bucket, in: kind, matchCount: facets.matchCount)
                     }
                     pageFooter(page, in: kind)
+                    // #775: over the section's WHOLE bucket list, not the visible page — an
+                    // exclude-only selection means "everything here except these", and resolving
+                    // it against one page would silently drop every row the user had not scrolled
+                    // to.
+                    selectionStrip(kind, universe: buckets.map(\.key))
                     if kind == .years, facets.undatedCount > 0 {
                         // Reported, not dropped: otherwise the bars sum to less than the
                         // match with nothing explaining the gap.
@@ -681,6 +742,61 @@ struct FacetPanelView: View {
 
     @ViewBuilder
     private func row(_ bucket: FacetBucket, in kind: FacetSection, matchCount: Int) -> some View {
+        if FacetPanelController.stagedSections.contains(kind) {
+            stagedRow(bucket, in: kind)
+        } else {
+            immediateRow(bucket, in: kind)
+        }
+    }
+
+    /// A row in a section that stages its selection (#775): three states, no search per tap.
+    @ViewBuilder
+    private func stagedRow(_ bucket: FacetBucket, in kind: FacetSection) -> some View {
+        let state = controller.selection(for: kind).state(of: bucket.key)
+        Button {
+            FacetNarrowTip().invalidate(reason: .actionPerformed)
+            controller.cycleSelection(bucket.key, in: kind)
+        } label: {
+            HStack(spacing: 6) {
+                // A glyph rather than a colour alone: excluded and included must be
+                // distinguishable without colour vision, and the app has no "excluded" trait to
+                // lean on.
+                Image(systemName: state == .included ? "checkmark.circle.fill"
+                                : state == .excluded ? "minus.circle.fill" : "circle")
+                    .font(.caption2)
+                    .foregroundStyle(state == .included ? Color.accentColor
+                                   : state == .excluded ? Color.secondary : Color.secondary.opacity(0.4))
+                Text(bucket.label)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .strikethrough(state == .excluded, color: .secondary)
+                Spacer(minLength: 4)
+                Text(bucket.count.formatted())
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            // Greedy frame BEFORE the content shape, so the whole row is the target rather than
+            // the text's intrinsic width.
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(bucket.label)
+        // There is no "excluded" accessibility trait, so `.isSelected` alone could not tell the
+        // two active states apart. The value says which.
+        .accessibilityValue(state == .included
+            ? String(localized: "facets.row.state.included", defaultValue: "Included")
+            : state == .excluded
+            ? String(localized: "facets.row.state.excluded", defaultValue: "Excluded")
+            : String(localized: "facets.row.state.neutral", defaultValue: "Not selected"))
+        .accessibilityHint(String(localized: "facets.row.hint.cycle",
+                                  defaultValue: "Cycles between included, excluded, and not selected. Choose rows, then Apply."))
+        .accessibilityAddTraits(state == .included ? .isSelected : [])
+    }
+
+    /// A row in a section that narrows on the tap, as all five did before #775.
+    @ViewBuilder
+    private func immediateRow(_ bucket: FacetBucket, in kind: FacetSection) -> some View {
         let narrowing = FacetNarrowing.forBucket(bucket, in: kind)
         let content = HStack(spacing: 6) {
             Text(bucket.label)
@@ -708,6 +824,54 @@ struct FacetPanelView: View {
             // click that would do nothing.
             content
         }
+    }
+
+    /// The Apply / Clear strip a staged section shows once the user has chosen something (#775).
+    ///
+    /// Deliberately reports the counts rather than the values: a section can stage more rows than
+    /// fit, and a strip that listed them would either truncate silently or push the list off
+    /// screen. Rows carry their own state; this says how many and offers the commit.
+    @ViewBuilder
+    private func selectionStrip(_ kind: FacetSection, universe: [String]) -> some View {
+        let selection = controller.selection(for: kind)
+        if !selection.isEmpty {
+            HStack(spacing: 8) {
+                Text(selectionSummary(selection))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Spacer(minLength: 4)
+                Button(String(localized: "facets.selection.clear", defaultValue: "Clear")) {
+                    controller.clearSelection(in: kind)
+                }
+                .font(.caption2)
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                Button(String(localized: "facets.selection.apply", defaultValue: "Apply")) {
+                    onApplySelection(kind, selection.resolved(from: universe))
+                }
+                .font(.caption2.weight(.semibold))
+                .buttonStyle(.borderedProminent)
+                .controlSize(.mini)
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    /// "2 included · 1 excluded", omitting whichever half is zero.
+    private func selectionSummary(_ selection: FacetSelection) -> String {
+        var parts: [String] = []
+        if !selection.included.isEmpty {
+            parts.append(String(format: String(localized: "facets.selection.included %lld",
+                                               defaultValue: "%lld included"),
+                                Int64(selection.included.count)))
+        }
+        if !selection.excluded.isEmpty {
+            parts.append(String(format: String(localized: "facets.selection.excluded %lld",
+                                               defaultValue: "%lld excluded"),
+                                Int64(selection.excluded.count)))
+        }
+        return parts.joined(separator: " · ")
     }
 
     private func provenanceCaveat(_ coverage: ProvenanceCoverage) -> some View {

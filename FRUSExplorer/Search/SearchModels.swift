@@ -126,6 +126,37 @@ public struct SearchParameters: Codable, Sendable, Equatable {
     /// Documents without a parseable date are excluded when this is non-nil.
     public var dateRange: DateRange?
 
+    /// Restrict results to documents whose **start year** is one of these (#775).
+    ///
+    /// `nil` = no year-set filter. An **empty array matches nothing**, deliberately: it is what
+    /// "include these three years, then exclude all three" resolves to, and silently widening that
+    /// to the whole corpus would be the opposite of what the user asked for. (`volumeIds` takes
+    /// the other convention — empty means no filter — because it is reached from scopes that
+    /// legitimately resolve to nothing; the two are documented apart for that reason.)
+    ///
+    /// ## Why a set and not a wider `dateRange`
+    /// `DateRange` is one contiguous interval, so `{1951, 1953}` has no representation in it. This
+    /// is the field #775 needs and the reason the issue cannot be satisfied by widening anything.
+    ///
+    /// ## Why include *and* exclude resolve to one set before they get here
+    /// The facet panel offers both, and both are resolved in Swift over a finite domain (203
+    /// distinct years on the shipped index) into the single set stored here. So
+    /// `include{1950…1953} − {1950,1952}` and `include{1951,1953}` are literally the same value,
+    /// and #775's equivalence requirement holds by construction rather than by two code paths
+    /// agreeing. It also keeps negation out of SQL entirely — `substr(NULL,1,4) NOT IN ('1950')`
+    /// is NULL, which SQLite drops, so a `NOT IN` spelling would silently delete every undated
+    /// document while the panel went on reporting them.
+    ///
+    /// ## Start year, not interval overlap — and this is a repair
+    /// The predicate is `substr(date_iso, 1, 4) IN (…)`, which is **the same rule the Years facet
+    /// buckets on**. `dateRange` uses interval overlap, and the mismatch was visible: on the
+    /// shipped index the 1948 row reads 7,392 documents and the filter a 1948 tap applied returned
+    /// **7,892** — 7,562 dated rows span a year boundary. A facet row that does not deliver its
+    /// own count is a wrong answer wearing a number. `dateRange` is untouched and still ANDs
+    /// alongside this, because "documents touching this period" is a different question that the
+    /// filter sheet is entitled to ask.
+    public var yearKeys: [String]?
+
     /// Formerly restricted results to documents carrying the given subject tag IDs.
     ///
     /// Retained for API/persistence stability (`SavedSearch`, `Project` defaults) but
@@ -243,6 +274,7 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         excludedTerms: [String] = [],
         prefixWildcard: String? = nil,
         dateRange: DateRange? = nil,
+        yearKeys: [String]? = nil,
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
         volumeIds: [String]? = nil,
@@ -265,6 +297,7 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         self.excludedTerms = excludedTerms
         self.prefixWildcard = prefixWildcard
         self.dateRange = dateRange
+        self.yearKeys = yearKeys
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.volumeIds = volumeIds
