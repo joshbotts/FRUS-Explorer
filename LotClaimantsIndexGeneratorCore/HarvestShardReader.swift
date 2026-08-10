@@ -48,6 +48,22 @@ public enum HarvestShardReader {
         /// 385 records corpus-wide but reaches **1** of the 622 series the app can name, which is
         /// not a feature.
         public struct Facts: Sendable, Equatable {
+            /// Memberwise init, public so tests in sibling generator targets can build fixtures.
+            public init(accessStatus: String? = nil, accessRestrictions: [String] = [],
+                        useStatus: String? = nil, useRestrictions: [String] = [],
+                        extent: String? = nil, referenceUnit: String? = nil,
+                        findingAids: [String] = [], startYear: Int? = nil, endYear: Int? = nil) {
+                self.accessStatus = accessStatus
+                self.accessRestrictions = accessRestrictions
+                self.useStatus = useStatus
+                self.useRestrictions = useRestrictions
+                self.extent = extent
+                self.referenceUnit = referenceUnit
+                self.findingAids = findingAids
+                self.startYear = startYear
+                self.endYear = endYear
+            }
+
             /// `Unrestricted` / `Restricted - Partly` / `Restricted - Fully` /
             /// `Restricted - Possibly`. Measured over the app-reachable series: 414 of 622 are
             /// restricted in some degree — this is the field that decides whether a trip is

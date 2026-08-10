@@ -186,6 +186,56 @@ public enum SeriesFactsIndexRunner {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Builds the rows and their interned vocabularies.
+    ///
+    /// Extracted from `run()` so the ordering invariant can be tested: it is not visible in the
+    /// shipped artifact (a generator mutation leaves the committed file untouched), and covering
+    /// it end-to-end would need the 4.5 GB harvest.
+    ///
+    /// **The NAID walk must be sorted.** The interners number each vocabulary in first-seen order,
+    /// so an unsorted walk over a Dictionary renumbers every vocabulary between runs with no input
+    /// having changed — a diff on each regeneration, hiding any real one.
+    static func buildRows(
+        creatorsByNaId: [String: [HarvestShardReader.Record.Creator]],
+        factsByNaId: [String: HarvestShardReader.Record.Facts],
+        headingIndex: [String: Int]
+    ) -> (rows: [String: Entry], statuses: [String], restrictions: [String],
+          useRestrictions: [String], referenceUnits: [String], findingAidTypes: [String]) {
+        var statuses = Interner()
+        var restrictions = Interner()
+        var useRestrictions = Interner()
+        var referenceUnits = Interner()
+        var findingAidTypes = Interner()
+        var rows: [String: Entry] = [:]
+        for naId in creatorsByNaId.keys.sorted() {
+            guard let creators = creatorsByNaId[naId] else { continue }
+            guard let mostRecent = primaryCreator(from: creators) else { continue }
+            guard let primary = headingIndex[displayHeading(mostRecent.heading)] else { continue }
+            let predecessors = creators
+                .filter { $0.creatorType != "Most Recent" }
+                .compactMap { headingIndex[displayHeading($0.heading)] }
+                .filter { $0 != primary }
+            let facts = factsByNaId[naId]
+            rows[naId] = Entry(
+                creator: primary,
+                predecessors: predecessors.isEmpty ? nil : Array(Set(predecessors)).sorted(),
+                accessStatus: facts?.accessStatus.map { statuses.index($0) },
+                accessRestrictions: (facts?.accessRestrictions).flatMap {
+                    $0.isEmpty ? nil : $0.map { restrictions.index($0) }.sorted() },
+                useStatus: facts?.useStatus.map { statuses.index($0) },
+                useRestrictions: (facts?.useRestrictions).flatMap {
+                    $0.isEmpty ? nil : $0.map { useRestrictions.index($0) }.sorted() },
+                extent: facts?.extent,
+                referenceUnit: facts?.referenceUnit.map { referenceUnits.index($0) },
+                findingAids: (facts?.findingAids).flatMap {
+                    $0.isEmpty ? nil : $0.map { findingAidTypes.index($0) }.sorted() },
+                startYear: facts?.startYear,
+                endYear: facts?.endYear)
+        }
+        return (rows, statuses.values, restrictions.values, useRestrictions.values,
+                referenceUnits.values, findingAidTypes.values)
+    }
+
     /// Assigns a stable index to each distinct string, in first-seen order, and hands back the
     /// vocabulary. Deterministic because the rows it is fed are iterated in a sorted order.
     struct Interner {
@@ -307,48 +357,21 @@ public enum SeriesFactsIndexRunner {
         // Intern the small, highly repetitive vocabularies. `extent` is NOT interned: measured,
         // 592 of the 622 values are distinct, so a vocabulary would add a level of indirection
         // and save nothing.
-        var statuses = Interner()
-        var restrictions = Interner()
-        var useRestrictions = Interner()
-        var referenceUnits = Interner()
-        var findingAidTypes = Interner()
-
-        var rows: [String: Entry] = [:]
-        // SORTED, not dictionary order: the interners assign indices in first-seen order,
-        // so an unsorted walk would renumber every vocabulary between runs and make the
-        // artifact churn on regeneration without any input having changed.
-        for naId in creatorsByNaId.keys.sorted() {
-            guard let creators = creatorsByNaId[naId] else { continue }
-            guard let mostRecent = primaryCreator(from: creators) else { continue }
-            guard let primary = indexOf[displayHeading(mostRecent.heading)] else { continue }
-            let predecessors = creators
-                .filter { $0.creatorType != "Most Recent" }
-                .compactMap { indexOf[displayHeading($0.heading)] }
-                .filter { $0 != primary }
-            let facts = factsByNaId[naId]
-            rows[naId] = Entry(
-                creator: primary,
-                predecessors: predecessors.isEmpty ? nil : Array(Set(predecessors)).sorted(),
-                accessStatus: facts?.accessStatus.map { statuses.index($0) },
-                accessRestrictions: (facts?.accessRestrictions).flatMap {
-                    $0.isEmpty ? nil : $0.map { restrictions.index($0) }.sorted() },
-                useStatus: facts?.useStatus.map { statuses.index($0) },
-                useRestrictions: (facts?.useRestrictions).flatMap {
-                    $0.isEmpty ? nil : $0.map { useRestrictions.index($0) }.sorted() },
-                extent: facts?.extent,
-                referenceUnit: facts?.referenceUnit.map { referenceUnits.index($0) },
-                findingAids: (facts?.findingAids).flatMap {
-                    $0.isEmpty ? nil : $0.map { findingAidTypes.index($0) }.sorted() },
-                startYear: facts?.startYear,
-                endYear: facts?.endYear)
-        }
+        let built = buildRows(creatorsByNaId: creatorsByNaId, factsByNaId: factsByNaId,
+                              headingIndex: indexOf)
+        let rows = built.rows
+        let statuses = built.statuses
+        let restrictions = built.restrictions
+        let useRestrictions = built.useRestrictions
+        let referenceUnits = built.referenceUnits
+        let findingAidTypes = built.findingAidTypes
 
         let index = Index(schemaVersion: 2, generated: generated,
                           headings: vocabulary, byNaId: rows,
-                          statuses: statuses.values, restrictions: restrictions.values,
-                          useRestrictions: useRestrictions.values,
-                          referenceUnits: referenceUnits.values,
-                          findingAidTypes: findingAidTypes.values)
+                          statuses: statuses, restrictions: restrictions,
+                          useRestrictions: useRestrictions,
+                          referenceUnits: referenceUnits,
+                          findingAidTypes: findingAidTypes)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let data = try encoder.encode(index)

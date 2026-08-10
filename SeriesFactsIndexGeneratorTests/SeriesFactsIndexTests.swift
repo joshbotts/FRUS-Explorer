@@ -331,3 +331,59 @@ struct PrimaryCreatorTests {
         #expect(SeriesFactsIndexRunner.primaryCreator(from: []) == nil)
     }
 }
+
+// MARK: - RowBuildOrderTests
+
+/// That the row walk is deterministic (#663).
+///
+/// A mutation sweep unsorted the NAID walk and nothing failed — the artifact test reads the
+/// *committed* file, which a generator mutation leaves untouched, so the invariant was only
+/// checkable end-to-end against a 4.5 GB harvest. `buildRows` is extracted for exactly this.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #663 (F-7)
+@Suite("Row build order (#663)")
+struct RowBuildOrderTests {
+
+    private func creator(_ heading: String) throws -> HarvestShardReader.Record.Creator {
+        try JSONDecoder().decode(
+            HarvestShardReader.Record.Creator.self,
+            from: Data(#"{"heading":"\#(heading)","naId":"1","creatorType":"Most Recent"}"#.utf8))
+    }
+
+    private func facts(_ status: String) -> HarvestShardReader.Record.Facts {
+        .init(accessStatus: status, accessRestrictions: [], useStatus: nil, useRestrictions: [],
+              extent: nil, referenceUnit: nil, findingAids: [], startYear: nil, endYear: nil)
+    }
+
+    @Test("The vocabulary is numbered by sorted NAID, not by dictionary order")
+    func vocabularyFollowsSortedNAIDs() throws {
+        // Three NAIDs whose sorted order ("1","2","3") gives a DIFFERENT first-seen sequence from
+        // any other order: the statuses must come out A, B, C in that order.
+        let creators = ["1": [try creator("X.")], "2": [try creator("X.")], "3": [try creator("X.")]]
+        let f = ["1": facts("A"), "2": facts("B"), "3": facts("C")]
+        let built = SeriesFactsIndexRunner.buildRows(
+            creatorsByNaId: creators, factsByNaId: f, headingIndex: ["X.": 0])
+        #expect(built.statuses == ["A", "B", "C"], """
+            Got \(built.statuses). The interner numbers in first-seen order, so this is the \
+            sorted-NAID walk's signature. Any other order means the walk is over an unsorted \
+            Dictionary and every vocabulary renumbers between runs.
+            """)
+        #expect(built.rows["1"]?.accessStatus == 0)
+        #expect(built.rows["3"]?.accessStatus == 2)
+    }
+
+    @Test("Repeated runs over the same input give byte-identical vocabularies")
+    func repeatedRunsAgree() throws {
+        let creators = Dictionary(uniqueKeysWithValues:
+            try (1...40).map { ("naid\($0)", [try creator("X.")]) })
+        let f = Dictionary(uniqueKeysWithValues:
+            (1...40).map { ("naid\($0)", facts("S\($0 % 7)")) })
+        let a = SeriesFactsIndexRunner.buildRows(creatorsByNaId: creators, factsByNaId: f,
+                                                 headingIndex: ["X.": 0])
+        let b = SeriesFactsIndexRunner.buildRows(creatorsByNaId: creators, factsByNaId: f,
+                                                 headingIndex: ["X.": 0])
+        #expect(a.statuses == b.statuses)
+        #expect(a.rows == b.rows)
+    }
+}
