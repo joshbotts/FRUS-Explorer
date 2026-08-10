@@ -14,13 +14,18 @@ on the macOS-bundled `python3`.
 
 1. **Install LM Studio** (lmstudio.ai), open it once, and in Settings enable the **Developer**
    options so the local server tab appears. Optionally enable the `lms` CLI when prompted.
-2. **Download the spike models** (in-app search, under the *Embedding* category — download the
-   **F16 or Q8_0** file where offered; do not use Q4 for embeddings):
-   - `embeddinggemma-300m` (the `lmstudio-community` GGUF)
-   - `nomic-embed-text-v1.5`
-   - `bge-small-en-v1.5` *(control)*
-   - `snowflake-arctic-embed-m-v1.5` if the search finds a GGUF; skip if not — the spike
-     works with three.
+2. **Download the spike models** — paste each Hugging Face repo name below into LM Studio's
+   in-app search (it searches HF directly; confirm each shows the *Embedding* tag). Download
+   the **F16 or Q8_0** file where offered; do not use Q4 for embeddings. The one exception is
+   a **QAT** release: quantization-aware trained, so its quantized file *is* the intended
+   artifact.
+   - `lmstudio-community/embeddinggemma-300m-qat-GGUF` *(primary candidate; QAT release)*
+   - `nomic-ai/nomic-embed-text-v1.5-GGUF`
+   - `CompendiumLabs/bge-small-en-v1.5-gguf` *(control)*
+   - `fisher046/snowflake-arctic-embed-l-v2.0-Q8_0-GGUF` — note this is arctic-embed
+     **l-v2.0** (~568 M params, still Apache-2.0), not the 109 M `m-v1.5` the plan's cost
+     tables price. Expect the slowest spike pass of the four, and a full run roughly 2× the
+     300 M primary's hours if it wins the gates — the spike measures the real number.
 3. **Copy the inputs over** (AirDrop or an SSD):
    - `Development/frus/volumes/` → `~/frus-volumes` on the Studio (3.34 GB)
    - this folder's `harvest_embeddings.py` + a copy of
@@ -34,7 +39,12 @@ Run once per model, on **both** the Studio and the Air — the printed tokens/s 
 replaces every hardware guess in the plan.
 
 1. In LM Studio, load the model (server tab → load; set **context length 2048**; confirm the
-   model is tagged *embedding*). Start the server (default port 1234).
+   model is tagged *embedding*). Start the server (default port 1234). One caveat: bge-small's
+   architectural max is **512 tokens** — LM Studio clamps the context there, and the harvester's
+   ~800-token chunks exceed it, so the control model may silently truncate or refuse batches.
+   If its spike run errors out, rerun the control only with
+   `CHUNK_CHARS=1800 OVERLAP_CHARS=270` (~433 tokens, same 15% overlap) and note it in the
+   hand-off — a truncated or re-chunked control is a caveat on the comparison, not a bug.
 2. In Terminal:
 
    ```
@@ -42,8 +52,14 @@ replaces every hardware guess in the plan.
    SPIKE=1 OUT_DIR=~/frus-semantic-raw-spike-<model> python3 harvest_embeddings.py
    ```
 
-   For **nomic only**, add its required document prefix (it is part of the vector contract and
-   is recorded in provenance): `PREFIX="search_document: "`.
+   Two of the four carry a documented **document-side prompt**. The prefix is part of the
+   vector contract and is recorded in provenance (`run-manifest.json`'s `prefix`), so whichever
+   choice embeds the spike must also embed the full run:
+   - **nomic** (required): `PREFIX="search_document: "`
+   - **embeddinggemma** (per its model card's retrieval-document prompt; trailing space
+     included): `PREFIX="title: none | text: "` — verify the string against the model card at
+     spike time before relying on it.
+   bge-small and arctic embed documents bare (their prefixes are query-side only).
 3. Note the closing line (`~N tokens/s`). Eject the model, load the next, repeat with a fresh
    `OUT_DIR`.
 
