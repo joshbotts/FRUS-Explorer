@@ -41,8 +41,8 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
         limit: Int,
         scopeVolumeIds: Set<String>?,
         appState: AppState
-    ) async throws -> [GeneratedCandidate] {
-        guard let pipeline = appState.indexingPipeline else { return [] }
+    ) async throws -> GeneratedPool {
+        guard let pipeline = appState.indexingPipeline else { return .empty }
         // The cohort-aware entry point: the same query, plus how many documents share this
         // anchor's container corpus-wide. That number is the chip (#644); it never touches the
         // strength, which stays constant because every candidate here shares one container.
@@ -52,18 +52,23 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
             documentYear: anchorYear,
             limit: limit,
             scopeVolumeIds: scopeVolumeIds)
-        return result.documents.map { document in
-            GeneratedCandidate(
-                key: DocumentKey(volumeId: document.volumeId, documentId: document.documentId),
-                record: CandidateRecord(
-                    header: document.header,
-                    dateline: document.dateline,
-                    documentNumber: document.documentNumber,
-                    isEditorialNote: document.isEditorialNote),
-                strength: 1.0,
-                evidenceCount: result.cohortCount,
-                evidenceLabel: result.basis)
-        }
+        // #645: `totalCount` is the whole in-scope neighbour set; `documents` is at most `limit`
+        // of it. Reporting the difference is what stops the engine's "N more" line — computed
+        // inside this pool — from presenting a truncated total as a complete one.
+        return GeneratedPool(
+            candidates: result.documents.map { document in
+                GeneratedCandidate(
+                    key: DocumentKey(volumeId: document.volumeId, documentId: document.documentId),
+                    record: CandidateRecord(
+                        header: document.header,
+                        dateline: document.dateline,
+                        documentNumber: document.documentNumber,
+                        isEditorialNote: document.isEditorialNote),
+                    strength: 1.0,
+                    evidenceCount: result.cohortCount,
+                    evidenceLabel: result.basis)
+            },
+            availableTotal: result.totalCount)
     }
 }
 
@@ -106,14 +111,19 @@ struct CrossReferenceGenerator: SimilarityGenerator {
         limit: Int,
         scopeVolumeIds: Set<String>?,
         appState: AppState
-    ) async throws -> [GeneratedCandidate] {
-        guard let store = appState.crossReferenceStore else { return [] }
+    ) async throws -> GeneratedPool {
+        guard let store = appState.crossReferenceStore else { return .empty }
         let candidates = try await store.relatedByCitation(
             forDocumentId: anchor.documentId,
             volumeId: anchor.volumeId,
             scopeVolumeIds: scopeVolumeIds,
             limit: limit)
-        return candidates.map { candidate in
+        // `availableTotal` is deliberately left nil: `relatedByCitation` returns at most `limit`
+        // and reports no total, so this generator does not know whether it was cut. `nil` means
+        // "unknown", and `GeneratedPool` keeps that distinct from "not truncated" — inferring
+        // completeness from a generator that never counted is how a truncated total becomes a
+        // confident one.
+        return GeneratedPool(candidates: candidates.map { candidate in
             GeneratedCandidate(
                 key: DocumentKey(volumeId: candidate.volumeId, documentId: candidate.documentId),
                 record: CandidateRecord(
@@ -125,6 +135,6 @@ struct CrossReferenceGenerator: SimilarityGenerator {
                 // single-citation partners (see ProximityMath.logDampedMultiplicity).
                 strength: ProximityMath.logDampedMultiplicity(candidate.citationCount),
                 evidenceCount: candidate.citationCount)
-        }
+        })
     }
 }

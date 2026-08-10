@@ -172,10 +172,18 @@ enum RelatedDocumentsEngine {
         var generatorEvidence: [SimilarityAxis: [DocumentKey: Int]] = [:]
         var generatorEvidenceLabel: [SimilarityAxis: [DocumentKey: String]] = [:]
         var records: [DocumentKey: CandidateRecord] = [:]
+        // #645: the largest reported pool that was actually cut. The axes overlap, so summing
+        // would double-count; the largest is the one whose truncation bounds what a scorer could
+        // have surfaced at all.
+        var poolCutFrom: Int?
         for generator in generators {
-            let produced = (try? await generator.candidates(
+            let pool = (try? await generator.candidates(
                 for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
-                scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? []
+                scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? .empty
+            let produced = pool.candidates
+            if pool.isTruncated, let total = pool.availableTotal {
+                poolCutFrom = max(poolCutFrom ?? 0, total)
+            }
             var strengths: [DocumentKey: Double] = [:]
             var evidence: [DocumentKey: Int] = [:]
             var evidenceLabel: [DocumentKey: String] = [:]
@@ -241,6 +249,7 @@ enum RelatedDocumentsEngine {
                 for i in rows.indices { rows[i].snippet = snippets[rows[i].key.compositeString] }
             }
         }
-        return RelatedDocumentsResult(rows: rows, totalBeforeLimit: ranked.rankableCount)
+        return RelatedDocumentsResult(rows: rows, totalBeforeLimit: ranked.rankableCount,
+                                      poolCutFrom: poolCutFrom)
     }
 }

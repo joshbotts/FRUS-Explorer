@@ -166,6 +166,39 @@ struct ArchivalPoolWiringTests {
         return declaration
     }
 
+    @Test("The scoped re-cut stratifies too, or the fix stops at the volume grain")
+    func scopedRecutStratifies() throws {
+        // The second alphabetical cut #645 reported, one grain down, and the one that actually
+        // binds when a scope is active: the fetch ceiling is 100,000, so `stratifyByVolume`'s
+        // `documents.count > limit` guard is false for every real container — the largest is
+        // 7,056 — and the query-side stratification never fires. `applyScope` is where the list
+        // is really cut.
+        let source = try Self.pipelineSource()
+        let applyScope = try Self.functionSource(named: "applyScope", in: source)
+        #expect(applyScope.contains("stratifyByVolume(filtered, limit: limit)"), """
+            applyScope must be able to stratify its re-cut. For "This subseries" — which the \
+            picker offers and which expands to every member volume — a plain prefix returns the \
+            alphabetically-first volumes' heads and nothing from the rest, under a scope chosen \
+            precisely because it spans volumes.
+            """)
+        #expect(applyScope.contains("ordering == .stratified"),
+                "…and only when asked, so the finding-aid callers keep their alphabetical cut")
+    }
+
+    /// The routes into the anchored axis that are meant to stratify, each with its reason.
+    ///
+    /// The direct-key fetch is deliberately absent: it spells its argument across a line break, so
+    /// matching it textually would pin the call's formatting rather than its behaviour. The count
+    /// assertion below covers it.
+    private static let intendedStratifiedRequests: [(call: String, why: String)] = [
+        ("limit: fetchLimit, ordering: .stratified, excluding: exclude",
+         "the collection-authority alias fallback — the ONLY pool an anchor whose direct keys all missed ever sees"),
+        ("ordering: .stratified)",
+         "the scoped re-cut in applyScope — the cut that actually binds under a scope, because the 100,000-row fetch ceiling means the query-side stratification never fires"),
+        ("ordering: .stratified\n",
+         "the direct-key fetch, the anchored axis's main route"),
+    ]
+
     /// Stratification is requested only from inside the anchored entry point — an **allowlist by
     /// location**, not a count.
     ///
@@ -181,19 +214,34 @@ struct ArchivalPoolWiringTests {
     /// Scoping to `archivalNeighborsWithCohort`'s body keeps the real guarantee — no anchorless
     /// finding aid quietly stops being alphabetical — without also freezing the number of routes
     /// the anchored path is allowed to have.
-    @Test("Stratification is requested only from inside the anchored entry point")
+    ///
+    /// **And then it froze them anyway.** The paragraph above says "allowlist by location, not a
+    /// count", but the assertion below still read `inside == 2` — so when the *third* route was
+    /// fixed (the scoped re-cut in `applyScope`, which is the cut that actually binds when a scope
+    /// is active), this test went red on a change that repaired a defect. Twice now, this
+    /// assertion has been the thing standing between #645 and its fix. It is a real allowlist
+    /// now: ``intendedStratifiedRequests`` names each route and why it is on the list, and
+    /// whoever adds a fourth has to say what it is for rather than edit a number.
+    @Test("Stratification is requested at the intended sites, and only there")
     func onlyTheAnchoredPathOptsIn() throws {
         let source = try Self.pipelineSource()
         let anchored = try Self.functionSource(named: "archivalNeighborsWithCohort", in: source)
 
-        let inside = anchored.components(separatedBy: "ordering: .stratified").count - 1
-        #expect(inside == 2,
-                """
-                The anchored path must stratify BOTH of its routes — the direct keys and the \
-                collection-authority alias fallback. Found \(inside). An anchor whose direct keys \
-                all miss reaches its neighbours only through the fallback, so an alphabetical \
-                fallback reproduces #645 in full for exactly those documents.
+        for request in Self.intendedStratifiedRequests {
+            #expect(anchored.contains(request.call), """
+                Missing an intended `.stratified` request: \(request.why). Each is a route into \
+                the anchored axis, and an anchor that reaches its neighbours through the missing \
+                one gets #645 in full.
                 """)
+        }
+
+        let inside = anchored.components(separatedBy: "ordering: .stratified").count - 1
+        #expect(inside == Self.intendedStratifiedRequests.count, """
+            \(inside) stratified requests inside archivalNeighborsWithCohort against \
+            \(Self.intendedStratifiedRequests.count) on the allowlist. If you added one, add it to \
+            `intendedStratifiedRequests` with the reason it belongs — a bare number here has now \
+            blocked this issue's fix twice.
+            """)
 
         let total = source.components(separatedBy: "ordering: .stratified").count - 1
         #expect(total == inside,

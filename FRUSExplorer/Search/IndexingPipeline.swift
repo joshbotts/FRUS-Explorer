@@ -6650,7 +6650,12 @@ public actor IndexingPipeline {
         // own count. See the doc comment: a cohort that changed under a volume scope would make
         // the chip mean something different on two screens showing the same pair.
         let cohortCount = result.totalCount > 0 ? result.totalCount + 1 : 0
-        let scoped = Self.applyScope(result, scopeVolumeIds: scopeVolumeIds, limit: limit)
+        // `.stratified` here for the reason the two fetches above are (#645). This is the cut
+        // that actually binds under a scope: the fetch ceiling is 100,000, so the query-side
+        // stratification never fires, and a plain `prefix` would hand "This subseries" the
+        // alphabetically-first volumes and nothing from the rest.
+        let scoped = Self.applyScope(result, scopeVolumeIds: scopeVolumeIds, limit: limit,
+                                     ordering: .stratified)
         return (scoped.documents, scoped.totalCount, basis, cohortCount)
     }
 
@@ -7055,14 +7060,30 @@ public actor IndexingPipeline {
     /// returns the result untouched. The scope filter is applied **uniformly in the
     /// public entry points**, so the same archival key returns the same in-scope set on
     /// every trigger surface (the #217 parity guarantee).
+    ///
+    /// ## The re-cut has to stratify too (#645)
+    /// This is the second alphabetical cut #645 reported, one grain down, and it survived the
+    /// first fix. With a scope active the underlying query fetches `scopedFetchCeiling` rows, so
+    /// `stratifyByVolume`'s `documents.count > limit` guard is **false for every real container**
+    /// — the largest is 7,056 against a ceiling of 100,000 — and it hands the list back untouched.
+    /// The cut that actually binds is the one here.
+    ///
+    /// For "This volume" that was harmless: one volume has nothing to interleave. For **"This
+    /// subseries"**, which the picker offers and which expands to every member volume, a
+    /// `prefix(limit)` returns the alphabetically-first volumes' heads and nothing from the rest —
+    /// exactly the defect, against a scope chosen precisely because it spans volumes.
     nonisolated private static func applyScope(
         _ result: (documents: [RelatedDocument], totalCount: Int),
         scopeVolumeIds: Set<String>?,
-        limit: Int
+        limit: Int,
+        ordering: RelatedPoolOrdering = .alphabetical
     ) -> (documents: [RelatedDocument], totalCount: Int) {
         guard let scopeVolumeIds else { return result }
         let filtered = result.documents.filter { scopeVolumeIds.contains($0.volumeId) }
-        return (Array(filtered.prefix(limit)), filtered.count)
+        let cut = ordering == .stratified
+            ? stratifyByVolume(filtered, limit: limit)
+            : Array(filtered.prefix(limit))
+        return (cut, filtered.count)
     }
 
     /// The direct match keys a parsed document source note routes through — the
