@@ -163,7 +163,7 @@ assessment's "same-volume collapse" — measure it again when cross-era candidat
 
 | # | question | status |
 |---|---|---|
-| 2 | model + licence | **gemma on the numbers**, pending the panel and the owner's licence read. Phase-3 (generation-only) use is unproblematic either way; the licence question binds only V-5 weight-bundling. Arctic (Apache-2.0, recall-retentive, 2× wall clock) is the clean-licence runner-up. |
+| 2 | model + licence | **gemma on the numbers**, pending the panel and the owner's licence read. Phase-3 (generation-only) use is unproblematic either way; the licence question binds only V-5 weight-bundling — clause map in `Gemma-License-V5-Implications.md` (headlines: all shipped vectors are licence-free "Outputs"; shipping weights takes a custom EULA + three notice duties; the restricted-use list is Google-updatable; a V-5 model swap costs one re-harvest night, so gemma-now does not lock V-5 in). Arctic (Apache-2.0, recall-retentive, 2× wall clock) is the clean-licence runner-up. |
 | 4 | dims | **128 is refuted; 256 recommended; 512 priced** as the fallback if truncation pain shows up rendered. |
 | 5 | chunk vectors | untouched — the store keeps them; pooling stayed downstream (rule pinned in `spike-gates.json`: char-length-weighted mean of unit-norm chunk vectors, L2-renormalized). |
 | — | §4.2 rerank recall [U] | measured: ≥95% holds vs the *256-d* truth, not vs full-dim; the cut is the cost, quantization is free. |
