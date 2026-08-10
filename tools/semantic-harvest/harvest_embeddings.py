@@ -128,6 +128,12 @@ def pick_model():
     listing = http_json("GET", "/v1/models")
     ids = [m.get("id", "") for m in listing.get("data", [])]
     if explicit:
+        # LM Studio routes an unknown id to whatever model is loaded (observed 2026-08-10:
+        # a literal "<the nomic id from curl>" placeholder embedded a full spike), so an
+        # unlisted id would "work" while writing a fictional model into every head.json.
+        if ids and explicit not in ids:
+            sys.exit("MODEL %r is not among the ids the server reports:\n  %s\n"
+                     "Copy the id exactly from the list above." % (explicit, "\n  ".join(ids)))
         return explicit, listing
     embed_ids = [i for i in ids if "embed" in i.lower()]
     if len(embed_ids) == 1:
@@ -275,6 +281,12 @@ def main():
         os.makedirs(os.path.join(OUT, sub), exist_ok=True)
 
     model, listing = pick_model()
+    # Validate MODEL_FILE up front: it is hashed into run-manifest.json at the END of the
+    # run, and a typo would otherwise surface only after the last volume embeds — on the
+    # full harvest, hours later, killing the manifest and SHA256SUMS writes (2026-08-10).
+    model_file = os.environ.get("MODEL_FILE", "")
+    if model_file and not os.path.exists(model_file):
+        sys.exit("MODEL_FILE does not exist: %s" % model_file)
     print("LM Studio %s | model %s | %d volume(s) -> %s" % (URL, model, len(volumes), OUT))
 
     dim_holder = [None]
@@ -302,7 +314,6 @@ def main():
         print("[%d/%d] %-22s %5d chunks  %6.1fs  %8.0f chars/s (~%.0f tok/s)  ETA %.1fh"
               % (index + 1, len(todo), vol, nchunks, secs, rate, rate / 4.16, eta_h))
 
-    model_file = os.environ.get("MODEL_FILE", "")
     run_manifest = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "script_sha256": sha256(os.path.abspath(__file__)),
