@@ -157,11 +157,15 @@ public enum MatchStrategy: Sendable, Equatable {
 public enum CitationLookupMode: Sendable, CaseIterable, Equatable {
     case paste
     case structured
+    /// A pasted block of footnotes, triaged as a table (#263).
+    case batch
 
     public var label: String {
         switch self {
         case .paste:
             return String(localized: "citation.mode.paste", defaultValue: "Paste Citation")
+        case .batch:
+            return String(localized: "citation.mode.batch", defaultValue: "Batch")
         case .structured:
             return String(localized: "citation.mode.structured", defaultValue: "Structured Entry")
         }

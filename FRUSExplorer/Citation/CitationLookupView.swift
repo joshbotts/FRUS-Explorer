@@ -77,6 +77,13 @@ struct CitationLookupView: View {
     @State private var error: String? = nil
     @State private var hasSearched: Bool = false
 
+    /// The triage table (#263). Filled progressively as each row's lookup completes, so a long
+    /// paste shows its first answers immediately rather than after the last one.
+    @State private var batchRows: [BatchCitationRow] = []
+    /// Sorts the table worst-first. On by default: the point of triaging a chapter is finding
+    /// what needs work, not admiring what already resolved.
+    @State private var batchTriageSort: Bool = true
+
     // MARK: - Navigation
 
     @State private var navigationPath = NavigationPath()
@@ -193,7 +200,20 @@ struct CitationLookupView: View {
 
     @ViewBuilder
     private var inputSection: some View {
-        if mode == .paste {
+        if mode == .batch {
+            Section {
+                TextEditor(text: $pasteText)
+                    .frame(minHeight: 140)
+                    .font(.callout.monospaced())
+                    .accessibilityLabel(String(localized: "citation.batch.input.a11y",
+                                               defaultValue: "Footnote block"))
+            } header: {
+                Text(String(localized: "citation.batch.header", defaultValue: "Footnotes"))
+            } footer: {
+                Text(String(localized: "citation.batch.footer",
+                            defaultValue: "Paste a chapter's footnotes. Numbered notes are split on their numbers, and a note wrapped across lines is rejoined; an unnumbered list is one citation per line."))
+            }
+        } else if mode == .paste {
             Section {
                 TextField(
                     String(localized: "citation.paste.placeholder",
@@ -325,7 +345,9 @@ struct CitationLookupView: View {
 
     @ViewBuilder
     private var resultsSection: some View {
-        if isSearching {
+        if mode == .batch {
+            batchResultsSection
+        } else if isSearching {
             Section {
                 ProgressView()
                     .frame(maxWidth: .infinity)
@@ -374,7 +396,7 @@ struct CitationLookupView: View {
     /// shared trigger for the Look Up button, Return-in-field, and the default-action key.
     private func submitIfActionable() {
         guard isInputActionable, !isSearching else { return }
-        Task { await performLookup() }
+        Task { mode == .batch ? await performBatchLookup() : await performLookup() }
     }
 
     /// Opens the match's document. On macOS this is a real document window (so parsed
@@ -449,6 +471,137 @@ struct CitationLookupView: View {
                                   Int64(matches.count))
         }
         AccessibilityNotification.Announcement(announcement).post()
+    }
+
+    /// The triage table (#263).
+    @ViewBuilder
+    private var batchResultsSection: some View {
+        if batchRows.isEmpty && isSearching {
+            Section { ProgressView().frame(maxWidth: .infinity).padding() }
+        } else if batchRows.isEmpty {
+            Section {
+                ContentUnavailableView(
+                    String(localized: "citation.batch.empty.title", defaultValue: "Nothing to Triage"),
+                    systemImage: "text.badge.xmark",
+                    description: Text(String(localized: "citation.batch.empty.detail",
+                                             defaultValue: "No citations were found in that text."))
+                )
+            }
+        } else {
+            Section {
+                ForEach(sortedBatchRows) { row in
+                    batchRow(row)
+                }
+            } header: {
+                HStack {
+                    Text(batchSummary)
+                    Spacer()
+                    Toggle(isOn: $batchTriageSort) {
+                        Text(String(localized: "citation.batch.sort",
+                                    defaultValue: "Needs work first"))
+                    }
+                    .toggleStyle(.button)
+                    .font(.caption)
+                }
+            }
+        }
+    }
+
+    /// Rows in the order the table shows them.
+    private var sortedBatchRows: [BatchCitationRow] {
+        guard batchTriageSort else { return batchRows }
+        // Stable within a bucket: paste order is the reader's own numbering, so two `missing`
+        // rows must not swap places between renders.
+        return batchRows.enumerated()
+            .sorted {
+                $0.element.outcome.triageOrder == $1.element.outcome.triageOrder
+                    ? $0.offset < $1.offset
+                    : $0.element.outcome.triageOrder < $1.element.outcome.triageOrder
+            }
+            .map(\.element)
+    }
+
+    /// "12 citations · 8 resolved · 3 ambiguous · 1 missing".
+    private var batchSummary: String {
+        var resolved = 0, ambiguous = 0, missing = 0, failed = 0
+        for row in batchRows {
+            switch row.outcome {
+            case .resolved: resolved += 1
+            case .ambiguous: ambiguous += 1
+            case .missing: missing += 1
+            case .failed: failed += 1
+            }
+        }
+        return String(format: String(localized: "citation.batch.summary %lld %lld %lld %lld",
+                                     defaultValue: "%1$lld citations · %2$lld resolved · %3$lld ambiguous · %4$lld unresolved"),
+                      Int64(batchRows.count), Int64(resolved), Int64(ambiguous),
+                      Int64(missing + failed))
+    }
+
+    @ViewBuilder
+    private func batchRow(_ row: BatchCitationRow) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: row.entry.marker ?? "\(row.entry.index)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(minWidth: 22, alignment: .trailing)
+                Text(row.entry.text)
+                    .font(.callout)
+                    .lineLimit(2)
+            }
+            batchOutcomeLabel(row)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let match = row.primaryMatch { openMatch(match) }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func batchOutcomeLabel(_ row: BatchCitationRow) -> some View {
+        switch row.outcome {
+        case .resolved:
+            Label(String(format: String(localized: "citation.batch.resolved %@",
+                                        defaultValue: "Resolved — %@"),
+                         row.primaryMatch.map { "\($0.volumeId) \($0.documentId)" } ?? ""),
+                  systemImage: "checkmark.circle.fill")
+                .font(.caption).foregroundStyle(.green)
+        case .ambiguous(let count):
+            Label(String(format: String(localized: "citation.batch.ambiguous %lld",
+                                        defaultValue: "%lld possible documents"), Int64(count)),
+                  systemImage: "questionmark.circle.fill")
+                .font(.caption).foregroundStyle(.orange)
+        case .missing:
+            Label(String(localized: "citation.batch.missing", defaultValue: "No match"),
+                  systemImage: "minus.circle")
+                .font(.caption).foregroundStyle(.secondary)
+        case .failed(let reason):
+            // Distinct from "no match": we could not look, rather than looked and found nothing.
+            Label(reason, systemImage: "exclamationmark.triangle.fill")
+                .font(.caption).foregroundStyle(.red).lineLimit(2)
+        }
+    }
+
+    /// Splits the pasted block and looks every citation up (#263).
+    private func performBatchLookup() async {
+        guard let engine = appState.citationMatchingEngine else {
+            error = String(localized: "citation.error.noEngine",
+                           defaultValue: "Citation lookup is not available until a volume is downloaded.")
+            hasSearched = true
+            return
+        }
+        let entries = CitationBlockSplitter.split(pasteText)
+        batchRows = []
+        hasSearched = true
+        error = nil
+        isSearching = true
+        await BatchCitationRunner.run(entries: entries, engine: engine, parser: parser) { row in
+            batchRows.append(row)
+        }
+        isSearching = false
+        AccessibilityNotification.Announcement(batchSummary).post()
     }
 
     private func makeEntry(for match: CitationMatch) -> DocumentBrowserEntry? {
