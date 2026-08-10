@@ -9,12 +9,17 @@ mode) — same weights, one metadata bit apart. This tool is the flip.
 
     python3 gguf_eos_flag.py show /path/to/model.gguf
     python3 gguf_eos_flag.py set-true /path/to/COPY-of-model.gguf
+    python3 gguf_eos_flag.py set-false /path/to/COPY-of-model.gguf
 
 `show` prints the flag's presence/value plus neighbouring context (architecture, name,
-add_bos_token, bos/eos/sep token ids). `set-true` rewrites the flag's single value byte
-in place — run it ONLY on a copy, never the original: the point is two artifacts, one
-per configuration, each pinnable by SHA (printed after the flip for MODEL_FILE
-provenance).
+add_bos_token, bos/eos/sep token ids). `set-true`/`set-false` rewrite the flag's single
+value byte in place — run them ONLY on a copy, never the original: the point is two
+artifacts, one per configuration, each pinnable by SHA (printed after the flip for
+MODEL_FILE provenance). `set-false` exists for the CONSUMPTION check: when the shipped
+header is already correct (the 2026-08-10 finding — the QAT gemma ships add_eos_token
+= true while the SEP warning fires anyway, because Gemma's vocab has no SEP for the
+check to find), flipping a copy DOWN and comparing identical inputs through both
+models proves whether the engine consumes the flag at embedding time at all.
 
 Refusals are part of the contract: not GGUF / GGUF v1 / key ABSENT / key present but
 not BOOL all exit non-zero without writing a byte. "Absent" matters — a missing key
@@ -110,7 +115,7 @@ def sha256(path):
 
 
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in ("show", "set-true"):
+    if len(sys.argv) != 3 or sys.argv[1] not in ("show", "set-true", "set-false"):
         sys.exit(__doc__.strip().split("\n\n")[1])
     command, path = sys.argv[1], sys.argv[2]
     found = scan(path)
@@ -129,20 +134,20 @@ def main():
         sys.exit("\ntokenizer.ggml.add_eos_token has type %d, not BOOL — refusing." % vtype)
 
     if command == "show":
-        print("\nadd_eos_token is %s. %s" % (value,
-              "Nothing to flip." if value else "set-true on a COPY will flip it."))
+        print("\nadd_eos_token is %s. set-true / set-false on a COPY will flip it." % value)
         return
 
-    if value:
-        print("\nalready true — no write performed.")
+    target = command == "set-true"
+    if value == target:
+        print("\nalready %s — no write performed." % value)
         return
     with open(path, "r+b") as f:
         f.seek(offset)
-        f.write(b"\x01")
+        f.write(b"\x01" if target else b"\x00")
     check = scan(path)["tokenizer.ggml.add_eos_token"][1]
-    if check is not True:
-        sys.exit("post-write verification failed — the flag does not read back true")
-    print("\nFlipped add_eos_token false -> true in place and verified by re-read.")
+    if check is not target:
+        sys.exit("post-write verification failed — the flag does not read back %s" % target)
+    print("\nFlipped add_eos_token %s -> %s in place and verified by re-read." % (value, target))
     print("Patched file SHA-256 (pin this via MODEL_FILE when harvesting with it):")
     print("  %s" % sha256(path))
 

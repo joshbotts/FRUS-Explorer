@@ -115,12 +115,15 @@ def two_model_mode(model_a, model_b):
         print("sample %d: cosine %.6f" % (index + 1, value))
     print("\nmin cosine %.6f | mean %.6f" % (min(cosines), sum(cosines) / len(cosines)))
     if min(cosines) >= 0.99999:
-        print("Effectively identical: the flag changed NOTHING (llama.cpp ignored it). "
-              "The original store stands alone; report this outcome.")
+        print("Effectively identical: the flag changed NOTHING (the engine ignored it). "
+              "Report this outcome.")
     else:
-        print("The flag is live — the two configurations genuinely embed differently. "
-              "Re-spike the flipped copy into a FRESH folder (pin it via MODEL_FILE) and "
-              "carry both stores to Phase 2.")
+        print("The flag is CONSUMED at embedding time — the two configurations genuinely "
+              "differ, and the arm whose header matches the model's documented contract "
+              "is the valid one. If the shipped header was already correct (set-false "
+              "consumption check), the original store is hereby confirmed; if you flipped "
+              "false -> true to fix a defect, re-spike the corrected copy into a FRESH "
+              "folder (pin it via MODEL_FILE) and carry both stores to Phase 2.")
 
 
 def eos_literal_mode(model):
