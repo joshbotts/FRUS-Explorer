@@ -309,6 +309,13 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
 
 ### Tier 3 — Infrastructure, tests, accessibility
 
+- **I-1 · #268 — shared `AXChartDescriptor` builder** — **builder + Series adoption DONE
+  (2026-08-10); OWNER DEVICE PASS OUTSTANDING**, which is the issue's own gate and the reason this
+  is not closed. Premise re-verified: zero `AXChartDescriptor` in the tree before this. The
+  `ChartInspectorData` bridge REFUSES rather than guesses — those cells are localised display
+  strings, and a lenient parse yields a wrong axis range, which on an audio graph is inaudible.
+  Adopted at `SeriesChartCard` (one site, every Series chart). **The other four families —
+  corpus, person, cross-reference, archival — are not adopted yet.**
 - **I-1 · #268 — shared `AXChartDescriptor` builder** (M + owner device pass). Zero
   `AXChartDescriptor` exists in the tree while the chart population has grown to five analytics
   families (corpus, person, cross-ref, archival, About-the-Series) — the payoff has grown since

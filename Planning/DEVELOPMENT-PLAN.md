@@ -4731,3 +4731,42 @@ it is this generator's own refusal to write an empty record-group map.
   `AXChartDescriptor` exists while the chart population has grown to five analytics families. Its
   own gate is **owner VoiceOver validation on device**, which I cannot perform.
 - **I-2 (#312, seeded-fixture obstruction test)** — not started.
+
+---
+
+## Session 2026-08-10 — I-1 (#268): the charts get an Audio Graph descriptor
+
+**Issue:** #268 · **Plan:** § I-1 · **NOT CLOSED — owner device pass outstanding**
+
+Premise re-verified before starting: **zero** occurrences of `AXChartDescriptor` or
+`accessibilityChartDescriptor` in the tree, against five analytics chart families. Every chart was
+one opaque element to VoiceOver.
+
+### The tempting shortcut is the dangerous one
+
+`ChartInspectorData` already has the shape a descriptor needs — but its cells are **already-formatted,
+already-localised strings**. Reading an axis range back out means parsing `1,204` and `38%` in
+whatever locale rendered them, and a lenient parse yields a *wrong* range rather than an error. On
+an audio graph that failure is **inaudible**: the tones describe a shape the chart does not have.
+
+So the builder takes numbers, and the bridge refuses **wholesale** — one unparseable cell yields no
+descriptor, not a descriptor missing a third of its points, because a graph missing points still
+sounds complete.
+
+Three behaviours worth naming: an empty series yields nil (a descriptor over `0...0` is one flat
+tone, which reads as data rather than absence); a constant series is widened by one (a zero-width
+range makes VoiceOver's own arithmetic divide by zero); a categorical axis keeps its labels rather
+than having an index forced onto it.
+
+### Adopted at one site
+
+`SeriesChartCard` is the shared card taking `inspector:`, so every Series chart gains a descriptor
+there rather than one dashboard at a time.
+
+### What remains — and why this is not closed
+
+- **The owner's VoiceOver device pass**, which is #268's own gate. Nothing here is validated
+  against a real screen reader; it is unit tests and a clean build only.
+- **Four of the five families are not adopted**: corpus, person, cross-reference, archival. They do
+  not route through `SeriesChartCard`, and several plot data with no inspector table, so each needs
+  its points supplied directly to the builder.
