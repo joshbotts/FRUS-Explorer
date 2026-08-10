@@ -41,10 +41,13 @@ on the macOS-bundled `python3`.
 4. **Check python3**: run `python3 --version` in Terminal. If macOS offers to install the
    Command Line Tools, accept and wait — that is the only install.
 
-## Phase 1 — the V-0 spike (both machines, ~15–60 min each)
+## Phase 1 — the V-0 spike (Studio only, ~15–60 min per model)
 
-Run once per model, on **both** the Studio and the Air — the printed tokens/s is the number that
-replaces every hardware guess in the plan.
+Run once per model, on the Studio. (Owner decision 2026-08-10: the spike does NOT run on the
+Air — Phase 1 completed Studio-only, so the plan's Air-side question, whether the M5's
+accelerators engage for encoder inference, deliberately stays unmeasured until some later
+pass actually needs the Air. The printed tokens/s replaces the plan's Studio-side hardware
+guesses.)
 
 1. In LM Studio, load ONE model at a time (server tab → load; set **context length 2048**;
    confirm the *embedding* tag). Start the server (default port 1234). Pass `MODEL=`
@@ -85,8 +88,8 @@ Spike output per model is ~40 MB. Keying nothing, deciding nothing — this meas
 
 ## Phase 2 — send Claude the spike
 
-Bring every `frus-semantic-raw-spike-*` folder (both machines') to the Air and tell Claude the
-paths. Claude then: validates the stores, runs the weak-positive gate (cross-reference
+Bring the Studio's `frus-semantic-raw-spike-*` folders (five of them — see Field notes) to
+the Air and tell Claude the paths. Claude then: validates the stores, runs the weak-positive gate (cross-reference
 neighbors, MRR@10 per model per era) against the live index, stages the blind-panel CSV for you,
 and computes the quantization ladder — the V-0 verdict comes back as numbers, and the full-run
 model is chosen from them, not from leaderboards.
