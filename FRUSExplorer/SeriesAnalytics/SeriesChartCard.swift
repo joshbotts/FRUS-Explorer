@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+#if canImport(Accessibility)
+import Accessibility
+#endif
 
 // MARK: - SeriesChartCard
 
@@ -69,10 +72,55 @@ struct SeriesChartCard<Controls: View, Content: View>: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             controls()
+            // #268: the Audio Graph descriptor, derived from the same table the "View as table"
+            // button shows — one adoption point for every Series chart rather than one per
+            // dashboard. Charts whose inspector cells are not numeric get no descriptor rather
+            // than a wrong one; see `AXChartDescriptorBuilder.points(from:)`.
             content()
+                .modifier(AXChartDescriptorModifier(inspector: inspector, title: title))
         }
     }
 }
+
+// MARK: - AXChartDescriptorModifier
+
+/// Attaches an `AXChartDescriptor` when the chart's inspector table can supply one (#268).
+///
+/// A modifier rather than an inline `.accessibilityChartDescriptor` so the `canImport` guard and
+/// the "no descriptor is better than a wrong one" refusal live in one place, and so charts with no
+/// inspector — or with a non-numeric one — are simply untouched.
+private struct AXChartDescriptorModifier: ViewModifier {
+    let inspector: ChartInspectorData?
+    let title: String
+
+    func body(content: Content) -> some View {
+        #if canImport(Accessibility)
+        if let inspector,
+           let points = AXChartDescriptorBuilder.points(from: inspector),
+           let descriptor = AXChartDescriptorBuilder.descriptor(
+                title: title,
+                xLabel: inspector.columns.first ?? "",
+                yLabel: inspector.columns.count > 1 ? inspector.columns[1] : "",
+                points: points) {
+            content.accessibilityChartDescriptor(FixedChartDescriptor(descriptor))
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}
+
+#if canImport(Accessibility)
+/// Wraps a prebuilt descriptor in the representable SwiftUI wants.
+private struct FixedChartDescriptor: AXChartDescriptorRepresentable {
+    let descriptor: AXChartDescriptor
+    init(_ descriptor: AXChartDescriptor) { self.descriptor = descriptor }
+    func makeChartDescriptor() -> AXChartDescriptor { descriptor }
+    func updateChartDescriptor(_ descriptor: AXChartDescriptor) {}
+}
+#endif
 
 extension SeriesChartCard where Controls == EmptyView {
     /// Convenience for a card with no per-chart controls.
