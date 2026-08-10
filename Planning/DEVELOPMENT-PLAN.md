@@ -4256,3 +4256,65 @@ would silently delete every undated document while the panel went on reporting t
 - People, above — an owner override would make it a further stage, not a patch.
 - The two date rules are disclosed in the chip's help text but not yet in the manuals' Search
   chapter.
+
+---
+
+## Session 2026-08-10 — F-4 (#645 remainder): the pool tells you when it cut you off
+
+**Issue:** #645 · **PR:** (this session) · **Plan:** `Resolve-Open-Issues-Plan-2026-08.md` § F-4
+
+The 2026-08-02 audit listed five items. **Two of them were already done** and the audit did not
+know it: PR #654 had stratified the collection-authority alias fallback (item 1), and item 4's
+allowlist conversion had been *started* — the doc comment already read "an allowlist by location,
+not a count" — but never finished, so the assertion underneath was still `inside == 2`. That
+half-finished state is why the audit's prediction came true on contact: the count went red on
+item 2's fix, a change that repairs a defect.
+
+### The measurement came first, because #645 let it decide the shape
+
+The issue offered an explicit out: *"If it is rare, this is a doc-comment correction rather than a
+code change, and that is a fine outcome."* Measured read-only against the live index:
+
+| axis | containers over the 120-row pool | documents in one |
+|---|---|---|
+| lot files | 23 of 1,248 | 6,678 (2.5% of source-noted documents) |
+| central-file classes | **260** | **105,681 (40.0%)** |
+
+Largest single container: `Lot 54 D 270`, 1,063 documents across 5 volumes. The class axis is an
+order of magnitude more affected than the lot axis **and nobody had counted it** — every previous
+discussion of pool depth in this issue used lot examples. Not rare, so not a doc-comment
+correction. Written to `Planning/Archival-Pool-Depth-Measurement.md` (item 5), which is where the
+figure should have been all along instead of PR prose.
+
+### What shipped
+
+- **The scoped re-cut stratifies** (item 2). `applyScope` took the survivors with
+  `prefix(limit)`. That is the cut that actually binds whenever a scope is active, because the
+  100,000-row fetch ceiling means the query-side stratification rarely fires — so a scoped reader
+  was getting the alphabetical head of the alphabetically-first volumes. `applyScope` now takes an
+  `ordering:` and the anchored entry point asks for `.stratified`; the default stays
+  `.alphabetical` so no finding-aid caller changes behaviour.
+- **A truncated total no longer reads as a complete one** (item 3). `GeneratedPool` carries the
+  generator's own `availableTotal`. `nil` means *did not count* — neither "none" nor "no
+  truncation" — which is the distinction that keeps a caveat off every cross-reference result
+  while still refusing to infer a total from what a generator happened to return. The engine takes
+  `max`, not sum, because the axes overlap. `RelatedDocumentsView` renders `related.poolCut` only
+  when the pool was genuinely cut.
+- **A real allowlist** (item 4). `intendedStratifiedRequests` names each site with the reason it
+  belongs and derives the count from itself, so adding a site means justifying it rather than
+  editing a number. A bare count had blocked this issue's fix twice; the comment says so.
+
+### Verified against the code, not the plan
+
+Three of the audit's five items were re-checked before implementing and two were already closed.
+That is now the fourth consecutive session where a plan line was stale — the habit of reading the
+code before the plan is earning its keep.
+
+### Left undone
+
+- The 120 floor itself. The measurement says the cut binds often; it says nothing about what
+  raising the floor would cost in per-anchor query and scoring time, and that needs its own
+  measurement before anyone touches it. Recorded in the measurement doc under "what this does not
+  license".
+- #353's decimal-class slice (N-1) is the change that would make this pool *bigger* for the axis
+  that binds hardest. Still scheduled in the N lane, still the largest reachable data win.

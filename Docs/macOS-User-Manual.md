@@ -544,6 +544,7 @@ Each row shows the document's header, volume, and dateline, plus small **"why re
 - **Scope** — a segmented picker narrows the candidate pool to **This volume**, **This subseries**, or **All volumes** (the default: cross-corpus reach is the point). A scoped list that comes up empty invites you to widen back out.
 - **Adjust weights** — a disclosure panel with a slider per signal (0–1). Drag a slider and the list re-ranks when you release it; your tuning **persists** and seeds every Related Documents window you open afterward. A sixth signal, **Shared topics**, is visible but disabled — "Available when detected-topic data ships (experimental)."
 - When more documents qualify than the list shows, a trailing line counts the overflow ("N more related — raise a weight or narrow the scope to refine").
+- That line counts what was *scored*, and on a document in a very large archival container not every neighbour can be — ranking works over a bounded candidate pool, and Lot 54 D 270 holds 1,063 documents. A second line says so when it applies: *"Ranked from the first 120 of 1,063 documents that share this anchor's archival container."* You will not see it on an anchor whose neighbours all fit, and narrowing the scope is what reaches the rest.
 
 `[SCREENSHOT: The Related Documents window on macOS — the This volume / This subseries / All volumes scope picker and Adjust weights disclosure above a ranked list with "why related" icon chips]`
 

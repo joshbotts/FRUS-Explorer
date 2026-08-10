@@ -181,9 +181,7 @@ enum RelatedDocumentsEngine {
                 for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
                 scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? .empty
             let produced = pool.candidates
-            if pool.isTruncated, let total = pool.availableTotal {
-                poolCutFrom = max(poolCutFrom ?? 0, total)
-            }
+            poolCutFrom = Self.absorbing(pool, into: poolCutFrom)
             var strengths: [DocumentKey: Double] = [:]
             var evidence: [DocumentKey: Int] = [:]
             var evidenceLabel: [DocumentKey: String] = [:]
@@ -251,5 +249,25 @@ enum RelatedDocumentsEngine {
         }
         return RelatedDocumentsResult(rows: rows, totalBeforeLimit: ranked.rankableCount,
                                       poolCutFrom: poolCutFrom)
+    }
+
+    /// Folds one generator's pool into the running "largest cut" (#645).
+    ///
+    /// Extracted from `rank`'s generator loop so the rule can be tested against the real
+    /// implementation rather than pinned by reading the source. A mutation sweep is what asked
+    /// for it: deleting the `isTruncated` guard survived every test, and it should not have —
+    /// without the guard a pool that returned **everything** contributes its total, and since
+    /// `totalBeforeLimit` counts only what stayed rankable after scoring, that total can exceed
+    /// it and light the disclosure on an anchor whose neighbours all fit.
+    ///
+    /// Two rules, both load-bearing:
+    /// - **Only a truncated pool contributes.** `nil` means the generator did not count, which is
+    ///   neither "none" nor "no truncation"; a complete pool has nothing to disclose.
+    /// - **`max`, not sum.** The axes overlap, so adding their totals double-counts every
+    ///   document two generators both produced. The largest is the one whose truncation actually
+    ///   bounds what a scorer could have surfaced.
+    nonisolated static func absorbing(_ pool: GeneratedPool, into existing: Int?) -> Int? {
+        guard pool.isTruncated, let total = pool.availableTotal else { return existing }
+        return max(existing ?? 0, total)
     }
 }

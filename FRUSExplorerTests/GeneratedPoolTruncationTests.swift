@@ -96,20 +96,59 @@ struct GeneratedPoolTruncationTests {
             """)
     }
 
+    /// A pool of `count` candidates that reports `total` available.
+    private func pool(_ count: Int, of total: Int?) -> GeneratedPool {
+        GeneratedPool(candidates: (0..<count).map { candidate("d\($0)") }, availableTotal: total)
+    }
+
     @Test("The engine takes the largest cut, not the sum")
-    func engineTakesTheLargestCut() throws {
+    func engineTakesTheLargestCut() {
+        // Two overlapping axes. Summing would report 1,663 documents for a corpus position that
+        // holds at most 1,063 of them.
+        var cut = RelatedDocumentsEngine.absorbing(pool(120, of: 1_063), into: nil)
+        cut = RelatedDocumentsEngine.absorbing(pool(120, of: 600), into: cut)
+        #expect(cut == 1_063, "expected the largest, got \(cut as Int?)")
+
+        // Order must not matter — generators run in a fixed order today, but the rule is about
+        // the pools, not the sequence.
+        var reversed = RelatedDocumentsEngine.absorbing(pool(120, of: 600), into: nil)
+        reversed = RelatedDocumentsEngine.absorbing(pool(120, of: 1_063), into: reversed)
+        #expect(reversed == 1_063)
+    }
+
+    @Test("A pool that was not cut contributes nothing")
+    func untruncatedPoolContributesNothing() {
+        // The mutation this test exists for: dropping the `isTruncated` guard survived the whole
+        // suite. It should not have. `totalBeforeLimit` counts what stayed rankable AFTER
+        // scoring, so a complete pool's total can exceed it — and the view would then disclose a
+        // cut on an anchor whose neighbours all fit, which is the false-confidence failure in the
+        // opposite direction from the one #645 reported.
+        #expect(RelatedDocumentsEngine.absorbing(pool(40, of: 40), into: nil) == nil,
+                "a pool that returned everything has no cut to report")
+        #expect(RelatedDocumentsEngine.absorbing(pool(40, of: 40), into: 1_063) == 1_063,
+                "and it must not disturb a real cut another axis already reported")
+    }
+
+    @Test("A pool that did not count contributes nothing")
+    func uncountedPoolContributesNothing() {
+        #expect(RelatedDocumentsEngine.absorbing(pool(40, of: nil), into: nil) == nil)
+        #expect(RelatedDocumentsEngine.absorbing(pool(40, of: nil), into: 1_063) == 1_063,
+                "the cross-reference axis runs alongside the archival one on every anchor")
+    }
+
+    @Test("The engine hands the cut to the result")
+    func engineReportsTheCut() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsEngine.swift"),
             encoding: .utf8)
-        #expect(source.contains("poolCutFrom = max(poolCutFrom ?? 0, total)"), """
-            The axes overlap, so summing their totals double-counts the documents both produced. \
-            The largest is the one whose truncation actually bounds what a scorer could have \
-            surfaced.
-            """)
+        // `rank` needs a live pipeline and an AppState, so the wiring is pinned by location while
+        // the rule above is tested against the real implementation.
+        #expect(source.contains("poolCutFrom = Self.absorbing(pool, into: poolCutFrom)"),
+                "the generator loop must fold through the tested rule, not re-implement it")
         #expect(source.contains("poolCutFrom: poolCutFrom"),
-                "and it must reach the result, or no surface can disclose it")
+                "and the folded value must reach the result, or no surface can disclose it")
     }
 
     @Test("The surface says it, and only when it has something to say")
