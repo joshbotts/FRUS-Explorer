@@ -39,6 +39,56 @@ public enum HarvestShardReader {
         /// as empty by construction, not by accident.
         public let creators: [Creator]
 
+        /// NARA's own catalogue facts about the series, as a researcher planning a visit needs
+        /// them (#663 / F-7). All four are present on 100% of the app-reachable series;
+        /// `findingAids` on 19.6%.
+        public let facts: Facts
+
+        /// The trip-planning facts. `numberingNote` is deliberately absent: it is projected on
+        /// 385 records corpus-wide but reaches **1** of the 622 series the app can name, which is
+        /// not a feature.
+        public struct Facts: Sendable, Equatable {
+            /// Memberwise init, public so tests in sibling generator targets can build fixtures.
+            public init(accessStatus: String? = nil, accessRestrictions: [String] = [],
+                        useStatus: String? = nil, useRestrictions: [String] = [],
+                        extent: String? = nil, referenceUnit: String? = nil,
+                        findingAids: [String] = [], startYear: Int? = nil, endYear: Int? = nil) {
+                self.accessStatus = accessStatus
+                self.accessRestrictions = accessRestrictions
+                self.useStatus = useStatus
+                self.useRestrictions = useRestrictions
+                self.extent = extent
+                self.referenceUnit = referenceUnit
+                self.findingAids = findingAids
+                self.startYear = startYear
+                self.endYear = endYear
+            }
+
+            /// `Unrestricted` / `Restricted - Partly` / `Restricted - Fully` /
+            /// `Restricted - Possibly`. Measured over the app-reachable series: 414 of 622 are
+            /// restricted in some degree — this is the field that decides whether a trip is
+            /// worth taking.
+            public var accessStatus: String?
+            /// The FOIA exemptions behind an access restriction — 338 of 622 cite
+            /// `(b)(1) National Security`. Distinct from the status: *why*, not *whether*.
+            public var accessRestrictions: [String]
+            /// Copyright and similar limits on *publishing* what you find, which is a different
+            /// question from whether you may read it. 205 of 622 are copyright-restricted.
+            public var useStatus: String?
+            /// The use-restriction categories, chiefly `Copyright`.
+            public var useRestrictions: [String]
+            /// NARA's own extent statement — "1 linear foot, 3 linear inches".
+            public var extent: String?
+            /// Which NARA facility holds it. 621 of 622 are College Park textual reference.
+            public var referenceUnit: String?
+            /// Finding-aid types NARA offers (`Folder List`, `Container List`, `Index`), when any.
+            public var findingAids: [String]
+            /// Coverage years as NARA states them, for sanity-checking a resolution against the
+            /// citation's own date.
+            public var startYear: Int?
+            public var endYear: Int?
+        }
+
         /// One creating body: NARA's heading, its own authority NAID, and which era it belongs to.
         public struct Creator: Decodable, Sendable, Equatable {
             /// The full hierarchical heading, verbatim, e.g.
@@ -63,7 +113,7 @@ public enum HarvestShardReader {
         private enum CodingKeys: String, CodingKey {
             case naId, title, levelOfDescription, recordGroupNumber
             case variantControlNumbers, inclusiveStartDate, inclusiveEndDate, ancestors
-            case creators
+            case creators, accessRestriction, useRestriction, findingAids, physicalOccurrences
         }
         private struct ControlNumber: Decodable {
             let number: String?
@@ -71,6 +121,33 @@ public enum HarvestShardReader {
             let note: String?
         }
         private struct YearBox: Decodable { let year: Int? }
+        private struct Restriction: Decodable {
+            let status: String?
+            let specificRestrictions: [String]
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: K.self)
+                status = try? c.decode(String.self, forKey: .status)
+                // NARA sends these as bare strings in the bulk export; tolerate an object form
+                // too rather than silently dropping the categories if that ever changes.
+                if let strings = try? c.decode([String].self, forKey: .specificRestrictions) {
+                    specificRestrictions = strings
+                } else {
+                    specificRestrictions = []
+                }
+            }
+            private enum K: String, CodingKey { case status, specificRestrictions }
+        }
+        private struct FindingAid: Decodable { let findingAidType: String? }
+        private struct Occurrence: Decodable {
+            let extent: String?
+            let referenceUnitNames: [String]
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: K.self)
+                extent = try? c.decode(String.self, forKey: .extent)
+                referenceUnitNames = (try? c.decode([String].self, forKey: .referenceUnitNames)) ?? []
+            }
+            private enum K: String, CodingKey { case extent, referenceUnitNames }
+        }
         private struct Ancestor: Decodable {
             let recordGroupNumber: String?
             init(from decoder: Decoder) throws {
@@ -116,6 +193,23 @@ public enum HarvestShardReader {
 
             creators = ((try? c.decode([Creator].self, forKey: .creators)) ?? [])
                 .filter { !$0.heading.isEmpty }
+
+            let access = try? c.decode(Restriction.self, forKey: .accessRestriction)
+            let use = try? c.decode(Restriction.self, forKey: .useRestriction)
+            let aids = (try? c.decode([FindingAid].self, forKey: .findingAids)) ?? []
+            let occurrences = (try? c.decode([Occurrence].self, forKey: .physicalOccurrences)) ?? []
+            let startBox = try? c.decode(YearBox.self, forKey: .inclusiveStartDate)
+            let endBox = try? c.decode(YearBox.self, forKey: .inclusiveEndDate)
+            facts = Facts(
+                accessStatus: access?.status,
+                accessRestrictions: access?.specificRestrictions ?? [],
+                useStatus: use?.status,
+                useRestrictions: use?.specificRestrictions ?? [],
+                extent: occurrences.first?.extent,
+                referenceUnit: occurrences.first?.referenceUnitNames.first,
+                findingAids: aids.compactMap(\.findingAidType),
+                startYear: startBox?.year,
+                endYear: endBox?.year)
 
             let start = (try? c.decode(YearBox.self, forKey: .inclusiveStartDate))?.year
             let end = (try? c.decode(YearBox.self, forKey: .inclusiveEndDate))?.year

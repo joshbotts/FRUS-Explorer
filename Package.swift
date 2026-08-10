@@ -189,37 +189,37 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Builds `series-creator-index.json` (#405 / F-6): for every NARA series the app can
+        /// Builds `series-facts-index.json` (#405 / F-6): for every NARA series the app can
         /// already name, the organisational body NARA credits with creating it. A DISPLAY
         /// projection — the similarity-axis half of #405 was measured and refused at 2.8%
         /// corpus reachability. Reuses LotClaimantsIndexGeneratorCore's HarvestShardReader
         /// rather than declaring a second decoder over the same shards.
         .target(
-            name: "SeriesCreatorIndexGeneratorCore",
+            name: "SeriesFactsIndexGeneratorCore",
             dependencies: [
                 .target(name: "GeneratorKit"),
                 .target(name: "LotClaimantsIndexGeneratorCore"),
             ],
-            path: "SeriesCreatorIndexGeneratorCore",
+            path: "SeriesFactsIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Thin entry point — calls SeriesCreatorIndexRunner.run() and exits.
+        /// Thin entry point — calls SeriesFactsIndexRunner.run() and exits.
         .executableTarget(
-            name: "SeriesCreatorIndexGenerator",
-            dependencies: [.target(name: "SeriesCreatorIndexGeneratorCore")],
-            path: "SeriesCreatorIndexGenerator",
+            name: "SeriesFactsIndexGenerator",
+            dependencies: [.target(name: "SeriesFactsIndexGeneratorCore")],
+            path: "SeriesFactsIndexGenerator",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Unit tests for SeriesCreatorIndexGeneratorCore.
+        /// Unit tests for SeriesFactsIndexGeneratorCore.
         .testTarget(
-            name: "SeriesCreatorIndexGeneratorTests",
+            name: "SeriesFactsIndexGeneratorTests",
             dependencies: [
-                .target(name: "SeriesCreatorIndexGeneratorCore"),
+                .target(name: "SeriesFactsIndexGeneratorCore"),
                 .target(name: "LotClaimantsIndexGeneratorCore"),
             ],
-            path: "SeriesCreatorIndexGeneratorTests",
+            path: "SeriesFactsIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
