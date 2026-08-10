@@ -4304,11 +4304,29 @@ figure should have been all along instead of PR prose.
   belongs and derives the count from itself, so adding a site means justifying it rather than
   editing a number. A bare count had blocked this issue's fix twice; the comment says so.
 
+### The sweep found two survivors, and they were the same mistake
+
+13 mutations. The two that survived were **not** exotic — they were the two most likely
+regressions, and both were "covered" by an assertion that read source for a string literal:
+
+- Deleting the `isTruncated` guard from the engine's fold. The assertion read
+  `poolCutFrom = max(poolCutFrom ?? 0, total)`; that literal does not contain the guard.
+- Flipping `applyScope`'s **default** to `.stratified`. The allowlist cannot catch this *by
+  construction* — it counts `.stratified` requests, and a default is not a request.
+
+Both fixes were the same move: make the thing callable and call it. The fold became
+`RelatedDocumentsEngine.absorbing(_:into:)`; `applyScope` went from `private` to internal. Seven
+tests replaced four string scans. The standing lesson (*tests must drive the real emitter*) has now
+been paid for twice in one session, in the same file, on the same kind of assertion — when a rule
+lives behind a source scan here, assume it is untested until proven otherwise.
+
 ### Verified against the code, not the plan
 
 Three of the audit's five items were re-checked before implementing and two were already closed.
 That is now the fourth consecutive session where a plan line was stale — the habit of reading the
-code before the plan is earning its keep.
+code before the plan is earning its keep. One doc comment was also caught mid-session giving
+guidance the shipped surface contradicts (`poolCutFrom` told a caller to say "at least" rather than
+"of"); CLAUDE.md's warning that doc-comment *accuracy* has no mechanical gate is not theoretical.
 
 ### Left undone
 
