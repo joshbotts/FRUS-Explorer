@@ -7072,7 +7072,16 @@ public actor IndexingPipeline {
     /// subseries"**, which the picker offers and which expands to every member volume, a
     /// `prefix(limit)` returns the alphabetically-first volumes' heads and nothing from the rest —
     /// exactly the defect, against a scope chosen precisely because it spans volumes.
-    nonisolated private static func applyScope(
+    /// ## Why the default is `.alphabetical`, and why a test calls this without an argument
+    /// Most callers are finding aids keyed on a container — the list **is** the collection, so an
+    /// alphabetical cut is the honest presentation. Only the anchored axis asks for stratification,
+    /// and it asks explicitly. Flipping this default would silently reorder every other caller
+    /// **without adding a `.stratified` call site anywhere**, which is precisely what the
+    /// allowlist in `ArchivalPoolOrderingTests` cannot see: it counts requests, and a default is
+    /// not a request. A mutation sweep flipped it and the whole suite stayed green. Hence
+    /// `internal` rather than `private` — so `defaultOrderingIsAlphabetical` can exercise the
+    /// default instead of reading the declaration for a literal.
+    nonisolated static func applyScope(
         _ result: (documents: [RelatedDocument], totalCount: Int),
         scopeVolumeIds: Set<String>?,
         limit: Int,

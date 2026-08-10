@@ -332,10 +332,17 @@ struct RelatedDocumentsResult: Sendable {
 
     /// When a generator's candidate pool was cut, how many candidates it had (#645).
     ///
-    /// `nil` when nothing was truncated *or* when no generator reported a total — a surface must
-    /// therefore say "at least" rather than "of", because an unreported total is unknown, not zero.
-    /// The largest reporting generator wins: the axes overlap, so summing would double-count, and
-    /// the largest is the one whose cut actually bounds what a scorer could have surfaced.
+    /// `nil` when nothing was truncated *or* when no generator reported a total. The largest
+    /// reporting generator wins: the axes overlap, so summing would double-count, and the largest
+    /// is the one whose cut actually bounds what a scorer could have surfaced.
+    ///
+    /// **A surface must attribute this number to the axis that produced it, not to the result as a
+    /// whole.** Only the archival generator counts today, so the shipped line names the archival
+    /// container — "of 1,063 documents that share this anchor's archival container" — and that is
+    /// exact. Phrased as a total over *all* candidates it would be an understatement, because a
+    /// generator that reported nothing may also have been cut. If a second generator ever starts
+    /// reporting, this field stops identifying which axis it came from and a surface will need
+    /// that alongside it.
     let poolCutFrom: Int?
 
     /// The empty result — no live index, or no candidates.
