@@ -88,3 +88,37 @@ struct ChartScrubRangeTests {
                                         corpusMaxYear: 0) == nil)
     }
 }
+
+// MARK: - ChartScrubWiringTests
+
+/// That the chart hands `resolve` the axis it is actually drawing (#306).
+///
+/// The rule itself is tested above by calling it. This is the one thing that cannot be: the
+/// selection arrives through a SwiftUI `onChange` on a private chart builder, so there is no
+/// runtime seam. A mutation replacing the forwarded `decadeStride` with a literal `false` passed
+/// every behavioural test — the By Decade chart would silently narrow to a single year on each
+/// drag while the By Year chart stayed correct.
+///
+/// This is a **wiring pin, not a behaviour test**, and it can only catch what the literal spells.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #306 (F-9)
+@Suite("Chart scrub wiring (#306)")
+struct ChartScrubWiringTests {
+
+    @Test("The chart forwards its own decadeStride, not a constant")
+    func forwardsTheAxis() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/Analytics/AnalyticsView.swift"),
+            encoding: .utf8)
+        #expect(source.contains("commitScrub(range, decadeStride: decadeStride)"), """
+            The scrub handler must pass the chart's own `decadeStride`. A literal here makes every \
+            By Decade drag select one year instead of ten, and no behavioural test can see it — \
+            the handler is a SwiftUI onChange with no runtime seam.
+            """)
+        // …and the selection must actually be bound, or the modifier is inert.
+        #expect(source.contains(".chartXSelection(range: $scrubSelection)"))
+    }
+}

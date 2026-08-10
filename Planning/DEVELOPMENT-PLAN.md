@@ -4558,3 +4558,50 @@ identifier that starts the same way.
   the Zotero app installed and signed in.
 - **The collection sheet has no multi-document web route**, by design: the share-extension path
   takes one URL at a time. If that ever changes upstream, the sheet is where it would go.
+
+---
+
+## Session 2026-08-10 — F-9 (#306): drag the chart to narrow the years
+
+**Issue:** #306 (body empty; the plan line was the whole spec) · **Plan:** § F-9
+
+`chartXSelection(range:)` on the date chart, committed on **release** rather than continuously:
+Swift Charts updates the selection through the whole drag, and writing the year range on each frame
+would re-filter and re-render the series under the user's finger.
+
+### "Honor the existing chip + reset" was already true
+
+Both read `yearRangeIsCustom`, which is derived from the two year bounds. A drag that writes the
+same state the steppers write surfaces the chip and Reset with no second code path. The plan line
+implied work; the work was to *not* introduce a parallel path.
+
+### Two rules that needed care, one that did not exist
+
+- **A decade selection covers ten years.** The By Decade axis plots decade *starts*, so a drag from
+  1950 to 1960 means 1950–1969. Committing the raw upper bound drops nine years the user visibly
+  selected, and the chart redraws narrower than the gesture that produced it.
+- **Bounds clamp to the corpus.** A drag can end past the plotted data; an out-of-corpus bound
+  yields an empty chart whose only escape is Reset.
+- **A descending drag is impossible.** The first draft ordered the bounds defensively and
+  documented Swift Charts as reporting them "as drawn". That is false: `chartXSelection(range:)`
+  yields a `ClosedRange`, and `1962...1947` **traps at construction** — which is how the claim was
+  caught, because the test written to prove it crashed on its own literal. Dead code and a wrong
+  comment, both removed; the test now pins the invariant the type guarantees so the next reader
+  knows why there is no min/max.
+
+### The rule was extracted before the sweep, not after
+
+Three sessions running, every mutation survivor was a rule no test could call. `ChartScrubRange`
+was written as a pure function from the start. The sweep still found one gap — the *wiring*
+(`decadeStride` forwarded from the chart) has no runtime seam, so a literal `false` there passed
+every behavioural test while making each By Decade drag select a single year. Pinned by a source
+assertion that says plainly it is a wiring pin, not behaviour.
+
+### Left undone
+
+- **The scrubber is on the single-term date chart only.** The multi-term comparison chart (D1) and
+  the categorical Subseries/Volume axes have no year x-axis to drag; the latter two ignore the year
+  range entirely (`isDateBased`).
+- **No haptic or live range readout during the drag.** The selection is invisible until release —
+  acceptable because the commit is immediate and reversible, but a live overlay would be the
+  obvious refinement if it reads as unresponsive on device.
