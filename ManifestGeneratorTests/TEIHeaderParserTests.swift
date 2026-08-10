@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 @testable import ManifestGeneratorCore
+import TEIHeaderKit
 
 /// Tests for `TEIHeaderParser`.
 struct TEIHeaderParserTests {

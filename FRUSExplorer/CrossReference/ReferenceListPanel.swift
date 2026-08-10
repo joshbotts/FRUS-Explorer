@@ -471,10 +471,7 @@ struct GraphNodeDetailView: View {
                 Button {
                     requestedDownloadVolumeIds.insert(volumeId)
                     Task {
-                        await downloadManager.enqueueDownload(
-                            volumeId: volumeId,
-                            downloadUrl: entry.downloadUrl
-                        )
+                        await downloadManager.enqueueDownload(entry)
                     }
                 } label: {
                     Label(

@@ -172,8 +172,7 @@ final class OnboardingViewModel {
     func enqueueScope(downloadManager: DownloadManager) async {
         let volumes = volumesForScope(resolvedScope)
         for entry in volumes {
-            let url = entry.downloadUrl
-            await downloadManager.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
+            await downloadManager.enqueueDownload(entry)
         }
         #if DEBUG
         print("[Onboarding] Enqueued \(volumes.count) volumes for scope \(resolvedScope).")

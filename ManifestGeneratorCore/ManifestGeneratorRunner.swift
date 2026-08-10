@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import TEIHeaderKit
 
 /// Orchestrates the full manifest generation pipeline.
 ///
@@ -267,7 +268,10 @@ public struct ManifestGeneratorRunner {
             title: header.title,
             dateRange: DateRange(earliest: header.earliestDate, latest: header.latestDate),
             publicationDate: header.publicationDate,
-            status: header.status,
+            // The TEI header carries no publication status, so the parser never set one and this
+            // was always the `.published` default. Stated explicitly now that `ParsedTEIHeader`
+            // lives in TEIHeaderKit and owns no manifest types (#777).
+            status: .published,
             editors: header.editors,
             generalEditor: header.generalEditor,
             documentCount: header.documentCount,

@@ -65,6 +65,13 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
     /// Resolve against `VolumeLevelTagStore` for display names and hierarchy.
     public let tags: [String]
 
+    /// Where this entry came from — the published catalogue, or the user's own file (#777).
+    ///
+    /// Defaulted and **not decoded**, so `manifest.json` is unchanged and every one of its 552
+    /// entries is `.publishedCatalogue` without a byte moving. Only `LocalVolumeCatalog` mints
+    /// the other case.
+    public var provenance: VolumeOrigin = .publishedCatalogue
+
     public var id: String { volumeId }
 
     /// Constructs the GitHub raw download URL for this volume.
@@ -76,9 +83,39 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
     /// Version history:
     ///   1.0 — New UI scaffolding: added so new macOS UI can enqueue downloads
     ///          without constructing the URL inline at every call site.
-    public var downloadUrl: String {
-        "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(filename)"
+    ///   1.1 — Session 2026-08-09 (#777): **optional.** A side-loaded volume has no catalogue
+    ///          URL, and this property is computed FROM THE FILENAME — so returning one anyway
+    ///          would hand every repair path a plausible GitHub address that 404s, or, worse,
+    ///          silently resolves to a *different* volume if that filename is later published.
+    ///          The optionality is the mechanism, not a nicety: it makes every consumer confront
+    ///          the missing URL at compile time.
+    public var downloadUrl: String? {
+        guard provenance == .publishedCatalogue else { return nil }
+        return "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(filename)"
     }
+}
+
+// MARK: - VolumeOrigin
+
+// (Named `VolumeOrigin`, not `VolumeProvenance`: SA-3's `SourceProvenanceData` already owns
+// that name for a per-volume archival-provenance row, an unrelated idea.)
+
+/// Whether a volume entry describes something the app can fetch, or something the user supplied.
+///
+/// The distinction is not bookkeeping. It decides three things that would otherwise be wrong for a
+/// side-loaded volume: whether a download URL exists at all (`downloadUrl`), whether Free Up Space
+/// may offer to delete it (`StorageRemovalPlan`), and — the one that matters most — whether a
+/// citation may claim the document is published (`FRUSVolumeMetadata`). A pre-release cited as
+/// published, with a canonical `history.state.gov` URL that resolves to nothing, is worse than no
+/// citation at all.
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #777
+public enum VolumeOrigin: String, Codable, Sendable, Equatable {
+    /// From `manifest.json` — the published FRUS catalogue.
+    case publishedCatalogue
+    /// From a file the user side-loaded. Not necessarily unpublished, but the app cannot tell.
+    case sideloaded
 }
 
 // Custom Decodable conformance in an extension so the synthesized memberwise

@@ -542,10 +542,14 @@ struct CollectionPreviewView: View {
             ?? appState.manifestStore.bundledEntries
         var enqueuedAny = false
         for volumeId in missingVolumeIds.subtracting(unavailableVolumeIds) {
-            guard let entry = manifest.first(where: { $0.volumeId == volumeId }) else { continue }
+            // #777: `manifest` is the catalogue, so a side-loaded volume never appears here —
+            // and could not be downloaded if it did. `enqueueDownload(_:)` declines it anyway,
+            // so `enqueuedAny` must not be set before the entry proves fetchable, or the preview
+            // would spin on a download that was never queued.
+            guard let entry = manifest.first(where: { $0.volumeId == volumeId }),
+                  entry.downloadUrl != nil else { continue }
             enqueuedAny = true
-            Task { await dm.enqueueDownload(volumeId: entry.volumeId,
-                                            downloadUrl: entry.downloadUrl) }
+            Task { await dm.enqueueDownload(entry) }
         }
         if enqueuedAny {
             downloadsInFlight = true

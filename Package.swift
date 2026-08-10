@@ -84,8 +84,17 @@ let package = Package(
         // MARK: - ManifestGenerator
 
         /// All manifest-generation logic. Imported by both the executable and test target.
+        // The FRUS `<teiHeader>` grammar, shared by the manifest generator and the app.
+        // Compiled into the app targets through project.yml as well (the SourceNoteKit pattern),
+        // so a side-loaded volume's header is read exactly the way manifest.json was built (#777).
+        .target(
+            name: "TEIHeaderKit",
+            path: "TEIHeaderKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .target(
             name: "ManifestGeneratorCore",
+            dependencies: [.target(name: "TEIHeaderKit")],
             path: "ManifestGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -101,7 +110,7 @@ let package = Package(
         /// Unit tests for ManifestGeneratorCore logic.
         .testTarget(
             name: "ManifestGeneratorTests",
-            dependencies: [.target(name: "ManifestGeneratorCore")],
+            dependencies: [.target(name: "ManifestGeneratorCore"), .target(name: "TEIHeaderKit")],
             path: "ManifestGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

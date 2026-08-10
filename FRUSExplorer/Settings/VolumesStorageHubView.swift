@@ -1118,9 +1118,7 @@ struct VolumesStorageHubView: View {
     /// re-indexes it once the transfer completes; the UPSERT path preserves user data.
     private func updateVolume(_ updatable: UpdatableVolume) async {
         guard let dm = appState.downloadManager else { return }
-        await dm.enqueueDownload(volumeId: updatable.id,
-                                 downloadUrl: updatable.entry.downloadUrl,
-                                 force: true)
+        await dm.enqueueDownload(updatable.entry, force: true)
         updatableVolumes.removeAll { $0.id == updatable.id }
     }
 
@@ -1683,7 +1681,7 @@ private struct DownloadVolumesBrowseView: View {
         }
 
         for entry in volumes {
-            await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
+            await dm.enqueueDownload(entry)
         }
         dismiss()
     }

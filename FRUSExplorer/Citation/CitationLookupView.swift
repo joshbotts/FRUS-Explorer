@@ -466,7 +466,7 @@ struct CitationLookupView: View {
     private func initiateDownload(for match: CitationMatch) {
         guard let entry = match.volumeManifestEntry,
               let dm = appState.downloadManager else { return }
-        Task { await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl) }
+        Task { await dm.enqueueDownload(entry) }
     }
 }
 

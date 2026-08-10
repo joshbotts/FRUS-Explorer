@@ -1378,8 +1378,12 @@ class CollectionContentResolver {
         var toIndex: [String] = []
         for vid in neededVolumeIds {
             if !dm.isVolumeDownloaded(vid) {
-                if let entry = manifest.first(where: { $0.volumeId == vid }) {
-                    toDownload.append((vid, entry.downloadUrl))
+                // #777: `manifest` is the catalogue, so a side-loaded volume is not in it — and
+                // a volume whose file has been removed cannot be re-fetched either way. The
+                // `downloadUrl` guard makes that explicit rather than depending on the lookup miss.
+                if let entry = manifest.first(where: { $0.volumeId == vid }),
+                   let url = entry.downloadUrl {
+                    toDownload.append((vid, url))
                 }
             } else if (try? !pipeline.isVolumeIndexed(vid)) == true {
                 toIndex.append(vid)

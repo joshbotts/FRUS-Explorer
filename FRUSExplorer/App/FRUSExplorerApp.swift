@@ -1859,7 +1859,7 @@ struct FRUSExplorerApp: App {
                 toEnqueue = allEntries.filter { $0.volumeId == id }
             }
             for entry in toEnqueue {
-                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
+                await dm.enqueueDownload(entry)
             }
             #if DEBUG
             print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")

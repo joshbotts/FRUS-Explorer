@@ -225,9 +225,13 @@ public final class BrowserViewModel {
 
     // MARK: - Subseries Groups
 
-    /// All volumes from the manifest (live known + bundled).
+    /// Every volume the app can show — the catalogue plus anything side-loaded (#777).
+    ///
+    /// Was `diffResult?.known ?? bundledEntries`, which is the catalogue and only the catalogue;
+    /// a side-loaded volume produced no subseries group and no row, however thoroughly it was
+    /// indexed. `browsableEntries` is that expression with the local entries folded in.
     private var allVolumes: [VolumeManifestEntry] {
-        manifestStore.diffResult?.known ?? manifestStore.bundledEntries
+        manifestStore.browsableEntries
     }
 
     /// All subseries groups, sorted chronologically by start year (most recent first).

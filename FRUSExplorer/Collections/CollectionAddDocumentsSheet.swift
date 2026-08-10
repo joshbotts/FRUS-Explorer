@@ -1013,8 +1013,7 @@ struct CollectionAddDocumentsSheet: View {
                     // Only show progress when something was actually enqueued.
                     guard let dm = appState.downloadManager else { return }
                     requestedDownloads.insert(volume.volumeId)
-                    Task { await dm.enqueueDownload(volumeId: volume.volumeId,
-                                                    downloadUrl: volume.downloadUrl) }
+                    Task { await dm.enqueueDownload(volume) }
                 }
                 .buttonStyle(.borderedProminent)
             }
