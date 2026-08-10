@@ -316,6 +316,7 @@ public actor SearchService {
             documentIds: parameters.documentIds,
             excludeDocumentIds: parameters.excludeDocumentIds,
             dateRange: parameters.dateRange,
+            yearKeys: parameters.yearKeys,
             includeFrontMatter: parameters.includeFrontMatter,
             personRef: parameters.personRef,
             personRollupId: parameters.personRollupId,

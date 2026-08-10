@@ -440,6 +440,7 @@ final class MacSearchViewModel {
     var activeFilterSummary: String? {
         var parts: [String] = []
         if parameters.dateRange != nil           { parts.append("date") }
+        if parameters.yearKeys != nil            { parts.append("years") }
         if parameters.volumeIds != nil           { parts.append("volume") }
         // `documentIds` has TWO producers — an applied working corpus and a project History
         // gate — and `DocumentScopeGate.combine` intersects them, so it can carry either or both.
@@ -542,6 +543,26 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    /// The Years-facet chip's label, or `nil` when no year set is in force (#775).
+    ///
+    /// Names the years up to three, then counts. Which years were kept is the finding a reader
+    /// needs; beyond three the list outgrows the chip.
+    var yearFilterLabel: String? {
+        guard let years = parameters.yearKeys else { return nil }
+        if years.isEmpty {
+            return String(localized: "search.filter.years.none", defaultValue: "none")
+        }
+        if years.count <= 3 { return years.sorted().joined(separator: ", ") }
+        return String(format: String(localized: "search.filter.years.count %lld",
+                                     defaultValue: "%lld years"), Int64(years.count))
+    }
+
+    func clearYearFilter() {
+        parameters.yearKeys = nil
+        filterVM?.facetYearKeys = nil
+        parametersVersion += 1
+    }
+
     func clearVolumeFilter() {
         // Clear the manual volume/subseries selection, then re-derive the scope so the
         // executed gate matches: in Focus this falls back to the subject-derived volumes
@@ -593,6 +614,7 @@ final class MacSearchViewModel {
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.locale = Locale(identifier: "en_US_POSIX")
 
+        filterVM.facetYearKeys = parameters.yearKeys
         if let range = parameters.dateRange {
             filterVM.dateRangeEnabled = true
             if let earliest = range.earliest, let d = fmt.date(from: earliest) {
@@ -638,6 +660,7 @@ final class MacSearchViewModel {
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.locale = Locale(identifier: "en_US_POSIX")
 
+        parameters.yearKeys = filterVM.facetYearKeys
         if filterVM.dateRangeEnabled {
             parameters.dateRange = DateRange(
                 earliest: fmt.string(from: filterVM.dateRangeStart),

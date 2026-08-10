@@ -384,6 +384,15 @@ struct SearchView: View {
                                 showFacetSheet = false
                                 Task { await runSearch() }
                             },
+                            onApplySelection: { section, keys in
+                                // #775: one search for the whole selection, and the sheet closes
+                                // on the commit rather than on the first tap — staging is what
+                                // makes a second row reachable at all.
+                                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
+                                vm.applyFacetSelection(section, keys: keys)
+                                showFacetSheet = false
+                                Task { await runSearch() }
+                            },
                             onDiscloseSection: { section in
                                 Task {
                                     await facetController.load(

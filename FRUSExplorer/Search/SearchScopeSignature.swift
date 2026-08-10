@@ -58,6 +58,11 @@ enum SearchScopeSignature {
         var parts: [String] = []
         parts.append("mode=\(parameters.booleanMode == .or ? "or" : "and")")
         parts.append("dates=\(dateComponent(parameters.dateRange))")
+        // #775: the Years facet's set. Two searches differing only in their years must sign
+        // differently, or the trail records one row for both and the exported methods appendix
+        // describes a scope the numbers did not come from. `nil` and `[]` are distinct: no filter
+        // versus a filter that matches nothing.
+        parts.append("years=\(parameters.yearKeys.map { $0.isEmpty ? "none" : $0.sorted().joined(separator: ",") } ?? "any")")
         parts.append("vols=\(idComponent(parameters.volumeIds))")
         parts.append("docs=\(idComponent(parameters.documentIds))")
         parts.append("exdocs=\(idComponent(parameters.excludeDocumentIds))")
@@ -174,6 +179,17 @@ enum SearchScopeSignature {
         }
         if let dates = pairs["dates"], dates != "none" {
             phrases.append(String(localized: "appendix.scope.dates %@", defaultValue: "dated \(dates)"))
+        }
+        // #775: the year set, named rather than counted — which years were kept is the finding,
+        // and an appendix reading "2 years" would leave a reader unable to reproduce the search.
+        if let years = pairs["years"], years != "any" {
+            if years == "none" {
+                phrases.append(String(localized: "appendix.scope.years.none",
+                                      defaultValue: "no years selected"))
+            } else {
+                phrases.append(String(localized: "appendix.scope.years %@",
+                                      defaultValue: "years \(years.replacingOccurrences(of: ",", with: ", "))"))
+            }
         }
         phrases += countPhrase(pairs["vols"],
                                some: { String(localized: "appendix.scope.volumes %lld",

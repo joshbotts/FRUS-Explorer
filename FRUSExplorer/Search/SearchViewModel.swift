@@ -118,6 +118,15 @@ final class SearchViewModel {
     // MARK: - Date Range Parameters
 
     var dateRangeEnabled: Bool = false
+
+    /// The Years facet's applied selection: documents whose **start year** is one of these (#775).
+    ///
+    /// `nil` = no year-set filter; an empty array matches nothing (see
+    /// `SearchParameters.yearKeys`). Separate from `dateRangeEnabled`/`dateRangeStart`/`End`
+    /// because a set of years is not an interval — `{1951, 1953}` cannot be written as a range —
+    /// and because the two ask different questions: this one is start-year containment, matching
+    /// the facet's own bucket rule, while the date range is interval overlap. They AND.
+    var facetYearKeys: [String]? = nil
     var dateRangeStart: Date = Calendar.current.date(byAdding: .year, value: -80, to: .now) ?? .distantPast
     var dateRangeEnd: Date = .now
 
@@ -263,6 +272,10 @@ final class SearchViewModel {
         parts.append(dateRangeEnabled
             ? "d1|\(dateRangeStart.timeIntervalSinceReferenceDate)|\(dateRangeEnd.timeIntervalSinceReferenceDate)"
             : "d0")
+        // #775: the Years facet's set. Without it macOS's `applyAdvancedFilters` never fires on a
+        // year selection — the signature is what tells it the filter state changed — so the set
+        // would be applied, shown, and silently ignored by the search. Exactly M-1 again.
+        parts.append(facetYearKeys.map { $0.sorted().joined(separator: ",") } ?? "y-")
         parts.append(personRefText)
         parts.append(personRollupId.map(String.init) ?? "")
         parts.append(personLabel ?? "")
@@ -683,6 +696,7 @@ final class SearchViewModel {
         booleanMode = .and
         excludedTermsText = ""
         dateRangeEnabled = false
+        facetYearKeys = nil
         selectedUserTagIds = []
         selectedVolumeIds = []
         selectedSubseriesIds = []
@@ -820,6 +834,7 @@ final class SearchViewModel {
             excludedTerms: excluded,
             prefixWildcard: pw.isEmpty ? nil : pw,
             dateRange: range,
+            yearKeys: facetYearKeys,
             subjectTagIds: [],
             userTagIds: selectedUserTagIds.map(\.uuidString),
             volumeIds: scoped.volumeIds,
@@ -974,6 +989,28 @@ final class SearchViewModel {
         // re-runs the search explicitly. The caller owns that — see `SearchView`.
     }
 
+    /// Applies a staged facet selection (#775), routed through the one shared applier.
+    ///
+    /// iOS holds its filters as individual fields rather than a `SearchParameters`, so this
+    /// round-trips through a value: build the parameters, let `FacetSelectionApplier` write the
+    /// change, read the result back. That is a little indirect and it is the point — the
+    /// single-tap path has two appliers, one per platform, and they have already drifted.
+    func applyFacetSelection(_ section: FacetSection, keys: [String]?) {
+        var parameters = searchParameters
+        FacetSelectionApplier.apply(section, keys: keys, to: &parameters)
+        switch section {
+        case .years:
+            facetYearKeys = parameters.yearKeys
+        case .volumes:
+            // A subseries selection is a different way of naming volumes and would widen the gate
+            // back out — the same reason the single-tap path clears it.
+            selectedVolumeIds = parameters.volumeIds ?? []
+            selectedSubseriesIds = []
+        case .people, .documentType, .provenance:
+            break
+        }
+    }
+
     /// Captures or re-resolves the person filter's durable anchor against the live rollup (#747).
     ///
     /// Call after applying a person filter and again on every `AppState.personRollupGeneration`
@@ -1029,6 +1066,21 @@ final class SearchViewModel {
                 label: String(localized: "search.narrowing.date",
                               defaultValue: "\(Self.isoDate(dateRangeStart)) to \(Self.isoDate(dateRangeEnd))")))
         }
+        if let years = facetYearKeys {
+            out.append(ActiveNarrowing(
+                id: "years",
+                // Named, not counted, up to three: "1951, 1953" is the whole point of #775 and a
+                // chip reading "2 years" would hide which two. Beyond three the list is longer
+                // than the chip, so it degrades to a count.
+                label: years.isEmpty
+                    ? String(localized: "search.narrowing.years.none",
+                             defaultValue: "No years")
+                    : years.count <= 3
+                    ? years.sorted().joined(separator: ", ")
+                    : String(format: String(localized: "search.narrowing.years %lld",
+                                            defaultValue: "%lld years"),
+                             Int64(years.count))))
+        }
         if !selectedVolumeIds.isEmpty {
             out.append(ActiveNarrowing(
                 id: "volume",
@@ -1078,6 +1130,7 @@ final class SearchViewModel {
     func clearNarrowing(_ id: String) {
         switch id {
         case "date": dateRangeEnabled = false
+        case "years": facetYearKeys = nil
         case "volume": selectedVolumeIds = []
         case "subseries": selectedSubseriesIds = []
         case "person": personRollupId = nil; personRefText = ""; personAnchor = nil
@@ -1093,6 +1146,9 @@ final class SearchViewModel {
         if personRollupId != nil { return true }
         if !personRefText.trimmingCharacters(in: .whitespaces).isEmpty { return true }
         if dateRangeEnabled { return true }
+        // `nil` is no filter; an EMPTY array is a real filter that matches nothing, so this tests
+        // for presence rather than for non-emptiness.
+        if facetYearKeys != nil { return true }
         if !selectedVolumeIds.isEmpty { return true }
         if !selectedSubseriesIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
@@ -1140,6 +1196,10 @@ final class SearchViewModel {
         personRollupId    = params.personRollupId
         personLabel       = params.personLabel
         personAnchor      = params.personAnchor
+        // #775: restore the year set. `nil` is a real value here (no year filter), so this
+        // assigns unconditionally rather than guarding on non-nil — a guard would leave a
+        // previous search's years in force under a restored search that has none.
+        facetYearKeys = params.yearKeys
         if let range = params.dateRange {
             dateRangeEnabled = true
             let fmt = ISO8601DateFormatter()

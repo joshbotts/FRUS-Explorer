@@ -351,6 +351,11 @@ struct MacSearchWindowView: View {
                     narrowing.apply(to: &searchVM.parameters)
                     searchVM.parametersVersion += 1
                 },
+                onApplySelection: { section, keys in
+                    facetController.recordNarrowing(from: searchVM.totalMatchCount)
+                    FacetSelectionApplier.apply(section, keys: keys, to: &searchVM.parameters)
+                    searchVM.parametersVersion += 1
+                },
                 onDiscloseSection: { section in
                     Task {
                         await facetController.load(
@@ -762,6 +767,21 @@ struct MacSearchWindowView: View {
             .help(String(
                 localized: "search.filter.date.help",
                 defaultValue: "Date-range filter (TEI document dates). Tap × to clear."
+            ))
+
+            Divider().frame(height: 16)
+
+            // #775: the Years facet's set is a filter the date chip cannot represent — a set of
+            // years is not an interval — so it needs a chip of its own or it would be in force
+            // with nothing on screen saying so.
+            FilterChip(
+                label: "Years",
+                value: searchVM.yearFilterLabel,
+                isActive: searchVM.parameters.yearKeys != nil
+            ) { searchVM.clearYearFilter() }
+            .help(String(
+                localized: "search.filter.years.help",
+                defaultValue: "Years chosen in the facet panel. Matches a document's start year, which is what the facet counts. Tap × to clear."
             ))
 
             Divider().frame(height: 16)

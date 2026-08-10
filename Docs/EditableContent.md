@@ -2181,19 +2181,19 @@ Read the results you have as a timeline, as your search term in context, or as t
 
 <!-- END SOURCE: search.mode.help -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1031–1032 | key: search.facets.on.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1051–1052 | key: search.facets.on.help.v2 -->
 
 Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply
 
 <!-- END SOURCE: search.facets.on.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1106–1107 | key: search.kwic.show.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1126–1127 | key: search.kwic.show.help.v2 -->
 
 Show every occurrence of your term on its own line, aligned — for the documents on this page
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1261–1264 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1281–1284 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -2201,7 +2201,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1266–1269 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1286–1289 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 

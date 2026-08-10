@@ -4188,3 +4188,71 @@ return. The change is therefore an improvement under both readings and needed no
 - The Source Explorer window still `dismiss()`es before handing the document off — "leave here and
   go read it" is a design choice, not a bug, and giving that window an in-place reader is an owner
   call rather than something to smuggle in on L-40.
+
+---
+
+## Session 2026-08-10 — F-3 (#775): choosing more than one year
+
+### Two plan premises, both false
+
+**"The reachability half (#586) can ship first and independently."** #586 closed on 2026-08-07 and
+its work is in the tree: `FacetRequest.fetchCeiling` is 20,000 and `FacetPaging` does the display
+cut. Nothing to ship. F-3 is the multi-select half alone.
+
+**"Tap a second row to add it."** This is what the issue implies and it cannot work. A facet section
+is computed **against the active filters**, and a narrow re-runs the search, which invalidates every
+section — so tapping 1951 leaves a Years section containing only 1951. There is no second row left
+to tap. Multi-select one tap at a time is structurally unreachable, and every design that did not
+notice would have shipped a control that appeared to work once.
+
+The answer is a **staged** selection: rows cycle neutral → included → excluded, nothing runs, and
+one **Apply** commits the whole selection as a single search. That also fixes the iOS sheet for
+free — it stays open while choosing and dismisses on Apply.
+
+### A shipped defect, found while mapping and repaired here
+
+The Years facet buckets on `substr(date_iso, 1, 4)` — the **start year**. A tap applied a
+`dateRange`, which is **interval overlap**. Measured on the owner's index: the 1948 row reads
+**7,392** documents and the filter it applied returned **7,892**, because 7,562 dated rows span a
+year boundary. A facet row that does not deliver its own count is a wrong answer wearing a number.
+
+`yearKeys` uses the facet's own rule, so the row now delivers exactly what it promises. `dateRange`
+is untouched and still ANDs alongside — "documents touching this period" is a different question the
+filter sheet is entitled to ask, and the Years chip says which rule it uses.
+
+### Negation never reaches SQL, on purpose
+
+Include-minus-exclude resolves in Swift over the section's own buckets, so #775's equivalence holds
+**by construction**: `include{1950…1953} − {1950,1952}` and `include{1951,1953}` are literally the
+same `["1951","1953"]` value, not two paths that have to agree. The obvious `NOT IN` spelling is a
+trap — `substr(NULL,1,4) NOT IN ('1950')` is NULL, SQLite drops the row, and excluding one year
+would silently delete every undated document while the panel went on reporting them present.
+
+### Per-domain, and what was refused
+
+- **Years** — multi-select and exclude. The only domain the model could not express at all.
+- **Volumes** — multi-select, no exclude. `volumeIds` was already a set end to end; the panel was
+  the only thing collapsing it. Exclude adds nothing: the facet lists only volumes in the match, so
+  "exclude these three" *is* "include the other thirty-seven".
+- **People — neither.** `personRollupId` is one rollup and `PersonRollupAnchor` is singular (the
+  #747 renumber defence); a set of N needs N anchors and per-member rebinding, none of which exist.
+  And OR multi-select is the *less* useful operation — the historian's question is co-occurrence,
+  which Person Analytics already answers.
+- **Document type, Provenance** — permanently not. `.all` already means "exclude neither"; the
+  other has no filter field by design.
+
+### Verification
+
+- 24 new tests. The acceptance criterion is one of them, run end to end through the real query.
+- **Ten mutations, two SURVIVED**: the staged-selection reset in `invalidate` (a selection would
+  survive into a search it does not describe, showing checkmarks against rows that may not exist)
+  and the macOS `advancedFilterSignature` — **M-1 recurring**, where a field missing from the
+  fingerprint is applied, shown as applied, and silently ignored by the search. Both CAUGHT now. One
+  COMPILE-FAIL is the `yearKeys` Optionality, which is protection of a different kind.
+- 3,210 tests in 419 suites green; both schemes build clean.
+
+### Left undone
+
+- People, above — an owner override would make it a further stage, not a patch.
+- The two date rules are disclosed in the chip's help text but not yet in the manuals' Search
+  chapter.
