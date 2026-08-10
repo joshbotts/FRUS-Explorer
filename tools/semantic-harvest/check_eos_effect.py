@@ -1,41 +1,49 @@
 #!/usr/bin/env python3
-"""Does the missing trailing EOS change embeddinggemma's vectors? A one-minute A/B.
+"""Does a trailing EOS change an embedding model's vectors? Two one-minute probes.
 
 Context: during the V-0 spike, LM Studio's console warned on every batch that
 "At least one last token in strings embedded is not SEP. 'tokenizer.ggml.add_eos_token'
 should be set to 'true' in the GGUF header" — i.e. the GGUF's metadata told llama.cpp
 NOT to append an end-of-sequence token, and llama.cpp suspects the model wants one.
-Whether that suspicion is correct for a Gemma-architecture embedding model is a
-model-card question; whether it MATTERS is measurable right here. This probe embeds a
-few FRUS-flavored samples twice — exactly as harvest_embeddings.py sends them, and with
-the literal EOS token appended — and reports the cosine between each pair.
+Whether that suspicion is correct is a model-card question; whether it MATTERS is
+measurable. This script measures it, two ways.
 
-The A/B is only valid if the server parsed the appended "<eos>" as ONE special token,
-so the probe checks usage.prompt_tokens: a delta of exactly +1 per pair validates the
-comparison; any other delta means the literal tokenized as plain text and the probe
-says so instead of reporting a meaningless cosine. Watch the LM Studio console while
-it runs: the +eos requests should NOT trigger the warning if the delta is +1.
+MODE 1 (default): same model, appended-literal A/B. Embeds each sample as
+harvest_embeddings.py sends it and again with the literal EOS string appended, and
+reports the cosine per pair. The A/B is only *conclusive about the EOS token* if the
+server parsed the literal as ONE special token, which the probe tries to confirm from
+usage.prompt_tokens — but note the field's real-world behaviour, measured 2026-08-10:
+LM Studio reports prompt_tokens: 0 for embeddings requests, so token accounting is
+usually UNAVAILABLE and the cosine then bounds the effect without attributing it
+(one special token vs a few literal-text tokens — indistinguishable server-side).
 
-Reading the result (mean pooling over ~40-60 token samples):
-  min cosine >= 0.995  ->  the missing EOS is immaterial; keep the spike store and
-                           record the warning in the hand-off.
-  min cosine <  0.99   ->  the header is load-bearing; resolve add_eos_token (model
-                           card / HF discussions / re-download or header edit) and
-                           re-spike this model into a FRESH folder, keeping both.
-  in between           ->  bring both a fixed-header store and the original to
-                           Phase 2 and let the retrieval gates decide.
+MODE 2 (set MODEL_B): same input, two models — the decisive experiment. Load BOTH the
+original GGUF and a copy whose add_eos_token flag was flipped (gguf_eos_flag.py), and
+embed identical text through each. Same weights, one metadata bit apart:
+  cosine ~= 1.000000 (>= 0.99999)  ->  the flag changed nothing; llama.cpp ignored it.
+  cosine below that                ->  the flag is live; re-spike the flipped copy into
+                                       a FRESH folder and carry both stores to Phase 2,
+                                       where the retrieval gates score the two
+                                       configurations head-to-head.
 
-Stdlib only, like the harvester. Run on the machine with LM Studio serving the model:
+Reading Mode 1 (mean pooling over ~40-70 token samples):
+  min cosine >= 0.995  ->  a trailing-token perturbation is immaterial; keep the store.
+  min cosine <  0.99   ->  load-bearing; do the Mode 2 experiment before trusting it.
+  in between           ->  gray zone; do the Mode 2 experiment and ship both arms.
 
-    MODEL="<id from /v1/models>" python3 check_eos_effect.py
+Stdlib only, like the harvester. Run on the machine with LM Studio serving:
+
+    MODEL="<id>" python3 check_eos_effect.py
+    MODEL="<original id>" MODEL_B="<flipped-copy id>" python3 check_eos_effect.py
 
 Environment:
   LMSTUDIO_URL  default http://localhost:1234
   MODEL         LM Studio model id (else auto-picked iff exactly one 'embed' id)
+  MODEL_B       second model id — presence switches to Mode 2
   PREFIX        default "title: none | text: " (embeddinggemma's document prompt —
                 mirror whatever the harvest used; pass PREFIX="" for a bare model)
-  EOS           default "<eos>" (the literal appended in the B arm; Gemma's EOS.
-                For a BERT/XLM-R-family model try EOS="</s>" or EOS="[SEP]")
+  EOS           Mode 1 literal, default "<eos>" (Gemma). For a BERT/XLM-R-family
+                model try EOS="</s>" or EOS="[SEP]"
 """
 
 import json
@@ -92,8 +100,31 @@ def cosine(a, b):
     return dot / (na * nb)
 
 
-def main():
-    model = pick_model()
+def two_model_mode(model_a, model_b):
+    print("MODE 2 — same input through two models (the same-weights flag A/B)")
+    print("A: %s\nB: %s\nprefix: %r" % (model_a, model_b, PREFIX))
+    cosines = []
+    for index, text in enumerate(SAMPLES):
+        vec_a, _ = embed_one(model_a, PREFIX + text)
+        vec_b, _ = embed_one(model_b, PREFIX + text)
+        if len(vec_a) != len(vec_b):
+            sys.exit("dimension mismatch (%d vs %d) — are these really the same weights?"
+                     % (len(vec_a), len(vec_b)))
+        value = cosine(vec_a, vec_b)
+        cosines.append(value)
+        print("sample %d: cosine %.6f" % (index + 1, value))
+    print("\nmin cosine %.6f | mean %.6f" % (min(cosines), sum(cosines) / len(cosines)))
+    if min(cosines) >= 0.99999:
+        print("Effectively identical: the flag changed NOTHING (llama.cpp ignored it). "
+              "The original store stands alone; report this outcome.")
+    else:
+        print("The flag is live — the two configurations genuinely embed differently. "
+              "Re-spike the flipped copy into a FRESH folder (pin it via MODEL_FILE) and "
+              "carry both stores to Phase 2.")
+
+
+def eos_literal_mode(model):
+    print("MODE 1 — one model, EOS literal appended")
     print("model: %s" % model)
     print("prefix: %r   eos literal: %r" % (PREFIX, EOS))
     cosines, deltas = [], []
@@ -108,17 +139,28 @@ def main():
               % (index + 1, base_toks, eos_toks, delta, value))
 
     print()
-    if any(d is None for d in deltas):
-        print("The server did not report usage.prompt_tokens, so the probe cannot confirm "
-              "%r was parsed as one special token. Treat the cosines as suggestive only." % EOS)
-    elif all(d == 1 for d in deltas):
-        print("Delta +1 on every pair: %r was parsed as ONE token — the A/B is valid." % EOS)
-        print("min cosine %.6f | mean %.6f" % (min(cosines), sum(cosines) / len(cosines)))
-        print("Reading: >=0.995 immaterial, keep the store; <0.99 the header is load-bearing; "
-              "between, bring both configurations to Phase 2.")
+    print("min cosine %.6f | mean %.6f" % (min(cosines), sum(cosines) / len(cosines)))
+    if all(d == 1 for d in deltas):
+        print("Delta +1 on every pair: %r was parsed as ONE token — the A/B measured the "
+              "EOS token itself. Read: >=0.995 immaterial; <0.99 load-bearing; between, "
+              "run Mode 2 and ship both arms." % EOS)
+    elif any(d is None for d in deltas) or all(d == 0 for d in deltas):
+        print("Token accounting unavailable (the server reported no/zero prompt_tokens — "
+              "LM Studio does this for embeddings), so whether %r became one special "
+              "token or a few literal-text tokens is UNKNOWN. The cosine bounds a "
+              "trailing perturbation either way; for an attributed answer run Mode 2 "
+              "(gguf_eos_flag.py + MODEL_B)." % EOS)
     else:
-        print("Delta != +1, so %r tokenized as literal text and this run did NOT test the EOS "
-              "token. The header question stays open — report this outcome." % EOS)
+        print("Delta != +1 with real counts: %r tokenized as literal text, so this did "
+              "NOT test the EOS token. Run Mode 2 (gguf_eos_flag.py + MODEL_B)." % EOS)
+
+
+def main():
+    model_b = os.environ.get("MODEL_B", "")
+    if model_b:
+        two_model_mode(pick_model(), model_b)
+    else:
+        eos_literal_mode(pick_model())
 
 
 if __name__ == "__main__":
