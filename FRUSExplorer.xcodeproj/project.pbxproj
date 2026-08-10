@@ -697,6 +697,7 @@
 		A596C29BDEA272F010B43152 /* UserTagPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D20EB2E17BEEE50A2085004 /* UserTagPickerSheet.swift */; };
 		A5EF94095D052BD474E84E81 /* ChronologyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B1FCB97482B12E177439C04 /* ChronologyView.swift */; };
 		A657EA1D32F083710B44D89D /* RelatedDocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A364FA04305F32B1651686AF /* RelatedDocumentsView.swift */; };
+		A66DE3E6702DE5FF3BF2A192 /* VolumeSourcesMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AF63128DA4823B9017D263 /* VolumeSourcesMigrationTests.swift */; };
 		A68ADD4A6777A0EFBDB70DAC /* PersonCoMentionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC6E67AA63034BBFBF7B7098 /* PersonCoMentionGraphView.swift */; };
 		A7116E9882C7EE6908549B69 /* PersonClusterOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */; };
 		A71FD8F16EA54AD18DF949FD /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81475CA28849923822135AD /* BrowserViewModel.swift */; };
@@ -1823,6 +1824,7 @@
 		F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		F89AC5BB14EEE61586D263D1 /* DocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentView.swift; sourceTree = "<group>"; };
 		F8DA3DEE45576188EE42F070 /* CitationLookupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationLookupView.swift; sourceTree = "<group>"; };
+		F9AF63128DA4823B9017D263 /* VolumeSourcesMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSourcesMigrationTests.swift; sourceTree = "<group>"; };
 		FA95163C58F401025F855304 /* CuratedLibraryResolutionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuratedLibraryResolutionsTests.swift; sourceTree = "<group>"; };
 		FAC28DDC19E5D2D71E5E031D /* IndexingPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingPipelineTests.swift; sourceTree = "<group>"; };
 		FBE0716B4B3C7052EC58ACEB /* OnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTests.swift; sourceTree = "<group>"; };
@@ -2409,6 +2411,7 @@
 				8096BE8D8973E27A3F11A05D /* UnreferencedDeclarationAuditTests.swift */,
 				616C4888303721B60B3C4308 /* UserTagCountTests.swift */,
 				9ECB12934B74A080479BC4FA /* VolumeMetadataDiscoveredTests.swift */,
+				F9AF63128DA4823B9017D263 /* VolumeSourcesMigrationTests.swift */,
 				DE376BB484CCD0F72B4BE84D /* VolumeSubjectProfilesTests.swift */,
 				077F7EF3771CABD8CE60E996 /* VolumeUpdateCheckerTests.swift */,
 				6D3D36C3120683A02B651204 /* WhyRelatedChipTests.swift */,
@@ -4154,6 +4157,7 @@
 				0502FAC410AAADE0D75331B6 /* UnreferencedDeclarationAuditTests.swift in Sources */,
 				444014D465C3809C781C93D2 /* UserTagCountTests.swift in Sources */,
 				784F41F594BB98DBAC9DBD73 /* VolumeMetadataDiscoveredTests.swift in Sources */,
+				A66DE3E6702DE5FF3BF2A192 /* VolumeSourcesMigrationTests.swift in Sources */,
 				DAEB1497C60D24BF13153813 /* VolumeSubjectProfilesTests.swift in Sources */,
 				1572AD78B54603DDB61CBB38 /* VolumeUpdateCheckerTests.swift in Sources */,
 				E50F95856BB90C6AC6D011B7 /* WhyRelatedChipTests.swift in Sources */,

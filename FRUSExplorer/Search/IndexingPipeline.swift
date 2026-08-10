@@ -706,7 +706,13 @@ public actor IndexingPipeline {
     ///   front-matter key, so `SourcesParserDelegate.makeItemEntry` emits two new fields and the
     ///   columns are empty on an existing index until each volume is re-parsed. Measured on the
     ///   owner's index the bump moves 619 `item` rows across 119 volumes from keyless to keyed.
-    public static let currentDateIndexVersion: Int = 39
+    /// - v40 — REPAIR for the v39 bump. #733 added `volume_sources.job_number` to the CREATE
+    ///   without adding it to the drop-and-recreate guard above it, so on an existing database the
+    ///   table kept its old columns, every insert threw against the two it did not have, and the
+    ///   delete-then-insert emptied it: 33,764 rows across 258 volumes → 0. The guard is fixed;
+    ///   this bump is what makes the repair actually repopulate, because a device that already ran
+    ///   the v39 reindex has `installed == 39` and would otherwise never reindex again.
+    public static let currentDateIndexVersion: Int = 40
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -5320,9 +5326,17 @@ public actor IndexingPipeline {
         // #668 adds `note` — the description paragraph belonging to a collection whose
         // encoding separates name from description. Same drop-and-recreate, keyed on the
         // absent newest column; the version-34 reindex repopulates.
+        // #733 adds `job_number` / `job_number_norm`. THIS GUARD IS THE MIGRATION — adding columns
+        // to the CREATE below without adding them here does nothing to an existing database, and
+        // it is not a silent no-op: `auxInsertVolumeSources` then names columns the table does not
+        // have, every insert throws, and because the indexer deletes a volume's rows before
+        // reinserting them, the whole table empties. Measured on the owner's index after #807
+        // shipped without this line: 33,764 rows across 258 volumes → 0, and every volume's
+        // Sources tab read "No Sources Listed".
         if tableExists("volume_sources") && (!columnExists("kind", inTable: "volume_sources")
                                              || !columnExists("lot_file_norm", inTable: "volume_sources")
-                                             || !columnExists("note", inTable: "volume_sources")) {
+                                             || !columnExists("note", inTable: "volume_sources")
+                                             || !columnExists("job_number", inTable: "volume_sources")) {
             try? exec("DROP TABLE volume_sources")
         }
         try exec("""
