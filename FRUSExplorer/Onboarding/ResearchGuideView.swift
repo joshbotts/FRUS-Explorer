@@ -25,8 +25,9 @@ import SwiftUI
 ///    presenting the guide
 ///
 /// ## Entry points
-/// - **iOS/iPadOS**: presented as a sheet from Settings
-///   (`AppState.showResearchGuide`)
+/// - **iOS/iPadOS**: presented as a sheet from **Settings ▸ About**, off `AboutView`'s own
+///   `showsResearchGuide` state. It used to hang off an `AppState` flag, which every open iPad
+///   window's Settings tab was bound to at once (#752 / L-43).
 /// - **macOS**: a dedicated `Window` scene (`id: "frus.researchGuide"`)
 ///   reachable from the Help menu
 ///

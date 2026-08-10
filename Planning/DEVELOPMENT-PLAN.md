@@ -4128,3 +4128,63 @@ because that is what a source note is.
   `externalCitationStats` exist and are tested, but nothing in Source Explorer or the research rail
   reads them yet — the table currently feeds only the corpus-wide artifact.
 - **Screenshots** for the new Flows layer in either manual.
+
+---
+
+## Session 2026-08-10 — F-2 (#752 tail): an action reaches the window it belongs to
+
+The low-severity remainder of the 2026-08 navigation audit, after PR #769 closed the high-severity
+half. Four findings, last re-verified at a commit five PRs back. **Every one of them was re-verified
+before a line was written, and two did not survive it.**
+
+### What the verification changed
+
+| finding | audit said | measured |
+|---|---|---|
+| **M-25** | prefer the activated scene, or front the consuming one | *Prefer the activated scene* is unreachable — `MainTabView` already documents that iPadOS reports **every visible window** `.active`, and nothing exposes the activated scene. Fixed a third way. |
+| **L-40** | one unpaired producer | **Holds, exactly.** Line numbers unchanged since the audit; still the only unpaired `openBrowseDocument` of eleven. |
+| **L-43** | convert the shared bool to a scene-addressed hand-off | **Wrong shape.** Producer and consumer are one view tree in one window — `AboutView` is a `NavigationLink` destination of the `SettingsView` that presented the sheet. The answer is to *delete* the flag. |
+| **L-48** | a refocus leaves a stale origin a later window can adopt | **Does not reproduce.** `openAuxWindow` writes the slot unconditionally immediately before every open and is the only path that mints an aux scene, so a parked value can only be re-read by the window that parked it. **Closed with a documentation correction, no code.** |
+
+Two more corrections to the audit's own text: there is **no custom URL scheme** in this app (the
+three continuation entry points are Handoff, Spotlight and the `.fruscollection` open-with;
+`frusexplorer://` links are intercepted inside the web view), and the import path grew a *second*
+untargeted channel after the audit was written — #755's `pendingCollectionSelection` — so M-25's
+import half had got worse, not better, since it was filed.
+
+### The M-25 fix, and the hypothesis it does not depend on
+
+`ContinuationHost` publishes a per-window scene identity **above** the tab view, so each handler can
+address the window it fired in; `MainTabView` adopts the published value and keeps its own mint as a
+fallback. Both channels then carry the same target, which is what makes `openTab`'s own
+"lands in the SAME window (BUG-7)" doc comment true — with two `.anyWindow` wildcards it was false,
+because `MainTabView` exists in every window while `BrowserView` must have bootstrapped, so a window
+that had never visited Browse could take the tab switch while another took the document.
+
+**The part that matters for review:** UIKit delivers a user activity to one `UIScene` and SwiftUI
+bridges that per scene — but that is *not verified on this device*, and if SwiftUI instead fanned the
+modifier out, addressing each handler to its own scene would open the document in **every** window
+rather than one. `AppState.claimContinuation` bounds it: the first window to fire acts, the rest
+return. The change is therefore an improvement under both readings and needed no device gate.
+
+### Verification
+
+- 13 new tests in `SceneAddressingTests`, plus three rewritten in `CollectionsReaderRouteTests` that
+  pinned the old untargeted slot.
+- **Ten mutations. The first eight were CAUGHT immediately — which was the warning sign**, because
+  each directly contradicted a literal assertion. Two harder ones then **SURVIVED**, and both were
+  the worst regression the change could cause: deleting `ContinuationHost`'s
+  `.environment(\.sceneID, …)` (the handlers still receive a scene, `MainTabView` falls back to its
+  own mint, and every continuation is addressed to a token no consumer holds — a black hole where
+  `.anyWindow` at least always landed somewhere), and making the token a shared constant (every
+  window publishes the same identity, so addressing means nothing). Both CAUGHT now.
+- The full suite is green; both schemes build clean with no new warnings.
+
+### Left undone
+
+- Nothing calls `requestSceneSessionActivation`, and `WindowTargetingTests.noSceneActivationYet`
+  still pins that. This narrows targets from a lottery to the right window; it does **not** bring an
+  off-stage window forward. That remains the one structural gap in the family.
+- The Source Explorer window still `dismiss()`es before handing the document off — "leave here and
+  go read it" is a design choice, not a bug, and giving that window an in-place reader is an owner
+  call rather than something to smuggle in on L-40.

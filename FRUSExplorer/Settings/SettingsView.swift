@@ -90,8 +90,10 @@ struct SettingsView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        @Bindable var appState = appState
-
+        // The `@Bindable` shadow went with the Research Guide sheet (#752 / L-43) — it existed
+        // only to spell `$appState.showResearchGuide`, and nothing in this body binds `appState`
+        // any more. An unused one is a warning on a CLEAN build, which an incremental build will
+        // not re-emit.
         NavigationStack {
             Form {
                 // iCloud sync status — visible on iOS where there is no macOS status bar.
@@ -143,16 +145,9 @@ struct SettingsView: View {
                 }
                 #endif
             }
-            #if os(iOS)
-            // Standalone "Research Guide" — the same five educational pages
-            // shown during first-index onboarding, reachable here on demand
-            // (presented as a sheet rather than pushed, since it manages its
-            // own paging/navigation chrome via `ResearchGuideView`).
-            .sheet(isPresented: $appState.showResearchGuide) {
-                ResearchGuideView()
-                    .environment(appState)
-            }
-            #endif
+            // The Research Guide sheet moved to `AboutView`, which owns the row that opens it
+            // (#752 / L-43). Presenting it here off an `AppState` flag meant every open iPad
+            // window's Settings tab was bound to the same Bool.
         }
         #if os(macOS)
         // Provides stable minimum dimensions for the settings sheet on macOS so that

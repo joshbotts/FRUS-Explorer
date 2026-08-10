@@ -535,29 +535,11 @@ struct FRUSExplorerApp: App {
         WindowGroup(for: SourceExplorerRequest.self) { $request in
             Group {
                 if let request {
-                    NavigationStack {
-                        SourceExplorerView(
-                            rawSourceNote: request.rawSourceNote,
-                            documentYear: request.documentYear,
-                            indexingPipeline: appState.indexingPipeline,
-                            onRelatedDocumentTapped: { vid, did in
-                                let entry = DocumentBrowserEntry(
-                                    documentId: did, volumeId: vid,
-                                    documentNumber: nil, header: did, dateline: nil, sourceNote: nil
-                                )
-                                // The Source Explorer window republishes its launching scene via
-                                // `.auxWindowOrigin` (#338), but this inline related-docs tap is a plain
-                                // closure — not a View — so it can't read `\.sceneID`; it addresses the
-                                // `.anyWindow` wildcard (one window, no fan-out). The dedicated Archival
-                                // Neighbors WINDOW reached from here routes to the origin (it reads `\.sceneID`).
-                                appState.openBrowseDocument(entry, from: .anyWindow)
-                            },
-                            documentHeader: request.documentHeader,
-                            documentDateline: request.documentDateline,
-                            documentVolumeId: request.documentVolumeId,
-                            documentId: request.documentId
-                        )
-                    }
+                    // Extracted to a View so the related-documents tap can read `\.sceneID`
+                    // (#752 / L-40). Inline, it was a plain closure that could not, and it
+                    // addressed `.anyWindow` with no paired `openTab` — the only unpaired
+                    // `openBrowseDocument` producer in the app.
+                    SourceExplorerWindowContent(request: request, appState: appState)
                 } else {
                     ContentUnavailableView(
                         String(localized: "sourceExplorerWindow.empty.title",
@@ -1198,21 +1180,41 @@ struct FRUSExplorerApp: App {
                         }
                     }
                 }
+                // Handoff / Spotlight / open-with. On iOS these live inside `ContinuationHost`, a
+                // per-window modifier that mints this window's scene identity above the tab view so
+                // each handler can address the window it fired in (#752 / M-25). Before, the
+                // identity was minted two levels below them and they addressed `.anyWindow`, so on
+                // an iPad the OS fronted one window and the navigation could land in another — or
+                // split, the tab switch going to one and the document to a second.
+                //
+                // macOS keeps the plain modifiers: there is one scene identity concept there
+                // (`.global` + `fallbackHost()`'s most-recently-key stamp), the import fronts its
+                // own window, and neither needs a scene token.
+                #if os(iOS)
+                .modifier(ContinuationHost(
+                    onDocumentActivity: { activity, sceneID in
+                        continueDocumentActivity(activity, from: sceneID)
+                    },
+                    onSpotlight: { activity, sceneID in
+                        continueSpotlightActivity(activity, from: sceneID)
+                    },
+                    onOpenURL: { url, sceneID in
+                        importOpenedCollection(url, from: sceneID)
+                    }))
+                #else
                 // Handoff: a FRUS document viewed on another device
                 .onContinueUserActivity(AppActivityTypes.document) { activity in
-                    continueDocumentActivity(activity)
+                    continueDocumentActivity(activity, from: nil)
                 }
                 // Spotlight: user tapped a search result for a FRUS document
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
-                    guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
-                    let parts = identifier.split(separator: "/", maxSplits: 1).map(String.init)
-                    guard parts.count == 2 else { return }
-                    navigateToDocument(volumeId: parts[0], documentId: parts[1], title: activity.title)
+                    continueSpotlightActivity(activity, from: nil)
                 }
                 // A shared native collection opened from Files / Finder / AirDrop (Phase 4 / D9).
                 .onOpenURL { url in
-                    importOpenedCollection(url)
+                    importOpenedCollection(url, from: nil)
                 }
+                #endif
                 // Failed open-with import → user-visible alert (both platforms). The main
                 // window is what the OS activates on an open-with, so it is where the user
                 // is looking when the import fails.
@@ -1344,8 +1346,12 @@ struct FRUSExplorerApp: App {
     /// the collection it already created (see `openedCollectionImports`) instead of importing
     /// a duplicate. Failures present the `collectionOpenError` alert on the main window.
     @MainActor
-    private func importOpenedCollection(_ url: URL) {
+    private func importOpenedCollection(_ url: URL, from sceneID: SceneID?) {
         guard url.pathExtension.lowercased() == NativeCollectionSerializer.fileExtension else { return }
+        // #752 / M-25. The content-hash guard below already stops a second *import*, but not a
+        // second surfacing, and with the surfacing now addressed to a scene two windows acting on
+        // one open-with would each surface it in themselves.
+        guard appState.claimContinuation("openURL|\(url.absoluteString)") else { return }
         let context = modelContainer.mainContext
         do {
             let scoped = url.startAccessingSecurityScopedResource()
@@ -1355,7 +1361,7 @@ struct FRUSExplorerApp: App {
             let digest = Data(SHA256.hash(data: data))
             if let existingId = openedCollectionImports[digest],
                collectionExists(existingId, in: context) {
-                surfaceOpenedCollection(existingId)
+                surfaceOpenedCollection(existingId, from: sceneID)
                 return
             }
 
@@ -1364,7 +1370,7 @@ struct FRUSExplorerApp: App {
             if let pid = appState.activeProjectId { imported.projectIds = [pid] }
             try context.save()
             openedCollectionImports[digest] = imported.id
-            surfaceOpenedCollection(imported.id)
+            surfaceOpenedCollection(imported.id, from: sceneID)
         } catch {
             #if DEBUG
             print("[FRUSExplorerApp] .fruscollection import failed: \(error)")
@@ -1380,18 +1386,23 @@ struct FRUSExplorerApp: App {
     /// freshly created window's `.task` consumer sees it (mirroring the `currentGraphEntry` /
     /// `currentSourceNote` ordering).
     @MainActor
-    private func surfaceOpenedCollection(_ id: UUID) {
+    private func surfaceOpenedCollection(_ id: UUID, from sceneID: SceneID?) {
         #if os(iOS)
         // #755 (audit M-24): set the hand-off on iOS too. `CollectionListView` has had the consumer
-        // since #369 BUG-12 — `.task` + `.onChange` draining `pendingCollectionSelection` to push
-        // the imported collection's editor — but the ONLY writer in the codebase was the macOS
-        // branch below, so the iOS half could never fire. The collection imported fine and then the
-        // user had to go find it by name, while macOS opened straight onto it.
+        // since #369 BUG-12 — `.task` + `.onChange` draining the selection to push the imported
+        // collection's editor — but the ONLY writer in the codebase was the macOS branch below, so
+        // the iOS half could never fire. The collection imported fine and then the user had to go
+        // find it by name, while macOS opened straight onto it.
         //
         // Set BEFORE the tab switch, for the same reason macOS sets it before `openWindow`: a
         // freshly created consumer's `.task` must see it.
-        appState.pendingCollectionSelection = id
-        appState.openTab(.collections, from: .anyWindow)
+        //
+        // #752 / M-25: both halves are addressed to the window the open-with was delivered to, and
+        // through a scene-targeted slot of their own. The untargeted `pendingCollectionSelection`
+        // is drained by every open window's `CollectionListView`, so the imported collection could
+        // surface in a different window from the one that switched to Collections.
+        appState.pendingCollectionSelectionScene = Handoff(target: sceneID ?? .anyWindow, payload: id)
+        appState.openTab(.collections, from: sceneID)
         #else
         appState.pendingCollectionSelection = id
         openWindow.fronting(id: "frus.collections")
@@ -2086,10 +2097,25 @@ struct FRUSExplorerApp: App {
 
     /// Handles a Handoff or deep-link continuation for a specific document.
     @MainActor
-    private func continueDocumentActivity(_ activity: NSUserActivity) {
+    private func continueDocumentActivity(_ activity: NSUserActivity, from sceneID: SceneID?) {
         guard let volumeId = activity.userInfo?["volumeId"] as? String,
               let documentId = activity.userInfo?["documentId"] as? String else { return }
-        navigateToDocument(volumeId: volumeId, documentId: documentId, title: activity.title)
+        guard appState.claimContinuation("handoff|\(volumeId)/\(documentId)") else { return }
+        navigateToDocument(volumeId: volumeId, documentId: documentId,
+                           title: activity.title, from: sceneID)
+    }
+
+    /// A Spotlight result tapped: the identifier is `"<volumeId>/<documentId>"`, minted by
+    /// `IndexingPipeline` when it donates the item.
+    @MainActor
+    private func continueSpotlightActivity(_ activity: NSUserActivity, from sceneID: SceneID?) {
+        guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String
+        else { return }
+        let parts = identifier.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return }
+        guard appState.claimContinuation("spotlight|\(identifier)") else { return }
+        navigateToDocument(volumeId: parts[0], documentId: parts[1],
+                           title: activity.title, from: sceneID)
     }
 
     /// Pushes navigation to the requested document on both platforms. Handoff/Spotlight
@@ -2097,7 +2123,8 @@ struct FRUSExplorerApp: App {
     /// straight through the fallback chain (owner decision D3), minting a standalone
     /// document window when no host is live.
     @MainActor
-    private func navigateToDocument(volumeId: String, documentId: String, title: String?) {
+    private func navigateToDocument(volumeId: String, documentId: String, title: String?,
+                                    from sceneID: SceneID?) {
         let entry = DocumentBrowserEntry(
             documentId: documentId,
             volumeId: volumeId,
@@ -2108,10 +2135,19 @@ struct FRUSExplorerApp: App {
             openWindow(value: DocumentWindowID(entry: orphan))
         }
         #else
-        // #338 step 4: a deep link / Spotlight / Handoff continuation has no spawning window (the iOS
-        // analogue of macOS `.global`), so address the wildcard — the first main window opens it.
-        appState.openBrowseDocument(entry, from: .anyWindow)
-        appState.openTab(.browse, from: .anyWindow)
+        // #752 / M-25: address the window the continuation was delivered to, published by
+        // `ContinuationHost`. It used to be `.anyWindow` on the reasoning that a continuation has
+        // no spawning window — true of a deep link, but a user activity *is* delivered to a scene,
+        // and `.anyWindow` is first-observer-wins across every open iPad window. `sceneID` is nil
+        // only if the host is not wrapped, in which case `openTab`/`openBrowseDocument` fall back
+        // to the wildcard and the old behaviour returns.
+        //
+        // Tab first, then content — and both to the SAME target, which is what makes the BUG-7
+        // guarantee (`openTab`'s doc) true here. With two wildcards it was not: `MainTabView`
+        // exists in every window while `BrowserView` must have bootstrapped, so the tab switch and
+        // the document could be awarded to different windows.
+        appState.openTab(.browse, from: sceneID)
+        appState.openBrowseDocument(entry, from: sceneID)
         #endif
     }
 
@@ -3048,6 +3084,129 @@ struct ProjectSwitcherMenuContent: View {
 #endif // os(macOS)
 
 #if os(iOS)
+
+// MARK: - ContinuationHost
+
+/// Publishes a scene identity **above** the tab view, so a Spotlight / Handoff / open-with
+/// continuation can be addressed to the window that received it (#752 / M-25).
+///
+/// ## The problem this exists for
+/// `.onContinueUserActivity` and `.onOpenURL` are attached inside the main `WindowGroup`'s content,
+/// so they run once per window — but their closures live on the `App` struct, and the scene
+/// identity was minted two levels below them in `MainTabView`. A handler therefore had no window to
+/// name and addressed the `.anyWindow` wildcard, which is first-observer-wins. With two iPad windows
+/// open, the OS brings one forward and the navigation could land in the other.
+///
+/// Worse than one wrong window: the tab channel and the content channel are consumed by **different
+/// views with different eligibility**. `MainTabView` exists in every window; `BrowserView` only wins
+/// once its view model has bootstrapped. A window that has never visited Browse can take the tab
+/// switch while another takes the document — so the two halves split.
+///
+/// ## What this does
+/// Mints the token here and publishes it through `\.sceneID`. `MainTabView` adopts the published
+/// value when there is one and keeps its own mint as a fallback, so nothing changes for a host that
+/// is not wrapped in this. The three handlers then address the window they fired in.
+///
+/// ## The claim, and why it is not optional
+/// UIKit delivers an activity or a URL to one `UIScene`, and SwiftUI bridges that per scene — so on
+/// the expected behaviour one handler runs and `AppState.claimContinuation` never refuses anything.
+/// **That expectation is not verified on a device.** If SwiftUI did instead fan the modifier out to
+/// every window, addressing each to its own scene would open the document in *all* of them — worse
+/// than the wildcard it replaces. The claim bounds that: the first window to fire acts, the rest
+/// return, and the outcome degrades to exactly today's "one arbitrary window" rather than N.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #752 (audit M-25)
+private struct ContinuationHost: ViewModifier {
+
+    /// This window's scene identity, minted once for its live lifetime — the same contract
+    /// `MainTabView` had, moved up so the continuation handlers are inside it.
+    @State private var sceneIDToken = UUID().uuidString
+
+    /// Handoff from another device: a FRUS document.
+    let onDocumentActivity: (NSUserActivity, SceneID) -> Void
+    /// Spotlight result tapped.
+    let onSpotlight: (NSUserActivity, SceneID) -> Void
+    /// A `.fruscollection` opened from Files / AirDrop. There is no custom URL scheme in this app;
+    /// the `frusexplorer://` links in rendered documents are intercepted inside the web view and
+    /// never reach the OS.
+    let onOpenURL: (URL, SceneID) -> Void
+
+    func body(content: Content) -> some View {
+        let sceneID = SceneID(sceneIDToken)
+        content
+            .environment(\.sceneID, sceneID)
+            .onContinueUserActivity(AppActivityTypes.document) { onDocumentActivity($0, sceneID) }
+            .onContinueUserActivity(CSSearchableItemActionType) { onSpotlight($0, sceneID) }
+            .onOpenURL { onOpenURL($0, sceneID) }
+    }
+}
+
+// MARK: - SourceExplorerWindowContent
+
+/// The content of the standalone iPad Source Explorer window (#752 / L-40).
+///
+/// ## Why this is a View and not the inline closure it replaced
+/// The window's related-documents rows hand a document to the app to open. That producer used to
+/// live inline in the scene builder as a plain closure, which **cannot read `\.sceneID`** — the
+/// comment it replaced said exactly that — so it addressed the `.anyWindow` wildcard and, alone
+/// among the app's thirteen `openBrowseDocument` producers, wrote **no paired `openTab`**.
+///
+/// Two consequences, both real on a Stage Manager iPad with more than one window:
+/// 1. **Wrong window.** `.anyWindow` is first-observer-wins, and the eligible observer is any
+///    window whose Browse tab has already bootstrapped a view model — not the window this Source
+///    Explorer was opened from.
+/// 2. **Delayed surprise.** With no `openTab`, the winning window did not switch to Browse. The
+///    document was appended to a Browse stack the user was not looking at, and surfaced whenever
+///    they next visited that tab.
+///
+/// As a View it reads the scene `.auxWindowOrigin` publishes on the scene above — the launching
+/// window, or `.anyWindow` once that window has closed, which is the correct degradation.
+///
+/// ## What this does not fix
+/// Nothing in the app calls `requestSceneSessionActivation` (`WindowTargetingTests` pins that),
+/// so if the origin window is off-stage the tap still will not be *seen*. This narrows the target
+/// from a lottery to the one window that asked; it does not bring that window forward.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #752 (audit L-40)
+private struct SourceExplorerWindowContent: View {
+
+    /// The restorable request describing this window's content.
+    let request: SourceExplorerRequest
+
+    /// Passed as a plain `let`, never `@Environment(AppState.self)`: a non-optional Observable
+    /// environment read is resolved eagerly *before* `body` runs, so declaring one in a view the
+    /// scene has not injected traps at launch rather than at use.
+    let appState: AppState
+
+    /// Published by `.auxWindowOrigin(appState)` on the scene above.
+    @Environment(\.sceneID) private var sceneID
+
+    var body: some View {
+        NavigationStack {
+            SourceExplorerView(
+                rawSourceNote: request.rawSourceNote,
+                documentYear: request.documentYear,
+                indexingPipeline: appState.indexingPipeline,
+                onRelatedDocumentTapped: { vid, did in
+                    let entry = DocumentBrowserEntry(
+                        documentId: did, volumeId: vid,
+                        documentNumber: nil, header: did, dateline: nil, sourceNote: nil
+                    )
+                    // Tab first, then content — the order every other producer uses, so a window
+                    // that consumes both lands on Browse before the document arrives.
+                    appState.openTab(.browse, from: sceneID)
+                    appState.openBrowseDocument(entry, from: sceneID)
+                },
+                documentHeader: request.documentHeader,
+                documentDateline: request.documentDateline,
+                documentVolumeId: request.documentVolumeId,
+                documentId: request.documentId
+            )
+        }
+    }
+}
 
 // MARK: - StandaloneDocumentWindowContent
 

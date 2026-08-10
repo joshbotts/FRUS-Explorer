@@ -87,9 +87,14 @@ struct CollectionListView: View {
     /// #369 BUG-12: applies (once) a `pendingCollectionSelection` hand-off — pushes the imported
     /// collection's editor so the user lands on it after an open-with import. macOS has the twin in
     /// `MacCollectionManagerView`; this is iOS-only to avoid a double-consume race with that window.
+    ///
+    /// #752 / M-25: reads the **scene-addressed** slot, so an open-with delivered to one window
+    /// surfaces there rather than in whichever window's Collections tab happened to be mounted.
+    /// `orAnyWindow` keeps the wildcard working for a producer with no scene to name.
     private func consumePendingCollectionSelection() {
-        guard let id = appState.pendingCollectionSelection else { return }
-        appState.pendingCollectionSelection = nil
+        guard let sceneID,
+              let id = appState.consumeHandoff(\.pendingCollectionSelectionScene,
+                                               for: sceneID, orAnyWindow: true) else { return }
         if let collection = allCollections.first(where: { $0.id == id }) {
             collectionToEdit = collection
         }
@@ -158,8 +163,8 @@ struct CollectionListView: View {
             // imported collection was never surfaced). `.task` covers a fresh mount, `.onChange` a
             // live one — mirroring the macOS pattern.
             .task { consumePendingCollectionSelection() }
-            .onChange(of: appState.pendingCollectionSelection) { _, id in
-                if id != nil { consumePendingCollectionSelection() }
+            .onChange(of: appState.pendingCollectionSelectionScene) { _, handoff in
+                if handoff != nil { consumePendingCollectionSelection() }
             }
             #else
             .sheet(isPresented: $isCreating) {

@@ -1875,7 +1875,7 @@ Export your research data first if you might want it back.
 
 #### Erase All Data — what exactly goes
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1305–1306 | key: settings.erase.warning.inventory -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1300–1301 | key: settings.erase.warning.inventory -->
 
 This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone.
 
@@ -1922,7 +1922,7 @@ When on, summarization resumes opportunistically while the device is idle, a few
 
 #### Reading mode — footer (iPad and Mac)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1676–1677 | key: settings.display.reading.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1671–1672 | key: settings.display.reading.footer -->
 
 "Remember Last" reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document.
 
@@ -1932,7 +1932,7 @@ When on, summarization resumes opportunistically while the device is idle, a few
 
 #### Reading mode — footer (iPhone)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1673–1674 | key: settings.display.reading.footer.iphone -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1668–1669 | key: settings.display.reading.footer.iphone -->
 
 The Research rail opens as a bottom sheet from the toolbar's Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed.
 

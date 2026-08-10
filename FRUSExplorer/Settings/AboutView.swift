@@ -86,6 +86,13 @@ struct AboutView: View {
     #if os(macOS)
     /// Whether the Legal row's full-notices sheet is up. macOS only — iOS pushes instead.
     @State private var showsFullNotices = false
+    #else
+    /// Whether the Research Guide sheet is up. iOS only — macOS opens a window scene instead.
+    ///
+    /// Scene-local `@State`, not a flag on `AppState` (#752 / L-43): the row that sets it and the
+    /// sheet that reads it are the same view in the same window, and the app-wide flag it replaces
+    /// was bound by *every* open iPad window's Settings tab at once.
+    @State private var showsResearchGuide = false
     #endif
 
     private var appIconImage: Image {
@@ -165,6 +172,16 @@ struct AboutView: View {
         .sheet(item: $inAppBrowserURL) { url in
             InAppBrowserView(url: url)
         }
+        #if os(iOS)
+        // The Research Guide presents from the row that asked for it, in this window (#752 / L-43).
+        // It used to present from `SettingsView` off an `AppState` flag, which every open window's
+        // Settings tab was bound to. `.environment(appState)` is explicit because a sheet starts a
+        // fresh environment.
+        .sheet(isPresented: $showsResearchGuide) {
+            ResearchGuideView()
+                .environment(appState)
+        }
+        #endif
         #if os(macOS)
         // The full notices arrive as a sheet here, not a push — see `legalSection`.
         .sheet(isPresented: $showsFullNotices) {
@@ -275,7 +292,7 @@ the world.
             // Help ▸ FRUS Research Guide menu item makes (#363 #7).
             openWindow(value: ResearchGuideWindowID())
             #else
-            appState.showResearchGuide = true
+            showsResearchGuide = true
             #endif
         } label: {
             HStack {
