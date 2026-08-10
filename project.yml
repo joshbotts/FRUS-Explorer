@@ -395,6 +395,10 @@ targets:
       # (the extractor must reproduce exactly the notes IndexingPipeline stores).
       # Only this one file — it depends on Foundation alone.
       - path: CollectionAuthorityGeneratorCore/DocumentNoteExtractor.swift
+      # Its #784 sibling, for RealTEIFootnoteParityTests: the generator's body-footnote
+      # pass must find the same citations the pipeline's AST walk writes to
+      # external_citations. Foundation only, same as above.
+      - path: CollectionAuthorityGeneratorCore/DocumentFootnoteExtractor.swift
     resources:
       - path: FRUSExplorer/FRUSExplorer-iOS.entitlements
       - path: FRUSExplorer/FRUSExplorer-AppStore.entitlements

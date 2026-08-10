@@ -6,6 +6,9 @@ claim below checked in the tree (not inferred from PR prose).
 
 **Version history:**
 - 1.0 — Session 2026-08-09: initial plan, from the full open-issue verification sweep.
+- 1.2 — Session 2026-08-10: **F-1 executed** in one session. Struck through in §3 with the
+  measurement that refutes its era premise — the fifth plan line this program has found to be a
+  claim rather than a fact.
 - 1.1 — Session 2026-08-09: **Tier 0 executed.** QW-1…QW-5 struck through with their measured
   corrections — four of the five items were wrong in ways that would have produced a build error
   (QW-2), a fix that breaks five working links (QW-3), an edit to the wrong file (QW-1), or a red
@@ -140,6 +143,15 @@ would have conflicted on merge for no reviewing benefit.
 
 Ordered by value density; each is a normal PR-sized session with its spec already on the issue.
 
+- ~~**F-1 · #784 — `external_citations` table + Flows layer**~~ ✅ **DONE (2026-08-10)**, in one
+  session rather than two. All four non-negotiables held. **One premise did not:** the payoff line
+  below — "the only archival-flow signal that reaches 1910–1945" — is false at the scope the same
+  issue mandates. Measured, the 1910s/1920s/1930s yield **0 / 0 / 2** references, because lot files
+  and presidential libraries are a post-1945 filing practice and the pre-war signal lives entirely
+  in the decimal channel #784 defers. Recorded in `Archival-Analytics-Feasibility.md` §7.9a with the
+  measurement. Shipped anyway and worth shipping: 19,800 references, 19,011 joined, 995 units,
+  3,067 pairs, 284 volumes — the one thing Flows could not previously show. The `Ibid.` machinery
+  was also re-sized: ~9% of the harvest, and its real job is *refusing* to inherit.
 - **F-1 · #784 — `external_citations` table + Flows layer** (M, ~2 sessions). Now unblocked
   (#765 closed). The non-negotiables are contractual: anchor-first grammar in its own entry point
   (never route footnote prose through `decimalClassLocation` — the subject-numeric exclusion list

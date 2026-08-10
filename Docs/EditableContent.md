@@ -1952,7 +1952,7 @@ Adds volumes whose coverage overlaps the years you set. You can also narrow by e
 
 #### Browse — the search index could not be opened
 
-<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 489–491 | key: browser.indexing.pipelineUnavailable -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 493–495 | key: browser.indexing.pipelineUnavailable -->
 
 FRUS Explorer could not open its search index. This volume cannot be indexed or checked until you restart. Relaunch the app. If the message comes back, the index database is damaged and only reinstalling will rebuild it.
 
@@ -2606,13 +2606,13 @@ rather than hidden: this is the case where the number explains the most.*
 
 <!-- END SOURCE: settings.storage.compact.blocked -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 854–855 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 863–864 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
 
 Compact Database
 
 <!-- END SOURCE: settings.storage.compact.action -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 864–865 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 873–874 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
 
 Rewrites the index to give the free space back. Searching is unavailable while it runs — usually a few seconds, longer on a large library. Nothing you have written is affected.
 
@@ -2856,7 +2856,7 @@ The bundled collection authority is unavailable in this build, so the network ca
 
 #### Flows mode is unavailable
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 239–240 | key: archival.flows.unavailable -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 242–243 | key: archival.flows.unavailable -->
 
 The bundled reference-flow index is unavailable in this build, so hand-offs cannot be shown. This is not the same as the series having none.
 
@@ -2866,7 +2866,7 @@ The bundled reference-flow index is unavailable in this build, so hand-offs cann
 
 #### Document counts are unavailable, so only the volume weight is offered
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 618–619 | key: archival.caveats.noUsageIndex -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 621–622 | key: archival.caveats.noUsageIndex -->
 
 Document counts are unavailable in this build — the bundled usage index did not load — so only the volume weight is offered.
 
@@ -2880,7 +2880,7 @@ Document counts are unavailable in this build — the bundled usage index did no
 
 *The opening paragraph of Collections mode.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 277–278 | key: archival.collections.intro -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 280–281 | key: archival.collections.intro -->
 
 Every published FRUS document carries a source note naming the archival file it came from. Grouped across the whole series, those notes show which bodies of records each era's editors actually worked in. They also track how the documentary base of American foreign relations moved from the State Department's filing rooms to the White House.
 
@@ -2890,7 +2890,7 @@ Every published FRUS document carries a source note naming the archival file it 
 
 #### While the archival authority loads
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 271–272 | key: archival.collections.loading -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 274–275 | key: archival.collections.loading -->
 
 Reading the archival authority…
 
@@ -2902,7 +2902,7 @@ Reading the archival authority…
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 467–469 | key: archival.ranking.caption %@ %lld %@ %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 470–472 | key: archival.ranking.caption %@ %lld %@ %lld -->
 
 Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are coloured by who holds the records.
 
@@ -2912,7 +2912,7 @@ Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colou
 
 #### Nothing to rank in this era
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 402–403 | key: archival.ranking.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 405–406 | key: archival.ranking.empty -->
 
 No archival units resolved in this era under the current unit and weight.
 
@@ -2934,7 +2934,7 @@ Collection lifecycles in FRUS sourcing
 
 *The last sentence is load-bearing: this one card ignores the era filter.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 502–503 | key: archival.lifecycle.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 505–506 | key: archival.lifecycle.caption -->
 
 Each collection here is one of those cited by the most volumes. Its bar runs from the earliest to the latest coverage year of those volumes, so it shows when a body of records enters the published record and how long the editors keep returning to it. This card does not change with the era filter.
 
@@ -2944,7 +2944,7 @@ Each collection here is one of those cited by the most volumes. Its bar runs fro
 
 #### The caveat block — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 605–605 | key: archival.caveats.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 608–608 | key: archival.caveats.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 About these figures
 
@@ -2956,7 +2956,7 @@ About these figures
 
 *The longest single string in the app. It is what stops the two weights, the era asymmetry and the name-clustering from being read as defects.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 624–625 | key: archival.caveats.body -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 627–628 | key: archival.caveats.body -->
 
 These figures are parsed from document source notes, not read from an archive's catalog. They say where the editors drew documents from. That is an editorial and archival signal, not a census of the records themselves. The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection can have volumes and no documents. Coverage is uneven by era, and switching the unit is the way through it. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. The class list holds two filing systems, because FRUS cites both: the decimal classes of the pre-1963 central files, and the subject-numeric designators that replaced them. Collections are grouped across volumes by name. When two spellings of one name fail to merge, the same body of records appears twice under nearby names.
 
@@ -2968,7 +2968,7 @@ These figures are parsed from document source notes, not read from an archive's 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 609–611 | key: archival.caveats.umbrella %lld %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 612–614 | key: archival.caveats.umbrella %lld %@ %@ -->
 
 The Central Files umbrella record is hidden here. On its own it accounts for %1$lld %2$@ in the %3$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown.
 
@@ -3134,7 +3134,7 @@ Minimum link strength, as a share of the strongest link
 
 #### What this mode is for
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 109–110 | key: archival.flows.intro -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 140–141 | key: archival.flows.intro -->
 
 When a FRUS editor annotated one published document by pointing to another, the two documents usually came from different archives. Added up across the series, those pointers map the paths the editors walked between bodies of records.
 
@@ -3144,7 +3144,7 @@ When a FRUS editor annotated one published document by pointing to another, the 
 
 #### The unfocused view — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 202–203 | key: archival.flows.top.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 263–264 | key: archival.flows.top.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 The heaviest hand-offs in the series
 
@@ -3154,7 +3154,7 @@ The heaviest hand-offs in the series
 
 #### The unfocused view — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 229–230 | key: archival.flows.top.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 296–297 | key: archival.flows.top.caption -->
 
 Choose a focus collection above to see everywhere its documents point.
 
@@ -3164,7 +3164,7 @@ Choose a focus collection above to see everywhere its documents point.
 
 #### Focused, outgoing — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 282–283 | key: archival.flows.title.outgoing -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 356–357 | key: archival.flows.title.outgoing -->
 
 Where these documents point
 
@@ -3174,7 +3174,7 @@ Where these documents point
 
 #### Focused, incoming — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 284–285 | key: archival.flows.title.incoming -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 358–359 | key: archival.flows.title.incoming -->
 
 What points at these documents
 
@@ -3186,7 +3186,7 @@ What points at these documents
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 290–291 | key: archival.flows.caption.outgoing %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 372–373 | key: archival.flows.caption.outgoing %lld %lld -->
 
 %1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.
 
@@ -3198,7 +3198,7 @@ What points at these documents
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 292–293 | key: archival.flows.caption.incoming %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 374–375 | key: archival.flows.caption.incoming %lld %lld -->
 
 %1$lld references run from other collections to this one. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.
 
@@ -3210,7 +3210,7 @@ What points at these documents
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 460–461 | key: archival.flows.card.detail.outgoing %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 542–543 | key: archival.flows.card.detail.outgoing %lld %lld -->
 
 %1$lld references, %2$lld%% of everything this collection hands off.
 
@@ -3222,7 +3222,7 @@ What points at these documents
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 462–463 | key: archival.flows.card.detail.incoming %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 544–545 | key: archival.flows.card.detail.incoming %lld %lld -->
 
 %1$lld references, %2$lld%% of everything handed off to this collection.
 
@@ -3232,7 +3232,7 @@ What points at these documents
 
 #### No hand-offs — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 491–491 | key: archival.flows.none.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 573–573 | key: archival.flows.none.title -->
 
 No Hand-Offs Recorded
 
@@ -3244,7 +3244,7 @@ No Hand-Offs Recorded
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 493–495 | key: archival.flows.none.detail %@ %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 575–577 | key: archival.flows.none.detail %@ %lld %lld -->
 
 No cross-reference runs between %1$@ and another collection in this direction. The cross-reference style these come from postdates 1945. Only %2$lld of the %3$lld volumes in the series carry any of these references.
 
@@ -3256,7 +3256,7 @@ No cross-reference runs between %1$@ and another collection in this direction. T
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 508–510 | key: archival.flows.caveats.footnotes %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 646–648 | key: archival.flows.caveats.footnotes %@ -->
 
 %@ of these references are footnotes. A ribbon therefore describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves.
 
@@ -3268,7 +3268,7 @@ No cross-reference runs between %1$@ and another collection in this direction. T
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 515–517 | key: archival.flows.caveats.body.v2 %lld %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 653–655 | key: archival.flows.caveats.body.v2 %lld %lld %lld %lld -->
 
 Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld volumes in the series contribute a single reference. The cross-reference style these come from postdates 1945. The figures cover the whole series whatever you have downloaded, but they carry no dates. The stored data is a pair of archival units and a count, with no volume or year attached. So you cannot narrow this mode to a period. Central-file classes are left out on purpose. Across the whole series they carry %3$lld references over %4$lld pairs, which is under two per pair. That is too thin to rank, and there are no labels to rank it with.
 
@@ -3278,11 +3278,181 @@ Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld v
 
 #### The caveat block — why you cannot browse the citations
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 523–524 | key: archival.flows.caveats.browse -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 661–662 | key: archival.flows.caveats.browse -->
 
 You cannot browse the individual citations here. The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.
 
 <!-- END SOURCE: archival.flows.caveats.browse -->
+
+---
+
+#### The References picker — first option
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsData.swift | lines: 59–60 | key: archival.flows.layer.printed -->
+
+Between printed documents
+
+<!-- END SOURCE: archival.flows.layer.printed -->
+
+---
+
+#### The References picker — second option
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsData.swift | lines: 62–63 | key: archival.flows.layer.unprinted -->
+
+To unprinted material
+
+<!-- END SOURCE: archival.flows.layer.unprinted -->
+
+---
+
+#### The References picker — its label
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 158–158 | key: archival.flows.layer -->
+
+References
+
+<!-- END SOURCE: archival.flows.layer -->
+
+---
+
+#### Unprinted material — what this layer is for
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 138–139 | key: archival.flows.intro.unprinted -->
+
+FRUS editors often name a document they did not print, and say where it is filed. Added up across the series, those pointers show where the editors sent readers for the record they left out.
+
+<!-- END SOURCE: archival.flows.intro.unprinted -->
+
+---
+
+#### Unprinted material — unfocused title
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 261–262 | key: archival.flows.top.title.unprinted -->
+
+The heaviest pointers to unprinted material
+
+<!-- END SOURCE: archival.flows.top.title.unprinted -->
+
+---
+
+#### Unprinted material — unfocused caption
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 294–295 | key: archival.flows.top.caption.unprinted -->
+
+Choose a focus collection above to see everywhere its footnotes send you.
+
+<!-- END SOURCE: archival.flows.top.caption.unprinted -->
+
+---
+
+#### Unprinted material — focused, outgoing title
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 350–351 | key: archival.flows.title.unprinted.outgoing -->
+
+Where the footnotes send you
+
+<!-- END SOURCE: archival.flows.title.unprinted.outgoing -->
+
+---
+
+#### Unprinted material — focused, incoming title
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 352–353 | key: archival.flows.title.unprinted.incoming -->
+
+Which collections' footnotes send you here
+
+<!-- END SOURCE: archival.flows.title.unprinted.incoming -->
+
+---
+
+#### Unprinted material — focused, outgoing caption
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 365–366 | key: archival.flows.caption.unprinted.outgoing %lld %lld -->
+
+%1$lld footnotes on documents from this collection name unprinted material in other collections. A further %2$lld name unprinted material in this collection itself, and are left out — the diagram shows where the editors sent you *away* to.
+
+<!-- END SOURCE: archival.flows.caption.unprinted.outgoing %lld %lld -->
+
+---
+
+#### Unprinted material — focused, incoming caption
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 367–368 | key: archival.flows.caption.unprinted.incoming %lld %lld -->
+
+%1$lld footnotes on documents from other collections name unprinted material in this one. A further %2$lld come from documents already in this collection, and are left out.
+
+<!-- END SOURCE: archival.flows.caption.unprinted.incoming %lld %lld -->
+
+---
+
+#### Unprinted material — the scope caveat
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 608–610 | key: archival.flows.caveats.unprinted.scope %lld %lld %lld %lld -->
+
+This layer reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so the earlier volumes are almost absent here even though their footnotes are full of archival citations. Those earlier citations give a file number in the central files, which this measure does not yet read. %1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series.
+
+<!-- END SOURCE: archival.flows.caveats.unprinted.scope %lld %lld %lld %lld -->
+
+---
+
+#### Unprinted material — the coverage-span caveat
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 617–619 | key: archival.flows.caveats.unprinted.era %lld %lld -->
+
+The volumes contributing here cover %1$lld to %2$lld.
+
+<!-- END SOURCE: archival.flows.caveats.unprinted.era %lld %lld -->
+
+---
+
+#### Unprinted material — the “Ibid.” caveat
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 625–627 | key: archival.flows.caveats.unprinted.ibid %@ -->
+
+%@ of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation.
+
+<!-- END SOURCE: archival.flows.caveats.unprinted.ibid %@ -->
+
+---
+
+#### Unprinted material — what a ribbon claims
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 632–633 | key: archival.flows.caveats.unprinted.claim -->
+
+A ribbon says the editors, working on material from one collection, told the reader that something they did not print is in another. It does not say the two archives refer to each other, and it is not a count of documents held anywhere.
+
+<!-- END SOURCE: archival.flows.caveats.unprinted.claim -->
+
+---
+
+#### Unprinted material — export axis, outgoing
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 240–241 | key: archival.export.axis.flows.unprinted.outgoing -->
+
+Unprinted material this collection's footnotes name
+
+<!-- END SOURCE: archival.export.axis.flows.unprinted.outgoing -->
+
+---
+
+#### Unprinted material — export axis, incoming
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 242–243 | key: archival.export.axis.flows.unprinted.incoming -->
+
+Footnotes naming unprinted material in this collection
+
+<!-- END SOURCE: archival.export.axis.flows.unprinted.incoming -->
 
 ---
 
@@ -3292,7 +3462,7 @@ You cannot browse the individual citations here. The app can list the references
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 654–656 | key: archival.library.intro %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 657–659 | key: archival.library.intro %lld %lld -->
 
 The archival profile of **your** library — computed from the %1$lld source notes across the %2$lld indexed volumes that carry them, not from the bundled corpus-wide aggregates.
 
@@ -3302,7 +3472,7 @@ The archival profile of **your** library — computed from the %1$lld source not
 
 #### While your source notes are counted
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 648–649 | key: archival.library.loading -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 651–652 | key: archival.library.loading -->
 
 Counting your indexed source notes…
 
@@ -3312,7 +3482,7 @@ Counting your indexed source notes…
 
 #### Composition card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 665–666 | key: archival.library.composition.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 668–669 | key: archival.library.composition.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Where your documents come from
 
@@ -3322,7 +3492,7 @@ Where your documents come from
 
 #### Composition card — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 674–675 | key: archival.library.composition.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 677–678 | key: archival.library.composition.caption -->
 
 Every source note in your index, divided among the kinds of archival collection they cite.
 
@@ -3332,7 +3502,7 @@ Every source note in your index, divided among the kinds of archival collection 
 
 #### Citation-forms card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 710–711 | key: archival.library.bands.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 713–714 | key: archival.library.bands.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Citation forms across your volumes
 
@@ -3342,7 +3512,7 @@ Citation forms across your volumes
 
 #### Citation-forms card — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 719–720 | key: archival.library.bands.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 722–723 | key: archival.library.bands.caption -->
 
 The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department's decimal file, through the postwar bureau lot files, to the presidential libraries.
 
@@ -3352,7 +3522,7 @@ The same composition, split by the era your volumes cover. Read left to right it
 
 #### Your collections card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 796–797 | key: archival.library.collections.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 799–800 | key: archival.library.collections.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Your most-cited collections
 
@@ -3364,7 +3534,7 @@ Your most-cited collections
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 805–807 | key: archival.library.collections.caption %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 808–810 | key: archival.library.collections.caption %lld %lld -->
 
 Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognise. Neither group is listed here.
 
@@ -3374,7 +3544,7 @@ Matched from your own source notes against the archival authority list in the ap
 
 #### Your collections card — nothing resolved
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 817–818 | key: archival.library.collections.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 820–821 | key: archival.library.collections.empty -->
 
 None of your volumes' source notes name a collection the bundled authority recognises.
 
@@ -3384,7 +3554,7 @@ None of your volumes' source notes name a collection the bundled authority recog
 
 #### Your collections card — row hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 850–851 | key: archival.library.collections.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 853–854 | key: archival.library.collections.hint -->
 
 Shows the documents in your index drawn from this collection
 
@@ -3396,7 +3566,7 @@ Shows the documents in your index drawn from this collection
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 884–886 | key: archival.library.footer %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 887–889 | key: archival.library.footer %lld %lld -->
 
 Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series. Index more and these charts change with you. The Collections mode is different: it does not depend on what you have downloaded.
 
@@ -3408,7 +3578,7 @@ Counted from the %1$lld volumes you have indexed. %2$lld more exist in the serie
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 891–893 | key: archival.library.footer.detail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 894–896 | key: archival.library.footer.detail %lld %lld -->
 
 A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognise.
 
@@ -3418,7 +3588,7 @@ A source note is not a document. Only documents whose editors recorded where the
 
 #### Nothing indexed yet — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 905–905 | key: archival.library.empty.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 908–908 | key: archival.library.empty.title -->
 
 No Source Notes Yet
 
@@ -3428,7 +3598,7 @@ No Source Notes Yet
 
 #### Nothing indexed yet — detail
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 907–908 | key: archival.library.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 910–911 | key: archival.library.empty.detail -->
 
 Download and index a volume and this page will show where its documents came from. The Collections mode works without any downloads.
 
@@ -3562,7 +3732,7 @@ Method: these figures come from the source note on each published FRUS document.
 
 #### Why the two weights disagree
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 223–224 | key: archival.export.caveat.weight -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 251–252 | key: archival.export.caveat.weight -->
 
 The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Switching the weight changes which collections appear in the ranking, not just their order.
 
@@ -3572,7 +3742,7 @@ The two weights count different things. A document counts only when its own sour
 
 #### Why an era can look empty
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 229–230 | key: archival.export.caveat.coverage -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 257–258 | key: archival.export.caveat.coverage -->
 
 Coverage is uneven by era. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. A thin ranking usually means you have the wrong unit selected, not a thin era.
 
@@ -3642,7 +3812,7 @@ Scope: this table lists %1$lld of the %2$lld units above the current threshold. 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 183–185 | key: archival.export.caveat.flows.footnotes %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 210–212 | key: archival.export.caveat.flows.footnotes %@ -->
 
 Read this first: %@ of these references are footnotes. A row describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves.
 
@@ -3654,7 +3824,7 @@ Read this first: %@ of these references are footnotes. A row describes how the e
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 187–189 | key: archival.export.caveat.flows.coverage %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 214–216 | key: archival.export.caveat.flows.coverage %lld %lld -->
 
 Coverage: only %1$lld of the %2$lld volumes in the series contribute any of these references. The cross-reference style they come from postdates 1945. The figures carry no dates: the stored data is a pair of archival units and a count. You cannot narrow this view to a period.
 
@@ -3666,7 +3836,7 @@ Coverage: only %1$lld of the %2$lld volumes in the series contribute any of thes
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 191–193 | key: archival.export.caveat.flows.classes %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 218–220 | key: archival.export.caveat.flows.classes %lld %lld -->
 
 Excluded: central-file classes. Between them the whole series carries %1$lld references over %2$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with.
 
@@ -3678,11 +3848,61 @@ Excluded: central-file classes. Between them the whole series carries %1$lld ref
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 197–199 | key: archival.export.caveat.flows.sameUnit %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 225–227 | key: archival.export.caveat.flows.sameUnit %lld -->
 
 Excluded: %lld references from this collection to itself. A hand-off to yourself is not a hand-off, but the figure is stated so the exclusion is visible.
 
 <!-- END SOURCE: archival.export.caveat.flows.sameUnit %lld -->
+
+---
+
+#### Flows, unprinted material — what a row claims
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 189–191 | key: archival.export.caveat.flows.unprinted.claim %lld %lld -->
+
+Read this first: every row is an editorial footnote naming archival material FRUS did not print. A row says the editors, working on material from one collection, told the reader that something unprinted is in another. It is not a relationship between the archives and not a count of documents held anywhere. %1$lld citations were found; %2$lld matched a known collection.
+
+<!-- END SOURCE: archival.export.caveat.flows.unprinted.claim %lld %lld -->
+
+---
+
+#### Flows, unprinted material — scope
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 193–195 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
+
+Scope: State Department lot files and presidential-library collections only. Both are post-1945 ways of filing, so pre-war volumes are nearly absent even though their footnotes cite archives heavily — those citations give a central-file number, which this measure does not yet read. %1$lld of the %2$lld volumes in the series contribute a row.
+
+<!-- END SOURCE: archival.export.caveat.flows.unprinted.scope %lld %lld -->
+
+---
+
+#### Flows, unprinted material — method
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 197–199 | key: archival.export.caveat.flows.unprinted.ibid %@ -->
+
+Method: %@ of these citations come from an “Ibid.” — the archive is named once and referred back to. The app follows that back the way a reader would; it is a reading, not a quotation.
+
+<!-- END SOURCE: archival.export.caveat.flows.unprinted.ibid %@ -->
+
+---
+
+#### Flows, unprinted material — coverage span
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 203–205 | key: archival.export.caveat.flows.unprinted.era %lld %lld -->
+
+Coverage span: the contributing volumes cover %1$lld to %2$lld.
+
+<!-- END SOURCE: archival.export.caveat.flows.unprinted.era %lld %lld -->
+
+---
 
 ---
 
@@ -3904,7 +4124,7 @@ The source note format was not recognized. The raw text is shown to the left. Au
 
 #### The macOS window with no document selected
 
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 1963–1964 | key: source.explorer.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 1967–1968 | key: source.explorer.window.empty.detail -->
 
 Open a document with a source note, then tap Sources in the toolbar. Or switch to Collections to browse the archival collections FRUS cites.
 

@@ -897,6 +897,10 @@ Tap a node to fill the panel below the graph with what the link is made of. That
 
 Read one thing before reading a ribbon: **about 95% of these references are footnotes**. A ribbon says *the editors, annotating material from this collection, sent the reader to material from that one*. It does not say the two archives cite each other. The caveat block states the exact share, computed from the data rather than written into the app.
 
+A **References** picker sits above the fan with two settings, and they read two different bodies of evidence. **Between printed documents** is the original: an editor annotated one published document by pointing at another. **To unprinted material** is the other half of the editors' work — a footnote naming a document FRUS did not print and saying where it is filed. Switching clears the focus, because a collection that appears in one need not appear in the other.
+
+The second setting has a limit worth knowing before you draw conclusions from it. It reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so volumes covering the earlier decades are almost absent even though their footnotes cite archives constantly — those older citations give a central-file number, which this measure does not yet read. The caveat block states the coverage span the data actually has, and the share of citations that came from an "Ibid." rather than a spelled-out archive.
+
 - **Outgoing / Incoming** flips the fan. The two are not mirror images — the heaviest pair in the series runs 449 references one way and 317 the other.
 - **Nothing is silently dropped.** The busiest collection points at 238 others. The ten heaviest are drawn as blocks; the rest fold into a single dashed block that states how many collections and how many references it holds, and taps open to the full list.
 - Selecting a ribbon opens a card with the reference count, its share of the collection's hand-offs, and **Show Archival Neighbors** for the far end.

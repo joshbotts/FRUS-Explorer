@@ -315,3 +315,188 @@ struct ArchivalFlowsDataTests {
         #expect(checked == 40, "swept \(checked) combinations, not 40")
     }
 }
+
+// MARK: - ArchivalFlowsUnprintedLayerTests
+
+/// The Flows mode's second layer (#784): footnote citations of material FRUS did not print.
+///
+/// The tests that matter are the ones that keep the two layers apart. They are the same claim
+/// shape over different evidence, and the failure mode is not a crash — it is a diagram that adds
+/// them, or copy from one describing the other.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #784
+@Suite("Archival analytics — the unprinted layer (#784)")
+struct ArchivalFlowsUnprintedLayerTests {
+
+    // MARK: - Fixtures
+
+    private func externalIndex(targetIds: [String], sourceIds: [String],
+                               pairs: [(Int, Int, Int)],
+                               targets: [(key: Int, volumes: [Int], counts: [Int])],
+                               volumes: [String] = ["frus1955-57v19", "frus1958-60v03"],
+                               referencesFound: Int = 120, referencesJoined: Int = 100,
+                               referencesInherited: Int = 12) throws -> ExternalCitationIndex {
+        let payload: [String: Any] = [
+            "schemaVersion": 1, "generated": "2026-08-10",
+            "volumes": volumes, "targetIds": targetIds, "sourceIds": sourceIds,
+            "targets": targets.map { ["k": $0.key, "v": $0.volumes, "n": $0.counts] },
+            "pairs": pairs.map { ["f": $0.0, "t": $0.1, "n": $0.2] },
+            "coverage": [
+                "volumesScanned": 552, "volumesWithReferences": volumes.count,
+                "documentsScanned": 314_479, "footnotesScanned": 470_827,
+                "footnotesExcluded": 299_643, "headNestedExcluded": 31_301,
+                "headNestedExcludedWithAnchor": 533,
+                "referencesFound": referencesFound, "referencesInherited": referencesInherited,
+                "absenceClaimsRefused": 140, "lotReferences": 60, "libraryReferences": 60,
+                "referencesJoined": referencesJoined, "referencesWithBothEnds": 90,
+                "sameUnitReferences": 30, "authorityCollectionCount": 4423,
+            ],
+        ]
+        return try JSONDecoder().decode(
+            ExternalCitationIndex.self,
+            from: try JSONSerialization.data(withJSONObject: payload))
+    }
+
+    private func authority(_ records: [(id: String, name: String, repository: String?)]) throws
+        -> CollectionAuthorityIndex {
+        let payload: [String: Any] = [
+            "schemaVersion": 1, "generated": "2026-08-10",
+            "collections": records.map { record -> [String: Any] in
+                var row: [String: Any] = ["id": record.id, "name": record.name]
+                if let repository = record.repository { row["repository"] = repository }
+                return row
+            },
+        ]
+        return try JSONDecoder().decode(
+            CollectionAuthorityIndex.self,
+            from: try JSONSerialization.data(withJSONObject: payload))
+    }
+
+    private func entries(_ spans: [(String, String, String)]) -> [String: VolumeManifestEntry] {
+        Dictionary(uniqueKeysWithValues: spans.map { id, earliest, latest in
+            (id, VolumeManifestEntry(
+                volumeId: id, filename: "\(id).xml", subseries: "s", title: id,
+                dateRange: DateRange(earliest: earliest, latest: latest),
+                publicationDate: nil, status: .published, editors: [], generalEditor: nil,
+                documentCount: 0, sizeBytes: 0, tags: []))
+        })
+    }
+
+    // MARK: - The derivation
+
+    @Test("A focused collection's outgoing citations become endpoint blocks")
+    func buildsFocusedEndpoints() throws {
+        let index = try externalIndex(
+            targetIds: ["lot:63D351", "txt:johnson library|national security file"],
+            sourceIds: ["lot:60D627"],
+            pairs: [(0, 0, 40), (0, 1, 15)],
+            targets: [(0, [0, 1], [30, 10]), (1, [0], [15])])
+        let auth = try authority([
+            ("lot:60D627", "Conference Files", "Department of State"),
+            ("lot:63D351", "S/S–NSC Files", "Department of State"),
+            ("txt:johnson library|national security file", "National Security File", "Johnson Library"),
+        ])
+        let focus = try #require(auth.record(id: "lot:60D627"))
+
+        let data = ArchivalFlowsData.focusedExternal(
+            on: focus, direction: .outgoing, index: index, authority: auth,
+            entriesById: entries([("frus1955-57v19", "1955-01-01", "1957-12-31"),
+                                  ("frus1958-60v03", "1958-01-01", "1960-12-31")]))
+        #expect(data.layer == .toUnprinted)
+        #expect(data.endpoints.map(\.label) == ["S/S–NSC Files", "National Security File"])
+        #expect(data.totalReferences == 55)
+    }
+
+    @Test("The layer carries its own disclosures and none of the printed layer's")
+    func carriesItsOwnDisclosures() throws {
+        let index = try externalIndex(
+            targetIds: ["lot:63D351"], sourceIds: ["lot:60D627"],
+            pairs: [(0, 0, 40)], targets: [(0, [0], [40])],
+            referencesFound: 19_800, referencesJoined: 19_011, referencesInherited: 1_780)
+        let auth = try authority([
+            ("lot:60D627", "Conference Files", "Department of State"),
+            ("lot:63D351", "S/S–NSC Files", "Department of State"),
+        ])
+        let data = ArchivalFlowsData.corpusWideExternal(
+            index: index, authority: auth,
+            entriesById: entries([("frus1955-57v19", "1955-01-01", "1957-12-31"),
+                                  ("frus1958-60v03", "1958-01-01", "1960-12-31")]))
+        let facts = try #require(data.externalFacts)
+        #expect(facts.referencesFound == 19_800)
+        #expect(facts.referencesJoined == 19_011)
+        #expect(abs(facts.inheritedShare - 1_780.0 / 19_800.0) < 0.0001)
+        #expect(data.classBetweenReferences == 0, """
+            The printed layer's class-exclusion caveat describes `provenance-flow-index.json`. \
+            Carrying a non-zero here would put a sentence about central-file classes under a \
+            table that has nothing to do with them.
+            """)
+        #expect(data.footnoteShare == 0, """
+            Every citation on this layer is a footnote, so "95.3% are footnotes" is not the \
+            disclosure it owes; the view branches on `layer`, not on this number.
+            """)
+    }
+
+    @Test("The era span is read off the manifest, not predicted")
+    func statesTheEraItActuallyCovers() throws {
+        let index = try externalIndex(
+            targetIds: ["lot:63D351"], sourceIds: ["lot:60D627"],
+            pairs: [(0, 0, 40)], targets: [(0, [0, 1], [20, 20])])
+        let auth = try authority([
+            ("lot:60D627", "Conference Files", "Department of State"),
+            ("lot:63D351", "S/S–NSC Files", "Department of State"),
+        ])
+        let data = ArchivalFlowsData.corpusWideExternal(
+            index: index, authority: auth,
+            entriesById: entries([("frus1955-57v19", "1955-01-01", "1957-12-31"),
+                                  ("frus1958-60v03", "1958-01-01", "1960-12-31")]))
+        #expect(data.externalFacts?.eraSpan == 1955...1960, """
+            #784's case rests on this harvest reaching 1910–1945. At the scope the same issue \
+            mandates it does not, so the surface states the span the data has. A hard-coded era \
+            sentence is exactly what this replaces.
+            """)
+    }
+
+    @Test("A self-referencing collection is counted and excluded, never silently dropped")
+    func excludesSameUnitEdgesAndSaysSo() throws {
+        let index = try externalIndex(
+            targetIds: ["lot:60D627", "lot:63D351"], sourceIds: ["lot:60D627"],
+            pairs: [(0, 0, 25), (0, 1, 40)],
+            targets: [(0, [0], [25]), (1, [0], [40])])
+        let auth = try authority([
+            ("lot:60D627", "Conference Files", "Department of State"),
+            ("lot:63D351", "S/S–NSC Files", "Department of State"),
+        ])
+        let focus = try #require(auth.record(id: "lot:60D627"))
+        let data = ArchivalFlowsData.focusedExternal(
+            on: focus, direction: .outgoing, index: index, authority: auth,
+            entriesById: entries([("frus1955-57v19", "1955-01-01", "1957-12-31")]))
+        #expect(data.endpoints.map(\.label) == ["S/S–NSC Files"])
+        #expect(data.sameUnitReferences == 25,
+                "the diagram excludes it; the caption states it")
+    }
+
+    @Test("The focus picker offers only collections this layer actually has")
+    func focusCandidatesComeFromThisLayer() throws {
+        // `lot:77D777` appears in exactly one pair, and it points at itself. The mutation sweep is
+        // why the fixture carries it: without a self-only collection, dropping the self-edge guard
+        // changes nothing and the filter is untested — which is what M10 showed.
+        let index = try externalIndex(
+            targetIds: ["lot:63D351", "lot:77D777"],
+            sourceIds: ["lot:60D627", "lot:77D777"],
+            pairs: [(0, 0, 40), (1, 1, 10)],
+            targets: [(0, [0], [40]), (1, [0], [10])])
+        let auth = try authority([
+            ("lot:60D627", "Conference Files", "Department of State"),
+            ("lot:63D351", "S/S–NSC Files", "Department of State"),
+            ("lot:77D777", "A collection that only cites itself", "Department of State"),
+            ("lot:99D999", "A collection no footnote cites", "Department of State"),
+        ])
+        let candidates = ArchivalFlowsData.externalFocusCandidates(index: index, authority: auth)
+        #expect(candidates.map(\.record.id).sorted() == ["lot:60D627", "lot:63D351"], """
+            Two ways to land a reader on an empty diagram with no explanation: a collection the \
+            printed layer knows but no footnote cites, and one whose only citations point back \
+            into itself — which the diagram excludes by design.
+            """)
+    }
+}

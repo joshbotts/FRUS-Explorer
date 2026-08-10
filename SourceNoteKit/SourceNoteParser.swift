@@ -974,7 +974,7 @@ public struct SourceNoteParser {
         let afterLot = String(scope[lotRange.upperBound...]).trimmingCharacters(in: .whitespaces)
         let (lotNumber, box) = splitLotAndBox(afterLot)
         guard !lotNumber.isEmpty else { return nil }
-        let rg = lotFileRecordGroup(lotNumber)
+        let rg = Self.lotFileRecordGroup(lotNumber)
         return .lotFile(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: box)
     }
 
@@ -1155,7 +1155,14 @@ public struct SourceNoteParser {
     /// Handles:
     /// - D-designator (RG 59): `63D135`, `68 D 277`, `72D316`
     /// - F-designator (RG 84): `55F44`, `56 F 28`, `53 F 11`, `56F 158`
-    private static let lotFileRegex: NSRegularExpression? = try? NSRegularExpression(
+    ///
+    /// **Internal, not private, since #784.** `FootnoteCitationGrammar` finds *every* lot
+    /// designator in a footnote clause rather than the first in a source note, so it needs the
+    /// expression rather than a `firstMatch` helper over it. Sharing the compiled regex is the
+    /// point: a second copy of this pattern would let the footnote harvest and
+    /// `document_sources.lot_file` disagree about what a lot number looks like, and nothing
+    /// downstream would report the disagreement.
+    static let lotFileRegex: NSRegularExpression? = try? NSRegularExpression(
         pattern: #"\bLot\s+(\d{2,3}\s*[A-Za-z]\s*\d+)\b"#,
         options: .caseInsensitive
     )
@@ -1215,7 +1222,10 @@ public struct SourceNoteParser {
     /// - D-designator → RG 59 (State Dept. central files lot series)
     /// - F-designator → RG 84 (State Dept. diplomatic post records)
     /// - Other → RG 59 (conservative default)
-    private func lotFileRecordGroup(_ lotNumber: String) -> String {
+    /// Made `static` (and internal) for #784: `FootnoteCitationGrammar` needs the same
+    /// designator→record-group rule without owning a `SourceNoteParser` instance, and the rule
+    /// reads nothing off `self`. The three in-parser call sites are unchanged in behaviour.
+    static func lotFileRecordGroup(_ lotNumber: String) -> String {
         // Digits (or the string start, for letter-first designators) + optional
         // dash/space separators + F + optional separators + digits. En/em-dash
         // separators ("57–F103") are as common as spaces in the stored corpus.
@@ -1544,7 +1554,7 @@ public struct SourceNoteParser {
         guard !lotNumber.isEmpty else { return nil }
         // Determine RG from lot file letter designator:
         // F-designator → RG 84 (post records); D-designator and others → RG 59
-        let rg = lotFileRecordGroup(lotNumber)
+        let rg = Self.lotFileRecordGroup(lotNumber)
         return .lotFile(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: box)
     }
 
@@ -1954,7 +1964,7 @@ public struct SourceNoteParser {
         guard let (lotNumber, fullRange) = Self.firstLotReference(in: scope) else { return nil }
         let remainder = String(scope[fullRange.upperBound...])
         let box = extractBoxOrFileString(from: remainder)
-        return .lotFile(recordGroup: lotFileRecordGroup(lotNumber),
+        return .lotFile(recordGroup: Self.lotFileRecordGroup(lotNumber),
                         lotNumber: lotNumber, fileIdentifier: box)
     }
 

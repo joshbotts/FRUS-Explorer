@@ -25,12 +25,26 @@ import SwiftUI
 /// count and reference total, and expands to a full list. Nothing is dropped without being
 /// counted somewhere the reader can see.
 ///
+/// ## Two layers, never added together (#784)
+/// The `References` picker switches the diagram between two bodies of evidence: references
+/// between **printed** documents (the original, `provenance-flow-index.json`) and footnote
+/// citations of material FRUS **did not print** (`external-citation-index.json`). Same claim
+/// shape, different evidence, different disclosures — `caveats(_:)` branches, and so does the
+/// export's methods statement, because the printed layer's "95.3% are footnotes" and
+/// class-exclusion sentences describe a measurement the unprinted table is not.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — Session 2026-08-10 (#784): the unprinted layer, its picker, and its own caveats
 struct ArchivalFlowsView: View {
 
     /// The bundled flow index.
     let index: ProvenanceFlowIndex
+    /// The bundled footnote-citation index (#784), or `nil` when the resource is unavailable —
+    /// in which case the layer picker is withheld rather than offering an empty diagram.
+    let externalIndex: ExternalCitationIndex?
+    /// Manifest entries by volume id, so the unprinted layer can state the era it actually covers.
+    let entriesById: [String: VolumeManifestEntry]
     /// The bundled authority, for names and repositories.
     let authority: CollectionAuthorityIndex
     /// Opens Archival Neighbors for a collection.
@@ -44,6 +58,8 @@ struct ArchivalFlowsView: View {
     @State private var focus: AuthorityCollectionRecord?
     /// Which way the focused hand-off runs.
     @State private var direction: ArchivalFlowDirection = .outgoing
+    /// Which body of references is drawn (#784).
+    @State private var layer: ArchivalFlowLayer = .betweenPrinted
     /// The selected endpoint's id, which pins the flow card.
     @State private var selectedEndpointId: String?
     /// Whether the remainder block has been expanded into a list.
@@ -62,13 +78,25 @@ struct ArchivalFlowsView: View {
         let data = cached ?? ArchivalFlowsData.corpusWide(index: index, authority: authority)
         content(data)
             .sheet(isPresented: $isChoosingFocus) { focusPicker }
-            .task(id: "\(focus?.id ?? "")|\(direction.rawValue)") { await rebuild() }
+            .task(id: "\(focus?.id ?? "")|\(direction.rawValue)|\(layer.rawValue)") { await rebuild() }
     }
 
     /// Rebuilds off the main actor, for the same reason the Network does.
     private func rebuild() async {
-        let inputs = (index: index, authority: authority, focus: focus, direction: direction)
+        let inputs = (index: index, external: externalIndex, entries: entriesById,
+                      authority: authority, focus: focus, direction: direction, layer: layer)
         let built = await Task.detached(priority: .userInitiated) {
+            if inputs.layer == .toUnprinted, let external = inputs.external {
+                guard let focus = inputs.focus else {
+                    return ArchivalFlowsData.corpusWideExternal(index: external,
+                                                                authority: inputs.authority,
+                                                                entriesById: inputs.entries)
+                }
+                return ArchivalFlowsData.focusedExternal(on: focus, direction: inputs.direction,
+                                                         index: external,
+                                                         authority: inputs.authority,
+                                                         entriesById: inputs.entries)
+            }
             guard let focus = inputs.focus else {
                 return ArchivalFlowsData.corpusWide(index: inputs.index,
                                                     authority: inputs.authority)
@@ -106,8 +134,11 @@ struct ArchivalFlowsView: View {
     // MARK: - Intro and filters
 
     private func intro(_ data: ArchivalFlowsData) -> some View {
-        Text(String(localized: "archival.flows.intro",
-                    defaultValue: "When a FRUS editor annotated one published document by pointing to another, the two documents usually came from different archives. Added up across the series, those pointers map the paths the editors walked between bodies of records."))
+        Text(data.layer == .toUnprinted
+             ? String(localized: "archival.flows.intro.unprinted",
+                      defaultValue: "FRUS editors often name a document they did not print, and say where it is filed. Added up across the series, those pointers show where the editors sent readers for the record they left out.")
+             : String(localized: "archival.flows.intro",
+                      defaultValue: "When a FRUS editor annotated one published document by pointing to another, the two documents usually came from different archives. Added up across the series, those pointers map the paths the editors walked between bodies of records."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -123,6 +154,25 @@ struct ArchivalFlowsView: View {
 
     @ViewBuilder
     private var filterChips: some View {
+        if externalIndex != nil {
+            Picker(String(localized: "archival.flows.layer", defaultValue: "References"),
+                   selection: $layer) {
+                ForEach(ArchivalFlowLayer.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 340)
+            .onChange(of: layer) { _, _ in
+                // The two layers have different vocabularies: a collection the printed layer knows
+                // may appear in no footnote citation at all. Clearing the focus is what stops the
+                // switch landing on an empty diagram with no explanation.
+                focus = nil
+                selectedEndpointId = nil
+                isRemainderExpanded = false
+            }
+        }
+
         Button {
             isChoosingFocus = true
         } label: {
@@ -185,11 +235,19 @@ struct ArchivalFlowsView: View {
             title = String(format: String(localized: "archival.export.title.flows %@ %@",
                                           defaultValue: "%1$@ — %2$@"),
                            focus.name, direction.title)
-            axis = direction == .outgoing
-                ? String(localized: "archival.export.axis.flows.outgoing",
-                         defaultValue: "References out of this collection")
-                : String(localized: "archival.export.axis.flows.incoming",
-                         defaultValue: "References into this collection")
+            if data.layer == .toUnprinted {
+                axis = direction == .outgoing
+                    ? String(localized: "archival.export.axis.flows.unprinted.outgoing",
+                             defaultValue: "Unprinted material this collection's footnotes name")
+                    : String(localized: "archival.export.axis.flows.unprinted.incoming",
+                             defaultValue: "Footnotes naming unprinted material in this collection")
+            } else {
+                axis = direction == .outgoing
+                    ? String(localized: "archival.export.axis.flows.outgoing",
+                             defaultValue: "References out of this collection")
+                    : String(localized: "archival.export.axis.flows.incoming",
+                             defaultValue: "References into this collection")
+            }
             columns = [
                 String(localized: "archival.table.unit", defaultValue: "Archival unit"),
                 String(localized: "archival.table.custodian", defaultValue: "Custodian"),
@@ -199,8 +257,11 @@ struct ArchivalFlowsView: View {
                 [$0.label, $0.category.displayName, "\($0.count)"]
             }
         } else {
-            title = String(localized: "archival.flows.top.title",
-                           defaultValue: "The heaviest hand-offs in the series")
+            title = data.layer == .toUnprinted
+                ? String(localized: "archival.flows.top.title.unprinted",
+                         defaultValue: "The heaviest pointers to unprinted material")
+                : String(localized: "archival.flows.top.title",
+                         defaultValue: "The heaviest hand-offs in the series")
             axis = String(localized: "archival.export.axis.flows.top",
                           defaultValue: "Ranked by references between the pair")
             columns = [
@@ -222,12 +283,18 @@ struct ArchivalFlowsView: View {
 
     private func corpusWideCard(_ data: ArchivalFlowsData) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "archival.flows.top.title",
-                        defaultValue: "The heaviest hand-offs in the series"))
+            Text(data.layer == .toUnprinted
+                 ? String(localized: "archival.flows.top.title.unprinted",
+                          defaultValue: "The heaviest pointers to unprinted material")
+                 : String(localized: "archival.flows.top.title",
+                          defaultValue: "The heaviest hand-offs in the series"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text(String(localized: "archival.flows.top.caption",
-                        defaultValue: "Choose a focus collection above to see everywhere its documents point."))
+            Text(data.layer == .toUnprinted
+                 ? String(localized: "archival.flows.top.caption.unprinted",
+                          defaultValue: "Choose a focus collection above to see everywhere its footnotes send you.")
+                 : String(localized: "archival.flows.top.caption",
+                          defaultValue: "Choose a focus collection above to see everywhere its documents point."))
                 .font(.caption).foregroundStyle(.secondary)
             ForEach(Array(data.topPairs.enumerated()), id: \.offset) { _, pair in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -278,7 +345,14 @@ struct ArchivalFlowsView: View {
     }
 
     private func diagramTitle(_ data: ArchivalFlowsData) -> String {
-        direction == .outgoing
+        if data.layer == .toUnprinted {
+            return direction == .outgoing
+                ? String(localized: "archival.flows.title.unprinted.outgoing",
+                         defaultValue: "Where the footnotes send you")
+                : String(localized: "archival.flows.title.unprinted.incoming",
+                         defaultValue: "Which collections' footnotes send you here")
+        }
+        return direction == .outgoing
             ? String(localized: "archival.flows.title.outgoing",
                      defaultValue: "Where these documents point")
             : String(localized: "archival.flows.title.incoming",
@@ -286,7 +360,15 @@ struct ArchivalFlowsView: View {
     }
 
     private func diagramCaption(_ data: ArchivalFlowsData) -> String {
-        String(format: direction == .outgoing
+        if data.layer == .toUnprinted {
+            return String(format: direction == .outgoing
+                    ? String(localized: "archival.flows.caption.unprinted.outgoing %lld %lld",
+                             defaultValue: "%1$lld footnotes on documents from this collection name unprinted material in other collections. A further %2$lld name unprinted material in this collection itself, and are left out — the diagram shows where the editors sent you *away* to.")
+                    : String(localized: "archival.flows.caption.unprinted.incoming %lld %lld",
+                             defaultValue: "%1$lld footnotes on documents from other collections name unprinted material in this one. A further %2$lld come from documents already in this collection, and are left out."),
+                Int64(data.totalReferences), Int64(data.sameUnitReferences))
+        }
+        return String(format: direction == .outgoing
                 ? String(localized: "archival.flows.caption.outgoing %lld %lld",
                          defaultValue: "%1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.")
                 : String(localized: "archival.flows.caption.incoming %lld %lld",
@@ -500,7 +582,63 @@ struct ArchivalFlowsView: View {
 
     // MARK: - Caveats
 
+    @ViewBuilder
     private func caveats(_ data: ArchivalFlowsData) -> some View {
+        if let facts = data.externalFacts {
+            unprintedCaveats(data, facts: facts)
+        } else {
+            printedCaveats(data)
+        }
+    }
+
+    /// What the unprinted layer owes its reader (#784).
+    ///
+    /// The first paragraph is the one that matters and it corrects the issue that asked for this
+    /// feature. #784's case rests on footnote citations reaching 1910–1945; at the scope the same
+    /// issue mandates — lot files and library collections — the harvest reaches
+    /// `facts.eraSpan`, which on the shipped artifact starts in the 1930s and is effectively
+    /// post-war. Stating the span the data has is the only honest option, and it is read off the
+    /// manifest rather than written down, so a regenerated index cannot leave it wrong.
+    private func unprintedCaveats(_ data: ArchivalFlowsData,
+                                  facts: ArchivalFlowsData.ExternalFacts) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(String(format: String(
+                localized: "archival.flows.caveats.unprinted.scope %lld %lld %lld %lld",
+                defaultValue: "This layer reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so the earlier volumes are almost absent here even though their footnotes are full of archival citations. Those earlier citations give a file number in the central files, which this measure does not yet read. %1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series."),
+                Int64(facts.referencesFound), Int64(facts.referencesJoined),
+                Int64(data.volumesWithEdges), Int64(data.volumesScanned)))
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let span = facts.eraSpan {
+                Text(String(format: String(
+                    localized: "archival.flows.caveats.unprinted.era %lld %lld",
+                    defaultValue: "The volumes contributing here cover %1$lld to %2$lld."),
+                    Int64(span.lowerBound), Int64(span.upperBound)))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text(String(format: String(
+                localized: "archival.flows.caveats.unprinted.ibid %@",
+                defaultValue: "%@ of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation."),
+                facts.inheritedShare.formatted(.percent.precision(.fractionLength(1)))))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(String(localized: "archival.flows.caveats.unprinted.claim",
+                        defaultValue: "A ribbon says the editors, working on material from one collection, told the reader that something they did not print is in another. It does not say the two archives refer to each other, and it is not a count of documents held anywhere."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 4)
+    }
+
+    private func printedCaveats(_ data: ArchivalFlowsData) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
@@ -577,7 +715,14 @@ struct ArchivalFlowsView: View {
     /// listed all 4,423 records would mostly lead to the empty state.
     private var pickerCandidates: [(record: AuthorityCollectionRecord, references: Int)] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return ArchivalFlowsData.focusCandidates(index: index, authority: authority)
+        let candidates: [(record: AuthorityCollectionRecord, references: Int)]
+        if layer == .toUnprinted, let external = externalIndex {
+            candidates = ArchivalFlowsData.externalFocusCandidates(index: external,
+                                                                   authority: authority)
+        } else {
+            candidates = ArchivalFlowsData.focusCandidates(index: index, authority: authority)
+        }
+        return candidates
             .filter {
                 query.isEmpty || $0.record.name.lowercased().contains(query)
                     || ($0.record.repository?.lowercased().contains(query) ?? false)

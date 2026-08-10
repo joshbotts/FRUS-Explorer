@@ -695,7 +695,14 @@ public actor IndexingPipeline {
     ///   which is why frus1952-54Guat's `John Foster Dulles Papers` could not resolve against
     ///   the presidential-library catalogue. The heading now takes depth 0 and its children
     ///   depth 1, inheriting through `makeItemEntry`'s existing `ancestorTexts` channel.
-    public static let currentDateIndexVersion: Int = 37
+    /// - v37 — the collection-outline repository heading (#668 follow-up 2, above).
+    /// - v38 — #784: the `external_citations` table, and with it a new **parse output** —
+    ///   `collectBodyFootnoteTexts` walks each document's body footnotes and
+    ///   `FootnoteCitationScanner` reads the archival units they point at. The table is created
+    ///   empty on an existing index and stays empty until the volume is re-parsed, so the bump is
+    ///   what makes an already-downloaded corpus gain the rows rather than only newly-downloaded
+    ///   volumes.
+    public static let currentDateIndexVersion: Int = 38
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1565,7 +1572,8 @@ public actor IndexingPipeline {
         try auxExec("INSERT INTO user_content(user_content) VALUES('delete-all')")
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "terms",
-                      "document_sources", "volume_sources", "volume_structures"] {
+                      "document_sources", "external_citations", "volume_sources",
+                      "volume_structures"] {
             let stmt = try auxPrepare("DELETE FROM \(table)")
             defer { sqlite3_finalize(stmt) }
             try auxStep(stmt)
@@ -3727,6 +3735,14 @@ public actor IndexingPipeline {
         var dateRows: [DocumentDateRow] = []
         var cacheRows: [DocumentCacheRow] = []
         var personMentionRows: [PersonMentionRow] = []
+        var externalCitationRows: [ExternalCitationRow] = []
+
+        // #784: the document-ordered footnote pass. One scanner for the whole volume, reset at
+        // each document, because `Ibid.` inherits from a preceding footnote and a per-note pass
+        // could not see it. Front matter is skipped: a volume's Sources section is a list of
+        // archives, not an editor pointing at unprinted material, and harvesting it would drown
+        // the real signal in the volume's own bibliography.
+        var footnoteScanner = FootnoteCitationScanner()
 
         for astDoc in astDocs {
             let did = astDoc.documentId
@@ -3759,6 +3775,18 @@ public actor IndexingPipeline {
             )
             crossRefs.append(contentsOf: docCrossRefs)
             pageRangeRows.append(contentsOf: docPageRanges)
+
+            if !astDoc.isFrontMatter {
+                footnoteScanner.beginDocument()
+                for (ordinal, note) in Self.collectBodyFootnoteTexts(from: astDoc.nodes).enumerated() {
+                    for (position, citation) in footnoteScanner.scan(note: note).enumerated() {
+                        externalCitationRows.append(Self.externalCitationRow(
+                            volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
+                            citationIndex: position, citation: citation))
+                    }
+                }
+            }
+
             for ref in docPersonRefs {
                 personMentionRows.append(PersonMentionRow(
                     volumeId: volumeId, documentId: did, personRef: ref))
@@ -3866,9 +3894,49 @@ public actor IndexingPipeline {
             persons: personRows,
             terms: termRows,
             documentSources: documentSourceRows,
+            externalCitations: externalCitationRows,
             volumeSources: volumeSourceRows,
             structureJSON: structureJSON
         )
+    }
+
+    /// Flattens one harvested footnote citation into its storage row.
+    ///
+    /// The parsed value is the same `ParsedSourceNote` shape a source note produces, which is what
+    /// lets `CollectionAuthorityIndex.record(forParsed:note:)` resolve both ends of an archival
+    /// flow with one lookup. Only the two anchors #784 admits reach here; anything else is a
+    /// programming error rather than a data condition, and stores nothing.
+    nonisolated private static func externalCitationRow(
+        volumeId: String, documentId: String, noteOrdinal: Int, citationIndex: Int,
+        citation: FootnoteArchivalCitation
+    ) -> ExternalCitationRow {
+        var repository: String?
+        var collection: String?
+        var lotFile: String?
+        var fileId: String?
+        switch citation.parsed {
+        case .lotFile(_, let lot, let identifier):
+            // Lots are State Department records wherever NARA files them — the same repository
+            // `CollectionKeying.identity` attributes them to, so the two tables agree.
+            repository = "Department of State"
+            lotFile = lot
+            fileId = identifier
+        case .presidentialLibrary(let library, let name, let identifier):
+            repository = library
+            collection = name
+            fileId = identifier
+        default:
+            break
+        }
+        return ExternalCitationRow(
+            volumeId: volumeId, documentId: documentId,
+            noteOrdinal: noteOrdinal, citationIndex: citationIndex,
+            anchor: citation.anchor.rawValue,
+            repository: repository, collection: collection,
+            lotFile: lotFile,
+            lotFileNorm: lotFile.map { SourceNoteParser.lotFileNorm($0) },
+            fileId: fileId, inherited: citation.inherited,
+            rawText: citation.citation)
     }
 
     // MARK: - Storage
@@ -3973,6 +4041,11 @@ public actor IndexingPipeline {
         try auxInsertPersons(data.persons)
         try auxInsertTerms(data.terms)
         try auxInsertDocumentSources(data.documentSources)
+        // #784: same delete-then-insert shape as `volume_sources` below, and for the same reason —
+        // the key includes the note ordinal, so a re-index yielding fewer citations would strand
+        // the surplus as phantom rows.
+        try auxDeleteExternalCitations(forVolumeId: data.volumeId)
+        try auxInsertExternalCitations(data.externalCitations)
         // Clear this volume's prior source rows before re-inserting: INSERT OR REPLACE keys
         // on (volume_id, sort_order), so a re-index that yields *fewer* rows would otherwise
         // leave stale trailing rows (sort_order ≥ new count) behind as phantom entries.
@@ -4128,6 +4201,77 @@ public actor IndexingPipeline {
         // top-level alternative (~1,991 docs, e.g. frus1961-63 microfiche supplements).
         if let deferred = deferredHeadNote {
             return normalizeSourceNoteWrapper(deferred)
+        }
+        return nil
+    }
+
+    // MARK: - Body footnotes (#784)
+
+    /// Every **body** footnote of one document, in reading order — the input the external-citation
+    /// harvest runs over.
+    ///
+    /// "Body" excludes the two kinds of note that describe *this* document's provenance rather than
+    /// pointing outside it:
+    /// - `<note type="source">` and any note carrying a `<seg type="source">`, which are the source
+    ///   note itself (patterns 3 and 4 of ``extractSourceNote(from:)``'s locator chain);
+    /// - a note that is a **direct child of the document's direct-child `<head>`**, which in the
+    ///   pre-1950 encoding is a second provenance statement beside the decimal file number —
+    ///   `frus1937v01/d29` footnote 1 is, in full, *"Photostatic copy obtained from the Franklin D.
+    ///   Roosevelt Library, Hyde Park, N. Y."* Harvesting that would report the editors pointing
+    ///   outside the printed record when they were describing the printed record itself. Measured
+    ///   over the shippable corpus: 533 head-nested notes carry an anchor.
+    ///
+    /// Two structural details exist for **parity with `DocumentFootnoteExtractor`**, the generator's
+    /// XML twin, which `RealTEIFootnoteParityTests` pins over real volumes:
+    /// 1. A single `.editorialNote` wrapper is unwrapped first. The app wraps an editorial note's
+    ///    whole content in one node; the generator sees the same children as direct children of the
+    ///    `<div>`, so without the unwrap "direct child of the head" would mean different things on
+    ///    the two sides.
+    /// 2. A note nested inside another note is never captured separately — the outer note's
+    ///    `plainText` already contains it, and capturing both would count one citation twice.
+    nonisolated static func collectBodyFootnoteTexts(from nodes: [FRUSASTNode]) -> [String] {
+        var top = nodes
+        if top.count == 1, case .editorialNote(let inner) = top[0] { top = inner }
+        var texts: [String] = []
+        for node in top {
+            if case .head(let headChildren) = node {
+                for child in headChildren {
+                    if case .footnote = child { continue }
+                    collectBodyFootnoteTexts(from: child, into: &texts)
+                }
+                continue
+            }
+            collectBodyFootnoteTexts(from: node, into: &texts)
+        }
+        return texts
+    }
+
+    /// Depth-first half of ``collectBodyFootnoteTexts(from:)``.
+    nonisolated private static func collectBodyFootnoteTexts(from node: FRUSASTNode,
+                                                             into texts: inout [String]) {
+        if case .footnote(_, let type, _, let children) = node {
+            guard type != .source, segSourceText(inAnyDescendantOf: children) == nil else { return }
+            let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            if !text.isEmpty { texts.append(text) }
+            return
+        }
+        for child in node.children { collectBodyFootnoteTexts(from: child, into: &texts) }
+    }
+
+    /// The text of the first `<seg type="source">` anywhere beneath `nodes`, or `nil`.
+    ///
+    /// Unlike ``segSourceText(in:)``, which recurses only through `.paragraph` because that is
+    /// where the *source-note* chain looks, this searches the whole subtree: a note carrying a
+    /// source segment at any depth is provenance, not an editorial annotation, and the generator's
+    /// XML pass sees it wherever it sits.
+    nonisolated static func segSourceText(inAnyDescendantOf nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            if case .unknown(let name, let attrs, let children) = node,
+               name == "seg", attrs["type"] == "source" {
+                let t = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                if !t.isEmpty { return t }
+            }
+            if let t = segSourceText(inAnyDescendantOf: node.children) { return t }
         }
         return nil
     }
@@ -5087,6 +5231,49 @@ public actor IndexingPipeline {
         // Cheap and idempotent: the rows are gone after the first run, and none are written now.
         try exec("DELETE FROM document_sources WHERE citation_era = 'footnote'")
 
+        // #784: where the editorial *footnotes* point, in their own table.
+        //
+        // This is the table #783's removal note promised, and its shape is the reason that
+        // removal was necessary rather than a filter: `document_sources` is keyed
+        // (volume_id, document_id) — one row per document — while one document's footnotes may
+        // point at a dozen archival units. Keyed here on the note ordinal as well, so every
+        // citation is kept rather than `citations.first` (the old code discarded 1,182 of 3,208).
+        //
+        // **Never joined into a provenance count.** A row here says an editor *mentioned* an
+        // archive; a `document_sources` row says a document *came from* one. Blending them is
+        // exactly the defect #783 removed, and the separate table is what makes the blend
+        // impossible rather than merely discouraged.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS external_citations (
+                volume_id     TEXT NOT NULL,
+                document_id   TEXT NOT NULL,
+                note_ordinal  INTEGER NOT NULL,
+                citation_index INTEGER NOT NULL,
+                anchor        TEXT NOT NULL,
+                repository    TEXT,
+                collection    TEXT,
+                lot_file      TEXT,
+                lot_file_norm TEXT,
+                file_id       TEXT,
+                inherited     INTEGER NOT NULL DEFAULT 0,
+                raw_text      TEXT NOT NULL,
+                PRIMARY KEY (volume_id, document_id, note_ordinal, citation_index)
+            )
+            """)
+        // The document's own footnote citations — the per-document read.
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_ext_cit_doc
+            ON external_citations(volume_id, document_id)
+            """)
+        // "Which documents point at this lot?" — the same normal form `document_sources` and
+        // `volume_sources` store, so the three tables answer on one key.
+        try exec("CREATE INDEX IF NOT EXISTS idx_ext_cit_lot_norm ON external_citations(lot_file_norm)")
+        // "Which documents point at this library collection?"
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_ext_cit_repo_collection
+            ON external_citations(repository, collection)
+            """)
+
         // Session 170: volume_sources rewritten to a prose + collection-outline model
         // (kind / depth / is_heading), and the primary key changed from
         // (volume_id, entry_text) to (volume_id, sort_order) so repeated collection headings
@@ -5442,6 +5629,119 @@ public actor IndexingPipeline {
             }
         }
         logger.debug("Inserted \(rows.count, privacy: .public) document_sources for \(rows.first?.volumeId ?? "?", privacy: .public)")
+    }
+
+    /// Writes one volume's footnote citations (#784).
+    ///
+    /// Preceded by a delete of the volume's rows in ``storeIndexData(_:)`` for the same reason
+    /// `volume_sources` is: `INSERT OR REPLACE` keys on the note ordinal, so a re-index that finds
+    /// *fewer* citations in a note would leave the surplus behind as phantom rows.
+    private func auxInsertExternalCitations(_ rows: [ExternalCitationRow],
+                                            inExternalTransaction: Bool = false) throws {
+        guard !rows.isEmpty else { return }
+        let sql = """
+            INSERT OR REPLACE INTO external_citations
+            (volume_id, document_id, note_ordinal, citation_index, anchor, repository,
+             collection, lot_file, lot_file_norm, file_id, inherited, raw_text)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+        try withTransactionIfNeeded(inExternalTransaction) {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId,   -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int(stmt, 3, Int32(row.noteOrdinal))
+                sqlite3_bind_int(stmt, 4, Int32(row.citationIndex))
+                sqlite3_bind_text(stmt, 5, row.anchor, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 6, row.repository)
+                auxBindOptional(stmt, 7, row.collection)
+                auxBindOptional(stmt, 8, row.lotFile)
+                auxBindOptional(stmt, 9, row.lotFileNorm)
+                auxBindOptional(stmt, 10, row.fileId)
+                sqlite3_bind_int(stmt, 11, row.inherited ? 1 : 0)
+                sqlite3_bind_text(stmt, 12, row.rawText, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+        logger.debug("Inserted \(rows.count, privacy: .public) external_citations for \(rows.first?.volumeId ?? "?", privacy: .public)")
+    }
+
+    /// Clears one volume's footnote citations before re-inserting.
+    private func auxDeleteExternalCitations(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM external_citations WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    /// Every archival unit this document's footnotes point at, in reading order (#784).
+    ///
+    /// Reading order, not frequency order: these are annotations on a text, and the second one is
+    /// the second one the reader meets.
+    public func externalCitations(volumeId: String,
+                                  documentId: String) throws -> [ExternalCitation] {
+        let sql = """
+            SELECT anchor, repository, collection, lot_file, lot_file_norm, file_id,
+                   inherited, raw_text, note_ordinal
+            FROM external_citations
+            WHERE volume_id = ? AND document_id = ?
+            ORDER BY note_ordinal, citation_index
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId,   -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        var results: [ExternalCitation] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let anchor = auxColumnString(stmt, 0),
+                  let rawText = auxColumnString(stmt, 7) else { continue }
+            results.append(ExternalCitation(
+                anchor: anchor,
+                repository: auxColumnString(stmt, 1),
+                collection: auxColumnString(stmt, 2),
+                lotFile: auxColumnString(stmt, 3),
+                lotFileNorm: auxColumnString(stmt, 4),
+                fileId: auxColumnString(stmt, 5),
+                inherited: sqlite3_column_int(stmt, 6) != 0,
+                rawText: rawText,
+                noteOrdinal: Int(sqlite3_column_int(stmt, 8))))
+        }
+        return results
+    }
+
+    /// How many documents in the indexed corpus point at one archival unit through a footnote,
+    /// and how many volumes they sit in (#784).
+    ///
+    /// Deliberately **separate** from `localCollectionStats`, which counts documents *drawn from* a
+    /// collection. Two different claims that must never be added together — that addition is the
+    /// defect #783 removed, and keeping the counts in different methods over different tables is
+    /// what stops it coming back.
+    public func externalCitationStats(lotFileNorm: String?, repository: String?,
+                                      collection: String?) throws -> (documents: Int, volumes: Int) {
+        let clause: String
+        let bindings: [String]
+        if let lotFileNorm, !lotFileNorm.isEmpty {
+            clause = "lot_file_norm = ?"
+            bindings = [lotFileNorm]
+        } else if let repository, let collection, !repository.isEmpty, !collection.isEmpty {
+            clause = "repository = ? AND collection = ?"
+            bindings = [repository, collection]
+        } else {
+            return (0, 0)
+        }
+        let sql = """
+            SELECT COUNT(DISTINCT volume_id || '/' || document_id), COUNT(DISTINCT volume_id)
+            FROM external_citations WHERE \(clause)
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, value) in bindings.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), value, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return (0, 0) }
+        return (Int(sqlite3_column_int(stmt, 0)), Int(sqlite3_column_int(stmt, 1)))
     }
 
     private func auxInsertVolumeSources(_ rows: [VolumeSourceRow], inExternalTransaction: Bool = false) throws {
@@ -5886,6 +6186,7 @@ public actor IndexingPipeline {
             ("persons",           "volume_id"),
             ("terms",             "volume_id"),
             ("document_sources",  "volume_id"),
+            ("external_citations", "volume_id"),
             ("volume_sources",    "volume_id"),
             ("volume_structures", "volume_id"),
         ] {
@@ -8101,9 +8402,90 @@ private struct VolumeIndexData: Sendable {
     let persons: [PersonRow]
     let terms: [TermRow]
     let documentSources: [DocumentSourceRow]
+    let externalCitations: [ExternalCitationRow]
     let volumeSources: [VolumeSourceRow]
     /// JSON-encoded `VolumeStructure` for the Browser cache, or `nil` if encoding failed.
     let structureJSON: String?
+}
+
+/// One archival unit a document's footnote points at, as a reader sees it (#784).
+///
+/// The public read shape of `external_citations`. It carries no document counts and joins to no
+/// provenance figure on purpose: a citation here means an editor *mentioned* an archive, and the
+/// moment that is added to a "documents from this collection" total the two claims are one wrong
+/// number — which is precisely what #783 removed.
+public struct ExternalCitation: Sendable, Equatable, Identifiable {
+    /// `"lotFile"` or `"presidentialLibrary"`.
+    public let anchor: String
+    /// The repository, when the citation names one.
+    public let repository: String?
+    /// The collection within that repository.
+    public let collection: String?
+    /// The lot number as printed.
+    public let lotFile: String?
+    /// Canonical compact lot key, matching `document_sources.lot_file_norm`.
+    public let lotFileNorm: String?
+    /// Box or folder inside the unit.
+    public let fileId: String?
+    /// Whether an `Ibid.` supplied the unit.
+    public let inherited: Bool
+    /// The clause the citation was read from.
+    public let rawText: String
+    /// Which body footnote of the document carried it, from zero.
+    public let noteOrdinal: Int
+
+    /// Stable within one document's list.
+    public var id: String { "\(noteOrdinal)|\(lotFileNorm ?? "")|\(repository ?? "")|\(collection ?? "")" }
+
+    /// The unit's display label — the lot number, or the collection under its repository.
+    public var displayLabel: String {
+        if let lotFile, !lotFile.isEmpty { return "Lot \(lotFile)" }
+        let parts = [repository, collection].compactMap { $0 }.filter { !$0.isEmpty }
+        return parts.isEmpty ? rawText : parts.joined(separator: ", ")
+    }
+
+    /// Creates a citation.
+    public init(anchor: String, repository: String?, collection: String?, lotFile: String?,
+                lotFileNorm: String?, fileId: String?, inherited: Bool, rawText: String,
+                noteOrdinal: Int) {
+        self.anchor = anchor
+        self.repository = repository
+        self.collection = collection
+        self.lotFile = lotFile
+        self.lotFileNorm = lotFileNorm
+        self.fileId = fileId
+        self.inherited = inherited
+        self.rawText = rawText
+        self.noteOrdinal = noteOrdinal
+    }
+}
+
+/// One archival unit an editorial footnote points at — a row of `external_citations` (#784).
+///
+/// Deliberately **not** a `DocumentSourceRow`: that type is one-per-document and means *where this
+/// document came from*. This means *where the editor said something else lives*, there may be many
+/// per document, and it must never be counted as provenance.
+private struct ExternalCitationRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    /// Position of the citing note among the document's body footnotes, from zero.
+    let noteOrdinal: Int
+    /// Position of this citation within that note, from zero — a note may name several units.
+    let citationIndex: Int
+    /// `FootnoteArchivalCitation.Anchor.rawValue`.
+    let anchor: String
+    let repository: String?
+    let collection: String?
+    let lotFile: String?
+    /// Canonical compact lot key (`SourceNoteParser.lotFileNorm`), matching
+    /// `document_sources.lot_file_norm` so both tables answer on one key.
+    let lotFileNorm: String?
+    /// Box or folder inside the unit, when the footnote named one.
+    let fileId: String?
+    /// Whether an `Ibid.` supplied the unit rather than a phrase in this clause.
+    let inherited: Bool
+    /// The clause the citation was read from — the sentence a reader wants to see.
+    let rawText: String
 }
 
 private struct PersonMentionRow: Sendable {
