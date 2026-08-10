@@ -52,7 +52,9 @@ PANEL_QUOTA = {"frus1861": 34, "frus1938v01": 33, "frus1948v06": 33}
 CORPUS_CHARS = 1.374e9  # M2-Semantic-Pipeline-Ride-Along.md §1, measured 2026-08-07
 RERANK_POOL = 200  # Hamming candidates fed to the int8 rerank (design §4.2)
 TOP_K = 10
-SNIPPET_CHARS = 280
+SNIPPET_CHARS = 600
+# The app's own citation exporters pin this form (BibtexExporter, RISExporter):
+HSG_URL = "https://history.state.gov/historicaldocuments/%s/%s"
 
 DEFAULT_STORES = ",".join(
     "%s=%s" % (label, os.path.expanduser("~/frus-semantic-raw-spike-" + label))
@@ -367,14 +369,14 @@ def stage_panel(stores, panel_label, out_dir):
     key_path = os.path.join(out_dir, "blind-panel-key.csv")
     with open(panel_path, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["row", "era", "anchor_volume", "anchor_doc", "anchor_snippet",
-                    "neighbor_volume", "neighbor_doc", "neighbor_snippet",
-                    "verdict (good / moderate / garbage)", "note"])
+        w.writerow(["row", "era", "anchor_volume", "anchor_doc", "anchor_url",
+                    "anchor_snippet", "neighbor_volume", "neighbor_doc", "neighbor_url",
+                    "neighbor_snippet", "verdict (good / moderate / garbage)", "note"])
         for row_no, key in enumerate(anchors, 1):
             i = store["index"][key]
             nkey = store["keys"][top1[i][0]]
-            w.writerow([row_no, ERA[key[0]], key[0], key[1], snip(key),
-                        nkey[0], nkey[1], snip(nkey), "", ""])
+            w.writerow([row_no, ERA[key[0]], key[0], key[1], HSG_URL % key, snip(key),
+                        nkey[0], nkey[1], HSG_URL % nkey, snip(nkey), "", ""])
     with open(key_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["row", "model", "config", "int8_score", "float_cosine",
