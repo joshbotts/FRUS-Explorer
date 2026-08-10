@@ -682,6 +682,20 @@ public struct VolumeSourceEntry: Sendable {
     /// dash mapping bridges TEI front matter's en-dash against the hyphen the same
     /// files carry in document notes.)
     public let decimalClass: String?
+    /// The raw CIA Job number (formatting and dash variant preserved, e.g. "79–R01012A"),
+    /// recognized by the corpus-wide Job grammar shared with the document side
+    /// (`SourceNoteParser.firstJobNumber(in:)`) — #733.
+    ///
+    /// A **separate field from `lotFile`**, though the document side stores its job numbers in
+    /// `document_sources.lot_file`. That convention predates the normalized lot key and is now
+    /// load-bearing in the wrong direction: `lotFile` is fed to the bundled lot resolver and
+    /// matched against `central-files-index.json`'s lot table, so a Job number placed there is
+    /// looked up as a lot number and can only miss or, worse, hit.
+    public let jobNumber: String?
+    /// Canonical compact form of `jobNumber` (`SourceNoteParser.jobNumberNorm`, e.g.
+    /// "79R01012A"). The corpus spells one job four ways — `79R01012A`, `79-R01012A`,
+    /// `79–R01012A`, `79R–01012A` — so the raw form cannot be a join key.
+    public let jobNumberNorm: String?
     /// The entry's own text (whitespace-collapsed), excluding any nested child items.
     public let rawText: String
     /// The editors' description of this collection, where the encoding separates the two.
@@ -701,7 +715,8 @@ public struct VolumeSourceEntry: Sendable {
     public init(kind: VolumeSourceKind, depth: Int = 0, isHeading: Bool = false,
                 repository: String? = nil, recordGroup: String? = nil, lotFile: String? = nil,
                 lotFileNorm: String? = nil, seriesName: String? = nil,
-                decimalClass: String? = nil, rawText: String, note: String? = nil) {
+                decimalClass: String? = nil, jobNumber: String? = nil,
+                jobNumberNorm: String? = nil, rawText: String, note: String? = nil) {
         self.kind = kind
         self.depth = depth
         self.isHeading = isHeading
@@ -711,6 +726,8 @@ public struct VolumeSourceEntry: Sendable {
         self.lotFileNorm = lotFileNorm
         self.seriesName = seriesName
         self.decimalClass = decimalClass
+        self.jobNumber = jobNumber
+        self.jobNumberNorm = jobNumberNorm
         self.rawText = rawText
         self.note = note
     }
@@ -718,10 +735,14 @@ public struct VolumeSourceEntry: Sendable {
     /// A copy of this entry carrying `note` — used when the promotion pass discovers the
     /// description paragraph that belongs to a collection it has just recognised.
     func withNote(_ note: String?) -> VolumeSourceEntry {
+        // Every key field must be carried across. This copy is taken *after* extraction, so a
+        // field omitted here is silently dropped from exactly the rows the promotion pass
+        // touches — the #668 paragraph-encoded collections, which are 45 of the 664 Job rows.
         VolumeSourceEntry(kind: kind, depth: depth, isHeading: isHeading,
                           repository: repository, recordGroup: recordGroup, lotFile: lotFile,
                           lotFileNorm: lotFileNorm, seriesName: seriesName,
-                          decimalClass: decimalClass, rawText: rawText, note: note)
+                          decimalClass: decimalClass, jobNumber: jobNumber,
+                          jobNumberNorm: jobNumberNorm, rawText: rawText, note: note)
     }
 }
 
@@ -2356,11 +2377,20 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         // Decimal / subject-numeric class-leaf key; a lot-keyed row is never a class leaf.
         let decimalClass = (lot == nil) ? classLeafKey(from: text) : nil
 
+        // #733: the CIA Job number, from the same shared grammar the document side uses. Read
+        // from the row's OWN text only — a job number is a container identifier, and inheriting
+        // one from an ancestor would key every sibling row to the first child's collection. That
+        // is the opposite of `repository`/`recordGroup` above, which inherit precisely because a
+        // parent heading's repository does describe its children.
+        let job = SourceNoteParser.firstJobNumber(in: text)
+
         return VolumeSourceEntry(
             kind: .item, depth: depth, isHeading: isHeading,
             repository: repo, recordGroup: rg, lotFile: lot,
             lotFileNorm: lot.map { SourceNoteParser.lotFileNorm($0) },
-            seriesName: seriesName, decimalClass: decimalClass, rawText: text
+            seriesName: seriesName, decimalClass: decimalClass,
+            jobNumber: job, jobNumberNorm: job.map { SourceNoteParser.jobNumberNorm($0) },
+            rawText: text
         )
     }
 

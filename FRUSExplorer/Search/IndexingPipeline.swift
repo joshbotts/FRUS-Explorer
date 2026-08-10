@@ -702,7 +702,11 @@ public actor IndexingPipeline {
     ///   empty on an existing index and stays empty until the volume is re-parsed, so the bump is
     ///   what makes an already-downloaded corpus gain the rows rather than only newly-downloaded
     ///   volumes.
-    public static let currentDateIndexVersion: Int = 38
+    /// - v39 — #733: `volume_sources.job_number` / `job_number_norm`. A CIA Job number is now a
+    ///   front-matter key, so `SourcesParserDelegate.makeItemEntry` emits two new fields and the
+    ///   columns are empty on an existing index until each volume is re-parsed. Measured on the
+    ///   owner's index the bump moves 619 `item` rows across 119 volumes from keyless to keyed.
+    public static let currentDateIndexVersion: Int = 39
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3894,6 +3898,8 @@ public actor IndexingPipeline {
                     lotFileNorm: entry.lotFileNorm,
                     seriesName: entry.seriesName,
                     decimalClass: entry.decimalClass,
+                    jobNumber: entry.jobNumber,
+                    jobNumberNorm: entry.jobNumberNorm,
                     entryText: entry.rawText,
                     kind: entry.kind.rawValue,
                     depth: entry.depth,
@@ -5328,6 +5334,8 @@ public actor IndexingPipeline {
                 lot_file_norm TEXT,
                 series_name   TEXT,
                 decimal_class TEXT,
+                job_number    TEXT,
+                job_number_norm TEXT,
                 entry_text    TEXT NOT NULL,
                 kind          TEXT NOT NULL DEFAULT 'item',
                 depth         INTEGER NOT NULL DEFAULT 0,
@@ -5771,8 +5779,9 @@ public actor IndexingPipeline {
         let sql = """
             INSERT OR REPLACE INTO volume_sources
             (volume_id, repository, record_group, lot_file, lot_file_norm, series_name,
-             decimal_class, entry_text, kind, depth, is_heading, sort_order, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             decimal_class, job_number, job_number_norm, entry_text, kind, depth,
+             is_heading, sort_order, note)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -5785,12 +5794,14 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 5, row.lotFileNorm)
                 auxBindOptional(stmt, 6, row.seriesName)
                 auxBindOptional(stmt, 7, row.decimalClass)
-                sqlite3_bind_text(stmt, 8, row.entryText, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(stmt, 9, row.kind, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_int64(stmt, 10, Int64(row.depth))
-                sqlite3_bind_int64(stmt, 11, row.isHeading ? 1 : 0)
-                sqlite3_bind_int64(stmt, 12, Int64(row.sortOrder))
-                auxBindOptional(stmt, 13, row.note)
+                auxBindOptional(stmt, 8, row.jobNumber)
+                auxBindOptional(stmt, 9, row.jobNumberNorm)
+                sqlite3_bind_text(stmt, 10, row.entryText, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 11, row.kind, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 12, Int64(row.depth))
+                sqlite3_bind_int64(stmt, 13, row.isHeading ? 1 : 0)
+                sqlite3_bind_int64(stmt, 14, Int64(row.sortOrder))
+                auxBindOptional(stmt, 15, row.note)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -8441,6 +8452,12 @@ private struct VolumeSourceRow: Sendable {
     let seriesName: String?
     /// Decimal / subject-numeric class-leaf location key (doc-side verbatim normal form).
     let decimalClass: String?
+    /// The raw CIA Job number (#733), formatting and dash variant preserved.
+    let jobNumber: String?
+    /// Canonical compact job key (`SourceNoteParser.jobNumberNorm`). Deliberately its own
+    /// column rather than `lot_file_norm`: a job number is not a lot key, and `lot_file_norm`
+    /// is what the bundled lot resolver looks up.
+    let jobNumberNorm: String?
     let entryText: String
     let kind: String
     let depth: Int

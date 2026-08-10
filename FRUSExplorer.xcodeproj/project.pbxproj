@@ -832,6 +832,7 @@
 		C52CF58BDC380FDF7F87099B /* SeriesGeographyDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DED2CFC2F10796AFA2F566D /* SeriesGeographyDataTests.swift */; };
 		C5395D11EA33BE6AE440B6E3 /* IndexingBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCB24DA023BE940D40787A2 /* IndexingBatch.swift */; };
 		C54630E42C88C5D22E1A3943 /* CollocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C47F6740B2EBDAD0B2DC52 /* CollocationService.swift */; };
+		C55CCED9ECCA4AEAB3381DCB /* CIAJobKeyingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A4AAD7E4FE38F74E632C58C /* CIAJobKeyingTests.swift */; };
 		C55FAF5C0854A443E65E98BC /* FRUSRenderNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84775C3C5E64475098DAAE16 /* FRUSRenderNode.swift */; };
 		C5A7F05F4483939BCA33BDAF /* CollectionEntryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B16CD969BCF6F9E6B4C4720D /* CollectionEntryData.swift */; };
 		C5BCC51360FA2DFF9FBCFE3D /* FilterPanelCollapseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35EFD03606D6DF3695A5B5D /* FilterPanelCollapseTests.swift */; };
@@ -1497,6 +1498,7 @@
 		8927AFD7F65221657E7459A4 /* EducationDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EducationDashboardView.swift; sourceTree = "<group>"; };
 		897AC38C8548DC76D4555FCB /* CloudKitErrorInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitErrorInspector.swift; sourceTree = "<group>"; };
 		89C14E9DBC9063DE4763B77B /* AnalyticsRotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsRotationTests.swift; sourceTree = "<group>"; };
+		8A4AAD7E4FE38F74E632C58C /* CIAJobKeyingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIAJobKeyingTests.swift; sourceTree = "<group>"; };
 		8AC61AAB18A3D751E0376D08 /* FRUSExplorerWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FRUSExplorerWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8AD6AF6DD69A82AA71F8FCB1 /* pocom-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "pocom-index.json"; sourceTree = "<group>"; };
 		8B5A88FD6AE12C259469664C /* FRUSASTNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSASTNode.swift; sourceTree = "<group>"; };
@@ -2183,6 +2185,7 @@
 				549E24BC93CEFA09605A4296 /* CentralFilesIndexTests.swift */,
 				BF4359D21C639BBE0B733EFD /* ChartDataInspectorTests.swift */,
 				4F8616A6A03F9E3E2FB211DE /* ChronologyQueryTests.swift */,
+				8A4AAD7E4FE38F74E632C58C /* CIAJobKeyingTests.swift */,
 				0CC5315B1D4CB1B479C23348 /* CitationFormatterTests.swift */,
 				358C5961FA43410821148C63 /* CitationMatchingEngineTests.swift */,
 				3657532E321EDC46780453F1 /* CitationParserTests.swift */,
@@ -3896,6 +3899,7 @@
 				B51641FB00D964852BCA0E25 /* BrowserViewTests.swift in Sources */,
 				C2683FC1DFDEDF22F544CD16 /* BundledCloudVectorsTests.swift in Sources */,
 				3E33D36A95A6A1A3C0C33480 /* BundledKeynessBaselineTests.swift in Sources */,
+				C55CCED9ECCA4AEAB3381DCB /* CIAJobKeyingTests.swift in Sources */,
 				97D71D4B239B8EFC48C51EB9 /* CatalogQueryEvidenceTests.swift in Sources */,
 				DAC8121E5DC139C648C6EEA3 /* CentralFilesClassifierTests.swift in Sources */,
 				B5F08C82D92407C0F669E6FA /* CentralFilesIndexTests.swift in Sources */,

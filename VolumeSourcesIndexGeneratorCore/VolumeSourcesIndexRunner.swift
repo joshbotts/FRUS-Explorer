@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SourceNoteKit
 import CentralFilesIndexGeneratorCore
 
 /// Harvests the front-matter Sources section of every locally-downloaded FRUS volume into a
@@ -174,7 +175,7 @@ public enum VolumeSourcesIndexRunner {
             nodes.append(CollectionNode(
                 text: item.text, isHeading: item.isHeading, depth: item.depth,
                 recordGroup: item.recordGroup, lotFile: item.lotFile, repository: item.repository,
-                resolved: nil, children: children))
+                jobNumber: item.jobNumber, resolved: nil, children: children))
         }
         return nodes
     }
@@ -228,8 +229,16 @@ public enum VolumeSourcesIndexRunner {
     static func accumulateAuthority(_ nodes: [CollectionNode], volumeId: String,
                                     into authority: inout [String: MajorCollection]) {
         for node in nodes {
-            if node.isHeading || node.recordGroup != nil || node.lotFile != nil {
+            // #733: a job-bearing node is admitted on the same footing as a lot-bearing one.
+            // Without this clause the key would reach nothing: measured on the owner's index,
+            // 618 of the 620 job-naming item rows are not headings and carry no record group,
+            // so every one of them fell through this gate and never entered the authority.
+            if node.isHeading || node.recordGroup != nil || node.lotFile != nil
+                || node.jobNumber != nil {
+                // A job number keys its own namespace. Folding it into `lot:` would put a job
+                // through `normalizeLot` and collide the two vocabularies in one key space.
                 let key = node.lotFile.map { "lot:" + BundledLotResolver.normalizeLot($0) }
+                    ?? node.jobNumber.map { "job:" + SourceNoteParser.jobNumberNorm($0) }
                     ?? "txt:" + node.text.lowercased()
                 if var existing = authority[key] {
                     if !existing.volumeIds.contains(volumeId) { existing.volumeIds.append(volumeId) }
@@ -240,7 +249,8 @@ public enum VolumeSourcesIndexRunner {
                     authority[key] = MajorCollection(
                         key: key, text: node.text, isHeading: node.isHeading,
                         recordGroup: node.recordGroup, lotFile: node.lotFile,
-                        repository: node.repository, resolved: node.resolved,
+                        repository: node.repository, jobNumber: node.jobNumber,
+                        resolved: node.resolved,
                         volumeIds: [volumeId], occurrences: 1)
                 }
             }

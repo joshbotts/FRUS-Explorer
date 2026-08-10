@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SourceNoteKit
 
 /// One row extracted from a volume's front-matter Sources section: a narrative prose
 /// paragraph or a node in the archival-collection outline.
@@ -23,6 +24,10 @@ public struct SourceRow: Sendable, Equatable {
     public let recordGroup: String?
     public let lotFile: String?
     public let repository: String?
+    /// The raw CIA Job number (#733), formatting and dash variant preserved — a container
+    /// identifier in its own right, kept out of `lotFile` because `lotFile` is looked up
+    /// against `central-files-index.json`'s lot table and a job number is not a lot.
+    public var jobNumber: String? = nil
     /// The row's own text (whitespace-collapsed), excluding any nested child items.
     public let text: String
 }
@@ -109,8 +114,14 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
-    private static let lotPat = try? NSRegularExpression(
-        pattern: #"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#, options: .caseInsensitive)
+    // The lot grammar is NOT declared here any more (#733). It used to be
+    // `#"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#` — D-designator only — which is the regex the app
+    // replaced at index version 18, and keeping the old one here meant this generator and the app
+    // disagreed about what a lot is. Measured against the app's own table: **249 rows across 75
+    // volumes** carry a lot this pattern cannot see, 225 of them F-designator posts
+    // (`London Embassy Files, Lot 59 F 59`), plus A, M and B designators. Those collections were
+    // simply absent from the bundled index. `SourceNoteParser.firstLotReference(in:)` is the one
+    // grammar both sides now use.
 
     // Matches the app's post-review set (excludes "listofabbreviations", a terms glossary).
     private static let sourceSectionTypes: Set<String> = [
@@ -316,14 +327,12 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
             }
         }
 
-        var lot: String?
-        if let regex = lotPat {
-            let ns = NSRange(text.startIndex..., in: text)
-            if let m = regex.firstMatch(in: text, range: ns),
-               let r = Range(m.range(at: 1), in: text) {
-                lot = String(text[r]).trimmingCharacters(in: .whitespaces)
-            }
-        }
+        let lot = SourceNoteParser.firstLotReference(in: text)?.lotNumber
+
+        // #733: the CIA Job number, from the same shared grammar the app and the document side
+        // use. Read from the row's own text only — a job number identifies one container, so
+        // inheriting it would key every sibling to the first child's collection.
+        let job = SourceNoteParser.firstJobNumber(in: text)
 
         let repoKeywords = [
             "National Archives", "Library of Congress", "Washington National Records Center",
@@ -340,6 +349,7 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
         }
 
         return SourceRow(kind: .item, depth: depth, isHeading: isHeading,
-                         recordGroup: rg, lotFile: lot, repository: repo, text: text)
+                         recordGroup: rg, lotFile: lot, repository: repo,
+                         jobNumber: job, text: text)
     }
 }

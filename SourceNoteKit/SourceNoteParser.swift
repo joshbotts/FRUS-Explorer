@@ -1959,6 +1959,66 @@ public struct SourceNoteParser {
         return (lotNumber, fullRange)
     }
 
+    /// Finds the first CIA Job number in `text` using the shared corpus-wide Job grammar
+    /// (see `jobRegex`), or `nil`.
+    ///
+    /// The lot-side counterpart of `firstLotReference(in:)`, and it exists for the same reason:
+    /// until #733 the Job grammar was reachable **only** through `tryCIACollection`, which is
+    /// gated on the note naming the Agency. That gate is right for a document source note, whose
+    /// text stands alone, and wrong for a front-matter outline row, whose CIA identity usually
+    /// lives in an ancestor heading. Both front-matter extractors need the grammar without the
+    /// gate, and a second copy of the pattern is what would let the two sides disagree about what
+    /// a Job number looks like — the failure `firstLotReference` was extracted to prevent.
+    ///
+    /// ## Why there is no CIA-context gate here, and a shape guard instead
+    /// The obvious gate — require the text (or an ancestor) to name the Agency — was measured
+    /// against the owner's live index and **rejected**: of 664 front-matter rows naming a Job,
+    /// only 20 name the CIA in their own text and 562 inherit the repository, leaving **82
+    /// genuine CIA rows that such a gate would silently drop** (`DCI (McCone) Files: Job
+    /// 80-B01285A`, `DDO/DDP Files: Job 64–00352R`, `NIC Files, Job 79–R01012A`, and the bare
+    /// job numbers in `frus1950-55Intel`). The word "Job" followed by a job-shaped token is
+    /// already the specific thing: over all 33,764 front-matter rows the bare grammar produced
+    /// **zero** non-job captures.
+    ///
+    /// Zero measured false positives is not the same as zero possible ones, so the leading-digits
+    /// requirement below makes the property structural rather than lucky — it costs none of the
+    /// 664 real matches (every one begins with two digits) and it is what keeps "Job Corps", "his
+    /// job at the Department", and any other prose sense from minting an archival key.
+    ///
+    /// - Parameter text: Any citation or front-matter item text.
+    /// - Returns: The raw job number (whitespace-trimmed, formatting and dash variant preserved),
+    ///   or `nil` when no job-shaped token follows the word "Job".
+    public static func firstJobNumber(in text: String) -> String? {
+        guard let regex = jobRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: ns),
+              let range = Range(match.range(at: 1), in: text) else { return nil }
+        let job = String(text[range]).trimmingCharacters(in: .whitespaces)
+        // A job number opens with the two-digit accession year (`78–05091A`, `79R01012A`).
+        guard job.count >= 3 else { return nil }
+        guard job.prefix(2).allSatisfy(\.isNumber) else { return nil }
+        return job
+    }
+
+    /// The join key for a CIA Job number: non-alphanumerics stripped, upper-cased.
+    ///
+    /// Job numbers are spelled with a hyphen, an en-dash, or nothing at all, and the corpus uses
+    /// all three **for the same job** — `79R01012A`, `79-R01012A`, `79–R01012A` and `79R–01012A`
+    /// are one collection cited 214 times. Without this the collection splits four ways and each
+    /// fragment reports a fraction of its true membership, which is precisely the silent
+    /// under-count `lotFileNorm` exists to prevent on the lot side.
+    ///
+    /// Deliberately **not** `lotFileNorm`, though the transformation is the same: a job number is
+    /// not a lot key, `lot_file_norm` is joined against `central-files-index.json`'s lot table,
+    /// and folding the two namespaces together would have a Job looked up as a lot. Measured over
+    /// the corpus the two spaces do not currently intersect (395 job norms vs 1,734 lot norms,
+    /// **0 collisions**), and `JobNumberNormTests` pins that so a future corpus cannot quietly
+    /// introduce one.
+    public static func jobNumberNorm(_ job: String) -> String {
+        String(job.unicodeScalars.filter(CharacterSet.alphanumerics.contains))
+            .uppercased()
+    }
+
     private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
         let scope = Self.lotClaimScope(text)
         guard let (lotNumber, fullRange) = Self.firstLotReference(in: scope) else { return nil }

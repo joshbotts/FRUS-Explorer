@@ -4336,3 +4336,64 @@ guidance the shipped surface contradicts (`poolCutFrom` told a caller to say "at
   license".
 - #353's decimal-class slice (N-1) is the change that would make this pool *bigger* for the axis
   that binds hardest. Still scheduled in the N lane, still the largest reachable data win.
+
+---
+
+## Session 2026-08-10 — F-5 (#733): a CIA Job number is a front-matter key
+
+**Issue:** #733 · **Plan:** `Resolve-Open-Issues-Plan-2026-08.md` § F-5
+
+Sized "S — keying gap only". It was neither, and the audit that established that is most of the
+session's value.
+
+### Three stated facts were wrong, and each changed the design
+
+1. **"19 rows."** Measured now with the app's own grammar: **664 rows across 122 volumes** name a
+   Job — 619 outline items, 45 prose. 564 carry only an inherited `repository`, 98 carry nothing:
+   **662 of 664 have no container key**. The issue's own hedge ("the real population is likely
+   larger") understated by more than an order of magnitude.
+2. **"SourceNoteParser already owns the Job grammar — reuse it."** Not reachable: `jobRegex` was
+   `private`, with no standalone entry point (only `tryCIACollection`, gated on the note naming
+   the Agency), and `SourceNoteKit` was not a dependency of `VolumeSourcesIndexGeneratorCore` —
+   directly or transitively. Reuse meant new public API plus a Package.swift edit.
+3. **"Never a second regex."** There already was one, for **lots**. The generator declared
+   `\bLot\s+([\w\s\-]+?D\s*\d+)\b` — D-designator only, the pattern the app replaced at index
+   version 18. Measured against the app's own table it cannot see **249 rows across 75 volumes**
+   (225 F-designator embassy/consulate posts), and it minted malformed keys (`lot:FILE03D256`,
+   `lot:6D379`). The bundled index has been missing those collections all along.
+
+### The design decision the measurement settled
+
+The obvious gate is "extract a Job only where the text names the CIA". Measured, that drops **82
+unmistakably CIA rows** — `DCI (McCone) Files: Job 80-B01285A`, `DDO/DDP Files: Job 64–00352R`,
+`NIC Files, Job 79–R01012A` — because only 20 of the 664 name the Agency in their own text; the
+rest inherit it. So the gate is the **grammar itself**, which produced zero non-job captures over
+all 33,764 rows, plus a two-leading-digits guard that makes the property structural rather than
+lucky and costs none of the 664.
+
+Job numbers get **their own column and key space**. The document side stores them in `lot_file`,
+which is fed to the bundled lot resolver — a job number there is looked up as a lot. The norm is
+load-bearing, not tidiness: `79R01012A`, `79-R01012A`, `79–R01012A`, `79R–01012A` are one
+collection cited 214 times. 395 job norms vs 1,734 lot norms, **0 collisions**.
+
+`accumulateAuthority` also had to widen: it folds a node only when it is a heading or carries an RG
+or a lot, and 618 of the 620 job rows are none of those — the key would have reached nothing.
+
+### Result
+
+majorCollections **2,929 → 3,410**: +252 job, +302 lot, 59 re-keyed from malformed forms. Every
+removed key was traced. Index version 38 → 39.
+
+### Left undone, deliberately
+
+- **I-3 (GeneratorKit migration) was NOT folded in**, against the plan's suggestion. The pairing
+  existed so the regenerated artifact could be byte-verified, and #733 legitimately changes that
+  artifact — landing a mechanical refactor alongside makes every byte difference ambiguous between
+  the two. It is cheaper now, not dearer: the target gained its SourceNoteKit dependency here.
+- **`Lot 2015D608` regressed by one collection in one volume.** The *shared* grammar requires
+  `\d{2,3}` before the designator letter, so a 4-digit lot prefix matches nothing — the app misses
+  it too. The old generator regex caught it by accident. Filed rather than papered over.
+- **The 45 prose-kind Job rows are still unkeyed**, and that is consistent: prose rows carry no
+  keys at all (2,524 of 2,524). They are a #668-adjacent encoding gap — paragraph-encoded
+  collections in sections that also contain `<item>` rows, so the promotion pass skips them — not
+  #733's keying gap.
