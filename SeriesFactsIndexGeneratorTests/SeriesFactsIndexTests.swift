@@ -151,7 +151,7 @@ struct ShippedArtifactTests {
     @Test("It carries the measured population")
     func measuredShape() throws {
         let index = try loadShipped()
-        #expect(index.schemaVersion == 1)
+        #expect(index.schemaVersion == 2, "schema 2 adds the #663 catalog facts")
         // Measured 2026-08-10 over the full harvest: 622 of 2,121 app-held series NAIDs carry a
         // creator. A floor, not equality — a re-harvest may add series — but a collapse is caught.
         #expect(index.byNaId.count >= 600, "series with a creator: \(index.byNaId.count)")
@@ -183,6 +183,49 @@ struct ShippedArtifactTests {
                 && !$0.contains(" : ")
         }
         #expect(withTail.isEmpty, "headings still carrying a lifespan: \(withTail.prefix(3))")
+    }
+
+    @Test("The catalog facts are present at the measured rates")
+    func catalogFactsPopulated() throws {
+        let index = try loadShipped()
+        let rows = index.byNaId.values
+        // Measured 2026-08-10 over the 622 app-reachable series. Floors, since a re-harvest may
+        // move them — but each is near-universal, and a collapse would mean the shard reader
+        // stopped finding the field rather than NARA having stopped stating it.
+        #expect(rows.filter { $0.accessStatus != nil }.count >= 600, "accessStatus")
+        #expect(rows.filter { $0.useStatus != nil }.count >= 600, "useStatus")
+        #expect(rows.filter { $0.extent != nil }.count >= 600, "extent")
+        #expect(rows.filter { $0.referenceUnit != nil }.count >= 600, "referenceUnit")
+        #expect(rows.filter { $0.startYear != nil }.count >= 600, "startYear")
+        // Partial by nature — NARA lists a finding aid for a minority.
+        let aids = rows.filter { !($0.findingAids ?? []).isEmpty }.count
+        #expect(aids > 80 && aids < 300, "findingAids: \(aids)")
+        // numberingNote is NOT here on purpose: 1 of 622.
+    }
+
+    @Test("Every vocabulary index in the artifact is in bounds")
+    func vocabularyIndicesInBounds() throws {
+        let index = try loadShipped()
+        for (naId, row) in index.byNaId {
+            if let i = row.accessStatus {
+                #expect(index.statuses.indices.contains(i), "\(naId) accessStatus \(i)")
+            }
+            if let i = row.useStatus {
+                #expect(index.statuses.indices.contains(i), "\(naId) useStatus \(i)")
+            }
+            for i in row.accessRestrictions ?? [] {
+                #expect(index.restrictions.indices.contains(i), "\(naId) accessRestriction \(i)")
+            }
+            for i in row.useRestrictions ?? [] {
+                #expect(index.useRestrictions.indices.contains(i), "\(naId) useRestriction \(i)")
+            }
+            if let i = row.referenceUnit {
+                #expect(index.referenceUnits.indices.contains(i), "\(naId) referenceUnit \(i)")
+            }
+            for i in row.findingAids ?? [] {
+                #expect(index.findingAidTypes.indices.contains(i), "\(naId) findingAid \(i)")
+            }
+        }
     }
 
     @Test("It stays small enough to load eagerly")
