@@ -276,6 +276,15 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   app cannot open; (2) failed connected send: fall back to file/web-library from `exportError`
   instead of stopping. If the owner instead rules the RIS-to-a-Mac path sufficient, close the
   issue — that standing question is O-3's sibling but needs no design, just a yes/no.
+- ~~**F-9 · #306 — in-chart scrubber for year scope**~~ ✅ **DONE (2026-08-10)**. "Honor the
+  existing scope chip + reset affordances" turned out to need **no work**: both read
+  `yearRangeIsCustom`, derived from the two year bounds, so a drag that writes the same state the
+  steppers do surfaces them with no second code path. Two rules did need care — a **decade**
+  selection covers ten years (the axis plots decade *starts*, so committing the raw upper bound
+  drops nine), and bounds clamp to the corpus. One rule turned out not to exist: `ClosedRange`
+  cannot hold `lower > upper`, so the defensive ordering in the first draft was dead code
+  documenting a false claim about Swift Charts — found when the test written to prove it crashed
+  on its own literal.
 - **F-9 · #306 — in-chart scrubber for year scope** (S). Swift Charts selection
   (`chartXSelection`) to narrow the analytics year filter by dragging on the chart itself; honor
   the existing scope chip + reset affordances.
