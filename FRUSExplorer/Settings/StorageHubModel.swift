@@ -59,6 +59,9 @@ enum HubCopy {
 ///
 /// Version history:
 ///   1.0 — S-2c: extracted from the macOS Manage Storage sheet so the iOS port shares the rules
+///   1.1 — Session 2026-08-09 (#777): `redownloadableVolumeIds` — a volume the app cannot fetch
+///          again is never offered for removal. Free Up Space exists to reclaim space that costs
+///          only a download to restore; a side-loaded volume costs the user their only copy.
 struct StorageRemovalPlan: Equatable, Sendable {
 
     /// One removable volume.
@@ -92,12 +95,24 @@ struct StorageRemovalPlan: Equatable, Sendable {
     /// - Parameters:
     ///   - entries: Every downloaded volume, from `StorageReport.perVolume`.
     ///   - protectedVolumeIds: Volumes carrying notes, collections, or summaries. Excluded outright.
+    ///   - redownloadableVolumeIds: Volumes the app can fetch again — the catalogue ids. Anything
+    ///     else is **side-loaded**: the app's copy is the user's only copy, and it is written with
+    ///     `isExcludedFromBackupKey`, so it is in no iCloud Backup or Time Machine either. Removing
+    ///     one is irreversible, so it is never a candidate. Passing an empty set therefore offers
+    ///     nothing, which is the safe direction for a caller that has not loaded its catalogue yet.
     ///   - lastOpenedByVolumeId: Most recent reading-history timestamp per volume.
+    ///
+    /// The exclusion matters more than it looks: candidates are sorted **never-opened first**, and
+    /// a freshly side-loaded volume is by definition never opened and carries no notes — so before
+    /// this guard it was not merely offered, it was the top suggestion, under a confirmation
+    /// promising it "can be downloaded again" (#777).
     static func make(entries: [VolumeStorageEntry],
                      protectedVolumeIds: Set<String>,
+                     redownloadableVolumeIds: Set<String>,
                      lastOpenedByVolumeId: [String: Date]) -> StorageRemovalPlan {
         let candidates = entries
             .filter { !protectedVolumeIds.contains($0.volumeId) }
+            .filter { redownloadableVolumeIds.contains($0.volumeId) }
             .map { entry in
                 Candidate(volumeId: entry.volumeId,
                           volumeFileBytes: entry.volumeFileBytes,

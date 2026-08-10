@@ -192,6 +192,7 @@ struct MacVolumesStorageHub: View {
                 report: storageReport,
                 indexedVolumeIds: indexedVolumeIds,
                 protectedVolumeIds: protectedVolumeIds,
+                redownloadableVolumeIds: redownloadableVolumeIds,
                 lastOpenedByVolumeId: lastOpenedByVolumeId,
                 reindexingVolumeId: reindexingVolumeId,
                 onReindex: { volumeId in await reindexVolume(volumeId) },
@@ -810,11 +811,19 @@ struct MacVolumesStorageHub: View {
         return source.filter { $0.sizeBytes >= 20_000 }.count
     }
 
+    /// The ids the app can fetch again — the catalogue. Anything on disk and absent from this set
+    /// is side-loaded: the app's copy is the only copy (#777).
+    private var redownloadableVolumeIds: Set<String> {
+        Set((appState.manifestStore.diffResult?.known
+             ?? appState.manifestStore.bundledEntries).map(\.volumeId))
+    }
+
     /// What Free Up Space may offer, and in what order. Shared with iOS so the two platforms
     /// cannot drift into offering different volumes (`StorageRemovalPlan`).
     private var removalPlan: StorageRemovalPlan {
         StorageRemovalPlan.make(entries: storageReport?.perVolume ?? [],
                                 protectedVolumeIds: protectedVolumeIds,
+                                redownloadableVolumeIds: redownloadableVolumeIds,
                                 lastOpenedByVolumeId: lastOpenedByVolumeId)
     }
 
@@ -1236,6 +1245,9 @@ private struct MacAllVolumesSheet: View {
     let indexedVolumeIds: Set<String>
     /// Volumes carrying user data, marked and never auto-removed.
     let protectedVolumeIds: Set<String>
+    /// The ids the app can fetch again. A volume absent from this set was side-loaded and its
+    /// removal is irreversible, which the confirmation has to say (#777).
+    let redownloadableVolumeIds: Set<String>
     /// Most recent open per volume.
     let lastOpenedByVolumeId: [String: Date]
     /// The volume the host is currently re-indexing, if any.
@@ -1319,8 +1331,17 @@ private struct MacAllVolumesSheet: View {
             Button(String(localized: "settings.hub.rebuild.cancel", defaultValue: "Cancel"),
                    role: .cancel) { pendingRemoval = nil }
         } message: {
-            Text(String(localized: "settings.hub.remove.message",
-                        defaultValue: "The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again."))
+            // #777: a side-loaded volume cannot be downloaded again — the app's copy is the
+            // user's only copy, and it is written with `isExcludedFromBackupKey`, so it is in no
+            // iCloud Backup or Time Machine either. Promising a re-download there was the whole
+            // bug: the sentence is what makes the button feel safe.
+            if let volumeId = pendingRemoval, !redownloadableVolumeIds.contains(volumeId) {
+                Text(String(localized: "settings.hub.remove.message.sideloaded",
+                            defaultValue: "The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone."))
+            } else {
+                Text(String(localized: "settings.hub.remove.message",
+                            defaultValue: "The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again."))
+            }
         }
     }
 
