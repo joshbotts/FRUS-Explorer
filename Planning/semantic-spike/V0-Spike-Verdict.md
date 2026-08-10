@@ -175,6 +175,9 @@ licence read — then `caffeinate -i python3 harvest_embeddings.py` with the win
 ---
 
 Version history:
+  1.1 — 2026-08-10: owner decision — Phase 3 proceeds on gemma. The blind panel remains
+        open and still gates the AXIS (V-3 shipping), not the harvest: vectors are needed
+        under every panel outcome, including an era-scoped one.
   1.0 — 2026-08-10: Phase 2 executed — store validation, weak-positive gate, quantization
         ladder, Q4-vs-Q8 rung, wall-clock extrapolation, panel staged; gemma recommended
         pending panel + licence.

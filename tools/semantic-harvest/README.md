@@ -109,14 +109,31 @@ the Gemma licence (binds V-5 weight-bundling only, not the harvest).
 
 ## Phase 3 — the full harvest (Studio, overnight)
 
-With the chosen model loaded (context 2048, server running) — and `MODEL_FILE` set this
-time: the spike captured a GGUF SHA only for nomic-q8, and the full run's provenance
-must not repeat that gap (measured extrapolation for the gemma pick: ~6.1 h):
+**Owner decision 2026-08-10: the full run is gemma** (`text-embedding-embeddinggemma-300m-qat`),
+on the Phase 2 numbers. With that model loaded (context 2048, server running), the full
+command — every env var matters:
 
 ```
 cd ~/semantic-harvest
+MODEL="text-embedding-embeddinggemma-300m-qat" \
+MODEL_FILE="/path/to/the/loaded/embeddinggemma...q4_0.gguf" \
+PREFIX="title: none | text: " \
 caffeinate -i python3 harvest_embeddings.py 2>&1 | tee harvest.log
 ```
+
+- **`PREFIX` is not optional.** The spike embedded every chunk under
+  `title: none | text: ` (trailing space included) and the Phase 2 gates validated THAT
+  configuration; a run without it produces vectors from a different contract and no error.
+  The same goes for a resume: re-run the exact same command line (`tee -a` to keep the
+  earlier log), because a resumed volume embeds under whatever env the new invocation has.
+- **`MODEL_FILE` is not optional this time**: the spike captured a GGUF SHA only for
+  nomic-q8; the full run's provenance must not repeat that gap. (My Models → reveal in
+  Finder → drag the file into Terminal.)
+- Copy the model id exactly from `curl -s localhost:1234/v1/models` — the harvester
+  refuses unlisted ids by design.
+- Measured extrapolation for gemma: **~6.1 h**; the ETA on each progress line corrects
+  this within the first hour. Expect the SEP warning in LM Studio's log on every batch —
+  known-spurious on the QAT gemma (see Field notes).
 
 - `caffeinate -i` keeps the Studio awake; closing the Terminal window kills the run, so leave it
   open (or prefix with `nohup` and background it).
