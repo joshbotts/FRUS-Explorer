@@ -210,7 +210,8 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 
 ## 4. Browsing the Corpus
 
-Open the **Corpus Browser** (⇧⌘B) to navigate the FRUS series as a hierarchy.
+Open the **Corpus Browser** from **Window ▸ Corpus Browser** (⇧⌘B) to navigate the FRUS series as
+a hierarchy.
 
 ![Corpus Browser on macOS — the subseries list with downloaded counts in the sidebar, the People toolbar button (two-person icon), and the detail pane prompting you to select a subseries.](screenshots/macos/browser.png)
 
