@@ -4605,3 +4605,50 @@ assertion that says plainly it is a wiring pin, not behaviour.
 - **No haptic or live range readout during the drag.** The selection is invisible until release —
   acceptable because the commit is immediate and reversible, but a live overlay would be the
   obvious refinement if it reads as unresponsive on device.
+
+---
+
+## Session 2026-08-10 — F-10 (#263): paste a chapter's footnotes and triage them
+
+**Issue:** #263 · **Plan:** § F-10
+
+### "Engine unchanged" was true and misleading
+
+`CitationMatchingEngine` and `CitationParser` needed nothing — and `CitationParser.parse` takes
+**one** citation. Nothing in the app turned a chapter's footnotes into the list to hand it. That
+splitter *is* the feature, and the plan costed it at zero.
+
+### Why the splitter is marker-first, not newline-first
+
+Real blocks break the naive rule in both directions. A citation copied from a two-column PDF or a
+narrow measure arrives wrapped across three lines — splitting per line yields three unparseable
+fragments instead of one good citation. And a running notes paragraph puts several footnotes on one
+line. So: a numbered marker starts a citation, marker-less lines continue it, and a block with no
+markers at all is one citation per line.
+
+The marker is bounded to three digits. Unbounded, `1969. Memorandum…` reads as footnote 1969 and
+**silently eats the year** — a mutation confirmed nothing else catches it.
+
+### Four outcomes, not three
+
+The plan says resolved/ambiguous/missing. `.failed` is separate: "we looked and found nothing" and
+"we could not look" send a researcher to different next steps — a different volume versus fixing the
+citation text. Ambiguous carries its count, because 3 possibilities and 12 are different problems
+when triaging a chapter.
+
+### Sequential lookup, on purpose
+
+The engine is an actor over the same index the rest of the app reads, and a chapter is tens of rows.
+Fanning out would contend for the index to save a second on a list the reader is about to read line
+by line — and rows arriving in paste order is what makes partial progress legible. A row that throws
+becomes `.failed` rather than aborting the batch.
+
+### Left undone
+
+- **No export of the triage table.** A researcher who triages 40 footnotes may well want the result
+  as a file; nothing here produces one. Deliberately out of scope, and worth its own issue if it is
+  wanted.
+- **The table does not disambiguate in place.** An ambiguous row states its count; choosing among
+  the candidates still means a single lookup. That is the obvious next increment.
+- **Sequential lookup is untested for a very large paste.** Tens of rows is the design point; a
+  thousand-line paste would run visibly long with no cancel.
