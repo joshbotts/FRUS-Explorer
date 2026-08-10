@@ -485,8 +485,130 @@ the repo, with the honest limit stated:
 
 ---
 
+## 8. Assessed on owner question: should the corpus-level insights move to the series-analytics
+## sources page?
+
+**The question (2026-08-10):** should the corpus-level insights about archival sources — the
+series-wide bundled modes (Collections, Network, Flows) — be relocated to the sources page of
+series analytics (the Research Guide's *Archival Sourcing* page, SA-3 /
+`SourceProvenanceDashboard`) as deeper layers / alternate views?
+
+**Answer: relocate no; layer yes.** Keep the instrument where it is and fix it (R-1/R-2); give
+the sources page the collection-grain *narrative* layer it was originally specified to have.
+The reasoning, because the question is genuinely close and re-opens an explicit owner decision
+(D-1), deserves its full form.
+
+### 8.1 The question is the app's own original architecture
+
+By the governing blueprint's line test (`BigPicture-Analytics-CorpusVsSeries.md`: content =
+corpus, "how the Office of the Historian built and published this series" = series), the three
+bundled modes are **series-analytics subject matter** — where the editors found documents is a
+production story. The blueprint's S4 spec even names the exact view: *"Top archival collections
+by administration — ranked bars, tap-through to the existing Source Explorer
+`CollectionDetailView`"* — as a series dashboard. The feasibility doc's §6 recommended the same
+home. D-1 overrode both ("one Analytics-family surface … Research Guide untouched"), and §7.2
+records the governance departure with per-mode disclosure as the mitigation. So the relocation
+instinct is not eccentric; it is the pre-D-1 design asking to be re-heard, with this review's
+island findings (F-3) as new evidence in its favor.
+
+### 8.2 Why wholesale relocation still loses — the hosting facts decide it
+
+Verified in code, the sources page lives in three containers, and every one of them is wrong
+for the *instrument* use the owner's bar demands:
+
+- **On iOS the Research Guide is a sheet presented from Settings ▸ About**
+  (`AboutView.swift:175-184`; `#752`/L-43 comment) — it is *not* on the Research tab (grep over
+  `MainTabView.swift`: zero matches). Relocation would move the working surfaces from Browse ▸
+  Analysis Tools (poor, per F-3) to Settings ▸ About ▸ Research Guide ▸ About the Series ▸
+  Archival Sourcing — five levels deep in a reference modal. For the scope → rank → open → act
+  workflow, that is strictly worse on the platform with the most constrained navigation.
+- **The second iOS container is `WhileIndexingSheet` mid-onboarding**
+  (`WhileIndexingSheet.swift:64`). The #795 cross-link rationale
+  (`SourceProvenanceDashboard.swift:471-477`) already records why outbound navigation from that
+  context is fraught: sheet-over-sheet during the first index, and Archival Analytics needs
+  three environment injections a sheet does not inherit. Deeper layers that *navigate* (open
+  windows, push details) inherit the same constraint; the drill-downs below are designed
+  sheet-hostable for exactly this reason.
+- **On macOS the guide is a value-based reference window deliberately kept out of the Window
+  menu** (#363 #7, `FRUSExplorerApp.swift:1042-1057`). The instrument's working posture — a
+  window beside documents, a deep-link target for R-2e/R-10, the home of Archival Neighbors
+  hand-offs — is the opposite posture.
+- **The chassis mismatch is recorded and real.** The blueprint built "two chart chasses,
+  deliberately": guide dashboards "tuned for narrative reading rather than query-driven
+  exploration." Network is a full-frame gesture-owning `Canvas` that cannot nest in a
+  `ScrollView` (`ArchivalAnalyticsMode.isFullFrameCanvas` exists precisely because of the
+  gesture fight); Flows is a focus-picker instrument. Embedding either in
+  `IndexingEducationView`'s scrolling content model means rebuilding the full-frame branch
+  inside the guide — real work in the direction of the wrong chassis, in the surface family
+  where the canvas-renders-nothing defect class was already caught once (#765's review).
+- **Your Library is per-user by definition** and cannot move to series analytics at all.
+
+A wholesale move also forfeits what D-1 actually bought: one place where the unit vocabulary
+(collections vs classes), the weight semantics, and the four evidence bodies are learned and
+manipulated together. R-1/R-2's whole direction — make that place an instrument researchers
+reach *from* documents, search, and topics — needs a window/menu-resident target.
+
+### 8.3 What the sources page should absorb — the narrative layer, as specified pre-D-1
+
+The right split is by **use**, not by data: the narrative use (how the series' archival base
+changed; which collections carried each era) belongs on the sources page; the instrument use
+(my question → my units → act on them) stays in the Analytics family. Concretely:
+
+- **8.3a (S–M) — A "Top collections in this scope" card on the sources page.** The blueprint's
+  S4 bullet 2, finally landing where it was specified: top-N collections by documents,
+  custodian-coloured, computed from the same `ArchivalCollectionsData`/usage-index derivation
+  the Collections mode uses (shared code, not a copy), honouring the page's **existing**
+  `SeriesScopeBar` and year range — scoping machinery the sources page has today and the
+  Analytics surface does not, which makes this card the cheapest scoped collection ranking in
+  the app. Rows open `CollectionDetailSheet` (`CollectionDetailView.swift:714` — already
+  self-contained and sheet-hostable, so it works in both guide containers including
+  onboarding). The card is capped and closes with the outbound "Open Archival Analytics" link
+  as the escape to the full instrument. Load the authority/usage stores lazily on the card's
+  first appearance, off-main — the page's current decode is the 134 KB provenance index, and
+  onboarding must not pay ~2.5 MB up front.
+- **8.3b (S, after R-3) — the class half of the same card** for pre-1946 scopes, gated on the
+  label table: unlabeled decimal numbers are tolerable in a tool and wrong in an educational
+  page.
+- **8.3c — Do not add Flows or Network to the page.** Chassis (above), and a content reason
+  specific to this page: the sources page is *about source notes* — where documents were drawn
+  from. Flow ribbons assert a different claim (where editors pointed), and putting both claim
+  shapes on one educational page invites exactly the drawn-from/pointed-at conflation that
+  #783 removed from the data layer. The corpus-wide top-pairs list is narrative-shaped and
+  could join the page some day, but it is the weakest evidence body (annotation practice,
+  post-1945, time-blind) and earns nothing until schema 2, if ever.
+- **8.3d (S) — Finish the bidirectional links** rather than merging the homes: #798 (the iOS
+  cross-link, which R-2e's initializer makes tractable) and the reverse
+  `ResearchGuideLinkButton` from the Analytics surface to the sources page (R-11).
+- **Drift guard (non-negotiable, house style):** one shared derivation and one attribution
+  rule (both surfaces already attribute by coverage midpoint), plus a parity test pinning the
+  guide card against the Collections-mode ranking for an identical scope — two surfaces
+  showing "top collections" that could disagree would be worse than either alone. Per #763's
+  no-era-rollups decision, the card computes its buckets from the per-volume rows at render
+  time; no second stored era table.
+
+### 8.4 The decision, stated for the log
+
+D-1's consolidation of the *instrument* stands; its "Research Guide untouched" clause is
+amended: the sources page gains read-only, sheet-safe, collection-grain narrative layers that
+reuse the instrument's derivations, and the two surfaces cross-link both ways. This restores
+the blueprint's governance split in both directions — subject matter to the guide, query-driven
+exploration to the window — without duplicating an instrument or burying one in Settings. One
+contingency worth recording: if the Research Guide ever moves out of Settings onto the iOS
+Research tab, the calculus shifts and a fuller consolidation into the guide becomes worth
+re-assessing; today the hosting facts foreclose it.
+
+---
+
 ## Version history
 
+- 1.1 (2026-08-10) — §8: assessed the owner's relocation question (corpus-level archival
+  insights → the series-analytics sources page). Answer: relocate no — the guide's three
+  hosting containers (Settings-sheet on iOS, onboarding sheet, reference window) and the
+  recorded narrative-vs-instrument chassis split all cut against it — but layer yes: the
+  sources page absorbs the blueprint-S4 collection-grain narrative card (shared derivation,
+  sheet-hosted drill, lazy decode, parity-tested), the class half after R-3, no Flows/Network,
+  and both cross-links finish. D-1's consolidation stands; its "Research Guide untouched"
+  clause is amended.
 - 1.0 (2026-08-10) — Initial review: verdict, confirmation of working surfaces, findings
   F-1…F-10 with fresh measurements over the shipped artifacts (scoped-vs-band divergence,
   per-band denominators, class-grain fold discrepancy, external-citation era distribution,
