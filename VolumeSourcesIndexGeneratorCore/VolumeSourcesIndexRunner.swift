@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import GeneratorKit
 import SourceNoteKit
 import CentralFilesIndexGeneratorCore
 
@@ -35,23 +36,22 @@ public enum VolumeSourcesIndexRunner {
         let volumesDir = URL(fileURLWithPath: env["VOLUMES_DIR"] ?? "/Users/jbotts/Development/frus/volumes")
         let indexPath = env["CENTRAL_FILES_INDEX"] ?? "FRUSExplorer/Resources/central-files-index.json"
         let outputPath = env["OUTPUT"] ?? "FRUSExplorer/Resources/volume-sources-index.json"
-        let generated = env["GENERATED_DATE"] ?? today()
+        let generated = env["GENERATED_DATE"] ?? generatorDateStamp()
 
         let bundled = try BundledLotResolver(indexURL: URL(fileURLWithPath: indexPath))
-        log("Loaded bundled index: \(bundled.lotFileCount) lot files")
+        generatorLog("Loaded bundled index: \(bundled.lotFileCount) lot files")
 
         // NARA Catalog client — nil (offline only) when no API key is provided.
         let apiClient: NARACatalogHarvestClient? = env["CATALOG_API_KEY"].map { key in
             let cacheDir = URL(fileURLWithPath: env["CACHE_DIR"] ?? ".cache/volume-sources")
             return NARACatalogHarvestClient(apiKey: key, cacheDirectory: cacheDir)
         }
-        log(apiClient == nil ? "No CATALOG_API_KEY — offline pass only" : "API pass enabled")
+        generatorLog(apiClient == nil ? "No CATALOG_API_KEY — offline pass only" : "API pass enabled")
 
         // MARK: Phase A — parse every volume into an unresolved collection tree.
-        let xmls = try FileManager.default.contentsOfDirectory(at: volumesDir, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "xml" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
-        guard !xmls.isEmpty else { throw RunError.noVolumes(volumesDir.path) }
+        // #270: the shared enumerator, byte-identical to the inline filter-and-sort it replaces
+        // (`*.xml`, sorted by last path component) — the sort is what keeps the artifact stable.
+        let xmls = try VolumeCorpusEnumerator.volumeFiles(in: volumesDir)
 
         var volumeTrees: [(volumeId: String, prose: [String], tree: [CollectionNode])] = []
         for url in xmls {
@@ -69,7 +69,7 @@ public enum VolumeSourcesIndexRunner {
         var lotKeys: [String: String] = [:]   // normalizedLot -> inferred record group
         var rgHeadings: [String: String] = [:]   // record group number -> a representative heading title
         for vt in volumeTrees { gatherKeys(vt.tree, inheritedRG: nil, lotKeys: &lotKeys, rgHeadings: &rgHeadings) }
-        log("Distinct keys: \(lotKeys.count) lot files, \(rgHeadings.count) record groups")
+        generatorLog("Distinct keys: \(lotKeys.count) lot files, \(rgHeadings.count) record groups")
 
         // MARK: Phase C — resolve each distinct key once (offline first, then API).
         var lotMap: [String: ResolvedNAID] = [:]
@@ -98,7 +98,7 @@ public enum VolumeSourcesIndexRunner {
             // those rather than bundle mislinked headers.
             let byNAID = Dictionary(grouping: rgMap.keys) { rgMap[$0]!.naId }
             for (naId, rgs) in byNAID where rgs.count > 1 {
-                log("WARNING: \(rgs.count) record groups (\(rgs.sorted().joined(separator: ", "))) all resolved to NAID \(naId) — discarding as a likely ignored-filter bug")
+                generatorLog("WARNING: \(rgs.count) record groups (\(rgs.sorted().joined(separator: ", "))) all resolved to NAID \(naId) — discarding as a likely ignored-filter bug")
                 for rg in rgs { rgMap[rg] = nil }
             }
             apiRGHits = rgMap.count
@@ -109,7 +109,7 @@ public enum VolumeSourcesIndexRunner {
         let decided = try recordGroupsToWrite(resolved: rgMap, headingCount: rgHeadings.count,
                                               prior: prior?.recordGroups ?? [:], outputPath: outputPath)
         rgMap = decided.map
-        if let note = decided.note { log(note) }
+        if let note = decided.note { generatorLog(note) }
 
         // MARK: Phase D — apply resolutions to the (transient) trees to fold the cross-volume
         // authority and count coverage. The resolved trees themselves are not serialized —
@@ -139,7 +139,7 @@ public enum VolumeSourcesIndexRunner {
         // so the authority and the coverage count are provably untouched by this change.
         let lotsDecision = lotsToWrite(resolved: lotMap, prior: prior?.lots ?? [:],
                                        isAnsweredByCentralFiles: { bundled.resolve(rawLot: $0) != nil })
-        if let note = lotsDecision.note { log(note) }
+        if let note = lotsDecision.note { generatorLog(note) }
         let lotsOut = lotsDecision.map
 
         let output = VolumeSourcesIndex(schemaVersion: 2, generated: generated,
@@ -149,7 +149,7 @@ public enum VolumeSourcesIndexRunner {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(output).write(to: URL(fileURLWithPath: outputPath))
 
-        log("""
+        generatorLog("""
         volume-sources-index.json written to \(outputPath)
           volumes with sources: \(volumeTrees.count) / \(xmls.count)
           prose paragraphs:     \(totalProse)
@@ -269,18 +269,6 @@ public enum VolumeSourcesIndexRunner {
         }
     }
 
-    private static func today() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f.string(from: Date())
-    }
-
-    private static func log(_ message: String) {
-        FileHandle.standardError.write(Data((message + "\n").utf8))
-    }
-
     /// Just enough of the previous artifact to carry its record-group map forward.
     struct PriorIndex: Decodable {
         let recordGroups: [String: ResolvedNAID]
@@ -366,12 +354,13 @@ public enum VolumeSourcesIndexRunner {
                 + "\(outputPath) — this run had no CATALOG_API_KEY and cannot re-derive them.")
     }
 
+    /// Failures specific to this generator. `noVolumes` moved to `GeneratorKit.GeneratorError`
+    /// (#270) — the enumerator throws it, and two spellings of the same message is exactly the
+    /// two-standards gap this migration closes.
     public enum RunError: Error, CustomStringConvertible {
-        case noVolumes(String)
         case emptyRecordGroups(headings: Int, output: String)
         public var description: String {
             switch self {
-            case .noVolumes(let dir): return "No .xml volumes found in \(dir)"
             case .emptyRecordGroups(let headings, let output):
                 return """
                     Refusing to write \(output) with an EMPTY recordGroups map.
