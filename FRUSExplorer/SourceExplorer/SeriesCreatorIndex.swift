@@ -120,12 +120,21 @@ extension SeriesCreatorIndex {
     ///    guard is structural rather than a filter, but it is why the line stays absent on the
     ///    decimal-file mass instead of repeating one label everywhere.
     static func creatorName(for entry: LotFileEntry) -> String? {
-        guard entry.isSeriesLevel else { return nil }
-        // `!= true` rather than `== false`: an absent central-files index means the flag list is
-        // unavailable, which is not the same as "this NAID is fine". Matches CollectionDetailView.
-        guard CentralFilesIndexStore.shared?.isUntrustworthyNAID(entry.naId) != true else {
-            return nil
-        }
+        guard shouldShow(isSeriesLevel: entry.isSeriesLevel,
+                         untrustworthyFlag: CentralFilesIndexStore.shared?
+                             .isUntrustworthyNAID(entry.naId)) else { return nil }
         return SeriesCreatorIndexStore.shared?.creator(forNaId: entry.naId)
+    }
+
+    /// Guards 1 and 2 as a pure decision, so both can be exercised — including the case no test
+    /// can otherwise reach, where the central-files index failed to load.
+    ///
+    /// `untrustworthyFlag` is `nil` when that index is unavailable. It must be treated as
+    /// **unknown, not clean**: `!= true` rather than `== false`. A mutation sweep flipped exactly
+    /// that comparison and nothing caught it, because in a test process the singleton is always
+    /// present and the two spellings agree.
+    static func shouldShow(isSeriesLevel: Bool, untrustworthyFlag: Bool?) -> Bool {
+        guard isSeriesLevel else { return false }
+        return untrustworthyFlag != true
     }
 }

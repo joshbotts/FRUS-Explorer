@@ -215,7 +215,10 @@ let package = Package(
         /// Unit tests for SeriesCreatorIndexGeneratorCore.
         .testTarget(
             name: "SeriesCreatorIndexGeneratorTests",
-            dependencies: [.target(name: "SeriesCreatorIndexGeneratorCore")],
+            dependencies: [
+                .target(name: "SeriesCreatorIndexGeneratorCore"),
+                .target(name: "LotClaimantsIndexGeneratorCore"),
+            ],
             path: "SeriesCreatorIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

@@ -231,6 +231,15 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   `<list>`-encoded population while in there). `SourceNoteParser` already owns the Job grammar
   (`#"\bJob\s+([\w–—\-\/]+)"#` — en-dashes) — reuse it, never a second regex. Regenerate
   `volume-sources-index.json` offline.
+- ~~**F-6 · #405 (retitled) — series creators in Source Explorer**~~ ✅ **DONE (2026-08-10)**.
+  The 622-entry figure was exact — reached independently, from 8,234 app-held NAIDs of which 2,121
+  are series in the harvest. Two plan lines needed correcting in flight. (a) **No cohort statement
+  was built.** #650's form is `"%@ · 1 of %lld"` and its rule is that the count is taken before any
+  scope and includes the anchor; there is no cohort here to count — a creator is an attribute of
+  one series, not a set the reader is inside — so borrowing the phrasing would have implied a
+  measurement nobody made. (b) **The surface already existed and had never been fed**: the
+  `.candidates` branch has shipped a "NARA Creator" row since #669 with `creatorName` hard-coded
+  to nil. Filled, but only where every claimant of a divided lot agrees. Artifact 52 KB.
 - **F-6 · #405 (retitled) — series creators in Source Explorer** (S). The measured-positive
   remainder: a bundled `naId → creator heading` map (~622 entries, kilobytes; offline projection
   from the owner's harvest — no key, no re-harvest) rendered as "this series was created by X"
@@ -335,7 +344,8 @@ sitting, not a session.
    legitimately changes that artifact's contents; landing a mechanical refactor in the same PR
    would make every byte difference ambiguous between the two. I-3(volume-sources) is now cheaper
    than before, not more expensive: the target already gained its SourceNoteKit dependency here.
-8. Then F-6…F-11 / I-1 / I-2 by appetite — each is standalone.
+8. ~~**F-6**~~ ✅ **2026-08-10** (#405). Then F-7…F-11 / I-1 / I-2 by appetite — each is
+   standalone.
 
 **Owner lane, parallel:** B-1 device backtrace (with QW-2 on a build) · O-1 keyed call + harvest ·
 O-3 joint decision · O-6 send the ask · O-2 / O-4 / O-5 design sittings as convenient · O-7 when

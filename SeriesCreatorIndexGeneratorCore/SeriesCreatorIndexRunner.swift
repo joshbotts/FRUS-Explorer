@@ -148,6 +148,20 @@ public enum SeriesCreatorIndexRunner {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// The body to name as *the* creator: NARA's `Most Recent`, else the first listed.
+    ///
+    /// The fallback is not cosmetic — 1 of the 622 series carries a creator with no `creatorType`
+    /// at all (naId 2521222), and a series with a creator but no type still has a creator. Taking
+    /// `creators[0]` unconditionally instead would name a **Predecessor** wherever one sorts
+    /// first, which is a body that no longer held the records; a mutation sweep did exactly that
+    /// and nothing caught it, because the selection lived inside `run()` where no test could call
+    /// it.
+    static func primaryCreator(
+        from creators: [HarvestShardReader.Record.Creator]
+    ) -> HarvestShardReader.Record.Creator? {
+        creators.first { $0.creatorType == "Most Recent" } ?? creators.first
+    }
+
     /// Every NARA NAID the bundled indexes name, from any nesting depth.
     ///
     /// Deliberately a structural walk rather than a list of known key paths: the two indexes are
@@ -239,7 +253,7 @@ public enum SeriesCreatorIndexRunner {
 
         var rows: [String: Entry] = [:]
         for (naId, creators) in creatorsByNaId {
-            let mostRecent = creators.first { $0.creatorType == "Most Recent" } ?? creators[0]
+            guard let mostRecent = primaryCreator(from: creators) else { continue }
             guard let primary = indexOf[displayHeading(mostRecent.heading)] else { continue }
             let predecessors = creators
                 .filter { $0.creatorType != "Most Recent" }

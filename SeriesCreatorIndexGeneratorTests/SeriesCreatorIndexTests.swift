@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 @testable import SeriesCreatorIndexGeneratorCore
+import LotClaimantsIndexGeneratorCore
 
 // MARK: - DisplayHeadingTests
 
@@ -207,5 +208,49 @@ struct ShippedArtifactTests {
         // harvest changes it, whoever reads this knows the axis question was decided on it.
         #expect(Double(stateRoots) / Double(roots.count) > 0.9,
                 "\(stateRoots)/\(roots.count) headings root at Department of State")
+    }
+}
+
+// MARK: - PrimaryCreatorTests
+
+/// Which of a series' creators is *the* creator (#405).
+///
+/// A mutation sweep replaced this selection with `creators[0]` and nothing caught it — the rule
+/// lived inside `run()`, where no test could call it.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #405 (F-6)
+@Suite("Primary creator selection (#405)")
+struct PrimaryCreatorTests {
+
+    private func creator(_ heading: String, _ type: String?) throws
+        -> HarvestShardReader.Record.Creator {
+        let json = """
+        {"heading":"\(heading)","naId":"1","creatorType":\(type.map { "\"\($0)\"" } ?? "null")}
+        """
+        return try JSONDecoder().decode(HarvestShardReader.Record.Creator.self,
+                                        from: Data(json.utf8))
+    }
+
+    @Test("Most Recent wins even when a Predecessor is listed first")
+    func mostRecentWinsRegardlessOfOrder() throws {
+        let creators = [try creator("Before.", "Predecessor"),
+                        try creator("Now.", "Most Recent")]
+        #expect(SeriesCreatorIndexRunner.primaryCreator(from: creators)?.heading == "Now.", """
+            Taking the first listed names a body that no longer held the records — the office \
+            the reader would go looking for does not have them.
+            """)
+    }
+
+    @Test("A creator with no type is still a creator")
+    func untypedCreatorIsUsed() throws {
+        // Measured: 1 of the 622 series carries a creator NARA gives no type (naId 2521222).
+        let creators = [try creator("Unlabelled.", nil)]
+        #expect(SeriesCreatorIndexRunner.primaryCreator(from: creators)?.heading == "Unlabelled.")
+    }
+
+    @Test("No creators means no creator, not a crash")
+    func emptyIsNil() {
+        #expect(SeriesCreatorIndexRunner.primaryCreator(from: []) == nil)
     }
 }

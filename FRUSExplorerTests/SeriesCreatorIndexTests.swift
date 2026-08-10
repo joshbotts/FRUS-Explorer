@@ -115,3 +115,52 @@ struct SeriesCreatorGuardTests {
         #expect(SeriesCreatorIndex.creatorName(for: entry(naId: "999999999", level: "series")) == nil)
     }
 }
+
+// MARK: - SeriesCreatorDecisionTests
+
+/// The two decisions the guards and the divided-lot row turn on (#405).
+///
+/// Both were mutation survivors, and both for the same reason: the rule was inline in a function
+/// that needs a bundled singleton, so no test could reach it. Extracted and driven here.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #405 (F-6)
+@Suite("Series creator decisions (#405)")
+struct SeriesCreatorDecisionTests {
+
+    @Test("An unavailable central-files index is unknown, not clean")
+    func untrustworthyFlagNilIsUnknown() {
+        // `nil` means the flag list failed to load. Reading that as "this NAID is fine" would show
+        // a creator on exactly the records #351 established point at the wrong collection —
+        // precisely when the app has lost its ability to tell.
+        #expect(!SeriesCreatorIndex.shouldShow(isSeriesLevel: true, untrustworthyFlag: nil) == false,
+                "nil must not block a series outright…")
+        #expect(SeriesCreatorIndex.shouldShow(isSeriesLevel: true, untrustworthyFlag: nil),
+                "…an unavailable list is not evidence against this NAID")
+        #expect(!SeriesCreatorIndex.shouldShow(isSeriesLevel: true, untrustworthyFlag: true),
+                "a flagged NAID is refused")
+        #expect(SeriesCreatorIndex.shouldShow(isSeriesLevel: true, untrustworthyFlag: false))
+    }
+
+    @Test("A file unit is refused whatever the flag says")
+    func fileUnitAlwaysRefused() {
+        for flag in [nil, true, false] as [Bool?] {
+            #expect(!SeriesCreatorIndex.shouldShow(isSeriesLevel: false, untrustworthyFlag: flag),
+                    "file unit accepted with flag \(String(describing: flag))")
+        }
+    }
+
+    @Test("A divided lot names a creator only when every claimant agrees")
+    func unanimityRule() {
+        #expect(LotClaimantsIndex.unanimousCreator(["A.", "A.", "A."]) == "A.")
+        #expect(LotClaimantsIndex.unanimousCreator(["A.", "B."]) == nil,
+                "two offices made these series; naming one is false for the other")
+        #expect(LotClaimantsIndex.unanimousCreator(["A.", nil]) == nil, """
+            Partial coverage must stay silent too. Naming the creator of the covered subset is \
+            worse than saying nothing, because the reader cannot see which claimants it came from.
+            """)
+        #expect(LotClaimantsIndex.unanimousCreator([nil, nil]) == nil)
+        #expect(LotClaimantsIndex.unanimousCreator([]) == nil)
+        #expect(LotClaimantsIndex.unanimousCreator(["A."]) == "A.")
+    }
+}
