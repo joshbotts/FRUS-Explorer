@@ -765,6 +765,17 @@ final class AppState {
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingCollectionSelection: UUID? = nil
 
+    #if os(iOS)
+    /// The iOS twin of ``pendingCollectionSelection``, addressed to a scene (#752 / M-25).
+    ///
+    /// A separate slot rather than a scene on the existing one, because the existing one is
+    /// macOS's: there a singleton Collections window consumes it and there is no scene to address.
+    /// On iOS every open window's `CollectionListView` drains the untargeted slot, so the imported
+    /// collection could surface in a different window from the one the tab switch went to — the
+    /// two halves of the same continuation, split.
+    var pendingCollectionSelectionScene: Handoff<UUID>? = nil
+    #endif
+
     /// Bumped when the user asks to **type a new query** — ⌘S (Find ▸ Search…) or the main
     /// window's titlebar Search button (#749 / audit L-35).
     ///
@@ -842,7 +853,58 @@ final class AppState {
     /// drained by the aux window's `.onAppear` into its own state, so the aux window knows which main
     /// window opened it. Transient (never persisted) — a restored aux window reads nil and falls back
     /// to `.anyWindow`. #338 aux-window origin.
+    ///
+    /// ## The slot can be left populated, and that is harmless (#752 / L-48)
+    /// `openWindow(value:)` against a value matching an already-open window **refocuses** it rather
+    /// than minting a root, so nothing captures the slot and it stays set. The audit filed that as a
+    /// defect on the theory that a later aux window would inherit a stale origin. It cannot:
+    /// ``openAuxWindow(_:from:using:)`` is the only writer, it writes **unconditionally immediately
+    /// before every open**, and it is the only iOS path that mints any of the five
+    /// `.auxWindowOrigin`-bearing scenes. Every open therefore overwrites the slot with its own
+    /// launcher before the new root reads it — a parked value can only ever be re-read by the window
+    /// that parked it. And a value that outlives its window degrades through
+    /// ``resolveOriginScene(_:)`` to `.anyWindow`, which is a live window rather than nowhere.
+    ///
+    /// What *is* true, and is #338-accepted rather than a bug: an aux window refocused from a
+    /// **different** main window keeps the origin it captured first, so an action inside it routes to
+    /// the window that originally opened it. See ``AuxWindowOriginModifier``.
     var pendingAuxWindowOriginRaw: String? = nil
+
+    /// The continuation (Handoff / Spotlight / opened `.fruscollection`) a window has already
+    /// claimed, so a second window cannot act on the same one (#752 / M-25).
+    ///
+    /// ## Why a claim exists at all
+    /// UIKit delivers a user activity or a URL to **one** `UIScene`, and SwiftUI's
+    /// `.onContinueUserActivity` / `.onOpenURL` bridge that per scene — so on the expected
+    /// behaviour exactly one window's handler runs and this guard never fires. It is here because
+    /// that expectation is **not verified on a device**, and the cost of being wrong is
+    /// asymmetric: with the continuation now addressed to the receiving window's own scene, a
+    /// fan-out would open the document in *every* window instead of one. The claim makes the
+    /// change safe under both readings — one window acts either way.
+    ///
+    /// Keyed by content, not by object identity, so it also covers `.onOpenURL`, whose payload is
+    /// a value type.
+    private var claimedContinuationKey: String?
+
+    /// Claims a continuation for the calling window, or refuses if another already has it.
+    ///
+    /// The claim is released on the next main-actor turn: co-delivered handlers all run in the
+    /// turn the OS delivers them, while a user's second tap on the same Spotlight result is a
+    /// later turn and must work.
+    ///
+    /// - Returns: `true` when the caller may act on the continuation.
+    func claimContinuation(_ key: String) -> Bool {
+        guard claimedContinuationKey != key else { return false }
+        claimedContinuationKey = key
+        Task { @MainActor [weak self] in self?.releaseContinuationClaim(key) }
+        return true
+    }
+
+    /// Releases a claim if it is still the current one. Called on the turn after ``claimContinuation(_:)``;
+    /// exposed so tests can drive the two halves without racing a `Task`.
+    func releaseContinuationClaim(_ key: String) {
+        if claimedContinuationKey == key { claimedContinuationKey = nil }
+    }
 
     /// Monotonic counter behind the advisory stamps (deterministic, unlike wall-clock ties).
     private var hostStampCounter: UInt64 = 0
@@ -1060,10 +1122,6 @@ final class AppState {
     /// topic the user asked about. `ResearchGuideView` reads and clears it.
     var researchGuideInitialPageId: String? = nil
 
-    /// Controls presentation of the standalone "Research Guide" sheet on iOS,
-    /// reachable from Settings independently of the indexing flow.
-    var showResearchGuide: Bool = false
-
     /// Incremented each time the full-text index is completely cleared (app reset).
     ///
     /// Observed by `MacSearchWindowView` to discard cached result sets that were
@@ -1075,6 +1133,15 @@ final class AppState {
     // `showCitationLookup` removed in 4.3 — Citation Lookup is a Window scene on
     // macOS (`frus.citationLookup`, UI audit B4) and a local-state sheet on iOS
     // (`SearchView`), so no cross-view flag remains.
+    //
+    // `showResearchGuide` removed for the same reason (#752 / L-43). It was a Bool on this
+    // app-wide object driving a `.sheet(isPresented:)` in `SettingsView`, so on an iPad with
+    // several windows open every window's Settings tab was bound to the one flag and all of them
+    // would present the guide at once. The audit prescribed converting it to a scene-addressed
+    // hand-off; that is the wrong shape. Producer and consumer are **one view tree in one
+    // window** — `AboutView` is a `NavigationLink` destination of the very `SettingsView` that
+    // presented the sheet — so it never needed to cross a window boundary at all. The flag is now
+    // `@State` on `AboutView`, which is scene-local by construction and cannot fan out.
 
     /// The most recent per-document indexing progress update, or `nil` when no
     /// indexing is in progress.
@@ -2097,6 +2164,13 @@ extension EnvironmentValues {
 /// a document opened here — or a further aux window launched here — routes back to the originating
 /// main window. Captured ONCE: a same-request `openWindow(value:)` refocus keeps the first origin
 /// (a live window, no black-hole; #338 review, accepted).
+///
+/// The consequence of capturing once, stated plainly (#752 / L-48): an aux window **refocused from a
+/// different main window** keeps its *first* origin, so a related-document tap inside it routes to
+/// the window that originally opened it rather than the one that just refocused it. That is the
+/// accepted trade — the alternative, re-capturing on every appear, would let a background window's
+/// stale launch overwrite a foreground one's — and since #752/L-40 it is the behaviour
+/// `SourceExplorerWindowContent` inherits, so it is worth knowing before reading that code.
 struct AuxWindowOriginModifier: ViewModifier {
     let appState: AppState
     @State private var originRaw: String? = nil

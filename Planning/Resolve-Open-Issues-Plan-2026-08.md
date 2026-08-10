@@ -6,6 +6,9 @@ claim below checked in the tree (not inferred from PR prose).
 
 **Version history:**
 - 1.0 — Session 2026-08-09: initial plan, from the full open-issue verification sweep.
+- 1.3 — Session 2026-08-10: **F-2 executed.** One of its four items (L-48) closed as
+  not-reproducing and one (L-43) had the wrong remedy prescribed — the sixth and seventh plan lines
+  this program has found to be claims rather than facts.
 - 1.2 — Session 2026-08-10: **F-1 executed** in one session. Struck through in §3 with the
   measurement that refutes its era premise — the fifth plan line this program has found to be a
   claim rather than a fact.
@@ -161,6 +164,16 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   later, guarded; subject-numeric never — 87.2% OOV). `currentDateIndexVersion` bump; no CloudKit
   gate. Payoff: the only archival-flow signal that reaches 1910–1945, on a surface that shipped
   with the disclosure already phrased.
+- ~~**F-2 · #752 tail — scene-addressing sweep**~~ ✅ **DONE (2026-08-10)**. Three of the four
+  items fixed; **L-48 does not reproduce and was closed with a documentation correction rather
+  than code** — `openAuxWindow` writes the origin slot unconditionally immediately before every
+  open and is the only path that mints an aux scene, so a parked value can only ever be re-read by
+  the window that parked it. **L-43's prescribed remedy was also wrong**: the audit asked for a
+  scene-addressed hand-off, but producer and consumer are one view tree in one window, so the
+  answer was to delete the flag. M-25's remedy needed rethinking too — "prefer the activated scene"
+  is unreachable (`MainTabView` documents that iPadOS reports every visible window `.active`), so
+  the fix hoists the scene identity above the tab view and adds a claim that makes it safe whether
+  or not SwiftUI fans the continuation modifiers out.
 - **F-2 · #752 tail — scene-addressing sweep** (S). Four verified leftovers, one shared shape:
   M-25 (prefer the activated scene for Spotlight/Handoff/import continuations, or front the
   consuming scene), L-40 (`FRUSExplorerApp.swift:543-553` — origin-scene + `openTab` pairing for

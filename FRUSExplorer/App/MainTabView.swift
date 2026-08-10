@@ -104,7 +104,17 @@ struct MainTabView: View {
     /// restoration could replay one archived token into two live scenes and silently re-open the
     /// fan-out this exists to close (#338 review). Published via `\.sceneID` so a hand-off producer in
     /// this window addresses its `Handoff` to *this* scene, and only this scene applies it.
-    @State private var sceneIDToken = UUID().uuidString
+    /// …except that since #752 / M-25 the identity may be published from **above** this view, by
+    /// `ContinuationHost`, so the Spotlight / Handoff / open-with handlers — which are attached to
+    /// the `WindowGroup`'s content, two levels up — can address the window they fired in. When one
+    /// is published this view adopts it; the local mint below stays as the fallback for any host
+    /// that is not wrapped, so nothing changes for those.
+    @Environment(\.sceneID) private var inheritedSceneID
+
+    @State private var mintedSceneIDToken = UUID().uuidString
+
+    /// This window's scene token: the inherited identity when there is one, else this view's mint.
+    private var sceneIDToken: String { inheritedSceneID?.raw ?? mintedSceneIDToken }
 
     /// The word cloud this window is presenting, once **consumed** from the shared hand-off slot
     /// (#752). Local state, so another window's producer can no longer dismiss this sheet by

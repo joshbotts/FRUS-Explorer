@@ -505,6 +505,9 @@ even see.
 *Related known:* #369 BUG-12 added the iOS consumer; the producer side was never wired on iOS
 
 ### M-25. .anyWindow first-wins delivery can hand Spotlight/deep-link/import content to a background window instead of the one the OS just activated
+
+> **RESOLVED 2026-08-10 (#752 F-2).** The continuation modifiers now sit inside `ContinuationHost`, a per-window modifier that publishes a scene identity above the tab view, so each handler addresses the window it fired in and both channels carry the same target. The remedy this entry proposed — *prefer the activated scene* — is unreachable: `MainTabView` documents that iPadOS reports every visible window `.active`, and nothing exposes the activated scene to the app. Two corrections to the entry itself: there is **no custom URL scheme** (the three entry points are Handoff, Spotlight and the `.fruscollection` open-with; `frusexplorer://` links are intercepted inside the web view), and the import path acquired a *second* untargeted channel after this was written — #755's `pendingCollectionSelection` — which is now scene-addressed on iOS too.
+
 *iOS · verified · Hand-off machinery — AppState pendingX slots, Handoff/SceneID targeting, value-based window requests, both platforms*
 
 **Symptom.** With two or more iPad windows open, tapping a Spotlight/Handoff result (or opening a .fruscollection) brings one window forward, but the document/tab-switch can land in a different, background window — the fronted window shows no change.
@@ -724,6 +727,9 @@ even see.
 *Related known:* #338 fan-out program; runtime check: two iPad windows, open Citation Lookup in one, push a match, tap a cross-ref, observe which window navigates
 
 ### L-40. iPad Source Explorer window's related-document taps land in an arbitrary window
+
+> **RESOLVED 2026-08-10 (#752 F-2).** `SourceExplorerWindowContent` is a View, so the tap reads the scene `.auxWindowOrigin` publishes and pairs an `openTab`. It was the only unpaired `openBrowseDocument` producer of eleven; a repo-wide invariant test now enforces the pairing and the same-target rule.
+
 *iOS · finder-certain · Document-open entry points: mechanism, back-behavior, and origin survival (both platforms)*
 
 **Symptom.** On a multi-window iPad, tapping a related document inside the Source Explorer window opens it in whichever window's Browse tab consumes it first — not necessarily the window the Source Explorer was launched from, and possibly one in another workspace.
@@ -761,6 +767,9 @@ even see.
 - `FRUSExplorer/Citation/CitationLookupView.swift:133` — comment documenting why the identical pattern was removed there: 'silently broke prev/next and cross-reference navigation'
 
 ### L-43. Research Guide sheet fans out to every open iPad window (shared AppState bool bound in each window's Settings tab)
+
+> **RESOLVED 2026-08-10 (#752 F-2) — by deletion, not by the prescribed remedy.** The entry asked for a scene-addressed hand-off. That is the wrong shape: producer and consumer are one view tree in one window (`AboutView` is a `NavigationLink` destination of the `SettingsView` that presented the sheet), so the flag never needed to cross a window boundary. It is now `@State` on `AboutView`. Note also that this was not "the one real multi-presenter-over-one-binding case" — it was the one spelled `isPresented: $appState.`; `ProjectPickerMenu`'s nudge and `StoreSchemaMismatchAlert` reach shared state through hand-rolled `Binding`s and are documented as accepted.
+
 *iOS · finder-likely · Modal/sheet/inspector/popover presentation state (iOS + macOS)*
 
 **Symptom.** iPad with two windows whose Settings tabs have both been shown: opening "Research Guide" from About presents the guide sheet in BOTH windows at once; dismissing it in one window also dismisses it in the other.
@@ -826,6 +835,9 @@ even see.
 *Related known:* #377 Phase 5; runtime check: create a 2nd project on-device and tap 'Open Project Home' — verify Project Home actually opens
 
 ### L-48. pendingAuxWindowOriginRaw leaks when openWindow(value:) refocuses an existing aux window, letting a later system-created aux window adopt a stale origin
+
+> **CLOSED 2026-08-10 (#752 F-2) — DOES NOT REPRODUCE.** The premise is that a later aux window could adopt the stale origin. It cannot: `openAuxWindow` is the only writer, it writes **unconditionally immediately before every open**, and it is the only iOS path that mints any of the five `.auxWindowOrigin`-bearing scenes — so every open overwrites the slot with its own launcher before the new root reads it. A parked value can only ever be re-read by the window that parked it, and one that outlives its window degrades through `resolveOriginScene` to `.anyWindow`, a live window rather than nowhere. What *is* true is #338-accepted and now documented on both `pendingAuxWindowOriginRaw` and `AuxWindowOriginModifier`: an aux window refocused from a **different** main window keeps its first origin.
+
 *iOS · finder-likely · Hand-off machinery — AppState pendingX slots, Handoff/SceneID targeting, value-based window requests, both platforms*
 
 **Symptom.** A rarely-hit misroute: after re-invoking an already-open aux window (same request refocuses it), a subsequently system-created aux window (e.g. via the app switcher) can route its document taps to whichever window performed that earlier re-invoke, rather than to .anyWindow.

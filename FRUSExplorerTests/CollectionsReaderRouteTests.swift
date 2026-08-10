@@ -174,17 +174,24 @@ struct CollectionsReaderRouteTests {
     @Test("An imported collection is selected on iOS, not just switched to")
     func importSelectsOnIOS() throws {
         let source = try Self.source("App/FRUSExplorerApp.swift")
-        let body = try Self.functionBody("private func surfaceOpenedCollection(_ id: UUID)",
-                                         in: source, limit: 1_400)
+        let body = try Self.functionBody(
+            "private func surfaceOpenedCollection(_ id: UUID, from sceneID: SceneID?)",
+            in: source, limit: 1_800)
 
         // The iOS branch is everything before the #else.
         let iosBranch = String(body.prefix(body.range(of: "#else")?.lowerBound.utf16Offset(in: body)
                                            ?? body.count))
-        #expect(iosBranch.contains("appState.pendingCollectionSelection = id"), """
-            The iOS branch must write pendingCollectionSelection (#755 / M-24). \
-            CollectionListView has consumed that slot since #369 BUG-12 — .task and .onChange, \
+        #expect(iosBranch.contains("appState.pendingCollectionSelectionScene = Handoff("), """
+            The iOS branch must write the selection hand-off (#755 / M-24). \
+            CollectionListView has consumed it since #369 BUG-12 — .task and .onChange, \
             documented as pushing the imported collection's editor — but the ONLY writer in the \
-            codebase was the macOS branch, so the iOS consumer could never fire.
+            codebase was the macOS branch, so the iOS consumer could never fire. Since #752 / M-25 \
+            the slot is scene-addressed (`pendingCollectionSelectionScene`), so the selection and \
+            the tab switch cannot be awarded to two different windows.
+            """)
+        #expect(iosBranch.contains("target: sceneID ?? .anyWindow"), """
+            …and it must be addressed to the window the open-with was delivered to, with the \
+            wildcard only as the fallback for a producer that has no scene (#752 / M-25).
             """)
     }
 
@@ -193,19 +200,28 @@ struct CollectionsReaderRouteTests {
         // Same reason macOS sets it before openWindow: a freshly created consumer's `.task` has to
         // see it. Set it after and the drain races the value.
         let source = try Self.source("App/FRUSExplorerApp.swift")
-        let body = try Self.functionBody("private func surfaceOpenedCollection(_ id: UUID)",
-                                         in: source, limit: 1_400)
-        let set = try #require(body.range(of: "appState.pendingCollectionSelection = id"))
+        let body = try Self.functionBody(
+            "private func surfaceOpenedCollection(_ id: UUID, from sceneID: SceneID?)",
+            in: source, limit: 1_800)
+        let set = try #require(body.range(of: "appState.pendingCollectionSelectionScene = Handoff("))
         let switchTab = try #require(body.range(of: "appState.openTab(.collections"))
         #expect(set.lowerBound < switchTab.lowerBound,
                 "set the selection hand-off before switching tabs (#755 / M-24)")
     }
 
-    @Test("The iOS consumer that was dead is still wired")
+    @Test("The iOS consumer that was dead is still wired, to the slot the producer writes")
     func consumerStillWired() throws {
         // Guards the other half: a producer with no consumer is the same bug facing the other way.
+        // Naming the slot as well as the function is what makes this a real guard — the producer
+        // moved to `pendingCollectionSelectionScene` in #752 / M-25, and a consumer left on the old
+        // untargeted slot would compile, run, and never fire.
         let source = try Self.source("Collections/CollectionListView.swift")
         #expect(source.contains("consumePendingCollectionSelection"),
                 "CollectionListView must still consume the hand-off (#369 BUG-12 / #755)")
+        #expect(source.contains("\\.pendingCollectionSelectionScene"), """
+            …and from the scene-addressed slot the producer writes (#752 / M-25). Reading the \\
+            macOS `pendingCollectionSelection` here is how the iOS consumer was dead for two \\
+            releases the first time.
+            """)
     }
 }
