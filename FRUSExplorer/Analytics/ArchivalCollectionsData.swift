@@ -55,6 +55,43 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
 
 /// One horizontal span bar in the "Collection lifecycles" card: the coverage years of the
 /// volumes that cite a collection, from the earliest to the latest.
+/// The x-axis domain for the lifecycle chart.
+///
+/// Without an explicit domain Swift Charts infers one from the marks, and a `BarMark` anchors its
+/// numeric axis at **zero** — so a chart of coverage years rendered an axis running 0–1990 with
+/// every bar crushed against the right edge. The years are dates, not magnitudes: nothing is being
+/// measured *from* zero, so zero is not a meaningful origin.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: lifecycle x-axis fix
+enum ArchivalLifecycleAxis {
+
+    /// The floor a coverage-year axis opens at when the data starts later.
+    ///
+    /// FRUS begins with the 1861 volume, so 1860 is the round decade below the series' own start —
+    /// it gives the earliest bars somewhere to sit rather than beginning flush against the axis.
+    static let defaultFirstYear = 1860
+
+    /// The domain for `spans`, or `nil` when there is nothing to plot.
+    ///
+    /// - Parameter spans: The plotted lifecycles.
+    /// - Returns: The closed year range the axis should cover.
+    ///
+    /// The floor is a **default, not a clamp**: a span beginning before 1860 widens the axis rather
+    /// than being cut off. Clamping would hide the very records whose early coverage makes them
+    /// interesting, and it would do so silently — the bar would simply start at the edge.
+    static func domain(for spans: [ArchivalLifecycleSpan]) -> ClosedRange<Int>? {
+        guard !spans.isEmpty else { return nil }
+        let earliest = spans.map(\.firstYear).min() ?? defaultFirstYear
+        let latest = spans.map(\.lastYear).max() ?? defaultFirstYear
+        let lower = min(defaultFirstYear, earliest)
+        // A single-year span would otherwise give a zero-width domain, which Charts renders as an
+        // axis with no extent at all.
+        let upper = max(latest, lower + 1)
+        return lower...upper
+    }
+}
+
 struct ArchivalLifecycleSpan: Identifiable, Sendable, Equatable {
     /// Authority collection id.
     let id: String

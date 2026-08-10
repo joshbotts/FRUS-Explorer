@@ -552,6 +552,10 @@ struct ArchivalAnalyticsView: View {
                 AxisValueLabel(horizontalSpacing: 8)
             }
         }
+        // The axis is years, not magnitudes: without an explicit domain a BarMark anchors at zero
+        // and the axis ran 0–1990 with every bar against the right edge.
+        .chartXScale(domain: ArchivalLifecycleAxis.domain(for: spans)
+                        ?? ArchivalLifecycleAxis.defaultFirstYear...(ArchivalLifecycleAxis.defaultFirstYear + 1))
         .chartXAxis {
             AxisMarks { _ in
                 AxisGridLine()
