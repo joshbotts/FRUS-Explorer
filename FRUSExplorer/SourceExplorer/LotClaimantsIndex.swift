@@ -143,6 +143,25 @@ extension LotClaimantsIndex {
             format: String(localized: "source.explorer.dividedLot.rationale %lld",
                            defaultValue: "NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one."),
             claimants.count)
-        return .candidates(series, rationale: rationale, creatorName: nil, seeAllURL: nil)
+        // #405: the `.candidates` grammar has always had a creator row; nothing ever filled it.
+        let creatorName = unanimousCreator(
+            series.map { SeriesCreatorIndexStore.shared?.creator(forNaId: $0.naId) })
+        return .candidates(series, rationale: rationale, creatorName: creatorName, seeAllURL: nil)
+    }
+
+    /// The one creator to name for a divided lot, or `nil`.
+    ///
+    /// Named **only when every claimant is covered and they all agree**. A lot NARA split across
+    /// 13 series may have several creating offices, and naming one would be false for the rest;
+    /// naming the creator of the subset that happens to be covered would be worse, because the
+    /// reader cannot see which claimants it came from. Disagreement — and partial coverage — stay
+    /// silent rather than resolved arbitrarily.
+    ///
+    /// A mutation sweep replaced this with `creators.first` and nothing caught it: the rule lived
+    /// inline in `candidatesOutcome`, which needs the bundled store, so no test could reach it.
+    static func unanimousCreator(_ creators: [String?]) -> String? {
+        guard !creators.isEmpty, !creators.contains(where: { $0 == nil }) else { return nil }
+        let distinct = Set(creators.compactMap { $0 })
+        return distinct.count == 1 ? distinct.first : nil
     }
 }

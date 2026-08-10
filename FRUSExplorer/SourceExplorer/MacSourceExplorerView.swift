@@ -953,6 +953,15 @@ struct MacSourceExplorerView: View {
                     )
                     .font(.callout)
                 }
+                // #405: mirrors SourceExplorerView.bundledLotSection — keep in sync.
+                if let creator = SeriesCreatorIndex.creatorName(for: entry) {
+                    LabeledContent(
+                        String(localized: "source.explorer.curatedLot.creator",
+                               defaultValue: "NARA Creator"),
+                        value: creator
+                    )
+                    .font(.callout)
+                }
                 if let entries = entry.hmsMlrEntryNumbers, !entries.isEmpty {
                     LabeledContent(
                         String(localized: "source.explorer.lotFile.hmsMlr",

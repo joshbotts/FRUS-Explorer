@@ -4397,3 +4397,62 @@ removed key was traced. Index version 38 → 39.
   keys at all (2,524 of 2,524). They are a #668-adjacent encoding gap — paragraph-encoded
   collections in sections that also contain `<item>` rows, so the promotion pass skips them — not
   #733's keying gap.
+
+---
+
+## Session 2026-08-10 — F-6 (#405): NARA names the office that made the records
+
+**Issue:** #405 · **Plan:** `Resolve-Open-Issues-Plan-2026-08.md` § F-6
+
+The plan's numbers held up — rare enough this month to be worth saying. 622 series carry a creator,
+reached independently: 8,234 NAIDs are named by the bundled indexes, 2,121 of them are series in
+the 4.5 GB harvest, and 622 of those carry `creators`. 364 distinct headings, 52 KB.
+
+### Two plan lines needed correcting in flight
+
+- **"with a #650-style cohort statement"** — there is no cohort to state. #650's chip is
+  `"%@ · 1 of %lld"` and its rule is that the count is taken *before* any scope and *includes* the
+  anchor, so the same pair never reads two sizes on two screens. A creator is an attribute of one
+  series, not a set the reader is standing inside. Borrowing the phrasing would have implied a
+  measurement nobody made, so the creator is a plain `LabeledContent` row like every other
+  identifier in that panel.
+- **"rendered … both Source Explorer views"** — the row already existed. `curatedLotSection`'s
+  `.candidates` branch has shipped a "NARA Creator" row since #669, driven by a `creatorName` that
+  `LotClaimantsIndex.candidatesOutcome` hard-coded to `nil`. Feeding it cost one expression and no
+  new localized string.
+
+### The display rule took three attempts, and the test caught the first
+
+NARA appends the creating body's lifespan to its heading. Stripping it is obviously right; *how*
+is not.
+
+1. "A trailing parenthetical containing a year" — eats NARA's **identity** form, turning
+   `President (1945-1953 : Truman)` into a bare `President`. Caught by a test written before the
+   artifact was regenerated.
+2. "Digits, slashes and dashes only" — safe, and left **106 of 369** headings with their tail
+   attached, because NARA hedges: `(1958 - ca. 1961)`, `(1969 - 1974 ?)`.
+3. **"Contains a year AND not NARA's ` : ` disambiguator"** — measured to strip 369 of 369.
+
+The ` : ` guard protects nothing in today's corpus: the presidential form appears *mid*-heading,
+where an end-anchored pattern cannot reach it. It stays because the next harvest may put one at
+the end, and the failure would be silent.
+
+### Three guards keep a true fact off the wrong record
+
+Series level only (a file unit borrows its series title from its parent and would borrow the
+creator the same way); not an untrustworthy NAID (#351's list); and never the record group, whose
+creator reads "Department of State" for three-quarters of the corpus. The divided-lot row names a
+creator **only when every claimant agrees** — a lot NARA split across 13 series may have several
+creators, and naming one would be false for the rest.
+
+### Left undone
+
+- **The similarity axis stays refused**, and the generator's doc comment argues it at length so the
+  artifact's existence is not later mistaken for evidence that the axis became viable. 2.8% corpus
+  reachability, structural: only the lot route reaches a series NAID.
+- **Predecessor creators are stored and unrendered** (117 series). The harvest pass is the
+  expensive part, and re-running it later to answer a question this scan could already answer costs
+  the same again — the principle the presidential-library harvester states for its deeper levels.
+- **No export path exists for the bundled lot record**, so the new row has nothing to travel into.
+  Only live catalog results are exportable (`naraExportText`). Worth knowing before someone reads
+  the #680 caveat and assumes this row is missing from a copy.

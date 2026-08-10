@@ -189,6 +189,40 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Builds `series-creator-index.json` (#405 / F-6): for every NARA series the app can
+        /// already name, the organisational body NARA credits with creating it. A DISPLAY
+        /// projection — the similarity-axis half of #405 was measured and refused at 2.8%
+        /// corpus reachability. Reuses LotClaimantsIndexGeneratorCore's HarvestShardReader
+        /// rather than declaring a second decoder over the same shards.
+        .target(
+            name: "SeriesCreatorIndexGeneratorCore",
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "LotClaimantsIndexGeneratorCore"),
+            ],
+            path: "SeriesCreatorIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls SeriesCreatorIndexRunner.run() and exits.
+        .executableTarget(
+            name: "SeriesCreatorIndexGenerator",
+            dependencies: [.target(name: "SeriesCreatorIndexGeneratorCore")],
+            path: "SeriesCreatorIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for SeriesCreatorIndexGeneratorCore.
+        .testTarget(
+            name: "SeriesCreatorIndexGeneratorTests",
+            dependencies: [
+                .target(name: "SeriesCreatorIndexGeneratorCore"),
+                .target(name: "LotClaimantsIndexGeneratorCore"),
+            ],
+            path: "SeriesCreatorIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Thin entry point — calls LotClaimantsIndexRunner.run() and exits.
         .executableTarget(
             name: "LotClaimantsIndexGenerator",
