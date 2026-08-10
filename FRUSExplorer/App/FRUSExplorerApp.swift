@@ -1325,10 +1325,34 @@ struct FRUSExplorerApp: App {
             // `.modelContainer` feeds the embedded History submenu's @Query; appState/
             // openWindow are explicit init params (mirroring the surrounding CommandGroup
             // blocks) rather than relying on @Environment propagation into .commands.
-            CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
-                ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
-                    .modelContainer(modelContainer)
-                    .task { await bootSearchInfrastructureOnce() }
+            // Corpus Browser lives in the WINDOW menu, not Research. It opens a window and does
+            // nothing else — the Research menu's other items each act on research state (bind a
+            // project, open a collection), and grouping "show me this window" with them made the
+            // menu a list of two unlike things.
+            //
+            // ⌘⇧B stays on this Button rather than moving back to the `Window` scene: a
+            // scene-level shortcut runs no app code, so it cannot front a buried browser, and it
+            // appears on no menu at all (#749 / audit L-37). That is the defect this item exists
+            // to have fixed, and it is independent of which menu the item sits in.
+            // Grouped because `.commands` takes at most ten children and this block is at the
+            // limit; the Group is structural only and changes no menu.
+            Group {
+                CommandGroup(before: .windowList) {
+                    Button(String(localized: "menu.window.corpusBrowser",
+                                  defaultValue: "Corpus Browser")) {
+                        // Clear stale provenance → recency fallback.
+                        appState.bindTool(.corpusBrowser, to: nil)
+                        openWindow.fronting(id: "frus.corpusBrowser")
+                    }
+                    .keyboardShortcut("b", modifiers: [.command, .shift])
+                    Divider()
+                }
+
+                CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
+                    ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
+                        .modelContainer(modelContainer)
+                        .task { await bootSearchInfrastructureOnce() }
+                }
             }
         }
         #endif
@@ -2984,15 +3008,6 @@ struct ResearchMenuContent: View {
             openWindow.fronting(id: "frus.collections")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
-
-        // ⌘⇧B moved here from the Window scene (#749 / audit L-37): a scene-level shortcut runs no
-        // code, so it could not front a buried browser — and it appeared on no menu, so the only
-        // keyboard route to Browse was undiscoverable as well as unreliable.
-        Button(String(localized: "menu.research.corpusBrowser", defaultValue: "Corpus Browser")) {
-            appState.bindTool(.corpusBrowser, to: nil)   // clear stale provenance → recency fallback
-            openWindow.fronting(id: "frus.corpusBrowser")
-        }
-        .keyboardShortcut("b", modifiers: [.command, .shift])
 
         Divider()
 
