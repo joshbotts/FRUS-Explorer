@@ -544,8 +544,7 @@ struct DocumentView: View {
                           defaultValue: "Download Volume")) {
                 if let dm = appState.downloadManager,
                    let entry = appState.manifestStore.entry(forVolumeId: volumeId) {
-                    Task { await dm.enqueueDownload(volumeId: volumeId,
-                                                    downloadUrl: entry.downloadUrl) }
+                    Task { await dm.enqueueDownload(entry) }
                 }
                 crossRefDownloadVolumeId = nil
             }
@@ -747,14 +746,7 @@ struct DocumentView: View {
         // DocumentSheet associated-value types (PersonEntry, GlossEntry) are not
         // necessarily Equatable — String? always is.
         .onChange(of: activeSheet?.id) { oldId, newId in
-            if newId == nil { vm.selectedPerson = nil }
-            // iPhone: `panelVisible` shadows "the rail sheet is up". Leaving `.researchRail` by ANY
-            // path — swipe, the toggle, or a tile swapping the sheet for its target — writes false, so
-            // the shared mode bit stays truthful and the Read-mode edge-tap zones re-enable once the
-            // target is also dismissed (the gate additionally requires `activeSheet == nil`). On iPad
-            // the rail is the `.inspector`, so `activeSheet` never becomes `.researchRail` there and
-            // this is inert. (D2.)
-            if oldId == "researchRail" { panelVisible = false }
+            sheetIdentityChanged(from: oldId, to: newId)
         }
         // Handle frusexplorer:// deep-link URLs emitted by FRUSDocumentRenderer's
         // AttributedString rendering path.  Three URL forms are supported:
@@ -808,6 +800,25 @@ struct DocumentView: View {
         guard let dm = appState.downloadManager else { return [] }
         let known = appState.manifestStore.diffResult?.known ?? []
         return Set(known.compactMap { dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil })
+    }
+
+    /// Reacts to the presented sheet changing identity.
+    ///
+    /// Extracted from the `.onChange` closure because `documentContent`'s modifier chain crossed
+    /// the type checker's budget once `VolumeManifestEntry.downloadUrl` became optional (#777).
+    /// The reported line is wherever the solver gave up, not the cause; a named method is solved
+    /// on its own and takes the chain back under.
+    private func sheetIdentityChanged(from oldId: String?, to newId: String?) {
+        // Clear the persisted person selection when any sheet closes so the mention-count task
+        // does not re-fire with a stale ref after dismissal.
+        if newId == nil { vm?.selectedPerson = nil }
+        // iPhone: `panelVisible` shadows "the rail sheet is up". Leaving `.researchRail` by ANY
+        // path — swipe, the toggle, or a tile swapping the sheet for its target — writes false, so
+        // the shared mode bit stays truthful and the Read-mode edge-tap zones re-enable once the
+        // target is also dismissed (the gate additionally requires `activeSheet == nil`). On iPad
+        // the rail is the `.inspector`, so `activeSheet` never becomes `.researchRail` there and
+        // this is inert. (D2.)
+        if oldId == "researchRail" { panelVisible = false }
     }
 
     // MARK: - Tool Windows (iPad Stage Manager) / sheet fallback

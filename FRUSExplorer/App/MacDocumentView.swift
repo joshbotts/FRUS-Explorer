@@ -182,8 +182,7 @@ struct MacDocumentView: View {
                         Button(String(localized: "document.notDownloaded.download",
                                       defaultValue: "Download Volume")) {
                             if let manifestEntry = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
-                                Task { await dm.enqueueDownload(volumeId: entry.volumeId,
-                                                                downloadUrl: manifestEntry.downloadUrl) }
+                                Task { await dm.enqueueDownload(manifestEntry) }
                             }
                         }
                         .buttonStyle(.borderedProminent)
@@ -302,8 +301,7 @@ struct MacDocumentView: View {
                           defaultValue: "Download Volume")) {
                 if let dm = appState.downloadManager,
                    let entry = appState.manifestStore.entry(forVolumeId: volumeId) {
-                    Task { await dm.enqueueDownload(volumeId: volumeId,
-                                                    downloadUrl: entry.downloadUrl) }
+                    Task { await dm.enqueueDownload(entry) }
                 }
                 crossRefDownloadVolumeId = nil
             }

@@ -207,8 +207,7 @@ struct VolumeView: View {
                         Button {
                             guard let dm = vm.downloadManager else { return }
                             downloadRequested = true
-                            Task { await dm.enqueueDownload(volumeId: volume.volumeId,
-                                                            downloadUrl: volume.downloadUrl) }
+                            Task { await dm.enqueueDownload(volume) }
                         } label: {
                             Label(
                                 String(localized: "browser.volume.downloadAction",

@@ -228,6 +228,26 @@ public actor DownloadManager {
     ///   - force: If `true`, bypasses the "already downloaded" check so an existing
     ///     volume is re-downloaded and overwritten. Used by the "Update" action in
     ///     Downloads settings (Session 154). Default `false`.
+    /// Enqueues a catalogue volume, and silently declines anything the app cannot fetch.
+    ///
+    /// The entry-taking overload exists so no caller has to remember the #777 case. A side-loaded
+    /// volume's `downloadUrl` is `nil`, and there is nothing to enqueue: the app never had a URL
+    /// for it, and inventing one from the filename would either 404 or — worse — one day resolve
+    /// to a *different* volume published under that name. Every "Download" affordance in the app
+    /// routes through here, so declining is a single decision rather than twelve.
+    ///
+    /// Version history:
+    ///   1.0 — Session 2026-08-09: #777
+    public func enqueueDownload(_ entry: VolumeManifestEntry, force: Bool = false) {
+        guard let url = entry.downloadUrl else {
+            #if DEBUG
+            print("[DownloadManager] Declined \(entry.volumeId): side-loaded, no catalogue URL")
+            #endif
+            return
+        }
+        enqueueDownload(volumeId: entry.volumeId, downloadUrl: url, force: force)
+    }
+
     public func enqueueDownload(volumeId: String, downloadUrl: String, force: Bool = false) {
         guard (force || !isVolumeDownloaded(volumeId)),
               !activeVolumeIds.contains(volumeId),

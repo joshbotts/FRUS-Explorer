@@ -3986,3 +3986,59 @@ reported bug and it needs the navigation model to represent a volume with no man
 does not touch the ~50 other manifest-keyed surfaces (citations, search scoping, custom scopes,
 bulk summarization), each of which degrades for a side-loaded volume. Both are scoped in the
 follow-up issue; neither is a reason to hold a data-loss fix.
+
+---
+
+## Session 2026-08-09 — #777 browse half: a side-loaded volume gets a catalogue entry
+
+The reported bug. A side-loaded volume reached search but not Browse, because side-loading records
+existence only as a file plus SQLite rows while every navigation surface enumerates
+`manifest.json` — and `ManifestStore` has no mutation API.
+
+**The shape chosen, and the one thing that made it safe.** Three options were costed. The one that
+fixes Browse *and* the other ~50 manifest-keyed surfaces is to **synthesise a real entry**, because
+they all funnel through `entry(forVolumeId:)`. Its hazard is equally concentrated: `downloadUrl` is
+**computed from the filename**, so an unguarded synthesised entry hands every repair path a
+plausible GitHub URL that 404s — or one day resolves to a *different* volume published under that
+name — and `HistoryAtStateCitationFormatter` would cite an unpublished pre-release as published.
+
+So `downloadUrl` became **optional**, and that optionality is the mechanism rather than a nicety:
+it forced all fifteen consumers to confront the missing URL at compile time. Ten of them collapsed
+into one new `enqueueDownload(_ entry:)` overload that declines what it cannot fetch, so the rule
+lives in one place instead of fifteen.
+
+**`TEIHeaderKit`.** The app now reads a side-loaded volume's own `<teiHeader>` with *the parser that
+built `manifest.json`* — a second parser would drift, and the drift would surface as a side-loaded
+volume whose metadata disagreed with the same volume downloaded. The extraction was blocked because
+`ManifestGeneratorCore` and the app each declare `VolumeManifestEntry`/`VolumeStatus`/`DateRange`.
+Resolved by a decomposition rather than a move: **the kit owns the grammar, each consumer owns its
+model.** `ParsedTEIHeader` carries no manifest types — and lost nothing, because the parser never
+set `status` (the TEI header does not carry one).
+
+**A sidecar, not a `@Model`.** A stored property on a mirrored model trips the R-7 CloudKit gate,
+and this data has no business syncing: it is reconstructible from the XML beside it, and a device
+without the file has no use for it. `<volumeId>.frusmeta.json` lives next to the volume, so deleting
+one deletes both, with no orphan row to reconcile. Boot reconciliation parses only files that are
+both unknown *and* unparsed — which is what repairs volumes side-loaded before this shipped.
+
+**Citation honesty shipped with it, not after it.** `canonicalDocumentURL` returns `nil` for a
+side-loaded volume, which covers BibTeX, RIS, Zotero and the share message from one choke point, and
+a `citationProvenanceNote` says why. This was the non-negotiable: the previous session recorded that
+stages 1–2 without stage 3 would be *a regression dressed as a fix*, and shipping them together is
+that judgement honoured rather than restated.
+
+**A fixture that tested the opposite of its name.** The new browse-universe test used
+`frus1969-76v42` — **a real catalogue volume**. `refreshLocalEntries` correctly declined to mint an
+entry, `entry(forVolumeId:)` returned the catalogue's, and the assertions failed on a provenance
+mismatch. Caught because the test asserted `provenance == .sideloaded` rather than merely
+"resolves". The id is now `frus1969-76v99`, with a comment saying why it must stay absent from the
+manifest. Same lesson as the tie-break fixtures, in a new costume.
+
+**Verification.** 12 new tests. Five mutations: four CAUGHT immediately; **M1 — reverting the browse
+enumeration to the catalogue — SURVIVED**, which is to say nothing tested the central claim of the
+whole change. The browse-universe test exists because of that survivor, and M1 is CAUGHT now. Both
+schemes build; **3,162 tests in 412 suites** pass.
+
+**Left for the follow-up:** the manuals still describe side-loading as it was; there is no on-screen
+label distinguishing a side-loaded volume in Browse (it currently sits in its era with a title and
+nothing marking it); and the storage hero's "553 of 552" denominator is untouched.

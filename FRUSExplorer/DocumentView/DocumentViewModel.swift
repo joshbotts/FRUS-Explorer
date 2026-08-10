@@ -232,8 +232,28 @@ public final class DocumentViewModel {
     /// `historicaldocuments/{volumeId}/{documentId}` convention used by the
     /// macOS `CitationPopoverView`, `CollectionEditorView`, and the citation
     /// exporters (BibTeX/RIS).
+    /// **`nil` for a side-loaded volume (#777).** The URL is *constructed* from the volume and
+    /// document ids, so it is always well-formed and says nothing about whether the page exists.
+    /// For a volume the app got from the user rather than from the catalogue it very likely does
+    /// not: emitting it would put a canonical, authoritative-looking Office of the Historian link
+    /// on a document that has not been published there — in a BibTeX record, an RIS record, a
+    /// Zotero item, and a shared message. A citation with no URL is a smaller error than a
+    /// citation with a wrong one, because the reader can see that something is missing.
     public var canonicalDocumentURL: URL? {
-        URL(string: "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)")
+        guard volumeEntry?.provenance != .sideloaded else { return nil }
+        return URL(string: "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)")
+    }
+
+    /// A one-line note for a citation the app cannot vouch for, or `nil` for catalogue volumes.
+    ///
+    /// Shown beneath the formatted citation. The volume may be perfectly real — a pre-release, a
+    /// corrected copy — but the app has no catalogue record of it, so it cannot claim the document
+    /// is published, and a reader copying the citation should know that before it reaches a
+    /// footnote.
+    public var citationProvenanceNote: String? {
+        guard volumeEntry?.provenance == .sideloaded else { return nil }
+        return String(localized: "citation.sideloaded.note",
+                      defaultValue: "This volume was side-loaded, not downloaded from the published catalogue. The app cannot confirm it is published, so no history.state.gov link is included — check the citation before using it.")
     }
 
     /// A formatted citation plus its canonical URL, suitable for sharing via

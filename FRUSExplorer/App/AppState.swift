@@ -663,6 +663,13 @@ final class AppState {
     ///   correctness, not convenience — see `PersonRollupRefresh.afterCorpusChange`.
     func refreshAfterCorpusChange(context: ModelContext?) {
         refreshReadOnlyStores()
+        // #777: a side-loaded volume is a corpus change the catalogue cannot see. Reconciling here
+        // means the volume is browsable the moment its import finishes, and — because this also
+        // runs at boot — that a volume side-loaded before #777 shipped gains its metadata on the
+        // next launch rather than needing to be imported again.
+        if let volumesDirectory {
+            manifestStore.refreshLocalEntries(volumesDirectory: volumesDirectory)
+        }
         guard let indexingPipeline else { return }
         Task { @MainActor in
             if await PersonRollupRefresh.afterCorpusChange(context: context,

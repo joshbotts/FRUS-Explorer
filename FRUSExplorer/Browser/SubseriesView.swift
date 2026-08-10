@@ -395,10 +395,12 @@ private struct VolumeRowContextMenu: View {
     @Environment(\.sceneID) private var sceneID
 
     var body: some View {
-        if let dm = appState.downloadManager, !dm.isVolumeDownloaded(volume.volumeId) {
+        // #777: no Download affordance for a side-loaded volume — there is nothing to fetch, and
+        // the file is already here. `downloadUrl == nil` is exactly that condition.
+        if let dm = appState.downloadManager, !dm.isVolumeDownloaded(volume.volumeId),
+           volume.downloadUrl != nil {
             Button {
-                Task { await dm.enqueueDownload(volumeId: volume.volumeId,
-                                                downloadUrl: volume.downloadUrl) }
+                Task { await dm.enqueueDownload(volume) }
             } label: {
                 Label(
                     String(localized: "browser.volume.download.action",

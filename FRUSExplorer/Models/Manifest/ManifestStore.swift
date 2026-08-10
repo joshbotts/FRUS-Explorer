@@ -108,6 +108,39 @@ public final class ManifestStore {
     /// Non-nil if the live manifest fetch failed.
     public private(set) var liveFetchError: Error? = nil
 
+    /// Entries for volumes on disk that the catalogue does not list — side-loaded files (#777).
+    ///
+    /// Kept separate from `bundledEntries` so nothing that means "the published FRUS series" can
+    /// pick them up by accident: the corpus date range, the storage hero's denominator, and the
+    /// download-update check all read the catalogue and must keep meaning what they mean. What
+    /// *does* see them is ``browsableEntries`` — the volume universe the two browse surfaces
+    /// enumerate — and ``entry(forVolumeId:)``, so a side-loaded volume has a title everywhere
+    /// instead of a raw id.
+    public private(set) var localEntries: [VolumeManifestEntry] = []
+
+    /// Every volume the app can show: the catalogue, plus anything side-loaded.
+    ///
+    /// The catalogue wins a collision. A file named after a catalogue volume is that volume — the
+    /// side-load duplicate check is a disk test, so this is reachable — and the catalogue's entry
+    /// carries a download URL and a real publication status where the local one would not.
+    public var browsableEntries: [VolumeManifestEntry] {
+        let catalogue = diffResult?.known ?? bundledEntries
+        guard !localEntries.isEmpty else { return catalogue }
+        let known = Set(catalogue.map(\.volumeId))
+        return catalogue + localEntries.filter { !known.contains($0.volumeId) }
+    }
+
+    /// Re-reads the side-loaded volumes' sidecars, parsing headers for any that have none.
+    ///
+    /// Called from the corpus-change refresh that side-loading already triggers, and once at boot,
+    /// so a volume side-loaded before #777 shipped gains its metadata on the next launch rather
+    /// than needing to be re-imported.
+    public func refreshLocalEntries(volumesDirectory: URL) {
+        let known = Set((diffResult?.known ?? bundledEntries).map(\.volumeId))
+        localEntries = LocalVolumeCatalog.reconcile(in: volumesDirectory, known: known)
+        rebuildEntryIndex()
+    }
+
     // MARK: - Corpus Date Range
 
     /// The date range spanning the earliest to latest FRUS volume.
@@ -232,8 +265,11 @@ public final class ManifestStore {
     /// Last-write-wins on a duplicate id, which matches `first { }`'s behaviour only when
     /// ids are unique — they are, and a duplicate would be a manifest defect either way.
     private func rebuildEntryIndex() {
-        let source = diffResult?.known ?? bundledEntries
-        entryIndex = Dictionary(source.map { ($0.volumeId, $0) },
+        // `browsableEntries`, not the catalogue: a side-loaded volume needs a title, a coverage
+        // range and editors at all ~53 `entry(forVolumeId:)` call sites, or it renders as a raw
+        // id among titled neighbours and can never be a citation, a search scope, or a chart row.
+        // The catalogue is listed first and wins the `uniquingKeysWith` tie.
+        entryIndex = Dictionary(browsableEntries.map { ($0.volumeId, $0) },
                                 uniquingKeysWith: { first, _ in first })
     }
 

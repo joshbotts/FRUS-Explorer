@@ -118,18 +118,3 @@ public struct GitHubVolumeEntry: Codable, Sendable {
 /// Produced by `TEIHeaderParser` and consumed by `ManifestGeneratorRunner` to assemble
 /// a `VolumeManifestEntry`. Not part of the persisted manifest format.
 ///
-/// Version history:
-///   1.0 — Session 02: initial implementation
-public struct ParsedTEIHeader: Sendable {
-    public var title: String = ""
-    public var editors: [String] = []
-    public var generalEditor: String? = nil
-    public var publicationDate: String? = nil
-    public var earliestDate: String? = nil
-    public var latestDate: String? = nil
-    public var documentCount: Int = 0
-    public var status: VolumeStatus = .published
-    public var tags: [String] = []
-
-    public init() {}
-}

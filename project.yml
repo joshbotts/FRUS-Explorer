@@ -97,6 +97,11 @@ targets:
         excludes:
           - "eval-baseline.txt"
           - "eval-report.txt"
+      # TEIHeaderKit source files are compiled directly into the app, like the three above. The
+      # app reads a SIDE-LOADED volume's own `<teiHeader>` with it (#777), and it has to be the
+      # same grammar that built manifest.json — a second parser would drift, and the drift would
+      # show up as a side-loaded volume whose metadata disagreed with the downloaded copy.
+      - path: TEIHeaderKit
     # XcodeGen generates Info.plist at info.path and sets INFOPLIST_FILE accordingly.
     # Using an explicit info section (instead of GENERATE_INFOPLIST_FILE) allows
     # UIBackgroundModes, which is an array and cannot be set via INFOPLIST_KEY_*.
@@ -264,6 +269,11 @@ targets:
         excludes:
           - "eval-baseline.txt"
           - "eval-report.txt"
+      # TEIHeaderKit source files are compiled directly into the app, like the three above. The
+      # app reads a SIDE-LOADED volume's own `<teiHeader>` with it (#777), and it has to be the
+      # same grammar that built manifest.json — a second parser would drift, and the drift would
+      # show up as a side-loaded volume whose metadata disagreed with the downloaded copy.
+      - path: TEIHeaderKit
     # Explicit Info.plist (was GENERATE_INFOPLIST_FILE + INFOPLIST_KEY_*). Switched to an
     # explicit plist because CFBundleDocumentTypes / UTExportedTypeDeclarations are arrays of
     # dictionaries that cannot be expressed via INFOPLIST_KEY_* (same reason the iOS target

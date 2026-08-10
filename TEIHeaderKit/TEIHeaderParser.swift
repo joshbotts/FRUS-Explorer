@@ -9,10 +9,6 @@
 import Foundation
 
 /// Errors thrown by `TEIHeaderParser`.
-public enum TEIHeaderParserError: Error, Sendable {
-    case xmlParseError(String)
-}
-
 /// Parses the `<teiHeader>` of a FRUS TEI XML file into a `ParsedTEIHeader`.
 ///
 /// Uses Foundation's `XMLParser` in SAX (streaming) mode. The parser is fed the

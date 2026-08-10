@@ -594,7 +594,7 @@ struct OnboardingView: View {
                 selectedVolumeId: selectedVolumeId
             )
             for entry in volumes {
-                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
+                await dm.enqueueDownload(entry)
             }
         }
         step = .ready

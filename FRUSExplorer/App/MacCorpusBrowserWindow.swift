@@ -72,7 +72,10 @@ struct CorpusBrowserWindowView: View {
     @State private var pendingVolumePush: String? = nil
 
     private var allEntries: [VolumeManifestEntry] {
-        appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        // #777: the catalogue plus anything side-loaded. This expression and its iOS twin in
+        // `BrowserViewModel.allVolumes` were written independently and drifted identically —
+        // both now read the one property, so a third surface cannot re-introduce the gap.
+        appState.manifestStore.browsableEntries
     }
 
     private var subseries: [String] {
@@ -747,8 +750,7 @@ private struct CorpusVolumeDetailView: View {
             Button {
                 guard let dm = appState.downloadManager else { return }
                 phase = .downloading
-                Task { await dm.enqueueDownload(volumeId: volume.volumeId,
-                                                downloadUrl: volume.downloadUrl) }
+                Task { await dm.enqueueDownload(volume) }
             } label: {
                 Label("Download Volume", systemImage: "arrow.down.circle")
             }
