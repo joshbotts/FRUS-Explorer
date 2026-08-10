@@ -298,6 +298,12 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
 - **F-10 · #263 — batch citation lookup (footnote triage table)** (S). Paste a block of
   citations → per-row resolved/ambiguous/missing table. Engine unchanged; natural macOS window
   content for `CitationLookupView`; iOS gets the same table in the sheet.
+- ~~**F-11 · #265 — corpus-wide glossary/abbreviation lookup**~~ ✅ **DONE (2026-08-10)**. The
+  table and index exist; there was **no query API at all**, only an insert. And the framing —
+  "a UI over it" — assumes a glossary has one answer per abbreviation. Measured: 66,095 rows over
+  312 volumes, 10,632 terms, 5,685 defined in more than one volume, and the editors did not
+  standardise — **`EUR` carries 30 distinct definitions**, `S/S` 25. So a result carries its
+  variants ranked by how many volumes use each, and only contested terms get a disclosure.
 - **F-11 · #265 — corpus-wide glossary/abbreviation lookup** (S). The terms table is already
   indexed by term string; this is a search-scoped UI over it.
 

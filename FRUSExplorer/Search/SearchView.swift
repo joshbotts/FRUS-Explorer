@@ -265,6 +265,8 @@ struct SearchView: View {
     @State private var isLoadingConcordance = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
+    /// #265: the corpus-wide abbreviation lookup.
+    @State private var showGlossaryLookup = false
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
@@ -486,6 +488,11 @@ struct SearchView: View {
                     // `.anyWindow` — first-wins across every open iPad window. Its four sibling
                     // sheets already inject this; these two were the exceptions.
                     CitationLookupView()
+                        .environment(\.sceneID, sceneID)
+                }
+                .sheet(isPresented: $showGlossaryLookup) {
+                    // #265: same scene-id injection as its siblings — see the note above.
+                    GlossaryLookupView()
                         .environment(\.sceneID, sceneID)
                 }
                 .sheet(item: $archivalNeighborsTarget) { key in
@@ -919,6 +926,16 @@ struct SearchView: View {
             } label: {
                 Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
                       systemImage: "text.magnifyingglass")
+            }
+            // #265: sits beside citation lookup because they answer the same kind of question —
+            // "what does this reference in front of me mean?" — from the two directions a reader
+            // meets: a citation, and an abbreviation.
+            Button {
+                showGlossaryLookup = true
+            } label: {
+                Label(String(localized: "search.glossaryLookup.a11y",
+                             defaultValue: "Look up an abbreviation"),
+                      systemImage: "character.book.closed")
             }
             // Checklist mode (#189-D): hides results as you review them (open them, or tap
             // "Mark reviewed"), so a long result set becomes a shrinking to-do list.
