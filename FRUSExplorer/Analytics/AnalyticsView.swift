@@ -276,6 +276,15 @@ struct AnalyticsView: View {
 
     /// Start year for the chart x-axis and year-data filter. Defaults to 1861
     /// (the year of the first FRUS volume).
+    /// The in-chart scrubber's live selection (#306), in the chart's own x units — calendar years
+    /// on the By Year axis, decade *starts* on By Decade.
+    ///
+    /// Held separately from `yearRangeStart`/`yearRangeEnd` rather than bound to them directly:
+    /// Swift Charts updates this continuously through a drag, and writing the year range on every
+    /// frame would re-filter and re-render the series under the user's finger. It is committed
+    /// once, when the drag ends.
+    @State private var scrubSelection: ClosedRange<Int>?
+
     @State private var yearRangeStart: Int = 1861
 
     /// End year for the chart x-axis and year-data filter. Defaults to the
@@ -1897,6 +1906,29 @@ struct AnalyticsView: View {
         .chartYAxis { valueAxisMarks }
         .chartXAxisLabel(xLabel, alignment: .center)
         .chartYAxisLabel(valueAxisLabel)
+        // #306: drag across the plot to narrow the year range. The selection is committed on
+        // release, not continuously — see `scrubSelection`.
+        .chartXSelection(range: $scrubSelection)
+        .onChange(of: scrubSelection) { _, range in
+            guard let range else { return }
+            commitScrub(range, decadeStride: decadeStride)
+        }
+    }
+
+    /// Applies a finished scrubber drag to the year range (#306). The arithmetic lives in
+    /// `ChartScrubRange.resolve` so it can be tested; this is the state write.
+    private func commitScrub(_ range: ClosedRange<Int>, decadeStride: Bool) {
+        defer { scrubSelection = nil }
+        guard let resolved = ChartScrubRange.resolve(selection: range,
+                                                     decadeStride: decadeStride,
+                                                     corpusMaxYear: corpusMaxYear) else { return }
+        guard resolved.lowerBound != yearRangeStart || resolved.upperBound != yearRangeEnd else {
+            return
+        }
+        yearRangeStart = resolved.lowerBound
+        yearRangeEnd = resolved.upperBound
+        // Nothing else to do: the scope chip and its Reset already read `yearRangeIsCustom`, which
+        // is derived from these two, so a drag surfaces both without a second code path.
     }
 
     /// Display titles for the source series currently colored, resolved here (where `appState` is
