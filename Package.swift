@@ -343,6 +343,7 @@ let package = Package(
             dependencies: [
                 .target(name: "CentralFilesIndexGeneratorCore"),
                 .target(name: "SourceNoteKit"),
+                .target(name: "GeneratorKit"),
             ],
             path: "VolumeSourcesIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]

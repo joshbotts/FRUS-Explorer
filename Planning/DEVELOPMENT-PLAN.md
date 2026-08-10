@@ -4701,3 +4701,33 @@ tie-break because a glossary carries no frequency data of its own.
 - **Terms are indexed only for downloaded volumes**, so the corpus-wide claim is bounded by what
   the reader has. The empty state says the index needs a volume, but the counts shown are not
   labelled as "of your downloaded volumes" — worth wording if it confuses.
+
+---
+
+## Session 2026-08-10 — Tier 3 begins: I-3 volume-sources onto GeneratorKit
+
+**Issue:** #270 · **Plan:** § I-3
+
+The debt F-5 deliberately took on. That session declined to fold this in because the pairing's
+point was **byte-verifying** the regenerated artifact, and #733 legitimately changed the artifact's
+contents — a refactor landing alongside would have made every byte difference ambiguous between the
+two.
+
+Alone, the check is clean and it passes: same `GENERATED_DATE`, `cmp` reports the artifact
+**byte-identical**. That is the whole claim of a mechanical migration, demonstrated rather than
+asserted — and it is the thing the plan asked for that F-5 structurally could not provide.
+
+What moved: the inline `contentsOfDirectory`/filter/sort becomes `VolumeCorpusEnumerator.volumeFiles`
+(the sort keeps the artifact stable, so it is the part worth sharing), `today()` →
+`generatorDateStamp()`, `log()` → `generatorLog()`, and `RunError.noVolumes` retires in favour of
+`GeneratorError.noVolumes` which the enumerator already throws. `RunError.emptyRecordGroups` stays:
+it is this generator's own refusal to write an empty record-group map.
+
+### Tier 3 status
+
+- **I-3** — 1 of 5 generators done. **Manifest, Taxonomy, CentralFilesIndex, SourceProvenanceIndex
+  remain**, each its own PR with the same byte-verification.
+- **I-1 (#268, shared `AXChartDescriptor`)** — not started. Highest payoff of the three: zero
+  `AXChartDescriptor` exists while the chart population has grown to five analytics families. Its
+  own gate is **owner VoiceOver validation on device**, which I cannot perform.
+- **I-2 (#312, seeded-fixture obstruction test)** — not started.

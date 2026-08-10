@@ -320,6 +320,11 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   quirk) as a documented limitation; scenario 4's Browse drill-in needs a different driving
   mechanism per the measured answer (NavigationLink-backed row or accessibility action — not a
   coordinate tap).
+- **I-3 · #270 — migrate the 5 original generators onto GeneratorKit** — **VolumeSourcesIndex
+  ✅ DONE (2026-08-10)**, byte-verified: regenerated with the same `GENERATED_DATE`, `cmp` reports
+  the artifact identical. F-5 deferred this deliberately (a content change and a refactor in one
+  PR make every byte difference ambiguous), and doing it alone is what made the check meaningful.
+  **Four remain: Manifest, Taxonomy, CentralFilesIndex, SourceProvenanceIndex.**
 - **I-3 · #270 — migrate the 5 original generators onto GeneratorKit** (M, mechanical). One
   generator per PR (Manifest, Taxonomy, CentralFilesIndex, VolumeSourcesIndex,
   SourceProvenanceIndex), byte-verifying each regenerated artifact. Every generator written since
