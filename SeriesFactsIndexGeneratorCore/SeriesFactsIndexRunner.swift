@@ -10,9 +10,9 @@ import Foundation
 import GeneratorKit
 import LotClaimantsIndexGeneratorCore
 
-// MARK: - SeriesCreatorIndexRunner
+// MARK: - SeriesFactsIndexRunner
 
-/// Builds `series-creator-index.json`: for every NARA series the app can already name, the
+/// Builds `series-facts-index.json`: for every NARA series the app can already name, the
 /// organisational body NARA credits with creating it (#405).
 ///
 /// ## What it answers, and what it deliberately does not
@@ -62,7 +62,7 @@ import LotClaimantsIndexGeneratorCore
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #405 (F-6)
-public enum SeriesCreatorIndexRunner {
+public enum SeriesFactsIndexRunner {
 
     /// The bundled projection.
     public struct Index: Codable, Sendable, Equatable {
@@ -73,11 +73,21 @@ public enum SeriesCreatorIndexRunner {
         /// Secretariat."`. The dates describe the *body*, not the records, and repeating them on
         /// a line that already states the series' own date range reads as a contradiction.
         public var headings: [String]
-        /// Series NAID → its creators, as indices into `headings`.
+        /// Series NAID → its creators and NARA's catalogue facts about it.
         public var byNaId: [String: Entry]
+        /// Access/use status vocabulary (`Unrestricted`, `Restricted - Fully`, …).
+        public var statuses: [String]
+        /// Access-restriction category vocabulary (the FOIA exemptions).
+        public var restrictions: [String]
+        /// Use-restriction category vocabulary (chiefly `Copyright`).
+        public var useRestrictions: [String]
+        /// Holding-facility vocabulary.
+        public var referenceUnits: [String]
+        /// Finding-aid type vocabulary.
+        public var findingAidTypes: [String]
     }
 
-    /// One series' creators.
+    /// One series' creators and NARA's own catalogue facts about it.
     public struct Entry: Codable, Sendable, Equatable {
         /// Index into `headings` of the body NARA marks `Most Recent` — the one a surface should
         /// name. Falls back to the series' first creator when NARA marks none (measured: 1 of
@@ -86,9 +96,37 @@ public enum SeriesCreatorIndexRunner {
         /// Indices of any `Predecessor` bodies. Stored, not yet rendered — see the type doc.
         public var predecessors: [Int]?
 
+        /// NARA's access status (`Restricted - Fully`), as an index into `statuses`.
+        public var accessStatus: Int?
+        /// The FOIA exemptions behind it, as indices into `restrictions`.
+        public var accessRestrictions: [Int]?
+        /// The *use* status — whether you may publish what you find, not whether you may read it.
+        public var useStatus: Int?
+        /// Use-restriction categories, chiefly Copyright.
+        public var useRestrictions: [Int]?
+        /// NARA's extent statement, verbatim ("1 linear foot, 3 linear inches"). Not interned:
+        /// measured, 592 of 622 are distinct, so a vocabulary would cost more than it saves.
+        public var extent: String?
+        /// The holding facility, as an index into `referenceUnits`.
+        public var referenceUnit: Int?
+        /// Finding-aid types, as indices into `findingAidTypes`.
+        public var findingAids: [Int]?
+        /// Coverage years as NARA states them.
+        public var startYear: Int?
+        public var endYear: Int?
+
         enum CodingKeys: String, CodingKey {
             case creator = "c"
             case predecessors = "p"
+            case accessStatus = "as"
+            case accessRestrictions = "ar"
+            case useStatus = "us"
+            case useRestrictions = "ur"
+            case extent = "x"
+            case referenceUnit = "ru"
+            case findingAids = "fa"
+            case startYear = "y0"
+            case endYear = "y1"
         }
     }
 
@@ -148,6 +186,19 @@ public enum SeriesCreatorIndexRunner {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Assigns a stable index to each distinct string, in first-seen order, and hands back the
+    /// vocabulary. Deterministic because the rows it is fed are iterated in a sorted order.
+    struct Interner {
+        private(set) var values: [String] = []
+        private var lookup: [String: Int] = [:]
+        mutating func index(_ s: String) -> Int {
+            if let i = lookup[s] { return i }
+            lookup[s] = values.count
+            values.append(s)
+            return values.count - 1
+        }
+    }
+
     /// The body to name as *the* creator: NARA's `Most Recent`, else the first listed.
     ///
     /// The fallback is not cosmetic — 1 of the 622 series carries a creator with no `creatorType`
@@ -200,7 +251,7 @@ public enum SeriesCreatorIndexRunner {
             ?? "FRUSExplorer/Resources/central-files-index.json"
         let volumeSources = env["VOLUME_SOURCES_INDEX"]
             ?? "FRUSExplorer/Resources/volume-sources-index.json"
-        let output = env["OUTPUT"] ?? "FRUSExplorer/Resources/series-creator-index.json"
+        let output = env["OUTPUT"] ?? "FRUSExplorer/Resources/series-facts-index.json"
         let generated = env["GENERATED_DATE"] ?? generatorDateStamp()
 
         var held = Set<String>()
@@ -226,6 +277,7 @@ public enum SeriesCreatorIndexRunner {
         var scanned = 0
         var resolved = 0
         var creatorsByNaId: [String: [HarvestShardReader.Record.Creator]] = [:]
+        var factsByNaId: [String: HarvestShardReader.Record.Facts] = [:]
         for shard in shards {
             let (records, _) = try HarvestShardReader.read(shard)
             for record in records {
@@ -233,6 +285,7 @@ public enum SeriesCreatorIndexRunner {
                 guard held.contains(record.naId) else { continue }
                 resolved += 1
                 if !record.creators.isEmpty { creatorsByNaId[record.naId] = record.creators }
+                factsByNaId[record.naId] = record.facts
             }
             generatorLog("\(shard.lastPathComponent): \(records.count) records")
         }
@@ -251,21 +304,51 @@ public enum SeriesCreatorIndexRunner {
             vocabulary.append(heading)
         }
 
+        // Intern the small, highly repetitive vocabularies. `extent` is NOT interned: measured,
+        // 592 of the 622 values are distinct, so a vocabulary would add a level of indirection
+        // and save nothing.
+        var statuses = Interner()
+        var restrictions = Interner()
+        var useRestrictions = Interner()
+        var referenceUnits = Interner()
+        var findingAidTypes = Interner()
+
         var rows: [String: Entry] = [:]
-        for (naId, creators) in creatorsByNaId {
+        // SORTED, not dictionary order: the interners assign indices in first-seen order,
+        // so an unsorted walk would renumber every vocabulary between runs and make the
+        // artifact churn on regeneration without any input having changed.
+        for naId in creatorsByNaId.keys.sorted() {
+            guard let creators = creatorsByNaId[naId] else { continue }
             guard let mostRecent = primaryCreator(from: creators) else { continue }
             guard let primary = indexOf[displayHeading(mostRecent.heading)] else { continue }
             let predecessors = creators
                 .filter { $0.creatorType != "Most Recent" }
                 .compactMap { indexOf[displayHeading($0.heading)] }
                 .filter { $0 != primary }
-                .sorted()
-            rows[naId] = Entry(creator: primary,
-                               predecessors: predecessors.isEmpty ? nil : Array(Set(predecessors)).sorted())
+            let facts = factsByNaId[naId]
+            rows[naId] = Entry(
+                creator: primary,
+                predecessors: predecessors.isEmpty ? nil : Array(Set(predecessors)).sorted(),
+                accessStatus: facts?.accessStatus.map { statuses.index($0) },
+                accessRestrictions: (facts?.accessRestrictions).flatMap {
+                    $0.isEmpty ? nil : $0.map { restrictions.index($0) }.sorted() },
+                useStatus: facts?.useStatus.map { statuses.index($0) },
+                useRestrictions: (facts?.useRestrictions).flatMap {
+                    $0.isEmpty ? nil : $0.map { useRestrictions.index($0) }.sorted() },
+                extent: facts?.extent,
+                referenceUnit: facts?.referenceUnit.map { referenceUnits.index($0) },
+                findingAids: (facts?.findingAids).flatMap {
+                    $0.isEmpty ? nil : $0.map { findingAidTypes.index($0) }.sorted() },
+                startYear: facts?.startYear,
+                endYear: facts?.endYear)
         }
 
-        let index = Index(schemaVersion: 1, generated: generated,
-                          headings: vocabulary, byNaId: rows)
+        let index = Index(schemaVersion: 2, generated: generated,
+                          headings: vocabulary, byNaId: rows,
+                          statuses: statuses.values, restrictions: restrictions.values,
+                          useRestrictions: useRestrictions.values,
+                          referenceUnits: referenceUnits.values,
+                          findingAidTypes: findingAidTypes.values)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let data = try encoder.encode(index)
@@ -275,7 +358,7 @@ public enum SeriesCreatorIndexRunner {
         try data.write(to: outURL)
 
         generatorLog("""
-            series-creator-index.json written to \(output)
+            series-facts-index.json written to \(output)
               series with a creator: \(rows.count)
               distinct headings:     \(vocabulary.count)
               with predecessors:     \(rows.values.filter { $0.predecessors != nil }.count)

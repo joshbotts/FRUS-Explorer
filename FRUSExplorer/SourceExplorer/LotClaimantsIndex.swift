@@ -145,7 +145,7 @@ extension LotClaimantsIndex {
             claimants.count)
         // #405: the `.candidates` grammar has always had a creator row; nothing ever filled it.
         let creatorName = unanimousCreator(
-            series.map { SeriesCreatorIndexStore.shared?.creator(forNaId: $0.naId) })
+            series.map { SeriesFactsIndexStore.shared?.creator(forNaId: $0.naId) })
         return .candidates(series, rationale: rationale, creatorName: creatorName, seeAllURL: nil)
     }
 

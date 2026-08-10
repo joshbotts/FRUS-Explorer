@@ -954,13 +954,68 @@ struct MacSourceExplorerView: View {
                     .font(.callout)
                 }
                 // #405: mirrors SourceExplorerView.bundledLotSection — keep in sync.
-                if let creator = SeriesCreatorIndex.creatorName(for: entry) {
+                if let creator = SeriesFactsIndex.creatorName(for: entry) {
                     LabeledContent(
                         String(localized: "source.explorer.curatedLot.creator",
                                defaultValue: "NARA Creator"),
                         value: creator
                     )
                     .font(.callout)
+                }
+                // #663 / F-7: mirrors SourceExplorerView.bundledLotSection — keep in sync.
+                if let facts = SeriesFactsIndex.facts(for: entry) {
+                    if let access = facts.accessStatus {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.access",
+                                   defaultValue: "Access"),
+                            value: facts.accessRestrictions.isEmpty
+                                ? access
+                                : "\(access) — \(facts.accessRestrictions.joined(separator: ", "))"
+                        )
+                        .font(.callout)
+                    }
+                    if facts.isUseRestricted, let use = facts.useStatus {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.use",
+                                   defaultValue: "Use"),
+                            value: facts.useRestrictions.isEmpty
+                                ? use
+                                : "\(use) — \(facts.useRestrictions.joined(separator: ", "))"
+                        )
+                        .font(.callout)
+                    }
+                    if let years = facts.years {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.seriesYears",
+                                   defaultValue: "Series Dates"),
+                            value: years
+                        )
+                        .font(.callout)
+                    }
+                    if let extent = facts.extent {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.extent",
+                                   defaultValue: "Extent"),
+                            value: extent
+                        )
+                        .font(.callout)
+                    }
+                    if let unit = facts.referenceUnit {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.heldAt",
+                                   defaultValue: "Held At"),
+                            value: unit
+                        )
+                        .font(.callout)
+                    }
+                    if !facts.findingAids.isEmpty {
+                        LabeledContent(
+                            String(localized: "source.explorer.lotFile.findingAids",
+                                   defaultValue: "Finding Aids"),
+                            value: facts.findingAids.joined(separator: ", ")
+                        )
+                        .font(.callout)
+                    }
                 }
                 if let entries = entry.hmsMlrEntryNumbers, !entries.isEmpty {
                     LabeledContent(

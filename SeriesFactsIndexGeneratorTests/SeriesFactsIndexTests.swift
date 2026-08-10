@@ -8,7 +8,7 @@
 
 import Testing
 import Foundation
-@testable import SeriesCreatorIndexGeneratorCore
+@testable import SeriesFactsIndexGeneratorCore
 import LotClaimantsIndexGeneratorCore
 
 // MARK: - DisplayHeadingTests
@@ -32,8 +32,8 @@ struct DisplayHeadingTests {
              "Department of State. Bureau of European Affairs."),
         ]
         for (raw, expected) in cases {
-            #expect(SeriesCreatorIndexRunner.displayHeading(raw) == expected,
-                    "\(raw) → \(SeriesCreatorIndexRunner.displayHeading(raw))")
+            #expect(SeriesFactsIndexRunner.displayHeading(raw) == expected,
+                    "\(raw) → \(SeriesFactsIndexRunner.displayHeading(raw))")
         }
     }
 
@@ -47,8 +47,8 @@ struct DisplayHeadingTests {
             ("Department of State. Office of the Staff Director. (1969 - 1974 ?)",
              "Department of State. Office of the Staff Director."),
         ] {
-            #expect(SeriesCreatorIndexRunner.displayHeading(raw) == expected,
-                    "\(raw) → \(SeriesCreatorIndexRunner.displayHeading(raw))")
+            #expect(SeriesFactsIndexRunner.displayHeading(raw) == expected,
+                    "\(raw) → \(SeriesFactsIndexRunner.displayHeading(raw))")
         }
     }
 
@@ -59,30 +59,30 @@ struct DisplayHeadingTests {
         // end-anchored pattern's reach — so this is a guard against a future harvest, and it is
         // the reason the rule is not simply "a parenthetical containing a year".
         let raw = "President (1945-1953 : Truman)"
-        #expect(SeriesCreatorIndexRunner.displayHeading(raw) == raw, """
+        #expect(SeriesFactsIndexRunner.displayHeading(raw) == raw, """
             Stripping this collapses four presidencies into a bare "President". Got \
-            \(SeriesCreatorIndexRunner.displayHeading(raw)).
+            \(SeriesFactsIndexRunner.displayHeading(raw)).
             """)
-        #expect(SeriesCreatorIndexRunner.isIdentityParenthetical("1945-1953 : Truman"))
-        #expect(!SeriesCreatorIndexRunner.isIdentityParenthetical("10/12/1917 - 06/30/1919"))
+        #expect(SeriesFactsIndexRunner.isIdentityParenthetical("1945-1953 : Truman"))
+        #expect(!SeriesFactsIndexRunner.isIdentityParenthetical("10/12/1917 - 06/30/1919"))
     }
 
     @Test("A mid-heading parenthetical is untouched — only the tail is a lifespan")
     func onlyTheTailIsStripped() {
         let raw = "President (1945-1953 : Truman). White House Office. (1945 - 1953)"
-        #expect(SeriesCreatorIndexRunner.displayHeading(raw)
+        #expect(SeriesFactsIndexRunner.displayHeading(raw)
                 == "President (1945-1953 : Truman). White House Office.")
     }
 
     @Test("Whitespace is normalised, and a heading without a tail is untouched")
     func idempotentOnCleanInput() {
-        #expect(SeriesCreatorIndexRunner.displayHeading("  Department of State.  ")
+        #expect(SeriesFactsIndexRunner.displayHeading("  Department of State.  ")
                 == "Department of State.")
         let clean = "Department of State. Bureau of Far Eastern Affairs."
-        #expect(SeriesCreatorIndexRunner.displayHeading(clean) == clean)
+        #expect(SeriesFactsIndexRunner.displayHeading(clean) == clean)
         // Applying it twice must not strip more.
-        #expect(SeriesCreatorIndexRunner.displayHeading(
-            SeriesCreatorIndexRunner.displayHeading("War Trade Board. (1917 - 1919)"))
+        #expect(SeriesFactsIndexRunner.displayHeading(
+            SeriesFactsIndexRunner.displayHeading("War Trade Board. (1917 - 1919)"))
                 == "War Trade Board.")
     }
 }
@@ -116,7 +116,7 @@ struct NAIDHarvestTests {
         }
         """)
         defer { try? FileManager.default.removeItem(at: url) }
-        let found = try SeriesCreatorIndexRunner.naIds(inJSONAt: url)
+        let found = try SeriesFactsIndexRunner.naIds(inJSONAt: url)
         #expect(found == ["12345", "6789", "388"], "got \(found.sorted())")
     }
 
@@ -124,7 +124,7 @@ struct NAIDHarvestTests {
     func emptyDocument() throws {
         let url = try writeJSON(#"{"lots": [], "note": "no ids here"}"#)
         defer { try? FileManager.default.removeItem(at: url) }
-        #expect(try SeriesCreatorIndexRunner.naIds(inJSONAt: url).isEmpty)
+        #expect(try SeriesFactsIndexRunner.naIds(inJSONAt: url).isEmpty)
     }
 }
 
@@ -140,11 +140,11 @@ struct NAIDHarvestTests {
 @Suite("Shipped series-creator index (#405)")
 struct ShippedArtifactTests {
 
-    private func loadShipped() throws -> SeriesCreatorIndexRunner.Index {
+    private func loadShipped() throws -> SeriesFactsIndexRunner.Index {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let url = root.appending(path: "FRUSExplorer/Resources/series-creator-index.json")
-        return try JSONDecoder().decode(SeriesCreatorIndexRunner.Index.self,
+        let url = root.appending(path: "FRUSExplorer/Resources/series-facts-index.json")
+        return try JSONDecoder().decode(SeriesFactsIndexRunner.Index.self,
                                         from: Data(contentsOf: url))
     }
 
@@ -189,7 +189,7 @@ struct ShippedArtifactTests {
     func staysKilobytes() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let url = root.appending(path: "FRUSExplorer/Resources/series-creator-index.json")
+        let url = root.appending(path: "FRUSExplorer/Resources/series-facts-index.json")
         let bytes = try Data(contentsOf: url).count
         #expect(bytes < 250_000, """
             \(bytes) bytes. The whole argument for a separate projection is that it is kilobytes \
@@ -236,7 +236,7 @@ struct PrimaryCreatorTests {
     func mostRecentWinsRegardlessOfOrder() throws {
         let creators = [try creator("Before.", "Predecessor"),
                         try creator("Now.", "Most Recent")]
-        #expect(SeriesCreatorIndexRunner.primaryCreator(from: creators)?.heading == "Now.", """
+        #expect(SeriesFactsIndexRunner.primaryCreator(from: creators)?.heading == "Now.", """
             Taking the first listed names a body that no longer held the records — the office \
             the reader would go looking for does not have them.
             """)
@@ -246,11 +246,11 @@ struct PrimaryCreatorTests {
     func untypedCreatorIsUsed() throws {
         // Measured: 1 of the 622 series carries a creator NARA gives no type (naId 2521222).
         let creators = [try creator("Unlabelled.", nil)]
-        #expect(SeriesCreatorIndexRunner.primaryCreator(from: creators)?.heading == "Unlabelled.")
+        #expect(SeriesFactsIndexRunner.primaryCreator(from: creators)?.heading == "Unlabelled.")
     }
 
     @Test("No creators means no creator, not a crash")
     func emptyIsNil() {
-        #expect(SeriesCreatorIndexRunner.primaryCreator(from: []) == nil)
+        #expect(SeriesFactsIndexRunner.primaryCreator(from: []) == nil)
     }
 }

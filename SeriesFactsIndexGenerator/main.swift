@@ -7,10 +7,10 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SeriesCreatorIndexGeneratorCore
+import SeriesFactsIndexGeneratorCore
 
 do {
-    try SeriesCreatorIndexRunner.run()
+    try SeriesFactsIndexRunner.run()
 } catch {
     FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
     exit(1)
