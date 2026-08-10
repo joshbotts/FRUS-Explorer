@@ -82,7 +82,10 @@ struct ZoteroIOSDeadEndTests {
     @Test("The document share menu offers the web-page route on iOS")
     func documentMenuOffersTheWorkingRoute() throws {
         let view = try source("FRUSExplorer/DocumentView/DocumentView.swift")
-        #expect(view.contains("document.share.zoteroWeb"), """
+        // The QUOTED key, not the bare substring: `"document.share.zoteroWebRemoved"` contains
+        // `document.share.zoteroWeb`, so a loose check passes while the entry is gone. A mutation
+        // renaming the key proved it.
+        #expect(view.contains("\"document.share.zoteroWeb\""), """
             Without this entry the iOS menu offers only BibTeX and RIS files, neither of which \
             Zotero on iOS can read — every route to Zotero is a dead end for a user with no API \
             key, which is what #358 reports.
