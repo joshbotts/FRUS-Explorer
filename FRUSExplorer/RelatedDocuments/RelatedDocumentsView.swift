@@ -103,6 +103,9 @@ struct RelatedDocumentsContent: View {
     @State private var scope: NeighborScope
     @State private var rows: [RelatedDocumentRow] = []
     @State private var totalBeforeLimit = 0
+
+    /// When a generator's candidate pool was cut, how many candidates it had (#645).
+    @State private var poolCutFrom: Int?
     @State private var isLoading = true
     /// Bumped when a weight slider settles, to re-fire the load without putting the continuously
     /// changing weight values directly in the `.task` id (which would re-rank on every drag tick).
@@ -157,6 +160,19 @@ struct RelatedDocumentsContent: View {
                                 Int64(totalBeforeLimit - rows.count)))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
+                        // #645: the line above counts what scored inside the fetched pool, and the
+                        // pool itself may have been cut. Saying so is the house rule — a truncated
+                        // total is never presented as a complete one — and it matters here because
+                        // ranking can only surface a document the pool contained: an anchor with
+                        // 1,063 neighbours and a 120-row pool has 943 the scorers never saw.
+                        if let poolCutFrom, poolCutFrom > totalBeforeLimit {
+                            Text(String(
+                                format: String(localized: "related.poolCut %lld %lld",
+                                               defaultValue: "Ranked from the first %1$lld of %2$lld documents that share this anchor's archival container. The rest were not scored. Narrow the scope to reach them."),
+                                Int64(totalBeforeLimit), Int64(poolCutFrom)))
+                                .font(.caption2).foregroundStyle(.tertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                     .listStyle(.plain)
                 }
@@ -190,6 +206,7 @@ struct RelatedDocumentsContent: View {
             }
             rows = result.rows
             totalBeforeLimit = result.totalBeforeLimit
+            poolCutFrom = result.poolCutFrom
             isLoading = false
         }
     }

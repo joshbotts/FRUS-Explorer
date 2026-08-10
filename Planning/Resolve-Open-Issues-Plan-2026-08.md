@@ -197,6 +197,16 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   exclude-set across Years/Volumes/People, chips that read honestly, `SearchSQLFilters` growing
   set-valued fields with `NOT IN`). The reachability half (#586's old scope: raised bucket limit +
   local sort + display cap, non-lazy `ScrollView` hazard) can ship first and independently.
+- ~~**F-4 · #645 remainder — make the archival pool's ordering honest**~~ ✅ **DONE (2026-08-10)**.
+  Audit items 1 and 4 turned out to have landed already in PR #654 — the alias fallback stratifies
+  and the allowlist conversion had been *started* (its doc comment already said "an allowlist by
+  location, not a count") but never finished, so the assertion was still `inside == 2` and did go
+  red on item 2's fix, exactly as the audit predicted. Items 2, 3 and 5 are this session's work.
+  **The measurement decided the shape:** #645 offered an explicit out — "if it is rare, this is a
+  doc-comment correction rather than a code change" — and it is not rare. 23 lot containers exceed
+  the 120-row pool (6,678 documents), but the class axis, which nobody had counted, has **260
+  containers over the pool covering 105,681 documents — 40% of every source-noted document in the
+  corpus**. Recorded in `Planning/Archival-Pool-Depth-Measurement.md`.
 - **F-4 · #645 remainder — make the archival pool's ordering honest** (S). Per the 2026-08-02
   audit: (1) stratify the collection-authority alias fallback (`aliasNeighbors`' four helper calls
   take `.alphabetical` today); (2) fix the scoped re-cut (`applyScope`'s `prefix(limit)` — binds
@@ -307,7 +317,7 @@ sitting, not a session.
 2. **B-2** (#777) — the one user-visible data bug.
 3. **F-1** (#784), two sessions — the highest-value feature; everything it needs is measured.
 4. **F-2** (#752 tail) — closes #752 outright.
-5. **F-4** (#645) — closes #645.
+5. ~~**F-4** (#645)~~ ✅ **2026-08-10** — closes #645.
 6. **F-3 design ½-session** (#775 shape), then **F-3 build**.
 7. **F-5 + I-3(volume-sources)** (#733 + one GeneratorKit migration in the same regen).
 8. Then F-6…F-11 / I-1 / I-2 by appetite — each is standalone.

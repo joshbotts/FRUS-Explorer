@@ -325,15 +325,34 @@ struct RelatedDocumentsResult: Sendable {
     let rows: [RelatedDocumentRow]
     /// The count of candidates that scored above 0 *before* the limit — the honest "N more"
     /// denominator (record-less and zero-total candidates are already excluded, so this is `≥ rows.count`).
+    ///
+    /// **Honest within the pool, not within the corpus.** It counts what scored inside the fetched
+    /// candidate pool, and the pool itself may have been cut — see ``poolCutFrom`` (#645).
     let totalBeforeLimit: Int
+
+    /// When a generator's candidate pool was cut, how many candidates it had (#645).
+    ///
+    /// `nil` when nothing was truncated *or* when no generator reported a total. The largest
+    /// reporting generator wins: the axes overlap, so summing would double-count, and the largest
+    /// is the one whose cut actually bounds what a scorer could have surfaced.
+    ///
+    /// **A surface must attribute this number to the axis that produced it, not to the result as a
+    /// whole.** Only the archival generator counts today, so the shipped line names the archival
+    /// container — "of 1,063 documents that share this anchor's archival container" — and that is
+    /// exact. Phrased as a total over *all* candidates it would be an understatement, because a
+    /// generator that reported nothing may also have been cut. If a second generator ever starts
+    /// reporting, this field stops identifying which axis it came from and a surface will need
+    /// that alongside it.
+    let poolCutFrom: Int?
 
     /// The empty result — no live index, or no candidates.
     static let empty = RelatedDocumentsResult(rows: [], totalBeforeLimit: 0)
 
     /// Creates a result.
-    init(rows: [RelatedDocumentRow], totalBeforeLimit: Int) {
+    init(rows: [RelatedDocumentRow], totalBeforeLimit: Int, poolCutFrom: Int? = nil) {
         self.rows = rows
         self.totalBeforeLimit = totalBeforeLimit
+        self.poolCutFrom = poolCutFrom
     }
 }
 
@@ -351,7 +370,44 @@ struct RelatedDocumentsResult: Sendable {
     /// `limit` is the candidate-pool depth to fetch — the engine sizes it above the display limit so
     /// scoring re-ranks a pool larger than what's shown.
     func candidates(for anchor: DocumentKey, anchorYear: Int?, limit: Int,
-                    scopeVolumeIds: Set<String>?, appState: AppState) async throws -> [GeneratedCandidate]
+                    scopeVolumeIds: Set<String>?, appState: AppState) async throws -> GeneratedPool
+}
+
+// MARK: - GeneratedPool
+
+/// What one generator produced, and how much it had to leave behind (#645).
+///
+/// The count is the point. A generator returns at most `limit` candidates, and the engine's "N more
+/// related" line was computed *inside* that pool — so an anchor with 1,063 archival neighbours and a
+/// 120-row pool reported at most 120, presented as a complete total. The repo's own convention
+/// (`RecordedCount`, the facet `bounds`) is that a truncated total is never shown as a whole one,
+/// and #645 cited that convention against this exact line.
+struct GeneratedPool: Sendable {
+
+    /// The candidates, already cut to the requested pool depth.
+    let candidates: [GeneratedCandidate]
+
+    /// How many candidates existed before the pool depth was applied, when the generator knows.
+    ///
+    /// `nil` means "not reported" — not "none" and not "no truncation". A caller must treat an
+    /// unknown total as unknown rather than folding it to `candidates.count`, or a generator that
+    /// simply does not count would silently assert completeness on behalf of one that does.
+    let availableTotal: Int?
+
+    /// Whether the generator had more than it returned.
+    var isTruncated: Bool {
+        guard let availableTotal else { return false }
+        return availableTotal > candidates.count
+    }
+
+    /// Creates a pool.
+    init(candidates: [GeneratedCandidate], availableTotal: Int? = nil) {
+        self.candidates = candidates
+        self.availableTotal = availableTotal
+    }
+
+    /// The empty pool.
+    static let empty = GeneratedPool(candidates: [])
 }
 
 /// A ranker over an already-generated candidate set (design §6.2). Produces a `[0, 1]` score per
