@@ -288,6 +288,13 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
 - **F-9 · #306 — in-chart scrubber for year scope** (S). Swift Charts selection
   (`chartXSelection`) to narrow the analytics year filter by dragging on the chart itself; honor
   the existing scope chip + reset affordances.
+- ~~**F-10 · #263 — batch citation lookup (footnote triage table)**~~ ✅ **DONE (2026-08-10)**.
+  "Engine unchanged" is true of `CitationMatchingEngine` and `CitationParser` and **hides where
+  the work is**: `parse` takes ONE citation, and nothing turned a block of footnotes into the list
+  to hand it. `CitationBlockSplitter` is the feature — marker-first, newline-fallback, because a
+  citation copied from a two-column PDF arrives wrapped across lines and a per-line split yields
+  unparseable fragments. Four outcomes, not three: `.failed` is separate from `.missing` because
+  "could not look" and "looked and found nothing" send a researcher to different next steps.
 - **F-10 · #263 — batch citation lookup (footnote triage table)** (S). Paste a block of
   citations → per-row resolved/ambiguous/missing table. Engine unchanged; natural macOS window
   content for `CitationLookupView`; iOS gets the same table in the sheet.
