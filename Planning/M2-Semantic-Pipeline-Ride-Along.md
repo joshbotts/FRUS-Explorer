@@ -100,7 +100,7 @@ Stages named to compose with the design doc's V-phases:
 
 | Stage | What | Depends on |
 |---|---|---|
-| **V-0** | The design doc's spike, unchanged — 3 volumes × 3 models, quality gates, quantization ladder. **Run it on both machines** (§4.5: ~5 M tokens ≈ minutes each) — it doubles as the throughput measurement that collapses every [U] in §4. | corpus on both machines |
+| **V-0** | The design doc's spike, unchanged — 3 volumes × 3 models, quality gates, quantization ladder. **Run it on both machines** (§4.5: ~5 M tokens ≈ minutes each) — it doubles as the throughput measurement that collapses every [U] in §4. *(2026-08-10: executed **Studio-only** by owner decision, embeddings-only, five stores — see `tools/semantic-harvest/README.md` Field notes. The Studio [U]s are measured; the Air [U]s stay open.)* | corpus on the Studio |
 | **M2a** | Prose ground truth: extend `m1a_survey.py` to sample ~60–80 documents, era-stratified, for **exhaustive** person-mention annotation (~900–1,200 mention decisions). Owner keys it alongside the M1a 300. Nothing downstream is measurable without it. | — (parallel with V-0) |
 | **V-1 + R-0** | Stage-1 build with the extracted-text layer split out; full-corpus embed on the Studio. | V-0 |
 | **R-1** | NER pass over the no-list volumes from the R-0 text layer. Candidates: Apple `NLTagger` (near-free control — the app already runs it corpus-wide in ~1 h for word clouds), spaCy `en_core_web_trf`, GLiNER-medium. All three scored against M2a; 19th-century diplomatic prose is far from every NER model's training distribution and the winner is an empirical question. | R-0, M2a |
@@ -136,6 +136,8 @@ support for M5's accelerators exists for LLM workloads, but encoder utilisation 
 If the accelerators engage, the Air is roughly at parity with the Studio; if the pass falls back
 to plain GPU shaders, it runs ~1.5–2× slower. That software question, not silicon, is the
 dominant uncertainty below — and V-0 on both machines answers it for a few cents.
+*(2026-08-10: V-0 ran Studio-only, so this Air-side question remains open by choice —
+measure it if and when an Air pass is actually scheduled.)*
 
 Effective-throughput assumptions (stated so the tables can be re-derived): Studio 32-core ≈
 **5–8 TFLOPS** sustained fp16-effective (25–40% MFU of ~21 peak; a 24-core Studio is ~1.3×
@@ -215,6 +217,9 @@ sample (~3–5 h). Those two sittings gate everything; no machine makes them fas
 
 ### Recommendation
 
+*(2026-08-10: superseded in part — V-0 ran on the Studio only, per owner decision. The Air
+legs below are deferred, not scheduled.)*
+
 Run **V-0 on both machines** first — it converts every [U] above into a measurement for a few
 cents. Then: full embed on the **Studio** (primary model, overnight), NER on the **Air** the same
 night, mention-context pass on the Studio the following evening. Total: **one weekend of machine
@@ -257,7 +262,8 @@ What changes relative to §2/§3 of this doc and the design doc's Stage 1:
 4. **The transfer is part of the pipeline.** The store carries `SHA256SUMS`; the runbook's Phase
    4 verifies them on the Air before anything reads the vectors. An unverified transfer is not a
    raw store.
-5. **Division of labour**, explicit: owner = Phases 0–4 (setup, spike on both machines, model
+5. **Division of labour**, explicit: owner = Phases 0–4 (setup, the Studio spike (2026-08-10:
+   the Air spike was dropped), model
    choice sign-off from the spike numbers, full harvest, transfer); Claude = store validation,
    the V-0 scoring gates (weak-positive MRR via `cross_references`, blind-panel staging,
    quantization ladder), pooling/packing, and every artifact test.
@@ -270,13 +276,19 @@ What changes relative to §2/§3 of this doc and the design doc's Stage 1:
 1. Approve the **R-0 text layer** amendment to Stage 1 (the one change to the design doc's
    pipeline; costs ~1.4 GB of cache and buys a single audited extraction).
 2. Approve the **combined V-0**: run the spike on both machines, adding the NER candidates to the
-   same 3-volume sweep so one spike prices both programs.
+   same 3-volume sweep so one spike prices both programs. *(2026-08-10: decided otherwise — the
+   spike ran Studio-only and embeddings-only; the NER candidates did not ride and get priced
+   separately when M2 resumes.)*
 3. Schedule the **two keying sittings** (M1a 300 rows; M2a exhaustive sample) — everything else
    in both programs waits on these, not on hardware.
 4. Detector shortlist sign-off (NLTagger control / spaCy-trf / GLiNER) — or name a different one
    before the spike, not after.
 
 Version history:
+  1.2 — 2026-08-10: V-0 executed, Studio-only by owner decision (the Air spike is dropped and
+        the Air-side [U]s stay open), embeddings-only, five stores including an accidental
+        Q4_K_M-vs-Q8_0 nomic pair; measurements and field findings live in
+        tools/semantic-harvest/README.md.
   1.1 — 2026-08-07 (later): §5 execution route — LM Studio owner-run, committed harvester,
         pin moved to GGUF SHA, pooling moved to the deterministic pack side.
   1.0 — 2026-08-07: initial assessment and cost model (measured corpus tokens; both-machine
