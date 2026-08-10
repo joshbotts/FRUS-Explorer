@@ -30,6 +30,41 @@ enum ArchivalFlowDirection: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+// MARK: - ArchivalFlowLayer
+
+/// Which body of references the Flows diagram is drawing (#784).
+///
+/// The two layers are the same claim shape — *the editors, annotating material from this
+/// collection, sent the reader to that one* — over two different bodies of evidence, and they must
+/// never be added together:
+///
+/// - ``betweenPrinted`` counts references from one **printed** document to another
+///   (`provenance-flow-index.json`, #764). Structurally empty before 1945: the `dN` cross-reference
+///   idiom postdates the war, and 298 of 552 volumes contribute no edge at all.
+/// - ``toUnprinted`` counts references to material FRUS **did not print**
+///   (`external-citation-index.json`, #784) — the third body of archival evidence, and the one
+///   thing the Flows mode could not previously show.
+enum ArchivalFlowLayer: String, CaseIterable, Identifiable, Sendable {
+    /// References between two printed documents.
+    case betweenPrinted
+    /// References to archival material the volume did not print.
+    case toUnprinted
+
+    var id: String { rawValue }
+
+    /// Segment label.
+    var title: String {
+        switch self {
+        case .betweenPrinted:
+            return String(localized: "archival.flows.layer.printed",
+                          defaultValue: "Between printed documents")
+        case .toUnprinted:
+            return String(localized: "archival.flows.layer.unprinted",
+                          defaultValue: "To unprinted material")
+        }
+    }
+}
+
 // MARK: - ArchivalFlowEndpoint
 
 /// One block in the hand-off diagram.
@@ -78,8 +113,16 @@ struct ArchivalFlowEndpoint: Identifiable, Sendable, Equatable {
 ///    around. The flow card offers Archival Neighbors on either endpoint instead — a route that
 ///    exists and answers a question this data really does support.
 ///
+/// ## The unprinted layer (#784)
+/// `ArchivalFlowLayer.toUnprinted` runs the same diagram over `external-citation-index.json` —
+/// footnote citations of material FRUS did not print. It answers limitation 1 above only in part:
+/// that artifact *is* per-volume, so an era statement is possible, and ``ExternalFacts/eraSpan``
+/// makes it. What it cannot do is claim the pre-war reach #784 predicted; see
+/// `ExternalCitationIndex`'s own note for the measurement that refutes it.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — Session 2026-08-10 (#784): the unprinted layer and its disclosures
 struct ArchivalFlowsData: Sendable, Equatable {
 
     /// The id of the folded remainder block.
@@ -119,6 +162,31 @@ struct ArchivalFlowsData: Sendable, Equatable {
     let classBetweenReferences: Int
     /// Distinct pairs those references spread over.
     let classBetweenPairs: Int
+    /// Which body of references this is (#784). Defaults to the printed layer, so every existing
+    /// construction keeps its meaning.
+    var layer: ArchivalFlowLayer = .betweenPrinted
+    /// The disclosures the unprinted layer owes, or `nil` on the printed layer.
+    var externalFacts: ExternalFacts?
+
+    /// What the unprinted layer has to say about itself (#784).
+    ///
+    /// Every field is read off the artifact rather than written into a sentence, so a regenerated
+    /// index cannot leave the copy quietly wrong.
+    struct ExternalFacts: Sendable, Equatable {
+        /// Archival units named in footnotes, before the authority join.
+        let referencesFound: Int
+        /// Of those, the ones that resolved to a collection — what the diagram can draw from.
+        let referencesJoined: Int
+        /// Share whose unit came from an `Ibid.` rather than a phrase of its own, `0...1`.
+        let inheritedShare: Double
+        /// The coverage years the referencing volumes span, when the manifest supplies them.
+        ///
+        /// This exists because #784's headline claim — that footnote citations reach 1910–1945 —
+        /// **does not survive its own scope**. See `ExternalCitationIndex`'s note: the pre-war
+        /// signal is entirely in the decimal-file channel the issue defers. The surface states the
+        /// span the data has instead of the one that was predicted.
+        let eraSpan: ClosedRange<Int>?
+    }
 
     static func == (lhs: ArchivalFlowsData, rhs: ArchivalFlowsData) -> Bool {
         lhs.focus == rhs.focus && lhs.endpoints == rhs.endpoints
@@ -127,6 +195,7 @@ struct ArchivalFlowsData: Sendable, Equatable {
             && lhs.topPairs.map(\.source) == rhs.topPairs.map(\.source)
             && lhs.topPairs.map(\.target) == rhs.topPairs.map(\.target)
             && lhs.footnoteShare == rhs.footnoteShare
+            && lhs.layer == rhs.layer && lhs.externalFacts == rhs.externalFacts
     }
 
     /// Whether there is anything to draw.
@@ -185,21 +254,9 @@ struct ArchivalFlowsData: Sendable, Equatable {
             return a.id < b.id
         })
 
-        var drawn = Array(ordered.prefix(endpointCap))
-        if ordered.count > endpointCap {
-            let tail = ordered.dropFirst(endpointCap)
-            drawn.append(ArchivalFlowEndpoint(
-                id: remainderId,
-                label: String(format: String(localized: "archival.flows.remainder %lld",
-                                             defaultValue: "%lld more collections"),
-                              Int64(tail.count)),
-                repository: nil, category: .otherInstitution,
-                count: tail.reduce(0) { $0 + $1.count }, foldedCount: tail.count))
-        }
-
         return ArchivalFlowsData(
             focus: focus, focusCategory: ArchivalRepositoryCategory.from(focus),
-            endpoints: drawn, allEndpoints: ordered,
+            endpoints: fold(ordered), allEndpoints: ordered,
             totalReferences: ordered.reduce(0) { $0 + $1.count },
             sameUnitReferences: index.sameUnitReferences(forCollectionId: focus.id),
             topPairs: [], footnoteShare: footnoteShare(index),
@@ -235,7 +292,117 @@ struct ArchivalFlowsData: Sendable, Equatable {
             }
     }
 
+    // MARK: - The unprinted layer (#784)
+
+    /// The corpus-wide view over footnote citations of material FRUS did not print.
+    static func corpusWideExternal(index: ExternalCitationIndex,
+                                   authority: CollectionAuthorityIndex,
+                                   entriesById: [String: VolumeManifestEntry]) -> ArchivalFlowsData {
+        let pairs = index.heaviestPairs(limit: topPairCap)
+            .compactMap { pair -> (ArchivalFlowEndpoint, ArchivalFlowEndpoint)? in
+                guard let source = authority.record(id: pair.sourceId),
+                      let target = authority.record(id: pair.targetId) else { return nil }
+                return (endpoint(source, count: pair.count), endpoint(target, count: pair.count))
+            }
+        return external(focus: nil, endpoints: [], allEndpoints: [],
+                        totalReferences: pairs.reduce(0) { $0 + $1.0.count },
+                        sameUnitReferences: 0, topPairs: pairs,
+                        index: index, entriesById: entriesById)
+    }
+
+    /// The focused view over footnote citations.
+    static func focusedExternal(on focus: AuthorityCollectionRecord,
+                                direction: ArchivalFlowDirection,
+                                index: ExternalCitationIndex,
+                                authority: CollectionAuthorityIndex,
+                                entriesById: [String: VolumeManifestEntry]) -> ArchivalFlowsData {
+        let raw = direction == .outgoing
+            ? index.outgoingReferences(fromCollectionId: focus.id)
+            : index.incomingReferences(toCollectionId: focus.id)
+        let ordered = disambiguate(raw
+            .compactMap { reference -> ArchivalFlowEndpoint? in
+                guard let record = authority.record(id: reference.collectionId) else { return nil }
+                return endpoint(record, count: reference.count)
+            }
+            .sorted { a, b in
+                if a.count != b.count { return a.count > b.count }
+                return a.id < b.id
+            })
+        return external(focus: focus, endpoints: fold(ordered), allEndpoints: ordered,
+                        totalReferences: ordered.reduce(0) { $0 + $1.count },
+                        sameUnitReferences: index.sameUnitReferences(forCollectionId: focus.id),
+                        topPairs: [], index: index, entriesById: entriesById)
+    }
+
+    /// Collections that appear at either end of any between-unit footnote citation.
+    static func externalFocusCandidates(index: ExternalCitationIndex,
+                                        authority: CollectionAuthorityIndex)
+        -> [(record: AuthorityCollectionRecord, references: Int)] {
+        var totals: [String: Int] = [:]
+        for pair in index.pairs {
+            let sourceId = index.sourceIds[pair.source]
+            let targetId = index.targetIds[pair.target]
+            guard sourceId != targetId else { continue }
+            totals[sourceId, default: 0] += pair.count
+            totals[targetId, default: 0] += pair.count
+        }
+        return totals
+            .compactMap { id, count in authority.record(id: id).map { ($0, count) } }
+            .sorted { a, b in
+                if a.1 != b.1 { return a.1 > b.1 }
+                return a.0.id < b.0.id
+            }
+    }
+
+    /// Assembles an unprinted-layer value, so both builders read their disclosures the same way.
+    private static func external(focus: AuthorityCollectionRecord?,
+                                 endpoints: [ArchivalFlowEndpoint],
+                                 allEndpoints: [ArchivalFlowEndpoint],
+                                 totalReferences: Int, sameUnitReferences: Int,
+                                 topPairs: [(ArchivalFlowEndpoint, ArchivalFlowEndpoint)],
+                                 index: ExternalCitationIndex,
+                                 entriesById: [String: VolumeManifestEntry]) -> ArchivalFlowsData {
+        ArchivalFlowsData(
+            focus: focus, focusCategory: focus.map { ArchivalRepositoryCategory.from($0) },
+            endpoints: endpoints, allEndpoints: allEndpoints,
+            totalReferences: totalReferences, sameUnitReferences: sameUnitReferences,
+            topPairs: topPairs,
+            // Every reference on this layer is by definition an editor's footnote, so the printed
+            // layer's "95.3% are footnotes" caveat does not apply — it is 100% and saying so adds
+            // nothing. Zero here means "not the disclosure this layer owes", and the view branches
+            // on `layer` rather than on this number.
+            footnoteShare: 0,
+            volumesWithEdges: index.coverage.volumesWithReferences,
+            volumesScanned: index.coverage.volumesScanned,
+            classBetweenReferences: 0, classBetweenPairs: 0,
+            layer: .toUnprinted,
+            externalFacts: ExternalFacts(
+                referencesFound: index.coverage.referencesFound,
+                referencesJoined: index.coverage.referencesJoined,
+                inheritedShare: index.coverage.inheritedShare,
+                eraSpan: index.eraSpan(entriesById: entriesById)))
+    }
+
     // MARK: - Helpers
+
+    /// Draws the ten heaviest endpoints and folds the rest into one counted remainder block.
+    ///
+    /// Shared by both layers, because "no silent truncation" is a property of the diagram, not of
+    /// the data behind it.
+    static func fold(_ ordered: [ArchivalFlowEndpoint]) -> [ArchivalFlowEndpoint] {
+        var drawn = Array(ordered.prefix(endpointCap))
+        if ordered.count > endpointCap {
+            let tail = ordered.dropFirst(endpointCap)
+            drawn.append(ArchivalFlowEndpoint(
+                id: remainderId,
+                label: String(format: String(localized: "archival.flows.remainder %lld",
+                                             defaultValue: "%lld more collections"),
+                              Int64(tail.count)),
+                repository: nil, category: .otherInstitution,
+                count: tail.reduce(0) { $0 + $1.count }, foldedCount: tail.count))
+        }
+        return drawn
+    }
 
     private static func endpoint(_ record: AuthorityCollectionRecord,
                                  count: Int) -> ArchivalFlowEndpoint {

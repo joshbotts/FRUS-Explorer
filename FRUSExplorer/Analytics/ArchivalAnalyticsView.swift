@@ -231,7 +231,10 @@ struct ArchivalAnalyticsView: View {
     private var flowsMode: some View {
         if let index = ProvenanceFlowIndexStore.shared,
            let authority = CollectionAuthorityStore.shared {
-            ArchivalFlowsView(index: index, authority: authority,
+            ArchivalFlowsView(index: index,
+                              externalIndex: ExternalCitationIndexStore.shared,
+                              entriesById: manifestEntriesById,
+                              authority: authority,
                               onOpenNeighbors: { openNeighbors(for: $0) },
                               indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                               onExport: { deliver($0) })
@@ -975,6 +978,17 @@ struct ArchivalAnalyticsView: View {
     }
 
     // MARK: - Data
+
+    /// Manifest entries by volume id, for the Flows mode's unprinted layer (#784).
+    ///
+    /// `browsableEntries` rather than the catalogue, so a side-loaded volume is not silently
+    /// missing from an era span it belongs to (#777).
+    @MainActor
+    private var manifestEntriesById: [String: VolumeManifestEntry] {
+        guard let store = appState?.manifestStore else { return [:] }
+        return Dictionary(store.browsableEntries.map { ($0.volumeId, $0) },
+                          uniquingKeysWith: { first, _ in first })
+    }
 
     /// The manifest volumes' coverage spans — the join both modes bucket by.
     ///

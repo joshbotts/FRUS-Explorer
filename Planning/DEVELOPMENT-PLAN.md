@@ -4042,3 +4042,89 @@ schemes build; **3,162 tests in 412 suites** pass.
 **Left for the follow-up:** the manuals still describe side-loading as it was; there is no on-screen
 label distinguishing a side-loaded volume in Browse (it currently sits in its era with a title and
 nothing marking it); and the storage hero's "553 of 552" denominator is untouched.
+
+---
+
+## Session 2026-08-10 — F-1 (#784): where the editors pointed *outside* the printed record
+
+**Shipped as one PR** rather than the two the plan of record budgeted: `SourceNoteKit`'s
+`FootnoteCitationScanner`, `DocumentFootnoteExtractor`, the app's `external_citations` table and
+document-ordered harvest (`currentDateIndexVersion` → 38), `ExternalCitationIndexGenerator` →
+`external-citation-index.json` (159 KB), and the Flows mode's second layer with its own copy,
+caveats and export methods statement. No `@Model` change, so the R-7 CloudKit gate is untouched.
+
+**The measurement, from the shipped generator.** 470,827 body footnotes across 552 volumes →
+**19,800 references** (8,661 lot, 11,139 library, 1,780 inherited via `Ibid.`) → **19,011 joined**
+to the collection authority (96.0%), into 995 units and 3,067 pairs across **284 volumes**. Zero
+false positives in 178 read samples.
+
+### The issue's payoff line is false at the issue's own scope
+
+#784 argues footnote citations are "the only archival-flow signal that reaches 1910–1945", citing
+640 / 523 / 1,183 references for the 1910s / 1920s / 1930s. At the scope the same issue mandates —
+lot files and library collections, decimal classes deferred, subject-numeric never — those decades
+yield **0 / 0 / 2**.
+
+Both figures are right; they count different things, and the issue's own verbatim examples say which:
+`(file No. 711.684/11)` and `(811.114 Guatemala/90)` are **decimal file numbers**. Over the 159
+volumes covering 1910–1945, footnotes name a decimal file 4,877 times, a lot 67 times, and a library
+120 times — and most of that last figure is the head-nested *"Photostatic copy obtained from the
+Franklin D. Roosevelt Library"* provenance the harvest excludes by design. Lot files and
+presidential libraries are a post-1945 filing practice.
+
+So the feature ships without the argument that justified it, and the surface says the span the data
+has (`ExternalCitationIndex.eraSpan`, read off the manifest) instead of the one predicted. Recorded
+in `Archival-Analytics-Feasibility.md` §7.9a. **This is the fifth plan line this program has found
+to be a claim rather than a fact**, and the pattern is now stable enough to plan around: verify the
+justification, not only the mechanism.
+
+### `Ibid.` is worth a tenth of what the issue budgets, and its real job is refusal
+
+Non-negotiable 3 sizes the stateful pass at "12,482 notes inherit their repository". Measured over
+13,432 `(Ibid., …)` occurrences: 4,209 decimal, 1,471 subject-numeric (both out of scope), 5,863
+page/volume references to **publications**, 769 lot (which the anchor grammar reads with no state at
+all), 6 library. The machinery earns its place on **bare** `Ibid.` — and mostly by refusing:
+
+- `Ibid., National Security File, Country File, Vietnam` means *the same library, a different
+  collection*. The first corpus run inherited the previous unit and filed it under *Recordings and
+  Transcripts*.
+- `ibid., Central Files, 684A.86/8–956` means *a decimal file* — a unit this grammar does not read.
+  The first run filed it under a Conference-Files lot.
+
+Both were found by **reading the generator's sample file**, which is why the generator writes one.
+Neither would have failed a test, because no test existed for a case nobody had thought of.
+
+### The exclusion the issue did not name
+
+A footnote nested in the document's `<head>` is the printed document's *own* provenance —
+`frus1937v01/d29` fn 1 is, in full, *"Photostatic copy obtained from the Franklin D. Roosevelt
+Library, Hyde Park, N. Y."* 533 such notes carry an anchor. Harvesting them would report the editors
+pointing outside the printed record when they were describing the printed record itself. The
+extractor now returns what it refused, with the reason, so the coverage block can *measure* the
+guard — the first run reported "44,356 excluded notes carried an anchor" and the number was
+meaningless until split: 268,752 of the exclusions are source notes, which carry archival anchors
+because that is what a source note is.
+
+### Verification
+
+- 32 SPM tests + 14 app tests + 5 Flows tests, and a **generator↔app parity test over two dense real
+  volumes** (`frus1955-57v19`, `frus1958-60v03` — chosen for citation density, not convenience; the
+  first draft used a volume yielding four citations, and the sanity floor caught it).
+- **Ten mutations. Three SURVIVED**, and each exposed a fixture that could not reach the code:
+  - **M3** — the `Ibid.` publication veto. The existing test used `Ibid., p. 68.`, which a *clause*
+    check catches one step earlier, so the note-level state clearing was unpinned.
+  - **M8** — the pipeline's per-document `beginDocument()`. Every app fixture had one document, so
+    removing the reset changed no result. The scanner's own reset test proves the scanner, not the
+    pass that drives it.
+  - **M10** — the focus picker's self-edge filter. The fixture had no self-only collection.
+  All three now CAUGHT.
+- Both schemes build clean; the full suite is green.
+
+### Left explicitly undone
+
+- **The decimal channel.** Unblocking the pre-war reach needs it, and its gate is #784's own
+  measurement that 56% of decimal hits are the citing document's own class. That was not re-run.
+- **A document-grain surface.** `IndexingPipeline.externalCitations(volumeId:documentId:)` and
+  `externalCitationStats` exist and are tested, but nothing in Source Explorer or the research rail
+  reads them yet — the table currently feeds only the corpus-wide artifact.
+- **Screenshots** for the new Flows layer in either manual.

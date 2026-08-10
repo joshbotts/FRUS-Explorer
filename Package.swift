@@ -808,6 +808,52 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - ExternalCitationIndexGenerator
+
+        /// Builds `external-citation-index.json` (#784) — where FRUS's editorial *footnotes* point
+        /// outside the printed record, aggregated to archival units.
+        ///
+        /// A third body of archival evidence, distinct from the two already indexed: a document's
+        /// own source note (where the printed document came from) and a cross-reference between
+        /// two printed documents. A footnote citation says *there is another document, we did not
+        /// print it, and here is where it lives* — and it is the only archival signal that reaches
+        /// 1910–1945, the decades #764 found structurally empty.
+        ///
+        /// One pass over the shippable corpus reusing the app's own surfaces
+        /// (`DocumentFootnoteExtractor`, `SourceNoteKit.FootnoteCitationScanner`,
+        /// `DocumentNoteExtractor`, `SourceNoteParser`, `AuthorityLookup`), so a reference here is
+        /// a row in the app's `external_citations` table. Entirely offline & deterministic; throws
+        /// rather than writing an index of zeroes.
+        .target(
+            name: "ExternalCitationIndexGeneratorCore",
+            dependencies: [
+                .target(name: "SourceNoteKit"),
+                .target(name: "GeneratorKit"),
+                .target(name: "CollectionAuthorityGeneratorCore"),
+                .target(name: "SourceExplorerExportGeneratorCore"),
+            ],
+            path: "ExternalCitationIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls ExternalCitationIndexRunner.run() and exits.
+        .executableTarget(
+            name: "ExternalCitationIndexGenerator",
+            dependencies: [.target(name: "ExternalCitationIndexGeneratorCore")],
+            path: "ExternalCitationIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit + fixture tests for ExternalCitationIndexGeneratorCore (the body-footnote
+        /// extraction and its exclusions, the anchor grammar, the `Ibid.` state machine, the
+        /// absence guard, determinism, and the broken-join refusal).
+        .testTarget(
+            name: "ExternalCitationIndexGeneratorTests",
+            dependencies: [.target(name: "ExternalCitationIndexGeneratorCore")],
+            path: "ExternalCitationIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - RecordGroupCatalogGenerator
 
         /// Builds the offline NARA Catalog index for the 22 foreign-affairs record groups

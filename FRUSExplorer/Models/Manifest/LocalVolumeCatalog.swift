@@ -166,8 +166,11 @@ public struct LocalVolumeCatalog: Sendable {
             let volumeId = String(name.dropLast(4))
             guard !known.contains(volumeId), existing[volumeId] == nil else { continue }
             let url = directory.appendingPathComponent(name)
-            let size = (try? fm.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
-            guard let minted = entry(volumeId: volumeId, url: url, sizeBytes: size ?? 0) else { continue }
+            // Two `??` are needed and only one was there: `try?` makes the whole expression
+            // optional *and* the `as? Int` cast is itself optional, so the inner default was
+            // unreachable and the compiler said so.
+            let size = ((try? fm.attributesOfItem(atPath: url.path)[.size] as? Int) ?? nil) ?? 0
+            guard let minted = entry(volumeId: volumeId, url: url, sizeBytes: size) else { continue }
             write(minted, in: directory)
             existing[volumeId] = minted
         }

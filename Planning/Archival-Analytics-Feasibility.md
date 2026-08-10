@@ -678,6 +678,63 @@ editorial practice and already owns that disclosure. Two traps for whoever takes
 **stateful**, and 142 notes name an archive inside a *"Not found in Department of State files or at
 the Truman Library"* clause, where harvesting asserts the opposite of what the editor wrote.
 
+### 7.9a Built (#784, 2026-08-10) — and the era claim above does not survive its own scope
+
+**Shipped:** `SourceNoteKit.FootnoteCitationScanner` (the anchor-first grammar + `Ibid.` state),
+`DocumentFootnoteExtractor` (the generator's body-footnote pass), the app's `external_citations`
+table and document-ordered harvest (`currentDateIndexVersion` → 38),
+`ExternalCitationIndexGenerator` → `external-citation-index.json` (159 KB), and the Flows mode's
+second layer with its own copy, caveats and export methods statement.
+
+**Measured over the shippable corpus:** 470,827 body footnotes across 552 volumes → **19,800
+references** (8,661 lot, 11,139 library, 1,780 inherited through `Ibid.`) → **19,011 joined** to the
+collection authority (96.0%), reaching 995 units and 3,067 pairs across **284 volumes**.
+
+**The era premise is refuted.** §7.9 argues this is "the only signal that reaches the pre-war
+decades", citing 640 / 523 / 1,183 references for the 1910s / 1920s / 1930s. At the scope §7.9
+itself mandates — lot files and library collections, decimal classes deferred, subject-numeric never
+— those decades yield **0 / 0 / 2**.
+
+The two figures count different things, and §7.9's own examples give the game away: `(file No.
+711.684/11)` and `(811.114 Guatemala/90)` are **decimal file numbers**. Measured over the 159
+volumes whose coverage midpoint falls in 1910–1945:
+
+| unit named in a footnote | notes |
+|---|---|
+| decimal file number | **4,877** |
+| `File No.` form | 1,025 |
+| library | 120 — and most are the *head-nested* "Photostatic copy obtained from the Franklin D. Roosevelt Library" statements the harvest excludes as the printed document's own provenance |
+| lot file | **67** |
+
+Lot files and presidential libraries are a post-1945 filing practice. The pre-war reach is entirely
+in the decimal channel §7.9 deferred, so **the era argument belongs to that later work, not to
+this**. Every surface built on the shipped index states the span the data has
+(`ExternalCitationIndex.eraSpan`, read off the manifest) rather than the one that was predicted.
+
+**Two traps §7.9 named, re-sized by measurement.**
+- *`Ibid.` is stateful* — true, and implemented, but worth ~9% of the harvest rather than the bulk.
+  Of 13,432 measured `(Ibid., …)` occurrences, 4,209 are decimal classes and 1,471 subject-numeric
+  (both out of scope), 5,863 are page/volume references to **publications**, 769 name a lot (which
+  the anchor grammar reads with no state at all) and 6 a library. The machinery earns its place
+  mainly on **bare** `Ibid.`, and its most important job turned out to be *refusing*: an `Ibid.`
+  that names its own collection, or a decimal file, must not inherit the previous unit. The first
+  corpus run did inherit, and filed a footnote naming the Johnson Library's *National Security File*
+  under *Recordings and Transcripts*. It was found by reading the generator's sample file.
+- *142 absence-claim notes* — 140 measured, and the guard has to be **per clause**: `"Not printed.
+  (Truman Library, Papers of Clark M. Clifford)"` is an absence-shaped first clause and a real
+  citation in its second.
+
+**One trap §7.9 did not name.** A footnote nested in the document's `<head>` is the printed
+document's *own* provenance, not a pointer outside it — `frus1937v01/d29` fn 1 is, in full,
+*"Photostatic copy obtained from the Franklin D. Roosevelt Library, Hyde Park, N. Y."* 533 such
+notes carry an anchor. Harvesting them would report the editors pointing outside the printed record
+when they were describing the printed record itself.
+
+**What the decimal channel would need.** Unblocking the pre-war reach means reading decimal file
+numbers, which §7.9 defers because 56% of hits are the citing document's *own* class. That
+measurement was not re-run here and remains the gate. Note the grammar for it must stay
+anchor-first and must not route through `decimalClassLocation`, for the reason §7.9 records.
+
 ### 7.10 Phase 3 stage 1 (#765): the surface, and the four decisions the data forced
 
 **Shipped:** `ArchivalAnalyticsView` in the Analytics family with a mode picker, the

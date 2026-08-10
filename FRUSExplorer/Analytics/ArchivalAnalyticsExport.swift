@@ -179,20 +179,48 @@ enum ArchivalAnalyticsExport {
     /// The Flows mode's statement — the one that owes the footnote sentence.
     static func flows(title: String, axisLabel: String, data: ArchivalFlowsData,
                       indexedVolumeCount: Int) -> AnalyticsProvenance {
-        var caveats = [
-            String(format: String(
-                localized: "archival.export.caveat.flows.footnotes %@",
-                defaultValue: "Read this first: %@ of these references are footnotes. A row describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves."),
-                data.footnoteShare.formatted(.percent.precision(.fractionLength(1)))),
-            String(format: String(
-                localized: "archival.export.caveat.flows.coverage %lld %lld",
-                defaultValue: "Coverage: only %1$lld of the %2$lld volumes in the series contribute any of these references. The cross-reference style they come from postdates 1945. The figures carry no dates: the stored data is a pair of archival units and a count. You cannot narrow this view to a period."),
-                Int64(data.volumesWithEdges), Int64(data.volumesScanned)),
-            String(format: String(
-                localized: "archival.export.caveat.flows.classes %lld %lld",
-                defaultValue: "Excluded: central-file classes. Between them the whole series carries %1$lld references over %2$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with."),
-                Int64(data.classBetweenReferences), Int64(data.classBetweenPairs)),
-        ]
+        // #784: the two layers are different bodies of evidence and owe different disclosures.
+        // An export that carried the printed layer's caveats over unprinted-material rows would
+        // state a footnote share of 0.0% and a class exclusion that never applied — a methods
+        // statement describing a measurement the table is not.
+        var caveats: [String]
+        if let facts = data.externalFacts {
+            caveats = [
+                String(format: String(
+                    localized: "archival.export.caveat.flows.unprinted.claim %lld %lld",
+                    defaultValue: "Read this first: every row is an editorial footnote naming archival material FRUS did not print. A row says the editors, working on material from one collection, told the reader that something unprinted is in another. It is not a relationship between the archives and not a count of documents held anywhere. %1$lld citations were found; %2$lld matched a known collection."),
+                    Int64(facts.referencesFound), Int64(facts.referencesJoined)),
+                String(format: String(
+                    localized: "archival.export.caveat.flows.unprinted.scope %lld %lld",
+                    defaultValue: "Scope: State Department lot files and presidential-library collections only. Both are post-1945 ways of filing, so pre-war volumes are nearly absent even though their footnotes cite archives heavily — those citations give a central-file number, which this measure does not yet read. %1$lld of the %2$lld volumes in the series contribute a row."),
+                    Int64(data.volumesWithEdges), Int64(data.volumesScanned)),
+                String(format: String(
+                    localized: "archival.export.caveat.flows.unprinted.ibid %@",
+                    defaultValue: "Method: %@ of these citations come from an “Ibid.” — the archive is named once and referred back to. The app follows that back the way a reader would; it is a reading, not a quotation."),
+                    facts.inheritedShare.formatted(.percent.precision(.fractionLength(1)))),
+            ]
+            if let span = facts.eraSpan {
+                caveats.append(String(format: String(
+                    localized: "archival.export.caveat.flows.unprinted.era %lld %lld",
+                    defaultValue: "Coverage span: the contributing volumes cover %1$lld to %2$lld."),
+                    Int64(span.lowerBound), Int64(span.upperBound)))
+            }
+        } else {
+            caveats = [
+                String(format: String(
+                    localized: "archival.export.caveat.flows.footnotes %@",
+                    defaultValue: "Read this first: %@ of these references are footnotes. A row describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves."),
+                    data.footnoteShare.formatted(.percent.precision(.fractionLength(1)))),
+                String(format: String(
+                    localized: "archival.export.caveat.flows.coverage %lld %lld",
+                    defaultValue: "Coverage: only %1$lld of the %2$lld volumes in the series contribute any of these references. The cross-reference style they come from postdates 1945. The figures carry no dates: the stored data is a pair of archival units and a count. You cannot narrow this view to a period."),
+                    Int64(data.volumesWithEdges), Int64(data.volumesScanned)),
+                String(format: String(
+                    localized: "archival.export.caveat.flows.classes %lld %lld",
+                    defaultValue: "Excluded: central-file classes. Between them the whole series carries %1$lld references over %2$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with."),
+                    Int64(data.classBetweenReferences), Int64(data.classBetweenPairs)),
+            ]
+        }
         if data.sameUnitReferences > 0 {
             caveats.append(String(format: String(
                 localized: "archival.export.caveat.flows.sameUnit %lld",
