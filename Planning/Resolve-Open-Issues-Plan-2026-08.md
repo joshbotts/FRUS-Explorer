@@ -215,6 +215,17 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   `ArchivalPoolOrderingTests.onlyTheAnchoredPathOptsIn` from a count to an allowlist first, since
   it currently pins the bug shut; (5) write the pool-depth measurement into `Planning/` where the
   PR prose left it.
+- ~~**F-5 · #733 — CIA Job numbers as a front-matter key**~~ ✅ **DONE (2026-08-10)**. Not "S", and
+  not a keying gap "only". Three plan/issue lines were wrong. (a) **19 rows** is stale by an order
+  of magnitude: 664 rows across 122 volumes name a Job, and 662 of them have no container key.
+  (b) **"reuse the grammar, never a second regex"** could not be followed as written — the Job
+  pattern was `private` with no standalone entry point, and `SourceNoteKit` was not a dependency
+  of `VolumeSourcesIndexGeneratorCore` at all. (c) The second regex the line warns about **was
+  already there, for lots**: the generator declared its own D-designator-only pattern — the one
+  the app replaced at index version 18 — which cannot see 249 rows across 75 volumes (225
+  F-designator posts) and minted malformed keys (`lot:FILE03D256`). Both extractors now share one
+  grammar. Regenerated: majorCollections 2,929 → 3,410 (+252 job, +302 lot, 59 re-keyed).
+  Index version 38 → 39.
 - **F-5 · #733 — CIA Job numbers as a front-matter key** (S). Keying gap only: the volume-sources
   generator keys no Job number from outline rows (19 paragraph-encoded rows known; measure the
   `<list>`-encoded population while in there). `SourceNoteParser` already owns the Job grammar
@@ -319,7 +330,11 @@ sitting, not a session.
 4. **F-2** (#752 tail) — closes #752 outright.
 5. ~~**F-4** (#645)~~ ✅ **2026-08-10** — closes #645.
 6. **F-3 design ½-session** (#775 shape), then **F-3 build**.
-7. **F-5 + I-3(volume-sources)** (#733 + one GeneratorKit migration in the same regen).
+7. ~~**F-5**~~ ✅ **2026-08-10** (#733). **I-3(volume-sources) was deliberately NOT folded in** —
+   see below. The pairing's whole point was byte-verifying the regenerated artifact, and #733
+   legitimately changes that artifact's contents; landing a mechanical refactor in the same PR
+   would make every byte difference ambiguous between the two. I-3(volume-sources) is now cheaper
+   than before, not more expensive: the target already gained its SourceNoteKit dependency here.
 8. Then F-6…F-11 / I-1 / I-2 by appetite — each is standalone.
 
 **Owner lane, parallel:** B-1 device backtrace (with QW-2 on a build) · O-1 keyed call + harvest ·
