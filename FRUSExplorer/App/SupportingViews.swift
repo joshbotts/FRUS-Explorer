@@ -1182,6 +1182,10 @@ struct CitationPopoverView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                // #777: with no volume entry there is no citation — `plainTextCitation` is the
+                // "Citation unavailable" apology, and this button was copying that sentence to the
+                // clipboard. Its sibling `Copy as…` has always been disabled in the same state.
+                .disabled(volumeEntry == nil)
                 .help(String(
                     localized: "citation.popover.copyCitation.help",
                     defaultValue: "Copy the formatted citation to the clipboard"

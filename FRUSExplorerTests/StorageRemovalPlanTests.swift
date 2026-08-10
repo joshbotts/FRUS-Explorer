@@ -25,6 +25,22 @@ struct StorageRemovalPlanTests {
         VolumeStorageEntry(volumeId: volumeId, volumeFileBytes: bytes)
     }
 
+    /// The pre-#777 world: every volume came from the catalogue, so every volume is recoverable.
+    /// Tests about the *other* rules pass this so their meaning is unchanged.
+    private let allRedownloadable: Set<String> = [
+        "a",
+        "alpha",
+        "b",
+        "c",
+        "frus1861",
+        "frus1952-54v01",
+        "frus1969-76v12",
+        "never",
+        "old",
+        "recent",
+        "zebra",
+    ]
+
     private func date(_ daysAgo: Int) -> Date {
         Date(timeIntervalSince1970: 1_700_000_000 - Double(daysAgo) * 86_400)
     }
@@ -37,6 +53,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("a"), entry("b"), entry("c")],
             protectedVolumeIds: ["b"],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         #expect(plan.candidates.map(\.volumeId) == ["a", "c"])
@@ -50,6 +67,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("a"), entry("b")],
             protectedVolumeIds: ["a", "b"],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         #expect(plan.isEmpty)
@@ -62,6 +80,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("a")],
             protectedVolumeIds: ["not-downloaded"],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         #expect(plan.candidates.map(\.volumeId) == ["a"])
@@ -76,6 +95,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("recent"), entry("never"), entry("old")],
             protectedVolumeIds: [],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: ["recent": date(1), "old": date(400)]
         )
         #expect(plan.candidates.map(\.volumeId) == ["never", "old", "recent"])
@@ -88,6 +108,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("frus1969-76v12"), entry("frus1861"), entry("frus1952-54v01")],
             protectedVolumeIds: [],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         #expect(plan.candidates.map(\.volumeId) == ["frus1861", "frus1952-54v01", "frus1969-76v12"])
@@ -100,6 +121,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("zebra"), entry("alpha")],
             protectedVolumeIds: [],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: ["zebra": shared, "alpha": shared]
         )
         #expect(plan.candidates.map(\.volumeId) == ["alpha", "zebra"])
@@ -113,6 +135,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("a", bytes: 1_000_000)],
             protectedVolumeIds: [],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         let expected = 1_000_000 + Int(1_000_000 * StorageReport.indexOverheadFactor)
@@ -124,6 +147,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("a", bytes: 1_000), entry("b", bytes: 2_000), entry("c", bytes: 4_000)],
             protectedVolumeIds: [],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         let expected = plan.candidates
@@ -140,6 +164,7 @@ struct StorageRemovalPlanTests {
         let plan = StorageRemovalPlan.make(
             entries: [entry("a", bytes: 1_000)],
             protectedVolumeIds: [],
+            redownloadableVolumeIds: allRedownloadable,
             lastOpenedByVolumeId: [:]
         )
         #expect(plan.estimatedRecovery(for: ["a", "gone", "protected-now"])
@@ -151,6 +176,7 @@ struct StorageRemovalPlanTests {
     func emptyLibrary() {
         let plan = StorageRemovalPlan.make(entries: [],
                                            protectedVolumeIds: [],
+                                           redownloadableVolumeIds: allRedownloadable,
                                            lastOpenedByVolumeId: [:])
         #expect(plan.isEmpty)
         #expect(plan.estimatedRecovery(for: ["anything"]) == 0)
@@ -178,5 +204,78 @@ struct HubCopyTests {
     func subseriesAgreement() {
         #expect(HubCopy.subseries(1) == "1 subseries")
         #expect(HubCopy.subseries(3) == "3 subseries")
+    }
+}
+
+// MARK: - The recoverability rule (#777)
+
+extension StorageRemovalPlanTests {
+
+    /// Free Up Space exists to reclaim space that costs only a download to get back. A side-loaded
+    /// volume costs the user their only copy: the app's is written with `isExcludedFromBackupKey`,
+    /// so it is in no iCloud Backup and no Time Machine either.
+    @Test("A volume the app cannot download again is never offered")
+    func sideloadedVolumesAreNotCandidates() {
+        let plan = StorageRemovalPlan.make(
+            entries: [entry("a"), entry("sideloaded"), entry("b")],
+            protectedVolumeIds: [],
+            redownloadableVolumeIds: ["a", "b"],
+            lastOpenedByVolumeId: [:]
+        )
+        #expect(plan.candidates.map(\.volumeId) == ["a", "b"], """
+            A side-loaded volume was offered for removal. Nothing can restore it — this is the \
+            irreversible half of #777, and the confirmation promised a re-download.
+            """)
+    }
+
+    /// The reason this is not merely a sorting nicety: candidates are ordered never-opened first,
+    /// and a volume the user side-loaded a minute ago has by definition never been opened and
+    /// carries no notes. Before the guard it was not just eligible, it led the list.
+    @Test("It would otherwise have been the FIRST suggestion")
+    func sideloadedVolumeWouldHaveLedTheList() {
+        let entries = [entry("recent"), entry("sideloaded"), entry("old")]
+        let opened = ["recent": date(1), "old": date(400)]
+
+        let unguarded = StorageRemovalPlan.make(
+            entries: entries, protectedVolumeIds: [],
+            redownloadableVolumeIds: ["recent", "sideloaded", "old"],
+            lastOpenedByVolumeId: opened)
+        #expect(unguarded.candidates.first?.volumeId == "sideloaded", """
+            The premise of the guard: never-opened sorts first, so a fresh side-load leads. If this \
+            assertion fails the ordering changed and the #777 rationale needs re-checking.
+            """)
+
+        let guarded = StorageRemovalPlan.make(
+            entries: entries, protectedVolumeIds: [],
+            redownloadableVolumeIds: ["recent", "old"],
+            lastOpenedByVolumeId: opened)
+        #expect(guarded.candidates.map(\.volumeId) == ["old", "recent"])
+    }
+
+    /// A caller that has not resolved its catalogue yet offers nothing, rather than everything.
+    @Test("An empty catalogue offers no candidates, not all of them")
+    func emptyCatalogueIsSafe() {
+        let plan = StorageRemovalPlan.make(
+            entries: [entry("a"), entry("b")],
+            protectedVolumeIds: [],
+            redownloadableVolumeIds: [],
+            lastOpenedByVolumeId: [:]
+        )
+        #expect(plan.isEmpty, """
+            With no catalogue the plan must refuse rather than assume. The failure direction \
+            matters: guessing "recoverable" deletes files, guessing "not" shows an empty sheet.
+            """)
+    }
+
+    /// Both rules apply, and neither shadows the other.
+    @Test("Protection and recoverability are independent")
+    func bothRulesApply() {
+        let plan = StorageRemovalPlan.make(
+            entries: [entry("a"), entry("b"), entry("c"), entry("sideloaded")],
+            protectedVolumeIds: ["b"],
+            redownloadableVolumeIds: ["a", "b", "c"],
+            lastOpenedByVolumeId: [:]
+        )
+        #expect(plan.candidates.map(\.volumeId) == ["a", "c"])
     }
 }

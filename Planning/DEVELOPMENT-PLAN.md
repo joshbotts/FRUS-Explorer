@@ -3941,3 +3941,48 @@ as a description of the bundle would have replaced one stale claim with another.
 the predicate's scheme gate, each of its two clauses separately, both toolbar rows, the SA-3
 cross-link, and the badge reverted to `""`. All seven CAUGHT. Both schemes build clean; **3,146
 tests in 411 suites** pass, plus the UI suite.
+
+---
+
+## Session 2026-08-09 — #777 stage 0: Free Up Space could delete a file nothing can restore
+
+**Diagnosing B-2 turned up a worse bug than the one reported, and it is independent of the fix.**
+
+#777 says a side-loaded volume reaches search but not Browse. Tracing that produced the mechanism
+in one sentence: **side-loading records a volume's existence only as a file on disk plus rows in
+SQLite, while every navigation surface derives its universe from `manifest.json`** — so the volume
+is searchable (index-keyed) and structurally unrepresentable in Browse (manifest-keyed). Confirmed
+in code: `SideloadValidator` takes the id from the *filename*, copies the XML, and calls
+`indexVolume`; `ManifestStore` has no mutation API at all (`bundledEntries` is `private(set)` and
+only ever filled from the read-only bundle).
+
+**The worse bug, on the way past.** Free Up Space builds its candidates from a directory scan, so
+a side-loaded volume *is* offered — and it sorts never-opened volumes **first**, so a freshly
+side-loaded volume is by definition the top suggestion. All four removal confirmations end
+"…and the volume can be downloaded again." For a side-loaded volume that is false twice over: the
+app has no download URL for it, and its copy is written with `isExcludedFromBackupKey`, so it is in
+no iCloud Backup and no Time Machine either. **Irreversible data loss behind a reassuring
+sentence** — and the reassurance is what makes the button feel safe.
+
+**The guard is a filter, not a warning.** `StorageRemovalPlan.make` gains
+`redownloadableVolumeIds` and excludes anything absent from it, exactly as it already excludes
+volumes carrying notes. Passing an empty set therefore offers *nothing*, which is the safe
+direction for a caller whose catalogue has not loaded: guessing "recoverable" deletes files;
+guessing "not" shows an empty sheet. The per-volume Remove confirmation branches to say plainly
+that the app cannot fetch this one again.
+
+**A third find in the same area.** macOS's Citation popover substitutes "Citation unavailable —
+volume metadata not loaded." when there is no manifest entry, and its **Copy citation** button was
+not disabled — only the sibling *Copy as…* menu was — so clicking it put that apology on the
+clipboard. Now disabled in the same state.
+
+**Verification.** Four new tests, including one that pins the *premise*: with the guard removed a
+side-loaded volume leads the candidate list, so if the ordering ever changes the rationale gets
+re-checked rather than silently invalidated. Mutation: removing the filter turns the suite red
+(CAUGHT). Both schemes build; 3,150 tests in 411 suites pass.
+
+**What this deliberately does not do.** It does not make the volume browsable — that is the
+reported bug and it needs the navigation model to represent a volume with no manifest entry. It
+does not touch the ~50 other manifest-keyed surfaces (citations, search scoping, custom scopes,
+bulk summarization), each of which degrades for a side-loaded volume. Both are scoped in the
+follow-up issue; neither is a reason to hold a data-loss fix.
