@@ -1334,25 +1334,10 @@ struct FRUSExplorerApp: App {
             // scene-level shortcut runs no app code, so it cannot front a buried browser, and it
             // appears on no menu at all (#749 / audit L-37). That is the defect this item exists
             // to have fixed, and it is independent of which menu the item sits in.
-            // Grouped because `.commands` takes at most ten children and this block is at the
-            // limit; the Group is structural only and changes no menu.
-            Group {
-                CommandGroup(before: .windowList) {
-                    Button(String(localized: "menu.window.corpusBrowser",
-                                  defaultValue: "Corpus Browser")) {
-                        // Clear stale provenance → recency fallback.
-                        appState.bindTool(.corpusBrowser, to: nil)
-                        openWindow.fronting(id: "frus.corpusBrowser")
-                    }
-                    .keyboardShortcut("b", modifiers: [.command, .shift])
-                    Divider()
-                }
-
-                CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
-                    ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
-                        .modelContainer(modelContainer)
-                        .task { await bootSearchInfrastructureOnce() }
-                }
+            CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
+                ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
+                    .modelContainer(modelContainer)
+                    .task { await bootSearchInfrastructureOnce() }
             }
         }
         #endif
@@ -2766,6 +2751,24 @@ struct FindMenuContent: View {
             openWindow.fronting(id: "frus.search")
         }
         .keyboardShortcut("s", modifiers: .command)
+
+        // Corpus Browser sits with Search and Citation Lookup because all three answer "find me
+        // something in the corpus" — by term, by citation, by where it sits in the series.
+        //
+        // It is deliberately NOT in the Window menu. macOS already generates an entry there for
+        // every `Window` scene, this one included, so an item of ours beside it was a visible
+        // duplicate (#822). The auto-entry raises the window; this one additionally carries ⌘⇧B
+        // and clears stale provenance, which is why both can exist without being redundant —
+        // provided they are in different menus.
+        //
+        // ⌘⇧B lives here rather than on the `Window` scene: a scene-level shortcut runs no app
+        // code, so it cannot front an open-but-buried browser and appears on no menu at all
+        // (#749 / audit L-37).
+        Button(String(localized: "menu.find.corpusBrowser", defaultValue: "Corpus Browser…")) {
+            appState.bindTool(.corpusBrowser, to: nil)   // clear stale provenance → recency fallback
+            openWindow.fronting(id: "frus.corpusBrowser")
+        }
+        .keyboardShortcut("b", modifiers: [.command, .shift])
 
         Button(String(localized: "menu.find.citationLookup", defaultValue: "Citation Lookup…")) {
             openWindow.fronting(id: "frus.citationLookup")
