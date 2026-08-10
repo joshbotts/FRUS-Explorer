@@ -245,6 +245,17 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   from the owner's harvest — no key, no re-harvest) rendered as "this series was created by X"
   with a #650-style cohort statement, both Source Explorer views. The similarity axis stays dead
   (2.8% reachability, structural — do not resurrect).
+- ~~**F-7 · carried from #663 — the three catalog fields**~~ ✅ **DONE (2026-08-10)**. The field
+  list needed correcting against the 622 series the app can name. `numberingNote` reaches **1 of
+  622** (385 corpus-wide) and was dropped — a row for one record is not a feature. Two fields not
+  on the list are the strongest: **`useRestriction`** (100%; 205 copyright) and
+  **`physicalOccurrences.extent`** + holding facility (100%) — how much material and which
+  building. `accessRestriction` is 100% and consequential (414 restricted, 338 citing FOIA
+  (b)(1)); `findingAids` 19.6%. Access and use ship as **two rows**, because the measured
+  cross-tab populates all four cells (175/239/43/165) — 43 series may be read but not published.
+  Landed on the **bundled** lot panel, not `NARACatalogResult`: that is the live-API path, while
+  the bundled path is what a reader without a key hits, and F-6 measured it at 618/618 covered.
+  Artifact renamed `series-creator-index.json` → `series-facts-index.json` (schema 2, 105 KB).
 - **F-7 · carried from #663 — the three catalog fields** (S). `accessRestriction` ("Restricted —
   Fully" is trip-planning information), `inclusiveStartDate`/`inclusiveEndDate` (sanity-check a
   resolution against the citation's own date), `findingAids`/`numberingNote` (NARA's own ordering

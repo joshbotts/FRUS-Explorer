@@ -4456,3 +4456,57 @@ creators, and naming one would be false for the rest.
 - **No export path exists for the bundled lot record**, so the new row has nothing to travel into.
   Only live catalog results are exportable (`naraExportText`). Worth knowing before someone reads
   the #680 caveat and assumes this row is missing from a copy.
+
+---
+
+## Session 2026-08-10 — F-7 (#663): what NARA can tell you before you travel
+
+**Issue:** #663 (closed; this is the carried remainder) · **Plan:** § F-7
+
+The plan named three catalog fields. Measured against the 622 series the app can actually name,
+one of them barely exists and the two most useful are not on the list.
+
+| field | coverage of 622 | signal |
+|---|---|---|
+| `accessRestriction` | 100% | **414 restricted**; 338 cite FOIA (b)(1) National Security |
+| inclusive dates | 100% | real year pairs |
+| `physicalOccurrences.extent` | 100% | "1 linear foot, 3 linear inches" + holding facility |
+| `useRestriction` | 100% | 205 copyright-restricted |
+| `findingAids` | 19.6% | Folder List ×108 |
+| **`numberingNote`** | **1 (0.2%)** | **dropped** |
+
+`numberingNote` is projected on 385 records corpus-wide and reaches **one** the app can name.
+
+### Access and use are two rows, and the cross-tab is the argument
+
+(access-restricted, use-restricted) = (yes,yes) 175 · (yes,no) 239 · (no,yes) 43 · (no,no) 165.
+All four cells populated: 43 series may be **read** but not freely **published**, 239 the other
+way round. Folding them misleads in both directions. A status can also arrive with no categories
+(5 of the 43), so the render path has an empty-list branch with a test on it.
+
+### Where it landed, and why not where the plan said
+
+The plan said `NARACatalogResult` — the **live API** path, which needs a key and a network. The
+bundled lot panel is what a reader actually hits, and F-6 measured it at 618/618 covered. So the
+facts ride the bundled artifact, on the same NAID key F-6 established.
+
+### The artifact was renamed rather than duplicated
+
+Same records, same harvest pass, same key — one artifact is right, and `series-creator-index.json`
+would have been an actively misleading name for a file carrying access restrictions. Renaming a
+just-merged resource is cheap; renaming it later is not. Schema 1 → 2, 52 KB → 105 KB.
+
+### The sweep found a determinism bug my own comment had already flagged
+
+I wrote "deterministic because the rows are iterated in a sorted order" and then iterated a raw
+Dictionary. Every vocabulary would have renumbered between runs with no input change — a diff on
+each regeneration, hiding any real one. Fixed, and then the *fix* survived its mutation, because
+the artifact test reads the committed file, which a generator mutation cannot move. `buildRows` is
+extracted and driven directly; 6/6 caught.
+
+### Left undone
+
+- **The live `NARACatalogResult` path still shows none of this.** Its decoder reads
+  `coverageStartDate`, while the harvest uses `inclusiveStartDate` — worth confirming the live API
+  actually sends the former before anyone extends that path, since a mismatch would mean
+  `dateRange` is silently nil there today. Not investigated; flagged.
