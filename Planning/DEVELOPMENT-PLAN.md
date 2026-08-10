@@ -4652,3 +4652,52 @@ becomes `.failed` rather than aborting the batch.
   the candidates still means a single lookup. That is the obvious next increment.
 - **Sequential lookup is untested for a very large paste.** Tens of rows is the design point; a
   thousand-line paste would run visibly long with no cancel.
+
+---
+
+## Session 2026-08-10 — F-11 (#265): look up an abbreviation across every volume
+
+**Issue:** #265 · **Plan:** § F-11
+
+### "A search-scoped UI over it" was two things short
+
+The `terms` table and its `term` index exist, as the plan says. There was **no query API** — only
+an insert. And the framing assumes a glossary has one answer per abbreviation.
+
+### The corpus disagrees, and that is the feature
+
+Measured on the owner's index: **66,095 glossary rows over 312 volumes, 10,632 distinct terms,
+5,685 defined in more than one volume.** The editors did not standardise their glossaries:
+
+| term | volumes | distinct definitions |
+|---|---|---|
+| `EUR` | 231 | **30** |
+| `S/S` | 225 | 25 |
+| `NSC` | 276 | 10 |
+
+A corpus-wide glossary showing one line per abbreviation would be picking one volume's wording and
+hiding twenty-nine. So a result carries its variants, most widely used first, each with the count
+of volumes behind it — and only contested terms get a disclosure, because for the ~47% defined one
+way it would be a control with nothing behind it.
+
+### Ranking, and two things the SQL had to get right
+
+Exact, then prefix, then contains; breadth within a rank. Someone typing "NSC" wants NSC, not "NSC
+Action No." above it, even though the latter may be defined in more volumes. Breadth is the
+tie-break because a glossary carries no frequency data of its own.
+
+- **LIKE wildcards are escaped.** `100%` must search for a percent sign. Unescaped it matches
+  everything — the worse failure, because it looks like an answer.
+- **The per-term volume count is the widest variant's, not the sum.** Summing reports 220 volumes
+  for a term defined in 231, and would exceed the corpus for a heavily-contested abbreviation.
+
+### Left undone
+
+- **No path from a definition to the volumes using it.** Each variant knows a sample volume id but
+  the row does not link anywhere. That is the obvious next increment and the one a reader will ask
+  for first.
+- **No in-document affordance.** Selecting an abbreviation while reading does not offer this
+  lookup; it is reachable from Search's overflow only.
+- **Terms are indexed only for downloaded volumes**, so the corpus-wide claim is bounded by what
+  the reader has. The empty state says the index needs a volume, but the counts shown are not
+  labelled as "of your downloaded volumes" — worth wording if it confuses.
