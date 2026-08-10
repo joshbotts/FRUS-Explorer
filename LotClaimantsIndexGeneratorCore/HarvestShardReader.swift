@@ -18,22 +18,52 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #675 / N-8b
-enum HarvestShardReader {
+public enum HarvestShardReader {
 
     /// The projection this generator needs.
-    struct Record: Decodable {
-        let naId: String
-        let title: String
-        let levelOfDescription: String?
-        let recordGroupNumber: String?
-        let variantControlNumbers: [String]
-        let controlNumberNotes: [String]
-        let hmsMlrEntryNumbers: [String]
-        let dateRange: String?
+    public struct Record: Decodable, Sendable {
+        public let naId: String
+        public let title: String
+        public let levelOfDescription: String?
+        public let recordGroupNumber: String?
+        public let variantControlNumbers: [String]
+        public let controlNumberNotes: [String]
+        public let hmsMlrEntryNumbers: [String]
+        public let dateRange: String?
+        /// The organisational bodies NARA credits with creating this series (#405).
+        ///
+        /// Added to **this** reader rather than a second one for the reason its own header gives:
+        /// three analysis errors in this workstream came from a parallel implementation that
+        /// tokenised differently from the shipped one. `creators` is present on exactly the
+        /// series layer — 20,180 of 751,880 harvested records (2.7%) — so file units decode it
+        /// as empty by construction, not by accident.
+        public let creators: [Creator]
+
+        /// One creating body: NARA's heading, its own authority NAID, and which era it belongs to.
+        public struct Creator: Decodable, Sendable, Equatable {
+            /// The full hierarchical heading, verbatim, e.g.
+            /// `"Department of State. Office of the Secretary. Executive Secretariat. (1789 - )"`.
+            public let heading: String
+            /// The creator's own authority-record NAID, when NARA states one.
+            public let naId: String?
+            /// `"Most Recent"` for the body that last held the records; `"Predecessor"` for an
+            /// earlier one. A series may carry several.
+            public let creatorType: String?
+
+            public init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: K.self)
+                heading = ((try? c.decode(String.self, forKey: .heading)) ?? "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                naId = Record.looseString(c, .naId)
+                creatorType = try? c.decode(String.self, forKey: .creatorType)
+            }
+            private enum K: String, CodingKey { case heading, naId, creatorType }
+        }
 
         private enum CodingKeys: String, CodingKey {
             case naId, title, levelOfDescription, recordGroupNumber
             case variantControlNumbers, inclusiveStartDate, inclusiveEndDate, ancestors
+            case creators
         }
         private struct ControlNumber: Decodable {
             let number: String?
@@ -55,13 +85,13 @@ enum HarvestShardReader {
         /// `naId` varies the same way. Decoding one shape only silently yields `nil`, which the
         /// acceptance test then reads as "no record group" and refuses. That produced an
         /// artifact with zero rows on the first run of this generator.
-        static func looseString<K: CodingKey>(_ c: KeyedDecodingContainer<K>, _ key: K) -> String? {
+        public static func looseString<K: CodingKey>(_ c: KeyedDecodingContainer<K>, _ key: K) -> String? {
             if let s = try? c.decode(String.self, forKey: key) { return s }
             if let i = try? c.decode(Int.self, forKey: key) { return String(i) }
             return nil
         }
 
-        init(from decoder: Decoder) throws {
+        public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             // NARA emits naId as a string in the bulk export and an int in the API.
             naId = Record.looseString(c, .naId) ?? ""
@@ -84,6 +114,9 @@ enum HarvestShardReader {
                 .filter { $0.type == "HMS/MLR Entry Number" }
                 .compactMap(\.number)
 
+            creators = ((try? c.decode([Creator].self, forKey: .creators)) ?? [])
+                .filter { !$0.heading.isEmpty }
+
             let start = (try? c.decode(YearBox.self, forKey: .inclusiveStartDate))?.year
             let end = (try? c.decode(YearBox.self, forKey: .inclusiveEndDate))?.year
             switch (start, end) {
@@ -101,7 +134,7 @@ enum HarvestShardReader {
     }
 
     /// Decodes one shard, returning its records and the harvest's `generated` stamp.
-    static func read(_ url: URL) throws -> ([Record], String?) {
+    public static func read(_ url: URL) throws -> ([Record], String?) {
         let data = try Data(contentsOf: url, options: .mappedIfSafe)
         let shard = try JSONDecoder().decode(Shard.self, from: data)
         return (shard.records, shard.generated)

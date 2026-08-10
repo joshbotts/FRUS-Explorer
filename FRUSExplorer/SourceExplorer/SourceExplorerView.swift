@@ -1277,6 +1277,16 @@ struct SourceExplorerView: View {
                     value: seriesTitle
                 )
             }
+            // #405: NARA names the office that made the series; FRUS's own note never does.
+            // Absent for most rows and that is honest — `creators` exists only on NARA's series
+            // layer, so "not stated" is the true answer for a file unit, not a gap to fill.
+            if let creator = SeriesCreatorIndex.creatorName(for: entry) {
+                LabeledContent(
+                    String(localized: "source.explorer.curatedLot.creator",
+                           defaultValue: "NARA Creator"),
+                    value: creator
+                )
+            }
             if let entries = entry.hmsMlrEntryNumbers, !entries.isEmpty {
                 LabeledContent(
                     String(localized: "source.explorer.lotFile.hmsMlr",

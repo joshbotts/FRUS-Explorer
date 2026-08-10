@@ -143,6 +143,16 @@ extension LotClaimantsIndex {
             format: String(localized: "source.explorer.dividedLot.rationale %lld",
                            defaultValue: "NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one."),
             claimants.count)
-        return .candidates(series, rationale: rationale, creatorName: nil, seeAllURL: nil)
+        // #405: the `.candidates` grammar has always had a creator row; nothing ever filled it.
+        // Named **only when every claimant agrees**, which is the whole point of stating it here:
+        // a divided lot's claimants are several series, and if two offices made them then "created
+        // by X" would be false for the rest. Disagreement is the interesting case and it is left
+        // silent rather than resolved arbitrarily — the row simply does not appear.
+        let creators = Set(series.compactMap {
+            SeriesCreatorIndexStore.shared?.creator(forNaId: $0.naId)
+        })
+        let creatorName = (creators.count == 1 && creators.count == series.count)
+            ? creators.first : nil
+        return .candidates(series, rationale: rationale, creatorName: creatorName, seeAllURL: nil)
     }
 }
