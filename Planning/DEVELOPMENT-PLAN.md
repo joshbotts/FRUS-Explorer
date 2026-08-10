@@ -4510,3 +4510,51 @@ extracted and driven directly; 6/6 caught.
   `coverageStartDate`, while the harvest uses `inclusiveStartDate` — worth confirming the live API
   actually sends the former before anyone extends that path, since a mismatch would mean
   `dateRange` is silently nil there today. Not investigated; flagged.
+
+---
+
+## Session 2026-08-10 — F-8 (#358): every iOS route to Zotero now goes somewhere
+
+**Issue:** #358 · **Plan:** § F-8
+
+### The plan named the wrong mechanism
+
+F-8 says "offer the web-library/file hand-off". The Zotero design doc's own **verified Fallback B**
+is different: share the document's `history.state.gov` URL, which Zotero's iOS share extension
+ingests through its web translators. That is the only route into Zotero on iOS without an API key,
+and the document share menu did not offer it — it offered BibTeX and RIS files, neither of which
+Zotero on iOS can read.
+
+The upstream finding (recorded in `BigPicture-ZoteroExport.md`, verified against `zotero/zotero-ios`):
+no `CFBundleDocumentTypes` for `.ris`/`.bib`, no File → Import, and a share extension that accepts
+`public.url` and runs web translators with **no citation-file parser**. A shared RIS makes Zotero
+appear in the sheet and then does nothing — the exact reported symptom.
+
+### Three changes
+
+1. The document menu offers the working route on iOS, lossy on purpose and labelled as such.
+2. The collection row's caption stops over-promising. It read "Falls back to an RIS file with no
+   account" on **both** platforms; it is now platform-aware and names the Mac.
+3. A failed send recovers. Both failure paths — missing credentials and a thrown send — offer the
+   file route, which does not depend on whatever broke the API call.
+
+### The owner yes/no turned out to be moot
+
+The plan offered an alternative: "if the owner rules the RIS-to-a-Mac path sufficient, close the
+issue." No decision was needed — the RIS path is *retained* and simply labelled honestly, so the
+dead end closes either way. Nothing was closed on the strength of a decision nobody took.
+
+### The sweep caught a loose assertion of mine
+
+Renaming the localized key `document.share.zoteroWeb` → `…zoteroWebRemoved` passed, because my test
+checked for the bare substring and the longer key contains it. Pinned to the quoted key. Worth
+remembering generally: a source-scan assertion on an identifier prefix is satisfied by any longer
+identifier that starts the same way.
+
+### Left undone
+
+- **Live E2E against a real Zotero library is still owner-only** and remains on the build-33
+  checklist — the share-extension hand-off in particular cannot be verified in a simulator without
+  the Zotero app installed and signed in.
+- **The collection sheet has no multi-document web route**, by design: the share-extension path
+  takes one URL at a time. If that ever changes upstream, the sheet is where it would go.

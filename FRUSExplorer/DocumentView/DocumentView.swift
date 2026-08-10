@@ -1768,6 +1768,28 @@ struct DocumentShareMenu<LabelContent: View>: View {
                                  defaultValue: "Export Zotero file (RIS)…"), systemImage: "doc")
                 }
             }
+            #if os(iOS)
+            // #358: the only route into Zotero on iOS without an API key.
+            //
+            // An RIS file is NOT that route, and the two entries above over-promise if read as
+            // one: `zotero-ios` declares no `CFBundleDocumentTypes` for `.ris`/`.bib` and has no
+            // File → Import, so a shared citation file makes Zotero appear in the sheet — it
+            // conforms to `public.text` — and then produces nothing. Its share extension accepts
+            // `public.url` and runs Zotero's own web translators, so sharing the document's
+            // canonical page is what actually creates an item.
+            //
+            // Lossy on purpose, and the caption says so: Zotero extracts what it can from the
+            // page, so FRUS's tags and research notes do not travel. The Web API path above is
+            // the one that carries them, which is why this sits below it rather than replacing it.
+            if let pageURL = FRUSCanonicalURL.url(volumeId: vm.entry.volumeId,
+                                                 documentId: vm.entry.documentId) {
+                ShareLink(item: pageURL) {
+                    Label(String(localized: "document.share.zoteroWeb",
+                                 defaultValue: "Send to Zotero (web page)…"),
+                          systemImage: "safari")
+                }
+            }
+            #endif
             if let message = vm.shareableCitationMessage {
                 ShareLink(item: message) {
                     Label(String(localized: "document.share.citation",

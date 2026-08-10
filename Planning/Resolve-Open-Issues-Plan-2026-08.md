@@ -260,6 +260,17 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   Fully" is trip-planning information), `inclusiveStartDate`/`inclusiveEndDate` (sanity-check a
   resolution against the citation's own date), `findingAids`/`numberingNote` (NARA's own ordering
   instruction) onto `NARACatalogResult` + both views. Bundle-plus-presentation; no index bump.
+- ~~**F-8 · #358 (retitled) — Zotero dead-end fallbacks on iOS**~~ ✅ **DONE (2026-08-10)**, with
+  the mechanism corrected. This line says "the web-library/file hand-off"; the design doc's own
+  **verified Fallback B** is different and better — share the document's `history.state.gov` URL,
+  which Zotero's iOS share extension ingests via its web translators. That is the only route into
+  Zotero on iOS without an API key, and the document share menu did not offer it. Its caveat is
+  **one document at a time**, so it belongs on the document menu, not the collection sheet — the
+  sheet's honest answer is the corrected caption (the old one promised an RIS fallback on *both*
+  platforms, and on iOS that file reaches nothing) plus the file for a Mac. Failed sends now offer
+  the file route from both failure paths instead of ending. **The owner yes/no is moot**: the
+  RIS-to-a-Mac path is retained *and* labelled honestly, so nothing was closed on the strength of
+  a decision that was never taken.
 - **F-8 · #358 (retitled) — Zotero dead-end fallbacks on iOS** (S). (1) Unconnected
   `exportZoteroRIS()` path: offer the web-library/file hand-off instead of an RIS the iOS Zotero
   app cannot open; (2) failed connected send: fall back to file/web-library from `exportError`
