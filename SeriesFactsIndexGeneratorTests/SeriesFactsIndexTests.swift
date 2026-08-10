@@ -228,6 +228,40 @@ struct ShippedArtifactTests {
         }
     }
 
+    @Test("The vocabularies are in sorted-NAID first-seen order, which is what makes the artifact stable")
+    func vocabularyOrderIsDeterministic() throws {
+        // The interners number each vocabulary in FIRST-SEEN order, so the order depends entirely
+        // on the order the rows are walked. The walk must be over sorted NAIDs: over a raw
+        // Dictionary it is unspecified, and every vocabulary would renumber between runs with no
+        // input having changed — a diff on every regeneration, hiding any real one.
+        //
+        // Checkable without the 4.5 GB harvest: replay the walk against the shipped artifact and
+        // confirm each vocabulary is first seen in ascending index order.
+        let index = try loadShipped()
+
+        func assertFirstSeenInOrder(
+            _ name: String, _ pick: (SeriesFactsIndexRunner.Entry) -> [Int]
+        ) {
+            var next = 0
+            for naId in index.byNaId.keys.sorted() {
+                guard let row = index.byNaId[naId] else { continue }
+                for i in pick(row) where i >= next {
+                    #expect(i == next, """
+                        \(name) index \(i) first appears at NAID \(naId) but \(next) had not \
+                        been seen yet — the row walk is not in sorted-NAID order, so this \
+                        vocabulary renumbers on every regeneration.
+                        """)
+                    next = max(next, i + 1)
+                }
+            }
+        }
+        assertFirstSeenInOrder("statuses") { [$0.accessStatus, $0.useStatus].compactMap { $0 } }
+        assertFirstSeenInOrder("restrictions") { $0.accessRestrictions ?? [] }
+        assertFirstSeenInOrder("useRestrictions") { $0.useRestrictions ?? [] }
+        assertFirstSeenInOrder("referenceUnits") { $0.referenceUnit.map { [$0] } ?? [] }
+        assertFirstSeenInOrder("findingAidTypes") { $0.findingAids ?? [] }
+    }
+
     @Test("It stays small enough to load eagerly")
     func staysKilobytes() throws {
         let root = URL(fileURLWithPath: #filePath)
