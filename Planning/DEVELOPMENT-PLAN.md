@@ -5035,3 +5035,45 @@ correctness insurance rather than a live case — and the umbrella is a normal r
 ### Mutation sweep: 2 mutants, 2 killed
 
 Drop Open Collection from the Flows card; re-seed the Network focus on every appearance.
+
+---
+
+## Session 2026-08-11 — wave 1e (#838): plain labels, one method statement, and a copy rule with teeth
+
+**Issue:** #838 · **PR:** the fifth implementation session — wave 1 complete
+
+### The relabel
+
+`Units → Show`, `Weight → Count by`, `Coverage era → Era`. The rule that makes this more than a
+rename: the plain word goes on the **control**, and the term of art it replaces moves into the
+popover text, so a reader who knows "weight" still finds that word where the method is explained.
+
+It also surfaced a latent **localized-key collision**: `archival.filter.era` was used both as the
+chip's caption and as a chart axis name in Your Library, with two different default values. One key
+carrying two defaults means translating either silently rewrites the other. The axis now has its
+own key.
+
+### The ⓘ consolidation, and what deliberately stayed
+
+The standing method statement moved into **About These Figures**. The **conditional** disclosures
+did not: what the Central Files filter withheld *in this era*, and whether an artifact failed to
+load, describe the chart on screen right now and change with the controls. A caveat that changes
+with the controls has to be where the controls are, and a reader who never opens a popover must
+still be told the largest bar is missing.
+
+### The copy rules are a test, not a convention
+
+The handoff's four conventions — ●/○ marks, issue numbers, artboard ids, British spellings — each
+appear in copy the handoff itself calls final, and three of the four read as ordinary prose to a
+reviewer who has not seen the mocks. So "remember not to" is not a control. `ArchivalCopyRulesTests`
+scans the shipped `defaultValue:` literals (not the doc comments, which are exactly where that
+vocabulary *should* live) and fails on the commit that introduces a violation.
+
+**It immediately found five in pre-existing copy**: `coloured` in the ranking caption, `recognise`
+/ `recognises` three times in Your Library, and `centre` in the Network's ring legend. None came
+from this handoff; they had simply never been checked.
+
+### Mutation sweep: 3 mutants, 3 killed
+
+A ● in a shipped string; an issue number in a caption; the method statement altered rather than
+moved.

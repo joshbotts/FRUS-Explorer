@@ -38,6 +38,8 @@ import Charts
 ///          gains a way out through the uncapped all-units table
 ///   1.5 — Session 2026-08-11: #825(b, e) — Network and Flows gain Open Collection, and the
 ///          surface becomes addressable through a defaulted initializer
+///   1.6 — Session 2026-08-11: #838 — plain labels on the controls, the standing method
+///          statement moved into the info popover, the conditional disclosures left on the page
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -332,28 +334,23 @@ struct ArchivalAnalyticsView: View {
         if let data = collectionsData {
             let ranking = data.ranking(band: band, lens: unitLens, weight: weight,
                                        hidingUmbrella: hidesUmbrella)
-            collectionsIntro
             filterRow(data: data)
             denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
             drillInHint(ranking)
             showAllUnitsButton(ranking)
             classFamilies(ranking)
-            collectionsCaveats(data: data, ranking: ranking)
+            // The conditional disclosures stay on the page — they describe THIS view, change with
+            // the controls, and a reader who never opens the popover must still see them.
+            collectionsConditionalCaveats(data: data, ranking: ranking)
             perCollectionTimingPointer
+            methodPointer
         } else {
             loadingState(String(localized: "archival.collections.loading",
                                 defaultValue: "Reading the archival authority…"))
         }
     }
 
-    private var collectionsIntro: some View {
-        Text(String(localized: "archival.collections.intro",
-                    defaultValue: "Every published FRUS document carries a source note naming the archival file it came from. Grouped across the whole series, those notes show which bodies of records each era's editors actually worked in. They also track how the documentary base of American foreign relations moved from the State Department's filing rooms to the White House."))
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-    }
 
     /// The era / units / weight controls, wrapped so they stack on a narrow window.
     private func filterRow(data: ArchivalCollectionsData) -> some View {
@@ -366,20 +363,20 @@ struct ArchivalAnalyticsView: View {
     @ViewBuilder
     private func filterChips(data: ArchivalCollectionsData) -> some View {
         Menu {
-            Picker(String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+            Picker(String(localized: "archival.filter.era", defaultValue: "Era"),
                    selection: $band) {
                 ForEach(ArchivalEraBand.all) { b in Text(b.title).tag(b) }
             }
         } label: {
             chipLabel(systemImage: "calendar",
-                      caption: String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+                      caption: String(localized: "archival.filter.era", defaultValue: "Era"),
                       value: band.title)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
 
         Menu {
-            Picker(String(localized: "archival.filter.units", defaultValue: "Units"),
+            Picker(String(localized: "archival.filter.units", defaultValue: "Show"),
                    selection: $unitLensRaw) {
                 ForEach(ArchivalUnitLens.allCases) { lens in
                     Text(lens.title).tag(lens.rawValue)
@@ -387,14 +384,14 @@ struct ArchivalAnalyticsView: View {
             }
         } label: {
             chipLabel(systemImage: "archivebox",
-                      caption: String(localized: "archival.filter.units", defaultValue: "Units"),
+                      caption: String(localized: "archival.filter.units", defaultValue: "Show"),
                       value: unitLens.title)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
 
         Menu {
-            Picker(String(localized: "archival.filter.weight", defaultValue: "Weight"),
+            Picker(String(localized: "archival.filter.weight", defaultValue: "Count by"),
                    selection: $weightRaw) {
                 ForEach(ArchivalWeight.allCases) { w in
                     Text(w.title).tag(w.rawValue)
@@ -406,7 +403,7 @@ struct ArchivalAnalyticsView: View {
             .disabled(!data.supportsDocumentWeight)
         } label: {
             chipLabel(systemImage: "doc.on.doc",
-                      caption: String(localized: "archival.filter.weight", defaultValue: "Weight"),
+                      caption: String(localized: "archival.filter.weight", defaultValue: "Count by"),
                       value: weight.title)
         }
         .buttonStyle(.bordered)
@@ -802,7 +799,7 @@ struct ArchivalAnalyticsView: View {
             : String(localized: "archival.ranking.caption.units.classes", defaultValue: "classes")
         return String(format: String(
             localized: "archival.ranking.caption %@ %lld %@ %lld",
-            defaultValue: "Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are coloured by who holds the records."),
+            defaultValue: "Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colored by who holds the records."),
             band.title, Int64(ranking.bandVolumeCount), Int64(ranking.unitsReached), units)
     }
 
@@ -865,12 +862,17 @@ struct ArchivalAnalyticsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func collectionsCaveats(data: ArchivalCollectionsData,
-                                    ranking: ArchivalRanking) -> some View {
+    /// The disclosures that describe **this** view rather than the method.
+    ///
+    /// #838 moved the standing method statement into the ⓘ popover, and deliberately left these
+    /// behind. They are conditional: each appears only when the thing it discloses is true of
+    /// the chart on screen right now — what the umbrella filter withheld *in this era*, and
+    /// whether an artifact failed to load. A caveat that changes with the controls has to be
+    /// where the controls are; a reader who never opens a popover must still be told that the
+    /// largest bar is missing.
+    private func collectionsConditionalCaveats(data: ArchivalCollectionsData,
+                                               ranking: ArchivalRanking) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
             if let hidden = ranking.hiddenUmbrellaValue {
                 Text(String(format: String(
                     localized: "archival.caveats.umbrella %lld %@ %@",
@@ -887,13 +889,18 @@ struct ArchivalAnalyticsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text(String(localized: "archival.caveats.body",
-                        defaultValue: "These figures are parsed from document source notes, not read from an archive's catalog. They say where the editors drew documents from. That is an editorial and archival signal, not a census of the records themselves. The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection can have volumes and no documents. Coverage is uneven by era, and switching the unit is the way through it. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. The class list holds two filing systems, because FRUS cites both: the decimal classes of the pre-1963 central files, and the subject-numeric designators that replaced them. They are ranked at one depth. A decimal file number stands for itself; subject-numeric designators are grouped to their category and number, because at full length half of them carry a single document. Open a grouped row under the chart for the exact designator a pull slip needs. Collections are grouped across volumes by name. When two spellings of one name fail to merge, the same body of records appears twice under nearby names."))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 4)
+    }
+
+    /// The one line that replaces the removed intro and footer blocks.
+    private var methodPointer: some View {
+        Label(String(localized: "archival.caveats.pointer",
+                     defaultValue: "Where these figures come from, what each count measures, and how coverage changes by era — in About These Figures, above."),
+              systemImage: "info.circle")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Your Library mode
@@ -994,7 +1001,10 @@ struct ArchivalAnalyticsView: View {
                 ForEach(profile.bands) { band in
                     ForEach(band.categories) { item in
                         BarMark(
-                            x: .value(String(localized: "archival.filter.era",
+                            // Its OWN key: the filter chip's key now defaults to "Era", and one
+                            // key carrying two default values means a translation of either
+                            // silently rewrites the other.
+                            x: .value(String(localized: "archival.library.bands.axis",
                                              defaultValue: "Coverage era"), band.band.title),
                             y: .value(String(localized: "archival.table.documents",
                                              defaultValue: "Documents"), item.documentCount)
@@ -1009,7 +1019,7 @@ struct ArchivalAnalyticsView: View {
             }
             .chartForegroundStyleScale(
                 domain: SourceProvenanceCategory.ordered.map(\.displayName))
-            .chartXAxisLabel(String(localized: "archival.filter.era", defaultValue: "Coverage era"))
+            .chartXAxisLabel(String(localized: "archival.filter.era", defaultValue: "Era"))
             .chartYAxisLabel(String(localized: "archival.table.documents",
                                     defaultValue: "Documents"))
             .frame(height: 260)
@@ -1040,7 +1050,7 @@ struct ArchivalAnalyticsView: View {
             title: String(localized: "archival.library.bands.title",
                           defaultValue: "Citation forms across your volumes"),
             columns: [
-                String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+                String(localized: "archival.filter.era", defaultValue: "Era"),
                 String(localized: "archival.table.provenance", defaultValue: "Provenance"),
                 String(localized: "archival.table.documents", defaultValue: "Documents"),
             ],
@@ -1070,7 +1080,7 @@ struct ArchivalAnalyticsView: View {
                           defaultValue: "Your most-cited collections"),
             caption: String(format: String(
                 localized: "archival.library.collections.caption %lld %lld",
-                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognise. Neither group is listed here."),
+                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognize. Neither group is listed here."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)),
             inspector: libraryCollectionsTable(profile),
@@ -1081,7 +1091,7 @@ struct ArchivalAnalyticsView: View {
         ) {
             if profile.collections.isEmpty {
                 Text(String(localized: "archival.library.collections.empty",
-                            defaultValue: "None of your volumes' source notes name a collection the bundled authority recognises."))
+                            defaultValue: "None of your volumes' source notes name a collection the bundled authority recognizes."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1156,7 +1166,7 @@ struct ArchivalAnalyticsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.library.footer.detail %lld %lld",
-                defaultValue: "A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognise."),
+                defaultValue: "A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognize."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)))
                 .font(.footnote)
