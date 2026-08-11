@@ -36,6 +36,8 @@ import Charts
 ///          "Inside these families" leaf list below it
 ///   1.4 — Session 2026-08-10: #825(a, c) — ranking rows open a destination, and the row cap
 ///          gains a way out through the uncapped all-units table
+///   1.5 — Session 2026-08-11: #825(b, e) — Network and Flows gain Open Collection, and the
+///          surface becomes addressable through a defaulted initializer
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -49,7 +51,29 @@ struct ArchivalAnalyticsView: View {
     #endif
 
     /// The active mode.
-    @State private var mode: ArchivalAnalyticsMode = .collections
+    @State private var mode: ArchivalAnalyticsMode
+    /// The collection a deep link asked to focus the Network on, consumed once by that mode.
+    private let initialFocusId: String?
+
+    /// Opens the surface, optionally aimed at a mode and a collection (#825e).
+    ///
+    /// Every parameter is defaulted, so `ArchivalAnalyticsView()` remains valid — both existing
+    /// call sites use it, and one of them is pinned by a source-scan test.
+    ///
+    /// This is what makes the surface addressable at all: until now every selection was
+    /// `@State` with no way in, so `CollectionDetailView` could not offer "see this collection's
+    /// co-citation neighbourhood" and the Research Guide's iOS cross-link (#798) had nothing to
+    /// hand a destination to. Scope parameters are deliberately **not** here yet — #827 adds
+    /// volume scoping, and a parameter that no caller can act on would be an empty promise.
+    ///
+    /// - Parameters:
+    ///   - mode: The mode to open on.
+    ///   - focusCollectionId: An authority collection id for the Network's focus. Ignored by the
+    ///     other modes, and ignored if the bundled authority does not carry it.
+    init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil) {
+        _mode = State(initialValue: mode)
+        self.initialFocusId = focusCollectionId
+    }
 
     /// The era band the Collections ranking covers.
     ///
@@ -155,9 +179,24 @@ struct ArchivalAnalyticsView: View {
         #endif
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
         .sheet(item: $collectionDetail) { record in
-            CollectionDetailSheet(record: record)
-                .environment(appState)
-                .environment(\.sceneID, sceneID ?? .anyWindow)
+            // `CollectionDetailView` declares a NON-optional `@Environment(AppState.self)`, and
+            // that traps on DECLARATION rather than on use — so presenting it without an
+            // AppState would crash the very surface whose whole defensive pattern is to hold
+            // AppState optionally and degrade. Withheld instead.
+            if let appState {
+                CollectionDetailSheet(record: record)
+                    // Applied BEFORE the environment modifiers, which erase the concrete type.
+                    .onNavigateAwayFromCollection {
+                        #if os(iOS)
+                        // The analytics surface is itself a sheet on iOS, so a hand-off to the
+                        // Browse tab would land under it. Close both.
+                        collectionDetail = nil
+                        dismiss()
+                        #endif
+                    }
+                    .environment(appState)
+                    .environment(\.sceneID, sceneID ?? .anyWindow)
+            }
         }
         .sheet(isPresented: $showsAllUnits) {
             if let data = collectionsData {
@@ -246,6 +285,8 @@ struct ArchivalAnalyticsView: View {
                 indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                 usage: CollectionUsageIndexStore.shared,
                 onOpenNeighbors: { openNeighbors(for: $0) },
+                onOpenCollection: { collectionDetail = $0 },
+                initialFocusId: initialFocusId,
                 onOpenClassNeighbors: { openClassNeighbors($0) },
                 onExport: { deliver($0) })
         } else {
@@ -264,6 +305,7 @@ struct ArchivalAnalyticsView: View {
                               externalIndex: ExternalCitationIndexStore.shared,
                               entriesById: manifestEntriesById,
                               authority: authority,
+                              onOpenCollection: { collectionDetail = $0 },
                               onOpenNeighbors: { openNeighbors(for: $0) },
                               indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                               onExport: { deliver($0) })
@@ -294,6 +336,7 @@ struct ArchivalAnalyticsView: View {
             filterRow(data: data)
             denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
+            drillInHint(ranking)
             showAllUnitsButton(ranking)
             classFamilies(ranking)
             collectionsCaveats(data: data, ranking: ranking)
@@ -478,6 +521,29 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
+    /// Says the bars can be opened, and where the same rows are reachable without a tap.
+    ///
+    /// Two precedents in this app pair a chart tap with a hint (`AnalyticsView`'s by-subseries
+    /// and by-volume charts); an unannounced tap target is a feature only the person who wrote
+    /// it knows about. It also names the list, which is the route that works for VoiceOver: a
+    /// `chartOverlay` tap is not an accessibility element, so the rows-as-rows table is the
+    /// accessible way to the same destinations — the same division Person Analytics draws
+    /// between its chart and its table.
+    @ViewBuilder
+    private func drillInHint(_ ranking: ArchivalRanking) -> some View {
+        if !ranking.rows.isEmpty {
+            Label(unitLens == .namedCollections
+                  ? String(localized: "archival.ranking.drillIn.collections",
+                           defaultValue: "Tap a bar to open that collection's record, or use the list below.")
+                  : String(localized: "archival.ranking.drillIn.classes",
+                           defaultValue: "Tap a bar to see that file number's documents, or use the list below. A grouped row's documents include its sub-numbers."),
+                  systemImage: "hand.tap")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     // MARK: - Every unit (#825c)
 
     /// The way out of the row cap.
@@ -520,7 +586,7 @@ struct ArchivalAnalyticsView: View {
     private func open(_ row: ArchivalRankingRow, data: ArchivalCollectionsData) {
         switch unitLens {
         case .namedCollections:
-            guard let record = data.record(forId: row.id) else { return }
+            guard appState != nil, let record = data.record(forId: row.id) else { return }
             collectionDetail = record
         case .centralFileClasses:
             openClassNeighbors(row.id)
@@ -530,7 +596,8 @@ struct ArchivalAnalyticsView: View {
     /// Whether a row has somewhere to go, so a list can withhold the affordance rather than
     /// offering a control that does nothing.
     private func canOpen(_ row: ArchivalRankingRow, data: ArchivalCollectionsData) -> Bool {
-        unitLens == .centralFileClasses || data.record(forId: row.id) != nil
+        unitLens == .centralFileClasses
+            || (appState != nil && data.record(forId: row.id) != nil)
     }
 
     // MARK: - Class families (#826/R-4)

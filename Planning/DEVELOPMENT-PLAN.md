@@ -4988,3 +4988,50 @@ restoration relative to a sibling, and the correction is on the issue.
 
 Keep the cap in the all-units sheet; make the citing rows inert again; leak the interactive chart
 into the figure export.
+
+---
+
+## Session 2026-08-11 — wave 1d (#825 b, e) + four gaps the pre-flight found in wave 1c
+
+**Issue:** #825 (b, e — (f) sector zones still to come) · **PR:** the fourth implementation session
+
+### (b) and (e)
+
+**Open Collection** joins the Network dock and the Flows card. Both surfaces already *resolved* an
+`AuthorityCollectionRecord` to offer Archival Neighbors and simply never offered the record. The
+distinction matters most for a reader with few volumes indexed: Neighbors reads the **local** index
+and answers honestly-empty, so without this the dock had no route at all to what the app knows
+corpus-wide.
+
+**The surface is addressable.** `ArchivalAnalyticsView(mode:focusCollectionId:)`, every parameter
+defaulted so the two bare call sites (one pinned by a source scan) keep compiling. Scope parameters
+are deliberately **not** in the signature yet: #827 adds volume scoping, and a parameter no caller
+can act on is an empty promise. The Network seeds its focus **once**, guarded, because that view
+re-appears every time the mode picker returns to it and re-seeding would discard the reader's own
+choice.
+
+### The pre-flight's four findings against wave 1c — one was a crash
+
+1. **`CollectionDetailView` declares a NON-optional `@Environment(AppState.self)`, which traps on
+   DECLARATION.** The analytics surface holds AppState *optionally* by design — its whole defensive
+   pattern is to degrade to an empty state — so presenting the detail unguarded crashed exactly the
+   configuration the optional exists for. Now withheld, and a row will not even set a target it
+   cannot present.
+2. **The chart tap had no hint and no accessible equivalent.** A `chartOverlay` tap is not an
+   accessibility element. Two other charts in this app pair the same overlay with a hint; this one
+   now does, and names the uncapped list as the route that works without tapping.
+3. **A folded class row opens a document set drawn from a WIDER family than its bar** — the SQL
+   prefix match sweeps sub-numbers the artifact fold assigns elsewhere (#841). Measured by the
+   pre-flight: 38 of 102 drawn class rows, `POL 15` sweeping 73 keys. Until #841 is settled the
+   screen says so.
+4. **On iOS the analytics surface is itself a sheet**, so #825(d)'s hand-off to the Browse tab
+   landed *underneath* it and nothing appeared to happen. `CollectionDetailView` gained an
+   `onNavigateAway` hook, because only the host knows it is presented.
+
+Also confirmed by the pre-flight and worth recording: **0 of 1,828 usage collection ids are absent
+from the shipped authority**, so no drawn collection row currently lacks a record — the nil path is
+correctness insurance rather than a live case — and the umbrella is a normal record that opens.
+
+### Mutation sweep: 2 mutants, 2 killed
+
+Drop Open Collection from the Flows card; re-seed the Network focus on every appearance.
