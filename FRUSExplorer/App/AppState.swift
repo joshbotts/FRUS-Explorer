@@ -1945,18 +1945,6 @@ struct SceneID: Hashable, Sendable {
     static let macSearch = SceneID("frus.search")
 }
 
-/// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
-///
-/// Replaces the process-global single-slot `pendingX` pattern, whose consumers were per-scene
-/// observers on shared `AppState` — so on iPad multi-window a single hand-off was observed (and
-/// applied) by *every* open window (#338 fan-out / nondeterministic winner). Carrying the target
-/// scene lets only the addressed scene apply it, via ``AppState/consumeHandoff(_:for:)``: an iPad
-/// ``MainTabView`` addresses its minted per-scene id; a macOS singleton tool window a fixed
-/// ``SceneID`` of its own.
-///
-/// There is intentionally **no** "every window" broadcast target: it would need its own all-consume,
-/// non-clearing consumer, so a reserved-but-unconsumable case would silently black-hole a hand-off
-/// (#338 review). Reintroduce a target enum, with that consumer, if a broadcast use ever appears.
 /// A volume set to open Archival Analytics on, with the words to describe it (#833).
 ///
 /// The label is carried rather than re-derived because only the sender knows what the set *means*
@@ -1981,6 +1969,18 @@ struct ArchivalScopeRequest: Equatable, Sendable {
     static let unscoped = ArchivalScopeRequest(volumeIds: [], label: "")
 }
 
+/// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
+///
+/// Replaces the process-global single-slot `pendingX` pattern, whose consumers were per-scene
+/// observers on shared `AppState` — so on iPad multi-window a single hand-off was observed (and
+/// applied) by *every* open window (#338 fan-out / nondeterministic winner). Carrying the target
+/// scene lets only the addressed scene apply it, via ``AppState/consumeHandoff(_:for:)``: an iPad
+/// ``MainTabView`` addresses its minted per-scene id; a macOS singleton tool window a fixed
+/// ``SceneID`` of its own.
+///
+/// There is intentionally **no** "every window" broadcast target: it would need its own all-consume,
+/// non-clearing consumer, so a reserved-but-unconsumable case would silently black-hole a hand-off
+/// (#338 review). Reintroduce a target enum, with that consumer, if a broadcast use ever appears.
 struct Handoff<Payload: Equatable & Sendable>: Equatable, Sendable, Identifiable {
     /// Stable identity, for dedupe, the consume-once re-read guard, and `.sheet(item:)`.
     let id: UUID

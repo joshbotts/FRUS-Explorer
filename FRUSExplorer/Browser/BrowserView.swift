@@ -92,6 +92,8 @@ import SwiftUI
 ///   Session 09: `pendingBrowseVolume` resolves against the unfiltered manifest —
 ///         the filtered-groups lookup silently dropped hand-offs to undownloaded
 ///         volumes, which the subject pivot routinely targets.
+///   2.10 — Session 2026-08-11: #833 — the Archival Analytics row produces a hand-off instead
+///          of presenting its own sheet, so iOS has one presenter of that surface
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState

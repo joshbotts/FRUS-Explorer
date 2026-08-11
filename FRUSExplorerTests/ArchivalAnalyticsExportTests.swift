@@ -557,7 +557,7 @@ struct ArchivalExportWiringTests {
         // return in `loadCollections` sends it straight back out.
         let setter = try #require(source.range(of: "private func setScope("))
         let setterBody = source[setter.lowerBound...].prefix(320)
-        #expect(setterBody.contains("collectionsData = nil"), """
+        #expect(setterBody.contains("invalidateCollections()"), """
             setScope does not invalidate the derivation, so a keyed reload would early-return \
             and the chart would keep the previous scope's figures.
             """)
@@ -678,6 +678,115 @@ struct ArchivalExportWiringTests {
         #expect(!search.contains("appState.openTab(.browse, from: sceneID)\n    }"), """
             Switching to Browse was the old no-op: the surface's only presenter lived inside \
             that tab and nothing asked it to open.
+            """)
+    }
+
+    @Test("Re-picking the scope that is already active still rebuilds (#833 review)")
+    func idempotentRescopeStillReloads() throws {
+        // The wedge this prevents was introduced BY the #827 fix and is total. `setScope` drops
+        // the derivation; the only thing that rebuilds it is `.task(id: scopeSignature)`; and a
+        // signature made only of the scope VALUE is unchanged when the reader taps the already-
+        // checked "Whole corpus" row, re-picks the active administration, or uses the same door
+        // twice for the same query. The chart then sits on its spinner for the life of the view —
+        // and the scope chip is inside the `if let data` branch, so the control that could undo
+        // it has vanished along with the data.
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("@State private var scopeGeneration = 0"))
+        #expect(source.contains(#""\(scopeGeneration)|\(scopeLabel ?? "")"#), """
+            The generation must be IN the key. Dropping the data without moving the key is \
+            exactly the wedge.
+            """)
+        #expect(source.contains("""
+                private func invalidateCollections() {
+                        collectionsData = nil
+                        scopeGeneration += 1
+                    }
+            """.replacingOccurrences(of: "\n        ", with: "\n    ")) ||
+                (source.contains("collectionsData = nil") && source.contains("scopeGeneration += 1")))
+        // Every invalidation path goes through the one function — including the scope bar's own
+        // `onChange`, which nils the data without passing through `setScope` at all.
+        #expect(source.contains("onChange: { invalidateCollections() }"), """
+            The scope bar's onChange nils the derivation directly. Left as a bare assignment it \
+            is a second wedge with the same signature.
+            """)
+        #expect(!source.contains("onChange: { collectionsData = nil }"))
+    }
+
+    @Test("A superseded derivation cannot land on top of the scoped one (#833 review)")
+    func staleLoadCannotOverwrite() throws {
+        // `Task.detached` does not inherit cancellation and `Task.value` does not throw, so a
+        // load `.task(id:)` has cancelled still finishes and still resumes past its `await`. The
+        // macOS window reproduces the overlap on every scoped open: it mounts unscoped, starts a
+        // corpus-wide build, then consumes the hand-off. An unconditional assignment lets the
+        // UNSCOPED figures land last, under the scope's own name.
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("let requested = scopeSignature"))
+        #expect(source.contains("guard requested == scopeSignature else { return }"), """
+            Without the re-check the chart can show corpus-wide numbers under a scope's label, \
+            with nothing on screen indicating it.
+            """)
+        #expect(!source.contains("""
+            collectionsData = await Task.detached(priority: .userInitiated) {
+            """), "the assignment must not be the await itself")
+    }
+
+    @Test("The search door is reachable without opening the Volumes facet first (#833 review)")
+    func theDoorDoesNotDependOnAnotherSection() throws {
+        // Facet sections are computed lazily, one per disclosure. The door lives in Provenance but
+        // is built from `facets.volumes`, so without this the button renders only for a reader who
+        // happened to open Volumes first — and Provenance, the dead-end section this door exists
+        // to open a way out of, would be the one hiding it.
+        let panel = try Self.source("../FRUSExplorer/Search/FacetPanelView.swift")
+        #expect(panel.contains("if kind == .provenance { onDiscloseSection(.volumes) }"), """
+            Disclosing Provenance must also ask for the volume breakdown the door is made of.
+            """)
+    }
+
+    @Test("A scope handed in from elsewhere moves the era band to match (#833 review)")
+    func theDoorLandsOnAnEraTheScopeCovers() throws {
+        // The band opens on 1948–1960 and is otherwise moved only by the reader. A subject like
+        // Vietnamization selects volumes no part of that band covers, so the door would land on an
+        // empty chart under the topic's name — which reads as "FRUS cites no archives for this",
+        // not "wrong decade".
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("private func moveToTheBandTheScopeLivesIn(_ ids: [String])"))
+        #expect(source.contains("moveToTheBandTheScopeLivesIn(handoff.payload.volumeIds)"), """
+            The hand-off path must move the band, or every post-1960 topic opens empty.
+            """)
+        #expect(source.contains("if initialScopeNeedsBand, let ids = scopeVolumeIds"), """
+            The iOS path delivers the scope through the initializer, which has no manifest to \
+            read — so the move has to happen on first appearance or iOS keeps the empty chart.
+            """)
+        // Applied to arriving scopes only: moving the band under a reader working the scope bar
+        // would be a control changing itself while it is used.
+        let barSetter = try #require(source.range(of: "private func setScope("))
+        #expect(!source[barSetter.lowerBound...].prefix(340)
+                    .contains("moveToTheBandTheScopeLivesIn"))
+    }
+
+    @Test("Two hand-off doc comments stayed with the types they document (#833 review)")
+    func docCommentsWereNotOrphaned() throws {
+        // Inserting a type or a function between a doc comment and its declaration silently
+        // re-attributes the whole comment. Both happened in this change: `ArchivalScopeRequest`
+        // landed inside `Handoff`'s comment, and `archivalSheet` inside the word-cloud consumer's.
+        let appState = try Self.source("../FRUSExplorer/App/AppState.swift")
+        let handoffDoc = try #require(appState.range(of:
+            "/// There is intentionally **no** \"every window\" broadcast target"))
+        let handoffDecl = try #require(appState.range(of: "struct Handoff<Payload"))
+        let scopeDecl = try #require(appState.range(of: "struct ArchivalScopeRequest"))
+        #expect(handoffDoc.lowerBound < handoffDecl.lowerBound
+                && !(scopeDecl.lowerBound > handoffDoc.lowerBound
+                     && scopeDecl.lowerBound < handoffDecl.lowerBound), """
+            `Handoff`'s doc comment must sit directly above `Handoff`; with another type between \
+            them the comment documents that type and `Handoff` has none.
+            """)
+        let shell = try Self.source("../FRUSExplorer/App/MainTabView.swift")
+        let wcDoc = try #require(shell.range(of: "/// Adopts a pending word-cloud hand-off"))
+        let wcDecl = try #require(shell.range(of: "private func consumePendingWordCloud()"))
+        let between = shell[wcDoc.upperBound..<wcDecl.lowerBound]
+        #expect(!between.contains("func ") && !between.contains("private "), """
+            Nothing may sit between the word-cloud consumer's doc comment and the function it \
+            documents — a declaration inserted there takes the whole comment with it.
             """)
     }
 

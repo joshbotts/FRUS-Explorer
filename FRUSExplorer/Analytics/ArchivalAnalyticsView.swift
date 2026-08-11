@@ -42,6 +42,9 @@ import Charts
 ///          statement moved into the info popover, the conditional disclosures left on the page
 ///   1.7 — Session 2026-08-11: #827 — volume scoping over the SERIES (not the local index),
 ///          applied to the derivation's coverage map so every figure narrows together
+///   1.8 — Session 2026-08-11: #833 — `initialScope:`, because the iOS presenter consumes the
+///         hand-off before this view mounts; and the load task is keyed on the scope, which
+///         is what #827 shipped without (the chip changed, the chart did not)
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -58,6 +61,10 @@ struct ArchivalAnalyticsView: View {
     @State private var mode: ArchivalAnalyticsMode
     /// The collection a deep link asked to focus the Network on, consumed once by that mode.
     private let initialFocusId: String?
+
+    /// Whether the band still has to be moved to the initializer's scope. The move needs
+    /// `appState`'s manifest, which no initializer has, so it happens on the first appearance.
+    private let initialScopeNeedsBand: Bool
 
     /// Opens the surface, optionally aimed at a mode and a collection (#825e).
     ///
@@ -85,6 +92,9 @@ struct ArchivalAnalyticsView: View {
         if let initialScope, !initialScope.volumeIds.isEmpty {
             _scopeVolumeIds = State(initialValue: initialScope.volumeIds)
             _scopeLabel = State(initialValue: initialScope.label)
+            self.initialScopeNeedsBand = true
+        } else {
+            self.initialScopeNeedsBand = false
         }
     }
 
@@ -271,7 +281,12 @@ struct ArchivalAnalyticsView: View {
         // `scopeSignature` is a value `.task(id:)` can compare.
         .task(id: scopeSignature) { await loadCollections() }
         .onChange(of: appState?.pendingArchivalScope) { _, _ in consumePendingScope() }
-        .task { consumePendingScope() }
+        .task {
+            if initialScopeNeedsBand, let ids = scopeVolumeIds {
+                moveToTheBandTheScopeLivesIn(ids)
+            }
+            consumePendingScope()
+        }
         .task(id: libraryLoadToken) { await loadLibraryIfNeeded() }
     }
 
@@ -395,6 +410,7 @@ struct ArchivalAnalyticsView: View {
         mode = .collections
         guard !handoff.payload.volumeIds.isEmpty else { return }
         setScope(handoff.payload.volumeIds, label: handoff.payload.label)
+        moveToTheBandTheScopeLivesIn(handoff.payload.volumeIds)
     }
 
     // MARK: - Scope (#827)
@@ -404,8 +420,24 @@ struct ArchivalAnalyticsView: View {
     /// `[String]?` is `Equatable`, but the id also has to change when only the LABEL changes —
     /// two different topics can select the same volumes, and the chart's own sentences name the
     /// label.
+    ///
+    /// **`scopeGeneration` is in the key because the scope value alone is not enough.** Picking a
+    /// scope that is ALREADY active — tapping the checked "Whole corpus" row, re-picking the same
+    /// administration, using the same door twice for the same query — drops the derivation and
+    /// leaves the signature byte-identical, so a value-only key would never restart the load. The
+    /// chart would sit on its spinner permanently, and the scope chip lives inside the
+    /// `if let data` branch, so the control that could undo it would have vanished with the data.
     private var scopeSignature: String {
-        "\(scopeLabel ?? "")|\(scopeVolumeIds?.joined(separator: ",") ?? "")"
+        "\(scopeGeneration)|\(scopeLabel ?? "")|\(scopeVolumeIds?.joined(separator: ",") ?? "")"
+    }
+
+    /// Bumped by every invalidation, so an idempotent re-pick still restarts the keyed load.
+    @State private var scopeGeneration = 0
+
+    /// Drops the derivation AND moves the key that rebuilds it. Always both, never one.
+    private func invalidateCollections() {
+        collectionsData = nil
+        scopeGeneration += 1
     }
 
     /// Sets the scope and drops the derivation, so the keyed task rebuilds it.
@@ -417,7 +449,36 @@ struct ArchivalAnalyticsView: View {
     private func setScope(_ ids: [String]?, label: String?) {
         scopeVolumeIds = ids
         scopeLabel = label
-        collectionsData = nil
+        invalidateCollections()
+    }
+
+    /// Moves the era band to wherever the scoped volumes actually are.
+    ///
+    /// The band opens on 1948–1960 and is otherwise only ever moved by the reader's own segmented
+    /// control — which is right when the reader picked the scope while looking at the chart, and
+    /// wrong for a scope arriving from somewhere else. A subject like Vietnamization or a search
+    /// for a 1970s term selects volumes that no part of the default band covers, so the door would
+    /// land on an empty chart under the topic's name: a reader has every reason to read that as
+    /// "FRUS cites no archives for this topic" rather than "you are looking at the wrong decade".
+    ///
+    /// Applied ONLY to a scope handed in from elsewhere. Moving the band under a reader who is
+    /// working the scope bar would be a control changing itself while they use it.
+    ///
+    /// - Parameter ids: The scope's volumes.
+    private func moveToTheBandTheScopeLivesIn(_ ids: [String]) {
+        let coverage = volumeCoverage(limitedTo: ids)
+        guard !coverage.isEmpty else { return }
+        var counts: [Int: Int] = [:]
+        for span in coverage.values {
+            let midpoint = span.midpointYear
+            if let band = ArchivalEraBand.all.first(where: { $0.contains(midpointYear: midpoint) }) {
+                counts[band.index, default: 0] += 1
+            }
+        }
+        // Ties go to the earlier band, so the choice is stable rather than dictionary-ordered.
+        guard let best = counts.max(by: { ($0.value, -$0.key) < ($1.value, -$1.key) })?.key,
+              let band = ArchivalEraBand.all.first(where: { $0.index == best }) else { return }
+        self.band = band
     }
 
     /// The scope chip and the administration presets.
@@ -445,7 +506,7 @@ struct ArchivalAnalyticsView: View {
                                     set: { setScope($0, label: scopeLabel) }),
             scopeLabel: Binding(get: { scopeLabel },
                                 set: { setScope(scopeVolumeIds, label: $0) }),
-            onChange: { collectionsData = nil },
+            onChange: { invalidateCollections() },
             presentation: .chip)
         administrationMenu
     }
@@ -1436,14 +1497,26 @@ struct ArchivalAnalyticsView: View {
     }
 
     /// Builds the corpus-wide derivation off the main actor.
+    ///
+    /// **The result is admitted only if the scope has not moved under it.** `Task.detached` does
+    /// not inherit cancellation and `Task.value` is non-throwing, so when `.task(id:)` cancels a
+    /// run in flight the work still finishes and this function still resumes after the `await`.
+    /// Two runs overlap whenever a scope arrives while the first load is going — the macOS window
+    /// mounts unscoped and consumes the hand-off a moment later, which is precisely that shape —
+    /// and an unconditional assignment lets the superseded UNSCOPED derivation land last. The
+    /// chart would then show corpus-wide figures under the scope's own name and label, with no
+    /// visible sign anything was wrong.
     private func loadCollections() async {
         guard collectionsData == nil else { return }
+        let requested = scopeSignature
         let coverage = volumeCoverage(limitedTo: scopeVolumeIds)
         let authority = CollectionAuthorityStore.shared?.collections ?? []
         let usage = CollectionUsageIndexStore.shared
-        collectionsData = await Task.detached(priority: .userInitiated) {
+        let built = await Task.detached(priority: .userInitiated) {
             ArchivalCollectionsData.make(authority: authority, usage: usage, coverage: coverage)
         }.value
+        guard requested == scopeSignature else { return }
+        collectionsData = built
     }
 
     /// Runs the two grouped queries and folds them, once per visit.

@@ -470,6 +470,13 @@ struct FacetPanelView: View {
                         expanded.insert(kind)
                         // Lazy per decision R-1-1: nothing is computed until it is asked for.
                         onDiscloseSection(kind)
+                        // …but Provenance now ASKS for the volume breakdown, because its archival
+                        // door is built from it (#833). Without this the door renders only for a
+                        // reader who happened to open the Volumes section first — and the section
+                        // this door exists to open a way out of is the one that would hide it.
+                        // The controller no-ops if `.volumes` is already loaded, and loading a
+                        // section does not expand it: Volumes stays closed.
+                        if kind == .provenance { onDiscloseSection(.volumes) }
                     } else {
                         expanded.remove(kind)
                     }

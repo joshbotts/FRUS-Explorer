@@ -206,6 +206,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          VoiceOver can announce the selection, the glyph now fills for any active reading
 ///          (it tracked only Timeline), and Save as Working Corpus moves to `moreMenu` beside
 ///          Save this search — it is an action, not a reading.
+///   1.19 — Session 2026-08-11: #833 — the facet panel's provenance section opens an archival
+///          profile of the volumes the results sit in
 
 struct SearchView: View {
 

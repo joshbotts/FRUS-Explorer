@@ -84,6 +84,9 @@ import SwiftData
 ///          **This is a suspect removed, not a proven fix.** #657 is unreproduced and its own
 ///          report will not choose between a watchdog hang and a data abort; conviction needs
 ///          the device backtrace captured in Read mode (plan item B-1). The issue stays open.
+///   1.14 — Session 2026-08-11: #833 — the shell presents Archival Analytics from
+///          `pendingArchivalScope`. That surface had no presenter outside `BrowserView`'s own
+///          `@State`, so a scope handed over from Search or a subject sheet opened nothing.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -285,15 +288,6 @@ struct MainTabView: View {
         .secondProjectNudge()
     }
 
-    /// Adopts a pending word-cloud hand-off addressed to this window (#752).
-    ///
-    /// Uses `orAnyWindow: true`, matching `pendingSearch`, `pendingTab`, `pendingBrowseDocument`
-    /// and `pendingBrowseVolume` — this was the one channel of five that demanded an exact scene
-    /// match, which is why a standalone document window with no live origin had no presenter at all.
-    ///
-    /// Consuming (rather than reading the slot live) is what stops window B's producer from
-    /// dismissing window A's open sheet: once adopted, this window's presentation depends only on
-    /// its own state.
     /// The scoped Archival Analytics sheet.
     ///
     /// A function rather than an inline closure purely for the type-checker: the tab shell's body
@@ -326,6 +320,15 @@ struct MainTabView: View {
         presentedArchivalScope = handoff
     }
 
+    /// Adopts a pending word-cloud hand-off addressed to this window (#752).
+    ///
+    /// Uses `orAnyWindow: true`, matching `pendingSearch`, `pendingTab`, `pendingBrowseDocument`
+    /// and `pendingBrowseVolume` — this was the one channel of five that demanded an exact scene
+    /// match, which is why a standalone document window with no live origin had no presenter at all.
+    ///
+    /// Consuming (rather than reading the slot live) is what stops window B's producer from
+    /// dismissing window A's open sheet: once adopted, this window's presentation depends only on
+    /// its own state.
     private func consumePendingWordCloud() {
         guard presentedWordCloud == nil else { return }   // don't replace a sheet already up
         guard let handoff = appState.pendingWordCloud else { return }
