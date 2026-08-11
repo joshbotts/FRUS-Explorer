@@ -1168,4 +1168,141 @@ struct ArchivalCollectionsDataTests {
             info copy promises they differ; if they stopped differing, one of them is redundant.
             """)
     }
+
+    @Test("A class label follows the volumes citing the key, not the band's own years")
+    func perKeyEraAttribution() throws {
+        // Band 1 runs 1948–1960 and spans THREE classification schedules, so no schedule can
+        // ever speak for it — while `862.00` inside it is cited only by volumes covering
+        // 1948–1949, which the 1910–49 schedule states exactly. Asking the band was asking the
+        // wrong question: the band is how the chart groups, the volumes are the evidence.
+        // The volumes are ordered LATE FIRST, so the straddling key's *last* contributor is the
+        // one inside the schedule. A span that overwrote instead of widening would read that
+        // last volume and label the key; the ordering is what makes the difference visible.
+        let index = try Self.usage(
+            volumes: ["a-late", "b-early"], noteCounts: [40, 40],
+            classKeys: ["862.00", "893.00"],
+            rows: [(key: 0, volumes: [1], counts: [9]),
+                   (key: 1, volumes: [0, 1], counts: [5, 5])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            // Both land in band 1 by coverage midpoint; only one sits inside the schedule.
+            coverage: ["b-early": ArchivalVolumeCoverage(firstYear: 1948, lastYear: 1949),
+                       "a-late": ArchivalVolumeCoverage(firstYear: 1955, lastYear: 1958)])
+        let band = ArchivalEraBand.all[1]
+        #expect(band.startYear == 1948 && band.endYear == 1960, "the fixture assumes this band")
+        let rows = data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                                hidingUmbrella: false).rows
+
+        let labelled = try #require(rows.first { $0.id == "862.00" })
+        #expect(labelled.gloss == "Germany — Political affairs", """
+            Every volume citing this key covers 1948–1949. Under the band's own 1948–1960 span it \
+            rendered bare, and it would still render bare with all three schedules parsed — 1960 \
+            falls outside 1951–59 as surely as outside 1910–49.
+            """)
+
+        // The other key is cited from both sides of the renumbering, so its union spans it and
+        // no schedule may speak. Silence is the designed outcome, not a gap.
+        let straddling = try #require(rows.first { $0.id == "893.00" })
+        #expect(straddling.gloss == nil, """
+            1948–1958 crosses the 1950 renumbering, where the same digits mean different things, \
+            so a label here would be a confident guess. Note the LAST volume citing this key \
+            covers 1948–1949 and would resolve on its own: the span has to widen across every \
+            contributor rather than track the most recent.
+            """)
+    }
+
+    @Test("A merged-band selection labels what its keys support, not nothing at all")
+    func mergedBandsUsePerKeySpans() throws {
+        // #835's `ranking(bands:)` merges bands. The union of two bands' years is covered by no
+        // schedule, so a band-span rule silenced EVERY key in a multi-band scope — including the
+        // ones whose own volumes never leave the 1910–49 file.
+        let index = try Self.usage(
+            volumes: ["v1938", "v1948", "v1955"], noteCounts: [40, 40, 40],
+            classKeys: ["812.6363", "893.00"],
+            rows: [(key: 0, volumes: [0, 1], counts: [11, 4]),
+                   (key: 1, volumes: [0, 2], counts: [6, 6])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1938": ArchivalVolumeCoverage(firstYear: 1938, lastYear: 1939),
+                       "v1948": ArchivalVolumeCoverage(firstYear: 1948, lastYear: 1949),
+                       "v1955": ArchivalVolumeCoverage(firstYear: 1955, lastYear: 1958)])
+        let rows = data.ranking(bands: [ArchivalEraBand.all[0], ArchivalEraBand.all[1]],
+                                lens: .centralFileClasses, weight: .documents,
+                                hidingUmbrella: false).rows
+        let row = try #require(rows.first { $0.id == "812.6363" })
+        #expect(row.value == 15, "the merge still adds across bands")
+        #expect(row.gloss == "Mexico — Petroleum", """
+            The merged bands run 1861–1960, which no schedule governs. The key's own volumes run \
+            1938–1949, which the 1910–49 schedule governs completely.
+            """)
+
+        // The other key reaches band 1's far side, so its contributions across the two bands
+        // straddle the renumbering. Reading only the first band's span would label it on the
+        // strength of evidence the rest of the row contradicts.
+        let straddling = try #require(rows.first { $0.id == "893.00" })
+        #expect(straddling.value == 12)
+        #expect(straddling.gloss == nil, """
+            1938–1958 crosses 1950. The band-0 half alone resolves cleanly, which is exactly why \
+            the span is unioned across every band being ranked rather than taken from the first.
+            """)
+    }
+
+    @Test("A key's span reaches back to its earliest citing volume, not just its latest")
+    func spanWidensBackwards() throws {
+        // Unobservable against the shipped table, which carries one schedule: every lower bound
+        // that could matter is either below 1910 and clamped, or inside the only schedule there
+        // is. With two, it decides the answer — so the table is injected and the case is pinned
+        // here rather than left for the schedule that will depend on it.
+        let json = """
+        {"schemaVersion":1,"generated":"2026-08-11","provenance":"test","schedules":[
+          {"id":"1910-1949","startYear":1910,"endYear":1949,"source":"test",
+           "classes":{"8":"Internal Affairs of States"},"relationsClasses":["7"],
+           "countryArrangedClasses":["8"],"countries":{"91":"Iran"},"subjects":{}},
+          {"id":"1951-1959","startYear":1951,"endYear":1959,"source":"test",
+           "classes":{"8":"Other Internal Affairs"},"relationsClasses":["6"],
+           "countryArrangedClasses":["8"],"countries":{"91":"Iran"},"subjects":{}}]}
+        """
+        let table = try JSONDecoder().decode(DecimalClassLabelTable.self, from: Data(json.utf8))
+        // Both volumes have a coverage MIDPOINT in 1948–1960, so both land in band 1 and one
+        // band's own span has to cross the renumbering — the case a per-band union could not
+        // otherwise reach.
+        let index = try Self.usage(
+            volumes: ["v1948", "v1955"], noteCounts: [40, 40],
+            classKeys: ["891.00"],
+            rows: [(key: 0, volumes: [0, 1], counts: [5, 5])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1948": ArchivalVolumeCoverage(firstYear: 1947, lastYear: 1949),
+                       "v1955": ArchivalVolumeCoverage(firstYear: 1954, lastYear: 1956)],
+            labels: table)
+        let rows = data.ranking(band: ArchivalEraBand.all[1], lens: .centralFileClasses,
+                                weight: .documents, hidingUmbrella: false).rows
+        let row = try #require(rows.first { $0.id == "891.00" })
+        #expect(row.value == 10, "both volumes are in band 1")
+        #expect(row.gloss == nil, """
+            The span runs 1947–1956 and crosses 1950. A span that only widened forwards would end \
+            at 1954–1956, sit inside the later schedule, and name a country by a number half this \
+            key's documents predate.
+            """)
+    }
+
+    @Test("A key cited only by undated volumes produces no row to label")
+    func unplacedKeysStaySilent() throws {
+        // The invariant behind `gloss(forKey:bands:)` treating a missing span as unreachable: a
+        // volume absent from `coverage` cannot be attributed to a band, so it supplies neither a
+        // document count nor a span, and no row exists to be glossed either way. If that stopped
+        // holding, a row would reach the label lookup with no evidence behind it.
+        let index = try Self.usage(
+            volumes: ["known", "undated"], noteCounts: [40, 40],
+            classKeys: ["862.00"],
+            rows: [(key: 0, volumes: [1], counts: [9])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["known": ArchivalVolumeCoverage(firstYear: 1930, lastYear: 1935)])
+        for band in ArchivalEraBand.all {
+            let rows = data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                                    hidingUmbrella: false).rows
+            #expect(rows.isEmpty, "an undated volume supplies no rows in band \(band.index)")
+        }
+    }
 }

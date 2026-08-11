@@ -59,25 +59,35 @@ struct DecimalClassLabelTable: Decodable, Sendable {
         /// discriminator a reader needs.
         let subjects: [String: [String: String]]
 
-        /// Whether this schedule governs every year in `span`.
+        /// Whether this schedule governs every year in `span`, given where the decimal file opens.
         ///
-        /// The test is on the span's **upper** bound, and the asymmetry is the point.
+        /// Containment at **both** ends, on a span first clamped at `floor` — the earliest year
+        /// any schedule covers.
         ///
-        /// The renumbering in 1950 is the hazard: a span reaching past this schedule's end also
-        /// covers the era where the same digits mean something else, so a key drawn from it could
-        /// be read either way and labelling it would be a confident guess. The 1948–1960 era band
-        /// is exactly that case, and gets no labels.
+        /// The renumbering in 1950 is the hazard at the top: a span reaching past this schedule's
+        /// end also covers the era where the same digits mean something else, so a key drawn from
+        /// it could be read either way and labelling it would be a confident guess.
         ///
-        /// The lower bound carries no such risk. The central decimal file BEGINS in 1910, so a
-        /// span opening earlier — the first era band runs from 1861, where the series itself opens
-        /// — contains no decimal keys in those years to mislabel. Requiring containment at both
-        /// ends silenced that band entirely, which is the one era #828 exists to label: before
-        /// 1948 the class lens *is* the named archival record.
+        /// The clamp is what lets the bottom be tested at all. The central decimal file BEGINS in
+        /// 1910, so a span opening earlier — the first era band runs from 1861, where the *series*
+        /// opens — carries no decimal keys in those years to mislabel, and requiring literal
+        /// containment there silenced the whole first band, the one era #828 exists to label.
+        /// Clamping says that precisely, instead of dropping the lower bound and hoping.
         ///
-        /// - Parameter span: The years the caller's figures cover.
+        /// Dropping it was live while one schedule shipped and would have become a mislabel with
+        /// the second: a key cited by volumes covering 1945–1955 has an upper bound inside
+        /// 1951–59, and an upper-bound-only test would label it from a schedule that governs half
+        /// its documents. It has to stay bare.
+        ///
+        /// - Parameters:
+        ///   - span: The years the caller's figures cover.
+        ///   - floor: The first year the classification exists at all.
         /// - Returns: `true` when this schedule can speak for every decimal key in the span.
-        func governs(_ span: ClosedRange<Int>) -> Bool {
-            span.upperBound >= startYear && span.upperBound <= endYear
+        func governs(_ span: ClosedRange<Int>, floor: Int) -> Bool {
+            // A span ending before the file opens holds no decimal keys, so no schedule speaks
+            // for it. Without this the clamp would lift such a span INTO the first schedule.
+            guard span.upperBound >= floor else { return false }
+            return max(span.lowerBound, floor) >= startYear && span.upperBound <= endYear
         }
     }
 
@@ -93,7 +103,9 @@ struct DecimalClassLabelTable: Decodable, Sendable {
     ///   - span: The coverage years the surface's figures describe.
     /// - Returns: `"China and Japan"`, `"Mexico — Petroleum"`, or `nil`.
     func gloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
-        guard let schedule = schedules.first(where: { $0.governs(span) }) else { return nil }
+        guard let floor = schedules.map(\.startYear).min(),
+              let schedule = schedules.first(where: { $0.governs(span, floor: floor) })
+        else { return nil }
         let parts = key.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
         guard let head = parts.first, let first = head.first, first.isNumber else { return nil }
         let digit = String(first)

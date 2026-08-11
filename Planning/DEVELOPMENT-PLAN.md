@@ -5645,3 +5645,66 @@ have to be the whole chain) and the key itself is always displayed beside the gl
 The subject floor rose 60 → 650. Sixty is met by the stem pass alone, so a nested pass that
 silently stopped matching would leave a table that still passes, still ships, and still labels
 `812.6363` "Mexico".
+
+## Session 2026-08-11 — #828 follow-up: a class label follows its own key's volumes
+
+The label rule asked whether a schedule could speak for the **era band**. That is the wrong
+question. The band is how the chart groups; the evidence a label rests on is the coverage of the
+volumes citing the key.
+
+### Why it is a prerequisite and not a refinement
+
+Band 1 runs 1948–1960 and spans three classification schedules, so no schedule can ever govern it —
+**however many are parsed**. With the band's span, shipping the 1951–59 and 1960–63 schedules would
+label nothing at all: band 1's 1960 falls outside 1951–59, band 2's 1968 outside 1960–63. Every key
+in the eras those schedules exist for would still render bare. Item 3 of the #828 follow-ups is
+unreachable without this one.
+
+### Measured on the shipped artifact, which carries 1910–49 alone
+
+- **Band 0: unchanged, key for key.** The one band-0 volume whose coverage runs past 1949
+  (`frus1945-50Intel`, 1945–1950) contributes no class keys at all, so nothing is withdrawn.
+- **Band 1: +310 keys, +966 documents** — `862.00 Germany — Political affairs` (67 documents, cited
+  only by volumes covering 1948–1949), `893.001 China — Chief executive. Sovereign` (56),
+  `818.00 Costa Rica — Political affairs` (55).
+- Bands 2–4: nothing, until their schedules are parsed. That is the guard, not a gap.
+- **A merged-band selection goes from labelling nothing to 67,213 documents.** The union of two
+  bands' years is covered by no schedule, so `ranking(bands:)` silenced every key in a multi-band
+  scope including the ones whose volumes never leave the 1910–49 file. No class-lens surface merges
+  bands today — #835's card is on the collections lens — so this is latent rather than visible, and
+  it is stated as latent.
+
+966 documents is a small number and the PR says so. The change is worth making for the two reasons
+above: it asks the right question, and it is the only route to the later schedules.
+
+### The span is a union, and it can only take a label away
+
+A key cited by volumes running 1930–1940 and 1955–1960 yields 1930…1960, which no schedule governs,
+so it stays bare — the same conservatism the band rule had, applied to the population it is about.
+A key with no recorded span gets no gloss rather than falling back to the band's, because a
+fallback would quietly restore the old rule for exactly the rows whose evidence is missing.
+
+### The drift guard got stronger, not weaker
+
+`rankingCarriesTheGloss` was a source scan for three literal substrings, two of which this change
+invalidated. It now drives the real derivation over the bundled usage index and manifest — asserting
+the row carries both the key and `Mexico — Petroleum` — and then enumerates every app source file
+touching `DecimalClassLabelStore`, requiring the list to be exactly `ArchivalCollectionsData.swift`.
+That is the claim "one label source" was always making, and the scan could not check it.
+
+### The mutation sweep found a trap the next PR would have armed
+
+Narrowing the union's *upper* bound was killed; ignoring its **lower** bound survived, because
+`governs(_:)` only ever read the upper one. That asymmetry was deliberate and correct while the
+span was a band's — the decimal file begins in 1910 and the first band opens in 1861, so requiring
+containment at both ends silenced the whole first band. Under per-key attribution the span is
+evidence, and dropping half of it is a latent mislabel: a key cited by volumes covering 1945–1955
+has its upper bound inside 1951–59, so the moment that schedule ships it would be read against a
+table governing half its documents.
+
+`governs(_:floor:)` now tests containment at both ends on a span **clamped at the earliest year any
+schedule covers**, which says what the asymmetry was reaching for instead of dropping the bound and
+hoping. A span ending before that floor still resolves to nothing, or the clamp would lift it into
+the first schedule. Every corpus figure above is unchanged; a decoded two-schedule table pins the
+straddling case, because the defect arrives with data rather than with code and nothing else in the
+suite would see it.

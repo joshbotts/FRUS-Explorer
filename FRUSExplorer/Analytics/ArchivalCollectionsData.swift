@@ -198,6 +198,9 @@ struct ArchivalRanking: Sendable, Equatable {
 ///         becomes the one definition of what a scope means
 ///   1.5 — Session 2026-08-11: #828 — class rows carry a `gloss`, attached where the row is
 ///         BUILT so every surface reading a ranking gets it: chart, uncapped list, CSV, card
+///   1.6 — Session 2026-08-11: #828 — a class label is decided by the coverage of the volumes
+///         citing THAT KEY (`classSpans`, `gloss(forKey:bands:)`) rather than by the era band's
+///         own years, which straddle the 1950 renumbering in every band after the first
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
@@ -227,6 +230,21 @@ struct ArchivalCollectionsData: Sendable {
     private let classVolumes: [[String: Int]]
     /// Per-band leaves inside each folded class key, heaviest first.
     private let classLeaves: [[String: [ArchivalClassLeaf]]]
+    /// The label table class rows are read against.
+    ///
+    /// Injected rather than reached for, so a test can drive the derivation against a table with
+    /// TWO schedules. The shipped artifact carries one, which makes the whole renumbering rule —
+    /// and in particular the lower bound of a key's coverage span — unobservable through any
+    /// output: with a single schedule the clamp handles every lower bound that could matter. The
+    /// rule this parameter exists to test is the one the next schedule will land on.
+    private let labels: DecimalClassLabelTable?
+    /// Per-band coverage span of the volumes citing each folded class key.
+    ///
+    /// The evidence a class label rests on. See ``gloss(forKey:bands:)``: a decimal key means
+    /// different things either side of the 1950 renumbering, and the years that decide which
+    /// schedule may speak belong to the volumes citing the key, not to the era band the chart
+    /// happens to be grouping by.
+    private let classSpans: [[String: ClosedRange<Int>]]
     /// Volumes per band.
     private let bandVolumeCounts: [Int]
     /// Source notes scanned per band — the denominator every share on this surface needs.
@@ -256,7 +274,9 @@ struct ArchivalCollectionsData: Sendable {
     ///     they cannot be attributed to a band without a coverage year.
     static func make(authority: [AuthorityCollectionRecord],
                      usage: CollectionUsageIndex?,
-                     coverage: [String: ArchivalVolumeCoverage]) -> ArchivalCollectionsData {
+                     coverage: [String: ArchivalVolumeCoverage],
+                     labels: DecimalClassLabelTable? = DecimalClassLabelStore.shared)
+        -> ArchivalCollectionsData {
         let bandCount = ArchivalEraBand.all.count
         var bandByVolume: [String: Int] = [:]
         bandByVolume.reserveCapacity(coverage.count)
@@ -288,6 +308,7 @@ struct ArchivalCollectionsData: Sendable {
         var classDocuments = [[String: Int]](repeating: [:], count: bandCount)
         var classVolumes = [[String: Int]](repeating: [:], count: bandCount)
         var classLeaves = [[String: [ArchivalClassLeaf]]](repeating: [:], count: bandCount)
+        var classSpans = [[String: ClosedRange<Int>]](repeating: [:], count: bandCount)
         var bandNoteCounts = [Int](repeating: 0, count: bandCount)
         if let usage {
             // The collection lens takes its volume weight from the authority instead (see the
@@ -296,7 +317,8 @@ struct ArchivalCollectionsData: Sendable {
                       bandByVolume: bandByVolume, into: &collectionDocuments)
             (classVolumes, classLeaves) = tallyClasses(
                 usage.classes, keys: usage.classKeys, volumes: usage.volumes,
-                bandByVolume: bandByVolume, into: &classDocuments)
+                bandByVolume: bandByVolume, coverage: coverage,
+                into: &classDocuments, spans: &classSpans)
             for (index, volumeId) in usage.volumes.enumerated() {
                 guard let band = bandByVolume[volumeId],
                       usage.volumeNoteCounts.indices.contains(index) else { continue }
@@ -310,6 +332,8 @@ struct ArchivalCollectionsData: Sendable {
             classDocuments: classDocuments,
             classVolumes: classVolumes,
             classLeaves: classLeaves,
+            labels: labels,
+            classSpans: classSpans,
             bandVolumeCounts: bandVolumeCounts,
             bandNoteCounts: bandNoteCounts,
             records: records,
@@ -338,7 +362,9 @@ struct ArchivalCollectionsData: Sendable {
     /// - Returns: Per-band volume counts, and per-band leaves by folded key (heaviest first).
     private static func tallyClasses(_ rows: [CollectionUsageIndex.UsageRow], keys: [String],
                                      volumes: [String], bandByVolume: [String: Int],
-                                     into documents: inout [[String: Int]])
+                                     coverage: [String: ArchivalVolumeCoverage],
+                                     into documents: inout [[String: Int]],
+                                     spans: inout [[String: ClosedRange<Int>]])
         -> ([[String: Int]], [[String: [ArchivalClassLeaf]]]) {
         let bandCount = documents.count
         var volumeSets = [[String: Set<String>]](repeating: [:], count: bandCount)
@@ -354,6 +380,21 @@ struct ArchivalCollectionsData: Sendable {
                 guard let band = bandByVolume[volumeId] else { continue }
                 documents[band][group, default: 0] += row.counts[position]
                 volumeSets[band][group, default: []].insert(volumeId)
+                // The span is WIDENED across every contributor, not overwritten: a key cited from
+                // both sides of the 1950 renumbering must span it and stay unlabelled, and a rule
+                // that tracked the last volume seen would label it from whichever one the row
+                // happened to end on.
+                //
+                // Keyed by the FOLDED key, matching `documents` on the line above and the grain
+                // the label is looked up at. Only subject-numeric keys fold, and none of those
+                // resolves against a decimal schedule, so today this is a choice about what the
+                // structure MEANS rather than one any output can distinguish.
+                if let years = coverage[volumeId] {
+                    let existing = spans[band][group]
+                    let low = min(existing?.lowerBound ?? years.firstYear, years.firstYear)
+                    let high = max(existing?.upperBound ?? years.lastYear, years.lastYear)
+                    spans[band][group] = low...high
+                }
                 leafDocuments[band][group, default: [:]][leaf, default: 0] += row.counts[position]
                 leafVolumes[band][group, default: [:]][leaf, default: []].insert(volumeId)
             }
@@ -452,12 +493,6 @@ struct ArchivalCollectionsData: Sendable {
         var seen = Set<Int>()
         let indices = bands.map(\.index).filter { seen.insert($0).inserted }
 
-        // The years these bands cover, which is what decides whether any schedule can speak for
-        // the keys in them. A selection straddling the 1950 renumbering is covered by no single
-        // schedule and is therefore left unlabelled — see `Schedule.governs(_:)`.
-        let bandSpan = indices.compactMap { index in ArchivalEraBand.all.first { $0.index == index } }
-        let span = (bandSpan.map(\.startYear).min() ?? 0)...(bandSpan.map(\.endYear).max() ?? 0)
-
         var table: [String: Int] = [:]
         for index in indices {
             let source: [String: Int]
@@ -500,8 +535,7 @@ struct ArchivalCollectionsData: Sendable {
                 return ArchivalRankingRow(id: key, label: key, name: key,
                                           category: .stateDepartment, value: value,
                                           leaves: mergedLeaves(forKey: key, bands: indices),
-                                          gloss: DecimalClassLabelStore.shared?
-                                              .gloss(for: key, coveringYears: span))
+                                          gloss: gloss(forKey: key, bands: indices))
             }
         }
 
@@ -512,6 +546,52 @@ struct ArchivalCollectionsData: Sendable {
                                bandVolumeCount: indices.reduce(0) { $0 + bandVolumeCounts[$1] },
                                bandNoteCount: indices.reduce(0) { $0 + bandNoteCounts[$1] },
                                shownValue: labelled.reduce(0) { $0 + $1.value })
+    }
+
+    /// One class key's reading in plain words, from the coverage of the volumes citing IT (#828).
+    ///
+    /// ## The band is a display grouping; the key's own volumes are the evidence
+    /// The classification was renumbered in 1950, so a label is only safe when one schedule covers
+    /// the documents behind the key. Asking that of the *era band* asks the wrong question: band 1
+    /// runs 1948–1960 and spans three schedules, so no schedule can ever speak for it however many
+    /// are parsed — while the keys inside it are cited by volumes that mostly sit squarely in one.
+    /// `862.00` is cited only by volumes covering 1948–1949, and the 1910–49 schedule says exactly
+    /// what it means.
+    ///
+    /// This is a **prerequisite, not a refinement**. With the band's span the two later schedules
+    /// would label nothing at all once parsed: band 1's 1960 falls outside 1951–59 and band 2's
+    /// 1968 outside 1960–63, so every key in the eras those schedules exist for would still render
+    /// bare.
+    ///
+    /// Measured on the shipped artifact, which carries the 1910–49 schedule alone: band 0 is
+    /// unchanged key for key, band 1 gains 310 keys and **966 documents**, and bands 2–4 gain
+    /// nothing until their schedules are parsed. A merged-band selection — which no class-lens
+    /// surface makes today, though the entry point exists — goes from labelling **nothing** to
+    /// 67,213 documents, because the union of two bands' years is covered by no schedule at all.
+    ///
+    /// ## The span is a union, and it can only take a label away
+    /// A key cited by volumes running 1930–1940 and 1955–1960 yields 1930...1960, which no schedule
+    /// governs, so it stays bare. That is the same conservatism the band rule had, applied to the
+    /// population it is actually about.
+    ///
+    /// - Parameters:
+    ///   - key: A folded class key.
+    ///   - bands: The band indices being ranked.
+    /// - Returns: The gloss, or `nil` when no schedule covers the key's coverage. A key with no
+    ///   recorded span also yields `nil`, though that branch is unreachable: the tally writes a
+    ///   span and a document count in the same step, under the same guard, so a row that exists
+    ///   has a span. Reaching for the band's years there would be the one place the replaced rule
+    ///   survived, and only for the rows whose evidence was missing.
+    private func gloss(forKey key: String, bands: [Int]) -> String? {
+        var low: Int?
+        var high: Int?
+        for index in bands {
+            guard let span = classSpans[index][key] else { continue }
+            low = min(low ?? span.lowerBound, span.lowerBound)
+            high = max(high ?? span.upperBound, span.upperBound)
+        }
+        guard let low, let high else { return nil }
+        return labels?.gloss(for: key, coveringYears: low...high)
     }
 
     /// One class key's leaves across several bands, folded and re-ranked.
