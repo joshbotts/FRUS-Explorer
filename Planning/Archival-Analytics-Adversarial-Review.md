@@ -653,6 +653,13 @@ same day:
 | 7 | **Keep the sub-items the handoff quietly drops**: #825(a)'s class per-volume usage, 1e's Related Collections and Sub-Series sections, and #831's totals-invariant artifact test. |
 | 8 | **#830 gains an owner gate**: the first act of the T-0 session is to bring the repository-fact table to the owner for confirmation, item by item — the mocks turn those facts into printed sentences a researcher will act on. |
 
+### 10.0 Later decisions (2026-08-11)
+
+| # | Decision |
+|---|---|
+| 9 | **#828's schedule will be owner-supplied.** The 1910–49 decimal classification schedule — country-number table (322 codes), class-8 subject suffixes (~1,078), the relations-vs-subdivision rule (`738.11` vs `768.11`), and the 1910-vs-1950 boundary — comes from the owner in any legible form. #828 then builds the **compositional** table (~200 rows, 87.7% of classed documents) rather than a flat one (1,000 rows, 79.4%). The seed harvest — glosses, subject-numeric, unambiguous RG 59 titles, each row source-stamped per D-2 — needs no schedule and is groundwork, never a substitute: its era coverage is the inverse of the issue's priority (415 gloss rows 1950s, 394 1960s, **10 for the 1910s**). |
+| 10 | **#834 holds for #828.** The external-citation decimal channel emits decimal class keys; shipping them unlabeled would reproduce in a new surface the complaint #828 exists to fix. This is a wait on a source that is coming, not an indefinite park. |
+
 ### 10.1 Where the owner pass now lives
 
 | The addition | Home |
