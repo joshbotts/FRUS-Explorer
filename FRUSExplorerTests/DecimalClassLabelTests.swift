@@ -66,6 +66,50 @@ struct DecimalClassLabelTests {
             """)
     }
 
+    @Test("With a second schedule in the table, a span straddling 1950 still says nothing")
+    func straddlingSpansAcrossTwoSchedules() throws {
+        // The shipped table carries ONE schedule, which hides this: an upper-bound-only test
+        // labels a span whose end lands inside a schedule, however far back its evidence runs.
+        // Harmless while nothing follows 1949 and a mislabel the moment something does — 1945–1955
+        // would read against the 1951–59 table, naming countries by numbers half its documents
+        // predate. Decoded here rather than waited for, because the defect arrives with data, not
+        // with code, and nothing else in the suite would catch it.
+        let json = """
+        {"schemaVersion":1,"generated":"2026-08-11","provenance":"test","schedules":[
+          {"id":"1910-1949","startYear":1910,"endYear":1949,"source":"test",
+           "classes":{"8":"Internal Affairs of States"},"relationsClasses":["7"],
+           "countryArrangedClasses":["6","7","8"],"countries":{"91":"Iran"},"subjects":{}},
+          {"id":"1951-1959","startYear":1951,"endYear":1959,"source":"test",
+           "classes":{"7":"Internal Political and National Defense Affairs"},
+           "relationsClasses":["6"],"countryArrangedClasses":["3","4","5","6","7","8","9"],
+           "countries":{"88":"Iran"},"subjects":{}}]}
+        """
+        let table = try JSONDecoder().decode(DecimalClassLabelTable.self, from: Data(json.utf8))
+
+        // Wholly inside one schedule or the other: both resolve, and to different countries,
+        // which is the renumbering this table exists to keep apart.
+        #expect(table.gloss(for: "891.00", coveringYears: 1930...1940) == "Iran")
+        #expect(table.gloss(for: "888.00", coveringYears: 1955...1958) == "Iran")
+        #expect(table.gloss(for: "891.00", coveringYears: 1955...1958) == nil)
+
+        // Straddling. The upper bound sits squarely inside the later schedule.
+        #expect(table.gloss(for: "888.00", coveringYears: 1945...1955) == nil, """
+            Half this key's documents were filed before the renumbering. Reading it against the \
+            schedule its last year falls in is exactly the confident guess era-scoping exists to \
+            prevent, and only the span's LOWER bound can see it.
+            """)
+
+        // And the clamp still holds at the bottom: 1861 is where the series opens, not the file.
+        #expect(table.gloss(for: "891.00", coveringYears: 1861...1940) == "Iran", """
+            The decimal file begins in 1910, so a span opening earlier carries no keys in those \
+            years to mislabel. Literal containment here silenced the whole first era band.
+            """)
+        #expect(table.gloss(for: "891.00", coveringYears: 1861...1900) == nil, """
+            A span that ends before the file opens holds no decimal keys at all, and the clamp \
+            must not lift it into the first schedule.
+            """)
+    }
+
     @Test("The four glosses that shipped wrong are gone, and the good ones stayed")
     func retiredMislabels() throws {
         let table = try table()

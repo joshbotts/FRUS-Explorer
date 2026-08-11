@@ -5691,3 +5691,20 @@ invalidated. It now drives the real derivation over the bundled usage index and 
 the row carries both the key and `Mexico — Petroleum` — and then enumerates every app source file
 touching `DecimalClassLabelStore`, requiring the list to be exactly `ArchivalCollectionsData.swift`.
 That is the claim "one label source" was always making, and the scan could not check it.
+
+### The mutation sweep found a trap the next PR would have armed
+
+Narrowing the union's *upper* bound was killed; ignoring its **lower** bound survived, because
+`governs(_:)` only ever read the upper one. That asymmetry was deliberate and correct while the
+span was a band's — the decimal file begins in 1910 and the first band opens in 1861, so requiring
+containment at both ends silenced the whole first band. Under per-key attribution the span is
+evidence, and dropping half of it is a latent mislabel: a key cited by volumes covering 1945–1955
+has its upper bound inside 1951–59, so the moment that schedule ships it would be read against a
+table governing half its documents.
+
+`governs(_:floor:)` now tests containment at both ends on a span **clamped at the earliest year any
+schedule covers**, which says what the asymmetry was reaching for instead of dropping the bound and
+hoping. A span ending before that floor still resolves to nothing, or the clamp would lift it into
+the first schedule. Every corpus figure above is unchanged; a decoded two-schedule table pins the
+straddling case, because the defect arrives with data rather than with code and nothing else in the
+suite would see it.
