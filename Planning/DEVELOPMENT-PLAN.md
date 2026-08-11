@@ -5445,3 +5445,45 @@ cannot tell it is wrong.
 The 1950–59 and 1960–63 schedules are **omitted**, not shipped thin: their scans letter-space every
 word and yield 4 and 8 class headings against ten. A half-named class table mislabels rather than
 labels, so the generator drops an incomplete schedule and says which eras it covers.
+
+## Session 2026-08-11 — #828 PR 2: the renderer pass
+
+The label table reaches the screen. One injection point does the whole job: class rows are built in
+exactly one place, `ArchivalCollectionsData.ranking`, so attaching the gloss there labels the
+chart, the uncapped list, the CSV exports and the Archival Sourcing card at once. Attaching it in a
+view instead would have left every export shipping bare numbers.
+
+### The gloss sits beside the key, never instead of it
+
+`793.94` still reads `793.94`, with *China and Japan* under it. The number is what a pull slip
+needs; the prose is what makes the ranking legible. The chart's y-axis keeps the bare key because
+that axis value is also the disambiguation key, and Swift Charts silently merges two bars sharing a
+label — so the gloss goes to VoiceOver there, and under the key everywhere a second line fits.
+
+### When the table is allowed to speak
+
+The rule is asymmetric, and the asymmetry is the whole correctness argument.
+
+- **Upper bound is checked.** The classification was renumbered in 1950, so a span reaching past
+  1949 also covers the era where the same digits mean something else. The 1948–1960 era band is
+  exactly that case and gets no labels at all.
+- **Lower bound is not.** The central decimal file begins in 1910, so the first band's 1861–1909
+  years contain no decimal keys to mislabel. Requiring containment at both ends silenced that band
+  entirely — and that band is the one #828 exists for, since before 1948 the class lens *is* the
+  named archival record.
+
+The first version got this wrong in the safe direction and shipped nothing at all; it was caught by
+rendering real keys rather than by a test.
+
+### Measured on the shipped artifact
+
+Over the first era band: `793.94` → China and Japan; `893.51` → China — financial conditions (NOT
+"China and France": class 8 is Internal Affairs, and its suffix only looks like a country code);
+`812.00` → Mexico — political affairs; `795.00` → Korea and The World, the inverted index form
+un-inverted. `763.72` reads as Austria and Serbia, which is what an Austro-Serbian file from a
+1910s volume should say.
+
+### Mutation sweep: 4 mutants, 4 killed
+
+Read class 8's suffix as a second country; stop enforcing the renumbering boundary; stop
+un-inverting `World, The`; stop attaching the gloss to the rows.
