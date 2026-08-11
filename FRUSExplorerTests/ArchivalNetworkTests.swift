@@ -693,3 +693,81 @@ struct ArchivalNetworkWiringTests {
             """)
     }
 }
+
+// MARK: - ArchivalNetworkSectorZoneTests
+
+/// The custodian wedges as tap targets (#825f). Everything here is a source scan or a pure
+/// derivation: the wedge is a `Path` inside a `Canvas`-backed view with no view model to drive,
+/// so what can be pinned is the wiring and the two rules that make it safe.
+///
+/// Version history:
+///   1.0 — Session 2026-08-11: #825(f)
+@Suite("Archival network — sector zones (#825f)")
+struct ArchivalNetworkSectorZoneTests {
+
+    private static func source() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Analytics/ArchivalNetworkView.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("Wedge hit areas sit under the node buttons")
+    func nodesWinATap() throws {
+        // A wedge covers a quarter of the canvas. In a ZStack a later view wins the tap, so the
+        // wedges must be emitted BEFORE the nodes — reversing the two lines makes every node in
+        // the graph untappable, which no test of node behaviour would catch because the node
+        // buttons would still exist.
+        let source = try Self.source()
+        let zones = try #require(source.range(of: "sectorZones(layout, size: geometry.size)"))
+        let nodes = try #require(source.range(of: "hitAreas(graph, layout: layout)"))
+        #expect(zones.upperBound < nodes.lowerBound, """
+            The sector wedges are layered ON TOP of the node hit areas, so a tap meant for a \
+            collection selects its custodian group instead.
+            """)
+    }
+
+    @Test("The group filter re-scales the rings, and the dock says so")
+    func filteringDisclosesTheRescale() throws {
+        // The guide rings are fractions of the strongest link DRAWN. Dropping three sectors can
+        // change which link that is, so the same partner moves to a different radius while
+        // meaning the same thing. That is legitimate — the axis is self-scaling by design — but
+        // it has to be said, or the filter looks like it changed the data.
+        let source = try Self.source()
+        #expect(source.contains("strongestMeasureValue: kept.map(\\.measureValue).max()"), """
+            The filtered graph must recompute its own strongest link; keeping the unfiltered \
+            value would draw every survivor at a radius the legend no longer describes.
+            """)
+        #expect(source.contains("archival.network.group.rescaled"),
+                "the re-scale must be disclosed in the dock while the filter is on")
+    }
+
+    @Test("Clearing the group restores every sector and drops the filter")
+    func clearingRestoresEverything() throws {
+        let source = try Self.source()
+        #expect(source.contains("""
+            private func clearSector() {
+                    selectedSector = nil
+                    showsOnlySelectedSector = false
+                }
+            """.replacingOccurrences(of: "\n            ", with: "\n    ")), """
+            Clearing the chip must drop BOTH the inspection and the filter: leaving \
+            showsOnlySelectedSector set with no sector would draw a filtered graph with nothing \
+            on screen saying it is filtered.
+            """)
+    }
+
+    @Test("An empty group says so rather than showing a filter that would blank the canvas")
+    func emptyGroupIsExplained() throws {
+        let source = try Self.source()
+        #expect(source.contains("archival.network.group.none"))
+        // The filter button lives inside the non-empty branch, so a sector with no partners
+        // above the threshold cannot be filtered to nothing.
+        let none = try #require(source.range(of: "archival.network.group.none"))
+        let only = try #require(source.range(of: "archival.network.group.only"))
+        #expect(none.upperBound < only.lowerBound)
+        #expect(source.contains("guard !kept.isEmpty else { return graph }"),
+                "an empty survivor set must fall back to the full graph rather than draw nothing")
+    }
+}
