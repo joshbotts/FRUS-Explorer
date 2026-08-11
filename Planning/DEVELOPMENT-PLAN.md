@@ -4770,3 +4770,52 @@ there rather than one dashboard at a time.
 - **Four of the five families are not adopted**: corpus, person, cross-reference, archival. They do
   not route through `SeriesChartCard`, and several plot data with no inspector table, so each needs
   its points supplied directly to the builder.
+
+---
+
+## Session 2026-08-10 — the Archival Analytics design handoff, assessed and enrolled
+
+**Issues:** #825–#835, #798 · **New:** #837, #838 · **No code — planning and tracker only**
+
+A design handoff arrived after the #825–#835 enrolment: eleven artboards rendering the enrolled
+issues as screens. It is now in the repo at
+`Planning/Archival-Analytics-Revision-Design-Handoff/` (byte-identical to the delivered zip, with
+a `PROVENANCE.md` saying what governs), because the issue bodies reference artboards and those
+lived only in a zip outside the repo.
+
+### The finding that mattered
+
+The handoff is faithful to every issue's core scope. But its own opening paragraph records **"a
+later owner pass"** whose five additions appear in **no issue body and in no row of §9's
+enrolment table** — the two documents the handoff names as its plan of record. Sector zones, a
+third ranking weight, a Cross-Reference Graph layer, the lifecycles card's removal, and a global
+relabel pass. An implementer working from the tracker would have missed all five.
+
+Verification, not reading, is what produced that: `gh issue view` on all twelve bodies against the
+README, then code probes with an adversarial re-check on each. The re-check earned its keep twice
+— it caught that §9's own table also disagreed with the handoff (strengthening the finding), and
+it refuted a claim that a source-scan test would break on a new initializer (the pin is on the
+*call site*, not the type).
+
+### Two scope changes came out of the measurement
+
+**#829(c), the "Unprinted pointers" weight, is not an enum case.** The join is exact (995/995
+target ids present in the authority) but `ranking()` drops zeros, so the weight *replaces* the row
+set — 1,014 collections out, 181 in. The class lens has no external vocabulary at all; the
+availability fallback is documents-shaped; three shipped strings assert a two-weight world and one
+is pinned verbatim by a test over `allCases`; the export's base caveat is a drawn-from methods
+statement stamped above a pointed-at table.
+
+**#837's node layer is contract-touching.** `CrossReferenceEdge` cannot represent a
+document → archival-unit edge, node ids are `"volumeId/documentId"` parsed by splitting on `/` in
+three places, loading is whole-ego-graph, and the Session 161 vocabulary has already spent
+*dashed* and *orange* on other meanings. The issue splits into a phase A that touches no canvas
+code (the shipped Archival Neighbors context-menu pattern reaches the same destination) and a
+phase B gated on four visual decisions.
+
+### Owner decisions recorded
+
+All eight are in `Archival-Analytics-Adversarial-Review.md` §10, with the enrolment map. The two
+gates outside the repo are unchanged and remain the critical path: #828's 1910–49 filing schedule,
+and #830's repository facts — now an explicit gate on that issue, because the packet mocks turn
+those facts into printed sentences a researcher acts on.
