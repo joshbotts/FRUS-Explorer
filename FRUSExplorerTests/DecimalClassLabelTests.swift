@@ -172,25 +172,90 @@ struct DecimalClassLabelTests {
         #expect(subjects.keys.contains { $0.contains("†") } == false)
     }
 
-    @Test("The ranking hands every surface the same gloss")
+
+    @Test("Over the shipped corpus, a whole era of keys stops rendering bare")
+    func perKeyAttributionOverTheRealCorpus() throws {
+        // The artifact tests above pin what the table SAYS; this one pins what the app does with
+        // it, over the real usage index and the real manifest, through the same derivation the
+        // chart draws. It exists because the rule it checks is invisible to every synthetic
+        // fixture: the numbers only mean something against the corpus's actual coverage.
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
+                                               from: Data(contentsOf: url))
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: usage,
+            coverage: ArchivalVolumeCoverage.map(from: entries))
+
+        func glossed(_ band: ArchivalEraBand) -> [ArchivalRankingRow] {
+            data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                         hidingUmbrella: false, limit: .max).rows.filter { $0.gloss != nil }
+        }
+
+        // Band 0 is the era the schedule covers outright, and it was already labelled.
+        let band0 = glossed(ArchivalEraBand.all[0])
+        #expect(band0.count > 3_000)
+        #expect(band0.contains { $0.id == "812.6363" && $0.gloss == "Mexico — Petroleum" })
+
+        // Band 1 spans 1948–1960 and is covered by NO schedule, so under the band's own years it
+        // labelled nothing whatever. Its keys are another matter: 310 of them are cited only by
+        // volumes inside the 1910–49 file.
+        let band1 = glossed(ArchivalEraBand.all[1])
+        #expect(band1.count > 250, """
+            The band-span rule labelled zero rows here, and would still label zero with all three             schedules parsed — 1960 falls outside 1951–59 as surely as outside 1910–49.
+            """)
+        #expect(band1.contains { $0.id == "862.00" && $0.gloss == "Germany — Political affairs" })
+
+        // And the later bands stay silent, because their schedules are not parsed yet. This is
+        // the guard that would catch a rule that labelled by proximity rather than by coverage.
+        for index in 2...4 {
+            #expect(glossed(ArchivalEraBand.all[index]).isEmpty, """
+                Band \(index) opens in 1961. Nothing in the bundled table covers it, and a label                 there could only come from reading a key against the wrong schedule.
+                """)
+        }
+    }
+
+    @Test("The ranking hands every surface the same gloss, and nothing else looks the table up")
     func rankingCarriesTheGloss() throws {
-        // The single injection point: if this works, the chart, the uncapped list, the exports and
-        // the guide card are all labelled, because each reaches rows through `ranking`.
-        let source = try String(
-            contentsOf: URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent().deletingLastPathComponent()
-                .appendingPathComponent("FRUSExplorer/Analytics/ArchivalCollectionsData.swift"),
-            encoding: .utf8)
-        #expect(source.contains("gloss: DecimalClassLabelStore.shared?"), """
-            The gloss must be attached where class rows are BUILT. Attached in a view instead, \
-            every other surface — the CSV especially — would still ship bare numbers.
+        // The single injection point. Every surface that draws a class row — chart, uncapped
+        // list, CSV, guide card — reaches it through `ranking`, so a row built here carrying both
+        // the key and its reading is the whole guarantee.
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
+                                               from: Data(contentsOf: url))
+        let rows = ArchivalCollectionsData
+            .make(authority: [], usage: usage,
+                  coverage: ArchivalVolumeCoverage.map(from: entries))
+            .ranking(band: ArchivalEraBand.all[0], lens: .centralFileClasses,
+                     weight: .documents, hidingUmbrella: false, limit: .max).rows
+        let row = try #require(rows.first { $0.id == "812.6363" })
+        #expect(row.gloss == "Mexico — Petroleum")
+        #expect(row.label == "812.6363", """
+            The key survives beside the reading. A pull slip needs the number, and the gloss is \
+            not unique — `.711` and `.731` are both "Laws and regulations".
             """)
-        #expect(source.contains("coveringYears: span"), """
-            The span comes from the bands being ranked; without it the table cannot tell which \
-            schedule may speak.
+
+        // The other half of "one label source" is a fact about the codebase rather than about a
+        // row: nothing outside the derivation may reach the table, or a surface could quietly
+        // grow a second, differently-scoped answer.
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+        var callers: [String] = []
+        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let url = files?.nextObject() as? URL {
+            guard url.pathExtension == "swift",
+                  let text = try? String(contentsOf: url, encoding: .utf8),
+                  text.contains("DecimalClassLabelStore"),
+                  url.lastPathComponent != "DecimalClassLabelStore.swift"
+            else { continue }
+            callers.append(url.lastPathComponent)
+        }
+        #expect(callers == ["ArchivalCollectionsData.swift"], """
+            The table is looked up in \(callers.sorted()). Attached in a view instead, every other \
+            surface — the CSV especially — would still ship bare numbers, and a second call site \
+            could scope the lookup differently from the first.
             """)
-        // And the key itself survives: a pull slip needs the number, not the prose.
-        #expect(source.contains("ArchivalRankingRow(id: key, label: key, name: key,"))
     }
 
     @Test("The uncapped list and its CSV both carry the gloss")
