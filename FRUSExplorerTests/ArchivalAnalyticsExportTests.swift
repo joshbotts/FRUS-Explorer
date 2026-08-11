@@ -361,9 +361,10 @@ struct ArchivalExportWiringTests {
             The uncapped table's methods statement must not blame a row cap for its shortfall: \
             it has no rows below a cap.
             """)
-        #expect(view.contains("Task { @MainActor in open(row, data: data) }"), """
+        #expect(view.contains("Task { @MainActor in open(row, data: presentation.data) }"), """
             Dismissing the all-units sheet and presenting the collection record in the SAME \
-            state change drops the second presentation.
+            state change drops the second presentation. `presentation.data` because the sheet \
+            now holds a snapshot — the live derivation may be gone by the time this runs.
             """)
     }
 
@@ -598,7 +599,7 @@ struct ArchivalExportWiringTests {
         for host in ["../FRUSExplorer/Search/SearchView.swift",
                      "../FRUSExplorer/App/SearchSheet.swift"] {
             let source = try Self.source(host)
-            #expect(source.contains("openArchivalProfile(volumeIds: $0)"),
+            #expect(source.contains("openArchivalProfile(volumeIds: $0, query: $1)"),
                     "\(host) does not offer the door")
             #expect(source.contains("appState.openArchivalScope("),
                     "\(host) must route through the scene-addressed hand-off")
@@ -793,6 +794,133 @@ struct ArchivalExportWiringTests {
         #expect(!between.contains("func ") && !between.contains("private "), """
             Nothing may sit between the word-cloud consumer's doc comment and the function it \
             documents — a declaration inserted there takes the whole comment with it.
+            """)
+    }
+
+    @Test("The band a scope lands on is the one holding most of it (#833 review)")
+    func bandChoiceIsMeasuredNotAsserted() throws {
+        // A REAL test of the decision, not a source scan for the function's name. The first
+        // version of this could have had the plurality, the tie-break and the empty case all
+        // wrong and still passed, because it only checked that the call appeared.
+        #expect(ArchivalEraBand.bandHoldingMost(of: [:]) == nil,
+                "no coverage is no answer, not band zero")
+
+        // Two volumes in 1969–1976 against one in 1948–1960: the plurality wins, and it is NOT
+        // the band the surface opens on, which is the whole point.
+        let seventies = ArchivalEraBand.bandHoldingMost(of: [
+            "a": ArchivalVolumeCoverage(firstYear: 1969, lastYear: 1972),
+            "b": ArchivalVolumeCoverage(firstYear: 1973, lastYear: 1976),
+            "c": ArchivalVolumeCoverage(firstYear: 1950, lastYear: 1954),
+        ])
+        #expect(seventies?.startYear == 1969)
+        #expect(seventies != ArchivalEraBand.all[1], """
+            If the plurality band were also the default, this test could not tell a working \
+            move from no move at all.
+            """)
+
+        // A tie goes to the EARLIER band. Named against the expectation: if ties resolved by
+        // dictionary order the answer would vary between runs.
+        let tied = ArchivalEraBand.bandHoldingMost(of: [
+            "later": ArchivalVolumeCoverage(firstYear: 1970, lastYear: 1974),
+            "earlier": ArchivalVolumeCoverage(firstYear: 1962, lastYear: 1966),
+        ])
+        #expect(tied?.startYear == 1961, "ties must resolve to the earlier band, deterministically")
+
+        // Every band is reachable, so no scope can be sent somewhere it does not belong.
+        for band in ArchivalEraBand.all {
+            let midpoint = (band.startYear + band.endYear) / 2
+            let chosen = ArchivalEraBand.bandHoldingMost(of: [
+                "x": ArchivalVolumeCoverage(firstYear: midpoint, lastYear: midpoint),
+            ])
+            #expect(chosen == band, "a volume dated inside \(band.title) must select it")
+        }
+    }
+
+    @Test("The iOS hand-off is observed, not merely consumable (#833 review)")
+    func theShellActuallyObservesTheSlot() throws {
+        // consumePendingArchivalScope could be perfect and never called. Deleting these two
+        // observers leaves every other test on this branch green while every door opens nothing —
+        // the exact regression #833 exists to fix, one level up.
+        let shell = try Self.source("../FRUSExplorer/App/MainTabView.swift")
+        #expect(shell.contains(".onChange(of: appState.pendingArchivalScope) { _, _ in consumePendingArchivalScope() }"), """
+            Without the observer a scope produced while the shell is on screen is never adopted.
+            """)
+        #expect(shell.contains(".onAppear { consumePendingArchivalScope() }"), """
+            Without the appear hook a scope produced before the shell exists is stranded in the \
+            slot forever — it is never re-published, so no later change would deliver it.
+            """)
+        // And the producer must address the scene the shell actually answers to.
+        let appState = try Self.source("../FRUSExplorer/App/AppState.swift")
+        #expect(appState.contains("pendingArchivalScope = Handoff(target: .macArchivalAnalytics"),
+                "macOS must address the singleton window")
+        #expect(appState.contains("""
+            pendingArchivalScope = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"),
+            """.trimmingCharacters(in: .whitespacesAndNewlines)), """
+            iOS must address the PRODUCING scene, or an iPad opens the profile in every window.
+            """)
+    }
+
+    @Test("The uncapped list survives a scope arriving underneath it (#833 review)")
+    func allUnitsSheetIsSnapshotted() throws {
+        // The sheet owns its only Done button. Reading the live derivation, it emptied whenever a
+        // scope arrived from another window — on macOS leaving a window-modal sheet with no
+        // dismiss control at all.
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains(".sheet(item: $allUnits)"), """
+            An `isPresented` sheet whose body is `if let data = collectionsData` goes blank the \
+            moment the derivation is dropped, taking its Done button with it.
+            """)
+        #expect(source.contains("private struct ArchivalAllUnitsPresentation: Identifiable"))
+        #expect(!source.contains(".sheet(isPresented: $showsAllUnits)"))
+        // The snapshot carries the chart state too: the list says "same as the chart", and an
+        // arriving scope now moves the band.
+        for field in ["let band: ArchivalEraBand", "let lens: ArchivalUnitLens",
+                      "let weight: ArchivalWeight", "let hidingUmbrella: Bool"] {
+            #expect(source.contains(field), "the snapshot must capture \(field)")
+        }
+    }
+
+    @Test("The search door names the query its facets describe (#833 review)")
+    func theScopeLabelNamesTheExecutedQuery() throws {
+        // Both hosts' query properties are LIVE text-field buffers — macOS documents its own as
+        // such — so a reader who types a new term without committing it would get the OLD result
+        // set's volumes under the NEW term's name.
+        let panel = try Self.source("../FRUSExplorer/Search/FacetPanelView.swift")
+        #expect(panel.contains("private(set) var loadedQuery: String"))
+        #expect(panel.contains("onOpenArchivalProfile(ids, controller.loadedQuery)"))
+        #expect(panel.contains("var onOpenArchivalProfile: (([String], String) -> Void)?"))
+        for host in ["../FRUSExplorer/Search/SearchView.swift",
+                     "../FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try Self.source(host)
+            #expect(source.contains("openArchivalProfile(volumeIds: $0, query: $1)"),
+                    "\(host) must take the label from the panel, not from its own text field")
+            // Scoped to the door's own body: `vm.keywords` legitimately appears elsewhere in
+            // these files, and a whole-file negative would forbid an unrelated feature.
+            let door = try #require(source.range(of: "private func openArchivalProfile("))
+            let body = source[door.lowerBound...].prefix(420)
+            #expect(body.contains("let term = query.trimmingCharacters"), """
+                The label must come from the handed-over query, not from a live text field.
+                """)
+        }
+    }
+
+    @Test("The door outlives an empty provenance breakdown (#833 review)")
+    func theDoorIsNotHostedByTheRowsItIsNotMadeOf() throws {
+        // The door is built from the result set's VOLUMES, not from this section's rows. Nested
+        // in the non-empty branch it vanished exactly when the section had nothing to say — which
+        // is when a reader most needs somewhere to go.
+        let panel = try Self.source("../FRUSExplorer/Search/FacetPanelView.swift")
+        let emptyBranch = try #require(panel.range(of: "facets.none"))
+        let door = try #require(panel.range(of: "archivalProfileButton(facets)"))
+        let caveat = try #require(panel.range(of: "provenanceCaveat(facets.provenanceCoverage)"))
+        #expect(door.lowerBound > emptyBranch.lowerBound)
+        #expect(door.lowerBound > caveat.lowerBound, """
+            The door must sit outside the branch the caveat lives in, or an empty breakdown \
+            takes it down with the rows.
+            """)
+        #expect(panel.contains("facets.provenance.openProfile.preparing"), """
+            The volume breakdown loads in the background, so the wait must be stated rather than \
+            leaving a control to materialise seconds later.
             """)
     }
 

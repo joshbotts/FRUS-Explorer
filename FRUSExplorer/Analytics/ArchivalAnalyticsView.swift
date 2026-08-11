@@ -45,6 +45,31 @@ import Charts
 ///   1.8 — Session 2026-08-11: #833 — `initialScope:`, because the iOS presenter consumes the
 ///         hand-off before this view mounts; and the load task is keyed on the scope, which
 ///         is what #827 shipped without (the chip changed, the chart did not)
+/// The uncapped "Every Unit" sheet's whole input, captured at the moment it opens (#833 review).
+///
+/// The sheet used to read the host's live `collectionsData`, `band`, `unitLens`, `weight` and
+/// `hidesUmbrella`. Since a scope change drops the derivation, a hand-off arriving from another
+/// window while the sheet was open emptied its body — and because the sheet owns the only Done
+/// button, on macOS that left a window-modal sheet the reader could not dismiss. Capturing also
+/// keeps the list honest: it says "same as the chart", and it now means the chart it was opened
+/// from rather than whatever the chart became underneath it.
+private struct ArchivalAllUnitsPresentation: Identifiable {
+    /// Fresh per presentation, which is all `.sheet(item:)` needs.
+    let id = UUID()
+    /// The derivation the list is drawn from.
+    let data: ArchivalCollectionsData
+    /// The era it describes.
+    let band: ArchivalEraBand
+    /// Named collections or central-file classes.
+    let lens: ArchivalUnitLens
+    /// Documents or volumes.
+    let weight: ArchivalWeight
+    /// Whether the Central Files umbrella was withheld.
+    let hidingUmbrella: Bool
+    /// The scope's label, for the CSV's methods block.
+    let scopeLabel: String?
+}
+
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -68,14 +93,16 @@ struct ArchivalAnalyticsView: View {
 
     /// Opens the surface, optionally aimed at a mode and a collection (#825e).
     ///
-    /// Every parameter is defaulted, so `ArchivalAnalyticsView()` remains valid — both existing
-    /// call sites use it, and one of them is pinned by a source-scan test.
+    /// Every parameter is defaulted, so `ArchivalAnalyticsView()` remains valid — the macOS
+    /// window scene still opens the surface that way, and that call site is pinned by a
+    /// source-scan test.
     ///
     /// This is what makes the surface addressable at all: until now every selection was
     /// `@State` with no way in, so `CollectionDetailView` could not offer "see this collection's
     /// co-citation neighbourhood" and the Research Guide's iOS cross-link (#798) had nothing to
-    /// hand a destination to. Scope parameters are deliberately **not** here yet — #827 adds
-    /// volume scoping, and a parameter that no caller can act on would be an empty promise.
+    /// hand a destination to. #833 added the third parameter for the same reason: iOS delivers a
+    /// scope through the initializer because its presenter drains the hand-off slot before this
+    /// view mounts.
     ///
     /// - Parameters:
     ///   - mode: The mode to open on.
@@ -134,8 +161,15 @@ struct ArchivalAnalyticsView: View {
     @State private var inspectorData: ChartInspectorData?
     /// The collection record to present, set when a ranking row is opened (#825a).
     @State private var collectionDetail: AuthorityCollectionRecord?
-    /// Whether the uncapped "every unit in this era" table is up (#825c).
-    @State private var showsAllUnits = false
+    /// The uncapped "every unit in this era" table's presentation, or `nil` (#825c).
+    ///
+    /// Holds a SNAPSHOT rather than a flag. The sheet used to read `collectionsData` live, and
+    /// since a scope change now drops that derivation (#833), a hand-off arriving from another
+    /// window while the sheet was up emptied it — and the sheet owns the only Done button, so on
+    /// macOS that left a window-modal sheet with no way to dismiss it. The band, lens, weight and
+    /// umbrella state are captured with it so the list cannot end up describing a different era
+    /// from the one it was opened for.
+    @State private var allUnits: ArchivalAllUnitsPresentation?
     /// The file waiting to be shared (iOS) after an export.
     @State private var exportShareItem: AnalyticsExportFile?
     /// An export failure, surfaced rather than swallowed.
@@ -226,20 +260,19 @@ struct ArchivalAnalyticsView: View {
                     .environment(\.sceneID, sceneID ?? .anyWindow)
             }
         }
-        .sheet(isPresented: $showsAllUnits) {
-            if let data = collectionsData {
-                ArchivalAllUnitsSheet(
-                    band: band, lens: unitLens, weight: weight, hidingUmbrella: hidesUmbrella,
-                    data: data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
-                    scopeLabel: scopeLabel,
-                    onOpen: { row in
-                        showsAllUnits = false
-                        // Presented on the NEXT update, not this one: dismissing a sheet and
-                        // presenting another in the same state change drops the second.
-                        Task { @MainActor in open(row, data: data) }
-                    },
-                    canOpen: { canOpen($0, data: data) })
-            }
+        .sheet(item: $allUnits) { presentation in
+            ArchivalAllUnitsSheet(
+                band: presentation.band, lens: presentation.lens, weight: presentation.weight,
+                hidingUmbrella: presentation.hidingUmbrella,
+                data: presentation.data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+                scopeLabel: presentation.scopeLabel,
+                onOpen: { row in
+                    allUnits = nil
+                    // Presented on the NEXT update, not this one: dismissing a sheet and
+                    // presenting another in the same state change drops the second.
+                    Task { @MainActor in open(row, data: presentation.data) }
+                },
+                canOpen: { canOpen($0, data: presentation.data) })
         }
         // D3 (#787): anchored on the outermost view, not on a `Group` child — see the
         // Group-modifier gotcha, which applies the presentation once per child.
@@ -376,7 +409,7 @@ struct ArchivalAnalyticsView: View {
             denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
             drillInHint(ranking)
-            showAllUnitsButton(ranking)
+            showAllUnitsButton(ranking, data: data)
             classFamilies(ranking)
             // The conditional disclosures stay on the page — they describe THIS view, change with
             // the controls, and a reader who never opens the popover must still see them.
@@ -466,19 +499,9 @@ struct ArchivalAnalyticsView: View {
     ///
     /// - Parameter ids: The scope's volumes.
     private func moveToTheBandTheScopeLivesIn(_ ids: [String]) {
-        let coverage = volumeCoverage(limitedTo: ids)
-        guard !coverage.isEmpty else { return }
-        var counts: [Int: Int] = [:]
-        for span in coverage.values {
-            let midpoint = span.midpointYear
-            if let band = ArchivalEraBand.all.first(where: { $0.contains(midpointYear: midpoint) }) {
-                counts[band.index, default: 0] += 1
-            }
-        }
-        // Ties go to the earlier band, so the choice is stable rather than dictionary-ordered.
-        guard let best = counts.max(by: { ($0.value, -$0.key) < ($1.value, -$1.key) })?.key,
-              let band = ArchivalEraBand.all.first(where: { $0.index == best }) else { return }
-        self.band = band
+        guard let best = ArchivalEraBand.bandHoldingMost(of: volumeCoverage(limitedTo: ids))
+        else { return }
+        band = best
     }
 
     /// The scope chip and the administration presets.
@@ -741,10 +764,14 @@ struct ArchivalAnalyticsView: View {
     /// table inspector and the CSV both carried the capped twelve, so the full list was
     /// unobtainable in the app *and* out of it. Withheld when nothing is capped.
     @ViewBuilder
-    private func showAllUnitsButton(_ ranking: ArchivalRanking) -> some View {
+    private func showAllUnitsButton(_ ranking: ArchivalRanking, data: ArchivalCollectionsData)
+        -> some View
+    {
         if ranking.unitsReached > ranking.rows.count {
             Button {
-                showsAllUnits = true
+                allUnits = ArchivalAllUnitsPresentation(
+                    data: data, band: band, lens: unitLens, weight: weight,
+                    hidingUmbrella: hidesUmbrella, scopeLabel: scopeLabel)
             } label: {
                 Label(String(format: String(
                     localized: "archival.allUnits.button %lld",

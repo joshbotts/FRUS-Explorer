@@ -128,6 +128,16 @@ final class FacetPanelController {
     /// Sections that have been computed for the current match.
     private(set) var loadedSections: Set<FacetSection> = []
 
+    /// The keywords of the parameters the loaded breakdown was computed against (#833).
+    ///
+    /// The archival door names its scope after the search, and both hosts' query properties are
+    /// LIVE text-field buffers — macOS says so in as many words, and iOS searches on
+    /// `.onSubmit(of: .search)`. A reader who types a new term and opens the facet panel without
+    /// committing it would otherwise get a chart of the OLD result set's volumes under the NEW
+    /// term's name. Recorded here because this is the one place that knows which parameters the
+    /// breakdown describes.
+    private(set) var loadedQuery: String = ""
+
     /// The last error, if a section failed. Kept per-panel rather than per-section: a
     /// failure here is a database error, not a per-facet condition.
     private(set) var failure: String?
@@ -210,6 +220,7 @@ final class FacetPanelController {
         signature = newSignature
         facets = nil
         loadedSections = []
+        loadedQuery = ""
         loadingSections = []
         failure = nil
         // A narrow hands its pre-count forward exactly once; any other new search clears it,
@@ -300,6 +311,8 @@ final class FacetPanelController {
             guard !Task.isCancelled else { return }
             facets = Self.merge(computed, into: facets, section: section)
             loadedSections.insert(section)
+            loadedQuery = (parameters.keywords ?? parameters.phrase ?? "")
+                .trimmingCharacters(in: .whitespaces)
             failure = nil
         } catch {
             // A filter-only query with no filters throws `emptyQuery`; that is not a facet
@@ -385,7 +398,7 @@ struct FacetPanelView: View {
     /// button is withheld rather than shown inert. The payload is the volume ids the facets
     /// already computed; the HOST names the scope, because it holds the query and the panel
     /// deliberately does not reach into the search parameters for display copy.
-    var onOpenArchivalProfile: (([String]) -> Void)?
+    var onOpenArchivalProfile: (([String], String) -> Void)?
 
     /// Called when a section is first disclosed, so the controller can compute it.
     let onDiscloseSection: (FacetSection) -> Void
@@ -673,7 +686,6 @@ struct FacetPanelView: View {
                     }
                     if kind == .provenance {
                         provenanceCaveat(facets.provenanceCoverage)
-                        archivalProfileButton(facets)
                     }
                     // Suppressed outright when the evidence is partial. "The top three hold
                     // 60%" over a BM25-selected subset is partly a statement about the ranking
@@ -690,6 +702,15 @@ struct FacetPanelView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                }
+                // OUTSIDE the empty/non-empty branch on purpose (#833 review). The door is made
+                // of the result set's VOLUMES, not of this section's rows, so a provenance
+                // breakdown with nothing in it — no matched document carrying a resolvable source
+                // note — is precisely when a reader most needs the volumes' archival profile. Left
+                // in the `else` branch the section said "Nothing to break down here." and offered
+                // no way on.
+                if kind == .provenance {
+                    archivalProfileButton(facets)
                 }
             }
         }
@@ -917,10 +938,28 @@ struct FacetPanelView: View {
     /// matches sit in, not of the matches. A volume enters whole or not at all.
     @ViewBuilder
     private func archivalProfileButton(_ facets: ResultSetFacets) -> some View {
+        if onOpenArchivalProfile != nil, facets.volumes.isEmpty,
+           controller.loadingSections.contains(.volumes) {
+            // The door is made of the volume breakdown, which disclosing this section requests in
+            // the background. Saying so beats a control that materialises seconds later with no
+            // warning — on a broad match that second aggregation is the same size as the one the
+            // reader is already waiting for.
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(String(localized: "facets.provenance.openProfile.preparing",
+                            defaultValue: "Working out which volumes these matches sit in…"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
         if let onOpenArchivalProfile, !facets.volumes.isEmpty {
             let ids = facets.volumes.map(\.key)
             Button {
-                onOpenArchivalProfile(ids)
+                // `controller.loadedQuery`, never the host's live field: both hosts' query
+                // properties are text-field buffers, so a reader who has typed a new term without
+                // committing it would otherwise get the OLD result set's volumes under the NEW
+                // term's name (#833 review).
+                onOpenArchivalProfile(ids, controller.loadedQuery)
             } label: {
                 Label(String(localized: "facets.provenance.openProfile",
                              defaultValue: "Open archival profile of these results"),

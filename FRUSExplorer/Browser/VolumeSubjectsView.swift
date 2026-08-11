@@ -284,6 +284,10 @@ struct VolumeSubjectVolumesSheet: View {
                 localized: "browser.volume.subjectVolumes.archival.scopeLabel %@",
                 defaultValue: "Volumes on %@"), subject.name))
         #if os(macOS)
+        // Every explicit launcher of a tool window clears its provenance, or a buried earlier
+        // origin keeps capturing opens. `nil`, not a host: a subject sheet is not a document
+        // window, so there is nothing to inherit.
+        appState.bindTool(.archivalAnalytics, to: nil)
         appState.openArchivalScope(request, from: sceneID)
         openWindow.fronting(id: "frus.archivalAnalytics")
         dismiss()

@@ -109,8 +109,10 @@ struct MacSearchWindowView: View {
     ///
     /// Extracted from the closure because the type-checker could not solve it inline — the
     /// facet panel's initializer is already a large expression.
-    private func openArchivalProfile(volumeIds: [String]) {
-        let term = searchVM.queryText.trimmingCharacters(in: .whitespaces)
+    private func openArchivalProfile(volumeIds: [String], query: String) {
+        // The query the FACETS describe, handed over by the panel. The view model's own property
+        // is a live text-field buffer (#833 review).
+        let term = query.trimmingCharacters(in: .whitespaces)
         let label: String
         if term.isEmpty {
             label = String(localized: "facets.provenance.openProfile.label.results",
@@ -376,7 +378,7 @@ struct MacSearchWindowView: View {
                     FacetSelectionApplier.apply(section, keys: keys, to: &searchVM.parameters)
                     searchVM.parametersVersion += 1
                 },
-                onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0) },
+                onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                 onDiscloseSection: { section in
                     Task {
                         await facetController.load(

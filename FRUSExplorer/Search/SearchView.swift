@@ -287,8 +287,10 @@ struct SearchView: View {
     ///
     /// A method rather than an inline closure: the facet panel's initializer is already a large
     /// expression and the type-checker could not solve it with this inside.
-    private func openArchivalProfile(volumeIds: [String]) {
-        let term = vm.keywords.trimmingCharacters(in: .whitespaces)
+    private func openArchivalProfile(volumeIds: [String], query: String) {
+        // The query the FACETS describe, handed over by the panel. The view model's own property
+        // is a live text-field buffer (#833 review).
+        let term = query.trimmingCharacters(in: .whitespaces)
         let label: String
         if term.isEmpty {
             label = String(localized: "facets.provenance.openProfile.label.results",
@@ -422,7 +424,7 @@ struct SearchView: View {
                                 showFacetSheet = false
                                 Task { await runSearch() }
                             },
-                            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0) },
+                            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                             onDiscloseSection: { section in
                                 Task {
                                     await facetController.load(
