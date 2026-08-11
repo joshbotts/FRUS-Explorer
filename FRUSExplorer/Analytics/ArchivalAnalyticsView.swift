@@ -32,6 +32,8 @@ import Charts
 ///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
 ///   1.2 — Session 2026-08-10: #832(c) removes the lifecycle card; the mode ends with a
 ///          pointer to where one collection's own timing lives
+///   1.3 — Session 2026-08-10: #826 adds the denominator line above the ranking and the
+///          "Inside these families" leaf list below it
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -265,7 +267,9 @@ struct ArchivalAnalyticsView: View {
                                        hidingUmbrella: hidesUmbrella)
             collectionsIntro
             filterRow(data: data)
+            denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
+            classFamilies(ranking)
             collectionsCaveats(data: data, ranking: ranking)
             perCollectionTimingPointer
         } else {
@@ -374,6 +378,159 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
+    // MARK: - The denominator line (#826/R-5)
+
+    /// What the drawn rows account for, against the band's own source-note total.
+    ///
+    /// The shipped artifact has carried `volumeNoteCounts` since #763 — described in its own
+    /// generator notes as "the per-volume source-note totals every share needs as a denominator"
+    /// — and nothing read it. Without it the mode opens on 1948–1960 drawing twelve bars that
+    /// account for **9.4%** of the band's sourced documents, with nothing on screen saying so.
+    /// The era asymmetry the caveat block describes in prose is, stated this way, the finding.
+    ///
+    /// The share is withheld rather than approximated under the volumes weight: the numerator
+    /// would be volumes and the denominator notes.
+    @ViewBuilder
+    private func denominatorLine(_ ranking: ArchivalRanking,
+                                 data: ArchivalCollectionsData) -> some View {
+        if let notes = data.noteCount(band: band) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(denominatorSentence(ranking, notes: notes))
+                    .font(.footnote.weight(.medium))
+                if let pointer = denominatorPointer(data: data) {
+                    Text(pointer).font(.footnote)
+                }
+            }
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// "N source notes in this era. The M rows below account for X% of them."
+    private func denominatorSentence(_ ranking: ArchivalRanking, notes: Int) -> String {
+        guard let share = ranking.shownShare(weight: weight) else {
+            return String(format: String(
+                localized: "archival.denominator.notes %lld %@",
+                defaultValue: "%1$lld source notes in %2$@."), Int64(notes), band.title)
+        }
+        return String(format: String(
+            localized: "archival.denominator.share %lld %@ %lld %@",
+            defaultValue: "%1$lld source notes in %2$@. The %3$lld rows below account for %4$@ of them."),
+            Int64(notes), band.title, Int64(ranking.rows.count), Self.shareText(share))
+    }
+
+    /// A share, never rounded to a number that reads as nothing.
+    ///
+    /// `fractionLength` has a *minimum* of zero, so a plain percent style renders the class
+    /// lens's 1977–1992 share — 3 documents in 12,609 notes — as "0%", which states that the
+    /// rows below account for none of the era while three bars sit under it. Anything below a
+    /// percent says so in words instead.
+    static func shareText(_ share: Double) -> String {
+        guard share >= 0.01 else {
+            return String(localized: "archival.denominator.underOnePercent",
+                          defaultValue: "under 1%")
+        }
+        return share.formatted(.percent.precision(.fractionLength(share < 0.1 ? 1 : 0)))
+    }
+
+    /// The one comparison the collection/class overlap does not spoil: whether the *other* lens
+    /// reaches materially more of this band, which in the early eras it does by an order of
+    /// magnitude and is the whole reason the unit switch exists.
+    private func denominatorPointer(data: ArchivalCollectionsData) -> String? {
+        let other: ArchivalUnitLens = unitLens == .namedCollections ? .centralFileClasses
+                                                                    : .namedCollections
+        let mine = data.reach(band: band, lens: unitLens)
+        let theirs = data.reach(band: band, lens: other)
+        guard theirs > mine * 2 else { return nil }
+        switch other {
+        case .centralFileClasses:
+            return String(localized: "archival.denominator.tryClasses",
+                          defaultValue: "Most of this era's sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.")
+        case .namedCollections:
+            return String(localized: "archival.denominator.tryCollections",
+                          defaultValue: "Most of this era's sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.")
+        }
+    }
+
+    // MARK: - Class families (#826/R-4)
+
+    /// The way back from a folded family to the leaf a pull slip actually names.
+    ///
+    /// The fold is what makes the class lens rankable — at leaf grain half the subject-numeric
+    /// keys carry a single document — but `POL 27 VIET S` is what a researcher writes at NARA,
+    /// and `POL 27` is not. So every folded row can be opened to its leaves with their own
+    /// counts. Rows that fold nothing (every decimal file number, and a family with one leaf
+    /// under its own name) are omitted rather than listed as empty disclosures.
+    ///
+    /// A list below the chart rather than expansion inside it: the ranking is a Swift Charts
+    /// `Chart` whose categorical axis is one row per bar, and inserting leaf rows into it would
+    /// redraw the bars at a grain the axis does not describe.
+    /// The families list's caption, which has to change with the weight because the arithmetic
+    /// does: document counts add up to the bar, distinct-volume counts do not.
+    private var familiesCaption: String {
+        weight == .documents
+            ? String(localized: "archival.families.caption.documents",
+                     defaultValue: "Related file numbers are ranked together. Open one for the exact designator a pull slip needs; its parts add up to the bar above.")
+            : String(localized: "archival.families.caption.volumes",
+                     defaultValue: "Related file numbers are ranked together. Open one for the exact designator a pull slip needs. Each line counts the volumes citing that designator, so they overlap and do not add up to the bar: a volume citing two of them counts once for the group.")
+    }
+
+    @ViewBuilder
+    private func classFamilies(_ ranking: ArchivalRanking) -> some View {
+        let families = ranking.rows.filter(\.isFamily)
+        if unitLens == .centralFileClasses, !families.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "archival.families.title",
+                            defaultValue: "Inside these families"))
+                    .font(.subheadline.weight(.semibold))
+                Text(familiesCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(families) { family in
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Ordered by the weight on screen. The stored order is by documents,
+                            // which under Count-by = Volumes draws a visibly non-monotonic
+                            // column — measured on POL 27, 5 of 20 adjacent pairs inverted.
+                            ForEach(family.leaves.sorted {
+                                $0.value(weight: weight) != $1.value(weight: weight)
+                                    ? $0.value(weight: weight) > $1.value(weight: weight)
+                                    : $0.key < $1.key
+                            }) { leaf in
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(leaf.key)
+                                        .font(.caption.monospaced())
+                                    Spacer(minLength: 12)
+                                    // The weight's own unit. Under Documents the leaves sum to
+                                    // the bar; under Volumes they do NOT, and must not be added:
+                                    // each leaf counts its own distinct volumes while the bar
+                                    // counts their union, so a volume citing two designators is
+                                    // one bar-volume and two leaf-volumes. The caption says so.
+                                    Text(leaf.value(weight: weight), format: .number)
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                .accessibilityElement(children: .combine)
+                            }
+                        }
+                        .padding(.top, 2)
+                    } label: {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(family.name).font(.callout)
+                            Spacer(minLength: 12)
+                            Text(String(format: String(
+                                localized: "archival.families.count %lld",
+                                defaultValue: "%lld in family"), Int64(family.leaves.count)))
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - The ranking card
 
     @ViewBuilder
@@ -384,7 +541,8 @@ struct ArchivalAnalyticsView: View {
             band: band, lens: unitLens, weight: weight,
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount,
-            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
+            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue)
         SeriesChartCard(
             title: title,
             caption: rankingCaption(ranking),
@@ -553,7 +711,7 @@ struct ArchivalAnalyticsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "archival.caveats.body",
-                        defaultValue: "These figures are parsed from document source notes, not read from an archive's catalog. They say where the editors drew documents from. That is an editorial and archival signal, not a census of the records themselves. The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection can have volumes and no documents. Coverage is uneven by era, and switching the unit is the way through it. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. The class list holds two filing systems, because FRUS cites both: the decimal classes of the pre-1963 central files, and the subject-numeric designators that replaced them. Collections are grouped across volumes by name. When two spellings of one name fail to merge, the same body of records appears twice under nearby names."))
+                        defaultValue: "These figures are parsed from document source notes, not read from an archive's catalog. They say where the editors drew documents from. That is an editorial and archival signal, not a census of the records themselves. The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection can have volumes and no documents. Coverage is uneven by era, and switching the unit is the way through it. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. The class list holds two filing systems, because FRUS cites both: the decimal classes of the pre-1963 central files, and the subject-numeric designators that replaced them. They are ranked at one depth. A decimal file number stands for itself; subject-numeric designators are grouped to their category and number, because at full length half of them carry a single document. Open a grouped row under the chart for the exact designator a pull slip needs. Collections are grouped across volumes by name. When two spellings of one name fail to merge, the same body of records appears twice under nearby names."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

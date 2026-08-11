@@ -49,6 +49,43 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     let category: ArchivalRepositoryCategory
     /// Documents or volumes, per the ranking's weight.
     let value: Int
+    /// On the class lens, the leaf keys folded into this row — `POL 27 VIET S` and its siblings
+    /// under `POL 27`. Empty on the collections lens, and empty for a decimal file number, which
+    /// is already the grain a reader writes on a pull slip.
+    ///
+    /// A row is a *family* when this holds anything other than the row's own key: the leaf is
+    /// what NARA is asked for, so folding it out of sight without a way back would trade a
+    /// rankable chart for an unusable one.
+    var leaves: [ArchivalClassLeaf] = []
+
+    /// Whether this row folds names a reader would need to see to act on it.
+    var isFamily: Bool {
+        leaves.count > 1 || (leaves.count == 1 && leaves[0].key != id)
+    }
+}
+
+// MARK: - ArchivalClassLeaf
+
+/// One subject-numeric leaf inside a folded family row (`POL 27 VIET S` under `POL 27`).
+struct ArchivalClassLeaf: Identifiable, Sendable, Equatable {
+    /// The full class key, as a source note wrote it and as a pull slip needs it.
+    let key: String
+    /// Documents this leaf supplies in the band.
+    let documents: Int
+    /// Volumes citing this leaf in the band.
+    ///
+    /// Carried beside `documents` so an expanded family can be read in the **same unit as the
+    /// bar above it**. Without it a row measured in volumes — say 36 — expands to leaves summing
+    /// to several hundred, and the arithmetic a reader does in their head is wrong in a way the
+    /// screen never explains.
+    let volumes: Int
+
+    var id: String { key }
+
+    /// This leaf's value under one weight, so the expansion always matches its bar.
+    func value(weight: ArchivalWeight) -> Int {
+        weight == .documents ? documents : volumes
+    }
 }
 
 // MARK: - ArchivalRanking
@@ -68,6 +105,21 @@ struct ArchivalRanking: Sendable, Equatable {
     let unitsReached: Int
     /// Volumes whose coverage midpoint falls in this band.
     let bandVolumeCount: Int
+    /// Source notes scanned across the band's volumes — the denominator for every share below.
+    /// Zero when the usage index is absent, in which case no share may be stated.
+    var bandNoteCount: Int = 0
+    /// What the **drawn** rows account for, in the weight's own unit.
+    var shownValue: Int = 0
+
+    /// The drawn rows' share of the band's source notes, or `nil` when it cannot be stated.
+    ///
+    /// Only meaningful under the documents weight: a share needs a numerator and denominator
+    /// counting the same thing, and the volumes weight counts volumes against a note total.
+    /// `nil` rather than a wrong number is the whole point of the field.
+    func shownShare(weight: ArchivalWeight) -> Double? {
+        guard weight == .documents, bandNoteCount > 0, shownValue > 0 else { return nil }
+        return Double(shownValue) / Double(bandNoteCount)
+    }
 }
 
 // MARK: - ArchivalCollectionsData
@@ -97,6 +149,8 @@ struct ArchivalRanking: Sendable, Equatable {
 ///   1.0 — Session 2026-08-09: #765 stage 1
 ///   1.1 — Session 2026-08-10: #832(c) — the lifecycle span type and its derivation removed;
 ///          the authority loop stays because it is the Volumes weight's only writer
+///   1.2 — Session 2026-08-10: #826 — the class lens folds to one grain with its leaves kept,
+///          and the per-band source-note denominator is read from the usage index at last
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
@@ -120,12 +174,20 @@ struct ArchivalCollectionsData: Sendable {
     private let collectionDocuments: [[String: Int]]
     /// Per-band citing-volume counts by authority collection id.
     private let collectionVolumes: [[String: Int]]
-    /// Per-band document counts by class key.
+    /// Per-band document counts by **folded** class key.
     private let classDocuments: [[String: Int]]
-    /// Per-band citing-volume counts by class key.
+    /// Per-band citing-volume counts by folded class key.
     private let classVolumes: [[String: Int]]
+    /// Per-band leaves inside each folded class key, heaviest first.
+    private let classLeaves: [[String: [ArchivalClassLeaf]]]
     /// Volumes per band.
     private let bandVolumeCounts: [Int]
+    /// Source notes scanned per band — the denominator every share on this surface needs.
+    ///
+    /// Shipped in `collection-usage-index.json` as `volumeNoteCounts` since #763 and read by
+    /// nothing until now, which is why the mode could open on a band where its twelve bars
+    /// account for 9.4% of the sourced documents and say nothing about it.
+    private let bandNoteCounts: [Int]
     /// Authority records by id, for labels and categories.
     private let records: [String: AuthorityCollectionRecord]
 
@@ -178,13 +240,21 @@ struct ArchivalCollectionsData: Sendable {
         var collectionDocuments = [[String: Int]](repeating: [:], count: bandCount)
         var classDocuments = [[String: Int]](repeating: [:], count: bandCount)
         var classVolumes = [[String: Int]](repeating: [:], count: bandCount)
+        var classLeaves = [[String: [ArchivalClassLeaf]]](repeating: [:], count: bandCount)
+        var bandNoteCounts = [Int](repeating: 0, count: bandCount)
         if let usage {
             // The collection lens takes its volume weight from the authority instead (see the
             // type's note), so the counts this pass produces for it are deliberately dropped.
             _ = tally(usage.collections, keys: usage.collectionIds, volumes: usage.volumes,
                       bandByVolume: bandByVolume, into: &collectionDocuments)
-            classVolumes = tally(usage.classes, keys: usage.classKeys, volumes: usage.volumes,
-                                 bandByVolume: bandByVolume, into: &classDocuments)
+            (classVolumes, classLeaves) = tallyClasses(
+                usage.classes, keys: usage.classKeys, volumes: usage.volumes,
+                bandByVolume: bandByVolume, into: &classDocuments)
+            for (index, volumeId) in usage.volumes.enumerated() {
+                guard let band = bandByVolume[volumeId],
+                      usage.volumeNoteCounts.indices.contains(index) else { continue }
+                bandNoteCounts[band] += usage.volumeNoteCounts[index]
+            }
         }
 
         return ArchivalCollectionsData(
@@ -192,10 +262,73 @@ struct ArchivalCollectionsData: Sendable {
             collectionVolumes: collectionVolumes,
             classDocuments: classDocuments,
             classVolumes: classVolumes,
+            classLeaves: classLeaves,
             bandVolumeCounts: bandVolumeCounts,
+            bandNoteCounts: bandNoteCounts,
             records: records,
             supportsDocumentWeight: usage != nil,
             volumesPlaced: bandByVolume.count)
+    }
+
+    /// The class vocabulary's per-band totals, **folded to one grain**, with the leaves kept.
+    ///
+    /// ## Why the fold happens here and not at display time
+    /// The artifact's class vocabulary holds two filing systems (#763): decimal file numbers
+    /// (`763.72`) and subject-numeric designators (`POL 27 VIET S`). Ranking them raw put two
+    /// grains in one chart — a decimal row is a whole class, a subject-numeric row one country's
+    /// slice of one — and it split the heaviest unit in the corpus: raw, 1961–1968 leads with
+    /// `POL 27 VIET S` at 463; folded, `POL 27` is 1,090. Owner decision **D-3** admits the
+    /// subject-numeric lens at category+number, and the Network already folds there through the
+    /// same `CollectionKeying.subjectNumericGroup`.
+    ///
+    /// ## The volumes weight cannot be folded by addition
+    /// A volume citing `POL 27 VIET S` **and** `POL 27 ARAB-ISR` is one citing volume of
+    /// `POL 27`, not two. The raw tally counts one `(key, volume)` pair per stored pair, which is
+    /// exactly right at leaf grain and double-counts the moment leaves merge — so this pass
+    /// accumulates a *set* of volume ids per folded key and counts it at the end. `ArchivalNetworkData`
+    /// carries the same warning for the same reason on its own axis.
+    ///
+    /// - Returns: Per-band volume counts, and per-band leaves by folded key (heaviest first).
+    private static func tallyClasses(_ rows: [CollectionUsageIndex.UsageRow], keys: [String],
+                                     volumes: [String], bandByVolume: [String: Int],
+                                     into documents: inout [[String: Int]])
+        -> ([[String: Int]], [[String: [ArchivalClassLeaf]]]) {
+        let bandCount = documents.count
+        var volumeSets = [[String: Set<String>]](repeating: [:], count: bandCount)
+        var leafDocuments = [[String: [String: Int]]](repeating: [:], count: bandCount)
+        var leafVolumes = [[String: [String: Set<String>]]](repeating: [:], count: bandCount)
+        for row in rows where keys.indices.contains(row.key) {
+            let leaf = keys[row.key]
+            // A decimal file number folds to itself: it is already the unit a pull slip names.
+            let group = CollectionKeying.subjectNumericGroup(leaf) ?? leaf
+            for (position, volumeIndex) in row.volumes.enumerated()
+            where volumes.indices.contains(volumeIndex) {
+                let volumeId = volumes[volumeIndex]
+                guard let band = bandByVolume[volumeId] else { continue }
+                documents[band][group, default: 0] += row.counts[position]
+                volumeSets[band][group, default: []].insert(volumeId)
+                leafDocuments[band][group, default: [:]][leaf, default: 0] += row.counts[position]
+                leafVolumes[band][group, default: [:]][leaf, default: []].insert(volumeId)
+            }
+        }
+
+        var volumeCounts = [[String: Int]](repeating: [:], count: bandCount)
+        var leaves = [[String: [ArchivalClassLeaf]]](repeating: [:], count: bandCount)
+        for band in 0..<bandCount {
+            volumeCounts[band] = volumeSets[band].mapValues(\.count)
+            let volumesByLeaf = leafVolumes[band]
+            leaves[band] = leafDocuments[band].map { group, byLeaf in
+                (group, byLeaf
+                    .map { ArchivalClassLeaf(
+                        key: $0.key, documents: $0.value,
+                        volumes: volumesByLeaf[group]?[$0.key]?.count ?? 0) }
+                    // Heaviest first, then by key: a total order, so the expansion a reader sees
+                    // is the same on every launch.
+                    .sorted { $0.documents != $1.documents ? $0.documents > $1.documents
+                                                           : $0.key < $1.key })
+            }.reduce(into: [String: [ArchivalClassLeaf]]()) { $0[$1.0] = $1.1 }
+        }
+        return (volumeCounts, leaves)
     }
 
     /// Folds one usage vocabulary's rows into per-band document totals, returning the matching
@@ -262,14 +395,38 @@ struct ArchivalCollectionsData: Sendable {
                 // Every class key is a heading inside the State Department's own central
                 // filing system, so the whole lens is one colour. It is not "other".
                 return ArchivalRankingRow(id: key, label: key, name: key,
-                                          category: .stateDepartment, value: value)
+                                          category: .stateDepartment, value: value,
+                                          leaves: classLeaves[band.index][key] ?? [])
             }
         }
 
-        return ArchivalRanking(rows: Self.disambiguate(Array(rows), records: records),
+        let labelled = Self.disambiguate(Array(rows), records: records)
+        return ArchivalRanking(rows: labelled,
                                hiddenUmbrellaValue: (hiddenValue ?? 0) > 0 ? hiddenValue : nil,
                                unitsReached: ranked.count,
-                               bandVolumeCount: bandVolumeCounts[band.index])
+                               bandVolumeCount: bandVolumeCounts[band.index],
+                               bandNoteCount: bandNoteCounts[band.index],
+                               shownValue: labelled.reduce(0) { $0 + $1.value })
+    }
+
+    /// Documents one lens reaches in a band, across every unit — the numerator behind "how much
+    /// of this era's sourcing does this lens even see".
+    ///
+    /// Not a share on its own: a source note can name a collection *and* a central-file number,
+    /// so the two lenses' reaches overlap and must never be added or subtracted. It is used only
+    /// to decide whether the *other* lens would show a reader materially more of the same band,
+    /// which is the one comparison the overlap does not spoil.
+    func reach(band: ArchivalEraBand, lens: ArchivalUnitLens) -> Int {
+        let table = lens == .namedCollections
+            ? collectionDocuments[band.index]
+            : classDocuments[band.index]
+        return table.values.reduce(0, +)
+    }
+
+    /// Source notes scanned across a band's volumes, or `nil` when the usage index is absent.
+    func noteCount(band: ArchivalEraBand) -> Int? {
+        let count = bandNoteCounts[band.index]
+        return count > 0 ? count : nil
     }
 
     // MARK: - Label disambiguation
@@ -304,7 +461,8 @@ struct ArchivalCollectionsData: Sendable {
             if used.contains(label) { label = "\(row.name) · \(row.id)" }
             used.insert(label)
             return ArchivalRankingRow(id: row.id, label: label, name: row.name,
-                                      category: row.category, value: row.value)
+                                      category: row.category, value: row.value,
+                                      leaves: row.leaves)
         }
     }
 

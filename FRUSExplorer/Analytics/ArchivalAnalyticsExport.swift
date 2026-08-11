@@ -46,6 +46,7 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///   1.0 — Session 2026-08-09: #787
 ///   1.1 — Session 2026-08-10: #832 — `lifecycles` retired with its card, `collectionTimeline`
 ///          added for the collection record's Cited Over Time chart
+///   1.2 — Session 2026-08-10: #826 — the ranking states its class grain and its denominator
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -53,6 +54,18 @@ enum ArchivalAnalyticsExport {
     static var baseCaveat: String {
         String(localized: "archival.export.caveat.base",
                defaultValue: "Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. So they record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.")
+    }
+
+    /// What the class lens's one grain is, and what it costs.
+    ///
+    /// The corpus cites two filing systems through one grammar, and until #826 the ranking mixed
+    /// them: a decimal row was a whole class, a subject-numeric row one country's slice of one.
+    /// Folding to category+number is owner decision **D-3**'s grain and the one the co-citation
+    /// network already used — but it hides the designator a reader writes on a pull slip, so the
+    /// export says the fold happened and the app offers the leaves.
+    static var grainCaveat: String {
+        String(localized: "archival.export.caveat.grain",
+               defaultValue: "Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), because at full length half of them carry a single document. A grouped row's own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.")
     }
 
     /// The Collections ranking's statement.
@@ -67,7 +80,8 @@ enum ArchivalAnalyticsExport {
     ///   - indexedVolumeCount: Volumes indexed on this device.
     static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
                         hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
-                        indexedVolumeCount: Int) -> AnalyticsProvenance {
+                        indexedVolumeCount: Int, noteCount: Int = 0,
+                        shownValue: Int = 0) -> AnalyticsProvenance {
         var caveats = [baseCaveat, weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
             caveats.append(String(format: String(
@@ -79,6 +93,18 @@ enum ArchivalAnalyticsExport {
             localized: "archival.export.caveat.scope %lld %lld",
             defaultValue: "Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at least one document under the current unit and weight."),
             Int64(bandVolumeCount), Int64(unitsReached)))
+        if lens == .centralFileClasses {
+            caveats.append(grainCaveat)
+        }
+        // Only under the documents weight: a "rows account for N of M" sentence over a volume
+        // count and a note total is the units error `ArchivalRanking.shownShare(weight:)`
+        // refuses on screen, and a CSV outlives the screen that produced it.
+        if noteCount > 0, weight == .documents {
+            caveats.append(String(format: String(
+                localized: "archival.export.caveat.denominator %lld %lld",
+                defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
+                Int64(noteCount), Int64(shownValue)))
+        }
         return AnalyticsProvenance(
             figureTitle: String(format: String(localized: "archival.export.title.ranking %@ %@",
                                                defaultValue: "%1$@ by era — %2$@"),
