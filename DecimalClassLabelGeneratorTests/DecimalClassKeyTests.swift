@@ -288,10 +288,16 @@ struct NestedSubjectTests {
         // Class 7's bare children belong to the whole numbers heading them — `.01` sits under
         // `701 Diplomatic representation`, meaning `701.01`, not "suffix .01 of any country" — and
         // the manual's own country list at the back prints `51 France.` in the same shape.
+        // The prose line is verbatim: class 7 lists the treaty classes that fall elsewhere, so
+        // `Class 8.` appears as a sentence a hundred lines above the division it names. A heading
+        // is the bare form on a line of its own, which is why the pattern is anchored at both ends.
         let text = """
             Class 7
             701 Diplomatic representation.
             .01 Right of residence, transit, ect.
+            Class 6. Commercial treaties, conventions, commercial and trade agreements.
+            Class 8. Parcel post and money order conventions; tenure of real property.
+            8**.99 Not the class-8 division.
             Class 8
             8**.00 Political affairs.
             .001 Chief executive. Sovereign.
@@ -304,8 +310,13 @@ struct NestedSubjectTests {
             which the manual does not say.
             """)
         #expect(body.contains("Not a subject at all") == false)
+        #expect(body.contains("Not the class-8 division") == false, """
+            `Class 8. Parcel post and money order conventions;` is a sentence inside class 7's \
+            body naming where certain treaties are filed, not the heading of class 8's division.
+            """)
         let subjects = DecimalClassLabelRunner.nestedSubjects(text, ofClass: "8")
         #expect(subjects["01"] == nil)
+        #expect(subjects["99"] == nil)
         #expect(subjects["001"] == "Chief executive. Sovereign")
         #expect(subjects["0999"] == nil, "the body ends where the country table begins")
         #expect(DecimalClassLabelRunner.classBody(text, ofClass: "9") == nil,
