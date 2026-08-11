@@ -7425,14 +7425,45 @@ public actor IndexingPipeline {
 
     // MARK: - Shared match-clause builders (per-tap queries + batched counts)
 
-    /// The four boundary-gated LIKE patterns for a decimal / subject-numeric class
-    /// leaf (exact, token, subdivision, dotted subdivision) — shared verbatim by
-    /// `relatedByDecimalClass` and the batched `archivalNeighborCounts` so the badge
+    /// The boundary-gated LIKE patterns for a decimal / subject-numeric class leaf — shared
+    /// verbatim by `relatedByDecimalClass` and the batched `archivalNeighborCounts` so the badge
     /// and the opened sheet count the same rows. `nil` for an empty key.
-    nonisolated private static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
+    ///
+    /// ## Why the hyphen branch is decimal-only (#841)
+    /// A **subject-numeric** key is folded for display by
+    /// `CollectionKeying.subjectNumericGroup`, whose regex is greedy over the hyphenated number:
+    /// `POL 27-14 VIET` folds to `POL 27-14`, a family of its own. The `key + "-%"` pattern here
+    /// disagreed with that — the SQL family for `POL 27` swallowed `POL 27-14 VIET`, so a row
+    /// labelled 1,090 documents opened a document set drawn from a strictly wider population.
+    /// Measured before the fix: 38 of the 102 class rows the ranking draws, with `POL 15`
+    /// sweeping 73 keys the fold assigns elsewhere, and `POL 27-14` alone worth 220 documents in
+    /// one band.
+    ///
+    /// The owner's decision is that the **fold** is the definition and the query follows it, so
+    /// a subject-numeric key no longer matches its hyphenated sub-numbers. Nothing is lost: those
+    /// sub-numbers are their own rows, reachable in their own right.
+    ///
+    /// A **decimal** file number keeps the hyphen branch. It is not folded, so no second
+    /// definition exists to disagree with, and the corpus writes `611.51-A` style subdivisions
+    /// that a reader asking for `611.51` means to include.
+    ///
+    /// ## The residue, which is bounded rather than excused
+    /// The fold's regex requires two-to-six category letters, so the ten single-letter `E …`
+    /// keys in the shipped vocabulary cannot be parsed and each becomes its own group. Two of
+    /// them are prefixes of others, and the space branch — the one that finds `POL 27 VIET S`
+    /// under `POL 27` — therefore still matches across them: `E 1` reaches `E 1 JAPAN-US` and
+    /// `E 1 US`. Exactly those two, pinned as a set by `ClassFamilyDefinitionTests`, so a new
+    /// leak from either definition fails a test rather than going unnoticed.
+    /// Internal rather than private so the family definition can be driven directly: it is the
+    /// half of #841 that a source scan cannot check, since the defect was which *rows* matched.
+    nonisolated static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
         guard !key.isEmpty else { return nil }
         let esc = likeEscaped(key)
-        return [esc, esc + " %", esc + "-%", esc + ".%"]
+        var patterns = [esc, esc + " %", esc + ".%"]
+        if !CollectionKeying.isSubjectNumericClass(key) {
+            patterns.append(esc + "-%")
+        }
+        return patterns
     }
 
     /// The presidential-library `WHERE` over `document_sources ds` — library keyword
