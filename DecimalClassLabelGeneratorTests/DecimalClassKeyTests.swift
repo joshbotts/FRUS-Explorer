@@ -141,3 +141,190 @@ struct DecimalClassKeyTests {
         }
     }
 }
+
+// MARK: - NestedSubjectTests
+
+/// The class-8 subdivision tree — the children the manual writes without repeating their class
+/// (#828 follow-up).
+///
+/// These drive the real parser over hand-built manual text rather than asserting against the
+/// shipped artifact, so each trap is pinned by the shape that causes it. Every fixture below is
+/// transcribed from the 1910–49 manual; the line numbers in the comments are its own.
+@Suite("Decimal class labels — nested class-8 subjects")
+struct NestedSubjectTests {
+
+    /// Wraps `body` in the heading and terminator `classBody` looks for.
+    private func manual(_ body: String) -> String {
+        "Class 7\n700 Political relations of states.\nClass 8\nInternal Affairs of States\n"
+            + body + "\nCountry Numbers\n51 France.\n"
+    }
+
+    @Test("A bare child inherits the class from the stem above it")
+    func childrenInheritTheClass() {
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.42 Education.
+            .421 Academic.
+            .4211 Popular.
+            .428 Libraries.
+            """), ofClass: "8")
+        #expect(subjects["42"] == "Education")
+        #expect(subjects["421"] == "Academic", """
+            The manual states the class once and prints the tree beneath it bare. A pattern \
+            demanding `8**.` on every entry sees 61 of several hundred.
+            """)
+        #expect(subjects["4211"] == "Popular")
+        #expect(subjects["428"] == "Libraries")
+    }
+
+    @Test("A cross-reference is not a definition")
+    func crossReferencesAreNotDefinitions() {
+        // The failure that killed the first attempt at this: splitting the text at every suffix
+        // occurrence turns each mid-entry pointer into a fragment whose remainder is the NEXT
+        // entry's prose, and first-writer-wins locks it in — `8**.42` came back as "Division of
+        // Trade Agreements". Anchoring at the line start is what removes the failure mode.
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.42 Education.
+            For apprenticeship, see 8**.605 Trades.
+            .421 Academic.
+            For armament control, United States, see 711.00111 Armament control.
+            visa fees are recorded as 811.11101 Waivers ††.
+            """), ofClass: "8")
+        #expect(subjects["42"] == "Education")
+        #expect(subjects["421"] == "Academic")
+        #expect(subjects["605"] == nil, "a pointer to another entry states nothing about this one")
+        #expect(subjects["00111"] == nil)
+        #expect(subjects["11101"] == nil)
+    }
+
+    @Test("A country-scoped stem does not lend its children to every country")
+    func countryScopedBlock() {
+        // `800.88` is Foreign carrying trade of country 00, The World, and the eight route termini
+        // beneath it are its subdivisions — not suffix `.8810` of any country. Inherited by the
+        // class they would gloss `862.8810` as Germany's North America.
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.86 Seamen.
+            .867 Relief.
+            800.88 Foreign carrying trade.
+            .8810 North America.
+            .8840 Europe.
+            8**.90 Other internal affairs.
+            .911 Newspapers.
+            """), ofClass: "8")
+        #expect(subjects["867"] == "Relief")
+        #expect(subjects["8810"] == nil, """
+            A subdivision of one country's file is not a subdivision of the class. The block runs \
+            until the next `8**.` stem.
+            """)
+        #expect(subjects["8840"] == nil)
+        #expect(subjects["911"] == "Newspapers", "the next stem reopens the class")
+    }
+
+    @Test("The facing column, welded on by the scan, is cut or the entry is dropped")
+    func columnBleed() {
+        // Transcribed verbatim. Four left-column entries with a right-column note run into them;
+        // "Patents is sought" is the kind of confident nonsense this table must not print.
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.54 Intellectual and industrial property.
+            .541 Industrial property. ** Country in which protection
+            .542 Patents is sought. For treaties, conventions,
+            .543 Trade-marks. Trade names. arrangements, ect., add country number ††,
+            .544 Copyrights. using smaller number of country for **.
+            """), ofClass: "8")
+        for suffix in ["541", "542", "543"] {
+            #expect(subjects[suffix] == nil, "\(suffix) shipped the facing column's note")
+        }
+        #expect(subjects["544"] == "Copyrights", """
+            This one ends in a full stop and is still two columns; a sentence resuming in LOWER \
+            CASE is the second column starting.
+            """)
+    }
+
+    @Test("A wrapped entry takes its tail; a new sentence below it does not")
+    func wrappedEntries() {
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.04 Judicial branch of Government.
+            .0492 Requirements of country ** regarding authentication of documents for
+            use therein.
+            .512 Taxation
+            Processing tax.
+            """), ofClass: "8")
+        #expect(subjects["0492"]?.hasSuffix("use therein") == true, """
+            A wrapped phrase resumes in lower case, which is what separates it from a \
+            sub-descriptor of the entry above.
+            """)
+        #expect(subjects["512"] == nil, """
+            `Processing tax.` is a descriptor under Taxation, not the rest of its name. Joining it \
+            would read "Taxation Processing tax"; the manual left the entry unpunctuated and the \
+            table stays silent rather than guessing which it is.
+            """)
+    }
+
+    @Test("A gloss that begins with a number is dropped")
+    func splitNumbers() {
+        // The scan puts a space inside some numbers. Filed as written, suffix `42` takes the gloss
+        // "31 Engineering" and overwrites Education with a fragment; which of the two numbers is
+        // the real suffix cannot be recovered from the line.
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.40 Social matters.
+            .42 31 Engineering.
+            .4232 Manual training.
+            """), ofClass: "8")
+        #expect(subjects["42"] == nil)
+        #expect(subjects["4232"] == "Manual training")
+    }
+
+    @Test("An OCR mark before the number is tolerated; a word before it is not")
+    func leadingJunk() {
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            ]8**.77 Railway.
+            See also 8**.775 Accidents.
+            """), ofClass: "8")
+        #expect(subjects["77"] == "Railway", "`]8**.77 Railway.` is how the scan renders the stem")
+        #expect(subjects["775"] == nil, "a `See also` line is prose, whatever it points at")
+    }
+
+    @Test("The scan stops at the class body's edges")
+    func bodyIsBounded() throws {
+        // Class 7's bare children belong to the whole numbers heading them — `.01` sits under
+        // `701 Diplomatic representation`, meaning `701.01`, not "suffix .01 of any country" — and
+        // the manual's own country list at the back prints `51 France.` in the same shape.
+        let text = """
+            Class 7
+            701 Diplomatic representation.
+            .01 Right of residence, transit, ect.
+            Class 8
+            8**.00 Political affairs.
+            .001 Chief executive. Sovereign.
+            Country Numbers
+            .0999 Not a subject at all.
+            """
+        let body = try #require(DecimalClassLabelRunner.classBody(text, ofClass: "8"))
+        #expect(body.contains("Right of residence") == false, """
+            Class 7's subdivisions would gloss `761.01` as the Soviet Union's right of residence, \
+            which the manual does not say.
+            """)
+        #expect(body.contains("Not a subject at all") == false)
+        let subjects = DecimalClassLabelRunner.nestedSubjects(text, ofClass: "8")
+        #expect(subjects["01"] == nil)
+        #expect(subjects["001"] == "Chief executive. Sovereign")
+        #expect(subjects["0999"] == nil, "the body ends where the country table begins")
+        #expect(DecimalClassLabelRunner.classBody(text, ofClass: "9") == nil,
+                "the 1910–49 schedule has no class 9")
+    }
+
+    @Test("A second country in the suffix is a compound key, not a subject")
+    func compoundKeysRefused() {
+        let subjects = DecimalClassLabelRunner.nestedSubjects(manual("""
+            8**.04 Judicial branch of Government.
+            .045 Procurement of evidence.
+            .045†† Procurement of evidence from country †† for use in country **.
+            .†† 62 Patents.
+            """), ofClass: "8")
+        #expect(subjects["045"] == "Procurement of evidence")
+        #expect(subjects["045††"] == nil)
+        #expect(subjects.keys.contains { $0.contains("†") } == false, """
+            A `††` suffix names a second country, so the key it belongs to is `8**.045††` — a \
+            shape this table's one-suffix lookup cannot express.
+            """)
+    }
+}

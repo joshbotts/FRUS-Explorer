@@ -65,7 +65,11 @@ public enum DecimalClassLabelRunner {
                    // through 800 and the string "900" appears nowhere in the manual — the class
                    // arrives with the 1950 renumbering, as "Other Internal Affairs". A floor of
                    // ten here would reject a complete parse of a complete source.
-                   minClasses: 9, minSubjects: 60),
+                   // 693 subject suffixes parse: 62 stems plus 631 nested subdivisions. The floor
+                   // sits just under that rather than at the old 60, because 60 is met by the
+                   // stem pass ALONE — a nested pass that silently stopped matching would leave a
+                   // table that still passes, still ships, and still labels `812.6363` "Mexico".
+                   minClasses: 9, minSubjects: 650),
             Source(id: "1950-1959", start: 1950, end: 1959, countryColumn: 1,
                    manualPath: path("MANUAL_1950_59", downloads + "/manual-1950-59.pdf"),
                    title: "Records Codification Manual, Department of State "
@@ -87,7 +91,22 @@ public enum DecimalClassLabelRunner {
         for source in sources {
             let text = try plainText(of: source.manualPath)
             let classes = parseClasses(text)
-            let subjects = parseSubjects(text)
+            var subjects = parseSubjects(text)
+            // The stem pass runs FIRST so the 62 entries it already ships keep their values
+            // exactly, and the nested pass adds only suffixes it left unclaimed.
+            //
+            // 1910–49 ONLY. The nested idiom is a property of a manual's typography, not of the
+            // decimal file, and the two later manuals have neither been read nor measured — run
+            // blind against them this pass yields 507 and 311 further suffixes, numbers that mean
+            // nothing until someone has looked at what they say. Those schedules are skipped
+            // below for unrelated reasons, so admitting the pass would cost nothing today and
+            // ship silently the moment either one starts parsing.
+            if source.id == "1910-1949" {
+                for (suffix, gloss) in nestedSubjects(text, ofClass: "8")
+                where subjects["8"]?[suffix] == nil {
+                    subjects["8", default: [:]][suffix] = gloss
+                }
+            }
             let era = countries.compactMapValues { $0.codes[source.countryColumn] }
             // Several names legitimately share one code — 65 is both `Italy` and `Rhodes Island`,
             // because Italy held the Dodecanese for the period this schedule covers. First-wins
@@ -166,7 +185,13 @@ public enum DecimalClassLabelRunner {
                 + "carries the title of the document it was read from. The classification was "
                 + "RENUMBERED in 1950 — class 7 is Political Relations of States before that date "
                 + "and Internal Political and National Defense Affairs after it — so a key resolves "
-                + "only against the schedule governing its own era.",
+                + "only against the schedule governing its own era. Class 8's subject suffixes run "
+                + "the manual's full subdivision tree (`.6363 Petroleum` beneath `.636 Carbon. "
+                + "Graphite` beneath `.63 Mines. Mining`); classes 6 and 7 carry only the stems "
+                + "they state outright, because their own subdivisions name a second country and "
+                + "are compound keys this table does not express. A gloss is the manual's wording "
+                + "and is not unique — `.711` and `.731` are both Laws and regulations, of postal "
+                + "and of cable service — so it supplements the key rather than replacing it.",
             schedules: schedules)
 
         let encoder = JSONEncoder()
@@ -263,7 +288,13 @@ public enum DecimalClassLabelRunner {
         }
     }
 
-    /// `"8"` → (`"72"` → `"Telegraph"`), from the manual's `N**.NN` subdivision entries.
+    /// `"8"` → (`"72"` → `"Telegraph"`), from the manual's `N**.NN` STEM entries.
+    ///
+    /// Every entry this pass finds spells its class out, which is how the manual writes the top of
+    /// each subdivision and nothing else — the tree beneath a stem drops the class and is read by
+    /// ``nestedSubjects(_:ofClass:)`` instead. The two are kept apart because this one scans the
+    /// whole document (it is the only route to class 6's single stem, stated outside any class
+    /// body) while the nested pass is bounded to one class and cannot be.
     private static func parseSubjects(_ text: String) -> [String: [String: String]] {
         var result: [String: [String: String]] = [:]
         let pattern = #"(\d)\s*\*\s*\*\s*\.\s*(\d{2,5})\s+([A-Z][^\n]{3,80})"#
@@ -278,6 +309,185 @@ public enum DecimalClassLabelRunner {
             if result[digit]?[suffix] == nil { result[digit, default: [:]][suffix] = cleaned }
         }
         return result
+    }
+
+    /// The subdivisions a class body writes WITHOUT repeating the class — `.421 Academic.`
+    /// beneath `8**.42 Education.` — added to `subjects` under `digit`.
+    ///
+    /// ## Why the class has to be carried forward
+    /// ``parseSubjects`` demands a literal `8**.` on every entry, which is how the manual writes a
+    /// stem and how it writes nothing else. The tree below each stem drops the class and the
+    /// country and prints the suffix alone, so a pattern requiring the prefix sees 61 entries
+    /// where the class has several hundred. Carrying the class digit forward from the last stem is
+    /// the whole of the fix.
+    ///
+    /// ## The scan is LINE-ANCHORED, and that is what makes it safe
+    /// The manual writes cross-references mid-entry — "For apprenticeship, see 8**.605", "…are
+    /// carried in 8**.46" — and an earlier attempt at this split the text at every suffix
+    /// occurrence, which turned each pointer into a fragment whose remainder was the *next* entry's
+    /// prose: `8**.42` came back as "Division of Trade Agreements". Measured over the class-8 body,
+    /// **not one** of its 755 subdivision lines is a cross-reference and **not one** cross-reference
+    /// begins a line, so anchoring at the line start removes the entire failure mode rather than
+    /// guarding against it. Only four lines in the body carry anything before a suffix-shaped
+    /// token, and three of them are exactly that kind of prose (`For armament control, United
+    /// States, see 711.00111 Armament control.`); the fourth is `]8**.77 Railway.`, an OCR bracket,
+    /// which is why one leading mark is tolerated and a leading *word* is not.
+    ///
+    /// ## Class 8 only, and the reason is in the other two classes' grammar
+    /// Classes 6 and 7 are country-arranged too, but neither writes a general bare suffix:
+    /// - Class 7's bare children belong to the *whole numbers* that head them — `.01 Right of
+    ///   residence` sits under `701 Diplomatic representation`, meaning `701.01`, not "suffix .01
+    ///   of any country". Filed as a class-7 subject it would gloss `761.01` as the Soviet Union's
+    ///   right of residence, which the manual does not say. Its genuinely general subdivisions all
+    ///   carry the second-country marker (`.††11 War. Peace. Friendship.`) and so are compound
+    ///   keys this table's one-suffix lookup cannot express.
+    /// - Class 6's subdivisions are `††`-marked throughout, importing country against exporting.
+    ///
+    /// So the nested idiom is class 8's, and running the pass anywhere else would invent readings.
+    ///
+    /// - Parameters:
+    ///   - text: The whole manual.
+    ///   - digit: The class whose body to walk.
+    /// - Returns: `suffix` → gloss for every subdivision the body states in its own right.
+    static func nestedSubjects(_ text: String, ofClass digit: String) -> [String: String] {
+        guard let body = classBody(text, ofClass: digit) else { return [:] }
+        // One optional leading mark for the OCR bracket; a `**` stem, a country-scoped stem, or a
+        // bare child. The suffix is digits-then-alphanumerics so `.00B` and `.77A` survive while
+        // `.††62` and `.58**` — compound keys naming a second country — do not.
+        let lead = #"^[^\p{L}\p{N}\s.]?\s*"#
+        guard let stem = try? NSRegularExpression(
+                pattern: lead + #"(\d)\.?\*\*\.\s*(\d[0-9A-Za-z]*)\s+(\S.*)$"#),
+              let scoped = try? NSRegularExpression(pattern: lead + #"\d{2,3}\.\s*\d"#),
+              let child = try? NSRegularExpression(
+                pattern: lead + #"\.\s*(\d[0-9A-Za-z]*)\s+(\S.*)$"#)
+        else { return [:] }
+
+        var result: [String: String] = [:]
+        // `nil` while a country-scoped block is open. The body carries exactly one — `800.88
+        // Foreign carrying trade.` with eight route termini under it (`.8810 North America.`) —
+        // and those are subdivisions of country 00, The World, not of every country. Inherited by
+        // the class they would gloss `862.8810` as Germany's North America, a reading the manual
+        // does not make. The block ends at the next `8**.` stem.
+        var current: String?
+        let lines = body.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        for (index, line) in lines.enumerated() where !line.isEmpty {
+            let range = NSRange(line.startIndex..., in: line)
+            func group(_ match: NSTextCheckingResult, _ index: Int) -> String {
+                Range(match.range(at: index), in: line).map { String(line[$0]) } ?? ""
+            }
+            // A wrapped entry's tail, when there is one. The manual ends every finished entry with
+            // a full stop, so an entry lacking one ran past its line — and a WRAPPED PHRASE
+            // RESUMES IN LOWER CASE (`use therein.`, `philanthropic organizations.`) where a
+            // sub-descriptor of the entry above starts a new capitalised sentence (`Processing
+            // tax.`). Joining on that test recovers five truncated entries and refuses the one
+            // case where the following line belongs to a second column instead
+            // (`.796104 Inspection. ** Country of regulation,` / `Airworthiness certificates.
+            // Wireless. not nationality of aircraft.`).
+            let next = index + 1 < lines.count ? lines[index + 1] : ""
+            let continuation = next.first?.isLowercase == true
+                && child.firstMatch(in: next, range: NSRange(next.startIndex..., in: next)) == nil
+                ? next : nil
+
+            if let match = stem.firstMatch(in: line, range: range) {
+                current = group(match, 1)
+                file(suffix: group(match, 2), gloss: group(match, 3), continuation: continuation,
+                     under: current, digit: digit, into: &result)
+            } else if scoped.firstMatch(in: line, range: range) != nil {
+                current = nil
+            } else if let match = child.firstMatch(in: line, range: range) {
+                file(suffix: group(match, 1), gloss: group(match, 2), continuation: continuation,
+                     under: current, digit: digit, into: &result)
+            }
+        }
+        return result
+    }
+
+    /// Files one subdivision, or drops it when the entry is not a definition this table can state.
+    ///
+    /// ## An entry the manual did not finish is not a label
+    /// Every finished entry ends in a full stop. One that does not either wrapped — in which case
+    /// `continuation` carries its tail — or ran into the facing column, and the two are not
+    /// distinguishable from the fragment alone. So an entry still unterminated after the join is
+    /// **dropped**, which is what stops these four from shipping:
+    /// ```
+    /// .541 Industrial property. ** Country in which protection
+    /// .542 Patents is sought. For treaties, conventions,
+    /// .543 Trade-marks. Trade names. arrangements, ect., add country number ††,
+    /// .796104 Inspection. ** Country of regulation,
+    /// ```
+    /// Every one of those is a left-column entry with a right-column note welded to it, and
+    /// "Patents is sought" is the kind of confident nonsense this table exists not to print. The
+    /// same rule costs four entries the manual states perfectly well but forgot to punctuate
+    /// (`.512 Taxation`, `.4511 Dress`, `.61345 Soya beans`, `.2222F Foreign Nationals`); their
+    /// keys render bare, which is the designed outcome for anything uncertain.
+    ///
+    /// ## Where the bleed survives punctuation, it is cut
+    /// `.544 Copyrights. using smaller number of country for **.` ends in a full stop and is still
+    /// two columns. A sentence that resumes in LOWER CASE is the second column starting, and so is
+    /// a `**`/`††` marker followed by a capital — while `country **` mid-phrase, which the manual
+    /// writes constantly for the subject country, is followed by a lower-case word and is left
+    /// alone.
+    ///
+    /// ## The gloss must begin with a letter
+    /// The scan puts a space inside some numbers — `.42 31 Engineering` where the manual prints
+    /// `.4231` — and without this rule the suffix `42` is filed with the gloss "31 Engineering",
+    /// overwriting `Education` with a fragment. There is no way to tell which of the two numbers
+    /// is the real suffix, so the line is dropped.
+    private static func file(suffix: String, gloss: String, continuation: String?,
+                             under classDigit: String?, digit: String,
+                             into result: inout [String: String]) {
+        guard classDigit == digit, result[suffix] == nil else { return }
+        var text = gloss.trimmingCharacters(in: .whitespaces)
+        if !isFinished(text), let continuation { text += " " + continuation }
+        guard isFinished(text) else { return }
+        let cleaned = trimGloss(despace(columnCut(text)))
+        guard let first = cleaned.first, first.isLetter, first.isUppercase,
+              cleaned.count >= 3, cleaned.count <= 90
+        else { return }
+        result[suffix] = cleaned
+    }
+
+    /// Whether an entry's text ends where the manual ends one — a full stop, possibly inside a
+    /// closing bracket (`Socialism. … (I.W.W.)`, `Corn (maize.)`).
+    private static func isFinished(_ text: String) -> Bool {
+        var tail = text.trimmingCharacters(in: .whitespaces)
+        while tail.hasSuffix(")") { tail.removeLast() }
+        return tail.hasSuffix(".")
+    }
+
+    /// Cuts a gloss where the facing column's text was welded onto it.
+    private static func columnCut(_ text: String) -> String {
+        var gloss = text
+        for pattern in [#"\s(?:\*\*|††)\s+\p{Lu}"#, #"\.\s+\p{Ll}"#] {
+            if let range = gloss.range(of: pattern, options: .regularExpression) {
+                gloss = String(gloss[..<range.lowerBound])
+            }
+        }
+        return gloss
+    }
+
+    /// The text of one class's division, from its heading to the next class's or the country list.
+    ///
+    /// Bounded because the manual reuses the shape everywhere else: its own country list prints
+    /// `51 France.` and its prose prints `Class 6. Commercial treaties…`, so the heading pattern is
+    /// the bare form (`Class 8`, `Class 0.`) on a line of its own, and the body stops at whichever
+    /// comes first of the next heading and the `Country Numbers` table that closes the volume.
+    static func classBody(_ text: String, ofClass digit: String) -> Substring? {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        func heading(_ line: Substring) -> String? {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.range(of: #"^Class \d\.?$"#, options: .regularExpression) != nil,
+                  let value = trimmed.dropFirst(6).first
+            else { return nil }
+            return String(value)
+        }
+        guard let start = lines.firstIndex(where: { heading($0) == digit }) else { return nil }
+        let end = lines[lines.index(after: start)...].firstIndex {
+            let trimmed = $0.trimmingCharacters(in: .whitespaces)
+            return (heading($0).map { $0 != digit } ?? false) || trimmed == "Country Numbers"
+        } ?? lines.endIndex
+        return lines[lines.index(after: start)..<end].joined(separator: "\n")[...]
     }
 
     /// The three-era country table: name → the codes for 1910–49, 1950–59, 1960–63.
@@ -350,9 +560,6 @@ public enum DecimalClassLabelRunner {
                 // a code that BEGINS mid-period cannot be in the earliest column, so right-
                 // alignment removes possibilities rather than inventing one.
                 ambiguous += 1
-                return
-            }
-            if false {
                 return
             }
             let name = row.name
