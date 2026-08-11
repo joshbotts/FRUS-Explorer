@@ -8,7 +8,7 @@
 
 import Testing
 import Foundation
-@testable import SeriesCreatorIndexGeneratorCore
+@testable import SeriesFactsIndexGeneratorCore
 import LotClaimantsIndexGeneratorCore
 
 // MARK: - DisplayHeadingTests
@@ -32,8 +32,8 @@ struct DisplayHeadingTests {
              "Department of State. Bureau of European Affairs."),
         ]
         for (raw, expected) in cases {
-            #expect(SeriesCreatorIndexRunner.displayHeading(raw) == expected,
-                    "\(raw) → \(SeriesCreatorIndexRunner.displayHeading(raw))")
+            #expect(SeriesFactsIndexRunner.displayHeading(raw) == expected,
+                    "\(raw) → \(SeriesFactsIndexRunner.displayHeading(raw))")
         }
     }
 
@@ -47,8 +47,8 @@ struct DisplayHeadingTests {
             ("Department of State. Office of the Staff Director. (1969 - 1974 ?)",
              "Department of State. Office of the Staff Director."),
         ] {
-            #expect(SeriesCreatorIndexRunner.displayHeading(raw) == expected,
-                    "\(raw) → \(SeriesCreatorIndexRunner.displayHeading(raw))")
+            #expect(SeriesFactsIndexRunner.displayHeading(raw) == expected,
+                    "\(raw) → \(SeriesFactsIndexRunner.displayHeading(raw))")
         }
     }
 
@@ -59,30 +59,30 @@ struct DisplayHeadingTests {
         // end-anchored pattern's reach — so this is a guard against a future harvest, and it is
         // the reason the rule is not simply "a parenthetical containing a year".
         let raw = "President (1945-1953 : Truman)"
-        #expect(SeriesCreatorIndexRunner.displayHeading(raw) == raw, """
+        #expect(SeriesFactsIndexRunner.displayHeading(raw) == raw, """
             Stripping this collapses four presidencies into a bare "President". Got \
-            \(SeriesCreatorIndexRunner.displayHeading(raw)).
+            \(SeriesFactsIndexRunner.displayHeading(raw)).
             """)
-        #expect(SeriesCreatorIndexRunner.isIdentityParenthetical("1945-1953 : Truman"))
-        #expect(!SeriesCreatorIndexRunner.isIdentityParenthetical("10/12/1917 - 06/30/1919"))
+        #expect(SeriesFactsIndexRunner.isIdentityParenthetical("1945-1953 : Truman"))
+        #expect(!SeriesFactsIndexRunner.isIdentityParenthetical("10/12/1917 - 06/30/1919"))
     }
 
     @Test("A mid-heading parenthetical is untouched — only the tail is a lifespan")
     func onlyTheTailIsStripped() {
         let raw = "President (1945-1953 : Truman). White House Office. (1945 - 1953)"
-        #expect(SeriesCreatorIndexRunner.displayHeading(raw)
+        #expect(SeriesFactsIndexRunner.displayHeading(raw)
                 == "President (1945-1953 : Truman). White House Office.")
     }
 
     @Test("Whitespace is normalised, and a heading without a tail is untouched")
     func idempotentOnCleanInput() {
-        #expect(SeriesCreatorIndexRunner.displayHeading("  Department of State.  ")
+        #expect(SeriesFactsIndexRunner.displayHeading("  Department of State.  ")
                 == "Department of State.")
         let clean = "Department of State. Bureau of Far Eastern Affairs."
-        #expect(SeriesCreatorIndexRunner.displayHeading(clean) == clean)
+        #expect(SeriesFactsIndexRunner.displayHeading(clean) == clean)
         // Applying it twice must not strip more.
-        #expect(SeriesCreatorIndexRunner.displayHeading(
-            SeriesCreatorIndexRunner.displayHeading("War Trade Board. (1917 - 1919)"))
+        #expect(SeriesFactsIndexRunner.displayHeading(
+            SeriesFactsIndexRunner.displayHeading("War Trade Board. (1917 - 1919)"))
                 == "War Trade Board.")
     }
 }
@@ -116,7 +116,7 @@ struct NAIDHarvestTests {
         }
         """)
         defer { try? FileManager.default.removeItem(at: url) }
-        let found = try SeriesCreatorIndexRunner.naIds(inJSONAt: url)
+        let found = try SeriesFactsIndexRunner.naIds(inJSONAt: url)
         #expect(found == ["12345", "6789", "388"], "got \(found.sorted())")
     }
 
@@ -124,7 +124,7 @@ struct NAIDHarvestTests {
     func emptyDocument() throws {
         let url = try writeJSON(#"{"lots": [], "note": "no ids here"}"#)
         defer { try? FileManager.default.removeItem(at: url) }
-        #expect(try SeriesCreatorIndexRunner.naIds(inJSONAt: url).isEmpty)
+        #expect(try SeriesFactsIndexRunner.naIds(inJSONAt: url).isEmpty)
     }
 }
 
@@ -140,18 +140,18 @@ struct NAIDHarvestTests {
 @Suite("Shipped series-creator index (#405)")
 struct ShippedArtifactTests {
 
-    private func loadShipped() throws -> SeriesCreatorIndexRunner.Index {
+    private func loadShipped() throws -> SeriesFactsIndexRunner.Index {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let url = root.appending(path: "FRUSExplorer/Resources/series-creator-index.json")
-        return try JSONDecoder().decode(SeriesCreatorIndexRunner.Index.self,
+        let url = root.appending(path: "FRUSExplorer/Resources/series-facts-index.json")
+        return try JSONDecoder().decode(SeriesFactsIndexRunner.Index.self,
                                         from: Data(contentsOf: url))
     }
 
     @Test("It carries the measured population")
     func measuredShape() throws {
         let index = try loadShipped()
-        #expect(index.schemaVersion == 1)
+        #expect(index.schemaVersion == 2, "schema 2 adds the #663 catalog facts")
         // Measured 2026-08-10 over the full harvest: 622 of 2,121 app-held series NAIDs carry a
         // creator. A floor, not equality — a re-harvest may add series — but a collapse is caught.
         #expect(index.byNaId.count >= 600, "series with a creator: \(index.byNaId.count)")
@@ -185,11 +185,88 @@ struct ShippedArtifactTests {
         #expect(withTail.isEmpty, "headings still carrying a lifespan: \(withTail.prefix(3))")
     }
 
+    @Test("The catalog facts are present at the measured rates")
+    func catalogFactsPopulated() throws {
+        let index = try loadShipped()
+        let rows = index.byNaId.values
+        // Measured 2026-08-10 over the 622 app-reachable series. Floors, since a re-harvest may
+        // move them — but each is near-universal, and a collapse would mean the shard reader
+        // stopped finding the field rather than NARA having stopped stating it.
+        #expect(rows.filter { $0.accessStatus != nil }.count >= 600, "accessStatus")
+        #expect(rows.filter { $0.useStatus != nil }.count >= 600, "useStatus")
+        #expect(rows.filter { $0.extent != nil }.count >= 600, "extent")
+        #expect(rows.filter { $0.referenceUnit != nil }.count >= 600, "referenceUnit")
+        #expect(rows.filter { $0.startYear != nil }.count >= 600, "startYear")
+        // Partial by nature — NARA lists a finding aid for a minority.
+        let aids = rows.filter { !($0.findingAids ?? []).isEmpty }.count
+        #expect(aids > 80 && aids < 300, "findingAids: \(aids)")
+        // numberingNote is NOT here on purpose: 1 of 622.
+    }
+
+    @Test("Every vocabulary index in the artifact is in bounds")
+    func vocabularyIndicesInBounds() throws {
+        let index = try loadShipped()
+        for (naId, row) in index.byNaId {
+            if let i = row.accessStatus {
+                #expect(index.statuses.indices.contains(i), "\(naId) accessStatus \(i)")
+            }
+            if let i = row.useStatus {
+                #expect(index.statuses.indices.contains(i), "\(naId) useStatus \(i)")
+            }
+            for i in row.accessRestrictions ?? [] {
+                #expect(index.restrictions.indices.contains(i), "\(naId) accessRestriction \(i)")
+            }
+            for i in row.useRestrictions ?? [] {
+                #expect(index.useRestrictions.indices.contains(i), "\(naId) useRestriction \(i)")
+            }
+            if let i = row.referenceUnit {
+                #expect(index.referenceUnits.indices.contains(i), "\(naId) referenceUnit \(i)")
+            }
+            for i in row.findingAids ?? [] {
+                #expect(index.findingAidTypes.indices.contains(i), "\(naId) findingAid \(i)")
+            }
+        }
+    }
+
+    @Test("The vocabularies are in sorted-NAID first-seen order, which is what makes the artifact stable")
+    func vocabularyOrderIsDeterministic() throws {
+        // The interners number each vocabulary in FIRST-SEEN order, so the order depends entirely
+        // on the order the rows are walked. The walk must be over sorted NAIDs: over a raw
+        // Dictionary it is unspecified, and every vocabulary would renumber between runs with no
+        // input having changed — a diff on every regeneration, hiding any real one.
+        //
+        // Checkable without the 4.5 GB harvest: replay the walk against the shipped artifact and
+        // confirm each vocabulary is first seen in ascending index order.
+        let index = try loadShipped()
+
+        func assertFirstSeenInOrder(
+            _ name: String, _ pick: (SeriesFactsIndexRunner.Entry) -> [Int]
+        ) {
+            var next = 0
+            for naId in index.byNaId.keys.sorted() {
+                guard let row = index.byNaId[naId] else { continue }
+                for i in pick(row) where i >= next {
+                    #expect(i == next, """
+                        \(name) index \(i) first appears at NAID \(naId) but \(next) had not \
+                        been seen yet — the row walk is not in sorted-NAID order, so this \
+                        vocabulary renumbers on every regeneration.
+                        """)
+                    next = max(next, i + 1)
+                }
+            }
+        }
+        assertFirstSeenInOrder("statuses") { [$0.accessStatus, $0.useStatus].compactMap { $0 } }
+        assertFirstSeenInOrder("restrictions") { $0.accessRestrictions ?? [] }
+        assertFirstSeenInOrder("useRestrictions") { $0.useRestrictions ?? [] }
+        assertFirstSeenInOrder("referenceUnits") { $0.referenceUnit.map { [$0] } ?? [] }
+        assertFirstSeenInOrder("findingAidTypes") { $0.findingAids ?? [] }
+    }
+
     @Test("It stays small enough to load eagerly")
     func staysKilobytes() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let url = root.appending(path: "FRUSExplorer/Resources/series-creator-index.json")
+        let url = root.appending(path: "FRUSExplorer/Resources/series-facts-index.json")
         let bytes = try Data(contentsOf: url).count
         #expect(bytes < 250_000, """
             \(bytes) bytes. The whole argument for a separate projection is that it is kilobytes \
@@ -236,7 +313,7 @@ struct PrimaryCreatorTests {
     func mostRecentWinsRegardlessOfOrder() throws {
         let creators = [try creator("Before.", "Predecessor"),
                         try creator("Now.", "Most Recent")]
-        #expect(SeriesCreatorIndexRunner.primaryCreator(from: creators)?.heading == "Now.", """
+        #expect(SeriesFactsIndexRunner.primaryCreator(from: creators)?.heading == "Now.", """
             Taking the first listed names a body that no longer held the records — the office \
             the reader would go looking for does not have them.
             """)
@@ -246,11 +323,67 @@ struct PrimaryCreatorTests {
     func untypedCreatorIsUsed() throws {
         // Measured: 1 of the 622 series carries a creator NARA gives no type (naId 2521222).
         let creators = [try creator("Unlabelled.", nil)]
-        #expect(SeriesCreatorIndexRunner.primaryCreator(from: creators)?.heading == "Unlabelled.")
+        #expect(SeriesFactsIndexRunner.primaryCreator(from: creators)?.heading == "Unlabelled.")
     }
 
     @Test("No creators means no creator, not a crash")
     func emptyIsNil() {
-        #expect(SeriesCreatorIndexRunner.primaryCreator(from: []) == nil)
+        #expect(SeriesFactsIndexRunner.primaryCreator(from: []) == nil)
+    }
+}
+
+// MARK: - RowBuildOrderTests
+
+/// That the row walk is deterministic (#663).
+///
+/// A mutation sweep unsorted the NAID walk and nothing failed — the artifact test reads the
+/// *committed* file, which a generator mutation leaves untouched, so the invariant was only
+/// checkable end-to-end against a 4.5 GB harvest. `buildRows` is extracted for exactly this.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #663 (F-7)
+@Suite("Row build order (#663)")
+struct RowBuildOrderTests {
+
+    private func creator(_ heading: String) throws -> HarvestShardReader.Record.Creator {
+        try JSONDecoder().decode(
+            HarvestShardReader.Record.Creator.self,
+            from: Data(#"{"heading":"\#(heading)","naId":"1","creatorType":"Most Recent"}"#.utf8))
+    }
+
+    private func facts(_ status: String) -> HarvestShardReader.Record.Facts {
+        .init(accessStatus: status, accessRestrictions: [], useStatus: nil, useRestrictions: [],
+              extent: nil, referenceUnit: nil, findingAids: [], startYear: nil, endYear: nil)
+    }
+
+    @Test("The vocabulary is numbered by sorted NAID, not by dictionary order")
+    func vocabularyFollowsSortedNAIDs() throws {
+        // Three NAIDs whose sorted order ("1","2","3") gives a DIFFERENT first-seen sequence from
+        // any other order: the statuses must come out A, B, C in that order.
+        let creators = ["1": [try creator("X.")], "2": [try creator("X.")], "3": [try creator("X.")]]
+        let f = ["1": facts("A"), "2": facts("B"), "3": facts("C")]
+        let built = SeriesFactsIndexRunner.buildRows(
+            creatorsByNaId: creators, factsByNaId: f, headingIndex: ["X.": 0])
+        #expect(built.statuses == ["A", "B", "C"], """
+            Got \(built.statuses). The interner numbers in first-seen order, so this is the \
+            sorted-NAID walk's signature. Any other order means the walk is over an unsorted \
+            Dictionary and every vocabulary renumbers between runs.
+            """)
+        #expect(built.rows["1"]?.accessStatus == 0)
+        #expect(built.rows["3"]?.accessStatus == 2)
+    }
+
+    @Test("Repeated runs over the same input give byte-identical vocabularies")
+    func repeatedRunsAgree() throws {
+        let creators = Dictionary(uniqueKeysWithValues:
+            try (1...40).map { ("naid\($0)", [try creator("X.")]) })
+        let f = Dictionary(uniqueKeysWithValues:
+            (1...40).map { ("naid\($0)", facts("S\($0 % 7)")) })
+        let a = SeriesFactsIndexRunner.buildRows(creatorsByNaId: creators, factsByNaId: f,
+                                                 headingIndex: ["X.": 0])
+        let b = SeriesFactsIndexRunner.buildRows(creatorsByNaId: creators, factsByNaId: f,
+                                                 headingIndex: ["X.": 0])
+        #expect(a.statuses == b.statuses)
+        #expect(a.rows == b.rows)
     }
 }

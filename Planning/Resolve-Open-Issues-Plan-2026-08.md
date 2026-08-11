@@ -245,26 +245,77 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   from the owner's harvest — no key, no re-harvest) rendered as "this series was created by X"
   with a #650-style cohort statement, both Source Explorer views. The similarity axis stays dead
   (2.8% reachability, structural — do not resurrect).
+- ~~**F-7 · carried from #663 — the three catalog fields**~~ ✅ **DONE (2026-08-10)**. The field
+  list needed correcting against the 622 series the app can name. `numberingNote` reaches **1 of
+  622** (385 corpus-wide) and was dropped — a row for one record is not a feature. Two fields not
+  on the list are the strongest: **`useRestriction`** (100%; 205 copyright) and
+  **`physicalOccurrences.extent`** + holding facility (100%) — how much material and which
+  building. `accessRestriction` is 100% and consequential (414 restricted, 338 citing FOIA
+  (b)(1)); `findingAids` 19.6%. Access and use ship as **two rows**, because the measured
+  cross-tab populates all four cells (175/239/43/165) — 43 series may be read but not published.
+  Landed on the **bundled** lot panel, not `NARACatalogResult`: that is the live-API path, while
+  the bundled path is what a reader without a key hits, and F-6 measured it at 618/618 covered.
+  Artifact renamed `series-creator-index.json` → `series-facts-index.json` (schema 2, 105 KB).
 - **F-7 · carried from #663 — the three catalog fields** (S). `accessRestriction` ("Restricted —
   Fully" is trip-planning information), `inclusiveStartDate`/`inclusiveEndDate` (sanity-check a
   resolution against the citation's own date), `findingAids`/`numberingNote` (NARA's own ordering
   instruction) onto `NARACatalogResult` + both views. Bundle-plus-presentation; no index bump.
+- ~~**F-8 · #358 (retitled) — Zotero dead-end fallbacks on iOS**~~ ✅ **DONE (2026-08-10)**, with
+  the mechanism corrected. This line says "the web-library/file hand-off"; the design doc's own
+  **verified Fallback B** is different and better — share the document's `history.state.gov` URL,
+  which Zotero's iOS share extension ingests via its web translators. That is the only route into
+  Zotero on iOS without an API key, and the document share menu did not offer it. Its caveat is
+  **one document at a time**, so it belongs on the document menu, not the collection sheet — the
+  sheet's honest answer is the corrected caption (the old one promised an RIS fallback on *both*
+  platforms, and on iOS that file reaches nothing) plus the file for a Mac. Failed sends now offer
+  the file route from both failure paths instead of ending. **The owner yes/no is moot**: the
+  RIS-to-a-Mac path is retained *and* labelled honestly, so nothing was closed on the strength of
+  a decision that was never taken.
 - **F-8 · #358 (retitled) — Zotero dead-end fallbacks on iOS** (S). (1) Unconnected
   `exportZoteroRIS()` path: offer the web-library/file hand-off instead of an RIS the iOS Zotero
   app cannot open; (2) failed connected send: fall back to file/web-library from `exportError`
   instead of stopping. If the owner instead rules the RIS-to-a-Mac path sufficient, close the
   issue — that standing question is O-3's sibling but needs no design, just a yes/no.
+- ~~**F-9 · #306 — in-chart scrubber for year scope**~~ ✅ **DONE (2026-08-10)**. "Honor the
+  existing scope chip + reset affordances" turned out to need **no work**: both read
+  `yearRangeIsCustom`, derived from the two year bounds, so a drag that writes the same state the
+  steppers do surfaces them with no second code path. Two rules did need care — a **decade**
+  selection covers ten years (the axis plots decade *starts*, so committing the raw upper bound
+  drops nine), and bounds clamp to the corpus. One rule turned out not to exist: `ClosedRange`
+  cannot hold `lower > upper`, so the defensive ordering in the first draft was dead code
+  documenting a false claim about Swift Charts — found when the test written to prove it crashed
+  on its own literal.
 - **F-9 · #306 — in-chart scrubber for year scope** (S). Swift Charts selection
   (`chartXSelection`) to narrow the analytics year filter by dragging on the chart itself; honor
   the existing scope chip + reset affordances.
+- ~~**F-10 · #263 — batch citation lookup (footnote triage table)**~~ ✅ **DONE (2026-08-10)**.
+  "Engine unchanged" is true of `CitationMatchingEngine` and `CitationParser` and **hides where
+  the work is**: `parse` takes ONE citation, and nothing turned a block of footnotes into the list
+  to hand it. `CitationBlockSplitter` is the feature — marker-first, newline-fallback, because a
+  citation copied from a two-column PDF arrives wrapped across lines and a per-line split yields
+  unparseable fragments. Four outcomes, not three: `.failed` is separate from `.missing` because
+  "could not look" and "looked and found nothing" send a researcher to different next steps.
 - **F-10 · #263 — batch citation lookup (footnote triage table)** (S). Paste a block of
   citations → per-row resolved/ambiguous/missing table. Engine unchanged; natural macOS window
   content for `CitationLookupView`; iOS gets the same table in the sheet.
+- ~~**F-11 · #265 — corpus-wide glossary/abbreviation lookup**~~ ✅ **DONE (2026-08-10)**. The
+  table and index exist; there was **no query API at all**, only an insert. And the framing —
+  "a UI over it" — assumes a glossary has one answer per abbreviation. Measured: 66,095 rows over
+  312 volumes, 10,632 terms, 5,685 defined in more than one volume, and the editors did not
+  standardise — **`EUR` carries 30 distinct definitions**, `S/S` 25. So a result carries its
+  variants ranked by how many volumes use each, and only contested terms get a disclosure.
 - **F-11 · #265 — corpus-wide glossary/abbreviation lookup** (S). The terms table is already
   indexed by term string; this is a search-scoped UI over it.
 
 ### Tier 3 — Infrastructure, tests, accessibility
 
+- **I-1 · #268 — shared `AXChartDescriptor` builder** — **builder + Series adoption DONE
+  (2026-08-10); OWNER DEVICE PASS OUTSTANDING**, which is the issue's own gate and the reason this
+  is not closed. Premise re-verified: zero `AXChartDescriptor` in the tree before this. The
+  `ChartInspectorData` bridge REFUSES rather than guesses — those cells are localised display
+  strings, and a lenient parse yields a wrong axis range, which on an audio graph is inaudible.
+  Adopted at `SeriesChartCard` (one site, every Series chart). **The other four families —
+  corpus, person, cross-reference, archival — are not adopted yet.**
 - **I-1 · #268 — shared `AXChartDescriptor` builder** (M + owner device pass). Zero
   `AXChartDescriptor` exists in the tree while the chart population has grown to five analytics
   families (corpus, person, cross-ref, archival, About-the-Series) — the payoff has grown since
@@ -276,6 +327,11 @@ Ordered by value density; each is a normal PR-sized session with its spec alread
   quirk) as a documented limitation; scenario 4's Browse drill-in needs a different driving
   mechanism per the measured answer (NavigationLink-backed row or accessibility action — not a
   coordinate tap).
+- **I-3 · #270 — migrate the 5 original generators onto GeneratorKit** — **VolumeSourcesIndex
+  ✅ DONE (2026-08-10)**, byte-verified: regenerated with the same `GENERATED_DATE`, `cmp` reports
+  the artifact identical. F-5 deferred this deliberately (a content change and a refactor in one
+  PR make every byte difference ambiguous), and doing it alone is what made the check meaningful.
+  **Four remain: Manifest, Taxonomy, CentralFilesIndex, SourceProvenanceIndex.**
 - **I-3 · #270 — migrate the 5 original generators onto GeneratorKit** (M, mechanical). One
   generator per PR (Manifest, Taxonomy, CentralFilesIndex, VolumeSourcesIndex,
   SourceProvenanceIndex), byte-verifying each regenerated artifact. Every generator written since

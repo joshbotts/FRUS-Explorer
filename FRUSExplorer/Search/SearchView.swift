@@ -206,6 +206,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          VoiceOver can announce the selection, the glyph now fills for any active reading
 ///          (it tracked only Timeline), and Save as Working Corpus moves to `moreMenu` beside
 ///          Save this search — it is an action, not a reading.
+///   1.19 — Session 2026-08-11: #833 — the facet panel's provenance section opens an archival
+///          profile of the volumes the results sit in
 
 struct SearchView: View {
 
@@ -265,6 +267,8 @@ struct SearchView: View {
     @State private var isLoadingConcordance = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
+    /// #265: the corpus-wide abbreviation lookup.
+    @State private var showGlossaryLookup = false
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
@@ -277,6 +281,33 @@ struct SearchView: View {
     ) {
         _vm = State(initialValue: SearchViewModel(searchService: searchService))
         self.initialParameters = initialParameters
+    }
+
+    /// Opens Archival Analytics scoped to this result set's volumes (#833).
+    ///
+    /// A method rather than an inline closure: the facet panel's initializer is already a large
+    /// expression and the type-checker could not solve it with this inside.
+    private func openArchivalProfile(volumeIds: [String], query: String) {
+        // The query the FACETS describe, handed over by the panel. The view model's own property
+        // is a live text-field buffer (#833 review).
+        let term = query.trimmingCharacters(in: .whitespaces)
+        let label: String
+        if term.isEmpty {
+            label = String(localized: "facets.provenance.openProfile.label.results",
+                           defaultValue: "Search results")
+        } else {
+            label = String(format: String(localized: "facets.provenance.openProfile.label %@",
+                                          defaultValue: "Search: %@"), term)
+        }
+        let request = ArchivalScopeRequest(volumeIds: volumeIds, label: label)
+        // Close the facet sheet FIRST, then hand off on the next turn. The destination is another
+        // sheet — the tab shell presents Archival Analytics — and a dismissal and a presentation
+        // in one state change drop the presentation. No tab switch: the shell hosts the sheet, so
+        // it opens over whichever tab the reader is on.
+        showFacetSheet = false
+        let appState = appState
+        let sceneID = sceneID
+        Task { @MainActor in appState.openArchivalScope(request, from: sceneID) }
     }
 
     var body: some View {
@@ -393,6 +424,7 @@ struct SearchView: View {
                                 showFacetSheet = false
                                 Task { await runSearch() }
                             },
+                            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                             onDiscloseSection: { section in
                                 Task {
                                     await facetController.load(
@@ -486,6 +518,11 @@ struct SearchView: View {
                     // `.anyWindow` — first-wins across every open iPad window. Its four sibling
                     // sheets already inject this; these two were the exceptions.
                     CitationLookupView()
+                        .environment(\.sceneID, sceneID)
+                }
+                .sheet(isPresented: $showGlossaryLookup) {
+                    // #265: same scene-id injection as its siblings — see the note above.
+                    GlossaryLookupView()
                         .environment(\.sceneID, sceneID)
                 }
                 .sheet(item: $archivalNeighborsTarget) { key in
@@ -919,6 +956,16 @@ struct SearchView: View {
             } label: {
                 Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
                       systemImage: "text.magnifyingglass")
+            }
+            // #265: sits beside citation lookup because they answer the same kind of question —
+            // "what does this reference in front of me mean?" — from the two directions a reader
+            // meets: a citation, and an abbreviation.
+            Button {
+                showGlossaryLookup = true
+            } label: {
+                Label(String(localized: "search.glossaryLookup.a11y",
+                             defaultValue: "Look up an abbreviation"),
+                      systemImage: "character.book.closed")
             }
             // Checklist mode (#189-D): hides results as you review them (open them, or tap
             // "Mark reviewed"), so a long result set becomes a shrinking to-do list.

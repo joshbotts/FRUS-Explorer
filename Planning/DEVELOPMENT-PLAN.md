@@ -4457,6 +4457,492 @@ creators, and naming one would be false for the rest.
   Only live catalog results are exportable (`naraExportText`). Worth knowing before someone reads
   the #680 caveat and assumes this row is missing from a copy.
 
+---
+
+## Session 2026-08-10 — F-7 (#663): what NARA can tell you before you travel
+
+**Issue:** #663 (closed; this is the carried remainder) · **Plan:** § F-7
+
+The plan named three catalog fields. Measured against the 622 series the app can actually name,
+one of them barely exists and the two most useful are not on the list.
+
+| field | coverage of 622 | signal |
+|---|---|---|
+| `accessRestriction` | 100% | **414 restricted**; 338 cite FOIA (b)(1) National Security |
+| inclusive dates | 100% | real year pairs |
+| `physicalOccurrences.extent` | 100% | "1 linear foot, 3 linear inches" + holding facility |
+| `useRestriction` | 100% | 205 copyright-restricted |
+| `findingAids` | 19.6% | Folder List ×108 |
+| **`numberingNote`** | **1 (0.2%)** | **dropped** |
+
+`numberingNote` is projected on 385 records corpus-wide and reaches **one** the app can name.
+
+### Access and use are two rows, and the cross-tab is the argument
+
+(access-restricted, use-restricted) = (yes,yes) 175 · (yes,no) 239 · (no,yes) 43 · (no,no) 165.
+All four cells populated: 43 series may be **read** but not freely **published**, 239 the other
+way round. Folding them misleads in both directions. A status can also arrive with no categories
+(5 of the 43), so the render path has an empty-list branch with a test on it.
+
+### Where it landed, and why not where the plan said
+
+The plan said `NARACatalogResult` — the **live API** path, which needs a key and a network. The
+bundled lot panel is what a reader actually hits, and F-6 measured it at 618/618 covered. So the
+facts ride the bundled artifact, on the same NAID key F-6 established.
+
+### The artifact was renamed rather than duplicated
+
+Same records, same harvest pass, same key — one artifact is right, and `series-creator-index.json`
+would have been an actively misleading name for a file carrying access restrictions. Renaming a
+just-merged resource is cheap; renaming it later is not. Schema 1 → 2, 52 KB → 105 KB.
+
+### The sweep found a determinism bug my own comment had already flagged
+
+I wrote "deterministic because the rows are iterated in a sorted order" and then iterated a raw
+Dictionary. Every vocabulary would have renumbered between runs with no input change — a diff on
+each regeneration, hiding any real one. Fixed, and then the *fix* survived its mutation, because
+the artifact test reads the committed file, which a generator mutation cannot move. `buildRows` is
+extracted and driven directly; 6/6 caught.
+
+### Left undone
+
+- **The live `NARACatalogResult` path still shows none of this.** Its decoder reads
+  `coverageStartDate`, while the harvest uses `inclusiveStartDate` — worth confirming the live API
+  actually sends the former before anyone extends that path, since a mismatch would mean
+  `dateRange` is silently nil there today. Not investigated; flagged.
+
+---
+
+## Session 2026-08-10 — F-8 (#358): every iOS route to Zotero now goes somewhere
+
+**Issue:** #358 · **Plan:** § F-8
+
+### The plan named the wrong mechanism
+
+F-8 says "offer the web-library/file hand-off". The Zotero design doc's own **verified Fallback B**
+is different: share the document's `history.state.gov` URL, which Zotero's iOS share extension
+ingests through its web translators. That is the only route into Zotero on iOS without an API key,
+and the document share menu did not offer it — it offered BibTeX and RIS files, neither of which
+Zotero on iOS can read.
+
+The upstream finding (recorded in `BigPicture-ZoteroExport.md`, verified against `zotero/zotero-ios`):
+no `CFBundleDocumentTypes` for `.ris`/`.bib`, no File → Import, and a share extension that accepts
+`public.url` and runs web translators with **no citation-file parser**. A shared RIS makes Zotero
+appear in the sheet and then does nothing — the exact reported symptom.
+
+### Three changes
+
+1. The document menu offers the working route on iOS, lossy on purpose and labelled as such.
+2. The collection row's caption stops over-promising. It read "Falls back to an RIS file with no
+   account" on **both** platforms; it is now platform-aware and names the Mac.
+3. A failed send recovers. Both failure paths — missing credentials and a thrown send — offer the
+   file route, which does not depend on whatever broke the API call.
+
+### The owner yes/no turned out to be moot
+
+The plan offered an alternative: "if the owner rules the RIS-to-a-Mac path sufficient, close the
+issue." No decision was needed — the RIS path is *retained* and simply labelled honestly, so the
+dead end closes either way. Nothing was closed on the strength of a decision nobody took.
+
+### The sweep caught a loose assertion of mine
+
+Renaming the localized key `document.share.zoteroWeb` → `…zoteroWebRemoved` passed, because my test
+checked for the bare substring and the longer key contains it. Pinned to the quoted key. Worth
+remembering generally: a source-scan assertion on an identifier prefix is satisfied by any longer
+identifier that starts the same way.
+
+### Left undone
+
+- **Live E2E against a real Zotero library is still owner-only** and remains on the build-33
+  checklist — the share-extension hand-off in particular cannot be verified in a simulator without
+  the Zotero app installed and signed in.
+- **The collection sheet has no multi-document web route**, by design: the share-extension path
+  takes one URL at a time. If that ever changes upstream, the sheet is where it would go.
+
+---
+
+## Session 2026-08-10 — F-9 (#306): drag the chart to narrow the years
+
+**Issue:** #306 (body empty; the plan line was the whole spec) · **Plan:** § F-9
+
+`chartXSelection(range:)` on the date chart, committed on **release** rather than continuously:
+Swift Charts updates the selection through the whole drag, and writing the year range on each frame
+would re-filter and re-render the series under the user's finger.
+
+### "Honor the existing chip + reset" was already true
+
+Both read `yearRangeIsCustom`, which is derived from the two year bounds. A drag that writes the
+same state the steppers write surfaces the chip and Reset with no second code path. The plan line
+implied work; the work was to *not* introduce a parallel path.
+
+### Two rules that needed care, one that did not exist
+
+- **A decade selection covers ten years.** The By Decade axis plots decade *starts*, so a drag from
+  1950 to 1960 means 1950–1969. Committing the raw upper bound drops nine years the user visibly
+  selected, and the chart redraws narrower than the gesture that produced it.
+- **Bounds clamp to the corpus.** A drag can end past the plotted data; an out-of-corpus bound
+  yields an empty chart whose only escape is Reset.
+- **A descending drag is impossible.** The first draft ordered the bounds defensively and
+  documented Swift Charts as reporting them "as drawn". That is false: `chartXSelection(range:)`
+  yields a `ClosedRange`, and `1962...1947` **traps at construction** — which is how the claim was
+  caught, because the test written to prove it crashed on its own literal. Dead code and a wrong
+  comment, both removed; the test now pins the invariant the type guarantees so the next reader
+  knows why there is no min/max.
+
+### The rule was extracted before the sweep, not after
+
+Three sessions running, every mutation survivor was a rule no test could call. `ChartScrubRange`
+was written as a pure function from the start. The sweep still found one gap — the *wiring*
+(`decadeStride` forwarded from the chart) has no runtime seam, so a literal `false` there passed
+every behavioural test while making each By Decade drag select a single year. Pinned by a source
+assertion that says plainly it is a wiring pin, not behaviour.
+
+### Left undone
+
+- **The scrubber is on the single-term date chart only.** The multi-term comparison chart (D1) and
+  the categorical Subseries/Volume axes have no year x-axis to drag; the latter two ignore the year
+  range entirely (`isDateBased`).
+- **No haptic or live range readout during the drag.** The selection is invisible until release —
+  acceptable because the commit is immediate and reversible, but a live overlay would be the
+  obvious refinement if it reads as unresponsive on device.
+
+---
+
+## Session 2026-08-10 — F-10 (#263): paste a chapter's footnotes and triage them
+
+**Issue:** #263 · **Plan:** § F-10
+
+### "Engine unchanged" was true and misleading
+
+`CitationMatchingEngine` and `CitationParser` needed nothing — and `CitationParser.parse` takes
+**one** citation. Nothing in the app turned a chapter's footnotes into the list to hand it. That
+splitter *is* the feature, and the plan costed it at zero.
+
+### Why the splitter is marker-first, not newline-first
+
+Real blocks break the naive rule in both directions. A citation copied from a two-column PDF or a
+narrow measure arrives wrapped across three lines — splitting per line yields three unparseable
+fragments instead of one good citation. And a running notes paragraph puts several footnotes on one
+line. So: a numbered marker starts a citation, marker-less lines continue it, and a block with no
+markers at all is one citation per line.
+
+The marker is bounded to three digits. Unbounded, `1969. Memorandum…` reads as footnote 1969 and
+**silently eats the year** — a mutation confirmed nothing else catches it.
+
+### Four outcomes, not three
+
+The plan says resolved/ambiguous/missing. `.failed` is separate: "we looked and found nothing" and
+"we could not look" send a researcher to different next steps — a different volume versus fixing the
+citation text. Ambiguous carries its count, because 3 possibilities and 12 are different problems
+when triaging a chapter.
+
+### Sequential lookup, on purpose
+
+The engine is an actor over the same index the rest of the app reads, and a chapter is tens of rows.
+Fanning out would contend for the index to save a second on a list the reader is about to read line
+by line — and rows arriving in paste order is what makes partial progress legible. A row that throws
+becomes `.failed` rather than aborting the batch.
+
+### Left undone
+
+- **No export of the triage table.** A researcher who triages 40 footnotes may well want the result
+  as a file; nothing here produces one. Deliberately out of scope, and worth its own issue if it is
+  wanted.
+- **The table does not disambiguate in place.** An ambiguous row states its count; choosing among
+  the candidates still means a single lookup. That is the obvious next increment.
+- **Sequential lookup is untested for a very large paste.** Tens of rows is the design point; a
+  thousand-line paste would run visibly long with no cancel.
+
+---
+
+## Session 2026-08-10 — F-11 (#265): look up an abbreviation across every volume
+
+**Issue:** #265 · **Plan:** § F-11
+
+### "A search-scoped UI over it" was two things short
+
+The `terms` table and its `term` index exist, as the plan says. There was **no query API** — only
+an insert. And the framing assumes a glossary has one answer per abbreviation.
+
+### The corpus disagrees, and that is the feature
+
+Measured on the owner's index: **66,095 glossary rows over 312 volumes, 10,632 distinct terms,
+5,685 defined in more than one volume.** The editors did not standardise their glossaries:
+
+| term | volumes | distinct definitions |
+|---|---|---|
+| `EUR` | 231 | **30** |
+| `S/S` | 225 | 25 |
+| `NSC` | 276 | 10 |
+
+A corpus-wide glossary showing one line per abbreviation would be picking one volume's wording and
+hiding twenty-nine. So a result carries its variants, most widely used first, each with the count
+of volumes behind it — and only contested terms get a disclosure, because for the ~47% defined one
+way it would be a control with nothing behind it.
+
+### Ranking, and two things the SQL had to get right
+
+Exact, then prefix, then contains; breadth within a rank. Someone typing "NSC" wants NSC, not "NSC
+Action No." above it, even though the latter may be defined in more volumes. Breadth is the
+tie-break because a glossary carries no frequency data of its own.
+
+- **LIKE wildcards are escaped.** `100%` must search for a percent sign. Unescaped it matches
+  everything — the worse failure, because it looks like an answer.
+- **The per-term volume count is the widest variant's, not the sum.** Summing reports 220 volumes
+  for a term defined in 231, and would exceed the corpus for a heavily-contested abbreviation.
+
+### Left undone
+
+- **No path from a definition to the volumes using it.** Each variant knows a sample volume id but
+  the row does not link anywhere. That is the obvious next increment and the one a reader will ask
+  for first.
+- **No in-document affordance.** Selecting an abbreviation while reading does not offer this
+  lookup; it is reachable from Search's overflow only.
+- **Terms are indexed only for downloaded volumes**, so the corpus-wide claim is bounded by what
+  the reader has. The empty state says the index needs a volume, but the counts shown are not
+  labelled as "of your downloaded volumes" — worth wording if it confuses.
+
+---
+
+## Session 2026-08-10 — Tier 3 begins: I-3 volume-sources onto GeneratorKit
+
+**Issue:** #270 · **Plan:** § I-3
+
+The debt F-5 deliberately took on. That session declined to fold this in because the pairing's
+point was **byte-verifying** the regenerated artifact, and #733 legitimately changed the artifact's
+contents — a refactor landing alongside would have made every byte difference ambiguous between the
+two.
+
+Alone, the check is clean and it passes: same `GENERATED_DATE`, `cmp` reports the artifact
+**byte-identical**. That is the whole claim of a mechanical migration, demonstrated rather than
+asserted — and it is the thing the plan asked for that F-5 structurally could not provide.
+
+What moved: the inline `contentsOfDirectory`/filter/sort becomes `VolumeCorpusEnumerator.volumeFiles`
+(the sort keeps the artifact stable, so it is the part worth sharing), `today()` →
+`generatorDateStamp()`, `log()` → `generatorLog()`, and `RunError.noVolumes` retires in favour of
+`GeneratorError.noVolumes` which the enumerator already throws. `RunError.emptyRecordGroups` stays:
+it is this generator's own refusal to write an empty record-group map.
+
+### Tier 3 status
+
+- **I-3** — 1 of 5 generators done. **Manifest, Taxonomy, CentralFilesIndex, SourceProvenanceIndex
+  remain**, each its own PR with the same byte-verification.
+- **I-1 (#268, shared `AXChartDescriptor`)** — not started. Highest payoff of the three: zero
+  `AXChartDescriptor` exists while the chart population has grown to five analytics families. Its
+  own gate is **owner VoiceOver validation on device**, which I cannot perform.
+- **I-2 (#312, seeded-fixture obstruction test)** — not started.
+
+---
+
+## Session 2026-08-10 — I-1 (#268): the charts get an Audio Graph descriptor
+
+**Issue:** #268 · **Plan:** § I-1 · **NOT CLOSED — owner device pass outstanding**
+
+Premise re-verified before starting: **zero** occurrences of `AXChartDescriptor` or
+`accessibilityChartDescriptor` in the tree, against five analytics chart families. Every chart was
+one opaque element to VoiceOver.
+
+### The tempting shortcut is the dangerous one
+
+`ChartInspectorData` already has the shape a descriptor needs — but its cells are **already-formatted,
+already-localised strings**. Reading an axis range back out means parsing `1,204` and `38%` in
+whatever locale rendered them, and a lenient parse yields a *wrong* range rather than an error. On
+an audio graph that failure is **inaudible**: the tones describe a shape the chart does not have.
+
+So the builder takes numbers, and the bridge refuses **wholesale** — one unparseable cell yields no
+descriptor, not a descriptor missing a third of its points, because a graph missing points still
+sounds complete.
+
+Three behaviours worth naming: an empty series yields nil (a descriptor over `0...0` is one flat
+tone, which reads as data rather than absence); a constant series is widened by one (a zero-width
+range makes VoiceOver's own arithmetic divide by zero); a categorical axis keeps its labels rather
+than having an index forced onto it.
+
+### Adopted at one site
+
+`SeriesChartCard` is the shared card taking `inspector:`, so every Series chart gains a descriptor
+there rather than one dashboard at a time.
+
+### What remains — and why this is not closed
+
+- **The owner's VoiceOver device pass**, which is #268's own gate. Nothing here is validated
+  against a real screen reader; it is unit tests and a clean build only.
+- **Four of the five families are not adopted**: corpus, person, cross-reference, archival. They do
+  not route through `SeriesChartCard`, and several plot data with no inspector table, so each needs
+  its points supplied directly to the builder.
+
+---
+
+## Session 2026-08-10 — the Archival Analytics design handoff, assessed and enrolled
+
+**Issues:** #825–#835, #798 · **New:** #837, #838 · **No code — planning and tracker only**
+
+A design handoff arrived after the #825–#835 enrolment: eleven artboards rendering the enrolled
+issues as screens. It is now in the repo at
+`Planning/Archival-Analytics-Revision-Design-Handoff/` (byte-identical to the delivered zip, with
+a `PROVENANCE.md` saying what governs), because the issue bodies reference artboards and those
+lived only in a zip outside the repo.
+
+### The finding that mattered
+
+The handoff is faithful to every issue's core scope. But its own opening paragraph records **"a
+later owner pass"** whose five additions appear in **no issue body and in no row of §9's
+enrolment table** — the two documents the handoff names as its plan of record. Sector zones, a
+third ranking weight, a Cross-Reference Graph layer, the lifecycles card's removal, and a global
+relabel pass. An implementer working from the tracker would have missed all five.
+
+Verification, not reading, is what produced that: `gh issue view` on all twelve bodies against the
+README, then code probes with an adversarial re-check on each. The re-check earned its keep twice
+— it caught that §9's own table also disagreed with the handoff (strengthening the finding), and
+it refuted a claim that a source-scan test would break on a new initializer (the pin is on the
+*call site*, not the type).
+
+### Two scope changes came out of the measurement
+
+**#829(c), the "Unprinted pointers" weight, is not an enum case.** The join is exact (995/995
+target ids present in the authority) but `ranking()` drops zeros, so the weight *replaces* the row
+set — 1,014 collections out, 181 in. The class lens has no external vocabulary at all; the
+availability fallback is documents-shaped; three shipped strings assert a two-weight world and one
+is pinned verbatim by a test over `allCases`; the export's base caveat is a drawn-from methods
+statement stamped above a pointed-at table.
+
+**#837's node layer is contract-touching.** `CrossReferenceEdge` cannot represent a
+document → archival-unit edge, node ids are `"volumeId/documentId"` parsed by splitting on `/` in
+three places, loading is whole-ego-graph, and the Session 161 vocabulary has already spent
+*dashed* and *orange* on other meanings. The issue splits into a phase A that touches no canvas
+code (the shipped Archival Neighbors context-menu pattern reaches the same destination) and a
+phase B gated on four visual decisions.
+
+### Owner decisions recorded
+
+All eight are in `Archival-Analytics-Adversarial-Review.md` §10, with the enrolment map. The two
+gates outside the repo are unchanged and remain the critical path: #828's 1910–49 filing schedule,
+and #830's repository facts — now an explicit gate on that issue, because the packet mocks turn
+those facts into printed sentences a researcher acts on.
+
+---
+
+## Session 2026-08-10 — wave 1a: the lifecycle card goes, Cited Over Time becomes a real chart
+
+**Issues:** #832 (b) and (c) · **PR:** the first implementation session of the archival revamp
+
+(a), the authority-name concatenation, is deliberately **not** in this PR: it is a generator fix
+whose re-clustering may ripple through three bundled artifacts that key on authority ids
+(`collection-usage-index`, `external-citation-index`, `provenance-flow-index`), not the one the
+issue names. That needs measuring on its own.
+
+### The removal's real hazard was not the deletion
+
+The lifecycle card was self-contained across three files with one mount point. What made it
+dangerous is that the loop building its spans **also** fills `collectionVolumes` — the sole writer
+of the named-collection lens's Volumes weight — and `records`, which supplies every ranking row's
+label. Deleting the loop with the card compiles, throws nothing, and leaves the ranking quietly
+empty under a weight whose alternative needs a bundled artifact that may be absent. Only the span
+bookkeeping came out, and a new test asserts the per-band volume counts with the usage index
+withheld, so that failure mode is now caught rather than merely avoided. `repeatedNames` survives
+with one caller for the same class of reason: it is what stops Swift Charts silently *merging* two
+bars that share a label.
+
+This reverts #820 in full — its 1860 axis floor had no consumer outside the removed chart.
+
+### (b) needed three things the issue named as one
+
+Cited Over Time had no inspector, no export, and no Audio Graph descriptor. It could not simply
+adopt `SeriesChartCard`: the chart sits in a `List` section whose header already names it, so the
+card would draw a second heading beneath the first. So the pieces were composed instead, which
+surfaced two costs the issue did not carry — the descriptor modifier was `private`, and now has a
+`View.axChartDescriptor` entry point (also the route for the four chart families #268 has not
+reached); and **no** existing `AnalyticsProvenance` factory fit, the nearest being the one (c)
+deletes.
+
+### Mutation sweep: 5 mutants, 5 killed — and two pattern-misses worth recording
+
+M1 (drop the `collectionVolumes` increment), M2 (counting unit Volumes→Documents), M3 (drop the
+base caveat), M4 (drop the descriptor), M5 (sheet moved inside the Section) all KILLED.
+
+Two runs first reported SURVIVED and were wrong, both times because the *harness* missed rather
+than the test: `-only-testing FRUSExplorerTests/ArchivalAnalyticsTests` names a **file**, while the
+suite type is `ArchivalCollectionsDataTests`, so zero tests ran; and one `perl -0pi` regex silently
+matched nothing, which `git status` showed as a clean tree. Both are the standing PATTERN-MISS
+verdict, not evidence about the tests. Check that the mutation applied and that the intended tests
+actually ran before believing a survivor.
+
+### Docs
+
+Both manuals lose the removed card and gain the pointer; the macOS figure-export sentence was
+carrying a **second, already-false** clause (it promised figure export for Your Library, which has
+always been CSV-only). `EditableContent.md` loses three blocks and gains the new export caveat, and
+**38 stale `lines:` pointers** into the two shrunk files were recomputed against the source rather
+than hand-edited — 0 keys unresolved, which is also a check that no block references a string that
+no longer exists.
+
+---
+
+## Session 2026-08-10 — wave 1b (#826): one class grain, and the denominators that shipped unread
+
+**Issue:** #826 · **Filed en route:** #841 · **PR:** the second implementation session of the revamp
+
+### The fold's real hazard is the volumes weight
+
+Folding subject-numeric leaves to category+number is what makes the class lens
+rankable — at leaf grain half the keys carry one document. But the per-(key, volume)
+tally that was correct at leaf grain **double-counts the moment leaves merge**: a volume
+citing `POL 27 VIET S` and `POL 27 ARAB-ISR` is one citing volume of `POL 27`. The error
+is not marginal, it is absurd — summing the pairs reports `POL 1` as cited by 101 volumes
+in a band containing 64 volumes in total. The class pass therefore accumulates a **set**
+of volume ids per folded key, and a test drives the exact two-leaf case.
+
+The leaf is the pull-slip unit, so every folded row keeps its leaves under the chart.
+
+### The denominators reproduce exactly, so they are pinned rather than trusted
+
+`volumeNoteCounts` has been in the artifact since #763, described in its own generator
+notes as the denominator every share needs, and nothing read it. Measured independently
+here and by the pre-flight, #826's table reproduces to the digit: 150,764 / 59,973 /
+22,737 / 18,381 / 12,609 notes, and top-12 coverage of 3.0% / **9.4%** / 43.1% / 71.3% /
+46.7%. That 9.4% — the view the mode *opens* on — is now a test against the shipped
+artifacts, travelling through manifest coverage, band attribution, the usage index and
+the umbrella chip, which moves it to 29.2% when the umbrella is shown.
+
+One wrinkle worth recording: **#826's own two percentage columns use different
+populations.** "Lands in any named collection" includes the umbrella; "the 12 shown rows
+cover" excludes it. With the umbrella hidden the 1948–1960 figure is 22.1%, not 42.2%.
+The on-screen sentence picks one convention.
+
+### The pre-flight earned its keep, twice over
+
+It confirmed the two non-obvious decisions (the `?? key` fallback — 10 shipped keys are
+unfoldable and would VANISH without it — and the distinct-volume set), and then found
+**five defects in this session's own code**, four invisible from the screen. The worst was
+a **tautological test**: `#expect(folded != key || key == folded)` is `A || !A`. The test
+guarding the one property this issue exists to establish asserted nothing at all, and it
+passed, and it would have passed forever. Replaced with a fixed-point sweep that a
+mutation now kills.
+
+Also: leaf counts rendered in documents under both weights (a bar of 36 expanding to
+hundreds), leaves sorted by documents while displaying volumes, an unguarded export
+caveat committing to CSV the units error the screen refuses, and a sub-1% share rendering
+as "0%" above three visible bars.
+
+### Filed rather than fixed
+
+**#841** — two live definitions of a subject-numeric family. The artifact fold is greedy
+over the hyphen (`POL 27-14 VIET` → `POL 27-14`); the live-index query's
+`classLeafPatterns` includes a `POL 27-%` pattern and swallows it. The Network already
+hands folded labels to that query, so the mismatch ships today; #826 only makes it
+reachable from a second surface. Worth 220 documents in one band.
+
+The handoff's own worked example for that family is wrong in two positions — recorded on
+#838, whose job is the "never hard-code from the mocks" rule.
+
+### Mutation sweep: 7 mutants, 7 killed
+
+Volume-set → per-pair count; stop folding; drop the note accumulation; let the volumes
+weight state a share; leaves report documents under both weights; unfold (against the
+replaced parity test specifically); drop the shared fold from the Network.
+
+---
+
 ## Session 2026-08-10 — Semantic Phase 2: the spike comes back as numbers
 
 The owner carried the Studio's five raw spike stores to the Air; this session executed the
@@ -4495,3 +4981,771 @@ as stale; acceptable for a comparative gate, disclosed in the verdict. What wait
 owner: key the 100-row panel blind (the key file unblinds — open it after), and read the
 Gemma licence, which binds only V-5 weight-bundling. Then Phase 3 is one overnight
 `caffeinate` run with `MODEL_FILE` set — the one provenance gap the spike left.
+
+---
+
+## Session 2026-08-11 — wave 1c (#825 a, c, d): the dead ends close
+
+**Issue:** #825 (a, c, d — b/e/f follow separately) · **PR:** the third implementation session
+
+### What the pre-flight measured that changes the design
+
+The "Show all N units" table is **not** a 40-row list. Measured over the shipped artifacts, the
+largest cell is **5,881 rows** (Through 1947 · file numbers, either weight); the widest collections
+cell is 1,491. It is also the thinnest evidence in the corpus — 3,667 of those 5,881 rows are cited
+by exactly one volume. A `List` handles it lazily, but the number is why the sheet is a list rather
+than an inspector table, and why it states its own count in the header.
+
+### Three seams worth naming
+
+**The hit test cannot live in the chart body.** That body is also what the figure exporter
+rasterises, so `.chartOverlay` inside it would bake a dead hit-test region into a PNG. It lives on
+a separate wrapper, pinned by a test to exactly one call site.
+
+**The uncapped list must draw `label`, not `name`.** `disambiguate` appends the repository to names
+carried by more than one authority record. Drawn as `name`, one band prints `White House Central
+Files` **six times** — six identical rows, each opening a different collection. The chart never had
+this problem because it has always drawn `label`; the new list quietly did not.
+
+**A dismiss and a present in one state change drops the present.** Opening a collection from the
+all-units sheet sets `showsAllUnits = false` and then the detail target; done in the same update the
+detail never appears. The hand-off hops to the next update.
+
+### The uncapped export needed its own sentence
+
+The capped CSV's denominator caveat blames the shortfall partly on "a unit below the row cap". In
+the uncapped table there are no rows below a cap, so the same sentence is a false claim about a
+population that does not exist there. `rowCapApplied` branches it.
+
+### A dead end that predates the surface
+
+#825(d)'s "Cited Across the Series" rows were **never** navigable — `git show d7c53185` has the same
+inert `ForEach` from the section's first commit — while the sibling list in `VolumeSourcesView`,
+showing the same volumes for the same collection, has been navigable since the UI audit that
+recorded "the rows used to be dead ends". The issue calls it an adjacent regression; it is a
+restoration relative to a sibling, and the correction is on the issue.
+
+### Mutation sweep: 3 mutants, 3 killed
+
+Keep the cap in the all-units sheet; make the citing rows inert again; leak the interactive chart
+into the figure export.
+
+---
+
+## Session 2026-08-11 — wave 1d (#825 b, e) + four gaps the pre-flight found in wave 1c
+
+**Issue:** #825 (b, e — (f) sector zones still to come) · **PR:** the fourth implementation session
+
+### (b) and (e)
+
+**Open Collection** joins the Network dock and the Flows card. Both surfaces already *resolved* an
+`AuthorityCollectionRecord` to offer Archival Neighbors and simply never offered the record. The
+distinction matters most for a reader with few volumes indexed: Neighbors reads the **local** index
+and answers honestly-empty, so without this the dock had no route at all to what the app knows
+corpus-wide.
+
+**The surface is addressable.** `ArchivalAnalyticsView(mode:focusCollectionId:)`, every parameter
+defaulted so the two bare call sites (one pinned by a source scan) keep compiling. Scope parameters
+are deliberately **not** in the signature yet: #827 adds volume scoping, and a parameter no caller
+can act on is an empty promise. The Network seeds its focus **once**, guarded, because that view
+re-appears every time the mode picker returns to it and re-seeding would discard the reader's own
+choice.
+
+### The pre-flight's four findings against wave 1c — one was a crash
+
+1. **`CollectionDetailView` declares a NON-optional `@Environment(AppState.self)`, which traps on
+   DECLARATION.** The analytics surface holds AppState *optionally* by design — its whole defensive
+   pattern is to degrade to an empty state — so presenting the detail unguarded crashed exactly the
+   configuration the optional exists for. Now withheld, and a row will not even set a target it
+   cannot present.
+2. **The chart tap had no hint and no accessible equivalent.** A `chartOverlay` tap is not an
+   accessibility element. Two other charts in this app pair the same overlay with a hint; this one
+   now does, and names the uncapped list as the route that works without tapping.
+3. **A folded class row opens a document set drawn from a WIDER family than its bar** — the SQL
+   prefix match sweeps sub-numbers the artifact fold assigns elsewhere (#841). Measured by the
+   pre-flight: 38 of 102 drawn class rows, `POL 15` sweeping 73 keys. Until #841 is settled the
+   screen says so.
+4. **On iOS the analytics surface is itself a sheet**, so #825(d)'s hand-off to the Browse tab
+   landed *underneath* it and nothing appeared to happen. `CollectionDetailView` gained an
+   `onNavigateAway` hook, because only the host knows it is presented.
+
+Also confirmed by the pre-flight and worth recording: **0 of 1,828 usage collection ids are absent
+from the shipped authority**, so no drawn collection row currently lacks a record — the nil path is
+correctness insurance rather than a live case — and the umbrella is a normal record that opens.
+
+### Mutation sweep: 2 mutants, 2 killed
+
+Drop Open Collection from the Flows card; re-seed the Network focus on every appearance.
+
+---
+
+## Session 2026-08-11 — wave 1e (#838): plain labels, one method statement, and a copy rule with teeth
+
+**Issue:** #838 · **PR:** the fifth implementation session — wave 1 complete
+
+### The relabel
+
+`Units → Show`, `Weight → Count by`, `Coverage era → Era`. The rule that makes this more than a
+rename: the plain word goes on the **control**, and the term of art it replaces moves into the
+popover text, so a reader who knows "weight" still finds that word where the method is explained.
+
+It also surfaced a latent **localized-key collision**: `archival.filter.era` was used both as the
+chip's caption and as a chart axis name in Your Library, with two different default values. One key
+carrying two defaults means translating either silently rewrites the other. The axis now has its
+own key.
+
+### The ⓘ consolidation, and what deliberately stayed
+
+The standing method statement moved into **About These Figures**. The **conditional** disclosures
+did not: what the Central Files filter withheld *in this era*, and whether an artifact failed to
+load, describe the chart on screen right now and change with the controls. A caveat that changes
+with the controls has to be where the controls are, and a reader who never opens a popover must
+still be told the largest bar is missing.
+
+### The copy rules are a test, not a convention
+
+The handoff's four conventions — ●/○ marks, issue numbers, artboard ids, British spellings — each
+appear in copy the handoff itself calls final, and three of the four read as ordinary prose to a
+reviewer who has not seen the mocks. So "remember not to" is not a control. `ArchivalCopyRulesTests`
+scans the shipped `defaultValue:` literals (not the doc comments, which are exactly where that
+vocabulary *should* live) and fails on the commit that introduces a violation.
+
+**It immediately found five in pre-existing copy**: `coloured` in the ranking caption, `recognise`
+/ `recognises` three times in Your Library, and `centre` in the Network's ring legend. None came
+from this handoff; they had simply never been checked.
+
+### Mutation sweep: 3 mutants, 3 killed
+
+A ● in a shipped string; an issue number in a caption; the method statement altered rather than
+moved.
+
+---
+
+## Session 2026-08-11 — #841: one definition of a subject-numeric family
+
+**Issue:** #841 · owner's decision: **option (a)** — the fold is the definition, the query follows it.
+
+Two definitions were live at once. `CollectionKeying.subjectNumericGroup` is greedy over the
+hyphenated number, so `POL 27-14 VIET` belongs to `POL 27-14`; `classLeafPatterns` carried a
+`key + "-%"` branch, so the SQL family for `POL 27` swallowed it. A row labelled 1,090 documents
+opened a document set drawn from a strictly wider population — **38 of the 102 class rows the
+ranking draws**, `POL 15` sweeping 73 keys, `POL 27-14` alone worth 220 documents in one band.
+
+The hyphen branch is now **decimal-only**. A decimal key is not folded, so no second definition
+exists to disagree with, and the corpus writes `611.51-A` subdivisions a reader asking for `611.51`
+means to include.
+
+### The residue is bounded, not excused
+
+The fold's regex needs two-to-six category letters, so the ten single-letter `E …` keys cannot be
+parsed and each becomes its own group. Two are prefixes of others, and the space branch — the one
+that finds `POL 27 VIET S` under `POL 27` — still crosses them: `E 1` reaches `E 1 JAPAN-US` and
+`E 1 US`. **Exactly those two**, pinned as an exact set, so a new leak from a change to either
+definition fails a test rather than going unnoticed. Down from 38 rows to 2 keys.
+
+### A stale caveat is worse than none
+
+Wave 1d added a screen sentence warning that a grouped row's documents include its sub-numbers.
+That is now false, so it is gone — and the test that demanded it now demands its **absence**, with
+the reason. A caveat that outlives its defect tells a reader the number in front of them is wrong
+when it is right.
+
+### Mutation sweep: 2 mutants, 2 killed
+
+Restore the hyphen branch for subject-numeric keys (the original defect); drop it for decimal keys
+too (the over-correction). Pinning both directions matters here because the fix is a narrowing, and
+narrowing too far is as wrong as not narrowing at all.
+
+---
+
+## Session 2026-08-11 — wave 2a (#827): the Collections mode gets a scope
+
+**Issue:** #827 · the "value session" of the review's sequencing
+
+### The seam was already there
+
+`ArchivalCollectionsData.make(authority:usage:coverage:)` is a pure function of its three inputs,
+and the **coverage map is the volume set**. So scoping is a filter on one input rather than a new
+code path — which is exactly what makes the ranking, the per-band denominator, the caption's volume
+count, the units-reached figure and the CSV all narrow *together*. None of them can be scoped
+separately, so none can be left describing the wider population.
+
+### The decision that matters: scope over the series, not the library
+
+Every other analytics surface passes `appState.indexedVolumeIds` to `AnalyticsScopeBar`, because
+those surfaces read the local index and can only describe what is downloaded. This mode's
+derivation is the bundled corpus-wide authority and usage index — it is honest about all 552 volumes
+with **none** of them downloaded. Passing the library here would silently answer a different
+question for every reader: "the collections of the 1969–76 subseries" would mean whichever eleven
+of its volumes they happen to hold.
+
+So the surface passes a manifest-derived `scopableVolumeIds`, and the export says so in as many
+words: *the same scope gives the same figures on any device*. This is the handoff's "do not
+intersect with the local index" rule, which appears in no issue body.
+
+### The issue's own component assumption did not survive contact
+
+#827 names `AdministrationPresetMenu` as the administration control. That component binds a **year
+range**, and its doc comment restricts it to coverage-year surfaces — it cannot produce a volume
+set, and wiring it here would have put a second date axis beside the era bands for them to disagree
+over. The bundled administration profiles carry their own **per-volume** breakdown, so an
+administration is taken as a volume set directly. Same feature, right primitive.
+
+### Mutation sweep: 3 mutants, 3 killed
+
+Scope the library instead of the series; ignore the scope when building coverage; drop the scope
+from the export.
+
+## Session 2026-08-11 — #833: the topic door (subject- and search-scoped archival profiles)
+
+Two doors into Archival Analytics' volume scope, from the questions a reader is already asking:
+the search facet panel's archival-provenance section (scope = the volumes the matches sit in) and
+the subject sheet reached from a volume's **Top subjects** chips (scope = every volume whose
+profile carries that subject). Both travel as an `ArchivalScopeRequest` on the scene-addressed
+`pendingArchivalScope` hand-off — macOS to the singleton window, iOS to the producing scene.
+
+### The surface had no presenter outside one tab
+
+Before this, the only iOS presenter of `ArchivalAnalyticsView` was a private `@State` bool inside
+`BrowserView`. The search door could therefore switch to the Browse tab and *nothing would open* —
+a door with nothing behind it, and no data-layer test could see it, because the whole defect is in
+which view owns the presentation. `MainTabView` is now the single iOS presenter (the shape the word
+cloud has used since #752), Browse's own menu row produces `ArchivalScopeRequest.unscoped` through
+the same hand-off, and the view gained `init(initialScope:)` because the shell must consume the
+hand-off in order to decide whether to present at all.
+
+Two presenters remain in play on iOS — the shell and an already-mounted sheet — and the
+arrangement is deterministic because the shell **declines** while a sheet is up: a scope arriving
+then stays in the slot for the mounted view to adopt and re-scope in place. The mounted view always
+wins, whichever `onChange` the runtime runs first.
+
+### #827 shipped a scope that changed nothing, and this session's fix for it shipped a wedge
+
+The scope bar changed the chip and left the chart alone: `.task` was unkeyed, `loadCollections`
+early-returns while `collectionsData != nil`, and `setScope` did not clear it. Keying the task on
+the scope fixed that and introduced a worse failure, which the pre-flight review caught before the
+PR: picking a scope **that is already active** — the checked "Whole corpus" row, the same
+administration twice, the same door twice for one query — drops the derivation while leaving the
+signature byte-identical, so nothing restarts the load. The chart sits on its spinner for the life
+of the view, and the scope chip lives inside the `if let data` branch, so the only control that
+could undo it has vanished with the data. The signature now carries a `scopeGeneration` counter and
+every invalidation path goes through one `invalidateCollections()`.
+
+The same review found a second one: `Task.detached` does not inherit cancellation and `Task.value`
+does not throw, so a superseded load still resumes past its `await` and used to assign
+unconditionally. The macOS window reproduces the overlap on **every** scoped open — it mounts
+unscoped, starts a corpus-wide build, then consumes the hand-off — so corpus-wide figures could
+land last under the scope's own name. `loadCollections` now admits its result only if the signature
+it started with is still current.
+
+### Three more from the review, each a real dead end
+
+- The search door was gated on `facets.volumes`, which is computed only when the reader expands the
+  **Volumes** section. So the door rendered only for someone who had opened a different section
+  first — and Provenance, the dead-end section the door exists to open a way out of, was the one
+  hiding it. Disclosing Provenance now also asks for the volume breakdown (loading a section does
+  not expand it).
+- A scope arriving from a door landed on the default 1948–1960 band whatever era its volumes cover,
+  so a 1970s subject opened on an **empty chart under its own name** — which reads as "FRUS cites
+  no archives for this topic", not "wrong decade". Arriving scopes now move the band to wherever
+  their volumes are; a scope the reader picks from the bar does not, because a control that moves
+  itself while in use is worse than a wrong default.
+- Two doc comments were silently re-attributed by insertion: `ArchivalScopeRequest` landed inside
+  `Handoff`'s, and the new `archivalSheet` helper inside the word-cloud consumer's.
+
+### The subject door scopes to N volumes while the list above it shows N−1
+
+`otherVolumeIds` excludes the volume being viewed, which is right for "where else can I read about
+this" and wrong for the profile — dropping one volume from every profile opened from a volume page
+would be an under-count no figure on the destination could reveal. The door reads
+`volumesBySubjectRef` and its own count says which set it means. It is withheld below two volumes:
+a one-volume "profile of volumes on this subject" is that volume's own profile under a topic's name.
+
+### A second review, of the fixes themselves
+
+The six repairs above were then reviewed the same way, from three lenses with two independent
+refutation angles per finding. **All 21 findings against the fixes were refuted** — the repairs
+hold. The completeness critic, asked what all three lenses had missed, found five things that
+were not, of which four were real and are fixed here:
+
+- The `init` doc comment still said "scope parameters are deliberately **not** here yet",
+  two paragraphs above the scope parameter, and still claimed both call sites pass none.
+- The door was hidden by the very section it belongs to: it sat inside the `else` of
+  `if buckets.isEmpty`, so a provenance breakdown with **no rows** — no matched document carrying
+  a resolvable source note — showed "Nothing to break down here." and offered no way on. That is
+  precisely when the volumes' archival profile is worth most. The door's only condition is now the
+  section it belongs to, and the test pins the condition rather than the position (the first
+  version passed with a row-count guard bolted back on).
+- Both hosts labelled the scope from a **live text-field buffer** — macOS documents `queryText`
+  as exactly that — so a reader who typed a new term without committing it got the OLD result
+  set's volumes under the NEW term's name. `FacetPanelController` now records the query its
+  breakdown was computed against, and both doors take the label from there.
+- Disclosing Provenance runs a second aggregation in the background for the volume breakdown the
+  door is made of. On a broad match that is the same size as the one the reader is already waiting
+  for, and the control used to materialise silently seconds later; the wait is now stated.
+- The macOS subject door was the only launcher of the archival window not clearing the tool's
+  provenance. Now it does, like its four siblings.
+
+**And one defect that is not ours to fix here.** On macOS the facet panel is a long-lived
+inspector, so `expanded` survives a search; `onDiscloseSection` fires only from the header toggle;
+and `invalidate` clears the data. An already-open section therefore renders *completely empty* —
+no rows, no caveat, no door — after any re-search, until it is collapsed and re-opened. Verified
+present on `origin/v2`, affecting every section, so it is filed separately rather than widened
+into this branch.
+
+### The all-units sheet could be emptied out from under the reader
+
+`ArchivalAllUnitsSheet` read the live derivation and owns its only Done button. Once a scope change
+drops that derivation, a hand-off arriving from another window blanked the sheet — on macOS leaving
+a window-modal sheet with no dismiss control. It now takes a snapshot of the whole input (data,
+band, lens, weight, umbrella, label) at the moment it opens, which also makes its "same as the
+chart" claim true of the chart it was opened from rather than whatever the chart became.
+
+### Mutation sweep: 20 mutants, 20 killed
+
+Seven over the doors (scope the displayed list; drop the one-volume guard; soften the load-bearing
+footer; remove the shell's second-sheet guard; hand off in the same state change as the dismissal;
+revert Browse's row to private state; never pass the payload), seven over the first round of review
+fixes (the generation leaves the signature; the scope bar nils without moving the key; drop the
+stale-load guard; stop asking for the volume facet; two band-move paths; re-orphan the doc
+comment), and six over the second (flip the band tie-break; answer band zero for empty coverage;
+stop observing the hand-off slot; revert the all-units sheet to the live derivation; re-couple the
+door to the section's rows; label the scope from an empty string).
+
+The band decision moved out of the view and into `ArchivalEraBand.bandHoldingMost(of:)` for the
+sake of that sweep: the first test asserted only that the function was *called by name*, so the
+plurality, the tie-break and the empty case could all have been wrong and the suite would not have
+noticed. It is now tested against real coverage spans, including that every band is reachable.
+
+## Session 2026-08-11 — #835: the collection-grain card on Archival Sourcing
+
+§8's answer to the owner's relocation question was **relocate no, layer yes**: the *narrative*
+("which collections carried each era") is series-analytics subject matter, while the query-driven
+instrument stays in Analytics. This lands the narrative card, the derivation it needed, and the
+cross-links #835's 8.3d asked for.
+
+### Verifying the issue first overturned six of its premises
+
+- **"Authority/usage decode lazily" — already true**, but on whichever thread touches them first,
+  which is the actual problem. **"The page's current load is the 134 KB provenance index"** is
+  misleading in the other direction: `SourceProvenanceStore` is an eagerly-constructed stored
+  property on `AppState`, so this page's marginal load today is *zero* and #835 gives it its first
+  appearance-time cost. That strengthens the lazy/off-main requirement rather than weakening it.
+  (`SourceProvenanceStore`'s own "~4.5 KB" note, stale by 30× since #267, is corrected here.)
+- **`ArchivalAnalyticsView` is the counter-example, not the model** — it read both `.shared` stores
+  on the main actor *before* its detached block. Both touches now happen inside it.
+- **"Honouring the year range" had no API that could.** `ranking(band:)` takes exactly one band
+  and every per-band table is `private let`.
+- **Merging the bands in the view would have been a silent data-loss bug.** `disambiguate` runs per
+  ranking, and 279 shipped authority names are carried by more than one record: rows unique inside
+  their own band collide once merged, and Swift Charts draws two bars sharing a label as one. The
+  merge therefore happens inside the type, before disambiguation.
+- **Cross-band summation is exact under BOTH weights** — two of the verification lenses claimed
+  Volumes could not be summed. `make` writes `bandByVolume[volumeId]` exactly once, so the bands
+  *partition* the corpus and a unit's citing volumes in two bands are disjoint. The double-count
+  warning they were reading belongs to folding class *leaves within one band*, which is a different
+  situation that looks identical. Pinned by test rather than left as a comment.
+- **`CollectionDetailSheet` is not "self-contained"** — it wraps a view declaring a non-optional
+  `@Environment(AppState.self)`, which traps on *declaration*. The dashboard holds AppState
+  optionally by design, so every row is behind `if let appState`, the shape #844 fixed.
+
+### What the card owes its reader, and pays
+
+It is on a page whose charts count a **different population**: the provenance aggregate covers 522
+volumes and floors at decade 1900, the archival authority covers 552 with no floor (68 volumes sit
+in pre-1900 coverage decades). Its four custodian colours answer "who holds the records", not the
+ten categories' "what kind of citation is this". Its eras are coarser than the charts' decades. All
+three are stated on the card. The umbrella is withheld with its size named — there is no chip here
+to reveal it — and the share sentence is suppressed under the volumes weight, where a share of a
+note total would be a ratio of two different things.
+
+The year range selects the era bands it **overlaps**. Containment would have dropped the first band
+— 261 of 552 volumes — for any range starting after 1861.
+
+### #798 resolved to option (a), on a measured cost
+
+Owner decision 5 said build (a) and *report* the cost rather than force it. Measured: three files,
+about six lines, and `IndexingEducationView` already owned the value. The route the issue assumed
+does **not** work — `openArchivalScope` is consumed by `MainTabView`'s presenter, and on iOS this
+page is itself a sheet inside that shell, so the shell would be asked to present a second sheet
+while presenting. The door presents locally instead, and `ArchivalAnalyticsView` gained
+`onNavigateAway` so a Browse hand-off from a collection record closes the guide too rather than
+leaving it over the surface that just navigated.
+
+"Archival Analytics" appeared **nowhere** in the 1,200-line walkthrough — not a missing sentence, a
+missing section. It now has one, mirrored into `Docs/EditableContent.md`, and the tool carries a
+return link to the Archival Sourcing page.
+
+### The review found the card telling two untruths, and a guard that could not fire
+
+- **The population sentence was false.** It said the ranking "reads the archival authority, which
+  spans all 552 catalogued volumes and has no 1900 floor". Measured against the shipped artifacts:
+  the authority names **356** volumes and **none** with a pre-1900 coverage midpoint. The 552-and-
+  no-floor property belongs to the *usage* index, which is where the document counts come from —
+  so a row genuinely can rest on a volume the charts above leave out, but not for the reason given.
+  The sentence now names both artifacts and both numbers.
+- **The umbrella footnote asserted a magnitude it does not have.** "One undifferentiated record
+  carrying N here, which would flatten every other bar" is true for the default whole-range view
+  (17,587 against 7,056) and for 1948–1960 (12,060 against 1,643). For 1969–1976 it is 47 against
+  7,052 — a bar 0.7% of the tallest, described as scale-breaking. Withholding is still right in
+  every band; the copy now *compares* the two figures instead of asserting dominance, and the card
+  has no umbrella chip so this is the reader's only information.
+- **The stale-result guard could not fire.** `guard requested == scopeSignature` is live in the
+  instrument because its scope is `@State`, whose storage is shared across view-struct instances.
+  On the card the scope is a plain `let`, so a superseded run re-read its own captured value and
+  always matched itself — the guard was inert and a stale derivation could land last. `.task(id:)`
+  cancels the previous run, so `Task.isCancelled` is the signal that is actually about the current
+  view.
+
+Also folded: the iOS escape now carries the page's scope (`initialScope:` existed for exactly this
+and was unused, so the link discarded the narrowing the card above it describes); the collection
+sheet gained the `onNavigateAway` hook whose absence reintroduced the #844 dead-end; the reverse
+guide link is withheld when the guide is what presented the surface, or the guide becomes reachable
+from inside itself one sheet deeper each time; `isOnboarding` is actually passed, so the priority
+softening it exists for happens; a year range selecting no band reports a range problem instead of
+blaming the scope; the row's accessibility label carries the disambiguated form, since VoiceOver
+reading the bare name would announce several "White House Central Files" identically; and both
+manuals' standing "every chart offers View as table" claim is qualified, because the card is a list.
+
+**The band rule moved onto `ArchivalEraBand`.** It was briefly a static on the card, where the
+parity test could not call it: a `View` is `@MainActor`-isolated in Swift 6, and the test crashed on
+the actor check. It is a fact about the axis, so it lives beside `bandHoldingMost(of:)` — and is now
+tested directly rather than restated inline in the test, which is what the critic caught.
+
+### Mutation sweep: 16 mutants, 16 killed
+
+Six over the derivation (stop deduplicating bands; overwrite instead of summing; keep the
+denominators single-band; drop the umbrella disclosure; default an unparseable year instead of
+skipping; treat an empty scope as the whole corpus), six over the card and links (show the door
+mid-onboarding; stop forwarding the context through the iOS renderer; pin the card to one band;
+open rows with no authority record; show the umbrella; key the load on the year range), and four
+over the review fixes (containment instead of overlap; drop the scope from the escape; revert the
+population claim; drop the recursion guard).
+
+## Session 2026-08-11 — #828 PR 1: the decimal-class label artifact
+
+The 1910–49 State Department classification schedule, parsed from the manuals the owner supplied,
+into `decimal-class-labels.json`. The renderer pass — every surface reading one label source — is
+PR 2. The manuals stay local (`SCHEDULE_DIR`), as decided; the artifact is the reproducible product.
+
+### Compositional, and era-scoped
+
+`761.62` is *class 7, political relations, between country 61 and country 62*, so the table stores
+class glosses, country numbers and subject suffixes separately and composes at render time — the
+shape #764 measured at 87.7% of classed documents against 79.4% for a thousand flat rows.
+
+The classification was **renumbered in 1950** (class 7 is Political Relations of States before,
+Internal Political and National Defense Affairs after; Iran moves 91 → 88, Turkey 67 → 82), so a
+key resolves only against the schedule governing its own era. `891.00` is Iran in the 1910–49 table
+and resolves to nothing in the 1950s one — the failure that era-scoping exists to prevent.
+
+### Four things the source settled that guesswork would have got wrong
+
+- **The relations reading belongs to class 7 alone.** Class 8 is *Internal Affairs of States* —
+  one country and a subject — and its keys are shaped identically. Treating every country-arranged
+  class as relations made `893.51` read "China and France" when it means China's internal affairs.
+- **The 1910–49 schedule has no class 9.** Its summary runs 000–800 and "900" appears nowhere; the
+  class arrives with the 1950 renumbering. A floor of ten was rejecting a complete parse.
+- **Country codes are alphanumeric** — 270 of 353 carry a letter, because colonies were numbered
+  off the parent (France 51, Algeria 51r).
+- **65 is legitimately both Italy and Rhodes Island**, Italy having held the Dodecanese for the
+  period. Shared codes resolve to the shortest name, ties alphabetical — deterministic, and it
+  prefers the sovereign state over the territory filed under it.
+
+### Three parsing strategies, two measured and rejected
+
+- **Drop every partial row** (a row not filling all three era columns): honest but expensive —
+  176 of 353 codes, 80.0% of documents.
+- **Place codes by x position**: the column centres calibrate cleanly (125 / 224 / 293 from 140
+  rows each), but `PDFPage.characterBounds(at:)` does not agree with `PDFPage.string`'s ordering on
+  these files, so the positions cannot be trusted to belong to the tokens they are read for.
+- **Read NARA's own annotations** — the rule that ships. 135 `Discontinued` rows left-align, 106
+  `Beginning`/`Established` rows right-align, and an unannotated partial row is dropped and counted.
+
+Three bugs found by rendering the top corpus keys as a reader would see them, not by tests: a
+wrapped name after a code row was swallowed as note continuation (this hid the Soviet Union); a
+sort read the code's length instead of the name's (so 51 was "Corsica", not "France"); and the
+page headers reprint on every page, severing names from codes across breaks.
+
+### A short, sourced corrections list
+
+A few pages interleave columns beyond recovery — `Germany`'s name sits twenty lines above its
+`62 62 62`. Five entries are supplied by curation, **each established by the source document rather
+than by outside knowledge**, each carrying the quotation that establishes it. Germany's is derived
+from the table's own entries under the convention NARA's hints sheet states: `West Germany 62a`,
+`East Germany 62b`, so the parent is 62. The list is deliberately short and is not a place to make
+a coverage number look better.
+
+### Measured, and honest about the remainder
+
+**67.3% of decimal class keys and 78.8% of the documents behind them.** 124 codes remain
+unresolved. Where the table does not know a country it says nothing — the key renders as it does
+today — because a wrong gloss on an archival citation is worse than a bare number: the reader
+cannot tell it is wrong.
+
+The 1950–59 and 1960–63 schedules are **omitted**, not shipped thin: their scans letter-space every
+word and yield 4 and 8 class headings against ten. A half-named class table mislabels rather than
+labels, so the generator drops an incomplete schedule and says which eras it covers.
+
+## Session 2026-08-11 — #828 PR 2: the renderer pass
+
+The label table reaches the screen. One injection point does the whole job: class rows are built in
+exactly one place, `ArchivalCollectionsData.ranking`, so attaching the gloss there labels the
+chart, the uncapped list, the CSV exports and the Archival Sourcing card at once. Attaching it in a
+view instead would have left every export shipping bare numbers.
+
+### The gloss sits beside the key, never instead of it
+
+`793.94` still reads `793.94`, with *China and Japan* under it. The number is what a pull slip
+needs; the prose is what makes the ranking legible. The chart's y-axis keeps the bare key because
+that axis value is also the disambiguation key, and Swift Charts silently merges two bars sharing a
+label — so the gloss goes to VoiceOver there, and under the key everywhere a second line fits.
+
+### When the table is allowed to speak
+
+The rule is asymmetric, and the asymmetry is the whole correctness argument.
+
+- **Upper bound is checked.** The classification was renumbered in 1950, so a span reaching past
+  1949 also covers the era where the same digits mean something else. The 1948–1960 era band is
+  exactly that case and gets no labels at all.
+- **Lower bound is not.** The central decimal file begins in 1910, so the first band's 1861–1909
+  years contain no decimal keys to mislabel. Requiring containment at both ends silenced that band
+  entirely — and that band is the one #828 exists for, since before 1948 the class lens *is* the
+  named archival record.
+
+The first version got this wrong in the safe direction and shipped nothing at all; it was caught by
+rendering real keys rather than by a test.
+
+### Measured on the shipped artifact
+
+Over the first era band: `793.94` → China and Japan; `893.51` → China — financial conditions (NOT
+"China and France": class 8 is Internal Affairs, and its suffix only looks like a country code);
+`812.00` → Mexico — political affairs; `795.00` → Korea and The World, the inverted index form
+un-inverted. `763.72` reads as Austria and Serbia, which is what an Austro-Serbian file from a
+1910s volume should say.
+
+### Mutation sweep: 4 mutants, 4 killed
+
+Read class 8's suffix as a second country; stop enforcing the renumbering boundary; stop
+un-inverting `World, The`; stop attaching the gloss to the rows.
+
+## Session 2026-08-11 — #828 follow-up: four wrong glosses retired
+
+Investigating the remaining manuals turned up something more urgent than the manuals: **the shipped
+1910–49 table was confidently wrong about four country codes**, and two of them were large.
+
+| code | shipped gloss | truth | documents |
+|---|---|---|---|
+| `01` | Arctic | not a 1910–49 code at all | **4,513** |
+| `52` | `Africa."` | Spain | **1,761** |
+| `11h` | Alaska | not a 1910–49 code | — |
+| `90c` | `Azerbaijan Azores` | two rows' names merged | 8 |
+
+`501.BB` alone — 1,628 documents — was glossed "Arctic". It is a **Class 5 United Nations key** and
+names no country whatever. This is the precise failure the table's whole design is meant to make
+impossible, and it was shipping.
+
+### Two causes, both now closed
+
+- **`Discontinued ⇒ left-align` was never sound.** `Arctic 01 Discontinued 1955. See 03.` does not
+  say that 01 is a 1910–49 code; the annotation is written from the perspective of a column the
+  text never names. The rule is deleted. `Beginning`/`Established` is kept, because it is
+  directional in the other sense — a code that begins mid-period cannot be in the earliest column,
+  so right-alignment removes possibilities rather than inventing one.
+- **Note prose was reaching the name slot.** A country name is a noun phrase; names carrying a
+  quote mark, ending in a full stop or comma, or running past six words are rejected.
+
+Spain joins the curated corrections under the same rule as Germany — established by the document's
+own dependants (`Adrar 52c`, `Annobon 52e`, `Alhucemas 52f`) under the parent-plus-letter
+convention NARA's hints sheet states, never from outside knowledge.
+
+### The coverage number went down and the table got better
+
+67.3% of keys / 78.8% of documents → **63.3% / 77.1%**. The old figure counted 6,274 documents
+carrying a wrong label as covered. Net *correct* coverage rose; the headline fell because it had
+been flattered.
+
+### What the analysis found for the rest, and what it costs
+
+Measured before any of it was built:
+
+- **The later schedules are worth less than they look.** 73.9% of decimal-class documents sit in
+  the first era band, 24.4% in 1948–1960, 1.7% after. And the era bands do not align with the
+  schedule boundaries — band 1 spans 1948–1960, which is three schedules — so **no band-level rule
+  can label it however many schedules are parsed**. Attributing per *key* instead (all contributing
+  volumes agreeing on one schedule) would unlock 6.2% for 1951–1959 and 0.3% for 1960–1963.
+- **The biggest single win is in the era already covered**: the 1910–49 manual holds 646 nested
+  `.NNN` continuation lines under its class-8 headings that the parser never sees, because the
+  pattern demands an `8**.` prefix while the tree is written as bare `.421 Academic`. Measured lift
+  **+18,750 documents**, class-8 suffix naming 55.8% → 83.7%. No new extractor needed.
+- **The cultural-relations supplement should not be parsed.** 13 keys, 155 documents, and **zero**
+  corpus keys use its parenthesised grammar — `SourceNoteParser` drops it upstream, so no
+  downstream change could render it. Its one real subject, `.427††`, is already in the parent
+  manual.
+- Three traps recorded for whoever builds the later schedules: class 3 is **not** country-arranged
+  (including it would mislabel 4,151 documents, the UN General Assembly among them as "South and
+  Central America"); the later relations classes are 2/4/5/6, not 6 alone; and every pattern must
+  be bounded to the body pages, since the back index yields 1,445 confident nonsense matches that
+  clear the floors by orders of magnitude.
+
+## Session 2026-08-11 — #828 follow-up: the class-8 subdivision tree
+
+`812.6363` used to read "Mexico". It is the Mexican oil file — class 8, country 12, subject
+`.6363 Petroleum` — and the manual states it, three levels down a branch whose class is printed
+once at the top. The shipped table had the 61 stems and none of the tree.
+
+### Why one pass could not do it, and why the second one is line-anchored
+
+The stem pass demands a literal `8**.` on every entry, which is how the manual writes the top of a
+subdivision and nothing else; beneath it the class and the country are dropped and the suffix is
+printed alone (`.421 Academic.`, `.4211 Popular.`). Carrying the class forward from the last stem
+is the whole of the fix, and an earlier attempt at this got it wrong in a way worth recording: it
+split the text at every suffix occurrence, so each mid-entry pointer ("For apprenticeship, see
+8**.605") became a fragment whose remainder was the next entry's prose, and first-writer-wins locked
+it in — `8**.42` came back as "Division of Trade Agreements".
+
+The measurement that settles it: over the class-8 body, **not one of its 755 subdivision lines is a
+cross-reference, and not one cross-reference begins a line.** Anchoring at the line start removes
+the failure mode rather than guarding against it. Only four lines in the body carry anything before
+a suffix-shaped token; three are exactly that prose (`For armament control, United States, see
+711.00111 Armament control.`) and the fourth is `]8**.77 Railway.`, an OCR bracket — which is why
+one leading mark is tolerated and a leading word is not.
+
+### Class 8 only, and that is a property of the other classes
+
+Classes 6 and 7 are country-arranged too and neither writes a general bare suffix. Class 7's bare
+children belong to the *whole numbers* heading them — `.01 Right of residence` sits under `701
+Diplomatic representation`, meaning `701.01`; filed as a class-7 subject it would gloss `761.01` as
+the Soviet Union's right of residence, which the manual does not say. Its genuinely general
+subdivisions all carry the second-country marker (`.††11 War. Peace. Friendship.`) and are compound
+keys the one-suffix lookup cannot express. Class 6's are `††`-marked throughout. Running the pass
+anywhere else would invent readings, so it runs on class 8 and on the 1910–49 manual alone (blind
+against the two later scans it yields 507 and 311 further suffixes — numbers that mean nothing
+until someone has read what they say).
+
+### Three parse rules, each found by reading the output rather than by a test
+
+- **An entry the manual did not finish is not a label.** Every finished entry ends in a full stop.
+  One that does not either wrapped — and a wrapped phrase resumes in LOWER CASE, where a
+  sub-descriptor of the entry above starts a new capitalised sentence — or ran into the facing
+  column. Joining on that test recovered five truncated entries and refused the one case where the
+  next line was a second column. What is still unterminated is dropped, which is what stops
+  `.541 Industrial property. ** Country in which protection`, `.542 Patents is sought. For
+  treaties, conventions,`, `.543 Trade-marks. Trade names. arrangements, ect., add country number
+  ††,` and `.796104 Inspection. ** Country of regulation,` from shipping. The same rule costs four
+  entries the manual states perfectly well but forgot to punctuate (`.512 Taxation`, `.4511 Dress`,
+  `.61345 Soya beans`, `.2222F Foreign Nationals`); their keys render bare.
+- **Where bleed survives punctuation, it is cut.** `.544 Copyrights. using smaller number of
+  country for **.` ends in a full stop and is still two columns. A sentence resuming in lower case
+  is the second column starting, and so is a `**`/`††` followed by a capital — while `country **`
+  mid-phrase, which the manual writes constantly, is followed by a lower-case word and is left
+  alone.
+- **A gloss must begin with a letter.** The scan splits some numbers across a space; without the
+  rule, suffix `42` takes the gloss "31 Engineering" from `.42 31 Engineering` and overwrites
+  Education with a fragment.
+
+A country-scoped stem suspends inheritance: `800.88 Foreign carrying trade` has eight route termini
+under it (`.8810 North America.`) that are subdivisions of country 00, The World. Inherited by the
+class they would gloss `862.8810` as Germany's North America.
+
+### The subject keeps the manual's capitalisation
+
+Lower-casing it was right for 61 common nouns and wrong for a tree full of proper ones — it turned
+`.00N` into "Haiti — nazi. nazi activities" and `.142` into "United States — red cross". Any rule
+that lower-cases a first word breaks the proper-noun-initial entries, so the glosses now read as the
+manual prints them. This changes the appearance of every subject label already shipping and is the
+one item on the visual-review list.
+
+### Measured, with the app's own gloss code over the real corpus
+
+Over the Through-1947 era band — 261 volumes, 5,881 class keys, 135,432 documents:
+
+| | keys naming their subject | documents |
+|---|---|---|
+| before | 878 (14.9%) | 49,551 (36.6%) |
+| after | 2,069 (35.2%) | 69,851 (51.6%) |
+
+**1,191 keys and 20,300 documents gained a named subject.** The measure is *names the subject*, not
+*has a gloss*: an unresolved suffix already fell back to the country alone, so "keys glossed" is
+identical before and after (69.9%) and cannot see this change at all.
+
+Reading the largest of them is what the artifact is held to, and they are recognisable files:
+`812.6363 Mexico — Petroleum` (419), `882.5048 Liberia — Slavery. Compulsory labor. Peonage` (139),
+`891.51A Iran — Financial adviser` (142), `817.812 Nicaragua — Canals` (124), `837.61351 Cuba —
+Cane` (217), `893.0146 China — Territory occupied by foreign military forces` (127), `867.4016
+Turkey — Race problems` (89), `862.4016 Germany — Race problems` (86).
+
+### Known and deliberate: a gloss is not unique
+
+99 of the 693 suffixes share wording with another — `.711` and `.731` are both "Laws and
+regulations", of postal and of cable service; `.2225` and `.3225` are both "Discharge", from the
+army and from the navy. Qualifying them by their parent was measured and dropped: it does not
+separate the largest family (the military/naval pairs differ two levels up, so the qualifier would
+have to be the whole chain) and the key itself is always displayed beside the gloss.
+
+The subject floor rose 60 → 650. Sixty is met by the stem pass alone, so a nested pass that
+silently stopped matching would leave a table that still passes, still ships, and still labels
+`812.6363` "Mexico".
+
+## Session 2026-08-11 — #828 follow-up: a class label follows its own key's volumes
+
+The label rule asked whether a schedule could speak for the **era band**. That is the wrong
+question. The band is how the chart groups; the evidence a label rests on is the coverage of the
+volumes citing the key.
+
+### Why it is a prerequisite and not a refinement
+
+Band 1 runs 1948–1960 and spans three classification schedules, so no schedule can ever govern it —
+**however many are parsed**. With the band's span, shipping the 1951–59 and 1960–63 schedules would
+label nothing at all: band 1's 1960 falls outside 1951–59, band 2's 1968 outside 1960–63. Every key
+in the eras those schedules exist for would still render bare. Item 3 of the #828 follow-ups is
+unreachable without this one.
+
+### Measured on the shipped artifact, which carries 1910–49 alone
+
+- **Band 0: unchanged, key for key.** The one band-0 volume whose coverage runs past 1949
+  (`frus1945-50Intel`, 1945–1950) contributes no class keys at all, so nothing is withdrawn.
+- **Band 1: +310 keys, +966 documents** — `862.00 Germany — Political affairs` (67 documents, cited
+  only by volumes covering 1948–1949), `893.001 China — Chief executive. Sovereign` (56),
+  `818.00 Costa Rica — Political affairs` (55).
+- Bands 2–4: nothing, until their schedules are parsed. That is the guard, not a gap.
+- **A merged-band selection goes from labelling nothing to 67,213 documents.** The union of two
+  bands' years is covered by no schedule, so `ranking(bands:)` silenced every key in a multi-band
+  scope including the ones whose volumes never leave the 1910–49 file. No class-lens surface merges
+  bands today — #835's card is on the collections lens — so this is latent rather than visible, and
+  it is stated as latent.
+
+966 documents is a small number and the PR says so. The change is worth making for the two reasons
+above: it asks the right question, and it is the only route to the later schedules.
+
+### The span is a union, and it can only take a label away
+
+A key cited by volumes running 1930–1940 and 1955–1960 yields 1930…1960, which no schedule governs,
+so it stays bare — the same conservatism the band rule had, applied to the population it is about.
+A key with no recorded span gets no gloss rather than falling back to the band's, because a
+fallback would quietly restore the old rule for exactly the rows whose evidence is missing.
+
+### The drift guard got stronger, not weaker
+
+`rankingCarriesTheGloss` was a source scan for three literal substrings, two of which this change
+invalidated. It now drives the real derivation over the bundled usage index and manifest — asserting
+the row carries both the key and `Mexico — Petroleum` — and then enumerates every app source file
+touching `DecimalClassLabelStore`, requiring the list to be exactly `ArchivalCollectionsData.swift`.
+That is the claim "one label source" was always making, and the scan could not check it.
+
+### The mutation sweep found a trap the next PR would have armed
+
+Narrowing the union's *upper* bound was killed; ignoring its **lower** bound survived, because
+`governs(_:)` only ever read the upper one. That asymmetry was deliberate and correct while the
+span was a band's — the decimal file begins in 1910 and the first band opens in 1861, so requiring
+containment at both ends silenced the whole first band. Under per-key attribution the span is
+evidence, and dropping half of it is a latent mislabel: a key cited by volumes covering 1945–1955
+has its upper bound inside 1951–59, so the moment that schedule ships it would be read against a
+table governing half its documents.
+
+`governs(_:floor:)` now tests containment at both ends on a span **clamped at the earliest year any
+schedule covers**, which says what the asymmetry was reaching for instead of dropping the bound and
+hoping. A span ending before that floor still resolves to nothing, or the clamp would lift it into
+the first schedule. Every corpus figure above is unchanged; a decoded two-schedule table pins the
+straddling case, because the defect arrives with data rather than with code and nothing else in the
+suite would see it.

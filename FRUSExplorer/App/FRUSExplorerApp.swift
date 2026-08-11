@@ -92,7 +92,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
-/// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, lifecycles, your library |
+/// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, co-citation network, reference flows, your library |
 /// | `"frus.wordcloud"`              | Window        | Word cloud (note the lowercase `c`)              |
 /// | `"frus.chronology"`             | Window        | Chronology                                       |
 /// | `"frus.research"`               | Window        | Research — notes, tags, collections, highlights  |
@@ -850,7 +850,7 @@ struct FRUSExplorerApp: App {
         // MARK: - Archival Analytics Window (#765)
         //
         // Where the editors found what they published: era × collection rankings and collection
-        // lifecycles from the bundled authority + usage index (corpus-wide, needs no downloads),
+        // rankings from the bundled authority + usage index (corpus-wide, needs no downloads),
         // and the archival profile of the user's own indexed volumes from `document_sources`.
         Window(String(localized: "archival.window.title", defaultValue: "Archival Analytics"),
                id: "frus.archivalAnalytics") {
@@ -1325,6 +1325,15 @@ struct FRUSExplorerApp: App {
             // `.modelContainer` feeds the embedded History submenu's @Query; appState/
             // openWindow are explicit init params (mirroring the surrounding CommandGroup
             // blocks) rather than relying on @Environment propagation into .commands.
+            // Corpus Browser lives in the WINDOW menu, not Research. It opens a window and does
+            // nothing else — the Research menu's other items each act on research state (bind a
+            // project, open a collection), and grouping "show me this window" with them made the
+            // menu a list of two unlike things.
+            //
+            // ⌘⇧B stays on this Button rather than moving back to the `Window` scene: a
+            // scene-level shortcut runs no app code, so it cannot front a buried browser, and it
+            // appears on no menu at all (#749 / audit L-37). That is the defect this item exists
+            // to have fixed, and it is independent of which menu the item sits in.
             CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
                 ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
                     .modelContainer(modelContainer)
@@ -2743,6 +2752,24 @@ struct FindMenuContent: View {
         }
         .keyboardShortcut("s", modifiers: .command)
 
+        // Corpus Browser sits with Search and Citation Lookup because all three answer "find me
+        // something in the corpus" — by term, by citation, by where it sits in the series.
+        //
+        // It is deliberately NOT in the Window menu. macOS already generates an entry there for
+        // every `Window` scene, this one included, so an item of ours beside it was a visible
+        // duplicate (#822). The auto-entry raises the window; this one additionally carries ⌘⇧B
+        // and clears stale provenance, which is why both can exist without being redundant —
+        // provided they are in different menus.
+        //
+        // ⌘⇧B lives here rather than on the `Window` scene: a scene-level shortcut runs no app
+        // code, so it cannot front an open-but-buried browser and appears on no menu at all
+        // (#749 / audit L-37).
+        Button(String(localized: "menu.find.corpusBrowser", defaultValue: "Corpus Browser…")) {
+            appState.bindTool(.corpusBrowser, to: nil)   // clear stale provenance → recency fallback
+            openWindow.fronting(id: "frus.corpusBrowser")
+        }
+        .keyboardShortcut("b", modifiers: [.command, .shift])
+
         Button(String(localized: "menu.find.citationLookup", defaultValue: "Citation Lookup…")) {
             openWindow.fronting(id: "frus.citationLookup")
         }
@@ -2984,15 +3011,6 @@ struct ResearchMenuContent: View {
             openWindow.fronting(id: "frus.collections")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
-
-        // ⌘⇧B moved here from the Window scene (#749 / audit L-37): a scene-level shortcut runs no
-        // code, so it could not front a buried browser — and it appeared on no menu, so the only
-        // keyboard route to Browse was undiscoverable as well as unreliable.
-        Button(String(localized: "menu.research.corpusBrowser", defaultValue: "Corpus Browser")) {
-            appState.bindTool(.corpusBrowser, to: nil)   // clear stale provenance → recency fallback
-            openWindow.fronting(id: "frus.corpusBrowser")
-        }
-        .keyboardShortcut("b", modifiers: [.command, .shift])
 
         Divider()
 

@@ -47,6 +47,8 @@ struct ArchivalFlowsView: View {
     let entriesById: [String: VolumeManifestEntry]
     /// The bundled authority, for names and repositories.
     let authority: CollectionAuthorityIndex
+    /// Opens a collection's own authority record (#825b).
+    let onOpenCollection: (AuthorityCollectionRecord) -> Void
     /// Opens Archival Neighbors for a collection.
     let onOpenNeighbors: (AuthorityCollectionRecord) -> Void
     /// Volumes indexed on this device, for the export's provenance line.
@@ -551,12 +553,21 @@ struct ArchivalFlowsView: View {
             // "Browse these citations" is deliberately absent — see the caveats. What the app can
             // honestly offer is the other half of the pair, through a route that exists.
             if let record = authority.record(id: endpoint.id) {
-                Button {
-                    onOpenNeighbors(record)
-                } label: {
-                    Label(String(localized: "archival.flows.card.neighbors",
-                                 defaultValue: "Show Archival Neighbors"),
-                          systemImage: "square.stack.3d.up")
+                HStack {
+                    Button {
+                        onOpenNeighbors(record)
+                    } label: {
+                        Label(String(localized: "archival.flows.card.neighbors",
+                                     defaultValue: "Show Archival Neighbors"),
+                              systemImage: "square.stack.3d.up")
+                    }
+                    Button {
+                        onOpenCollection(record)
+                    } label: {
+                        Label(String(localized: "archival.flows.card.openCollection",
+                                     defaultValue: "Open Collection"),
+                              systemImage: "archivebox")
+                    }
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)

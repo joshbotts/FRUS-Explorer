@@ -139,8 +139,12 @@ struct ExportSheetView: View {
                     Text(String(localized: "export.zotero.send", defaultValue: "Send to Zotero Library"))
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
-                    Text(String(localized: "export.zotero.send.caption",
-                                defaultValue: "Over the Zotero web API — carries your tags & research notes. Falls back to an RIS file with no account."))
+                    // #358: the old single caption promised "falls back to an RIS file with no
+                    // account" on both platforms. On iOS that fallback reaches nothing: Zotero's
+                    // iOS app declares no document types for `.ris` and has no File → Import, so
+                    // the file lands nowhere. Saying so is the fix; the file is still worth
+                    // producing, but for a Mac.
+                    Text(zoteroCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -241,11 +245,25 @@ struct ExportSheetView: View {
             // Inline error — shown above the button bar when present
             if let error = exportError {
                 Divider()
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
-                    .font(.callout)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                    // #358: a failed send is not a dead end — the file route is unaffected by
+                    // whatever broke the API call.
+                    if zoteroFileRecoveryOffered {
+                        Button {
+                            zoteroFileRecoveryOffered = false
+                            Task { await exportZoteroRIS() }
+                        } label: {
+                            Label(String(localized: "export.zotero.recover",
+                                         defaultValue: "Save a Zotero file instead"),
+                                  systemImage: "doc.badge.arrow.up")
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
             }
 
             Divider()
@@ -380,6 +398,18 @@ struct ExportSheetView: View {
                         Label(error, systemImage: "exclamationmark.triangle")
                             .foregroundStyle(.red)
                             .font(.callout)
+                    // #358: a failed send is not a dead end — the file route is unaffected by
+                    // whatever broke the API call.
+                    if zoteroFileRecoveryOffered {
+                        Button {
+                            zoteroFileRecoveryOffered = false
+                            Task { await exportZoteroRIS() }
+                        } label: {
+                            Label(String(localized: "export.zotero.recover",
+                                         defaultValue: "Save a Zotero file instead"),
+                                  systemImage: "doc.badge.arrow.up")
+                        }
+                    }
                     }
                 }
             }
@@ -407,6 +437,7 @@ struct ExportSheetView: View {
     /// the resolved items to the format's exporter.
     private func runExport() async {
         exportError = nil
+        zoteroFileRecoveryOffered = false
 
         // Native shareable-collection file (D9): serialize the collection's source directly.
         if selectedFormat == .fruscollection {
@@ -576,6 +607,7 @@ struct ExportSheetView: View {
     /// content — so no volume needs to be downloaded to produce it.
     private func runNativeExport() {
         exportError = nil
+        zoteroFileRecoveryOffered = false
         // Smart collections have no static entries to serialize yet (D9b); the picker hides the
         // native format for them, but guard defensively.
         guard collection.savedSearchId == nil else {
@@ -631,6 +663,32 @@ struct ExportSheetView: View {
     /// `true` when a Zotero account is connected (Settings → Integrations → Zotero).
     private var isZoteroConnected: Bool { ZoteroAccountStore.shared.isConnected }
 
+    /// What the row can honestly promise, which differs by platform when no account is connected.
+    private var zoteroCaption: String {
+        if isZoteroConnected {
+            return String(localized: "export.zotero.send.caption.connected",
+                          defaultValue: "Over the Zotero web API — carries your tags & research notes.")
+        }
+        #if os(iOS)
+        // Verified against zotero/zotero-ios: no `CFBundleDocumentTypes` for `.ris`, no
+        // File → Import, and the share extension runs web translators only. An RIS cannot reach
+        // Zotero on this device, so the row must not imply that it does.
+        return String(localized: "export.zotero.send.caption.iosNoAccount",
+                      defaultValue: "Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.")
+        #else
+        return String(localized: "export.zotero.send.caption.macNoAccount",
+                      defaultValue: "Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero's File → Import.")
+        #endif
+    }
+
+    /// Set when a connected send failed and the RIS file is still worth offering (#358).
+    ///
+    /// A failed send used to end at an error message, discarding the work of resolving and
+    /// formatting the collection. The file route is unaffected by whatever broke the API call —
+    /// a bad key, an offline device, a 500 — so it is offered as a recovery rather than a
+    /// dead end.
+    @State private var zoteroFileRecoveryOffered = false
+
     /// The unified "Send to Zotero Library" action (Composer v2 §Export), invoked by `zoteroSendRow`:
     /// the annotation-preserving Web-API send when a Zotero account is connected, else the RIS-file
     /// fallback for Zotero desktop (the row's caption states this behavior).
@@ -673,6 +731,7 @@ struct ExportSheetView: View {
         let store = ZoteroAccountStore.shared
         guard let apiKey = store.retrieveKey(), let userID = store.userID else {
             exportError = ZoteroAPIError.missingCredentials.errorDescription
+            zoteroFileRecoveryOffered = true
             return
         }
         isExporting = true
@@ -703,6 +762,9 @@ struct ExportSheetView: View {
             return
         } catch {
             exportError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
+            // #358: the send failed, but the collection is resolved and the file route does not
+            // depend on whatever broke the API call. Offer it rather than ending here.
+            zoteroFileRecoveryOffered = true
         }
     }
 

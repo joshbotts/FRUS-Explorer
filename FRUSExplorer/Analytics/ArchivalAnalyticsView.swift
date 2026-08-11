@@ -30,6 +30,49 @@ import Charts
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1 (Collections + Your Library)
 ///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
+///   1.2 — Session 2026-08-10: #832(c) removes the lifecycle card; the mode ends with a
+///          pointer to where one collection's own timing lives
+///   1.3 — Session 2026-08-10: #826 adds the denominator line above the ranking and the
+///          "Inside these families" leaf list below it
+///   1.4 — Session 2026-08-10: #825(a, c) — ranking rows open a destination, and the row cap
+///          gains a way out through the uncapped all-units table
+///   1.5 — Session 2026-08-11: #825(b, e) — Network and Flows gain Open Collection, and the
+///          surface becomes addressable through a defaulted initializer
+///   1.6 — Session 2026-08-11: #838 — plain labels on the controls, the standing method
+///          statement moved into the info popover, the conditional disclosures left on the page
+///   1.7 — Session 2026-08-11: #827 — volume scoping over the SERIES (not the local index),
+///          applied to the derivation's coverage map so every figure narrows together
+///   1.8 — Session 2026-08-11: #833 — `initialScope:`, because the iOS presenter consumes the
+///         hand-off before this view mounts; and the load task is keyed on the scope, which
+///         is what #827 shipped without (the chip changed, the chart did not)
+/// The uncapped "Every Unit" sheet's whole input, captured at the moment it opens (#833 review).
+///
+/// The sheet used to read the host's live `collectionsData`, `band`, `unitLens`, `weight` and
+/// `hidesUmbrella`. Since a scope change drops the derivation, a hand-off arriving from another
+/// window while the sheet was open emptied its body — and because the sheet owns the only Done
+/// button, on macOS that left a window-modal sheet the reader could not dismiss. Capturing also
+/// keeps the list honest: it says "same as the chart", and it now means the chart it was opened
+/// from rather than whatever the chart became underneath it.
+///   1.9 — Session 2026-08-11: #835 — `onNavigateAway`, so a presenter that is itself a sheet
+///         closes behind a hand-off; a return link to the Research Guide; and the two store
+///         touches move inside `loadCollections`'s detached block, off the main actor
+private struct ArchivalAllUnitsPresentation: Identifiable {
+    /// Fresh per presentation, which is all `.sheet(item:)` needs.
+    let id = UUID()
+    /// The derivation the list is drawn from.
+    let data: ArchivalCollectionsData
+    /// The era it describes.
+    let band: ArchivalEraBand
+    /// Named collections or central-file classes.
+    let lens: ArchivalUnitLens
+    /// Documents or volumes.
+    let weight: ArchivalWeight
+    /// Whether the Central Files umbrella was withheld.
+    let hidingUmbrella: Bool
+    /// The scope's label, for the CSV's methods block.
+    let scopeLabel: String?
+}
+
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -43,7 +86,54 @@ struct ArchivalAnalyticsView: View {
     #endif
 
     /// The active mode.
-    @State private var mode: ArchivalAnalyticsMode = .collections
+    @State private var mode: ArchivalAnalyticsMode
+    /// The collection a deep link asked to focus the Network on, consumed once by that mode.
+    private let initialFocusId: String?
+
+    /// Invoked after this surface hands off and dismisses itself, so a presenter that is *also* a
+    /// sheet can close too (#798). `nil` wherever this view is the outermost presentation.
+    private let onNavigateAway: (() -> Void)?
+
+    /// Whether the band still has to be moved to the initializer's scope. The move needs
+    /// `appState`'s manifest, which no initializer has, so it happens on the first appearance.
+    private let initialScopeNeedsBand: Bool
+
+    /// Opens the surface, optionally aimed at a mode and a collection (#825e).
+    ///
+    /// Every parameter is defaulted, so `ArchivalAnalyticsView()` remains valid — the macOS
+    /// window scene still opens the surface that way, and that call site is pinned by a
+    /// source-scan test.
+    ///
+    /// This is what makes the surface addressable at all: until now every selection was
+    /// `@State` with no way in, so `CollectionDetailView` could not offer "see this collection's
+    /// co-citation neighbourhood" and the Research Guide's iOS cross-link (#798) had nothing to
+    /// hand a destination to. #833 added the third parameter for the same reason: iOS delivers a
+    /// scope through the initializer because its presenter drains the hand-off slot before this
+    /// view mounts.
+    ///
+    /// - Parameters:
+    ///   - mode: The mode to open on.
+    ///   - focusCollectionId: An authority collection id for the Network's focus. Ignored by the
+    ///     other modes, and ignored if the bundled authority does not carry it.
+    ///   - onNavigateAway: Invoked after this surface hands off and dismisses itself on iOS, so
+    ///     a presenter that is itself a sheet — the Research Guide (#798) — can close too.
+    ///   - initialScope: A volume scope delivered by the presenter rather than through
+    ///     `pendingArchivalScope`. iOS needs it: the tab shell consumes the hand-off in order to
+    ///     decide whether to present at all, so by the time this view mounts the slot is already
+    ///     empty. An empty volume set means no scope.
+    init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil,
+         initialScope: ArchivalScopeRequest? = nil, onNavigateAway: (() -> Void)? = nil) {
+        _mode = State(initialValue: mode)
+        self.onNavigateAway = onNavigateAway
+        self.initialFocusId = focusCollectionId
+        if let initialScope, !initialScope.volumeIds.isEmpty {
+            _scopeVolumeIds = State(initialValue: initialScope.volumeIds)
+            _scopeLabel = State(initialValue: initialScope.label)
+            self.initialScopeNeedsBand = true
+        } else {
+            self.initialScopeNeedsBand = false
+        }
+    }
 
     /// The era band the Collections ranking covers.
     ///
@@ -60,6 +150,11 @@ struct ArchivalAnalyticsView: View {
     @AppStorage("frus.archivalAnalytics.weight")
     private var weightRaw: String = ArchivalWeight.documents.rawValue
 
+    /// The volume set the Collections mode describes, or `nil` for the whole series (#827).
+    @State private var scopeVolumeIds: [String]?
+    /// The active scope's human label, shown on the chip and stamped on the export.
+    @State private var scopeLabel: String?
+
     /// Whether the `Central Files` umbrella is filtered out. Per-visit, like every other
     /// narrowing in the analytics family.
     @State private var hidesUmbrella = true
@@ -74,6 +169,17 @@ struct ArchivalAnalyticsView: View {
 
     /// The chart whose data the table inspector is showing.
     @State private var inspectorData: ChartInspectorData?
+    /// The collection record to present, set when a ranking row is opened (#825a).
+    @State private var collectionDetail: AuthorityCollectionRecord?
+    /// The uncapped "every unit in this era" table's presentation, or `nil` (#825c).
+    ///
+    /// Holds a SNAPSHOT rather than a flag. The sheet used to read `collectionsData` live, and
+    /// since a scope change now drops that derivation (#833), a hand-off arriving from another
+    /// window while the sheet was up emptied it — and the sheet owns the only Done button, so on
+    /// macOS that left a window-modal sheet with no way to dismiss it. The band, lens, weight and
+    /// umbrella state are captured with it so the list cannot end up describing a different era
+    /// from the one it was opened for.
+    @State private var allUnits: ArchivalAllUnitsPresentation?
     /// The file waiting to be shared (iOS) after an export.
     @State private var exportShareItem: AnalyticsExportFile?
     /// An export failure, surfaced rather than swallowed.
@@ -144,6 +250,45 @@ struct ArchivalAnalyticsView: View {
         .frame(minWidth: 720, minHeight: 580)
         #endif
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .sheet(item: $collectionDetail) { record in
+            // `CollectionDetailView` declares a NON-optional `@Environment(AppState.self)`, and
+            // that traps on DECLARATION rather than on use — so presenting it without an
+            // AppState would crash the very surface whose whole defensive pattern is to hold
+            // AppState optionally and degrade. Withheld instead.
+            if let appState {
+                CollectionDetailSheet(record: record)
+                    // Applied BEFORE the environment modifiers, which erase the concrete type.
+                    .onNavigateAwayFromCollection {
+                        #if os(iOS)
+                        // The analytics surface is itself a sheet on iOS, so a hand-off to the
+                        // Browse tab would land under it. Close both.
+                        collectionDetail = nil
+                        dismiss()
+                        // And whatever presented THIS surface, if it is itself a sheet. Reached
+                        // from the Research Guide (#798), dismissing only this one leaves the
+                        // guide sitting over the Browse tab that just navigated — the same
+                        // "nothing appears to have happened" shape one level further out.
+                        onNavigateAway?()
+                        #endif
+                    }
+                    .environment(appState)
+                    .environment(\.sceneID, sceneID ?? .anyWindow)
+            }
+        }
+        .sheet(item: $allUnits) { presentation in
+            ArchivalAllUnitsSheet(
+                band: presentation.band, lens: presentation.lens, weight: presentation.weight,
+                hidingUmbrella: presentation.hidingUmbrella,
+                data: presentation.data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+                scopeLabel: presentation.scopeLabel,
+                onOpen: { row in
+                    allUnits = nil
+                    // Presented on the NEXT update, not this one: dismissing a sheet and
+                    // presenting another in the same state change drops the second.
+                    Task { @MainActor in open(row, data: presentation.data) }
+                },
+                canOpen: { canOpen($0, data: presentation.data) })
+        }
         // D3 (#787): anchored on the outermost view, not on a `Group` child — see the
         // Group-modifier gotcha, which applies the presentation once per child.
         .sheet(item: $exportShareItem) { AnalyticsExportShareSheet(item: $0) }
@@ -178,7 +323,18 @@ struct ArchivalAnalyticsView: View {
             }
         }
         #endif
-        .task { await loadCollections() }
+        // KEYED ON THE SCOPE. `.task` without an id runs once per appearance, and
+        // `loadCollections` early-returns while `collectionsData` is non-nil — so an unkeyed
+        // task means changing the scope changes nothing on screen. The scope is the id, and
+        // `scopeSignature` is a value `.task(id:)` can compare.
+        .task(id: scopeSignature) { await loadCollections() }
+        .onChange(of: appState?.pendingArchivalScope) { _, _ in consumePendingScope() }
+        .task {
+            if initialScopeNeedsBand, let ids = scopeVolumeIds {
+                moveToTheBandTheScopeLivesIn(ids)
+            }
+            consumePendingScope()
+        }
         .task(id: libraryLoadToken) { await loadLibraryIfNeeded() }
     }
 
@@ -200,6 +356,21 @@ struct ArchivalAnalyticsView: View {
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.archivalAnalytics
         }
+        ToolbarItem(placement: .primaryAction) {
+            // The return half of #835's cross-link: the Archival Sourcing page frames what these
+            // rankings are about, and until now the pointer ran one way only. Guarded because
+            // `ResearchGuideLinkButton` declares a NON-optional AppState, which traps on
+            // declaration, while this surface holds it optionally.
+            // Withheld when the guide is what presented THIS surface (`onNavigateAway` is the
+            // marker for that): on iOS the button opens its own guide sheet, so offering it there
+            // makes the guide reachable from inside itself, one sheet deeper each time.
+            if appState != nil, onNavigateAway == nil {
+                ResearchGuideLinkButton(
+                    pageId: "series-sourcing",
+                    label: String(localized: "archival.researchGuide",
+                                  defaultValue: "About Archival Sourcing"))
+            }
+        }
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "archival.done", defaultValue: "Done")) { dismiss() }
@@ -217,6 +388,8 @@ struct ArchivalAnalyticsView: View {
                 indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                 usage: CollectionUsageIndexStore.shared,
                 onOpenNeighbors: { openNeighbors(for: $0) },
+                onOpenCollection: { collectionDetail = $0 },
+                initialFocusId: initialFocusId,
                 onOpenClassNeighbors: { openClassNeighbors($0) },
                 onExport: { deliver($0) })
         } else {
@@ -235,6 +408,7 @@ struct ArchivalAnalyticsView: View {
                               externalIndex: ExternalCitationIndexStore.shared,
                               entriesById: manifestEntriesById,
                               authority: authority,
+                              onOpenCollection: { collectionDetail = $0 },
                               onOpenNeighbors: { openNeighbors(for: $0) },
                               indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                               onExport: { deliver($0) })
@@ -261,54 +435,186 @@ struct ArchivalAnalyticsView: View {
         if let data = collectionsData {
             let ranking = data.ranking(band: band, lens: unitLens, weight: weight,
                                        hidingUmbrella: hidesUmbrella)
-            collectionsIntro
             filterRow(data: data)
+            denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
-            // Lifecycles are a property of a *collection* — a class has no custodian and no
-            // arrival in the record — and the card is only meaningful with bars in it.
-            if unitLens == .namedCollections, !data.lifecycleSpans.isEmpty {
-                lifecycleCard(data)
-            }
-            collectionsCaveats(data: data, ranking: ranking)
+            drillInHint(ranking)
+            showAllUnitsButton(ranking, data: data)
+            classFamilies(ranking)
+            // The conditional disclosures stay on the page — they describe THIS view, change with
+            // the controls, and a reader who never opens the popover must still see them.
+            collectionsConditionalCaveats(data: data, ranking: ranking)
+            perCollectionTimingPointer
+            methodPointer
         } else {
             loadingState(String(localized: "archival.collections.loading",
                                 defaultValue: "Reading the archival authority…"))
         }
     }
 
-    private var collectionsIntro: some View {
-        Text(String(localized: "archival.collections.intro",
-                    defaultValue: "Every published FRUS document carries a source note naming the archival file it came from. Grouped across the whole series, those notes show which bodies of records each era's editors actually worked in. They also track how the documentary base of American foreign relations moved from the State Department's filing rooms to the White House."))
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+
+    // MARK: - The topic door (#833)
+
+    /// Applies a scope handed in from elsewhere, once.
+    ///
+    /// Consumed rather than merely read: the hand-off is cleared on arrival, so re-entering the
+    /// mode does not re-apply a scope the reader has since changed. An **empty** volume set is
+    /// treated as no scope, because a topic that matches no volume is a fact about the topic and
+    /// an empty chart under its name would read as a broken filter.
+    private func consumePendingScope() {
+        guard let appState, let handoff = appState.pendingArchivalScope else { return }
+        #if os(macOS)
+        let isForThisScene = handoff.target == .macArchivalAnalytics
+        #else
+        let isForThisScene = handoff.target == (sceneID ?? .anyWindow)
+        #endif
+        guard isForThisScene else { return }
+        appState.pendingArchivalScope = nil
+        mode = .collections
+        guard !handoff.payload.volumeIds.isEmpty else { return }
+        setScope(handoff.payload.volumeIds, label: handoff.payload.label)
+        moveToTheBandTheScopeLivesIn(handoff.payload.volumeIds)
+    }
+
+    // MARK: - Scope (#827)
+
+    /// The scope as one comparable value, so `.task(id:)` can watch it.
+    ///
+    /// `[String]?` is `Equatable`, but the id also has to change when only the LABEL changes —
+    /// two different topics can select the same volumes, and the chart's own sentences name the
+    /// label.
+    ///
+    /// **`scopeGeneration` is in the key because the scope value alone is not enough.** Picking a
+    /// scope that is ALREADY active — tapping the checked "Whole corpus" row, re-picking the same
+    /// administration, using the same door twice for the same query — drops the derivation and
+    /// leaves the signature byte-identical, so a value-only key would never restart the load. The
+    /// chart would sit on its spinner permanently, and the scope chip lives inside the
+    /// `if let data` branch, so the control that could undo it would have vanished with the data.
+    private var scopeSignature: String {
+        "\(scopeGeneration)|\(scopeLabel ?? "")|\(scopeVolumeIds?.joined(separator: ",") ?? "")"
+    }
+
+    /// Bumped by every invalidation, so an idempotent re-pick still restarts the keyed load.
+    @State private var scopeGeneration = 0
+
+    /// Drops the derivation AND moves the key that rebuilds it. Always both, never one.
+    private func invalidateCollections() {
+        collectionsData = nil
+        scopeGeneration += 1
+    }
+
+    /// Sets the scope and drops the derivation, so the keyed task rebuilds it.
+    ///
+    /// Both halves are load-bearing and neither is enough alone: without clearing
+    /// `collectionsData` the reload early-returns, and without the keyed `.task` nothing re-runs
+    /// the reload. Every setter of the scope goes through here for that reason — the scope bar's
+    /// own bindings included.
+    private func setScope(_ ids: [String]?, label: String?) {
+        scopeVolumeIds = ids
+        scopeLabel = label
+        invalidateCollections()
+    }
+
+    /// Moves the era band to wherever the scoped volumes actually are.
+    ///
+    /// The band opens on 1948–1960 and is otherwise only ever moved by the reader's own segmented
+    /// control — which is right when the reader picked the scope while looking at the chart, and
+    /// wrong for a scope arriving from somewhere else. A subject like Vietnamization or a search
+    /// for a 1970s term selects volumes that no part of the default band covers, so the door would
+    /// land on an empty chart under the topic's name: a reader has every reason to read that as
+    /// "FRUS cites no archives for this topic" rather than "you are looking at the wrong decade".
+    ///
+    /// Applied ONLY to a scope handed in from elsewhere. Moving the band under a reader who is
+    /// working the scope bar would be a control changing itself while they use it.
+    ///
+    /// - Parameter ids: The scope's volumes.
+    private func moveToTheBandTheScopeLivesIn(_ ids: [String]) {
+        guard let best = ArchivalEraBand.bandHoldingMost(of: volumeCoverage(limitedTo: ids))
+        else { return }
+        band = best
+    }
+
+    /// The scope chip and the administration presets.
+    ///
+    /// `AnalyticsScopeBar` is the machinery the rest of the analytics family already uses, so a
+    /// reader who has scoped a word cloud knows this control. What differs is the POPULATION it
+    /// offers — see ``scopableVolumeIds``: this mode scopes over the **series**, not over the
+    /// reader's library, because its derivation is the bundled corpus-wide authority and is
+    /// honest with nothing downloaded.
+    ///
+    /// The administrations are a second menu rather than `AdministrationPresetMenu`, which binds
+    /// a **year range** and is documented as belonging to coverage-year surfaces only. Here an
+    /// administration is a volume SET, taken from the bundled profile index's own per-volume
+    /// breakdown, so "the Nixon administration" means the volumes that index attributes to it
+    /// rather than a date window this surface would then have to reconcile with its era bands.
+    @ViewBuilder
+    private var scopeControls: some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: scopableVolumeIds,
+            volumeTitle: { appState?.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
+            // The bar writes both halves through `setScope`, so its selections invalidate the
+            // derivation exactly as the administration menu's do. Assigning the state directly
+            // here is what let a scope change leave the chart untouched.
+            scopeVolumeIds: Binding(get: { scopeVolumeIds },
+                                    set: { setScope($0, label: scopeLabel) }),
+            scopeLabel: Binding(get: { scopeLabel },
+                                set: { setScope(scopeVolumeIds, label: $0) }),
+            onChange: { invalidateCollections() },
+            presentation: .chip)
+        administrationMenu
+    }
+
+    /// Scope to one presidential administration's volumes.
+    @ViewBuilder
+    private var administrationMenu: some View {
+        let profiles = appState?.administrationProfilesStore.index?.administrations ?? []
+        if !profiles.isEmpty {
+            Menu {
+                ForEach(profiles, id: \.id) { profile in
+                    Button(profile.president) {
+                        let ids = profile.volumes.map(\.volumeId)
+                            .filter { scopableVolumeIds.contains($0) }
+                        guard !ids.isEmpty else { return }
+                        setScope(ids.sorted(), label: profile.president)
+                    }
+                }
+            } label: {
+                chipLabel(systemImage: "person.crop.square",
+                          caption: String(localized: "archival.filter.administration",
+                                          defaultValue: "Administration"),
+                          value: String(localized: "archival.filter.administration.choose",
+                                        defaultValue: "Choose"))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
     }
 
     /// The era / units / weight controls, wrapped so they stack on a narrow window.
     private func filterRow(data: ArchivalCollectionsData) -> some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) { filterChips(data: data); Spacer(minLength: 0) }
-            VStack(alignment: .leading, spacing: 8) { filterChips(data: data) }
+            HStack(spacing: 8) { scopeControls; filterChips(data: data); Spacer(minLength: 0) }
+            VStack(alignment: .leading, spacing: 8) { scopeControls; filterChips(data: data) }
         }
     }
 
     @ViewBuilder
     private func filterChips(data: ArchivalCollectionsData) -> some View {
         Menu {
-            Picker(String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+            Picker(String(localized: "archival.filter.era", defaultValue: "Era"),
                    selection: $band) {
                 ForEach(ArchivalEraBand.all) { b in Text(b.title).tag(b) }
             }
         } label: {
             chipLabel(systemImage: "calendar",
-                      caption: String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+                      caption: String(localized: "archival.filter.era", defaultValue: "Era"),
                       value: band.title)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
 
         Menu {
-            Picker(String(localized: "archival.filter.units", defaultValue: "Units"),
+            Picker(String(localized: "archival.filter.units", defaultValue: "Show"),
                    selection: $unitLensRaw) {
                 ForEach(ArchivalUnitLens.allCases) { lens in
                     Text(lens.title).tag(lens.rawValue)
@@ -316,14 +622,14 @@ struct ArchivalAnalyticsView: View {
             }
         } label: {
             chipLabel(systemImage: "archivebox",
-                      caption: String(localized: "archival.filter.units", defaultValue: "Units"),
+                      caption: String(localized: "archival.filter.units", defaultValue: "Show"),
                       value: unitLens.title)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
 
         Menu {
-            Picker(String(localized: "archival.filter.weight", defaultValue: "Weight"),
+            Picker(String(localized: "archival.filter.weight", defaultValue: "Count by"),
                    selection: $weightRaw) {
                 ForEach(ArchivalWeight.allCases) { w in
                     Text(w.title).tag(w.rawValue)
@@ -335,7 +641,7 @@ struct ArchivalAnalyticsView: View {
             .disabled(!data.supportsDocumentWeight)
         } label: {
             chipLabel(systemImage: "doc.on.doc",
-                      caption: String(localized: "archival.filter.weight", defaultValue: "Weight"),
+                      caption: String(localized: "archival.filter.weight", defaultValue: "Count by"),
                       value: weight.title)
         }
         .buttonStyle(.bordered)
@@ -376,7 +682,249 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
-    // MARK: - Card 1: the ranking
+    // MARK: - The denominator line (#826/R-5)
+
+    /// What the drawn rows account for, against the band's own source-note total.
+    ///
+    /// The shipped artifact has carried `volumeNoteCounts` since #763 — described in its own
+    /// generator notes as "the per-volume source-note totals every share needs as a denominator"
+    /// — and nothing read it. Without it the mode opens on 1948–1960 drawing twelve bars that
+    /// account for **9.4%** of the band's sourced documents, with nothing on screen saying so.
+    /// The era asymmetry the caveat block describes in prose is, stated this way, the finding.
+    ///
+    /// The share is withheld rather than approximated under the volumes weight: the numerator
+    /// would be volumes and the denominator notes.
+    @ViewBuilder
+    private func denominatorLine(_ ranking: ArchivalRanking,
+                                 data: ArchivalCollectionsData) -> some View {
+        if let notes = data.noteCount(band: band) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(denominatorSentence(ranking, notes: notes))
+                    .font(.footnote.weight(.medium))
+                if let pointer = denominatorPointer(data: data) {
+                    Text(pointer).font(.footnote)
+                }
+            }
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// "N source notes in this era. The M rows below account for X% of them."
+    private func denominatorSentence(_ ranking: ArchivalRanking, notes: Int) -> String {
+        // The population's name, not just the era: once a scope is on, "22,737 source notes in
+        // 1961–1968" would be read as the series' 1961–1968 when it is the scope's.
+        let population = scopeLabel.map {
+            String(format: String(localized: "archival.denominator.scoped %@ %@",
+                                  defaultValue: "%1$@, %2$@"), $0, band.title)
+        } ?? band.title
+        guard let share = ranking.shownShare(weight: weight) else {
+            return String(format: String(
+                localized: "archival.denominator.notes %lld %@",
+                defaultValue: "%1$lld source notes in %2$@."), Int64(notes), population)
+        }
+        return String(format: String(
+            localized: "archival.denominator.share %lld %@ %lld %@",
+            defaultValue: "%1$lld source notes in %2$@. The %3$lld rows below account for %4$@ of them."),
+            Int64(notes), population, Int64(ranking.rows.count), Self.shareText(share))
+    }
+
+    /// A share, never rounded to a number that reads as nothing.
+    ///
+    /// `fractionLength` has a *minimum* of zero, so a plain percent style renders the class
+    /// lens's 1977–1992 share — 3 documents in 12,609 notes — as "0%", which states that the
+    /// rows below account for none of the era while three bars sit under it. Anything below a
+    /// percent says so in words instead.
+    static func shareText(_ share: Double) -> String {
+        guard share >= 0.01 else {
+            return String(localized: "archival.denominator.underOnePercent",
+                          defaultValue: "under 1%")
+        }
+        return share.formatted(.percent.precision(.fractionLength(share < 0.1 ? 1 : 0)))
+    }
+
+    /// The one comparison the collection/class overlap does not spoil: whether the *other* lens
+    /// reaches materially more of this band, which in the early eras it does by an order of
+    /// magnitude and is the whole reason the unit switch exists.
+    private func denominatorPointer(data: ArchivalCollectionsData) -> String? {
+        let other: ArchivalUnitLens = unitLens == .namedCollections ? .centralFileClasses
+                                                                    : .namedCollections
+        let mine = data.reach(band: band, lens: unitLens)
+        let theirs = data.reach(band: band, lens: other)
+        guard theirs > mine * 2 else { return nil }
+        switch other {
+        case .centralFileClasses:
+            return String(localized: "archival.denominator.tryClasses",
+                          defaultValue: "Most of this era's sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.")
+        case .namedCollections:
+            return String(localized: "archival.denominator.tryCollections",
+                          defaultValue: "Most of this era's sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.")
+        }
+    }
+
+    /// Says the bars can be opened, and where the same rows are reachable without a tap.
+    ///
+    /// Two precedents in this app pair a chart tap with a hint (`AnalyticsView`'s by-subseries
+    /// and by-volume charts); an unannounced tap target is a feature only the person who wrote
+    /// it knows about. It also names the list, which is the route that works for VoiceOver: a
+    /// `chartOverlay` tap is not an accessibility element, so the rows-as-rows table is the
+    /// accessible way to the same destinations — the same division Person Analytics draws
+    /// between its chart and its table.
+    @ViewBuilder
+    private func drillInHint(_ ranking: ArchivalRanking) -> some View {
+        if !ranking.rows.isEmpty {
+            Label(unitLens == .namedCollections
+                  ? String(localized: "archival.ranking.drillIn.collections",
+                           defaultValue: "Tap a bar to open that collection's record, or use the list below.")
+                  : String(localized: "archival.ranking.drillIn.classes",
+                           defaultValue: "Tap a bar to see that file number's documents, or use the list below."),
+                  systemImage: "hand.tap")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Every unit (#825c)
+
+    /// The way out of the row cap.
+    ///
+    /// The chart draws twelve bars and the caption has always counted the units reached in the
+    /// hundreds, but until now those rows existed nowhere the reader could get at them: the
+    /// table inspector and the CSV both carried the capped twelve, so the full list was
+    /// unobtainable in the app *and* out of it. Withheld when nothing is capped.
+    @ViewBuilder
+    private func showAllUnitsButton(_ ranking: ArchivalRanking, data: ArchivalCollectionsData)
+        -> some View
+    {
+        if ranking.unitsReached > ranking.rows.count {
+            Button {
+                allUnits = ArchivalAllUnitsPresentation(
+                    data: data, band: band, lens: unitLens, weight: weight,
+                    hidingUmbrella: hidesUmbrella, scopeLabel: scopeLabel)
+            } label: {
+                Label(String(format: String(
+                    localized: "archival.allUnits.button %lld",
+                    defaultValue: "Show all %lld units in this era"),
+                    Int64(ranking.unitsReached)), systemImage: "tablecells")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    // MARK: - Opening a row (#825a)
+
+    /// Where a ranking row goes when it is opened.
+    ///
+    /// The two lenses rank different kinds of thing and so have different destinations, which is
+    /// the whole reason this is one function rather than a tap handler per surface:
+    ///
+    /// - A **collection** is a body of records, so it opens its authority record — the one screen
+    ///   holding the NARA catalog link, the aliases, the citing volumes and Divided at NARA. A row
+    ///   whose id the authority does not carry simply does not open (see
+    ///   ``ArchivalCollectionsData/record(forId:)``); it has no record to show, and inventing a
+    ///   destination would be worse than the dead end this issue is closing.
+    /// - A **class** is a subject heading inside a filing system, not a body of records. There is
+    ///   nothing to open, so it routes to the class-keyed Archival Neighbors — the documents
+    ///   themselves.
+    private func open(_ row: ArchivalRankingRow, data: ArchivalCollectionsData) {
+        switch unitLens {
+        case .namedCollections:
+            guard appState != nil, let record = data.record(forId: row.id) else { return }
+            collectionDetail = record
+        case .centralFileClasses:
+            openClassNeighbors(row.id)
+        }
+    }
+
+    /// Whether a row has somewhere to go, so a list can withhold the affordance rather than
+    /// offering a control that does nothing.
+    private func canOpen(_ row: ArchivalRankingRow, data: ArchivalCollectionsData) -> Bool {
+        unitLens == .centralFileClasses
+            || (appState != nil && data.record(forId: row.id) != nil)
+    }
+
+    // MARK: - Class families (#826/R-4)
+
+    /// The way back from a folded family to the leaf a pull slip actually names.
+    ///
+    /// The fold is what makes the class lens rankable — at leaf grain half the subject-numeric
+    /// keys carry a single document — but `POL 27 VIET S` is what a researcher writes at NARA,
+    /// and `POL 27` is not. So every folded row can be opened to its leaves with their own
+    /// counts. Rows that fold nothing (every decimal file number, and a family with one leaf
+    /// under its own name) are omitted rather than listed as empty disclosures.
+    ///
+    /// A list below the chart rather than expansion inside it: the ranking is a Swift Charts
+    /// `Chart` whose categorical axis is one row per bar, and inserting leaf rows into it would
+    /// redraw the bars at a grain the axis does not describe.
+    /// The families list's caption, which has to change with the weight because the arithmetic
+    /// does: document counts add up to the bar, distinct-volume counts do not.
+    private var familiesCaption: String {
+        weight == .documents
+            ? String(localized: "archival.families.caption.documents",
+                     defaultValue: "Related file numbers are ranked together. Open one for the exact designator a pull slip needs; its parts add up to the bar above.")
+            : String(localized: "archival.families.caption.volumes",
+                     defaultValue: "Related file numbers are ranked together. Open one for the exact designator a pull slip needs. Each line counts the volumes citing that designator, so they overlap and do not add up to the bar: a volume citing two of them counts once for the group.")
+    }
+
+    @ViewBuilder
+    private func classFamilies(_ ranking: ArchivalRanking) -> some View {
+        let families = ranking.rows.filter(\.isFamily)
+        if unitLens == .centralFileClasses, !families.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "archival.families.title",
+                            defaultValue: "Inside these families"))
+                    .font(.subheadline.weight(.semibold))
+                Text(familiesCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(families) { family in
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Ordered by the weight on screen. The stored order is by documents,
+                            // which under Count-by = Volumes draws a visibly non-monotonic
+                            // column — measured on POL 27, 5 of 20 adjacent pairs inverted.
+                            ForEach(family.leaves.sorted {
+                                $0.value(weight: weight) != $1.value(weight: weight)
+                                    ? $0.value(weight: weight) > $1.value(weight: weight)
+                                    : $0.key < $1.key
+                            }) { leaf in
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(leaf.key)
+                                        .font(.caption.monospaced())
+                                    Spacer(minLength: 12)
+                                    // The weight's own unit. Under Documents the leaves sum to
+                                    // the bar; under Volumes they do NOT, and must not be added:
+                                    // each leaf counts its own distinct volumes while the bar
+                                    // counts their union, so a volume citing two designators is
+                                    // one bar-volume and two leaf-volumes. The caption says so.
+                                    Text(leaf.value(weight: weight), format: .number)
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                .accessibilityElement(children: .combine)
+                            }
+                        }
+                        .padding(.top, 2)
+                    } label: {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(family.name).font(.callout)
+                            Spacer(minLength: 12)
+                            Text(String(format: String(
+                                localized: "archival.families.count %lld",
+                                defaultValue: "%lld in family"), Int64(family.leaves.count)))
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - The ranking card
 
     @ViewBuilder
     private func rankingCard(_ ranking: ArchivalRanking, data: ArchivalCollectionsData) -> some View {
@@ -386,7 +934,9 @@ struct ArchivalAnalyticsView: View {
             band: band, lens: unitLens, weight: weight,
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount,
-            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
+            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue,
+            scopeLabel: scopeLabel)
         SeriesChartCard(
             title: title,
             caption: rankingCaption(ranking),
@@ -409,7 +959,7 @@ struct ArchivalAnalyticsView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 12)
             } else {
-                rankingChart(ranking)
+                interactiveRankingChart(ranking, data: data)
                     .frame(height: CGFloat(ranking.rows.count) * 26 + 60)
             }
         }
@@ -420,6 +970,35 @@ struct ArchivalAnalyticsView: View {
     /// `AnalyticsFigureCanvas` renders detached from the view hierarchy and inherits no
     /// environment, so everything this reads — the weight's title, the category colours, the row
     /// labels — must already be resolved by the time it is called. All of it is.
+    /// The ranking chart with its tap-through, for the screen only.
+    ///
+    /// Interaction is added here rather than inside ``rankingChart(_:)`` because that body is
+    /// also what the figure exporter rasterises, and a hit-test overlay in a PNG is dead weight
+    /// — the same split Person Analytics draws between its screen chart and its export.
+    private func interactiveRankingChart(_ ranking: ArchivalRanking,
+                                         data: ArchivalCollectionsData) -> some View {
+        rankingChart(ranking)
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard let anchor = proxy.plotFrame else { return }
+                            let plot = geo[anchor]
+                            // The Y axis is categorical on `label`, which `disambiguate` has
+                            // already made unique within the ranking — so the label round-trips
+                            // to exactly one row.
+                            guard let label = proxy.value(atY: location.y - plot.origin.y,
+                                                          as: String.self),
+                                  let row = ranking.rows.first(where: { $0.label == label })
+                            else { return }
+                            open(row, data: data)
+                        }
+                }
+            }
+    }
+
     @ViewBuilder
     private func rankingChart(_ ranking: ArchivalRanking) -> some View {
         Chart {
@@ -437,7 +1016,11 @@ struct ArchivalAnalyticsView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                .accessibilityLabel(Text(row.label))
+                // #828: the axis keeps the bare key — it is the disambiguation key, and a chart
+                // silently merges two bars sharing a label — but VoiceOver reads the gloss, which
+                // is the one place a reader cannot glance at the row beneath for it.
+                .accessibilityLabel(Text([row.label, row.gloss].compactMap { $0 }
+                    .joined(separator: ", ")))
                 .accessibilityValue(Text(accessibilityValue(for: row)))
             }
         }
@@ -469,7 +1052,7 @@ struct ArchivalAnalyticsView: View {
             : String(localized: "archival.ranking.caption.units.classes", defaultValue: "classes")
         return String(format: String(
             localized: "archival.ranking.caption %@ %lld %@ %lld",
-            defaultValue: "Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are coloured by who holds the records."),
+            defaultValue: "Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colored by who holds the records."),
             band.title, Int64(ranking.bandVolumeCount), Int64(ranking.unitsReached), units)
     }
 
@@ -493,96 +1076,6 @@ struct ArchivalAnalyticsView: View {
             rowCells: ranking.rows.map { [$0.label, $0.category.displayName, "\($0.value)"] })
     }
 
-    // MARK: - Card 2: lifecycles
-
-    private func lifecycleCard(_ data: ArchivalCollectionsData) -> some View {
-        let spans = data.lifecycleSpans
-        let provenance = ArchivalAnalyticsExport.lifecycles(
-            spanCount: spans.count, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
-        return SeriesChartCard(
-            title: String(localized: "archival.lifecycle.title",
-                          defaultValue: "Collection lifecycles in FRUS sourcing"),
-            caption: String(localized: "archival.lifecycle.caption",
-                            defaultValue: "Each collection here is one of those cited by the most volumes. Its bar runs from the earliest to the latest coverage year of those volumes, so it shows when a body of records enters the published record and how long the editors keep returning to it. This card does not change with the era filter."),
-            inspector: lifecycleTable(spans),
-            onInspect: { inspectorData = $0 },
-            controls: {
-                exportControl(table: lifecycleTable(spans), provenance: provenance) { format in
-                    deliverFigure(format, provenance: provenance,
-                                  chartHeight: CGFloat(spans.count) * 24 + 60) {
-                        lifecycleChart(spans)
-                    }
-                }
-            }
-        ) {
-            lifecycleChart(spans)
-                .frame(height: CGFloat(spans.count) * 24 + 60)
-        }
-    }
-
-    /// The lifecycle chart, separated from its card so the figure exporter can render it.
-    @ViewBuilder
-    private func lifecycleChart(_ spans: [ArchivalLifecycleSpan]) -> some View {
-        Chart {
-            ForEach(spans) { span in
-                BarMark(
-                    xStart: .value(String(localized: "archival.table.first",
-                                          defaultValue: "First coverage year"), span.firstYear),
-                    xEnd: .value(String(localized: "archival.table.last",
-                                        defaultValue: "Last coverage year"), span.lastYear),
-                    y: .value(String(localized: "archival.ranking.y",
-                                     defaultValue: "Archival unit"), span.label)
-                )
-                .foregroundStyle(by: .value(
-                    String(localized: "archival.ranking.legend", defaultValue: "Custodian"),
-                    span.category.displayName))
-                .cornerRadius(3)
-                .accessibilityLabel(Text(span.label))
-                .accessibilityValue(Text(String(
-                    format: String(localized: "archival.lifecycle.a11y %lld %lld %lld",
-                                   defaultValue: "%1$lld to %2$lld, cited by %3$lld volumes"),
-                    Int64(span.firstYear), Int64(span.lastYear), Int64(span.volumeCount))))
-            }
-        }
-        .chartForegroundStyleScale(
-            domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
-            range: ArchivalRepositoryCategory.ordered.map(\.color))
-        .chartYAxis {
-            AxisMarks(preset: .extended, position: .leading) { _ in
-                AxisValueLabel(horizontalSpacing: 8)
-            }
-        }
-        .chartXAxis {
-            AxisMarks { _ in
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
-            }
-        }
-        .chartXAxisLabel(String(localized: "archival.lifecycle.x",
-                                defaultValue: "Coverage year"))
-    }
-
-    /// The lifecycle card's table — one value, used by both the inspector and the export, so the
-    /// numbers a reader sees and the numbers they take away cannot drift apart.
-    private func lifecycleTable(_ spans: [ArchivalLifecycleSpan]) -> ChartInspectorData {
-        ChartInspectorData(
-            id: "archival.lifecycle",
-            title: String(localized: "archival.lifecycle.title",
-                          defaultValue: "Collection lifecycles in FRUS sourcing"),
-            columns: [
-                String(localized: "archival.table.unit", defaultValue: "Archival unit"),
-                String(localized: "archival.table.custodian", defaultValue: "Custodian"),
-                String(localized: "archival.table.first", defaultValue: "First coverage year"),
-                String(localized: "archival.table.last", defaultValue: "Last coverage year"),
-                String(localized: "archival.weight.volumes", defaultValue: "Volumes"),
-            ],
-            rowCells: spans.map {
-                [$0.label, $0.category.displayName, "\($0.firstYear)", "\($0.lastYear)",
-                 "\($0.volumeCount)"]
-            })
-    }
-
     /// The per-card export control, in `SeriesChartCard`'s controls slot.
     ///
     /// Per-card rather than one control for the view, because this surface shows several charts
@@ -602,12 +1095,37 @@ struct ArchivalAnalyticsView: View {
 
     // MARK: - Collections caveats
 
-    private func collectionsCaveats(data: ArchivalCollectionsData,
-                                    ranking: ArchivalRanking) -> some View {
+    /// Where a *single* collection's timing lives, now that the corpus-wide lifecycle card is gone.
+    ///
+    /// The card this replaces ranked collections by citing volumes and drew each one's first-to-last
+    /// coverage span. Two things made it an accident of derivation order rather than a finding: it
+    /// ignored the umbrella chip, so `Central Files` topped it whatever the reader had chosen, and
+    /// repository-grain records ranked beside collections. The same question — when did this body of
+    /// records enter the published series, and how long did the editors keep returning to it — is
+    /// answered per collection, and correctly, by `CollectionDetailView`'s Cited Over Time chart.
+    private var perCollectionTimingPointer: some View {
+        Label {
+            Text(String(localized: "archival.collections.timingPointer",
+                        defaultValue: "When one collection entered the published record, and how long the editors kept returning to it, is on that collection's own record, under Cited Over Time."))
+        } icon: {
+            Image(systemName: "info.circle")
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// The disclosures that describe **this** view rather than the method.
+    ///
+    /// #838 moved the standing method statement into the ⓘ popover, and deliberately left these
+    /// behind. They are conditional: each appears only when the thing it discloses is true of
+    /// the chart on screen right now — what the umbrella filter withheld *in this era*, and
+    /// whether an artifact failed to load. A caveat that changes with the controls has to be
+    /// where the controls are; a reader who never opens a popover must still be told that the
+    /// largest bar is missing.
+    private func collectionsConditionalCaveats(data: ArchivalCollectionsData,
+                                               ranking: ArchivalRanking) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
             if let hidden = ranking.hiddenUmbrellaValue {
                 Text(String(format: String(
                     localized: "archival.caveats.umbrella %lld %@ %@",
@@ -624,13 +1142,18 @@ struct ArchivalAnalyticsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text(String(localized: "archival.caveats.body",
-                        defaultValue: "These figures are parsed from document source notes, not read from an archive's catalog. They say where the editors drew documents from. That is an editorial and archival signal, not a census of the records themselves. The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection can have volumes and no documents. Coverage is uneven by era, and switching the unit is the way through it. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. The class list holds two filing systems, because FRUS cites both: the decimal classes of the pre-1963 central files, and the subject-numeric designators that replaced them. Collections are grouped across volumes by name. When two spellings of one name fail to merge, the same body of records appears twice under nearby names."))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 4)
+    }
+
+    /// The one line that replaces the removed intro and footer blocks.
+    private var methodPointer: some View {
+        Label(String(localized: "archival.caveats.pointer",
+                     defaultValue: "Where these figures come from, what each count measures, and how coverage changes by era — in About These Figures, above."),
+              systemImage: "info.circle")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Your Library mode
@@ -731,7 +1254,10 @@ struct ArchivalAnalyticsView: View {
                 ForEach(profile.bands) { band in
                     ForEach(band.categories) { item in
                         BarMark(
-                            x: .value(String(localized: "archival.filter.era",
+                            // Its OWN key: the filter chip's key now defaults to "Era", and one
+                            // key carrying two default values means a translation of either
+                            // silently rewrites the other.
+                            x: .value(String(localized: "archival.library.bands.axis",
                                              defaultValue: "Coverage era"), band.band.title),
                             y: .value(String(localized: "archival.table.documents",
                                              defaultValue: "Documents"), item.documentCount)
@@ -746,7 +1272,7 @@ struct ArchivalAnalyticsView: View {
             }
             .chartForegroundStyleScale(
                 domain: SourceProvenanceCategory.ordered.map(\.displayName))
-            .chartXAxisLabel(String(localized: "archival.filter.era", defaultValue: "Coverage era"))
+            .chartXAxisLabel(String(localized: "archival.filter.era", defaultValue: "Era"))
             .chartYAxisLabel(String(localized: "archival.table.documents",
                                     defaultValue: "Documents"))
             .frame(height: 260)
@@ -777,7 +1303,7 @@ struct ArchivalAnalyticsView: View {
             title: String(localized: "archival.library.bands.title",
                           defaultValue: "Citation forms across your volumes"),
             columns: [
-                String(localized: "archival.filter.era", defaultValue: "Coverage era"),
+                String(localized: "archival.filter.era", defaultValue: "Era"),
                 String(localized: "archival.table.provenance", defaultValue: "Provenance"),
                 String(localized: "archival.table.documents", defaultValue: "Documents"),
             ],
@@ -807,7 +1333,7 @@ struct ArchivalAnalyticsView: View {
                           defaultValue: "Your most-cited collections"),
             caption: String(format: String(
                 localized: "archival.library.collections.caption %lld %lld",
-                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognise. Neither group is listed here."),
+                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognize. Neither group is listed here."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)),
             inspector: libraryCollectionsTable(profile),
@@ -818,7 +1344,7 @@ struct ArchivalAnalyticsView: View {
         ) {
             if profile.collections.isEmpty {
                 Text(String(localized: "archival.library.collections.empty",
-                            defaultValue: "None of your volumes' source notes name a collection the bundled authority recognises."))
+                            defaultValue: "None of your volumes' source notes name a collection the bundled authority recognizes."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -893,7 +1419,7 @@ struct ArchivalAnalyticsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.library.footer.detail %lld %lld",
-                defaultValue: "A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognise."),
+                defaultValue: "A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognize."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)))
                 .font(.footnote)
@@ -995,18 +1521,27 @@ struct ArchivalAnalyticsView: View {
     /// Read on the main actor because `ManifestStore` is `@MainActor`; the value is a plain
     /// dictionary, so the derivations that consume it can run anywhere.
     @MainActor
-    private func volumeCoverage() -> [String: ArchivalVolumeCoverage] {
+    private func volumeCoverage(limitedTo scope: [String]? = nil) -> [String: ArchivalVolumeCoverage] {
         guard let store = appState?.manifestStore else { return [:] }
+        // The map is built by the shared builder (#835), not here: the coverage map IS the volume
+        // set, so a second copy of this loop would be a second definition of what a scope means —
+        // and the Archival Sourcing card scopes the same corpus by the same rule.
+        return ArchivalVolumeCoverage.map(from: store.diffResult?.known ?? store.bundledEntries,
+                                          limitedTo: scope.map(Set.init))
+    }
+
+    /// Every volume the **series** has, which is what the scope selector offers (#827).
+    ///
+    /// Deliberately NOT `appState.indexedVolumeIds`, which is what every other analytics surface
+    /// scopes over. Those surfaces read the local index and can only describe what is
+    /// downloaded; this mode's derivation is the bundled corpus-wide authority and usage index,
+    /// and it is honest about all 552 volumes with none of them downloaded. Intersecting with
+    /// the library would silently answer a different question for every reader — "the collections
+    /// of the 1969–76 subseries" would mean the eleven volumes they happen to hold.
+    private var scopableVolumeIds: Set<String> {
+        guard let store = appState?.manifestStore else { return [] }
         let entries = store.diffResult?.known ?? store.bundledEntries
-        var result: [String: ArchivalVolumeCoverage] = [:]
-        result.reserveCapacity(entries.count)
-        for entry in entries {
-            let first = FRUSVolumeMetadata.firstYear(in: entry.dateRange.earliest)
-            let last = FRUSVolumeMetadata.firstYear(in: entry.dateRange.latest)
-            guard let start = first ?? last, let end = last ?? first else { continue }
-            result[entry.volumeId] = ArchivalVolumeCoverage(firstYear: start, lastYear: end)
-        }
-        return result
+        return Set(entries.map(\.volumeId))
     }
 
     /// Volumes in the series, for the library footer's "more exist" clause.
@@ -1016,14 +1551,32 @@ struct ArchivalAnalyticsView: View {
     }
 
     /// Builds the corpus-wide derivation off the main actor.
+    ///
+    /// **The result is admitted only if the scope has not moved under it.** `Task.detached` does
+    /// not inherit cancellation and `Task.value` is non-throwing, so when `.task(id:)` cancels a
+    /// run in flight the work still finishes and this function still resumes after the `await`.
+    /// Two runs overlap whenever a scope arrives while the first load is going — the macOS window
+    /// mounts unscoped and consumes the hand-off a moment later, which is precisely that shape —
+    /// and an unconditional assignment lets the superseded UNSCOPED derivation land last. The
+    /// chart would then show corpus-wide figures under the scope's own name and label, with no
+    /// visible sign anything was wrong.
     private func loadCollections() async {
         guard collectionsData == nil else { return }
-        let coverage = volumeCoverage()
-        let authority = CollectionAuthorityStore.shared?.collections ?? []
-        let usage = CollectionUsageIndexStore.shared
-        collectionsData = await Task.detached(priority: .userInitiated) {
-            ArchivalCollectionsData.make(authority: authority, usage: usage, coverage: coverage)
+        let requested = scopeSignature
+        let coverage = volumeCoverage(limitedTo: scopeVolumeIds)
+        // The `.shared` touches happen INSIDE the detached block. They are lazy `static let`
+        // globals, so whichever thread reaches one first pays its decode — and these two are
+        // 1.8 MB and 0.6 MB of JSON plus the authority's three lookup dictionaries. Read here,
+        // on the main actor, that is a visible stall before the spinner even appears; only
+        // `coverage` needs to cross the boundary.
+        let built = await Task.detached(priority: .userInitiated) {
+            ArchivalCollectionsData.make(
+                authority: CollectionAuthorityStore.shared?.collections ?? [],
+                usage: CollectionUsageIndexStore.shared,
+                coverage: coverage)
         }.value
+        guard requested == scopeSignature else { return }
+        collectionsData = built
     }
 
     /// Runs the two grouped queries and folds them, once per visit.

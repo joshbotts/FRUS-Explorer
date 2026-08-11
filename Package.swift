@@ -168,6 +168,30 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Builds `decimal-class-labels.json` (#828, design decision D-2): the era-scoped label
+        /// table for State Department central-file decimal classes, parsed from NARA's published
+        /// classification manuals. COMPOSITIONAL — class glosses, country numbers and subject
+        /// suffixes are stored separately and composed at render time, which the #764 feasibility
+        /// study measured at 87.7% of classed documents against 79.4% for a thousand flat rows.
+        /// The manuals stay LOCAL (`SCHEDULE_DIR`); the artifact is the reproducible product.
+        .target(
+            name: "DecimalClassLabelGeneratorCore",
+            path: "DecimalClassLabelGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "DecimalClassLabelGenerator",
+            dependencies: [.target(name: "DecimalClassLabelGeneratorCore")],
+            path: "DecimalClassLabelGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "DecimalClassLabelGeneratorTests",
+            dependencies: [.target(name: "DecimalClassLabelGeneratorCore")],
+            path: "DecimalClassLabelGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Builds the digitised decimal-range index (#663): NARA file units whose titles
         /// state a decimal range and which carry scanned images, so Source Explorer can link
         /// the microfilm PDF for a citation's file range.
@@ -189,37 +213,37 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Builds `series-creator-index.json` (#405 / F-6): for every NARA series the app can
+        /// Builds `series-facts-index.json` (#405 / F-6): for every NARA series the app can
         /// already name, the organisational body NARA credits with creating it. A DISPLAY
         /// projection — the similarity-axis half of #405 was measured and refused at 2.8%
         /// corpus reachability. Reuses LotClaimantsIndexGeneratorCore's HarvestShardReader
         /// rather than declaring a second decoder over the same shards.
         .target(
-            name: "SeriesCreatorIndexGeneratorCore",
+            name: "SeriesFactsIndexGeneratorCore",
             dependencies: [
                 .target(name: "GeneratorKit"),
                 .target(name: "LotClaimantsIndexGeneratorCore"),
             ],
-            path: "SeriesCreatorIndexGeneratorCore",
+            path: "SeriesFactsIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Thin entry point — calls SeriesCreatorIndexRunner.run() and exits.
+        /// Thin entry point — calls SeriesFactsIndexRunner.run() and exits.
         .executableTarget(
-            name: "SeriesCreatorIndexGenerator",
-            dependencies: [.target(name: "SeriesCreatorIndexGeneratorCore")],
-            path: "SeriesCreatorIndexGenerator",
+            name: "SeriesFactsIndexGenerator",
+            dependencies: [.target(name: "SeriesFactsIndexGeneratorCore")],
+            path: "SeriesFactsIndexGenerator",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Unit tests for SeriesCreatorIndexGeneratorCore.
+        /// Unit tests for SeriesFactsIndexGeneratorCore.
         .testTarget(
-            name: "SeriesCreatorIndexGeneratorTests",
+            name: "SeriesFactsIndexGeneratorTests",
             dependencies: [
-                .target(name: "SeriesCreatorIndexGeneratorCore"),
+                .target(name: "SeriesFactsIndexGeneratorCore"),
                 .target(name: "LotClaimantsIndexGeneratorCore"),
             ],
-            path: "SeriesCreatorIndexGeneratorTests",
+            path: "SeriesFactsIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
@@ -343,6 +367,7 @@ let package = Package(
             dependencies: [
                 .target(name: "CentralFilesIndexGeneratorCore"),
                 .target(name: "SourceNoteKit"),
+                .target(name: "GeneratorKit"),
             ],
             path: "VolumeSourcesIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]

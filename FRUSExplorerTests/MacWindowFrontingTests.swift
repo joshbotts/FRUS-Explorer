@@ -234,7 +234,16 @@ struct MacWindowFrontingTests {
             """)
 
         // And it must exist as a real command that fronts.
-        let menuStart = try #require(source.range(of: "menu.research.corpusBrowser"))
+        // It lives in FIND, beside Search and Citation Lookup — all three answer "find me
+        // something in the corpus". Not Window: macOS auto-generates an entry there for every
+        // `Window` scene, so an item of ours beside it was a visible duplicate (#822).
+        #expect(!source.contains("menu.research.corpusBrowser"),
+                "stale key: the item no longer sits in the Research menu")
+        #expect(!source.contains("menu.window.corpusBrowser"), """
+            stale key: an item in the Window menu duplicates the entry macOS generates there for \
+            the Corpus Browser `Window` scene.
+            """)
+        let menuStart = try #require(source.range(of: "menu.find.corpusBrowser"))
         let menuRegion = String(source[menuStart.lowerBound...].prefix(400))
         #expect(menuRegion.contains("openWindow.fronting(id: \"frus.corpusBrowser\")"),
                 "the Corpus Browser menu command must front the window")

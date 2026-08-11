@@ -1280,12 +1280,66 @@ struct SourceExplorerView: View {
             // #405: NARA names the office that made the series; FRUS's own note never does.
             // Absent for most rows and that is honest — `creators` exists only on NARA's series
             // layer, so "not stated" is the true answer for a file unit, not a gap to fill.
-            if let creator = SeriesCreatorIndex.creatorName(for: entry) {
+            if let creator = SeriesFactsIndex.creatorName(for: entry) {
                 LabeledContent(
                     String(localized: "source.explorer.curatedLot.creator",
                            defaultValue: "NARA Creator"),
                     value: creator
                 )
+            }
+            // #663 / F-7: NARA's own trip-planning facts. Access status first because it is the
+            // one that decides whether the trip is worth taking — 414 of the 622 series the app
+            // can name are restricted in some degree.
+            if let facts = SeriesFactsIndex.facts(for: entry) {
+                if let access = facts.accessStatus {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.access",
+                               defaultValue: "Access"),
+                        value: facts.accessRestrictions.isEmpty
+                            ? access
+                            : "\(access) — \(facts.accessRestrictions.joined(separator: ", "))"
+                    )
+                }
+                // Separate from access on purpose: whether you may PUBLISH what you find is a
+                // different question from whether you may read it, and it is the one a
+                // researcher usually discovers too late.
+                if facts.isUseRestricted, let use = facts.useStatus {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.use",
+                               defaultValue: "Use"),
+                        value: facts.useRestrictions.isEmpty
+                            ? use
+                            : "\(use) — \(facts.useRestrictions.joined(separator: ", "))"
+                    )
+                }
+                if let years = facts.years {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.seriesYears",
+                               defaultValue: "Series Dates"),
+                        value: years
+                    )
+                }
+                if let extent = facts.extent {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.extent",
+                               defaultValue: "Extent"),
+                        value: extent
+                    )
+                }
+                if let unit = facts.referenceUnit {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.heldAt",
+                               defaultValue: "Held At"),
+                        value: unit
+                    )
+                }
+                if !facts.findingAids.isEmpty {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.findingAids",
+                               defaultValue: "Finding Aids"),
+                        value: facts.findingAids.joined(separator: ", ")
+                    )
+                }
             }
             if let entries = entry.hmsMlrEntryNumbers, !entries.isEmpty {
                 LabeledContent(

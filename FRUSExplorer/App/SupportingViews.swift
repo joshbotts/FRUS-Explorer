@@ -917,7 +917,8 @@ enum DocumentExportSupport {
 
     /// Canonical history.state.gov URL for a document.
     static func canonicalURL(entry: DocumentBrowserEntry) -> String {
-        "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
+        // One spelling, shared with the iOS share menu — see FRUSCanonicalURL for why.
+        FRUSCanonicalURL.string(volumeId: entry.volumeId, documentId: entry.documentId)
     }
 
     /// Citation metadata carrying the effective (entry-or-index) document number.

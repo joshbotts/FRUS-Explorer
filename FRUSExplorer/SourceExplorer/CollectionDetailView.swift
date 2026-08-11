@@ -66,6 +66,17 @@ struct CollectionDetailView: View {
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
+    /// Closes this view after an iOS hand-off, so the destination is not left under the sheet or
+    /// the push this view was presented in (#825d). Harmless when the view is not presented.
+    @Environment(\.dismiss) private var dismiss
+    /// Told when a row hands off to a different surface, so a host that is ITSELF presented can
+    /// get out of the way (#825d).
+    ///
+    /// Dismissing this view is not enough when it was opened from another sheet: on iOS the
+    /// Archival Analytics surface is a sheet, so a hand-off to the Browse tab lands underneath
+    /// it and the reader sees nothing happen. Only the host knows it is presented, so only the
+    /// host can close itself.
+    var onNavigateAway: (() -> Void)?
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
@@ -83,6 +94,10 @@ struct CollectionDetailView: View {
     @State private var showsAllRelated = false
     /// #762: citing volumes bucketed by coverage era. Empty when they reach fewer than two eras.
     @State private var timeline: [CollectionEraCount] = []
+    /// The Cited Over Time table, non-nil while its inspector sheet is up (#832b).
+    @State private var timelineInspector: ChartInspectorData?
+    /// Delivery for that chart's CSV — owns the share sheet and the failure alert.
+    @State private var timelineExportBox = SeriesExportBox()
     /// Whether the citing-volume list is expanded past ``CollectionRelations/previewRowCap``.
     @State private var showsAllVolumes = false
     #if os(iOS)
@@ -148,6 +163,10 @@ struct CollectionDetailView: View {
             .environment(\.sceneID, sceneID ?? .anyWindow)
         }
         #endif
+        // Anchored on the `List`, never inside the Section that draws the chart: a presentation
+        // modifier applied per section (or per `Group` child) mounts once per child.
+        .sheet(item: $timelineInspector) { ChartDataInspectorView(data: $0) }
+        .seriesExportPresentation(timelineExportBox)
         .task {
             loadTimeline()
             await loadRelated()
@@ -442,6 +461,7 @@ struct CollectionDetailView: View {
                     }
                 }
                 .frame(height: 92)
+                .axChartDescriptor(inspector: timelineTable, title: timelineExportTitle)
                 Text(String(format: String(
                     localized: "collection.detail.timeline.caption %@",
                     defaultValue: "Citing volumes by coverage era (the citing-volume list × the manifest's date ranges). %@"),
@@ -449,12 +469,89 @@ struct CollectionDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                timelineControls
             }
             .padding(.vertical, 4)
         } header: {
             Text(String(localized: "collection.detail.timeline.header",
                         defaultValue: "Cited Over Time"))
         }
+    }
+
+    /// The chart's title wherever it is named outside the section header — the inspector sheet and
+    /// the export's methods statement, which both leave this screen and so cannot say only
+    /// "Cited Over Time".
+    private var timelineExportTitle: String {
+        String(format: String(localized: "collection.detail.timeline.exportTitle %@",
+                              defaultValue: "%@ — cited over time"), record.name)
+    }
+
+    /// The chart's tabular form: one value feeding the inspector, the CSV, and the Audio Graph
+    /// descriptor, so the numbers a reader sees, hears, and takes away cannot drift apart.
+    private var timelineTable: ChartInspectorData {
+        ChartInspectorData(
+            id: "collection.detail.timeline",
+            title: timelineExportTitle,
+            columns: [
+                String(localized: "collection.detail.timeline.x", defaultValue: "Coverage era"),
+                String(localized: "collection.detail.timeline.y", defaultValue: "Citing volumes"),
+            ],
+            rowCells: timeline.map { [$0.era.fullLabel, "\($0.volumeCount)"] })
+    }
+
+    /// "View as table" and the export menu (#832b), the pair every other analytics chart carries.
+    ///
+    /// Composed here rather than by adopting ``SeriesChartCard`` because this chart lives in a
+    /// `List` section whose header already names it; the card would draw a second heading directly
+    /// beneath the first. CSV only, no figure — the same shape as the Your Library cards.
+    private var timelineControls: some View {
+        HStack(spacing: 16) {
+            Spacer()
+            Button {
+                timelineInspector = timelineTable
+            } label: {
+                Label(String(localized: "series.inspector.viewTable",
+                             defaultValue: "View as table"),
+                      systemImage: "tablecells")
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text(String(
+                localized: "collection.detail.timeline.viewTable.a11y",
+                defaultValue: "View cited over time as a table")))
+            AnalyticsSectionExportControl(
+                isEnabled: !timeline.isEmpty,
+                exportCSV: {
+                    timelineExportBox.deliver(
+                        timelineTable,
+                        ArchivalAnalyticsExport.collectionTimeline(
+                            collectionName: record.name,
+                            eraCount: timeline.count,
+                            indexedVolumeCount: appState.indexedVolumeIds.count))
+                })
+        }
+    }
+
+    /// Opens a citing volume in the browser (#825d).
+    ///
+    /// These rows have been inert since the section's first commit — `git show d7c53185` has the
+    /// same `ForEach` of plain `VStack`s — while the sibling list in `VolumeSourcesView` that
+    /// shows the *same* volumes for the *same* collection has been navigable since the UI audit
+    /// that recorded "the rows used to be dead ends". This is that fix, applied to the surface
+    /// that superseded it, through the same `pendingBrowseVolume` hand-off both platforms consume.
+    ///
+    /// The presenting sheet is deliberately left open on macOS, matching the sibling: the
+    /// Corpus Browser is a separate window there, so dismissing would throw away the reader's
+    /// place in a list they are working through.
+    private func openVolume(_ volumeId: String) {
+        appState.openBrowseVolume(volumeId, from: sceneID)
+        #if os(macOS)
+        openWindow.fronting(id: "frus.corpusBrowser")
+        #else
+        appState.openTab(.browse, from: sceneID)
+        dismiss()
+        onNavigateAway?()
+        #endif
     }
 
     // MARK: - Divided at NARA (#762-F)
@@ -536,14 +633,24 @@ struct CollectionDetailView: View {
                 ? record.volumeIds
                 : Array(record.volumeIds.prefix(CollectionRelations.previewRowCap))
             ForEach(shown, id: \.self) { volumeId in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
-                        .font(.callout)
-                    Text(volumeId)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                Button {
+                    openVolume(volumeId)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
+                            .font(.callout)
+                        Text(volumeId)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                    // The greedy frame must come before the shape, or only the text is tappable.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .padding(.vertical, 2)
+                .buttonStyle(.plain)
+                .accessibilityHint(String(localized: "collection.detail.volumes.row.hint",
+                                          defaultValue: "Opens this volume in the browser"))
             }
             if record.volumeIds.count > CollectionRelations.previewRowCap {
                 Button {
@@ -715,12 +822,15 @@ struct CollectionDetailSheet: View {
 
     /// The bundled authority record being shown.
     let record: AuthorityCollectionRecord
+    /// Forwarded to ``CollectionDetailView/onNavigateAway``, so a host that is itself presented
+    /// can close when a row hands off to another surface (#825d).
+    var onNavigateAway: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            CollectionDetailView(record: record)
+            CollectionDetailView(record: record, onNavigateAway: onNavigateAway)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
@@ -730,5 +840,21 @@ struct CollectionDetailSheet: View {
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 480)
         #endif
+    }
+}
+
+// MARK: - Presenting hosts
+
+extension CollectionDetailSheet {
+
+    /// Runs `action` when a row inside the record hands off to another surface.
+    ///
+    /// A modifier rather than an initializer argument because the closure is about the *host's*
+    /// presentation, not about the record: the four existing call sites do not need it and
+    /// should not have to name it.
+    func onNavigateAwayFromCollection(_ action: @escaping () -> Void) -> CollectionDetailSheet {
+        var copy = self
+        copy.onNavigateAway = action
+        return copy
     }
 }

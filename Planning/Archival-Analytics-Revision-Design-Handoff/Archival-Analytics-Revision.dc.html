@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body { margin:0; background:#1b1b1e; }
+  a { color:#007AFF; text-decoration:none; }
+  a:hover { color:#409cff; }
+</style>
+</helmet>
+<section style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;padding:48px 56px 96px;color:#d5d5da">
+
+  <div style="max-width:1240px;margin-bottom:40px">
+    <div style="font-size:24px;font-weight:650;color:#f2f2f5;letter-spacing:-.01em">Archival Analytics — Revision Design (#825–#835)</div>
+    <div style="font-size:12.5px;color:#9a9aa2;margin-top:8px;line-height:1.6">Implements <span style="font-family:ui-monospace,Menlo,monospace">Archival-Analytics-Adversarial-Review.md</span> v1.2 (2026-08-11) against the plan of record. Chrome mirrors stock iPadOS/SwiftUI — implement with native controls (<span style="font-family:ui-monospace,Menlo,monospace">List</span>, <span style="font-family:ui-monospace,Menlo,monospace">Picker(.segmented)</span>, <span style="font-family:ui-monospace,Menlo,monospace">.bordered</span> chips, Swift Charts, <span style="font-family:ui-monospace,Menlo,monospace">Canvas</span>), not these pixels. Quoted caveat strings are copy-final. <span style="color:#c9c9cf">● measured</span> on the shipped artifacts (review of 2026-08-10) · <span style="color:#c9c9cf">○ illustrative</span> — compute from the artifacts. Labels stay plain on screen; method statements and caveats live in each surface's ⓘ popover (drawn open once, in 1a).</div>
+    <div style="display:flex;align-items:stretch;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">1 · SCOPE</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5">My question → my volumes. Scope bar + topic and search doors.</div>
+        <div style="margin-top:6px;display:flex;gap:4px"><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#827</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#833</span></div>
+      </div>
+      <div style="flex:1;min-width:200px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">2 · RANK HONESTLY</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5">One class grain, share-of-notes denominators, readable class labels.</div>
+        <div style="margin-top:6px;display:flex;gap:4px"><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#826</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#828</span></div>
+      </div>
+      <div style="flex:1;min-width:200px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">3 · OPEN THE UNIT</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5">Every row reaches the collection record; the record deep-links back.</div>
+        <div style="margin-top:6px;display:flex;gap:4px"><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#825</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#832</span></div>
+      </div>
+      <div style="flex:1;min-width:200px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">4 · ACT BEYOND FRUS</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5">Unprinted-material pointers, both cross-links, the trip packet.</div>
+        <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#829</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#834</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#835</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#88888f;margin-top:10px;line-height:1.55">The bar (owner, restated 2026-08-10): the feature must help researchers work out <em>what archival sources to consult beyond FRUS for their own questions</em> — describing FRUS itself is secondary. No new visualization anywhere below; the whole revision is scoping, navigation, denominators, labels, and linking out.</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:44px;align-items:flex-start">
+
+  <!-- ══ 1a · Collections mode, scoped ══ -->
+  <div id="1a" data-screen-label="1a Collections mode scoped" style="width:790px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1a</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Collections mode — the scoped instrument</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#827</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#826</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#825</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#832</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="font-size:17px;font-weight:600">Archival Analytics</div>
+        <div style="flex:1"></div>
+        <div style="display:inline-flex;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;font-size:13px;line-height:1">
+          <span style="background:#fff;border-radius:7px;padding:4px 10px;font-weight:600;box-shadow:0 1px 2.5px rgba(0,0,0,.15)">Collections</span>
+          <span style="padding:4px 10px">Network</span>
+          <span style="padding:4px 10px">Flows</span>
+          <span style="padding:4px 10px">Your Library</span>
+        </div>
+        <span style="color:#007AFF;font-size:15px">ⓘ</span>
+        <span style="color:#007AFF;font-size:15px;font-weight:600">Done</span>
+      </div>
+      <div style="padding:16px 18px 18px">
+        <div style="height:0;position:relative;z-index:2"><div style="width:320px;background:rgba(250,250,252,.99);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.22),0 0 0 0.5px rgba(0,0,0,.06);padding:12px 14px;position:absolute;right:24px;top:-4px"><span style="position:absolute;top:-5px;right:26px;width:10px;height:10px;background:rgba(250,250,252,.99);transform:rotate(45deg)"></span><div style="font-size:13px;font-weight:600;color:#000">About these figures</div><div style="font-size:12px;color:#3a3a3c;margin-top:5px;line-height:1.55">Parsed from document source notes, not from an archive's catalog: where the editors drew documents from — an editorial signal, not a census of the records. The three counts measure different things: documents drawn from a collection, volumes citing it, and footnotes pointing at material there that FRUS did not print. The Central Files umbrella record is hidden (its 2,113 documents ○ here would flatten the scale); the era-specific Central Files records still show. Named collections are scarce before 1948 — switch Show to File numbers for that record. Scoped figures count only the volumes in scope.</div></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,122,255,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Scope</span><span style="font-weight:600;color:#007AFF">Vietnam volumes, 1961–1968</span><span style="color:#85858B;font-size:12px">·  11 vols</span><span style="color:#007AFF;font-size:11px">×</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Administration</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1;font-variant-numeric:tabular-nums">1961–1968<span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Show</span><span style="font-weight:500">Collections</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Central Files</span><span style="font-weight:500">Hidden</span></span>
+        </div>
+        <div style="margin-top:12px;padding:9px 12px;background:rgba(120,120,128,.08);border-radius:8px;font-size:12.5px;color:#3a3a3c;line-height:1.5"><span style="font-weight:600">8,124 source notes ○ in this scope.</span> The 10 rows below cover 20% ○ of them. Most of the rest is the central files — switch Show to File numbers to rank those.</div>
+        <div style="margin-top:16px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div style="font-size:17px;font-weight:600">Top collections in this scope</div>
+            <div style="flex:1"></div>
+            <span style="color:#007AFF;font-size:14px">▦</span>
+            <span style="color:#007AFF;font-size:14px">↥</span>
+          </div>
+          <div style="font-size:12px;color:#85858B;margin-top:3px;line-height:1.45">11 volumes in scope draw on 214 collections ○. Coloured by who holds the records.</div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="display:inline-flex;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;font-size:13px;line-height:1"><span style="background:#fff;border-radius:7px;padding:4px 10px;font-weight:600;box-shadow:0 1px 2.5px rgba(0,0,0,.15)">Documents</span><span style="padding:4px 10px">Volumes</span><span style="padding:4px 10px">Unprinted pointers</span></span><span style="font-size:11px;color:#85858B">Unprinted pointers ranks by footnotes naming material FRUS did not print ○</span></div>
+          <div style="margin-top:12px;font-variant-numeric:tabular-nums">
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">National Security File · Johnson Library</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:100%;background:#AF52DE;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">753 · 9.3% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Central Files 1967–69</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:32%;background:#007AFF;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">241 · 3.0% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">National Security Files · Kennedy Library</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:21.1%;background:#AF52DE;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">159 · 2.0% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Taylor Papers</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:13.5%;background:#FF9500;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">102 · 1.3% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">A/IM Files: Lot 93 D 82</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:10.5%;background:#30B0C7;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">79 · 1.0% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Recordings and Transcripts · Johnson Library</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:10.5%;background:#AF52DE;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">79 · 1.0% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Tom Johnson's Notes of Meetings</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:9.7%;background:#AF52DE;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">73 · 0.9% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Meeting Notes File</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:6.1%;background:#AF52DE;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">46 · 0.6% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Hilsman Papers</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:5.7%;background:#AF52DE;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">43 · 0.5% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:26px"><span style="width:238px;text-align:right;font-size:12.5px;line-height:1.15;color:#1c1c1e">Vietnam Working Group Files: Lot 67 D 54</span><span style="flex:1;height:16px;position:relative"><span style="position:absolute;left:0;top:0;height:16px;width:5.4%;background:#30B0C7;border-radius:3px"></span></span><span style="width:104px;font-size:11px;color:#85858B">41 · 0.5% ○</span><span style="color:#c7c7cc;font-size:12px">›</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:10px;font-size:11px;color:#85858B">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#007AFF;margin-right:4px"></span>Department of State</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#30B0C7;margin-right:4px"></span>State lot files</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#AF52DE;margin-right:4px"></span>Presidential libraries</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF9500;margin-right:4px"></span>Other institutions</span>
+            <span style="flex:1"></span>
+            <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:500;line-height:1">Show all 214 units in this scope ○</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid rgba(60,60,67,.12);padding-top:10px;font-size:12px;color:#85858B"><span style="color:#007AFF">ⓘ</span> Umbrella, populations, era coverage, and scope caveats — in the info popover above.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>Pattern for every surface:</b> plain labels on screen; the full method statement moves into the toolbar ⓘ popover (drawn open here once). <b>#827</b> — scope via existing <span style="font-family:ui-monospace,Menlo,monospace">AnalyticsScopeBar</span> (.chip) + <span style="font-family:ui-monospace,Menlo,monospace">AdministrationPresetMenu</span> + year chip; the usage index is already per-volume; do <b>not</b> intersect the scope with the local index (F-1). <b>#826</b> — denominator line + per-bar shares from bundled <span style="font-family:ui-monospace,Menlo,monospace">volumeNoteCounts</span>. <b>#825</b> — rows push <span style="font-family:ui-monospace,Menlo,monospace">CollectionDetailView</span>; "Show all" opens the uncapped table, whose CSV replaces today's cap-12 export. <b>#829</b> — the third count, Unprinted pointers, ranks the same rows by <span style="font-family:ui-monospace,Menlo,monospace">ExternalCitationIndex</span> per-target totals (the data behind 1e's Unprinted Material section); the popover discloses the evidence switch. <b>#832</b> — the lifecycles card is removed from this mode, resolving the repository-grain decision by removal; its story stays reachable per collection via Cited Over Time (1e).</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1b · Collections, class lens ══ -->
+  <div id="1b" data-screen-label="1b Collections class lens" style="width:700px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1b</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">File numbers — grouped and named</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#826</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#828</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#825</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="padding:16px 18px 18px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Scope</span><span style="font-weight:500">Whole corpus</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Era</span><span style="font-weight:500">1961–1968</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Show</span><span style="font-weight:600;color:#007AFF">File numbers</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Count by</span><span style="font-weight:500">Documents</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+        </div>
+        <div style="margin-top:12px;padding:9px 12px;background:rgba(120,120,128,.08);border-radius:8px;font-size:12.5px;color:#3a3a3c;line-height:1.5"><span style="font-weight:600">22,737 source notes ● in this era.</span> Rows group related file numbers into families — expand one for the exact number a pull slip needs.</div>
+        <div style="margin-top:16px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div style="font-size:17px;font-weight:600">Top file numbers</div>
+            <div style="flex:1"></div>
+            <span style="color:#007AFF;font-size:14px">▦</span>
+            <span style="color:#007AFF;font-size:14px">↥</span>
+          </div>
+          <div style="font-size:12px;color:#85858B;margin-top:3px;line-height:1.45">Grouped the same way everywhere in the app. Names arrive with the label table (#828).</div>
+          <div style="margin-top:12px;font-variant-numeric:tabular-nums">
+            <div style="display:flex;align-items:center;gap:8px;height:28px;background:rgba(0,122,255,.06);border-radius:6px;padding:0 6px"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#007AFF"></span><span style="font-size:13px;font-weight:600">POL 27</span><span style="font-size:12px;color:#3a3a3c">Military operations ○</span><span style="flex:1;height:14px;position:relative;max-width:180px"><span style="position:absolute;left:0;top:0;height:14px;width:100%;background:#007AFF;border-radius:3px"></span></span><span style="font-size:11px;color:#85858B">1,090 docs ●</span><span style="color:#007AFF;font-size:11px;font-weight:600">⌄ 31 in family</span></div>
+            <div style="padding:4px 0 6px 26px;border-left:2px solid rgba(0,122,255,.25);margin-left:10px">
+              <div style="display:flex;align-items:center;gap:8px;height:23px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,122,255,.6)"></span><span style="font-size:12.5px;font-family:ui-monospace,Menlo,monospace">POL 27 VIET S</span><span style="flex:1"></span><span style="font-size:11px;color:#85858B">463 ●</span><span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:500;line-height:1">Show documents</span></div>
+              <div style="display:flex;align-items:center;gap:8px;height:23px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,122,255,.6)"></span><span style="font-size:12.5px;font-family:ui-monospace,Menlo,monospace">POL 27 ARAB-ISR</span><span style="flex:1"></span><span style="font-size:11px;color:#85858B">233 ●</span><span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:500;line-height:1">Show documents</span></div>
+              <div style="display:flex;align-items:center;gap:8px;height:23px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,122,255,.6)"></span><span style="font-size:12.5px;font-family:ui-monospace,Menlo,monospace">POL 27 CYP</span><span style="flex:1"></span><span style="font-size:11px;color:#85858B">143 ●</span><span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:500;line-height:1">Show documents</span></div>
+              <div style="display:flex;align-items:center;gap:8px;height:23px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,122,255,.6)"></span><span style="font-size:12.5px;font-family:ui-monospace,Menlo,monospace">POL 27-14 VIET</span><span style="flex:1"></span><span style="font-size:11px;color:#85858B">138 ●</span><span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:500;line-height:1">Show documents</span></div>
+              <div style="display:flex;align-items:center;gap:8px;height:23px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,122,255,.6)"></span><span style="font-size:12.5px;font-family:ui-monospace,Menlo,monospace">POL 27 YEMEN</span><span style="flex:1"></span><span style="font-size:11px;color:#85858B">92 ●</span><span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:500;line-height:1">Show documents</span></div>
+              <div style="font-size:11px;color:#007AFF;font-weight:500;padding:4px 0 0 16px">Show 26 more ○</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 6px"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#007AFF"></span><span style="font-size:13px;font-weight:500">POL 23</span><span style="font-size:12px;color:#3a3a3c">Internal security ○</span><span style="flex:1;height:14px;position:relative;max-width:180px"><span style="position:absolute;left:0;top:0;height:14px;width:60%;background:#007AFF;border-radius:3px;opacity:.85"></span></span><span style="font-size:11px;color:#85858B">655 ○</span><span style="color:#85858B;font-size:11px">⌄</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 6px"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#007AFF"></span><span style="font-size:13px;font-weight:500">POL 15-1</span><span style="font-size:12px;color:#3a3a3c">Head of state, executive ○</span><span style="flex:1;height:14px;position:relative;max-width:180px"><span style="position:absolute;left:0;top:0;height:14px;width:41%;background:#007AFF;border-radius:3px;opacity:.85"></span></span><span style="font-size:11px;color:#85858B">449 ○</span><span style="color:#85858B;font-size:11px">⌄</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 6px"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#007AFF"></span><span style="font-size:13px;font-weight:500">DEF 19</span><span style="font-size:12px;color:#3a3a3c">Military assistance ○</span><span style="flex:1;height:14px;position:relative;max-width:180px"><span style="position:absolute;left:0;top:0;height:14px;width:35%;background:#007AFF;border-radius:3px;opacity:.85"></span></span><span style="font-size:11px;color:#85858B">380 ○</span><span style="color:#85858B;font-size:11px">⌄</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 6px"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#007AFF"></span><span style="font-size:13px;font-weight:500">751K.00</span><span style="font-size:12px;color:#3a3a3c">Laos — political affairs ○</span><span style="flex:1;height:14px;position:relative;max-width:180px"><span style="position:absolute;left:0;top:0;height:14px;width:26%;background:#007AFF;border-radius:3px;opacity:.85"></span></span><span style="font-size:11px;color:#85858B">288 ○</span><span style="font-size:9.5px;color:#85858B;font-weight:600;border:1px solid rgba(60,60,67,.2);border-radius:4px;padding:1px 4px">single file</span></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid rgba(60,60,67,.12);padding-top:10px;font-size:12px;color:#85858B"><span style="color:#007AFF">ⓘ</span> Two filing systems, one grouping rule, where the names come from — in the info popover. (Popover copy is the quoted caveat, verbatim.)</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#826</b> — the fold is <span style="font-family:ui-monospace,Menlo,monospace">CollectionKeying.subjectNumericGroup</span>, shared with the generator; add fold parity (Network == Collections) to the derivation tests. Leaf actions route to class-keyed Archival Neighbors — a class never opens a collection detail (unit honesty, unchanged). <b>#828</b> — labels are owner-gated on the 1910–49 filing schedule; the compositional seed (country codes + class-8 suffixes + validated subject-numeric rows, ~200 rows) covers 87.7% ● of classed documents. All glosses shown here are ○ until that table lands; per-row source-edition stamps required.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1c · Network dock ══ -->
+  <div id="1c" data-screen-label="1c Network dock" style="width:620px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1c</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Network — sectors are zones; the dock reaches the record</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#825</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(60,60,67,.12)">
+        <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Focus</span><span style="font-weight:500">Whitman File</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(175,82,222,.14);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Group</span><span style="font-weight:600;color:#AF52DE">Presidential libraries</span><span style="color:#AF52DE;font-size:11px">×</span></span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Link strength</span><span style="font-weight:500">Shared volumes</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Central Files</span><span style="font-weight:500">Collapsed</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+        <span style="font-size:11px;color:#85858B">Show links above <span style="display:inline-block;width:90px;height:3px;background:rgba(120,120,128,.3);border-radius:2px;vertical-align:2px;position:relative"><span style="position:absolute;left:22px;top:-4.5px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35)"></span></span> 25%</span>
+      </div>
+      <div style="position:relative;height:330px;overflow:hidden">
+        <div style="position:absolute;left:50%;top:158px;width:330px;height:330px;transform:translate(-50%,-50%);border-radius:50%;overflow:hidden">
+          <div style="position:absolute;left:0;top:0;width:50%;height:50%;background:rgba(0,122,255,.04)"></div>
+          <div style="position:absolute;right:0;top:0;width:50%;height:50%;background:rgba(48,176,199,.04)"></div>
+          <div style="position:absolute;right:0;bottom:0;width:50%;height:50%;background:rgba(175,82,222,.17);box-shadow:inset 0 0 0 1.5px rgba(175,82,222,.35)"></div>
+          <div style="position:absolute;left:0;bottom:0;width:50%;height:50%;background:rgba(255,149,0,.04)"></div>
+        </div>
+        <div style="position:absolute;left:50%;top:158px;width:170px;height:170px;transform:translate(-50%,-50%);border:1px dashed rgba(120,120,128,.35);border-radius:50%"></div>
+        <div style="position:absolute;left:50%;top:158px;width:270px;height:270px;transform:translate(-50%,-50%);border:1px dashed rgba(120,120,128,.3);border-radius:50%"></div>
+        <div style="position:absolute;left:16px;top:12px;font-size:9px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:rgba(0,122,255,.55)">State central files</div>
+        <div style="position:absolute;right:16px;top:12px;font-size:9px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:rgba(48,176,199,.65)">State lot files</div>
+        <div style="position:absolute;right:16px;bottom:12px;font-size:9px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:#AF52DE">Presidential libraries ✓</div>
+        <div style="position:absolute;left:16px;bottom:12px;font-size:9px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,149,0,.6)">Other institutions</div>
+        <div style="position:absolute;left:50%;top:158px;width:96px;height:2.6px;background:rgba(175,82,222,.5);transform-origin:0 50%;transform:rotate(28deg)"></div>
+        <div style="position:absolute;left:50%;top:158px;width:128px;height:1.6px;background:rgba(0,122,255,.42);transform-origin:0 50%;transform:rotate(208deg)"></div>
+        <div style="position:absolute;left:50%;top:158px;width:112px;height:1.4px;background:rgba(48,176,199,.4);transform-origin:0 50%;transform:rotate(322deg)"></div>
+        <div style="position:absolute;left:50%;top:158px;width:124px;height:1px;background:rgba(48,176,199,.34);transform-origin:0 50%;transform:rotate(348deg)"></div>
+        <div style="position:absolute;left:50%;top:158px;width:118px;height:1px;background:rgba(255,149,0,.34);transform-origin:0 50%;transform:rotate(128deg)"></div>
+        <div style="position:absolute;left:50%;top:158px;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:#007AFF;box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center"><span style="width:20px;height:15px;background:#fff;border-radius:3px;position:relative"><span style="position:absolute;left:5px;top:6px;width:10px;height:2px;background:#007AFF;border-radius:1px"></span></span></div>
+        <div style="position:absolute;left:50%;top:194px;transform:translateX(-50%);font-size:9px;font-weight:600;color:#1c1c1e">Whitman File</div>
+        <div style="position:absolute;left:calc(50% + 85px);top:calc(158px + 45px);transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:#AF52DE;box-shadow:0 0 0 1.5px #fff,0 0 0 3px rgba(175,82,222,.5)"></div>
+        <div style="position:absolute;left:calc(50% + 85px);top:calc(158px + 72px);transform:translateX(-50%);font-size:8px;color:#6e6e73">Dulles Papers</div>
+        <div style="position:absolute;left:calc(50% - 113px);top:calc(158px - 60px);transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:rgba(0,122,255,.62)"></div>
+        <div style="position:absolute;left:calc(50% - 113px);top:calc(158px - 36px);transform:translateX(-50%);font-size:8px;color:#6e6e73">Central Files</div>
+        <div style="position:absolute;left:calc(50% + 88px);top:calc(158px - 69px);transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:rgba(48,176,199,.62)"></div>
+        <div style="position:absolute;left:calc(50% + 88px);top:calc(158px - 50px);transform:translateX(-50%);font-size:8px;color:#6e6e73">Conference Files: Lot 63 D 351</div>
+        <div style="position:absolute;left:calc(50% + 121px);top:calc(158px - 26px);transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:rgba(48,176,199,.62)"></div>
+        <div style="position:absolute;left:calc(50% + 121px);top:calc(158px - 10px);transform:translateX(-50%);font-size:8px;color:#6e6e73">Lot 66 D 95</div>
+        <div style="position:absolute;left:calc(50% - 73px);top:calc(158px + 93px);transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:rgba(255,149,0,.62)"></div>
+        <div style="position:absolute;left:calc(50% - 73px);top:calc(158px + 110px);transform:translateX(-50%);font-size:8px;color:#6e6e73">Manuscript Division</div>
+      </div>
+      <div style="border-top:1px solid rgba(60,60,67,.14);padding:12px 16px;height:150px">
+        <div style="font-size:17px;font-weight:600">Presidential libraries</div>
+        <div style="font-size:12px;color:#85858B;margin-top:2px">Group — tap any wedge to inspect it on its own</div>
+        <div style="font-size:12px;color:#85858B;margin-top:4px;line-height:1.45">"4 of this focus's 12 partners ○ are held by a presidential library. Strongest: Dulles Papers, 34 shared volumes ○."</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(0,122,255,.14);color:#007AFF;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:600;line-height:1;box-shadow:inset 0 0 0 1px rgba(0,122,255,.35)">Show Only This Group</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:500;line-height:1">List These 4 Collections</span>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>Sector zones</b> — each custodian wedge is its own tap target: selecting one shows the group card in the dock, <b>Show Only This Group</b> redraws the graph with just that custodian's partners (radius re-scales to the group's strongest link; the dock says so), and the Group chip's ✕ restores all four. Wedge hit areas sit under the node buttons, so node taps always win. <b>#825b</b> — a selected node's card gains "Open Collection" beside Explore / Neighbors (dropped unrecorded from the approved dock); class squares stay class-keyed with no record to open. Plain sector names map 1:1 to <span style="font-family:ui-monospace,Menlo,monospace">ArchivalRepositoryCategory</span>; the ⓘ popover keeps the precise definitions ("Department of State" is not only central files).</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1d · Flows ══ -->
+  <div id="1d" data-screen-label="1d Flows unprinted decimal channel" style="width:790px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1d</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Flows — the pre-war record joins, and eras arrive</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#834</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#831</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#825</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="padding:16px 18px 18px">
+        <div style="font-size:15px;color:#6e6e73;line-height:1.45">FRUS editors often name a document they did not print, and say where it is filed. Added up across the series, those pointers show where the editors sent readers for the record they left out.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
+          <span style="display:inline-flex;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;font-size:13px;line-height:1"><span style="padding:4px 10px">Between documents</span><span style="background:#fff;border-radius:7px;padding:4px 10px;font-weight:600;box-shadow:0 1px 2.5px rgba(0,0,0,.15)">To unprinted material</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,122,255,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Focus</span><span style="font-weight:600;color:#007AFF">763.72 — European War</span><span style="color:#007AFF;font-size:11px">×</span></span>
+          <span style="display:inline-flex;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;font-size:13px;line-height:1"><span style="background:#fff;border-radius:7px;padding:4px 10px;font-weight:600;box-shadow:0 1px 2.5px rgba(0,0,0,.15)">Outgoing</span><span style="padding:4px 10px">Incoming</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Era</span><span style="font-weight:600;color:#007AFF">Through 1947</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+        </div>
+        <div style="margin-top:16px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div style="font-size:17px;font-weight:600">Where the footnotes send you</div>
+            <div style="flex:1"></div>
+            <div style="font-size:12px;color:#85858B">all 16 destinations ○</div>
+          </div>
+          <div style="font-size:12px;color:#85858B;margin-top:3px;line-height:1.45">"4,412 ○ footnotes here point at unprinted material elsewhere. 856 ○ point back into this file and are left out."</div>
+          <div style="position:relative;height:250px;margin-top:10px">
+            <svg viewBox="0 0 754 250" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="M 208 112 C 300 112 380 32 470 32 L 470 60 C 380 60 300 140 208 140 Z" fill="rgba(0,122,255,.5)"></path>
+              <path d="M 208 146 C 300 146 380 88 470 88 L 470 99 C 380 99 300 157 208 157 Z" fill="rgba(0,122,255,.26)"></path>
+              <path d="M 208 160 C 300 160 380 138 470 138 L 470 146 C 380 146 300 168 208 168 Z" fill="rgba(0,122,255,.24)"></path>
+              <path d="M 208 171 C 300 171 380 185 470 185 L 470 191 C 380 191 300 177 208 177 Z" fill="rgba(0,122,255,.22)"></path>
+              <path d="M 208 181 C 300 181 380 226 470 226 L 470 236 C 380 236 300 191 208 191 Z" fill="rgba(120,120,128,.22)"></path>
+            </svg>
+            <div style="position:absolute;left:0;top:24px;width:200px;height:200px;background:rgba(0,122,255,.16);border-radius:8px;padding:10px 12px">
+              <div style="font-size:12.5px;font-weight:600;line-height:1.3">763.72 — European War</div>
+              <div style="font-size:10.5px;color:#85858B;margin-top:2px">Central Decimal File, 1910–29 segment</div>
+              <div style="font-size:11px;color:#3a3a3c;margin-top:8px;font-variant-numeric:tabular-nums">4,412 outgoing references ○</div>
+              <div style="font-size:10.5px;color:#85858B;margin-top:3px;line-height:1.4;font-variant-numeric:tabular-nums">856 stay within the file — excluded ○</div>
+            </div>
+            <div style="position:absolute;left:470px;top:22px;width:250px;height:44px;background:rgba(0,122,255,.14);border:1px solid rgba(0,122,255,.5);border-radius:7px;padding:6px 10px">
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-family:ui-monospace,Menlo,monospace;font-weight:600">861.00</span><span style="color:#85858B;font-variant-numeric:tabular-nums">1,842 ○</span></div>
+              <div style="font-size:10px;color:#85858B">Russia — political affairs ○</div>
+            </div>
+            <div style="position:absolute;left:470px;top:80px;width:250px;height:38px;background:rgba(0,122,255,.12);border:1px solid rgba(0,122,255,.4);border-radius:7px;padding:5px 10px">
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-family:ui-monospace,Menlo,monospace;font-weight:600">862.00</span><span style="color:#85858B;font-variant-numeric:tabular-nums">611 ○</span></div>
+              <div style="font-size:10px;color:#85858B">Germany — political affairs ○</div>
+            </div>
+            <div style="position:absolute;left:470px;top:130px;width:250px;height:38px;background:rgba(0,122,255,.12);border:1px solid rgba(0,122,255,.4);border-radius:7px;padding:5px 10px">
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-family:ui-monospace,Menlo,monospace;font-weight:600">867.00</span><span style="color:#85858B;font-variant-numeric:tabular-nums">380 ○</span></div>
+              <div style="font-size:10px;color:#85858B">Turkey — political affairs ○</div>
+            </div>
+            <div style="position:absolute;left:470px;top:178px;width:250px;height:34px;background:rgba(0,122,255,.12);border:1px solid rgba(0,122,255,.4);border-radius:7px;padding:5px 10px">
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-family:ui-monospace,Menlo,monospace;font-weight:600">851.00</span><span style="color:#85858B;font-variant-numeric:tabular-nums">214 ○</span></div>
+            </div>
+            <div style="position:absolute;left:470px;top:220px;width:250px;height:30px;border:1px dashed rgba(120,120,128,.55);border-radius:7px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;color:#6e6e73">12 more classes · 552 refs ○</span><span style="font-size:10px;color:#007AFF;font-weight:500">tap to expand</span>
+            </div>
+            <div style="position:absolute;left:296px;top:8px;background:#1c1c1e;color:#fff;border-radius:6px;padding:4px 8px;font-size:10.5px;font-variant-numeric:tabular-nums">763.72 → 861.00 · 1,842 references ○</div>
+          </div>
+          <div style="margin-top:12px;padding:10px 12px;background:rgba(120,120,128,.06);border-radius:10px">
+            <div style="font-size:14px;font-weight:600">763.72 → 861.00</div>
+            <div style="font-size:12px;color:#85858B;margin-top:2px">"1,842 references ○, 41% ○ of everything this class hands off."</div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:500;line-height:1">Show Documents in This Class</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid rgba(60,60,67,.12);padding-top:10px;font-size:12px;color:#85858B"><span style="color:#007AFF">ⓘ</span> What a ribbon claims, the own-file rule (56% ●), era coverage (4,877 pre-war citations ●), and Ibid. handling — in the info popover.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#834</b> (after #828, so the output is readable on arrival) — harvest decimal-file footnote citations with the own-class exclusion (or a same-class flag), anchor-first grammar, never through <span style="font-family:ui-monospace,Menlo,monospace">decimalClassLocation</span>; review <span style="font-family:ui-monospace,Menlo,monospace">SAMPLE_OUTPUT</span> before trusting. Class endpoints keep the square/leaf treatment and route to class-keyed neighbors; collection endpoints additionally gain <b>Open Collection</b> (#825b). <b>#831</b> (measure first, lowest lane) — schema 2 keys pairs by coverage band, not volume, and the same regeneration measures collection→class density to decide whether the mixed axis earns a surface. The era chip ships only with schema 2.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1e · Collection detail ══ -->
+  <div id="1e" data-screen-label="1e Collection detail revised" style="width:470px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1e</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Collection record — inbound evidence + hand-offs</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#829</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#825</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#832</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <span style="color:#007AFF;font-size:14px">‹ Back</span>
+        <div style="flex:1;text-align:center;font-size:16px;font-weight:600;margin-left:-34px">Collection</div>
+        <span style="color:#007AFF;font-size:15px;font-weight:600">Done</span>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:0 16px 6px">Archival Collection</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 16px;font-size:16px;font-weight:600;line-height:1.3">NSC Files</div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;font-size:14.5px"><span>Repository</span><span style="color:#85858B">Nixon Presidential Materials</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16)"><div style="font-size:12px;color:#85858B">Also cited as</div><div style="font-size:12px;margin-top:2px">Nixon Presidential Materials, NSC Files · National Security Council Files</div></div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">In Your Library</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 16px;font-size:14.5px">1,412 documents in 22 of your indexed volumes cite this collection.</div>
+          <div style="padding:10px 16px;border-top:0.5px solid rgba(60,60,67,.16);color:#007AFF;font-size:14.5px">Show Archival Neighbors</div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Unprinted Material</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 16px;font-size:14.5px;line-height:1.4">Editors pointed here for unprinted material <b>3,914 times across 71 volumes</b> ○.</div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;font-size:12.5px"><span style="color:#3a3a3c">FRUS 1969–76, Vol. XVII China</span><span style="color:#85858B;font-variant-numeric:tabular-nums">412 ○</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;font-size:12.5px"><span style="color:#3a3a3c">FRUS 1969–76, Vol. XI South Asia Crisis</span><span style="color:#85858B;font-variant-numeric:tabular-nums">369 ○</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);font-size:12.5px;color:#007AFF">All 71 volumes…</div>
+        </div>
+        <div style="font-size:12px;color:#6D6D72;padding:6px 16px 0;line-height:1.45">Each count is an editor saying: more is filed here than FRUS printed.</div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Cited Over Time</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden;padding:10px 16px">
+          <div style="display:flex;justify-content:flex-end;gap:10px"><span style="color:#007AFF;font-size:13px">▦</span><span style="color:#007AFF;font-size:13px">↥</span></div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:2px">
+            <span style="flex:1;height:8%;background:rgba(0,122,255,.45);border-radius:2px 2px 0 0"></span>
+            <span style="flex:1;height:100%;background:#007AFF;border-radius:2px 2px 0 0"></span>
+            <span style="flex:1;height:64%;background:rgba(0,122,255,.8);border-radius:2px 2px 0 0"></span>
+            <span style="flex:1;height:14%;background:rgba(0,122,255,.5);border-radius:2px 2px 0 0"></span>
+          </div>
+          <div style="display:flex;gap:6px;font-size:10px;color:#85858B;font-variant-numeric:tabular-nums"><span style="flex:1;text-align:center">'61–68</span><span style="flex:1;text-align:center">'69–72</span><span style="flex:1;text-align:center">'73–76</span><span style="flex:1;text-align:center">'77–80</span></div>
+          <div style="font-size:12px;color:#85858B;margin-top:6px;line-height:1.4">Citing volumes by coverage era. Enters the record with the 1969 volumes, peaks across 1969–1976, gone after 1980 ○.</div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Cited Across the Series (98 volumes ○)</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:9px 16px;display:flex;justify-content:space-between;align-items:center"><span><span style="font-size:14.5px">FRUS 1969–76, Vol. I, Foundations of Foreign Policy</span><br><span style="font-size:11.5px;color:#85858B">frus1969-76v01</span></span><span style="color:#c7c7cc;font-size:13px">›</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span><span style="font-size:14.5px">FRUS 1969–76, Vol. V, United Nations</span><br><span style="font-size:11.5px;color:#85858B">frus1969-76v05</span></span><span style="color:#c7c7cc;font-size:13px">›</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);color:#007AFF;font-size:14.5px">Show all 98 volumes</div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Archival Analytics</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 16px;color:#007AFF;font-size:14.5px">View Co-Citation Network (focused here)</div>
+          <div style="padding:10px 16px;border-top:0.5px solid rgba(60,60,67,.16);color:#007AFF;font-size:14.5px">View Reference Flows (focused here)</div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Research Trip</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 16px;color:#007AFF;font-size:14.5px">Add to Trip Packet…</div>
+        </div>
+        <div style="font-size:12px;color:#6D6D72;padding:6px 16px 0;line-height:1.45">Queues this collection's resolved series for a packet chapter (1j).</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#829b</b> — "Unprinted Material" reads the bundled <span style="font-family:ui-monospace,Menlo,monospace">ExternalCitationIndex.referenceCount / volumeCounts</span> (stored and tested, zero UI callers today); it sits beside In Your Library on purpose — one section is what you have, the other is what the archive has that FRUS did not print. <b>#825d</b> — "Cited Across the Series" rows navigate again (the legacy surface they superseded had it). <b>#825e</b> — the Archival Analytics section rides the new initializer (mode + focus), which is also what unlocks 1g and #798. <b>#832</b> — Cited Over Time gains the family's inspector + export; NARA Catalog is honestly absent here (no NAID — the N-4 presidential-library join lifts this later, review §7.4); the 35 concatenated authority names are a generator-side name-assembly fix, no UI. <b>#830</b> — Add to Trip Packet appears once T-2 ships.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1f · Document sources ══ -->
+  <div id="1f" data-screen-label="1f Document sources unprinted" style="width:420px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1f</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Document Sources — unprinted pointers + graph hand-off</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#829</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="flex:1;font-size:16px;font-weight:600">Sources</div>
+        <span style="color:#007AFF;font-size:15px;font-weight:600">Done</span>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:0 16px 6px">Source Note</div>
+        <div style="background:#fff;border-radius:10px;padding:10px 16px;font-size:13.5px;line-height:1.5;color:#3a3a3c">"Johnson Library, National Security File, Country File, Vietnam, Vol. XXVII. Top Secret. Drafted by McGeorge Bundy."</div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Provenance</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:9px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14.5px">National Security File · Johnson Library</span><span style="color:#c7c7cc;font-size:13px">›</span></div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Unprinted Material</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:9px 16px;font-size:13px;color:#3a3a3c;line-height:1.45">These footnotes point to unprinted material in:</div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span><span style="font-size:11px;color:#85858B;font-variant-numeric:tabular-nums">fn 2</span><br><span style="font-size:14px">Vietnam Working Group Files: Lot 67 D 54</span><br><span style="font-size:11.5px;color:#85858B">Department of State</span></span><span style="color:#c7c7cc;font-size:13px">›</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span><span style="font-size:11px;color:#85858B;font-variant-numeric:tabular-nums">fn 3</span><br><span style="font-size:14px">Recordings and Transcripts</span><br><span style="font-size:11.5px;color:#85858B">Johnson Library</span></span><span style="color:#c7c7cc;font-size:13px">›</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span><span style="font-size:11px;color:#85858B;font-variant-numeric:tabular-nums">fn 5 ⤴ Ibid.</span><br><span style="font-size:14px">Recordings and Transcripts</span><br><span style="font-size:11.5px;color:#85858B">Johnson Library</span></span><span style="color:#c7c7cc;font-size:13px">›</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16)"><span style="font-size:11px;color:#85858B;font-variant-numeric:tabular-nums">fn 7</span><br><span style="font-size:14px;color:#85858B">CIA Job 79–T00936A — names no collection the app recognises</span></div>
+        </div>
+        <div style="font-size:12px;color:#6D6D72;padding:6px 16px 0;line-height:1.45">In reading order. ⤴ marks an "Ibid." followed back the way a reader would. CIA Job numbers match nothing yet (#808).</div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">See It as a Graph</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="position:relative;height:158px">
+            <div style="position:absolute;left:50%;top:76px;width:74px;border-top:1.5px solid rgba(0,122,255,.5);transform-origin:0 50%;transform:rotate(-155deg)"></div>
+            <div style="position:absolute;left:50%;top:76px;width:74px;border-top:1.5px solid rgba(0,122,255,.5);transform-origin:0 50%;transform:rotate(160deg)"></div>
+            <div style="position:absolute;left:50%;top:76px;width:82px;border-top:1.5px dashed rgba(175,82,222,.65);transform-origin:0 50%;transform:rotate(-25deg)"></div>
+            <div style="position:absolute;left:50%;top:76px;width:84px;border-top:1.5px dashed rgba(48,176,199,.7);transform-origin:0 50%;transform:rotate(22deg)"></div>
+            <div style="position:absolute;left:50%;top:76px;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:#1c1c1e;box-shadow:0 0 0 2px #fff,0 1px 6px rgba(0,0,0,.25)"></div>
+            <div style="position:absolute;left:50%;top:98px;transform:translateX(-50%);font-size:9px;font-weight:600;color:#1c1c1e">This document</div>
+            <div style="position:absolute;left:calc(50% - 70px);top:50px;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#007AFF"></div>
+            <div style="position:absolute;left:calc(50% - 70px);top:66px;transform:translateX(-50%);font-size:8px;color:#6e6e73;white-space:nowrap">doc 198 <span style="color:#007AFF;font-weight:700">+</span></div>
+            <div style="position:absolute;left:calc(50% - 68px);top:105px;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#007AFF"></div>
+            <div style="position:absolute;left:calc(50% - 68px);top:120px;transform:translateX(-50%);font-size:8px;color:#6e6e73">doc 187</div>
+            <div style="position:absolute;left:calc(50% + 75px);top:41px;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:6px;border:1.5px dashed #AF52DE;background:rgba(175,82,222,.12)"></div>
+            <div style="position:absolute;left:calc(50% + 75px);top:58px;transform:translateX(-50%);font-size:8px;color:#6e6e73;white-space:nowrap">Recordings and Transcripts</div>
+            <div style="position:absolute;left:calc(50% + 76px);top:107px;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:6px;border:1.5px dashed #30B0C7;background:rgba(48,176,199,.12)"></div>
+            <div style="position:absolute;left:calc(50% + 76px);top:123px;transform:translateX(-50%);font-size:8px;color:#6e6e73;white-space:nowrap">Lot 67 D 54</div>
+          </div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);font-size:11px;color:#85858B"><span style="color:#007AFF">●</span> printed document — expandable · <span style="color:#AF52DE">▢</span> unprinted, in an archive — opens the collection record</div>
+          <div style="padding:10px 16px;border-top:0.5px solid rgba(60,60,67,.16);color:#007AFF;font-size:14.5px">Open Cross-Reference Graph</div>
+        </div>
+        <div style="font-size:12px;color:#6D6D72;padding:6px 16px 0;line-height:1.45">The document's cross-reference graph with these unprinted citations drawn in. Expanding a printed node pulls in its own unprinted pointers too; dashed nodes end the walk — there is no document behind them to open.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#829a</b> — wired to <span style="font-family:ui-monospace,Menlo,monospace">externalCitations(volumeId:documentId:)</span> (stored, tested, no UI caller today). Rows open the collection record; unrecognised citations render honestly inert. <b>Graph hand-off — yes, feasible:</b> the Cross-Reference Graph already exists and expands node by node; it gains an "unprinted citations" layer that calls the same per-document API on every expanded node. Dashed shapes are unit honesty — a dashed node is a citation of material with no document behind it, so it terminates the walk and routes to the collection record instead; the graph legend gains the dashed key. Unmatched citations (CIA Jobs, #808) stay off the graph rather than being drawn as guesses.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1g · Topic door ══ -->
+  <div id="1g" data-screen-label="1g Topic and search doors" style="width:560px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1g</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">The doors — topic and search-result scoping</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#833</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000;padding:16px 18px 18px">
+      <div style="font-size:12px;color:#85858B;margin-bottom:8px">The Collections scope menu (from 1a's Scope chip):</div>
+      <div style="width:280px;background:rgba(250,250,252,.99);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18),0 0 0 0.5px rgba(0,0,0,.06);overflow:hidden;font-size:14px">
+        <div style="padding:9px 14px;display:flex;justify-content:space-between"><span>Whole corpus</span><span style="color:#007AFF">✓</span></div>
+        <div style="height:0.5px;background:rgba(60,60,67,.2)"></div>
+        <div style="padding:9px 14px;display:flex;justify-content:space-between"><span>By Subseries</span><span style="color:#85858B">›</span></div>
+        <div style="padding:9px 14px;display:flex;justify-content:space-between"><span>By Volume</span><span style="color:#85858B">›</span></div>
+        <div style="padding:9px 14px;display:flex;justify-content:space-between"><span>My Volume Scopes</span><span style="color:#85858B">›</span></div>
+        <div style="height:0.5px;background:rgba(60,60,67,.2)"></div>
+        <div style="padding:9px 14px;display:flex;justify-content:space-between;background:rgba(0,122,255,.1)"><span style="font-weight:500">By Detected Topic</span><span style="color:#85858B">›</span></div>
+      </div>
+      <div style="width:290px;margin:8px 0 0 60px;background:rgba(250,250,252,.99);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18),0 0 0 0.5px rgba(0,0,0,.06);overflow:hidden;font-size:14px">
+        <div style="padding:7px 14px 3px;font-size:11px;color:#85858B;text-transform:uppercase;letter-spacing:.02em">Detected topics — experimental</div>
+        <div style="padding:8px 14px">All of Wars &amp; Conflicts</div>
+        <div style="padding:8px 14px;background:rgba(0,122,255,.1);font-weight:500">Vietnam War (43 volumes)</div>
+        <div style="padding:8px 14px">Arab–Israeli Conflict (27 volumes ○)</div>
+        <div style="padding:8px 14px;color:#85858B">Korean War (18 volumes ○)</div>
+      </div>
+      <div style="margin-top:20px;border-top:1px solid rgba(60,60,67,.12);padding-top:14px;font-size:12px;color:#85858B">Search → archival profile of a result set:</div>
+      <div style="margin-top:8px;background:#F2F2F7;border-radius:12px;padding:12px 14px">
+        <div style="font-size:12px;color:#6D6D72;text-transform:uppercase;letter-spacing:.03em">Archival provenance</div>
+        <div style="margin-top:6px;background:#fff;border-radius:9px;overflow:hidden;font-size:13.5px;font-variant-numeric:tabular-nums">
+          <div style="padding:8px 14px;display:flex;justify-content:space-between"><span>Presidential libraries</span><span style="color:#85858B">214 ○</span></div>
+          <div style="padding:8px 14px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between"><span>Central files (decimal)</span><span style="color:#85858B">187 ○</span></div>
+          <div style="padding:8px 14px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between"><span>State lot files</span><span style="color:#85858B">96 ○</span></div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:500;line-height:1">Open archival profile of these results</span><span style="font-size:11px;color:#85858B">→ 1a, Scope: Search "dien bien phu" · 23 vols ○</span></div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#833</b> rides #827: the subject door is <span style="font-family:ui-monospace,Menlo,monospace">AnalyticsScopeBar</span>'s existing By-Detected-Topic tree (volume-grain, <span style="font-family:ui-monospace,Menlo,monospace">VolumeSubjectProfiles.volumeIds(forSubjectRefs:)</span>) — but seeded manifest-wide here, not intersected with the local index, because the bundled derivation is corpus-wide. The search door hands the result set's volume ids to the #825e initializer; today's provenance facet stays descriptive, it just gains the outbound action. Zero new artifacts.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1h · Sources page card ══ -->
+  <div id="1h" data-screen-label="1h Sources page narrative card" style="width:560px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1h</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Research Guide · Archival Sourcing — the narrative layer</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#835</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#798</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000;padding:16px 18px 18px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:11px;color:#85858B">⌖</span>
+        <span style="font-size:12px;color:#85858B">Scope: <b style="color:#111;font-weight:500">1969–1976 subseries</b> ⌵</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:4px 9px;font-size:12px;line-height:1;font-variant-numeric:tabular-nums">1969–1976<span style="color:#85858B;font-size:9px">⌄</span></span>
+        <span style="font-size:11px;color:#007AFF">Whole series</span>
+      </div>
+      <div style="margin-top:14px;border:0.5px solid rgba(60,60,67,.14);border-radius:12px;padding:12px 14px">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div style="font-size:17px;font-weight:600">Top collections in this scope</div>
+          <div style="flex:1"></div>
+          <span style="color:#007AFF;font-size:14px">▦</span>
+        </div>
+        <div style="font-size:12px;color:#85858B;margin-top:3px;line-height:1.45">The collections these volumes drew on most.</div>
+        <div style="margin-top:10px;font-variant-numeric:tabular-nums;font-size:13px">
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#AF52DE"></span><span>NSC Files · Nixon</span><span style="flex:1;border-bottom:1px dotted rgba(60,60,67,.2)"></span><span style="color:#85858B">7,056 ●</span><span style="color:#c7c7cc">›</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#AF52DE"></span><span>Kissinger Office Files</span><span style="flex:1;border-bottom:1px dotted rgba(60,60,67,.2)"></span><span style="color:#85858B">2,340 ○</span><span style="color:#c7c7cc">›</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#007AFF"></span><span>Central Files 1970–73</span><span style="flex:1;border-bottom:1px dotted rgba(60,60,67,.2)"></span><span style="color:#85858B">1,988 ○</span><span style="color:#c7c7cc">›</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#AF52DE"></span><span>National Security Adviser file · Ford Library</span><span style="flex:1;border-bottom:1px dotted rgba(60,60,67,.2)"></span><span style="color:#85858B">1,614 ○</span><span style="color:#c7c7cc">›</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#AF52DE"></span><span>White House Tapes</span><span style="flex:1;border-bottom:1px dotted rgba(60,60,67,.2)"></span><span style="color:#85858B">1,432 ○</span><span style="color:#c7c7cc">›</span></div>
+        </div>
+        <div style="font-size:11.5px;color:#85858B;margin-top:8px">Top 8 shown. Rows open the collection record in a sheet.</div>
+        <div style="margin-top:10px;border-top:0.5px solid rgba(60,60,67,.14);padding-top:10px">
+          <span style="color:#007AFF;font-size:14px;font-weight:500">Open Archival Analytics</span>
+          <div style="font-size:12px;color:#85858B;margin-top:3px;line-height:1.45">Names, ranks, and connects the individual collections behind this page's ten categories.</div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#835</b> (review §8: relocate no, layer yes — D-1's "guide untouched" clause amended) — the blueprint-S4 card lands on the sources page: shared <span style="font-family:ui-monospace,Menlo,monospace">ArchivalCollectionsData</span> derivation (never a copy), the page's existing <span style="font-family:ui-monospace,Menlo,monospace">SeriesScopeBar</span> + year range, rows open <span style="font-family:ui-monospace,Menlo,monospace">CollectionDetailSheet</span> (sheet-safe in both guide containers, onboarding included), authority/usage stores decode lazily off-main on first appearance. Drift guard: a parity test pins this card against the Collections-mode ranking for an identical scope; both attribute by coverage midpoint; buckets computed from per-volume rows at render time (#763 no-era-rollups). Class half after #828 — unlabeled numbers are wrong on an educational page. No Flows or Network here (chassis + claim shape). <b>#798</b> — the cross-link ships on iOS too via the #825e initializer, and the analytics surface gains the reverse <span style="font-family:ui-monospace,Menlo,monospace">ResearchGuideLinkButton</span> + a Research Guide "Find it from…" line (R-11).</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1i · Trip packet builder ══ -->
+  <div id="1i" data-screen-label="1i Trip packet builder" style="width:520px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1i</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Research Trip Packet — builder (T-1/T-2)</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <span style="color:#007AFF;font-size:15px">Cancel</span>
+        <div style="flex:1;text-align:center;font-size:16px;font-weight:600">Plan an Archive Visit</div>
+        <span style="color:#007AFF;font-size:15px;font-weight:600">Generate</span>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="background:#fff;border-radius:10px;padding:10px 16px">
+          <div style="font-size:15px;font-weight:600">Vietnam escalation, 1964–1965</div>
+          <div style="font-size:12.5px;color:#85858B;margin-top:2px">Project · 38 engaged documents ○ → 3 repositories, 9 series, 1 unresolved lot ○</div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Visit Date (optional)</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:9px 16px;display:flex;justify-content:space-between;font-size:14.5px"><span>College Park</span><span style="color:#007AFF;font-variant-numeric:tabular-nums">Oct 14, 2026</span></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16);font-size:12.5px;line-height:1.5;color:#3a3a3c"><b>9 weeks out — your inquiry window is open now.</b> NARA asks for 4 weeks minimum ●, and this packet trips its extra-notice criteria ●:</div>
+          <div style="padding:0 16px 10px;display:flex;gap:6px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:6px;background:rgba(255,149,0,.14);color:#B36B00;font-size:11px;font-weight:600">post-1960 records</span>
+            <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:6px;background:rgba(255,149,0,.14);color:#B36B00;font-size:11px;font-weight:600">State Department RGs</span>
+            <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:6px;background:rgba(255,149,0,.14);color:#B36B00;font-size:11px;font-weight:600">1 lot without a NARA match</span>
+          </div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Chapters — one repository each</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:9px 16px"><div style="display:flex;justify-content:space-between;font-size:14.5px"><span style="font-weight:500">National Archives at College Park</span><span style="color:#85858B;font-size:12px">RG 59 · RG 84</span></div><div style="font-size:12px;color:#85858B;margin-top:1px">Appointment strongly encouraged · 2 inquiry drafts (State cluster · JCS) ●</div></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16)"><div style="display:flex;justify-content:space-between;font-size:14.5px"><span style="font-weight:500">Johnson Presidential Library</span><span style="color:#85858B;font-size:12px">2 collections</span></div><div style="font-size:12px;color:#85858B;margin-top:1px">Write ahead to confirm materials are at this location ● · own draft</div></div>
+          <div style="padding:9px 16px;border-top:0.5px solid rgba(60,60,67,.16)"><div style="display:flex;justify-content:space-between;font-size:14.5px"><span style="font-weight:500">Library of Congress, Manuscript Division</span><span style="color:#85858B;font-size:12px">1 collection</span></div><div style="font-size:12px;color:#85858B;margin-top:1px">Not NARA — pointer row with the Division's own guidance</div></div>
+        </div>
+        <div style="text-transform:uppercase;font-size:12px;color:#6D6D72;letter-spacing:.03em;padding:16px 16px 6px">Sections</div>
+        <div style="background:#fff;border-radius:10px;overflow:hidden;font-size:14px">
+          <div style="padding:8px 16px;display:flex;justify-content:space-between;align-items:center"><span>Cover &amp; checklist</span><span style="color:#34C759;font-size:13px">✓</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span>Advance inquiry drafts</span><span style="color:#34C759;font-size:13px">✓</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span>Pull worksheet</span><span style="color:#34C759;font-size:13px">✓</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span style="color:#85858B">Mandatory substitutes (digitised / microfilm)</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(120,120,128,.12);color:#6e6e73;font:600 10px ui-monospace,Menlo,monospace">T-3 · N-7</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span style="color:#85858B">Restriction triage</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(120,120,128,.12);color:#6e6e73;font:600 10px ui-monospace,Menlo,monospace">T-3 · N-7</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span>Citation crib</span><span style="color:#34C759;font-size:13px">✓</span></div>
+          <div style="padding:8px 16px;border-top:0.5px solid rgba(60,60,67,.16);display:flex;justify-content:space-between;align-items:center"><span>Visit-day card</span><span style="color:#34C759;font-size:13px">✓</span></div>
+        </div>
+        <div style="font-size:12px;color:#6D6D72;padding:8px 16px 0;line-height:1.45">Exports one PDF, one repository per chapter; inquiry drafts also as plain text. Entry points: Project Home and a collection's overflow menu (1e).</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#830 T-0</b> — measure on a real project first; hand-curate the ~16-row repository JSON (the one genuinely new artifact; owner verifies each row's links; every row carries <span style="font-family:ui-monospace,Menlo,monospace">verifiedDate</span>). <b>T-1</b> — extend <span style="font-family:ui-monospace,Menlo,monospace">archivalSourceRows</span> into <span style="font-family:ui-monospace,Menlo,monospace">TripPacketModel</span> (repository → RG → series → roster + A4 flags), platform-neutral, fixture-tested. <b>T-2</b> — chapters 1–3, 6–7 + entry points; ships useful before N-7. <b>T-3</b> — chapters 4–5, <span style="font-family:ui-monospace,Menlo,monospace">numberingNote</span>, series date-checks, the day the N-7 bundle lands. Open decisions resolved as recommended: visit date optional with relative fallback; presidential libraries in v1 at collection grain; verifiedDate snapshot; drafts quote the project's stored research question.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1j · Packet pages I ══ -->
+  <div id="1j" data-screen-label="1j Packet cover and inquiry" style="width:810px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1j</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Packet PDF — cover &amp; checklist · advance inquiry draft (T-2)</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="display:flex;gap:20px">
+      <div style="width:390px;background:#fff;border-radius:6px;box-shadow:0 10px 34px rgba(0,0,0,.4);color:#1c1c1e;padding:22px 24px;font-size:11px;line-height:1.5">
+        <div style="font-size:9px;color:#8a8a90;text-transform:uppercase;letter-spacing:.08em">FRUS Explorer · Research Trip Packet</div>
+        <div style="font-size:16px;font-weight:650;margin-top:6px">Vietnam escalation, 1964–1965</div>
+        <div style="color:#6e6e73;margin-top:2px">38 documents · 9 series · 3 repositories · generated Aug 11, 2026 — a snapshot; confirm dated facts at the links.</div>
+        <div style="font-weight:650;margin-top:14px;font-size:12px;border-bottom:1px solid rgba(60,60,67,.2);padding-bottom:3px">Checklist — College Park visit Oct 14, 2026</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span style="width:58px;font-weight:600;font-variant-numeric:tabular-nums;color:#B36B00">now</span><span><b>Send the advance inquiries.</b> Write early — NARA lists State Department records and post-1960 material among those needing extra notice ●. One address per repository ●.</span></div>
+        <div style="display:flex;gap:8px;margin-top:6px"><span style="width:58px;font-weight:600;font-variant-numeric:tabular-nums">−4 weeks</span><span>NARA's stated minimum: a few days to register, then 10 business days for a staff response ●.</span></div>
+        <div style="display:flex;gap:8px;margin-top:6px"><span style="width:58px;font-weight:600;font-variant-numeric:tabular-nums">−2 bus. days</span><span>Off-site records need advance pull notice ● — ask in the inquiry which series are off-site.</span></div>
+        <div style="display:flex;gap:8px;margin-top:6px"><span style="width:58px;font-weight:600;font-variant-numeric:tabular-nums">day 0</span><span>Register on arrival for a researcher ID card ●.</span></div>
+        <div style="font-weight:650;margin-top:14px;font-size:12px;border-bottom:1px solid rgba(60,60,67,.2);padding-bottom:3px">Appointments</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span style="width:118px;font-weight:600">College Park</span><span>Strongly encouraged ● · book via NARA's reservation page (link)</span></div>
+        <div style="display:flex;gap:8px;margin-top:5px"><span style="width:118px;font-weight:600">Johnson Library</span><span>Required — write, phone, or email ahead; confirm the materials are at this location ●</span></div>
+        <div style="margin-top:14px;padding:8px 10px;background:rgba(255,149,0,.08);border-radius:6px;color:#7a5200">Availability is never promised in this packet. Records can be off-site, in preservation, under review, or moved — every pull is "confirm with staff" ●.</div>
+      </div>
+      <div style="width:390px;background:#fff;border-radius:6px;box-shadow:0 10px 34px rgba(0,0,0,.4);color:#1c1c1e;padding:22px 24px;font-size:11px;line-height:1.5">
+        <div style="font-size:9px;color:#8a8a90;text-transform:uppercase;letter-spacing:.08em">Chapter 2 · Advance inquiry — College Park, State cluster (RG 59 / RG 84)</div>
+        <div style="color:#6e6e73;margin-top:6px">To: <span style="font-family:ui-monospace,Menlo,monospace">archives2reference@nara.gov</span> ● — the one address for this repository; unrelated agencies get their own draft ●.</div>
+        <div style="margin-top:10px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(0,122,255,.1);color:#005ec4;font-size:9px;font-weight:650;text-transform:uppercase;letter-spacing:.04em">topic</span> "I am researching U.S. decision-making in the escalation of the Vietnam War, June 1964 – July 1965." <span style="color:#8a8a90">(the project's stored research question)</span></div>
+        <div style="margin-top:8px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(0,122,255,.1);color:#005ec4;font-size:9px;font-weight:650;text-transform:uppercase;letter-spacing:.04em">records</span> identified by RG · entry · series title · NAID ●:</div>
+        <div style="margin-top:5px;border:0.5px solid rgba(60,60,67,.25);border-radius:5px;overflow:hidden;font-size:10px;font-variant-numeric:tabular-nums">
+          <div style="display:flex;background:rgba(120,120,128,.08);font-weight:650"><span style="width:44px;padding:4px 6px">RG</span><span style="width:52px;padding:4px 6px">Entry</span><span style="flex:1;padding:4px 6px">Series</span><span style="width:78px;padding:4px 6px">NAID</span></div>
+          <div style="display:flex;border-top:0.5px solid rgba(60,60,67,.15)"><span style="width:44px;padding:4px 6px">59</span><span style="width:52px;padding:4px 6px">A1 5408 ○</span><span style="flex:1;padding:4px 6px">Vietnam Working Group Files (Lot 67 D 54)</span><span style="width:78px;padding:4px 6px;color:#005ec4">2669261 ○</span></div>
+          <div style="display:flex;border-top:0.5px solid rgba(60,60,67,.15)"><span style="width:44px;padding:4px 6px">59</span><span style="width:52px;padding:4px 6px">—</span><span style="flex:1;padding:4px 6px">Central Files 1964–66, POL 27 VIET S</span><span style="width:78px;padding:4px 6px;color:#005ec4">302021 ○</span></div>
+        </div>
+        <div style="margin-top:8px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(255,149,0,.14);color:#8a5a00;font-size:9px;font-weight:650;text-transform:uppercase;letter-spacing:.04em">locate</span> "One citation I cannot yet identify in your catalog: <i>'S/S Files: Lot 70 D 48'</i> ○, cited at FRUS 1964–68 vol. II, doc 213. NARA's guidance notes lot numbers 'do not always carry over into use by the National Archives' ● — I would appreciate help locating this series before my visit."</div>
+        <div style="margin-top:8px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(0,122,255,.1);color:#005ec4;font-size:9px;font-weight:650;text-transform:uppercase;letter-spacing:.04em">questions</span> Which of these series are stored off-site? Are any digitised or on microfilm (which I must use instead ●)? Any pending restriction review?</div>
+        <div style="margin-top:10px;color:#8a8a90">Asks about records — locations, entries, availability — never for research; NARA staff "cannot undertake research for you" ●.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 1k · Packet pages II ══ -->
+  <div id="1k" data-screen-label="1k Packet worksheet and visit day" style="width:810px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1k</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Packet PDF — pull worksheet (T-2) · substitutes &amp; restrictions (T-3) · visit-day card</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="display:flex;gap:20px">
+      <div style="width:390px;background:#fff;border-radius:6px;box-shadow:0 10px 34px rgba(0,0,0,.4);color:#1c1c1e;padding:22px 24px;font-size:11px;line-height:1.5">
+        <div style="font-size:9px;color:#8a8a90;text-transform:uppercase;letter-spacing:.08em">Chapter 3 · Pull worksheet — RG 59</div>
+        <div style="margin-top:8px;border:0.5px solid rgba(60,60,67,.25);border-radius:5px;overflow:hidden;font-size:10px;font-variant-numeric:tabular-nums">
+          <div style="display:flex;background:rgba(120,120,128,.08);font-weight:650"><span style="flex:1;padding:4px 6px">Series · entry · NAID · dates</span><span style="width:120px;padding:4px 6px">Document (FRUS cite)</span><span style="width:34px;padding:4px 6px">Box</span></div>
+          <div style="display:flex;border-top:0.5px solid rgba(60,60,67,.15)"><span style="flex:1;padding:4px 6px">Vietnam Working Group Files · A1 5408 ○ · NAID 2669261 ○ · 1963–66 ○<br><span style="color:#8a8a90">Order by folder title ○ (numberingNote — T-3)</span></span><span style="width:120px;padding:4px 6px">"Draft memo, McNaughton" — 1964–68 II d213 · folder "Courses of Action" ○</span><span style="width:34px;padding:4px 6px;background:rgba(120,120,128,.06)"></span></div>
+          <div style="display:flex;border-top:0.5px solid rgba(60,60,67,.15)"><span style="flex:1;padding:4px 6px">Central Files 1964–66 · POL 27 VIET S</span><span style="width:120px;padding:4px 6px">tel. 611, Saigon — 1964–68 I d87 ○</span><span style="width:34px;padding:4px 6px;background:rgba(120,120,128,.06)"></span></div>
+        </div>
+        <div style="color:#8a8a90;margin-top:5px">The Box column ships blank — source notes cite files and folders, never boxes; staff and finding aids supply boxes back ●.</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:14px"><span style="font-weight:650;font-size:12px">Chapter 4 · Use these instead of pulls</span><span style="display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:4px;background:rgba(120,120,128,.12);color:#6e6e73;font:600 9px ui-monospace,Menlo,monospace">T-3 · N-7</span></div>
+        <div style="margin-top:6px">M820 rolls 129–137 ○ — scanned microfilm for file range 763.72/1476–1635 ○. NARA: researchers <b>must use</b> microfilm and online resources when available ●. A range, never a document ●.</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:12px"><span style="font-weight:650;font-size:12px">Chapter 5 · Restrictions</span><span style="display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:4px;background:rgba(120,120,128,.12);color:#6e6e73;font:600 9px ui-monospace,Menlo,monospace">T-3 · N-7</span></div>
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:5px;background:rgba(52,199,89,.14);color:#1e7c3c;font-size:10px;font-weight:600">Unrestricted — 7 series ○</span><span style="display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:5px;background:rgba(255,149,0,.16);color:#8a5a00;font-size:10px;font-weight:600">Restricted–Partly — 2 series ○</span></div>
+        <div style="color:#8a8a90;margin-top:5px">Withdrawal notices in a folder → FOIA/MDR; the explainer follows ●.</div>
+      </div>
+      <div style="width:390px;background:#fff;border-radius:6px;box-shadow:0 10px 34px rgba(0,0,0,.4);color:#1c1c1e;padding:22px 24px;font-size:11px;line-height:1.5">
+        <div style="font-size:9px;color:#8a8a90;text-transform:uppercase;letter-spacing:.08em">Chapter 7 · Visit day — College Park</div>
+        <div style="font-weight:650;margin-top:8px;font-size:12px">Pulls run on a schedule ●</div>
+        <div style="margin-top:3px;font-variant-numeric:tabular-nums">M–F 9:30 · 10:30 · 11:30 · 1:00 · 2:00 · 3:00 — nothing signed out after 5:15.</div>
+        <div style="font-weight:650;margin-top:10px;font-size:12px">Foreign-affairs help ●</div>
+        <div style="margin-top:3px">Consultation area, 3rd floor, 9–4 M–F. Senior foreign-affairs specialist Wednesdays 9:30–10:30, other mornings by request. Bring the unresolved-lot page from Chapter 2 — the desk is the day-of fallback, in that order ●.</div>
+        <div style="font-weight:650;margin-top:10px;font-size:12px">Room rules that change your packing ●</div>
+        <div style="margin-top:3px">Lockers for bags and coats. Laptops, cameras, flatbed/overhead scanners allowed; no auto-feed or hand-held scanners, no personal copiers. One box and one folder at a time. Airport-style screening.</div>
+        <div style="font-weight:650;margin-top:10px;font-size:12px">Citation crib — lot file ●</div>
+        <div style="margin-top:3px;font-family:ui-monospace,Menlo,monospace;font-size:9.5px;background:rgba(120,120,128,.07);border-radius:5px;padding:6px 8px">Memorandum, 24 June 1964; Vietnam Working Group Files, 1963–66, Lot 67 D 54, box __, folder "Courses of Action"; RG 59; NACP. ○</div>
+        <div style="margin-top:12px;padding:8px 10px;background:rgba(120,120,128,.07);border-radius:6px;color:#6e6e73">Every fact on this card is stamped "as of Aug 4, 2026 ●" with its archives.gov link — pull times and procedures change; the packet is a snapshot and says so.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><b>#830 verification oracle</b> — build the packet for a fixture project spanning a decimal citation, a resolved lot, an unresolved lot, a presidential-library collection, and a post-1960 document; then walk NARA's advisories A1–A14 showing each satisfied by a section or consciously excluded. A packet claim with no source in the traceability table is a defect. Honesty rules are non-negotiable: no fabricated box numbers; unresolved lots are NARA's predicted case, routed into the inquiry; volatile facts dated and linked; scans range-grain; availability never promised.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ Build notes ══ -->
+  <div id="1z" data-screen-label="Build notes" style="width:1180px;border:1px solid #34343a;border-radius:12px;background:#232327;padding:18px 22px">
+    <div style="font-size:14px;font-weight:650;color:#e4e4e9">Build notes — sequencing, gates, drift guards</div>
+    <div style="display:flex;gap:28px;margin-top:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px;font-size:12px;color:#b9b9c0;line-height:1.65">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em;margin-bottom:6px">WAVE 1 — ONE POLISH SESSION</div>
+        <b style="color:#dcdce2">#825</b> all view-layer: row navigation (Person surfaces already solve chart-row nav), Open Collection in Network dock + Flows card, the uncapped units table (today's cap-12 export is the family's one silent-in-practice truncation), Cited-Across-the-Series rows re-enabled, and the <b style="color:#dcdce2">initializer</b> (mode + focus) that unlocks every deep link in this doc.<br>
+        <b style="color:#dcdce2">#826</b> fold = <span style="font-family:ui-monospace,Menlo,monospace">CollectionKeying.subjectNumericGroup</span> (shared with the generator); denominators from bundled <span style="font-family:ui-monospace,Menlo,monospace">volumeNoteCounts</span> — F-5's table is the finding.<br>
+        <b style="color:#dcdce2">#832</b> name-assembly separator fix is generator-side (35 records ●); Cited-Over-Time inspector/export; lifecycle decision: umbrella chip governs both cards, repository-grain rows badged.
+      </div>
+      <div style="flex:1;min-width:260px;font-size:12px;color:#b9b9c0;line-height:1.65">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em;margin-bottom:6px">WAVE 2 — THE VALUE SESSION</div>
+        <b style="color:#dcdce2">#827</b> scope via existing <span style="font-family:ui-monospace,Menlo,monospace">AnalyticsScopeBar</span>(.chip) + <span style="font-family:ui-monospace,Menlo,monospace">AdministrationPresetMenu</span> + year chip; derivation takes <span style="font-family:ui-monospace,Menlo,monospace">scopeVolumeIds</span> and does <b>not</b> intersect the local index; era band = display selector; measured payoff: a Vietnam scope shares only 5 of 12 rows with its band ●.<br>
+        <b style="color:#dcdce2">#833</b> rides the scope bar + the initializer; search door from the provenance facet. Zero new artifacts.<br>
+        <b style="color:#dcdce2">#835</b> shared derivation, sheet-safe drill, lazy off-main decode, parity test vs the Collections ranking; class half waits for #828; no Flows/Network on the page. <b style="color:#dcdce2">#798</b> + guide "Find it from…" + reverse link ride along.<br>
+        <b style="color:#dcdce2">#829</b> independent, either wave: both surfaces read stored, tested, caller-less APIs.
+      </div>
+      <div style="flex:1;min-width:260px;font-size:12px;color:#b9b9c0;line-height:1.65">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em;margin-bottom:6px">WAVE 3 + CAPSTONE + LAST</div>
+        <b style="color:#dcdce2">#828</b> owner-gated on the 1910–49 filing schedule; ~200 compositional rows cover 87.7% ● of classed documents; per-row source-edition stamps; unlocks #834 and 1h's class half.<br>
+        <b style="color:#dcdce2">#834</b> after #828: own-class gate (56% ●) re-run at harvest, anchor-first, never <span style="font-family:ui-monospace,Menlo,monospace">decimalClassLocation</span>, <span style="font-family:ui-monospace,Menlo,monospace">SAMPLE_OUTPUT</span> reviewed. The only route to the owner's framing for 1910–1945.<br>
+        <b style="color:#dcdce2">#830</b> T-0…T-3 per its scoped plan; repository JSON is the one new artifact.<br>
+        <b style="color:#dcdce2">#831</b> last, if earned: schema 2 keyed by coverage band; measure collection→class density in the same regeneration before building anything on it.<br>
+        <span style="color:#88888f">Standing rules: unit honesty (circle ≠ square) everywhere; every scoped number states its denominator; bundled-resource enrolment (<span style="font-family:ui-monospace,Menlo,monospace">xcodegen generate</span> + scheme restore) per new artifact; <span style="font-family:ui-monospace,Menlo,monospace">FRUS-API.openapi.yaml</span> for new queryable surfaces.</span>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAnnotations&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Presentation&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { showAnnotations: this.props.showAnnotations ?? true };
+  }
+}
+</script>
+</body>
+</html>

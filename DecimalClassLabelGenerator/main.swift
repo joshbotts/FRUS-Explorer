@@ -6,12 +6,12 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import DecimalClassLabelGeneratorCore
 import Foundation
-import SeriesCreatorIndexGeneratorCore
 
 do {
-    try SeriesCreatorIndexRunner.run()
+    try DecimalClassLabelRunner.run()
 } catch {
-    FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
+    FileHandle.standardError.write(Data("[DecimalClassLabels] \(error)\n".utf8))
     exit(1)
 }

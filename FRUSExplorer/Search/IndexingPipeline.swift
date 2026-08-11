@@ -706,7 +706,13 @@ public actor IndexingPipeline {
     ///   front-matter key, so `SourcesParserDelegate.makeItemEntry` emits two new fields and the
     ///   columns are empty on an existing index until each volume is re-parsed. Measured on the
     ///   owner's index the bump moves 619 `item` rows across 119 volumes from keyless to keyed.
-    public static let currentDateIndexVersion: Int = 39
+    /// - v40 — REPAIR for the v39 bump. #733 added `volume_sources.job_number` to the CREATE
+    ///   without adding it to the drop-and-recreate guard above it, so on an existing database the
+    ///   table kept its old columns, every insert threw against the two it did not have, and the
+    ///   delete-then-insert emptied it: 33,764 rows across 258 volumes → 0. The guard is fixed;
+    ///   this bump is what makes the repair actually repopulate, because a device that already ran
+    ///   the v39 reindex has `installed == 39` and would otherwise never reindex again.
+    public static let currentDateIndexVersion: Int = 40
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -5320,9 +5326,17 @@ public actor IndexingPipeline {
         // #668 adds `note` — the description paragraph belonging to a collection whose
         // encoding separates name from description. Same drop-and-recreate, keyed on the
         // absent newest column; the version-34 reindex repopulates.
+        // #733 adds `job_number` / `job_number_norm`. THIS GUARD IS THE MIGRATION — adding columns
+        // to the CREATE below without adding them here does nothing to an existing database, and
+        // it is not a silent no-op: `auxInsertVolumeSources` then names columns the table does not
+        // have, every insert throws, and because the indexer deletes a volume's rows before
+        // reinserting them, the whole table empties. Measured on the owner's index after #807
+        // shipped without this line: 33,764 rows across 258 volumes → 0, and every volume's
+        // Sources tab read "No Sources Listed".
         if tableExists("volume_sources") && (!columnExists("kind", inTable: "volume_sources")
                                              || !columnExists("lot_file_norm", inTable: "volume_sources")
-                                             || !columnExists("note", inTable: "volume_sources")) {
+                                             || !columnExists("note", inTable: "volume_sources")
+                                             || !columnExists("job_number", inTable: "volume_sources")) {
             try? exec("DROP TABLE volume_sources")
         }
         try exec("""
@@ -7411,14 +7425,45 @@ public actor IndexingPipeline {
 
     // MARK: - Shared match-clause builders (per-tap queries + batched counts)
 
-    /// The four boundary-gated LIKE patterns for a decimal / subject-numeric class
-    /// leaf (exact, token, subdivision, dotted subdivision) — shared verbatim by
-    /// `relatedByDecimalClass` and the batched `archivalNeighborCounts` so the badge
+    /// The boundary-gated LIKE patterns for a decimal / subject-numeric class leaf — shared
+    /// verbatim by `relatedByDecimalClass` and the batched `archivalNeighborCounts` so the badge
     /// and the opened sheet count the same rows. `nil` for an empty key.
-    nonisolated private static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
+    ///
+    /// ## Why the hyphen branch is decimal-only (#841)
+    /// A **subject-numeric** key is folded for display by
+    /// `CollectionKeying.subjectNumericGroup`, whose regex is greedy over the hyphenated number:
+    /// `POL 27-14 VIET` folds to `POL 27-14`, a family of its own. The `key + "-%"` pattern here
+    /// disagreed with that — the SQL family for `POL 27` swallowed `POL 27-14 VIET`, so a row
+    /// labelled 1,090 documents opened a document set drawn from a strictly wider population.
+    /// Measured before the fix: 38 of the 102 class rows the ranking draws, with `POL 15`
+    /// sweeping 73 keys the fold assigns elsewhere, and `POL 27-14` alone worth 220 documents in
+    /// one band.
+    ///
+    /// The owner's decision is that the **fold** is the definition and the query follows it, so
+    /// a subject-numeric key no longer matches its hyphenated sub-numbers. Nothing is lost: those
+    /// sub-numbers are their own rows, reachable in their own right.
+    ///
+    /// A **decimal** file number keeps the hyphen branch. It is not folded, so no second
+    /// definition exists to disagree with, and the corpus writes `611.51-A` style subdivisions
+    /// that a reader asking for `611.51` means to include.
+    ///
+    /// ## The residue, which is bounded rather than excused
+    /// The fold's regex requires two-to-six category letters, so the ten single-letter `E …`
+    /// keys in the shipped vocabulary cannot be parsed and each becomes its own group. Two of
+    /// them are prefixes of others, and the space branch — the one that finds `POL 27 VIET S`
+    /// under `POL 27` — therefore still matches across them: `E 1` reaches `E 1 JAPAN-US` and
+    /// `E 1 US`. Exactly those two, pinned as a set by `ClassFamilyDefinitionTests`, so a new
+    /// leak from either definition fails a test rather than going unnoticed.
+    /// Internal rather than private so the family definition can be driven directly: it is the
+    /// half of #841 that a source scan cannot check, since the defect was which *rows* matched.
+    nonisolated static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
         guard !key.isEmpty else { return nil }
         let esc = likeEscaped(key)
-        return [esc, esc + " %", esc + "-%", esc + ".%"]
+        var patterns = [esc, esc + " %", esc + ".%"]
+        if !CollectionKeying.isSubjectNumericClass(key) {
+            patterns.append(esc + "-%")
+        }
+        return patterns
     }
 
     /// The presidential-library `WHERE` over `document_sources ds` — library keyword
@@ -8589,6 +8634,149 @@ private struct RollupAggregate {
     let startYear: Int?
     let endYear: Int?
     let volumeCount: Int
+}
+
+
+extension IndexingPipeline {
+
+    /// Corpus-wide glossary lookup (#265).
+    ///
+    /// - Parameters:
+    ///   - query: A term or fragment. Empty returns the most widely defined terms, which is what
+    ///     makes the surface useful before the user has typed anything.
+    ///   - limit: Maximum terms returned.
+    /// - Returns: Matching terms, each with its distinct definitions.
+    ///
+    /// Ranking puts an **exact match first**, then prefix matches, then contains — someone typing
+    /// "NSC" wants NSC, not "NSC Action No." above it. Within a rank, terms that more volumes
+    /// define come first, because breadth is the best available proxy for "this is the one you
+    /// meant" in a glossary with no frequency data of its own.
+    public func glossaryLookup(query: String, limit: Int = 60) async throws -> [GlossaryEntry] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sql: String
+        var binds: [String] = []
+        if trimmed.isEmpty {
+            sql = """
+                SELECT term, definition, COUNT(DISTINCT volume_id) AS n, MIN(volume_id)
+                FROM terms GROUP BY term, definition
+                """
+        } else {
+            // Three patterns, one pass. LIKE is case-insensitive for ASCII in SQLite, which is
+            // what an abbreviation lookup needs (`nsc` finds `NSC`).
+            sql = """
+                SELECT term, definition, COUNT(DISTINCT volume_id) AS n, MIN(volume_id)
+                FROM terms WHERE term LIKE ? ESCAPE '\\'
+                GROUP BY term, definition
+                """
+            binds = ["%" + Self.escapeLike(trimmed) + "%"]
+        }
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, value) in binds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), value, -1, SQLITE_TRANSIENT_IP)
+        }
+        var rows: [(term: String, definition: String, count: Int, volume: String)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append((
+                auxColumnString(stmt, 0) ?? "",
+                auxColumnString(stmt, 1) ?? "",
+                Int(sqlite3_column_int(stmt, 2)),
+                auxColumnString(stmt, 3) ?? ""
+            ))
+        }
+        return Self.assemble(rows: rows, query: trimmed, limit: limit)
+    }
+
+    /// Escapes LIKE wildcards so a user typing `%` searches for a percent sign.
+    static func escapeLike(_ s: String) -> String {
+        s.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+    }
+
+    /// Groups rows into entries and ranks them. Pure, so the ranking can be tested without a
+    /// database — the rule is the part worth pinning, not the SQL.
+    static func assemble(
+        rows: [(term: String, definition: String, count: Int, volume: String)],
+        query: String,
+        limit: Int
+    ) -> [GlossaryEntry] {
+        var byTerm: [String: [(definition: String, count: Int, volume: String)]] = [:]
+        for row in rows where !row.term.isEmpty && !row.definition.isEmpty {
+            byTerm[row.term, default: []].append((row.definition, row.count, row.volume))
+        }
+        let lowered = query.lowercased()
+        let entries: [GlossaryEntry] = byTerm.map { term, defs in
+            let variants = defs
+                .sorted {
+                    $0.count == $1.count ? $0.definition < $1.definition : $0.count > $1.count
+                }
+                .map { GlossaryEntry.Variant(definition: $0.definition,
+                                             volumeCount: $0.count,
+                                             sampleVolumeId: $0.volume) }
+            // Volumes defining the term at all — NOT the sum of the per-wording counts, which
+            // double-counts a volume whose glossary gives two wordings of the same abbreviation.
+            let total = defs.map(\.count).max() ?? 0
+            return GlossaryEntry(term: term, variants: variants,
+                                 volumeCount: max(total, variants.count))
+        }
+        func rank(_ term: String) -> Int {
+            let t = term.lowercased()
+            if lowered.isEmpty { return 1 }
+            if t == lowered { return 0 }
+            if t.hasPrefix(lowered) { return 1 }
+            return 2
+        }
+        return entries
+            .sorted {
+                let (a, b) = (rank($0.term), rank($1.term))
+                if a != b { return a < b }
+                if $0.volumeCount != $1.volumeCount { return $0.volumeCount > $1.volumeCount }
+                return $0.term.localizedCaseInsensitiveCompare($1.term) == .orderedAscending
+            }
+            .prefix(limit)
+            .map { $0 }
+    }
+}
+
+// MARK: - Glossary lookup (#265)
+
+/// One abbreviation as the corpus defines it, with every distinct definition the editors gave.
+///
+/// The shape is the finding. FRUS's glossaries are per-volume and the editors did not standardise
+/// them: measured over the owner's index, **`EUR` carries 30 distinct definitions across 231
+/// volumes** and `S/S` 25. A corpus-wide glossary that showed one answer per abbreviation would be
+/// picking one editor's wording and hiding twenty-nine others — so a result carries its variants.
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #265 (F-11)
+public struct GlossaryEntry: Sendable, Identifiable, Equatable {
+
+    /// One wording, and how widely it is used.
+    public struct Variant: Sendable, Equatable {
+        /// The definition text as one volume's glossary gives it.
+        public let definition: String
+        /// How many volumes use this exact wording.
+        public let volumeCount: Int
+        /// A volume that uses it, so a reader can go and see it in context.
+        public let sampleVolumeId: String
+    }
+
+    /// The abbreviation or term.
+    public let term: String
+    /// Distinct definitions, most widely used first.
+    public let variants: [Variant]
+    /// Volumes defining this term at all.
+    public let volumeCount: Int
+
+    public var id: String { term }
+
+    /// The wording to show when only one line fits.
+    public var primaryDefinition: String? { variants.first?.definition }
+
+    /// `true` when the editors did not agree on one wording — the case a single-answer glossary
+    /// would hide.
+    public var isContested: Bool { variants.count > 1 }
 }
 
 private struct TermRow: Sendable {

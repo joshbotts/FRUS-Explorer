@@ -120,6 +120,8 @@ struct VolumeSubjectsChips: View {
 ///   1.1 — Session 9 review: singular/plural header forms; the zero-volume case is
 ///         owned entirely by the ContentUnavailableView (no "0 other volumes" header
 ///         behind the overlay)
+///   1.2 — Session 2026-08-11: #833, the topic door — the covering volumes open as an
+///         archival profile
 struct VolumeSubjectVolumesSheet: View {
 
     /// The subject being pivoted on.
@@ -145,6 +147,16 @@ struct VolumeSubjectVolumesSheet: View {
     private var otherVolumeIds: [String] {
         VolumeSubjectProfilesStore.shared?
             .otherVolumes(forSubjectRef: subject.ref, excluding: currentVolumeId) ?? []
+    }
+
+    /// Every volume whose profile carries the subject, the volume being viewed INCLUDED.
+    ///
+    /// Deliberately not `otherVolumeIds`: the list above answers "where else can I read about
+    /// this", so excluding the volume in hand is right, while the archival profile answers "which
+    /// archives do volumes on this subject draw on", and dropping one of them would quietly
+    /// under-count. The button's own count says which set it means.
+    private var coveringVolumeIds: [String] {
+        VolumeSubjectProfilesStore.shared?.volumesBySubjectRef[subject.ref] ?? []
     }
 
     /// The pluralized section header. Two keys per context rather than a format inflection so
@@ -202,6 +214,7 @@ struct VolumeSubjectVolumesSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                archivalProfileSection
             }
             .navigationTitle(subject.name)
             #if os(iOS)
@@ -226,6 +239,65 @@ struct VolumeSubjectVolumesSheet: View {
         }
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 420)
+        #endif
+    }
+
+    /// The topic door (#833): the archival profile of every volume covering this subject.
+    ///
+    /// Withheld below two volumes. A one-volume "profile of volumes on this subject" is that
+    /// volume's own profile wearing a topic's name, which is exactly the misreading the caption
+    /// below guards against.
+    @ViewBuilder
+    private var archivalProfileSection: some View {
+        if coveringVolumeIds.count > 1 {
+            Section {
+                Button {
+                    openArchivalProfile()
+                } label: {
+                    Label(String(localized: "browser.volume.subjectVolumes.archival.button",
+                                 defaultValue: "Archival profile of these volumes"),
+                          systemImage: "archivebox")
+                }
+            } footer: {
+                // The load-bearing sentence. The scope is WHOLE VOLUMES that rank this subject
+                // among their most characteristic, so the profile describes the archives those
+                // volumes draw on — not the archives behind the documents about this subject,
+                // which is what a reader will assume unless told otherwise.
+                Text(String(format: String(
+                    localized: "browser.volume.subjectVolumes.archival.footer %lld",
+                    defaultValue: "Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them — and the subjects themselves are detected automatically, not editorial headings."),
+                    Int64(coveringVolumeIds.count)))
+            }
+        }
+    }
+
+    /// Hands the covering volumes to Archival Analytics and closes up behind itself.
+    ///
+    /// **iOS dismisses first and hands off on the next turn.** The destination is a sheet
+    /// presented by the tab shell, and dismissing one sheet while presenting another in the same
+    /// state change drops the second — the surface would simply never appear. macOS has no such
+    /// conflict: the destination is a window, so the hand-off and the dismissal can be one step.
+    private func openArchivalProfile() {
+        let request = ArchivalScopeRequest(
+            volumeIds: coveringVolumeIds,
+            label: String(format: String(
+                localized: "browser.volume.subjectVolumes.archival.scopeLabel %@",
+                defaultValue: "Volumes on %@"), subject.name))
+        #if os(macOS)
+        // Every explicit launcher of a tool window clears its provenance, or a buried earlier
+        // origin keeps capturing opens. `nil`, not a host: a subject sheet is not a document
+        // window, so there is nothing to inherit.
+        appState.bindTool(.archivalAnalytics, to: nil)
+        appState.openArchivalScope(request, from: sceneID)
+        openWindow.fronting(id: "frus.archivalAnalytics")
+        dismiss()
+        onNavigate?()
+        #else
+        dismiss()
+        onNavigate?()
+        let appState = appState
+        let sceneID = sceneID
+        Task { @MainActor in appState.openArchivalScope(request, from: sceneID) }
         #endif
     }
 

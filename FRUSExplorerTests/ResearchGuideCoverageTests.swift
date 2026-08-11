@@ -49,7 +49,10 @@ struct ResearchGuideCoverageTests {
         "working corpora": ["working corpus", "working corpora"],
         "the Query Inspector": ["query inspector"],
         "the method appendix": ["method appendix", "query log"],
-        "excerpt verification": ["quotation", "verif"]
+        "excerpt verification": ["quotation", "verif"],
+        // #835: the tool appeared NOWHERE in the guide until this row's section was written —
+        // exactly the absence-is-the-bug case this suite exists for.
+        "archival analytics": ["archival analytics"]
     ]
 
     private static func source(_ path: String) throws -> String {
