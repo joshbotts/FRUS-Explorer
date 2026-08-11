@@ -4943,6 +4943,47 @@ replaced parity test specifically); drop the shared fold from the Network.
 
 ---
 
+## Session 2026-08-10 — Semantic Phase 2: the spike comes back as numbers
+
+The owner carried the Studio's five raw spike stores to the Air; this session executed the
+runbook's Phase 2 — validate, gate, ladder, panel — and wrote the V-0 verdict.
+`tools/semantic-harvest/spike_gates.py` (new, committed, deterministic, numpy on the Air)
+produced `Planning/semantic-spike/`: `V0-Spike-Verdict.md`, `spike-gates.json`,
+`blind-panel.csv` + its key.
+
+### What the numbers said
+
+- **Gemma leads everywhere it can be measured.** Weak-positive MRR@10 0.087 / hit@10 0.226 /
+  median cited-doc rank 62 of 2,197, ahead of arctic (0.076/0.211/81) at full precision, at
+  the shipping int8 config, and in both eras with edges. Full-corpus run extrapolates to
+  ~6.1 h — under the ride-along's 8–13 h band.
+- **The gate's ceiling is the labels, not the models.** Hits are same-thread telegrams at
+  rank 1–5; misses are page-anchor noise ("for portions not printed, see p. 155" resolving
+  to whatever document spans p. 155). Identical noise for every model ⇒ valid comparatively,
+  meaningless absolutely.
+- **frus1861 has zero cross-ref edges**, so pre-1900 — the era the feature exists for — has
+  no weak-positive evidence at all. The 34 pre-1900 rows of the blind panel are the only
+  gate that era gets. The design doc assumed `cross_references` was era-stratified; pre-1945
+  it is not.
+- **int8 is free, the Hamming→rerank pipeline is sound, the Matryoshka cut is the entire
+  cost**: 768→256 loses 23% of gemma's exact top-10 (512 recovers to 12% at double the
+  Tier-2 bytes; 128 is refuted). The design's "≥95% recall [U]" survives against the 256-d
+  truth, not against full-dim.
+- **The no-Q4 rule got its measurement** from the accidental store pair: Q4_K_M vs Q8_0
+  nomic agree on 82% of rank-1 neighbors — one in five top results silently differ.
+
+### Decisions taken, and the two that wait
+
+Store validation passed everywhere (gzip-mtime explains the differing text-layer checksums;
+decompressed layers are byte-identical across all five stores). The pooling rule is pinned
+in the output JSON. The Aug-3 index build supplied the edges — owner flagged the app copy
+as stale; acceptable for a comparative gate, disclosed in the verdict. What waits is the
+owner: key the 100-row panel blind (the key file unblinds — open it after), and read the
+Gemma licence, which binds only V-5 weight-bundling. Then Phase 3 is one overnight
+`caffeinate` run with `MODEL_FILE` set — the one provenance gap the spike left.
+
+---
+
 ## Session 2026-08-11 — wave 1c (#825 a, c, d): the dead ends close
 
 **Issue:** #825 (a, c, d — b/e/f follow separately) · **PR:** the third implementation session

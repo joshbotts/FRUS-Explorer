@@ -1,0 +1,373 @@
+{
+  "db": "/Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/frus.db",
+  "models": {
+    "arctic": {
+      "chunk_chars": 3200,
+      "dim": 1024,
+      "full_corpus_hours": 13.5,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.1774,
+          "hit@100": 0.4839,
+          "hit@50": 0.3548,
+          "median_rank": 108,
+          "mrr@10": 0.0519,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.2217,
+          "hit@100": 0.5764,
+          "hit@50": 0.4433,
+          "median_rank": 73,
+          "mrr@10": 0.0834,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.2113,
+          "hit@100": 0.5547,
+          "hit@50": 0.4226,
+          "median_rank": 81,
+          "mrr@10": 0.076,
+          "queries": 265
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.1774,
+          "hit@100": 0.4839,
+          "hit@50": 0.3548,
+          "median_rank": 105,
+          "mrr@10": 0.0498,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1921,
+          "hit@100": 0.5813,
+          "hit@50": 0.4433,
+          "median_rank": 70,
+          "mrr@10": 0.0759,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.1887,
+          "hit@100": 0.5585,
+          "hit@50": 0.4226,
+          "median_rank": 73,
+          "mrr@10": 0.0698,
+          "queries": 265
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.5452,
+        "float-256": 0.8838,
+        "hamming200->int8-256": 0.88,
+        "int8-256": 0.8833
+      },
+      "model": "text-embedding-snowflake-arctic-embed-l-v2.0",
+      "prefix": "",
+      "throughput_chars_per_s": 28290
+    },
+    "bge": {
+      "chunk_chars": 1800,
+      "dim": 384,
+      "full_corpus_hours": 3.8,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.129,
+          "hit@100": 0.5,
+          "hit@50": 0.3226,
+          "median_rank": 99,
+          "mrr@10": 0.0253,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1773,
+          "hit@100": 0.532,
+          "hit@50": 0.4138,
+          "median_rank": 90,
+          "mrr@10": 0.081,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.166,
+          "hit@100": 0.5245,
+          "hit@50": 0.3925,
+          "median_rank": 91,
+          "mrr@10": 0.0679,
+          "queries": 265
+        }
+      },
+      "gate_a_int8_384": {
+        "frus1938v01": {
+          "hit@10": 0.129,
+          "hit@100": 0.5,
+          "hit@50": 0.3226,
+          "median_rank": 99,
+          "mrr@10": 0.0256,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1872,
+          "hit@100": 0.5271,
+          "hit@50": 0.4138,
+          "median_rank": 90,
+          "mrr@10": 0.0832,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.1736,
+          "hit@100": 0.5208,
+          "hit@50": 0.3925,
+          "median_rank": 92,
+          "mrr@10": 0.0697,
+          "queries": 265
+        }
+      },
+      "gate_b_ladder": {
+        "binary-384": 0.6,
+        "hamming200->int8-384": 0.9683,
+        "int8-384": 0.9705
+      },
+      "model": "text-embedding-bge-small-en-v1.5",
+      "prefix": "",
+      "throughput_chars_per_s": 100148
+    },
+    "gemma": {
+      "chunk_chars": 3200,
+      "dim": 768,
+      "full_corpus_hours": 6.1,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.1613,
+          "hit@100": 0.5323,
+          "hit@50": 0.3548,
+          "median_rank": 85,
+          "mrr@10": 0.0844,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.2463,
+          "hit@100": 0.6404,
+          "hit@50": 0.4877,
+          "median_rank": 52,
+          "mrr@10": 0.0877,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.2264,
+          "hit@100": 0.6151,
+          "hit@50": 0.4566,
+          "median_rank": 62,
+          "mrr@10": 0.087,
+          "queries": 265
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.1613,
+          "hit@100": 0.4677,
+          "hit@50": 0.3548,
+          "median_rank": 107,
+          "mrr@10": 0.069,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.2365,
+          "hit@100": 0.6207,
+          "hit@50": 0.4828,
+          "median_rank": 56,
+          "mrr@10": 0.0746,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.2189,
+          "hit@100": 0.5849,
+          "hit@50": 0.4528,
+          "median_rank": 67,
+          "mrr@10": 0.0733,
+          "queries": 265
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.5262,
+        "float-128": 0.6567,
+        "float-256": 0.7725,
+        "float-512": 0.8777,
+        "hamming200->int8-256": 0.7715,
+        "int8-128": 0.6566,
+        "int8-256": 0.7726,
+        "int8-512": 0.8772
+      },
+      "model": "text-embedding-embeddinggemma-300m-qat",
+      "prefix": "title: none | text: ",
+      "throughput_chars_per_s": 62920
+    },
+    "nomic": {
+      "chunk_chars": 3200,
+      "dim": 768,
+      "full_corpus_hours": 5.3,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.129,
+          "hit@100": 0.4516,
+          "hit@50": 0.3226,
+          "median_rank": 112,
+          "mrr@10": 0.0358,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1675,
+          "hit@100": 0.5567,
+          "hit@50": 0.4039,
+          "median_rank": 74,
+          "mrr@10": 0.0608,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.1585,
+          "hit@100": 0.5321,
+          "hit@50": 0.3849,
+          "median_rank": 87,
+          "mrr@10": 0.055,
+          "queries": 265
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.129,
+          "hit@100": 0.4355,
+          "hit@50": 0.3226,
+          "median_rank": 111,
+          "mrr@10": 0.0395,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1675,
+          "hit@100": 0.5468,
+          "hit@50": 0.3941,
+          "median_rank": 78,
+          "mrr@10": 0.0568,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.1585,
+          "hit@100": 0.5208,
+          "hit@50": 0.3774,
+          "median_rank": 90,
+          "mrr@10": 0.0528,
+          "queries": 265
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.4509,
+        "float-128": 0.7528,
+        "float-256": 0.8309,
+        "float-512": 0.9072,
+        "hamming200->int8-256": 0.8224,
+        "int8-128": 0.75,
+        "int8-256": 0.8302,
+        "int8-512": 0.9051
+      },
+      "model": "text-embedding-nomic-embed-text-v1.5",
+      "prefix": "search_document: ",
+      "throughput_chars_per_s": 72439
+    },
+    "nomic-q8": {
+      "chunk_chars": 3200,
+      "dim": 768,
+      "full_corpus_hours": 4.8,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.1613,
+          "hit@100": 0.4516,
+          "hit@50": 0.3387,
+          "median_rank": 114,
+          "mrr@10": 0.0464,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1773,
+          "hit@100": 0.5616,
+          "hit@50": 0.3941,
+          "median_rank": 74,
+          "mrr@10": 0.0651,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.1736,
+          "hit@100": 0.5358,
+          "hit@50": 0.3811,
+          "median_rank": 86,
+          "mrr@10": 0.0607,
+          "queries": 265
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.129,
+          "hit@100": 0.4677,
+          "hit@50": 0.3387,
+          "median_rank": 106,
+          "mrr@10": 0.0468,
+          "queries": 62
+        },
+        "frus1948v06": {
+          "hit@10": 0.1626,
+          "hit@100": 0.5764,
+          "hit@50": 0.399,
+          "median_rank": 78,
+          "mrr@10": 0.0568,
+          "queries": 203
+        },
+        "overall": {
+          "hit@10": 0.1547,
+          "hit@100": 0.5509,
+          "hit@50": 0.3849,
+          "median_rank": 82,
+          "mrr@10": 0.0545,
+          "queries": 265
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.464,
+        "float-128": 0.755,
+        "float-256": 0.8348,
+        "float-512": 0.9081,
+        "hamming200->int8-256": 0.8246,
+        "int8-128": 0.7545,
+        "int8-256": 0.8325,
+        "int8-512": 0.9061
+      },
+      "model": "text-embedding-nomic-embed-text-v1.5@q8_0",
+      "prefix": "search_document: ",
+      "throughput_chars_per_s": 79981
+    }
+  },
+  "nomic_q4_vs_q8": {
+    "rank1_agreement": 0.8207,
+    "recall@10_mutual": 0.859
+  },
+  "panel": {
+    "auto_pick": "gemma",
+    "auto_pick_basis": "best overall Gate-A MRR@10 at float full-dim, Q4_K_M store excluded",
+    "csv": "Planning/semantic-spike/blind-panel.csv",
+    "key": "Planning/semantic-spike/blind-panel-key.csv",
+    "model": "gemma",
+    "rows": 100
+  },
+  "pooling": "char-length-weighted mean of unit-norm chunk vectors, L2-renormalized",
+  "rerank_pool": 200,
+  "seed": 18610810,
+  "top_k": 10,
+  "weak_positive_drops": {
+    "cross_volume": 142,
+    "not_in_store": 8,
+    "self": 7,
+    "unresolved_page": 122
+  },
+  "weak_positive_queries": {
+    "frus1938v01": 62,
+    "frus1948v06": 203
+  },
+  "weak_positive_resolved_pairs": 369
+}

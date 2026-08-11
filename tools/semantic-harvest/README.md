@@ -94,14 +94,46 @@ neighbors, MRR@10 per model per era) against the live index, stages the blind-pa
 and computes the quantization ladder — the V-0 verdict comes back as numbers, and the full-run
 model is chosen from them, not from leaderboards.
 
+**Executed 2026-08-10** by `spike_gates.py` (the Air-side analysis half — needs numpy,
+unlike the Studio scripts). Verdict and all numbers:
+`Planning/semantic-spike/V0-Spike-Verdict.md`; machine copy `spike-gates.json` beside it.
+Headlines: gemma leads the weak-positive gate on every statistic in both measurable eras
+(frus1861 has **zero** cross-ref edges — the blind panel is the only pre-1900 gate);
+int8 + Hamming-rerank are measured-free while the 768→256 Matryoshka cut costs 23% of
+gemma's exact top-10 (512 halves that at double the Tier-2 budget); the accidental
+Q4_K_M nomic agrees with its Q8_0 twin on only 82% of rank-1 neighbors — the no-Q4 rule,
+measured. **Owner's move before Phase 3:** grade all 100 rows of
+`Planning/semantic-spike/blind-panel.csv` (good / moderate / garbage — *would a historian
+want this?*) **before** opening `blind-panel-key.csv`, which would unblind you; and read
+the Gemma licence (binds V-5 weight-bundling only, not the harvest).
+
 ## Phase 3 — the full harvest (Studio, overnight)
 
-With the chosen model loaded (context 2048, server running):
+**Owner decision 2026-08-10: the full run is gemma** (`text-embedding-embeddinggemma-300m-qat`),
+on the Phase 2 numbers. With that model loaded (context 2048, server running), the full
+command — every env var matters:
 
 ```
 cd ~/semantic-harvest
+MODEL="text-embedding-embeddinggemma-300m-qat" \
+MODEL_FILE="/path/to/the/loaded/embeddinggemma...q4_0.gguf" \
+PREFIX="title: none | text: " \
 caffeinate -i python3 harvest_embeddings.py 2>&1 | tee harvest.log
 ```
+
+- **`PREFIX` is not optional.** The spike embedded every chunk under
+  `title: none | text: ` (trailing space included) and the Phase 2 gates validated THAT
+  configuration; a run without it produces vectors from a different contract and no error.
+  The same goes for a resume: re-run the exact same command line (`tee -a` to keep the
+  earlier log), because a resumed volume embeds under whatever env the new invocation has.
+- **`MODEL_FILE` is not optional this time**: the spike captured a GGUF SHA only for
+  nomic-q8; the full run's provenance must not repeat that gap. (My Models → reveal in
+  Finder → drag the file into Terminal.)
+- Copy the model id exactly from `curl -s localhost:1234/v1/models` — the harvester
+  refuses unlisted ids by design.
+- Measured extrapolation for gemma: **~6.1 h**; the ETA on each progress line corrects
+  this within the first hour. Expect the SEP warning in LM Studio's log on every batch —
+  known-spurious on the QAT gemma (see Field notes).
 
 - `caffeinate -i` keeps the Studio awake; closing the Terminal window kills the run, so leave it
   open (or prefix with `nohup` and background it).
