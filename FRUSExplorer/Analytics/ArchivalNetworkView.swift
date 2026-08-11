@@ -628,7 +628,7 @@ struct ArchivalNetworkView: View {
         // umbrella could report drawing more collections than were co-cited at all.
         var text = String(format: String(
             localized: "archival.network.dock.summary.v2 %lld %lld %@",
-            defaultValue: "%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the centre shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@)."),
+            defaultValue: "%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@)."),
             Int64(graph.nodes.count), Int64(graph.nodesAboveThreshold), strongest)
         text += " " + String(format: String(
             localized: "archival.network.dock.grain %lld",
