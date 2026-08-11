@@ -105,6 +105,26 @@ struct MacSearchWindowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openWindow) private var openWindow
 
+    /// Opens Archival Analytics scoped to this result set's volumes (#833).
+    ///
+    /// Extracted from the closure because the type-checker could not solve it inline — the
+    /// facet panel's initializer is already a large expression.
+    private func openArchivalProfile(volumeIds: [String]) {
+        let term = searchVM.queryText.trimmingCharacters(in: .whitespaces)
+        let label: String
+        if term.isEmpty {
+            label = String(localized: "facets.provenance.openProfile.label.results",
+                           defaultValue: "Search results")
+        } else {
+            label = String(format: String(localized: "facets.provenance.openProfile.label %@",
+                                          defaultValue: "Search: %@"), term)
+        }
+        appState.openArchivalScope(ArchivalScopeRequest(volumeIds: volumeIds, label: label),
+                                   from: nil)
+        appState.bindTool(.archivalAnalytics, to: appState.provenance(of: .search))
+        openWindow.fronting(id: "frus.archivalAnalytics")
+    }
+
     @State private var searchVM = MacSearchViewModel()
 
     /// Keyboard focus for the query field (#749 / audit L-35).
@@ -356,6 +376,7 @@ struct MacSearchWindowView: View {
                     FacetSelectionApplier.apply(section, keys: keys, to: &searchVM.parameters)
                     searchVM.parametersVersion += 1
                 },
+                onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0) },
                 onDiscloseSection: { section in
                     Task {
                         await facetController.load(

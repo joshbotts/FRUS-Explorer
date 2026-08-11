@@ -370,6 +370,7 @@ struct FacetPanelView: View {
     /// Called when a facet row is clicked, for the sections that can narrow.
     let onNarrow: (FacetNarrowing) -> Void
 
+
     /// Called when a staged multi-select is applied (#775).
     ///
     /// The payload is the RESOLVED key set — include minus exclude, over the section's own
@@ -377,6 +378,14 @@ struct FacetPanelView: View {
     /// An **empty array is a real value** meaning "the user excluded everything they included";
     /// hosts must pass it through rather than treating it as no filter.
     let onApplySelection: (FacetSection, [String]?) -> Void
+
+    /// Opens the archival profile of this result set's volumes (#833).
+    ///
+    /// Optional so a host that cannot present Archival Analytics simply does not offer it — the
+    /// button is withheld rather than shown inert. The payload is the volume ids the facets
+    /// already computed; the HOST names the scope, because it holds the query and the panel
+    /// deliberately does not reach into the search parameters for display copy.
+    var onOpenArchivalProfile: (([String]) -> Void)?
 
     /// Called when a section is first disclosed, so the controller can compute it.
     let onDiscloseSection: (FacetSection) -> Void
@@ -655,7 +664,10 @@ struct FacetPanelView: View {
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
-                    if kind == .provenance { provenanceCaveat(facets.provenanceCoverage) }
+                    if kind == .provenance {
+                        provenanceCaveat(facets.provenanceCoverage)
+                        archivalProfileButton(facets)
+                    }
                     // Suppressed outright when the evidence is partial. "The top three hold
                     // 60%" over a BM25-selected subset is partly a statement about the ranking
                     // that selected it, and unlike a count there is no caveat that repairs a
@@ -886,4 +898,37 @@ struct FacetPanelView: View {
         .font(.caption2)
         .foregroundStyle(.tertiary)
     }
+
+    /// The door out of a descriptive-only section (#833).
+    ///
+    /// This section has always been able to say what the matches' provenance looks like and
+    /// never able to do anything with it — the panel's own caveat says so. It cannot become a
+    /// filter (the search has no provenance index to narrow on), but the result set's VOLUMES
+    /// are a scope the archival surface understands, so the dead end becomes a door.
+    ///
+    /// The distinction the copy has to keep: this is the archival profile of the volumes these
+    /// matches sit in, not of the matches. A volume enters whole or not at all.
+    @ViewBuilder
+    private func archivalProfileButton(_ facets: ResultSetFacets) -> some View {
+        if let onOpenArchivalProfile, !facets.volumes.isEmpty {
+            let ids = facets.volumes.map(\.key)
+            Button {
+                onOpenArchivalProfile(ids)
+            } label: {
+                Label(String(localized: "facets.provenance.openProfile",
+                             defaultValue: "Open archival profile of these results"),
+                      systemImage: "archivebox")
+            }
+            .font(.caption)
+            .buttonStyle(.borderless)
+            Text(String(format: String(
+                localized: "facets.provenance.openProfile.detail %lld",
+                defaultValue: "Ranks the collections behind all %lld volumes these matches sit in — whole volumes, not the matches themselves."),
+                Int64(facets.volumes.count)))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
 }

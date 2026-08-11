@@ -746,6 +746,18 @@ final class AppState {
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingWordCloud: Handoff<WordCloudScope>? = nil
 
+    /// Cross-view hand-off into Archival Analytics with a volume scope already applied (#833).
+    ///
+    /// Set by any surface that can name a volume set a researcher is thinking in — a subject on
+    /// a volume's Subjects page, a detected-topic chip, a search result set. The Collections mode
+    /// is scoped to it on arrival, which is what turns "the archival profile of the volumes about
+    /// X" from a thing the reader must assemble by hand into one tap.
+    ///
+    /// The same `Handoff` shape as `pendingWordCloud` and for the same reason: it has to work
+    /// where the destination is a **window** (macOS) as readily as where it is a sheet or a tab,
+    /// and the target scene is what makes a hand-off land in the window the reader was in.
+    var pendingArchivalScope: Handoff<ArchivalScopeRequest>? = nil
+
     /// One-shot hand-off for the second-project nudge (#377 Phase 5): the id of a project the
     /// researcher just created that brought their project count to ≥ 2. Set by
     /// `ProjectEditorView.saveProject`; the nudge host (iOS `MainTabView` / macOS Settings) presents
@@ -1901,6 +1913,10 @@ struct SceneID: Hashable, Sendable {
     /// macOS word-cloud hand-offs address this; iPad producers address their own minted per-scene id.
     static let macWordCloud = SceneID("frus.wordcloud")
 
+    /// Fixed identity of the macOS singleton **Archival Analytics** window
+    /// (`frus.archivalAnalytics`, #833) — where scoped topic and search hand-offs land.
+    static let macArchivalAnalytics = SceneID("frus.archivalAnalytics")
+
     /// Fixed identity of the macOS singleton **Corpus Analytics** window (`frus.analytics`, #338 step 3).
     static let macAnalytics = SceneID("frus.analytics")
 
@@ -1941,6 +1957,25 @@ struct SceneID: Hashable, Sendable {
 /// There is intentionally **no** "every window" broadcast target: it would need its own all-consume,
 /// non-clearing consumer, so a reserved-but-unconsumable case would silently black-hole a hand-off
 /// (#338 review). Reintroduce a target enum, with that consumer, if a broadcast use ever appears.
+/// A volume set to open Archival Analytics on, with the words to describe it (#833).
+///
+/// The label is carried rather than re-derived because only the sender knows what the set *means*
+/// — "Vietnam War", "Search: dien bien phu", "the 1969–1976 subseries" — and the receiving chart
+/// has to say it. A scope with no name would show narrowed figures over an unexplained population.
+struct ArchivalScopeRequest: Equatable, Sendable {
+    /// The volumes to scope to. Empty is treated as no scope by the receiver rather than as an
+    /// empty chart, because a topic that matches nothing is a fact about the topic, not a filter.
+    let volumeIds: [String]
+    /// What to call this set on the chip, in the denominator sentence, and in the export.
+    let label: String
+
+    /// Creates a request, sorting the ids so the same set always compares equal.
+    init(volumeIds: some Sequence<String>, label: String) {
+        self.volumeIds = volumeIds.sorted()
+        self.label = label
+    }
+}
+
 struct Handoff<Payload: Equatable & Sendable>: Equatable, Sendable, Identifiable {
     /// Stable identity, for dedupe, the consume-once re-read guard, and `.sheet(item:)`.
     let id: UUID
@@ -2033,6 +2068,30 @@ extension AppState {
         }
         #endif
         pendingWordCloud = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"), payload: scope)
+        #endif
+    }
+
+    /// Opens Archival Analytics scoped to a volume set (#833).
+    ///
+    /// The same scene-addressed shape as `openWordCloud`: on macOS the destination is the
+    /// singleton window, and on iOS it is the producing scene, so on iPad the profile opens in
+    /// the window the reader was working in rather than fanning out across all of them.
+    ///
+    /// - Parameters:
+    ///   - request: The volume set and the words for it.
+    ///   - sceneID: The producing scene, on iOS.
+    func openArchivalScope(_ request: ArchivalScopeRequest, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingArchivalScope = Handoff(target: .macArchivalAnalytics, payload: request)
+        #else
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openArchivalScope: \\.sceneID did not reach this producer (#338) — "
+                + "the scoped profile will not present from this surface.")
+        }
+        #endif
+        pendingArchivalScope = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"),
+                                       payload: request)
         #endif
     }
 

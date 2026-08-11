@@ -530,6 +530,77 @@ struct ArchivalExportWiringTests {
             """)
     }
 
+    @Test("Changing the scope actually rebuilds the derivation")
+    func scopeChangeInvalidatesTheDerivation() throws {
+        // THIS IS THE TEST #827 SHIPPED WITHOUT, and the bug it would have caught was total:
+        // `loadCollections` early-returns while `collectionsData` is non-nil, and the load task
+        // was NOT keyed on the scope — so picking a scope changed the chip and nothing else.
+        // Every #827 test passed, because they drove `make()` directly or scanned for the
+        // presence of `volumeCoverage(limitedTo:)`. Neither touches the view's lifecycle.
+        //
+        // All three parts are required and none is sufficient alone.
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains(".task(id: scopeSignature) { await loadCollections() }"), """
+            The load task must be KEYED on the scope. `.task` without an id runs once per \
+            appearance, so with the early return in `loadCollections` a scope change would \
+            leave the chart exactly as it was.
+            """)
+        #expect(source.contains("private var scopeSignature: String"), """
+            The key must change when the LABEL changes too: two topics can select the same \
+            volumes, and the chart's sentences name the label.
+            """)
+        // `setScope` must drop the derivation. Without it the keyed task re-runs and the early
+        // return in `loadCollections` sends it straight back out.
+        let setter = try #require(source.range(of: "private func setScope("))
+        let setterBody = source[setter.lowerBound...].prefix(320)
+        #expect(setterBody.contains("collectionsData = nil"), """
+            setScope does not invalidate the derivation, so a keyed reload would early-return \
+            and the chart would keep the previous scope's figures.
+            """)
+        // And the scope bar must write through the setter rather than around it.
+        #expect(source.contains("set: { setScope($0, label: scopeLabel) }"))
+        #expect(!source.contains("set: { scopeVolumeIds = $0 }"), """
+            Assigning the scope state directly bypasses the invalidation — which is exactly how \
+            the chip came to change without the chart changing.
+            """)
+    }
+
+    @Test("A scope handed in from elsewhere is applied once, and an empty one is not a filter")
+    func pendingScopeIsConsumedOnce() throws {
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("appState.pendingArchivalScope = nil"), """
+            The hand-off must be CONSUMED. Left in place it would re-apply on every re-entry, \
+            overriding a scope the reader has since changed.
+            """)
+        #expect(source.contains("guard !handoff.payload.volumeIds.isEmpty else { return }"), """
+            A topic that matches no volume is a fact about the topic. Scoping to an empty set \
+            would draw an empty chart under its name, which reads as a broken filter.
+            """)
+        #expect(source.contains("mode = .collections"),
+                "the scope only means anything in the mode that has a scope")
+    }
+
+    @Test("The search facet panel's dead end becomes a door (#833)")
+    func searchResultsOpenAnArchivalProfile() throws {
+        let panel = try Self.source("../FRUSExplorer/Search/FacetPanelView.swift")
+        #expect(panel.contains("facets.provenance.openProfile"))
+        #expect(panel.contains("whole volumes, not the matches themselves"), """
+            The distinction this copy must keep: the profile is of the VOLUMES the matches sit \
+            in, not of the matches. A volume enters whole or not at all, and a reader who takes \
+            it for a profile of their results would over-read every figure.
+            """)
+        // Withheld rather than inert when the host cannot present it.
+        #expect(panel.contains("if let onOpenArchivalProfile, !facets.volumes.isEmpty"))
+        for host in ["../FRUSExplorer/Search/SearchView.swift",
+                     "../FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try Self.source(host)
+            #expect(source.contains("openArchivalProfile(volumeIds: $0)"),
+                    "\(host) does not offer the door")
+            #expect(source.contains("appState.openArchivalScope("),
+                    "\(host) must route through the scene-addressed hand-off")
+        }
+    }
+
     @Test("The share sheet and the error alert are anchored outside the mode switch")
     func deliverySurfacesAreAnchoredOnce() throws {
         // The Group-modifier gotcha: a `.sheet` on a Group applies once per child, so anchoring

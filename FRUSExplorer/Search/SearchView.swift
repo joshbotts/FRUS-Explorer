@@ -281,6 +281,30 @@ struct SearchView: View {
         self.initialParameters = initialParameters
     }
 
+    /// Opens Archival Analytics scoped to this result set's volumes (#833).
+    ///
+    /// A method rather than an inline closure: the facet panel's initializer is already a large
+    /// expression and the type-checker could not solve it with this inside.
+    private func openArchivalProfile(volumeIds: [String]) {
+        let term = vm.keywords.trimmingCharacters(in: .whitespaces)
+        let label: String
+        if term.isEmpty {
+            label = String(localized: "facets.provenance.openProfile.label.results",
+                           defaultValue: "Search results")
+        } else {
+            label = String(format: String(localized: "facets.provenance.openProfile.label %@",
+                                          defaultValue: "Search: %@"), term)
+        }
+        appState.openArchivalScope(ArchivalScopeRequest(volumeIds: volumeIds, label: label),
+                                   from: sceneID)
+        showFacetSheet = false
+        // Same shape as `openSearchInAnalytics` below: the tab switch is the iOS half, and macOS
+        // routes to a window instead.
+        #if os(iOS)
+        appState.openTab(.browse, from: sceneID)
+        #endif
+    }
+
     var body: some View {
         @Bindable var vm = vm
         NavigationStack(path: $vm.navigationPath) {
@@ -395,6 +419,7 @@ struct SearchView: View {
                                 showFacetSheet = false
                                 Task { await runSearch() }
                             },
+                            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0) },
                             onDiscloseSection: { section in
                                 Task {
                                     await facetController.load(

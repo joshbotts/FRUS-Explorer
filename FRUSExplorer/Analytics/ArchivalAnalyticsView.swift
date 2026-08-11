@@ -256,7 +256,13 @@ struct ArchivalAnalyticsView: View {
             }
         }
         #endif
-        .task { await loadCollections() }
+        // KEYED ON THE SCOPE. `.task` without an id runs once per appearance, and
+        // `loadCollections` early-returns while `collectionsData` is non-nil — so an unkeyed
+        // task means changing the scope changes nothing on screen. The scope is the id, and
+        // `scopeSignature` is a value `.task(id:)` can compare.
+        .task(id: scopeSignature) { await loadCollections() }
+        .onChange(of: appState?.pendingArchivalScope) { _, _ in consumePendingScope() }
+        .task { consumePendingScope() }
         .task(id: libraryLoadToken) { await loadLibraryIfNeeded() }
     }
 
@@ -360,12 +366,49 @@ struct ArchivalAnalyticsView: View {
     }
 
 
+    // MARK: - The topic door (#833)
+
+    /// Applies a scope handed in from elsewhere, once.
+    ///
+    /// Consumed rather than merely read: the hand-off is cleared on arrival, so re-entering the
+    /// mode does not re-apply a scope the reader has since changed. An **empty** volume set is
+    /// treated as no scope, because a topic that matches no volume is a fact about the topic and
+    /// an empty chart under its name would read as a broken filter.
+    private func consumePendingScope() {
+        guard let appState, let handoff = appState.pendingArchivalScope else { return }
+        #if os(macOS)
+        let isForThisScene = handoff.target == .macArchivalAnalytics
+        #else
+        let isForThisScene = handoff.target == (sceneID ?? .anyWindow)
+        #endif
+        guard isForThisScene else { return }
+        appState.pendingArchivalScope = nil
+        mode = .collections
+        guard !handoff.payload.volumeIds.isEmpty else { return }
+        setScope(handoff.payload.volumeIds, label: handoff.payload.label)
+    }
+
     // MARK: - Scope (#827)
 
-    /// Sets the scope and drops the derivation, so the next `task` rebuilds it.
+    /// The scope as one comparable value, so `.task(id:)` can watch it.
+    ///
+    /// `[String]?` is `Equatable`, but the id also has to change when only the LABEL changes —
+    /// two different topics can select the same volumes, and the chart's own sentences name the
+    /// label.
+    private var scopeSignature: String {
+        "\(scopeLabel ?? "")|\(scopeVolumeIds?.joined(separator: ",") ?? "")"
+    }
+
+    /// Sets the scope and drops the derivation, so the keyed task rebuilds it.
+    ///
+    /// Both halves are load-bearing and neither is enough alone: without clearing
+    /// `collectionsData` the reload early-returns, and without the keyed `.task` nothing re-runs
+    /// the reload. Every setter of the scope goes through here for that reason — the scope bar's
+    /// own bindings included.
     private func setScope(_ ids: [String]?, label: String?) {
         scopeVolumeIds = ids
         scopeLabel = label
+        collectionsData = nil
     }
 
     /// The scope chip and the administration presets.
@@ -386,10 +429,14 @@ struct ArchivalAnalyticsView: View {
         AnalyticsScopeBar(
             indexedVolumeIds: scopableVolumeIds,
             volumeTitle: { appState?.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
+            // The bar writes both halves through `setScope`, so its selections invalidate the
+            // derivation exactly as the administration menu's do. Assigning the state directly
+            // here is what let a scope change leave the chart untouched.
             scopeVolumeIds: Binding(get: { scopeVolumeIds },
-                                    set: { scopeVolumeIds = $0 }),
-            scopeLabel: Binding(get: { scopeLabel }, set: { scopeLabel = $0 }),
-            onChange: {},
+                                    set: { setScope($0, label: scopeLabel) }),
+            scopeLabel: Binding(get: { scopeLabel },
+                                set: { setScope(scopeVolumeIds, label: $0) }),
+            onChange: { collectionsData = nil },
             presentation: .chip)
         administrationMenu
     }
