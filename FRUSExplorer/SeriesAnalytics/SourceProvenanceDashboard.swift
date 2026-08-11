@@ -168,6 +168,7 @@ struct SourceProvenanceDashboard: View {
                 densityChart
                 TopCollectionsCard(entries: entries, scope: scope,
                                    yearStart: yearStart, yearEnd: yearEnd,
+                                   isOnboarding: presentationContext == .onboarding,
                                    onOpenCollection: appState == nil ? nil : { collectionDetail = $0 })
                 archivalAnalyticsLink
                 caveats
@@ -181,6 +182,16 @@ struct SourceProvenanceDashboard: View {
         .sheet(item: $collectionDetail) { record in
             if let appState {
                 CollectionDetailSheet(record: record)
+                    // Applied BEFORE the environment modifiers, which erase the concrete type.
+                    // Without it a Browse hand-off dismisses the record and leaves the GUIDE
+                    // sitting over the surface that just navigated — the #844 shape, which the
+                    // AppState guard three lines up already protects against in its other form.
+                    .onNavigateAwayFromCollection {
+                        #if os(iOS)
+                        collectionDetail = nil
+                        dismiss()
+                        #endif
+                    }
                     .environment(appState)
                     .environment(\.sceneID, sceneID ?? .anyWindow)
             }
@@ -193,10 +204,19 @@ struct SourceProvenanceDashboard: View {
         // appears to happen, the shape #844 fixed one level up.
         .sheet(isPresented: $showsArchivalAnalytics) {
             if let appState {
-                ArchivalAnalyticsView(onNavigateAway: {
-                    showsArchivalAnalytics = false
-                    dismiss()
-                })
+                // The scope travels with the reader. Opening the instrument unscoped would
+                // discard the very narrowing the card above it describes, and #833's
+                // `initialScope:` exists precisely so a caller can hand one over. An empty set
+                // means "whole series", which is what `SeriesScope.whole` should become.
+                ArchivalAnalyticsView(
+                    initialScope: ArchivalScopeRequest(
+                        volumeIds: scope.volumeIds ?? [],
+                        label: scope.label ?? String(localized: "series.provenance.scope.whole",
+                                                     defaultValue: "Whole series")),
+                    onNavigateAway: {
+                        showsArchivalAnalytics = false
+                        dismiss()
+                    })
                 .environment(appState)
                 .modelContainer(modelContext.container)
                 .environment(\.sceneID, sceneID ?? .anyWindow)

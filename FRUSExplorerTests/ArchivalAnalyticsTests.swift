@@ -441,8 +441,9 @@ struct ArchivalCollectionsDataTests {
             authority: CollectionAuthorityStore.shared?.collections ?? [],
             usage: CollectionUsageIndexStore.shared, coverage: coverage)
 
-        // The card's own band selection: every band the default 1861…1993 range overlaps.
-        let bands = ArchivalEraBand.all.filter { $0.startYear <= 1993 && $0.endYear >= 1861 }
+        // The CARD's own rule, called — not a predicate restated in the test, which would pass
+        // with the card pinned to one band.
+        let bands = ArchivalEraBand.bands(overlapping: 1861, through: 1993)
         #expect(bands.count == ArchivalEraBand.all.count,
                 "the default range must cover the whole axis, or the card hides eras silently")
 
@@ -469,6 +470,34 @@ struct ArchivalCollectionsDataTests {
             The merged denominator must be every dated volume in the scope; otherwise the card's \
             share sentence describes a population it did not rank.
             """)
+    }
+
+    @Test("The card's year range selects the bands it OVERLAPS")
+    func cardBandSelection() {
+        // Containment would drop the first band — 261 of 552 volumes — for any range starting
+        // after 1861, which is most of them.
+        #expect(ArchivalEraBand.bands(overlapping: 1861, through: 1993).count
+                == ArchivalEraBand.all.count, "the default range must cover the whole axis")
+        #expect(ArchivalEraBand.bands(overlapping: 1900, through: 1993).contains(
+                    where: { $0.index == 0 }), """
+            A range starting after 1861 must still include the 1861–1947 band it overlaps; \
+            dropping it would silently discard 261 volumes.
+            """)
+
+        // A range inside one band selects exactly that band.
+        let sixties = ArchivalEraBand.bands(overlapping: 1962, through: 1966)
+        #expect(sixties.map(\.index) == [2])
+
+        // A range spanning a boundary selects both.
+        #expect(ArchivalEraBand.bands(overlapping: 1966, through: 1970).map(\.index) == [2, 3])
+
+        // Outside the axis entirely: no bands, which the card reports as a range problem rather
+        // than as a fact about the scope.
+        #expect(ArchivalEraBand.bands(overlapping: 1994, through: 2020).isEmpty)
+        #expect(ArchivalEraBand.bands(overlapping: 1700, through: 1800).isEmpty)
+
+        // Reversed endpoints order themselves rather than selecting nothing.
+        #expect(ArchivalEraBand.bands(overlapping: 1970, through: 1962).map(\.index) == [2, 3])
     }
 
     /// The shipped manifest, for the tests that must not run against a fixture.

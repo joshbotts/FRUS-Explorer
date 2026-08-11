@@ -45,7 +45,7 @@ import SwiftUI
 /// The two bundled artifacts behind this are ~2.5 MB of JSON. They are lazy `static let` globals,
 /// so whichever thread touches one first pays its decode — and this page is reachable
 /// mid-onboarding. Both touches therefore happen inside a detached task, and the reload is keyed
-/// on the **scope** only: dragging the year range re-ranks an in-memory table and must never
+/// on the **scope** only: changing the year range re-ranks an in-memory table and must never
 /// rebuild the derivation.
 ///
 /// Version history:
@@ -76,7 +76,16 @@ struct TopCollectionsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
-            if let data {
+            if bands.isEmpty {
+                // Reachable: the year-range fields accept any pair, and a range wholly outside
+                // 1861–1992 overlaps no era band. Blaming the scope there would be an answer
+                // about the wrong thing.
+                Text(String(localized: "series.provenance.topCollections.noBands",
+                            defaultValue: "The years selected above fall outside the eras this ranking covers, which run from 1861 to 1992. Widen the range to see the collections."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let data {
                 let ranking = ranking(from: data)
                 if ranking.rows.isEmpty {
                     emptyState
@@ -91,7 +100,8 @@ struct TopCollectionsCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         // Keyed on the SCOPE, never the year range: the range picks bands out of a table that is
-        // already built, and rebuilding 2.5 MB on a slider drag would be a stall per frame.
+        // already built, so re-ranking is a dictionary read and a sort, while rebuilding it would
+        // be ~2.5 MB of JSON for a control the reader may nudge several times in a row.
         .task(id: scopeSignature) { await load() }
     }
 
@@ -108,8 +118,9 @@ struct TopCollectionsCard: View {
     /// so "the band starts inside the range" would drop it for any range beginning after 1861 —
     /// silently discarding almost half the series. The default 1861…1993 selects all five.
     private var bands: [ArchivalEraBand] {
-        ArchivalEraBand.all.filter { $0.startYear <= yearEnd && $0.endYear >= yearStart }
+        ArchivalEraBand.bands(overlapping: yearStart, through: yearEnd)
     }
+
 
     /// Documents where the usage index supports it, volumes otherwise.
     ///
@@ -138,7 +149,15 @@ struct TopCollectionsCard: View {
                 usage: CollectionUsageIndexStore.shared,
                 coverage: coverage)
         }.value
-        guard requested == scopeSignature else { return }
+        // `Task.isCancelled`, NOT `requested == scopeSignature`. `scope` is a plain `let` on a
+        // value-type view, so a superseded run's `scopeSignature` re-reads its OWN captured
+        // scope and always matches itself — the comparison is inert and the stale derivation
+        // lands last. (The instrument's identical-looking guard is live only because its scope
+        // is `@State`, whose storage is shared across view-struct instances.) `.task(id:)`
+        // cancels the previous run when the id changes, which is the signal that is actually
+        // about the current view.
+        guard !Task.isCancelled else { return }
+        _ = requested
         data = built
     }
 
@@ -224,8 +243,12 @@ struct TopCollectionsCard: View {
         .buttonStyle(.plain)
         .disabled(!opens)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(row.name)
-        .accessibilityValue(row.category.displayName)
+        // `label`, not `name`: several repositories hold a "White House Central Files", and
+        // VoiceOver reading the bare name would announce the same row several times over — the
+        // collision the disambiguation exists to prevent, reintroduced in the one place a
+        // sighted reader cannot see the difference either.
+        .accessibilityLabel(row.label)
+        .accessibilityValue(Text("\(row.value) · \(row.category.displayName)"))
         .accessibilityAddTraits(opens ? .isButton : [])
     }
 
@@ -257,13 +280,16 @@ struct TopCollectionsCard: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let withheld = ranking.hiddenUmbrellaValue {
-                // No umbrella chip on this page, so the withheld figure is stated rather than
-                // offered: the State Department's central files supply more than twice the next
-                // collection, and a bar for them would flatten every other one.
+                // The figure is COMPARED, never asserted to dominate. Withholding the umbrella is
+                // right in every band, but "it would flatten every other bar" is only true in some
+                // of them: measured on the shipped artifacts it carries 12,060 against a top row
+                // of 1,643 in 1948–1960, and 47 against 7,052 in 1969–1976. A card with no
+                // umbrella chip is the reader's only source on this, so it states both numbers and
+                // lets them judge.
                 Text(String(format: String(
-                    localized: "series.provenance.topCollections.umbrella %lld",
-                    defaultValue: "The State Department's central files are withheld from this ranking — one undifferentiated record carrying %lld here, which would flatten every other bar. Archival Analytics can show it."),
-                    Int64(withheld)))
+                    localized: "series.provenance.topCollections.umbrella.v2 %lld %lld",
+                    defaultValue: "The State Department's central files are withheld from this ranking — one undifferentiated record, carrying %1$lld here against %2$lld for the largest collection shown. Archival Analytics can show it."),
+                    Int64(withheld), Int64(ranking.rows.first?.value ?? 0)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -275,8 +301,8 @@ struct TopCollectionsCard: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text(String(localized: "series.provenance.topCollections.method",
-                        defaultValue: "Colours group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. This ranking reads the archival authority, which spans all 552 catalogued volumes and has no 1900 floor, so it can rest on volumes the charts above leave out."))
+            Text(String(localized: "series.provenance.topCollections.method.v2",
+                        defaultValue: "Colours group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 catalogued volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -286,7 +312,12 @@ struct TopCollectionsCard: View {
 
     /// How much of the scope the drawn rows account for — never a bare "top 12".
     private func coverageSentence(_ ranking: ArchivalRanking) -> String {
-        let eras = bands.map(\.title).joined(separator: ", ")
+        // Named only when the reader has narrowed to a subset; listing all five reads as
+        // boilerplate and makes the sentence ungrammatical around "Through 1947".
+        let eras = bands.count == ArchivalEraBand.all.count
+            ? String(localized: "series.provenance.topCollections.eras.all",
+                     defaultValue: "the whole series")
+            : bands.map(\.title).joined(separator: ", ")
         if let share = ranking.shownShare(weight: weight) {
             let percent = share < 0.01
                 ? String(localized: "series.provenance.topCollections.share.tiny",

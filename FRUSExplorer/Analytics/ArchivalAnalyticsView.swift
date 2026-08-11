@@ -361,7 +361,10 @@ struct ArchivalAnalyticsView: View {
             // rankings are about, and until now the pointer ran one way only. Guarded because
             // `ResearchGuideLinkButton` declares a NON-optional AppState, which traps on
             // declaration, while this surface holds it optionally.
-            if appState != nil {
+            // Withheld when the guide is what presented THIS surface (`onNavigateAway` is the
+            // marker for that): on iOS the button opens its own guide sheet, so offering it there
+            // makes the guide reachable from inside itself, one sheet deeper each time.
+            if appState != nil, onNavigateAway == nil {
                 ResearchGuideLinkButton(
                     pageId: "series-sourcing",
                     label: String(localized: "archival.researchGuide",

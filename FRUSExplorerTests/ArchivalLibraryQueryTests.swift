@@ -278,9 +278,14 @@ struct ArchivalAnalyticsEntryPointTests {
             Mid-onboarding the door would open a sheet over a sheet while the first index is \
             still building. Owner decision (a) is that it is withheld there.
             """)
-        #expect(source.contains("ArchivalAnalyticsView(onNavigateAway:"), """
+        #expect(source.contains("onNavigateAway: {"), """
             Without the hook, a Browse hand-off from a collection record closes the analytics \
             sheet and leaves the GUIDE sitting over the surface that just navigated.
+            """)
+        // And the scope travels with the reader — opening the instrument unscoped would discard
+        // the narrowing the card above the link describes.
+        #expect(source.contains("initialScope: ArchivalScopeRequest("), """
+            The escape must carry the page's scope; #833 added `initialScope:` for exactly this.
             """)
     }
 
@@ -309,6 +314,10 @@ struct ArchivalAnalyticsEntryPointTests {
                 "the walkthrough has no Archival Analytics section")
         #expect(education.contains("or the Archival Analytics window (Mac)"),
                 "the section must say where to find it, like every sibling section")
+        #expect(!education.contains("link on the Archival Sourcing page of this guide."), """
+            That link is WITHHELD mid-onboarding, which is when most readers meet this section — \
+            telling them to use it would be an instruction they cannot follow.
+            """)
         // And the return pointer.
         let view = try Self.source("Analytics/ArchivalAnalyticsView.swift")
         #expect(view.contains("ResearchGuideLinkButton("), "the tool does not point back at the guide")
@@ -316,9 +325,11 @@ struct ArchivalAnalyticsEntryPointTests {
             It must open the Archival Sourcing page — the one whose card this pairs with — not \
             the general corpus-analysis page.
             """)
-        #expect(view.contains("if appState != nil {"), """
-            `ResearchGuideLinkButton` declares a NON-optional AppState, which traps on \
-            DECLARATION; this surface holds it optionally.
+        #expect(view.contains("if appState != nil, onNavigateAway == nil {"), """
+            Two conditions, both load-bearing. `ResearchGuideLinkButton` declares a NON-optional \
+            AppState, which traps on DECLARATION while this surface holds it optionally; and the \
+            link is withheld when the GUIDE is what presented this surface, or the guide becomes \
+            reachable from inside itself, one sheet deeper each time.
             """)
     }
 
@@ -336,13 +347,20 @@ struct ArchivalAnalyticsEntryPointTests {
         let taskLine = try #require(card.range(of: ".task(id: scopeSignature)"))
         _ = taskLine
         #expect(!card.contains(".task(id: \"\\(yearStart)"), """
-            Keying the load on the year range would rebuild ~2.5 MB on a slider drag; the range \
-            only picks bands out of a table that is already built.
+            Keying the load on the year range would rebuild ~2.5 MB every time the reader nudges \
+            a year; the range only picks bands out of a table that is already built.
             """)
 
         // The three sentences the card owes its reader.
         #expect(card.contains("four custodians, not the ten categories above"))
-        #expect(card.contains("has no 1900 floor"))
+        // The measured claim, not the one the first draft made: the AUTHORITY names 356 volumes
+        // and none before 1900; it is the document index that covers all 552 with no floor.
+        #expect(card.contains("covering all 552 catalogued volumes with no 1900 floor"))
+        #expect(card.contains("reaches 356 of them"))
+        #expect(!card.contains("archival authority, which spans all 552"), """
+            The authority does not span 552 volumes — measured, it names 356, none of them \
+            pre-1900. Stating otherwise is a claim the shipped artifacts contradict.
+            """)
         #expect(card.contains("Eras here are coarser than the decades above"))
         // The umbrella is withheld, so its size must be stated — there is no chip on this page.
         #expect(card.contains("hidingUmbrella: true"))
