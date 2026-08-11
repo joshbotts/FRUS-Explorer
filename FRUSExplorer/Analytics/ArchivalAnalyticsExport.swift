@@ -44,6 +44,8 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #787
+///   1.1 — Session 2026-08-10: #832 — `lifecycles` retired with its card, `collectionTimeline`
+///          added for the collection record's Cited Over Time chart
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -95,14 +97,29 @@ enum ArchivalAnalyticsExport {
             extraCaveats: caveats)
     }
 
-    /// The lifecycle card's statement.
-    static func lifecycles(spanCount: Int, indexedVolumeCount: Int) -> AnalyticsProvenance {
+    /// One collection's Cited Over Time statement (#832b).
+    ///
+    /// This is the surface that inherited the removed corpus-wide lifecycle card's question — when
+    /// did a body of records enter the published series, and how long did the editors keep
+    /// returning to it — and it answers it per collection, which is the grain the question actually
+    /// has. Two things therefore have to be said that the lifecycle caveat never had to say: the
+    /// buckets are **FRUS's own subseries**, not decades (a decade axis splits the 66-volume
+    /// `1969-76` subseries in half), and a bar counts **volumes**, not documents, so a volume that
+    /// cites the collection once and a volume built on it stand equally tall.
+    ///
+    /// - Parameters:
+    ///   - collectionName: The collection whose record this chart sits on.
+    ///   - eraCount: Buckets drawn — the chart is contiguous, so this is also its width in eras.
+    ///   - indexedVolumeCount: Volumes indexed on this device.
+    static func collectionTimeline(collectionName: String, eraCount: Int,
+                                   indexedVolumeCount: Int) -> AnalyticsProvenance {
         AnalyticsProvenance(
-            figureTitle: String(localized: "archival.lifecycle.title",
-                                defaultValue: "Collection lifecycles in FRUS sourcing"),
-            axisLabel: String(localized: "archival.export.axis.lifecycle",
-                              defaultValue: "Coverage years spanned by citing volumes"),
-            scopeLabel: nil,
+            figureTitle: String(format: String(
+                localized: "archival.export.title.timeline %@",
+                defaultValue: "%@ — cited over time"), collectionName),
+            axisLabel: String(localized: "archival.export.axis.timeline",
+                              defaultValue: "Citing volumes by coverage era"),
+            scopeLabel: collectionName,
             indexedVolumeCount: indexedVolumeCount,
             yearRange: nil,
             appliesDocumentDating: false,
@@ -111,9 +128,9 @@ enum ArchivalAnalyticsExport {
             extraCaveats: [
                 baseCaveat,
                 String(format: String(
-                    localized: "archival.export.caveat.lifecycle %lld",
-                    defaultValue: "Scope: the %lld most widely cited collections in the series, ranked by how many volumes cite them. Each span runs from the earliest to the latest coverage year of those volumes. It says nothing about how densely the years in between are covered."),
-                    Int64(spanCount)),
+                    localized: "archival.export.caveat.timeline %lld",
+                    defaultValue: "Scope: the whole published series, not this device's library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS's own subseries rather than decades, because a decade axis splits a published subseries across two bars."),
+                    Int64(eraCount)),
             ])
     }
 

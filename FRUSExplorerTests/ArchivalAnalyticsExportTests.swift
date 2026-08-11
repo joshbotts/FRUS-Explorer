@@ -55,7 +55,8 @@ struct ArchivalAnalyticsExportTests {
                 band: ArchivalEraBand.all[1], lens: .namedCollections, weight: .documents,
                 hiddenUmbrella: nil, unitsReached: 10, bandVolumeCount: 120,
                 indexedVolumeCount: 5),
-            ArchivalAnalyticsExport.lifecycles(spanCount: 18, indexedVolumeCount: 5),
+            ArchivalAnalyticsExport.collectionTimeline(collectionName: "C", eraCount: 4,
+                                                       indexedVolumeCount: 5),
             ArchivalAnalyticsExport.library(title: "T", axisLabel: "A", profile: profile(),
                                             indexedVolumeCount: 5, corpusVolumeCount: 552),
             ArchivalAnalyticsExport.network(focusName: "F", measure: .sharedVolumes, drawn: 6,
@@ -69,6 +70,34 @@ struct ArchivalAnalyticsExportTests {
                     "\(statement.figureTitle) claims a dating rule it never applied")
         }
         #expect(statements.count == 5, "every archival provenance builder must be in this sweep")
+    }
+
+    // MARK: - The collection timeline's statement (#832b)
+
+    @Test("A collection timeline export says it is series-wide, counts volumes, and names its buckets")
+    func collectionTimelineStatesItsScope() {
+        let provenance = ArchivalAnalyticsExport.collectionTimeline(
+            collectionName: "NSC Files", eraCount: 4, indexedVolumeCount: 3)
+        #expect(provenance.figureTitle.contains("NSC Files"))
+        #expect(provenance.scopeLabel == "NSC Files")
+        #expect(provenance.countingUnit == "Volumes", """
+            The bars count citing volumes. A CSV headed "Documents" over volume counts is the \
+            weight confusion this whole caveat block exists to prevent.
+            """)
+        let caveats = provenance.extraCaveats.joined(separator: " ")
+        #expect(caveats.contains(ArchivalAnalyticsExport.baseCaveat), """
+            Every archival export carries the parsed-from-source-notes statement.
+            """)
+        // The three claims a reader of this CSV alone cannot check for themselves.
+        #expect(caveats.contains("not this device's library"), """
+            The chart is corpus-wide; a reader who assumes it reflects their own library would \
+            read a partial download as a gap in the record.
+            """)
+        #expect(caveats.contains("4 eras"))
+        #expect(caveats.lowercased().contains("subseries"), """
+            The buckets are FRUS's own subseries, not decades — the distinction the era table \
+            exists for.
+            """)
     }
 
     // MARK: - The ranking states what it withheld
@@ -208,16 +237,16 @@ struct ArchivalExportWiringTests {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
-    @Test("All five chart cards mount an export control")
+    @Test("All four chart cards mount an export control")
     func everyCardExports() throws {
         let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
         // Call sites only: the helper's own declaration matches the same string.
         let mounted = source.split(separator: "\n")
             .filter { $0.contains("exportControl(table:") && !$0.contains("private func") }
             .count
-        #expect(mounted == 5, """
-            \(mounted) cards mount an export control; there are five: the ranking, the \
-            lifecycles, and the three Your Library cards.
+        #expect(mounted == 4, """
+            \(mounted) cards mount an export control; there are four: the ranking and the three \
+            Your Library cards. The lifecycles card was removed in #832(c).
             """)
         // The slot exists on SeriesChartCard and was unused across the whole tree until now.
         #expect(source.contains("controls: {"),
@@ -248,6 +277,42 @@ struct ArchivalExportWiringTests {
                 worse than a CSV that works.
                 """)
         }
+    }
+
+    @Test("Cited Over Time carries the table, the export, and the Audio Graph descriptor (#832b)")
+    func collectionTimelineIsAFullChart() throws {
+        // It was the one chart in the archival family with none of the three. The scan is on the
+        // wiring rather than on rendered output because each piece is a single call that a later
+        // edit can drop silently: the chart still draws, and nothing fails.
+        let source = try Self.source("SourceExplorer/CollectionDetailView.swift")
+        #expect(source.contains("timelineInspector = timelineTable"),
+                "the \"View as table\" button no longer opens the inspector")
+        #expect(source.contains("AnalyticsSectionExportControl("),
+                "the chart offers no export")
+        #expect(source.contains("ArchivalAnalyticsExport.collectionTimeline("), """
+            The CSV must carry the collection-timeline methods statement. The generic archival \
+            base caveat alone would head a series-wide volume count with a statement about \
+            document source notes and say nothing about which population the bars count.
+            """)
+        #expect(source.contains(".axChartDescriptor(inspector: timelineTable"), """
+            Without the descriptor the chart is one opaque element to VoiceOver — the gap #268 \
+            closed everywhere SeriesChartCard reaches, which this chart deliberately does not.
+            """)
+    }
+
+    @Test("Cited Over Time's sheets are anchored on the List, not on its Section")
+    func collectionTimelineSheetsAreAnchoredOnce() throws {
+        // A presentation modifier inside a Section (or a Group) mounts once per child. Both of
+        // this chart's presentations must sit on the outermost List, which is where the
+        // navigation title is — every Section builder is below the first `// MARK:`.
+        let source = try Self.source("SourceExplorer/CollectionDetailView.swift")
+        let inspectorSheet = try #require(source.range(of: ".sheet(item: $timelineInspector)"))
+        let exportBox = try #require(source.range(of: ".seriesExportPresentation(timelineExportBox)"))
+        let firstSectionBuilder = try #require(source.range(of: "// MARK: - Overview"))
+        #expect(inspectorSheet.upperBound < firstSectionBuilder.lowerBound,
+                "the inspector sheet is anchored below a Section builder, so it mounts per row")
+        #expect(exportBox.upperBound < firstSectionBuilder.lowerBound,
+                "the export presentation is anchored below a Section builder")
     }
 
     @Test("The share sheet and the error alert are anchored outside the mode switch")

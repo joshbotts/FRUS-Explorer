@@ -16,7 +16,7 @@ import SwiftUI
 ///   1.0 — Session 2026-08-09: #765 stage 1 (Collections + Your Library)
 ///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
 enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
-    /// Corpus-wide era × archival-unit rankings and lifecycles.
+    /// Corpus-wide era × archival-unit rankings.
     case collections
     /// The co-citation neighbourhood of one collection, drawn in custodian sectors.
     case network

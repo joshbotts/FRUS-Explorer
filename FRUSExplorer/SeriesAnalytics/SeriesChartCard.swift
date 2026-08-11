@@ -26,6 +26,8 @@ import Accessibility
 /// Version history:
 ///   1.0 — Session 3 / #236: extracted the shared chart card; title carries the
 ///          `.isHeader` accessibility trait
+///   1.1 — Session 2026-08-10: #832(b) — the Audio Graph descriptor gains a
+///          `View.axChartDescriptor` entry point for charts this card cannot host
 struct SeriesChartCard<Controls: View, Content: View>: View {
 
     /// The chart's title, shown in the header and exposed as a VoiceOver heading.
@@ -89,6 +91,11 @@ struct SeriesChartCard<Controls: View, Content: View>: View {
 /// A modifier rather than an inline `.accessibilityChartDescriptor` so the `canImport` guard and
 /// the "no descriptor is better than a wrong one" refusal live in one place, and so charts with no
 /// inspector — or with a non-numeric one — are simply untouched.
+///
+/// ``SeriesChartCard`` applies it for every chart it hosts. Charts that cannot be hosted by the
+/// card — one inside a `List` section, where the section header is already the chart's heading and
+/// the card's own title would render a second one — reach it through
+/// ``SwiftUI/View/axChartDescriptor(inspector:title:)``.
 private struct AXChartDescriptorModifier: ViewModifier {
     let inspector: ChartInspectorData?
     let title: String
@@ -109,6 +116,23 @@ private struct AXChartDescriptorModifier: ViewModifier {
         #else
         content
         #endif
+    }
+}
+
+extension View {
+
+    /// Attaches the Audio Graph descriptor to a chart that ``SeriesChartCard`` does not host (#268).
+    ///
+    /// Same refusal as the card's: a chart whose inspector table has no numeric value column gets
+    /// **no** descriptor rather than a wrong one, because an audio graph missing points still
+    /// sounds complete.
+    ///
+    /// - Parameters:
+    ///   - inspector: The chart's tabular form — the same value its "View as table" button shows,
+    ///     so the sonified series and the readable one cannot drift apart.
+    ///   - title: The descriptor's title, normally the chart's own heading.
+    func axChartDescriptor(inspector: ChartInspectorData?, title: String) -> some View {
+        modifier(AXChartDescriptorModifier(inspector: inspector, title: title))
     }
 }
 
