@@ -671,7 +671,10 @@ Two findings altered scope rather than merely recording it.
 external index's target ids are present among the authority's 4,423 records, and the per-target
 rows carry volume ids, so era banding works unchanged. But `ranking()` drops zero-valued rows, so
 the weight **replaces the row set**: 1,014 usage collections disappear and 181 pointer-only units
-appear. The class lens has no external vocabulary at all, so `(classes, pointers)` must be
+appear — and against the *fallback* view the app lands on whenever the usage index is missing, the
+drop is far larger, because every one of the authority's 4,423 records carries at least one
+in-coverage volume, so Volumes ranks all 4,423 against pointers' 995. The class lens has no
+external vocabulary at all, so `(classes, pointers)` must be
 disabled rather than rendered empty; the availability fallback is documents-shaped and needs its
 own gate; three shipped strings assert a two-weight world and one is pinned verbatim by a test
 over `allCases`; the export's base caveat is a drawn-from methods statement and needs the same
@@ -704,6 +707,18 @@ owns the copy rules; nothing may be hard-coded from the PNGs.
 Two gaps in the set: #825(b)'s three-button node dock is described in prose and drawn nowhere,
 and the iPhone treatment of the three-segment Count by control is undesigned (only 1e and 1f are
 iPhone-width).
+
+One artboard-versus-spec distinction worth keeping straight, because it looks like a dropped
+feature and is not: 1e omits Related Collections and Sub-Series from the *drawing*, while the
+handoff's written section order for that screen includes both. The same is true of the NARA
+Catalog and Divided at NARA sections, which are conditional. Decision 7 keeps them; the spec never
+proposed otherwise.
+
+**Every measurement in §10 was re-checked adversarially before it reached an issue**, which is how
+the fallback denominator above was found — and how one error of mine was caught: an issue comment
+that named the *local* `externalCitationStats` as #829(b)'s data source, where both the handoff
+and #829's own body specify the **bundled** `ExternalCitationIndex` accessors. A local scalar
+cannot produce the per-volume list 1e draws. The correction is on the issue.
 
 ### 10.4 What the handoff does not change
 
