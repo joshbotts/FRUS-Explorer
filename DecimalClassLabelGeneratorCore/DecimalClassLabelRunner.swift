@@ -105,6 +105,15 @@ public enum DecimalClassLabelRunner {
                 let key = code.lowercased()
                 if byCode[key] == nil { byCode[key] = name } else { shared += 1 }
             }
+            var corrected = 0
+            for (code, entry) in Self.corrections[source.id] ?? [:] where byCode[code] == nil {
+                byCode[code] = entry.name
+                corrected += 1
+            }
+            if corrected > 0 {
+                print("[DecimalClassLabels] \(source.id): \(corrected) curated corrections "
+                    + "applied for codes this scan mangles")
+            }
             if shared > 0 {
                 print("[DecimalClassLabels] \(source.id): \(shared) further names share a code "
                     + "already taken (territories filed under the power holding them)")
@@ -412,6 +421,61 @@ public enum DecimalClassLabelRunner {
         }
         return result
     }
+
+    /// One hand-verified row, with the evidence for it.
+    struct Correction {
+        /// The country as the table names it.
+        let name: String
+        /// What in the source establishes the pairing. Not decoration: D-2 requires every row to
+        /// carry its source, and these rows did not come from the parser.
+        let evidence: String
+    }
+
+    /// Codes the scan mangles beyond recovery, supplied by curation (#828 is curation-led).
+    ///
+    /// ## Why a hand list exists at all
+    /// A few of the country table's pages have a text layer that interleaves columns: `Germany`'s
+    /// name is stranded twenty lines above its `62 62 62`, with a reprinted page header between
+    /// them. Three parsing strategies were measured against those pages — reading order, x
+    /// geometry, and ordered pairing of orphan names to orphan codes — and none recovers them
+    /// (the geometry disagrees with the text layer's ordering; ordered pairing fails because a
+    /// wrapped name contributes several lines, so names outnumber code lines on every affected
+    /// page).
+    ///
+    /// ## The rule for adding a row
+    /// **Every entry is established by the source document, never by outside knowledge**, and
+    /// carries the quotation that establishes it. A code whose pairing the document does not
+    /// settle is left out — the table stays silent rather than becoming confidently wrong, which
+    /// is the same standard the parser is held to.
+    ///
+    /// This list is deliberately short. It is not a place to make the coverage number look
+    /// better; 124 further codes remain unresolved and are reported as such.
+    static let corrections: [String: [String: Correction]] = [
+        "1910-1949": [
+            "62": Correction(
+                name: "Germany",
+                evidence: "The orphaned line `62 62 62` carries no name because the page's text "
+                    + "layer interleaves. The parent is fixed by the table's own entries under the "
+                    + "convention the NARA hints sheet states — a colony or successor takes the "
+                    + "parent's number plus a letter: `West Germany 62a 62a`, `Federal Republic of "
+                    + "Germany 62a 62a`, `East Germany 62b 62b`, `Administration Germany. Russian "
+                    + "Zone 62b 62b`."),
+            "15": Correction(name: "Honduras",
+                             evidence: "`Honduras 15 15 15`, a complete three-column row."),
+            "83": Correction(
+                name: "Egypt",
+                evidence: "`Egypt 83 74* 74*  *See 86b. Use after October 1961.` — 83 is the "
+                    + "1910–49 column; the starred 74 belongs to the later schedules."),
+            "96": Correction(
+                name: "Philippines",
+                evidence: "`Philippines 96 96 96 Beginning July 1946`, beside the superseded "
+                    + "`Philippines 11b Discontinued July 1946. See 96.`"),
+            "10": Correction(
+                name: "America. Pan-America",
+                evidence: "The name wraps as `America. Pan-` / `America` with `10` on the "
+                    + "following line."),
+        ],
+    ]
 
     /// The column headers reprinted on every page of the country table.
     ///

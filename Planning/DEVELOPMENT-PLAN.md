@@ -5380,3 +5380,68 @@ mid-onboarding; stop forwarding the context through the iOS renderer; pin the ca
 open rows with no authority record; show the umbrella; key the load on the year range), and four
 over the review fixes (containment instead of overlap; drop the scope from the escape; revert the
 population claim; drop the recursion guard).
+
+## Session 2026-08-11 — #828 PR 1: the decimal-class label artifact
+
+The 1910–49 State Department classification schedule, parsed from the manuals the owner supplied,
+into `decimal-class-labels.json`. The renderer pass — every surface reading one label source — is
+PR 2. The manuals stay local (`SCHEDULE_DIR`), as decided; the artifact is the reproducible product.
+
+### Compositional, and era-scoped
+
+`761.62` is *class 7, political relations, between country 61 and country 62*, so the table stores
+class glosses, country numbers and subject suffixes separately and composes at render time — the
+shape #764 measured at 87.7% of classed documents against 79.4% for a thousand flat rows.
+
+The classification was **renumbered in 1950** (class 7 is Political Relations of States before,
+Internal Political and National Defense Affairs after; Iran moves 91 → 88, Turkey 67 → 82), so a
+key resolves only against the schedule governing its own era. `891.00` is Iran in the 1910–49 table
+and resolves to nothing in the 1950s one — the failure that era-scoping exists to prevent.
+
+### Four things the source settled that guesswork would have got wrong
+
+- **The relations reading belongs to class 7 alone.** Class 8 is *Internal Affairs of States* —
+  one country and a subject — and its keys are shaped identically. Treating every country-arranged
+  class as relations made `893.51` read "China and France" when it means China's internal affairs.
+- **The 1910–49 schedule has no class 9.** Its summary runs 000–800 and "900" appears nowhere; the
+  class arrives with the 1950 renumbering. A floor of ten was rejecting a complete parse.
+- **Country codes are alphanumeric** — 270 of 353 carry a letter, because colonies were numbered
+  off the parent (France 51, Algeria 51r).
+- **65 is legitimately both Italy and Rhodes Island**, Italy having held the Dodecanese for the
+  period. Shared codes resolve to the shortest name, ties alphabetical — deterministic, and it
+  prefers the sovereign state over the territory filed under it.
+
+### Three parsing strategies, two measured and rejected
+
+- **Drop every partial row** (a row not filling all three era columns): honest but expensive —
+  176 of 353 codes, 80.0% of documents.
+- **Place codes by x position**: the column centres calibrate cleanly (125 / 224 / 293 from 140
+  rows each), but `PDFPage.characterBounds(at:)` does not agree with `PDFPage.string`'s ordering on
+  these files, so the positions cannot be trusted to belong to the tokens they are read for.
+- **Read NARA's own annotations** — the rule that ships. 135 `Discontinued` rows left-align, 106
+  `Beginning`/`Established` rows right-align, and an unannotated partial row is dropped and counted.
+
+Three bugs found by rendering the top corpus keys as a reader would see them, not by tests: a
+wrapped name after a code row was swallowed as note continuation (this hid the Soviet Union); a
+sort read the code's length instead of the name's (so 51 was "Corsica", not "France"); and the
+page headers reprint on every page, severing names from codes across breaks.
+
+### A short, sourced corrections list
+
+A few pages interleave columns beyond recovery — `Germany`'s name sits twenty lines above its
+`62 62 62`. Five entries are supplied by curation, **each established by the source document rather
+than by outside knowledge**, each carrying the quotation that establishes it. Germany's is derived
+from the table's own entries under the convention NARA's hints sheet states: `West Germany 62a`,
+`East Germany 62b`, so the parent is 62. The list is deliberately short and is not a place to make
+a coverage number look better.
+
+### Measured, and honest about the remainder
+
+**67.3% of decimal class keys and 78.8% of the documents behind them.** 124 codes remain
+unresolved. Where the table does not know a country it says nothing — the key renders as it does
+today — because a wrong gloss on an archival citation is worse than a bare number: the reader
+cannot tell it is wrong.
+
+The 1950–59 and 1960–63 schedules are **omitted**, not shipped thin: their scans letter-space every
+word and yield 4 and 8 class headings against ten. A half-named class table mislabels rather than
+labels, so the generator drops an incomplete schedule and says which eras it covers.
