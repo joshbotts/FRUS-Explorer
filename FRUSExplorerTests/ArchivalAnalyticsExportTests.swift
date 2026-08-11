@@ -350,6 +350,40 @@ struct ArchivalExportWiringTests {
             #825(c) is "the export follows it": a CSV that still carried twelve rows while the \
             screen showed hundreds would be the same defect one layer down.
             """)
+        #expect(sheet.contains("Text(row.label)"), """
+            The uncapped list must draw the DISAMBIGUATED label. `disambiguate` appends the \
+            repository to names carried by more than one record, and drawing `name` prints \
+            "White House Central Files" six times in one band — six identical rows, each \
+            opening a different collection.
+            """)
+        #expect(!sheet.contains("Text(row.name)"))
+        #expect(sheet.contains("rowCapApplied: false"), """
+            The uncapped table's methods statement must not blame a row cap for its shortfall: \
+            it has no rows below a cap.
+            """)
+        #expect(view.contains("Task { @MainActor in open(row, data: data) }"), """
+            Dismissing the all-units sheet and presenting the collection record in the SAME \
+            state change drops the second presentation.
+            """)
+    }
+
+    @Test("The uncapped export gets its own denominator sentence")
+    func uncappedExportDoesNotBlameTheRowCap() {
+        let capped = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[1], lens: .namedCollections, weight: .documents,
+            hiddenUmbrella: nil, unitsReached: 700, bandVolumeCount: 120,
+            indexedVolumeCount: 5, noteCount: 59_973, shownValue: 5_655)
+        let uncapped = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[1], lens: .namedCollections, weight: .documents,
+            hiddenUmbrella: nil, unitsReached: 700, bandVolumeCount: 120,
+            indexedVolumeCount: 5, noteCount: 59_973, shownValue: 13_238,
+            rowCapApplied: false)
+        #expect(capped.extraCaveats.joined().contains("below the row cap"))
+        #expect(!uncapped.extraCaveats.joined().contains("below the row cap"), """
+            The uncapped table listed every unit the era reaches, so "a unit below the row cap" \
+            names a population that does not exist in it.
+            """)
+        #expect(uncapped.extraCaveats.joined().contains("uncapped"))
     }
 
     @Test("The collection record's citing volumes open the volume (#825d)")

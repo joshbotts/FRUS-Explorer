@@ -106,7 +106,11 @@ struct ArchivalAllUnitsSheet: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .frame(width: 44, alignment: .trailing)
-                Text(row.name)
+                // `label`, not `name`: `disambiguate` appends the repository (and, failing that,
+                // the authority id) to names carried by more than one record. Drawing `name`
+                // here would print `White House Central Files` six times over in one band —
+                // six identical rows, each opening a different collection.
+                Text(row.label)
                     .font(.callout)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(row.value, format: .number)
@@ -159,7 +163,7 @@ struct ArchivalAllUnitsSheet: View {
                 String(localized: "archival.table.custodian", defaultValue: "Custodian"),
                 weight.title,
             ],
-            rowCells: ranking.rows.map { [$0.name, $0.category.displayName, "\($0.value)"] })
+            rowCells: ranking.rows.map { [$0.label, $0.category.displayName, "\($0.value)"] })
     }
 
     private var provenance: AnalyticsProvenance {
@@ -167,6 +171,7 @@ struct ArchivalAllUnitsSheet: View {
             band: band, lens: lens, weight: weight,
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount, indexedVolumeCount: indexedVolumeCount,
-            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue)
+            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue,
+            rowCapApplied: false)
     }
 }

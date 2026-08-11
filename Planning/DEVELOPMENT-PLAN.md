@@ -4940,3 +4940,51 @@ The handoff's own worked example for that family is wrong in two positions — r
 Volume-set → per-pair count; stop folding; drop the note accumulation; let the volumes
 weight state a share; leaves report documents under both weights; unfold (against the
 replaced parity test specifically); drop the shared fold from the Network.
+
+---
+
+## Session 2026-08-11 — wave 1c (#825 a, c, d): the dead ends close
+
+**Issue:** #825 (a, c, d — b/e/f follow separately) · **PR:** the third implementation session
+
+### What the pre-flight measured that changes the design
+
+The "Show all N units" table is **not** a 40-row list. Measured over the shipped artifacts, the
+largest cell is **5,881 rows** (Through 1947 · file numbers, either weight); the widest collections
+cell is 1,491. It is also the thinnest evidence in the corpus — 3,667 of those 5,881 rows are cited
+by exactly one volume. A `List` handles it lazily, but the number is why the sheet is a list rather
+than an inspector table, and why it states its own count in the header.
+
+### Three seams worth naming
+
+**The hit test cannot live in the chart body.** That body is also what the figure exporter
+rasterises, so `.chartOverlay` inside it would bake a dead hit-test region into a PNG. It lives on
+a separate wrapper, pinned by a test to exactly one call site.
+
+**The uncapped list must draw `label`, not `name`.** `disambiguate` appends the repository to names
+carried by more than one authority record. Drawn as `name`, one band prints `White House Central
+Files` **six times** — six identical rows, each opening a different collection. The chart never had
+this problem because it has always drawn `label`; the new list quietly did not.
+
+**A dismiss and a present in one state change drops the present.** Opening a collection from the
+all-units sheet sets `showsAllUnits = false` and then the detail target; done in the same update the
+detail never appears. The hand-off hops to the next update.
+
+### The uncapped export needed its own sentence
+
+The capped CSV's denominator caveat blames the shortfall partly on "a unit below the row cap". In
+the uncapped table there are no rows below a cap, so the same sentence is a false claim about a
+population that does not exist there. `rowCapApplied` branches it.
+
+### A dead end that predates the surface
+
+#825(d)'s "Cited Across the Series" rows were **never** navigable — `git show d7c53185` has the same
+inert `ForEach` from the section's first commit — while the sibling list in `VolumeSourcesView`,
+showing the same volumes for the same collection, has been navigable since the UI audit that
+recorded "the rows used to be dead ends". The issue calls it an adjacent regression; it is a
+restoration relative to a sibling, and the correction is on the issue.
+
+### Mutation sweep: 3 mutants, 3 killed
+
+Keep the cap in the all-units sheet; make the citing rows inert again; leak the interactive chart
+into the figure export.

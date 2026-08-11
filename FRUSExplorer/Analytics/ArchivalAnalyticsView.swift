@@ -166,7 +166,9 @@ struct ArchivalAnalyticsView: View {
                     data: data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                     onOpen: { row in
                         showsAllUnits = false
-                        open(row, data: data)
+                        // Presented on the NEXT update, not this one: dismissing a sheet and
+                        // presenting another in the same state change drops the second.
+                        Task { @MainActor in open(row, data: data) }
                     },
                     canOpen: { canOpen($0, data: data) })
             }

@@ -81,7 +81,7 @@ enum ArchivalAnalyticsExport {
     static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
                         hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
                         indexedVolumeCount: Int, noteCount: Int = 0,
-                        shownValue: Int = 0) -> AnalyticsProvenance {
+                        shownValue: Int = 0, rowCapApplied: Bool = true) -> AnalyticsProvenance {
         var caveats = [baseCaveat, weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
             caveats.append(String(format: String(
@@ -100,10 +100,17 @@ enum ArchivalAnalyticsExport {
         // count and a note total is the units error `ArchivalRanking.shownShare(weight:)`
         // refuses on screen, and a CSV outlives the screen that produced it.
         if noteCount > 0, weight == .documents {
-            caveats.append(String(format: String(
-                localized: "archival.export.caveat.denominator %lld %lld",
-                defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
-                Int64(noteCount), Int64(shownValue)))
+            // The uncapped table has no rows below a cap, so it must not blame one for the
+            // shortfall — the same sentence would be a different, false claim there.
+            caveats.append(rowCapApplied
+                ? String(format: String(
+                    localized: "archival.export.caveat.denominator %lld %lld",
+                    defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
+                    Int64(noteCount), Int64(shownValue))
+                : String(format: String(
+                    localized: "archival.export.caveat.denominator.uncapped %lld %lld",
+                    defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and this table — every unit the era reaches, uncapped — accounts for %2$lld of them. The rest name a unit of the other kind, or nothing this app resolves."),
+                    Int64(noteCount), Int64(shownValue)))
         }
         return AnalyticsProvenance(
             figureTitle: String(format: String(localized: "archival.export.title.ranking %@ %@",
