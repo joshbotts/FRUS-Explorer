@@ -66,6 +66,9 @@ struct CollectionDetailView: View {
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
+    /// Closes this view after an iOS hand-off, so the destination is not left under the sheet or
+    /// the push this view was presented in (#825d). Harmless when the view is not presented.
+    @Environment(\.dismiss) private var dismiss
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
@@ -521,6 +524,27 @@ struct CollectionDetailView: View {
         }
     }
 
+    /// Opens a citing volume in the browser (#825d).
+    ///
+    /// These rows have been inert since the section's first commit — `git show d7c53185` has the
+    /// same `ForEach` of plain `VStack`s — while the sibling list in `VolumeSourcesView` that
+    /// shows the *same* volumes for the *same* collection has been navigable since the UI audit
+    /// that recorded "the rows used to be dead ends". This is that fix, applied to the surface
+    /// that superseded it, through the same `pendingBrowseVolume` hand-off both platforms consume.
+    ///
+    /// The presenting sheet is deliberately left open on macOS, matching the sibling: the
+    /// Corpus Browser is a separate window there, so dismissing would throw away the reader's
+    /// place in a list they are working through.
+    private func openVolume(_ volumeId: String) {
+        appState.openBrowseVolume(volumeId, from: sceneID)
+        #if os(macOS)
+        openWindow.fronting(id: "frus.corpusBrowser")
+        #else
+        appState.openTab(.browse, from: sceneID)
+        dismiss()
+        #endif
+    }
+
     // MARK: - Divided at NARA (#762-F)
 
     @ViewBuilder
@@ -600,14 +624,24 @@ struct CollectionDetailView: View {
                 ? record.volumeIds
                 : Array(record.volumeIds.prefix(CollectionRelations.previewRowCap))
             ForEach(shown, id: \.self) { volumeId in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
-                        .font(.callout)
-                    Text(volumeId)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                Button {
+                    openVolume(volumeId)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
+                            .font(.callout)
+                        Text(volumeId)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                    // The greedy frame must come before the shape, or only the text is tappable.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .padding(.vertical, 2)
+                .buttonStyle(.plain)
+                .accessibilityHint(String(localized: "collection.detail.volumes.row.hint",
+                                          defaultValue: "Opens this volume in the browser"))
             }
             if record.volumeIds.count > CollectionRelations.previewRowCap {
                 Button {

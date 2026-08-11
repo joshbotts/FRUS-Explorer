@@ -34,6 +34,8 @@ import Charts
 ///          pointer to where one collection's own timing lives
 ///   1.3 — Session 2026-08-10: #826 adds the denominator line above the ranking and the
 ///          "Inside these families" leaf list below it
+///   1.4 — Session 2026-08-10: #825(a, c) — ranking rows open a destination, and the row cap
+///          gains a way out through the uncapped all-units table
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -78,6 +80,10 @@ struct ArchivalAnalyticsView: View {
 
     /// The chart whose data the table inspector is showing.
     @State private var inspectorData: ChartInspectorData?
+    /// The collection record to present, set when a ranking row is opened (#825a).
+    @State private var collectionDetail: AuthorityCollectionRecord?
+    /// Whether the uncapped "every unit in this era" table is up (#825c).
+    @State private var showsAllUnits = false
     /// The file waiting to be shared (iOS) after an export.
     @State private var exportShareItem: AnalyticsExportFile?
     /// An export failure, surfaced rather than swallowed.
@@ -148,6 +154,23 @@ struct ArchivalAnalyticsView: View {
         .frame(minWidth: 720, minHeight: 580)
         #endif
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .sheet(item: $collectionDetail) { record in
+            CollectionDetailSheet(record: record)
+                .environment(appState)
+                .environment(\.sceneID, sceneID ?? .anyWindow)
+        }
+        .sheet(isPresented: $showsAllUnits) {
+            if let data = collectionsData {
+                ArchivalAllUnitsSheet(
+                    band: band, lens: unitLens, weight: weight, hidingUmbrella: hidesUmbrella,
+                    data: data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+                    onOpen: { row in
+                        showsAllUnits = false
+                        open(row, data: data)
+                    },
+                    canOpen: { canOpen($0, data: data) })
+            }
+        }
         // D3 (#787): anchored on the outermost view, not on a `Group` child — see the
         // Group-modifier gotcha, which applies the presentation once per child.
         .sheet(item: $exportShareItem) { AnalyticsExportShareSheet(item: $0) }
@@ -269,6 +292,7 @@ struct ArchivalAnalyticsView: View {
             filterRow(data: data)
             denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
+            showAllUnitsButton(ranking)
             classFamilies(ranking)
             collectionsCaveats(data: data, ranking: ranking)
             perCollectionTimingPointer
@@ -452,6 +476,61 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
+    // MARK: - Every unit (#825c)
+
+    /// The way out of the row cap.
+    ///
+    /// The chart draws twelve bars and the caption has always counted the units reached in the
+    /// hundreds, but until now those rows existed nowhere the reader could get at them: the
+    /// table inspector and the CSV both carried the capped twelve, so the full list was
+    /// unobtainable in the app *and* out of it. Withheld when nothing is capped.
+    @ViewBuilder
+    private func showAllUnitsButton(_ ranking: ArchivalRanking) -> some View {
+        if ranking.unitsReached > ranking.rows.count {
+            Button {
+                showsAllUnits = true
+            } label: {
+                Label(String(format: String(
+                    localized: "archival.allUnits.button %lld",
+                    defaultValue: "Show all %lld units in this era"),
+                    Int64(ranking.unitsReached)), systemImage: "tablecells")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    // MARK: - Opening a row (#825a)
+
+    /// Where a ranking row goes when it is opened.
+    ///
+    /// The two lenses rank different kinds of thing and so have different destinations, which is
+    /// the whole reason this is one function rather than a tap handler per surface:
+    ///
+    /// - A **collection** is a body of records, so it opens its authority record — the one screen
+    ///   holding the NARA catalog link, the aliases, the citing volumes and Divided at NARA. A row
+    ///   whose id the authority does not carry simply does not open (see
+    ///   ``ArchivalCollectionsData/record(forId:)``); it has no record to show, and inventing a
+    ///   destination would be worse than the dead end this issue is closing.
+    /// - A **class** is a subject heading inside a filing system, not a body of records. There is
+    ///   nothing to open, so it routes to the class-keyed Archival Neighbors — the documents
+    ///   themselves.
+    private func open(_ row: ArchivalRankingRow, data: ArchivalCollectionsData) {
+        switch unitLens {
+        case .namedCollections:
+            guard let record = data.record(forId: row.id) else { return }
+            collectionDetail = record
+        case .centralFileClasses:
+            openClassNeighbors(row.id)
+        }
+    }
+
+    /// Whether a row has somewhere to go, so a list can withhold the affordance rather than
+    /// offering a control that does nothing.
+    private func canOpen(_ row: ArchivalRankingRow, data: ArchivalCollectionsData) -> Bool {
+        unitLens == .centralFileClasses || data.record(forId: row.id) != nil
+    }
+
     // MARK: - Class families (#826/R-4)
 
     /// The way back from a folded family to the leaf a pull slip actually names.
@@ -565,7 +644,7 @@ struct ArchivalAnalyticsView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 12)
             } else {
-                rankingChart(ranking)
+                interactiveRankingChart(ranking, data: data)
                     .frame(height: CGFloat(ranking.rows.count) * 26 + 60)
             }
         }
@@ -576,6 +655,35 @@ struct ArchivalAnalyticsView: View {
     /// `AnalyticsFigureCanvas` renders detached from the view hierarchy and inherits no
     /// environment, so everything this reads — the weight's title, the category colours, the row
     /// labels — must already be resolved by the time it is called. All of it is.
+    /// The ranking chart with its tap-through, for the screen only.
+    ///
+    /// Interaction is added here rather than inside ``rankingChart(_:)`` because that body is
+    /// also what the figure exporter rasterises, and a hit-test overlay in a PNG is dead weight
+    /// — the same split Person Analytics draws between its screen chart and its export.
+    private func interactiveRankingChart(_ ranking: ArchivalRanking,
+                                         data: ArchivalCollectionsData) -> some View {
+        rankingChart(ranking)
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard let anchor = proxy.plotFrame else { return }
+                            let plot = geo[anchor]
+                            // The Y axis is categorical on `label`, which `disambiguate` has
+                            // already made unique within the ranking — so the label round-trips
+                            // to exactly one row.
+                            guard let label = proxy.value(atY: location.y - plot.origin.y,
+                                                          as: String.self),
+                                  let row = ranking.rows.first(where: { $0.label == label })
+                            else { return }
+                            open(row, data: data)
+                        }
+                }
+            }
+    }
+
     @ViewBuilder
     private func rankingChart(_ ranking: ArchivalRanking) -> some View {
         Chart {

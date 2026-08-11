@@ -151,6 +151,8 @@ struct ArchivalRanking: Sendable, Equatable {
 ///          the authority loop stays because it is the Volumes weight's only writer
 ///   1.2 — Session 2026-08-10: #826 — the class lens folds to one grain with its leaves kept,
 ///          and the per-band source-note denominator is read from the usage index at last
+///   1.3 — Session 2026-08-10: #825 — `record(forId:)`, so a drawn row can find its authority
+///          record without the view reaching into the derivation's tables
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
@@ -421,6 +423,17 @@ struct ArchivalCollectionsData: Sendable {
             ? collectionDocuments[band.index]
             : classDocuments[band.index]
         return table.values.reduce(0, +)
+    }
+
+    /// The authority record behind a ranking row, or `nil` when the row has none.
+    ///
+    /// Not every drawn row has one. A collection row's id comes from whichever table the weight
+    /// selected, and the documents table is keyed by the **usage index**, which can name an id the
+    /// authority does not carry; the ranking already falls back to the raw id for such a row's
+    /// label. Callers that navigate must therefore treat `nil` as "this row does not open"
+    /// rather than as an error — a row with no record has no detail screen to show.
+    func record(forId id: String) -> AuthorityCollectionRecord? {
+        records[id]
     }
 
     /// Source notes scanned across a band's volumes, or `nil` when the usage index is absent.
