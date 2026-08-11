@@ -1489,18 +1489,11 @@ struct ArchivalAnalyticsView: View {
     @MainActor
     private func volumeCoverage(limitedTo scope: [String]? = nil) -> [String: ArchivalVolumeCoverage] {
         guard let store = appState?.manifestStore else { return [:] }
-        let entries = store.diffResult?.known ?? store.bundledEntries
-        let allowed = scope.map(Set.init)
-        var result: [String: ArchivalVolumeCoverage] = [:]
-        result.reserveCapacity(allowed?.count ?? entries.count)
-        for entry in entries {
-            if let allowed, !allowed.contains(entry.volumeId) { continue }
-            let first = FRUSVolumeMetadata.firstYear(in: entry.dateRange.earliest)
-            let last = FRUSVolumeMetadata.firstYear(in: entry.dateRange.latest)
-            guard let start = first ?? last, let end = last ?? first else { continue }
-            result[entry.volumeId] = ArchivalVolumeCoverage(firstYear: start, lastYear: end)
-        }
-        return result
+        // The map is built by the shared builder (#835), not here: the coverage map IS the volume
+        // set, so a second copy of this loop would be a second definition of what a scope means —
+        // and the Archival Sourcing card scopes the same corpus by the same rule.
+        return ArchivalVolumeCoverage.map(from: store.diffResult?.known ?? store.bundledEntries,
+                                          limitedTo: scope.map(Set.init))
     }
 
     /// Every volume the **series** has, which is what the scope selector offers (#827).
@@ -1537,10 +1530,16 @@ struct ArchivalAnalyticsView: View {
         guard collectionsData == nil else { return }
         let requested = scopeSignature
         let coverage = volumeCoverage(limitedTo: scopeVolumeIds)
-        let authority = CollectionAuthorityStore.shared?.collections ?? []
-        let usage = CollectionUsageIndexStore.shared
+        // The `.shared` touches happen INSIDE the detached block. They are lazy `static let`
+        // globals, so whichever thread reaches one first pays its decode — and these two are
+        // 1.8 MB and 0.6 MB of JSON plus the authority's three lookup dictionaries. Read here,
+        // on the main actor, that is a visible stall before the spinner even appears; only
+        // `coverage` needs to cross the boundary.
         let built = await Task.detached(priority: .userInitiated) {
-            ArchivalCollectionsData.make(authority: authority, usage: usage, coverage: coverage)
+            ArchivalCollectionsData.make(
+                authority: CollectionAuthorityStore.shared?.collections ?? [],
+                usage: CollectionUsageIndexStore.shared,
+                coverage: coverage)
         }.value
         guard requested == scopeSignature else { return }
         collectionsData = built
