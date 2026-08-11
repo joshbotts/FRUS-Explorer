@@ -337,14 +337,31 @@ public enum DecimalClassLabelRunner {
                 for (offset, value) in row.codes.enumerated() {
                     placed[3 - row.codes.count + offset] = value
                 }
-            } else if note.contains("Discontinued") || note.contains("Generally not used") {
-                for (offset, value) in row.codes.enumerated() { placed[offset] = value }
             } else {
+                // The `Discontinued ⇒ left-align` rule is GONE, and its removal is a correctness
+                // fix rather than a tidy-up. `Arctic 01 Discontinued 1955. See 03.` does not mean
+                // 01 is a 1910–49 code — the row is annotated from the perspective of the column
+                // it actually occupies, which the text does not name. Left-aligned, `01` entered
+                // the 1910–49 table and glossed **4,513 documents** as "Arctic", among them
+                // `501.BB` (1,628), which is a United Nations key and names no country at all.
+                // `11h` (Alaska) arrived the same way.
+                //
+                // `Beginning`/`Established` is kept because it is directional in the other sense:
+                // a code that BEGINS mid-period cannot be in the earliest column, so right-
+                // alignment removes possibilities rather than inventing one.
                 ambiguous += 1
                 return
             }
+            if false {
+                return
+            }
             let name = row.name
-            guard name.count >= 3,
+            // A country name is a noun phrase. These reject note prose that the row builder let
+            // through: `52` shipped as `Africa."` — the tail of *Formerly "German Southwest
+            // Africa."* — and glossed 1,761 documents with it.
+            guard !name.contains("\""), !name.hasSuffix("."), !name.hasSuffix(","),
+                  name.split(separator: " ").count <= 6,
+                  name.count >= 3,
                   name.range(of: #"^[A-Z]"#, options: .regularExpression) != nil,
                   !name.lowercased().hasPrefix("country"),
                   !name.lowercased().contains("number")
@@ -460,6 +477,15 @@ public enum DecimalClassLabelRunner {
                     + "parent's number plus a letter: `West Germany 62a 62a`, `Federal Republic of "
                     + "Germany 62a 62a`, `East Germany 62b 62b`, `Administration Germany. Russian "
                     + "Zone 62b 62b`."),
+            "52": Correction(
+                name: "Spain",
+                evidence: "Stranded on the same interleaved page as Germany — the line reads "
+                    + "`Spain Spanish Guinea Spanish` with the column headers following it. The "
+                    + "parent is fixed by the table's own dependants under the parent-plus-letter "
+                    + "convention the NARA hints sheet states: `Adrar 52c`, `Annobon 52e`, "
+                    + "`Alhucemas 52f`, `Zaffarin Islands 52f` are all Spanish possessions. Until "
+                    + "this entry, 52 was taken by `Africa.\"` — the tail of the note *Formerly "
+                    + "\"German Southwest Africa.\"* — which glossed 1,761 documents."),
             "15": Correction(name: "Honduras",
                              evidence: "`Honduras 15 15 15`, a complete three-column row."),
             "83": Correction(

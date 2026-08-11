@@ -66,6 +66,41 @@ struct DecimalClassLabelTests {
             """)
     }
 
+    @Test("The four glosses that shipped wrong are gone, and the good ones stayed")
+    func retiredMislabels() throws {
+        let table = try table()
+        let schedule = try #require(table.schedules.first)
+        let band0 = 1861...1947
+
+        // `52` shipped as `Africa."` — the tail of the note *Formerly "German Southwest Africa."*
+        // — glossing 1,761 documents with a fragment of prose. It is Spain.
+        #expect(schedule.countries["52"] == "Spain")
+        #expect(table.gloss(for: "852.00", coveringYears: band0)?.hasPrefix("Spain") == true)
+
+        // `01` and `11h` were placed in the 1910–49 column by the `Discontinued ⇒ left-align`
+        // rule, which reads an annotation written from the perspective of a column the text never
+        // names. `01` glossed 4,513 documents as "Arctic", among them `501.BB` (1,628) — a United
+        // Nations key that names no country at all.
+        #expect(schedule.countries["01"] == nil, """
+            A code the source does not place in this column must not appear in it. This one \
+            reached more documents than any correct entry except the largest.
+            """)
+        #expect(schedule.countries["11h"] == nil)
+        #expect(table.gloss(for: "501.BB", coveringYears: band0) == nil, """
+            `501.BB` is a Class 5 United Nations key. Glossing it "Arctic" is the exact failure \
+            this table is supposed to be incapable of.
+            """)
+
+        // `90c` merged two rows' names into "Azerbaijan Azores".
+        #expect(schedule.countries["90c"]?.contains("Azores") != true)
+
+        // And the entries that were right stayed right.
+        for (code, name) in [("62", "Germany"), ("51", "France"), ("41", "Great Britain"),
+                             ("65", "Italy"), ("93", "China")] {
+            #expect(schedule.countries[code] == name, "\(code) regressed")
+        }
+    }
+
     @Test("Anything the table cannot place stays silent")
     func silence() throws {
         let table = try table()
