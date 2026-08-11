@@ -168,6 +168,30 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Builds `decimal-class-labels.json` (#828, design decision D-2): the era-scoped label
+        /// table for State Department central-file decimal classes, parsed from NARA's published
+        /// classification manuals. COMPOSITIONAL — class glosses, country numbers and subject
+        /// suffixes are stored separately and composed at render time, which the #764 feasibility
+        /// study measured at 87.7% of classed documents against 79.4% for a thousand flat rows.
+        /// The manuals stay LOCAL (`SCHEDULE_DIR`); the artifact is the reproducible product.
+        .target(
+            name: "DecimalClassLabelGeneratorCore",
+            path: "DecimalClassLabelGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "DecimalClassLabelGenerator",
+            dependencies: [.target(name: "DecimalClassLabelGeneratorCore")],
+            path: "DecimalClassLabelGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "DecimalClassLabelGeneratorTests",
+            dependencies: [.target(name: "DecimalClassLabelGeneratorCore")],
+            path: "DecimalClassLabelGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Builds the digitised decimal-range index (#663): NARA file units whose titles
         /// state a decimal range and which carry scanned images, so Source Explorer can link
         /// the microfilm PDF for a citation's file range.

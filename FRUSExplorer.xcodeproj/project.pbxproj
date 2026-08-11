@@ -163,6 +163,7 @@
 		26C871262EEC974E3E206F20 /* CollectionExcerpts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA4D049C98F1AD30D8A1C01 /* CollectionExcerpts.swift */; };
 		26EAE0B203D99C9397C99786 /* IndexHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BEBE77ECB0D5CB1DC46A17 /* IndexHealthView.swift */; };
 		270DFE1155FC0D6851A37826 /* CentralFilesClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A2B94D97D7EDE34FFBFFFA /* CentralFilesClassifier.swift */; };
+		271506E8A4CC947F8350BF4F /* decimal-class-labels.json in Resources */ = {isa = PBXBuildFile; fileRef = CA7014954871992D15D49362 /* decimal-class-labels.json */; };
 		271661E1C7878F8717D6EA37 /* SummarizationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BAA83CD70417BEC8E4736E /* SummarizationProvider.swift */; };
 		2750EFD858438D223004C453 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F3D4EC68B2923931D983 /* Project.swift */; };
 		2758916B3D1FBDCF21048A56 /* PersonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE9909AA39DA3A99793427 /* PersonAnalyticsView.swift */; };
@@ -707,6 +708,7 @@
 		A7116E9882C7EE6908549B69 /* PersonClusterOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */; };
 		A71FD8F16EA54AD18DF949FD /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81475CA28849923822135AD /* BrowserViewModel.swift */; };
 		A7D07B162D57D033D148671B /* PersonRollupRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18DE68AC2C164D1548F3E5E0 /* PersonRollupRefresh.swift */; };
+		A7D4300AFC33B43E961F0EE6 /* decimal-class-labels.json in Resources */ = {isa = PBXBuildFile; fileRef = CA7014954871992D15D49362 /* decimal-class-labels.json */; };
 		A7DB9174F877184EC5912669 /* AnalyticsChartTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3DCC71337106388B5176A6 /* AnalyticsChartTables.swift */; };
 		A8065087F9358A1B00FB8B98 /* ModelContainer+FRUS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */; };
 		A80C0A2291FD9201DABE91BA /* PersonCorrectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CFAE4BD52F4B87A79FC7ED /* PersonCorrectionsView.swift */; };
@@ -1700,6 +1702,7 @@
 		CA286AC3CE197B6146D6092A /* SearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
 		CA327B9761498E155E163443 /* TagEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagEditorView.swift; sourceTree = "<group>"; };
 		CA68BE5B1301B47853D393FE /* AnalyticsFigureExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsFigureExport.swift; sourceTree = "<group>"; };
+		CA7014954871992D15D49362 /* decimal-class-labels.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "decimal-class-labels.json"; sourceTree = "<group>"; };
 		CAEE237AF15C7ADA946E1472 /* BrokenRefsReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokenRefsReportExporter.swift; sourceTree = "<group>"; };
 		CAF0799F904BBDF8A9C941F5 /* FTS5Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Types.swift; sourceTree = "<group>"; };
 		CB1A5A1728E756D28973BD54 /* ProjectLeadsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectLeadsTests.swift; sourceTree = "<group>"; };
@@ -2535,6 +2538,7 @@
 				1E19164197E6F258BDA5D7FF /* collection-usage-index.json */,
 				8680C5035EF2B6B6615C76C8 /* curated-library-resolutions.json */,
 				F15A87AD9296CB30DF72C7E0 /* curated-lot-resolutions.json */,
+				CA7014954871992D15D49362 /* decimal-class-labels.json */,
 				F301841228E95CD6C8E11AA0 /* digitized-ranges-index.json */,
 				23C97E3B5ED764D021145571 /* external-citation-index.json */,
 				B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */,
@@ -3040,6 +3044,7 @@
 				F05D965CEE1DE06EC88D5769 /* collection-usage-index.json in Resources */,
 				30F28F3A6781248D47216757 /* curated-library-resolutions.json in Resources */,
 				BDE47F06DAB696FA3356AC72 /* curated-lot-resolutions.json in Resources */,
+				271506E8A4CC947F8350BF4F /* decimal-class-labels.json in Resources */,
 				CDF76A75B8F62CD9E9BAB9A7 /* digitized-ranges-index.json in Resources */,
 				4EE66888C6C02ACE06F3F1DF /* external-citation-index.json in Resources */,
 				E44167532316A537E2B69962 /* frus-highlights.js in Resources */,
@@ -3082,6 +3087,7 @@
 				CAFA204C8EFE4552CC408CAF /* collection-usage-index.json in Resources */,
 				371CB2BECA901E0949FBB968 /* curated-library-resolutions.json in Resources */,
 				E2BFA880CFB78D377923B02D /* curated-lot-resolutions.json in Resources */,
+				A7D4300AFC33B43E961F0EE6 /* decimal-class-labels.json in Resources */,
 				66E17FDEFA92BB6B5559F7FD /* digitized-ranges-index.json in Resources */,
 				E868467F0FB81EC2B77FFE3A /* external-citation-index.json in Resources */,
 				C6CE3386656EC85C8513C72E /* frus-highlights.js in Resources */,
