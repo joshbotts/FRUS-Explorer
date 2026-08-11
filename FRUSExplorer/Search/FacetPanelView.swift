@@ -357,6 +357,11 @@ final class FacetPanelController {
 /// Version history:
 ///   1.0 — R-1b: initial implementation
 ///   1.1 — Session 2026-08-07: sort pickers, paging, and a filter field (#586)
+///   1.2 — Session 2026-08-11: #833 — the archival door out of the descriptive-only provenance
+///         section. Disclosing that section also requests the volume breakdown the door is made
+///         of, the door's only condition is the section itself (nested in the non-empty branch it
+///         vanished exactly when the section had nothing to say), and the controller records the
+///         query its breakdown describes so the scope is never labelled with an uncommitted one
 struct FacetPanelView: View {
 
     /// The panel's state.

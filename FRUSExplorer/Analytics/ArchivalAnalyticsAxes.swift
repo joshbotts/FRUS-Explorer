@@ -281,6 +281,9 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
+///   1.1 — Session 2026-08-11: #833 — `bandHoldingMost(of:)`, so a scope arriving from a topic
+///         or a search lands on an era its volumes actually occupy, and so that decision can be
+///         tested against real spans rather than asserted by name in a source scan
 struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 
     /// Position in ``all``; also `id`.

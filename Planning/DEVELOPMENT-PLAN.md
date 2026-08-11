@@ -5220,10 +5220,58 @@ would be an under-count no figure on the destination could reveal. The door read
 `volumesBySubjectRef` and its own count says which set it means. It is withheld below two volumes:
 a one-volume "profile of volumes on this subject" is that volume's own profile under a topic's name.
 
-### Mutation sweep: 14 mutants, 14 killed
+### A second review, of the fixes themselves
+
+The six repairs above were then reviewed the same way, from three lenses with two independent
+refutation angles per finding. **All 21 findings against the fixes were refuted** — the repairs
+hold. The completeness critic, asked what all three lenses had missed, found five things that
+were not, of which four were real and are fixed here:
+
+- The `init` doc comment still said "scope parameters are deliberately **not** here yet",
+  two paragraphs above the scope parameter, and still claimed both call sites pass none.
+- The door was hidden by the very section it belongs to: it sat inside the `else` of
+  `if buckets.isEmpty`, so a provenance breakdown with **no rows** — no matched document carrying
+  a resolvable source note — showed "Nothing to break down here." and offered no way on. That is
+  precisely when the volumes' archival profile is worth most. The door's only condition is now the
+  section it belongs to, and the test pins the condition rather than the position (the first
+  version passed with a row-count guard bolted back on).
+- Both hosts labelled the scope from a **live text-field buffer** — macOS documents `queryText`
+  as exactly that — so a reader who typed a new term without committing it got the OLD result
+  set's volumes under the NEW term's name. `FacetPanelController` now records the query its
+  breakdown was computed against, and both doors take the label from there.
+- Disclosing Provenance runs a second aggregation in the background for the volume breakdown the
+  door is made of. On a broad match that is the same size as the one the reader is already waiting
+  for, and the control used to materialise silently seconds later; the wait is now stated.
+- The macOS subject door was the only launcher of the archival window not clearing the tool's
+  provenance. Now it does, like its four siblings.
+
+**And one defect that is not ours to fix here.** On macOS the facet panel is a long-lived
+inspector, so `expanded` survives a search; `onDiscloseSection` fires only from the header toggle;
+and `invalidate` clears the data. An already-open section therefore renders *completely empty* —
+no rows, no caveat, no door — after any re-search, until it is collapsed and re-opened. Verified
+present on `origin/v2`, affecting every section, so it is filed separately rather than widened
+into this branch.
+
+### The all-units sheet could be emptied out from under the reader
+
+`ArchivalAllUnitsSheet` read the live derivation and owns its only Done button. Once a scope change
+drops that derivation, a hand-off arriving from another window blanked the sheet — on macOS leaving
+a window-modal sheet with no dismiss control. It now takes a snapshot of the whole input (data,
+band, lens, weight, umbrella, label) at the moment it opens, which also makes its "same as the
+chart" claim true of the chart it was opened from rather than whatever the chart became.
+
+### Mutation sweep: 20 mutants, 20 killed
 
 Seven over the doors (scope the displayed list; drop the one-volume guard; soften the load-bearing
 footer; remove the shell's second-sheet guard; hand off in the same state change as the dismissal;
-revert Browse's row to private state; never pass the payload) and seven over the review fixes (the
-generation leaves the signature; the scope bar nils without moving the key; drop the stale-load
-guard; stop asking for the volume facet; two band-move paths; re-orphan the doc comment).
+revert Browse's row to private state; never pass the payload), seven over the first round of review
+fixes (the generation leaves the signature; the scope bar nils without moving the key; drop the
+stale-load guard; stop asking for the volume facet; two band-move paths; re-orphan the doc
+comment), and six over the second (flip the band tie-break; answer band zero for empty coverage;
+stop observing the hand-off slot; revert the all-units sheet to the live derivation; re-couple the
+door to the section's rows; label the scope from an empty string).
+
+The band decision moved out of the view and into `ArchivalEraBand.bandHoldingMost(of:)` for the
+sake of that sweep: the first test asserted only that the function was *called by name*, so the
+plurality, the tie-break and the empty case could all have been wrong and the suite would not have
+noticed. It is now tested against real coverage spans, including that every band is reachable.
