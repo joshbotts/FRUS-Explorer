@@ -11,6 +11,8 @@ harvest_embeddings.py was handed over under: the harvest is verified against a m
   * <persName> offsets surviving the tag-strip and whitespace collapse, including a
     nested tag inside a name and a name split across lines;
   * the scope rule (a volume defining persName xml:ids is NOT in scope);
+  * the R-0 STORE check (TEXT_DIR): a matching stored layer passes, a corpus that has
+    moved since the embeddings harvest aborts, a missing file aborts;
   * grounding: a name the model invents is counted `unlocated` and stored nowhere;
   * de-duplication of the same occurrence seen through two overlapping chunks;
   * resume (a completed volume is skipped) and byte-stable gzip across runs;
@@ -204,7 +206,31 @@ def run():
     check("rows are sorted by (ordinal, start)",
           detected == sorted(detected, key=lambda r: (r["o"], r["s"], r["e"])))
 
-    print("\n== pass 4: resume + provenance ==")
+    print("\n== pass 4: the R-0 store check ==")
+    text_dir = os.path.join(root, "r0-text")
+    os.makedirs(text_dir)
+    with gzip.open(os.path.join(text_dir, "frusNOLIST.jsonl.gz"), "wt", encoding="utf-8") as layer:
+        for doc_id, ordinal, text, _ in docs:
+            layer.write(json.dumps({"d": doc_id, "o": ordinal, "t": text}) + "\n")
+    hn.TEXT_DIR = text_dir
+    hn.verify_against_r0("frusNOLIST", docs)          # exits on mismatch; returning IS the pass
+    check("a matching R-0 layer verifies", True)
+
+    moved = [(d, o, t + " (a sentence the embeddings harvest never saw)", m) for d, o, t, m in docs]
+    try:
+        hn.verify_against_r0("frusNOLIST", moved)
+        check("a corpus that moved since the harvest aborts", False, "it passed")
+    except SystemExit as exit_code:
+        check("a corpus that moved since the harvest aborts",
+              "R-0 STORE mismatch" in str(exit_code), exit_code)
+    try:
+        hn.verify_against_r0("frusABSENT", docs)
+        check("a missing R-0 file aborts", False, "it passed")
+    except SystemExit as exit_code:
+        check("a missing R-0 file aborts", "is missing" in str(exit_code), exit_code)
+    hn.TEXT_DIR = ""
+
+    print("\n== pass 5: resume + provenance ==")
     hn.main()   # everything is done; must be a no-op
     check("gzip output is byte-stable across runs (mtime=0)",
           sha256(os.path.join(out, "marked", "frusNOLIST.jsonl.gz")) == digest_before)

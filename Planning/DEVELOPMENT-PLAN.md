@@ -5800,3 +5800,33 @@ harvest prints is descriptive (how much was found, how grounded it was); none is
 runbook says so in §0 and again in §5, along with the two things that are simply not built: the
 NLTagger control (needs a Swift harness, and without it a pilot cannot show a model beat the free
 option) and R-2, which waits on the embeddings store that Phase 3 has not yet produced.
+
+### Revised the same day: embeddings Phase 3 is done, and the model band is the lever
+
+Two corrections from the owner, both of which change the runbook rather than the harness's shape.
+
+**Phase 3 has run**, so the R-0 text layer exists for all 552 volumes. The sequencing warning above
+is void — there is no window to share — and the harness gains `TEXT_DIR`, which checks every
+volume's extracted text against that stored layer character for character. The parity assert
+against `extract_documents` catches a divergence in the *code*; this catches one in the *corpus*,
+which is the failure that would actually happen: R-2 embeds a context window around each mention
+against chunk vectors computed from the stored text, so a TEI copy that moved since Phase 3 would
+give offsets addressing a document those vectors never saw, and nothing downstream could tell. A
+mismatch aborts naming the first differing ordinal; a missing file aborts too, because the value of
+the check is that it ran. Three self-test cases cover it (26 checks now, all passing).
+
+**Smaller models on the M5 Air change the tier but not the order of work.** The token count is a
+property of the corpus, not the hardware: ~240 M, of which 94% is prefill. Prefill cost is roughly
+linear in parameters, so scaled from the ride-along's 8B anchor, the full sweep runs ~4.6–7.9 days
+at 7–8 B, **25–42 h at 1.5–2 B, and 8–15 h at 0.5–0.6 B** on the Studio, with the Air at 1.0–2.0×
+depending on whether llama.cpp drives the M5's neural accelerators — unmeasured, and the reason the
+runbook labels every cell derived. Prefill-dominance is the Air's best case, since its real deficit
+is memory bandwidth and this workload barely decodes; its fanless throttle is the argument for
+several resumable evening runs rather than one long one.
+
+So a ≤2 B sweep is schedulable where the 8B one never was. The runbook's §4.2 says what that costs:
+quality is the entire reason to prefer an LLM over `NLTagger`, quality is what degrades as the model
+shrinks, and the price gap narrows from 60–100× to roughly 5–20× — **a small model that merely ties
+NLTagger has no reason to exist**, and nothing can say which it is, because the control is still
+unbuilt. The recommendation therefore sharpens rather than relaxes: build the Swift control harness
+before spending an Air-night on a small-model sweep.

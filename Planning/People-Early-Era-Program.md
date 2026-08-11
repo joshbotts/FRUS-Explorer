@@ -143,9 +143,11 @@ question: roughly two-thirds of person mentions carry no markup, so detection is
 **The R-1 harvest has a runbook and a harness: `tools/semantic-harvest/NER-RUNBOOK.md`**
 (2026-08-11), driven by `harvest_ner.py`. Its scope pass and its **marked layer** — the 253,919
 `<persName>` mentions of §3, placed in the R-0 text's coordinate space — need no model and are
-M1b's input. Its detector layer is deliberately sampled: a full LM-Studio sweep over the scope
-prices at ~5–8 days of continuous Studio time against NLTagger's ~1–2 h, and no ground truth
-exists to say whether it earns that. Nothing it produces may ship until M2a is keyed.
+M1b's input. Its detector layer is deliberately sampled: a full LM-Studio sweep prices at ~5–8 days
+of continuous Studio time for an 8B-class model, or 8–42 h for a 0.5–2 B one, against NLTagger's
+~1–2 h — and no ground truth exists to say whether any of them earns it. The cheaper the model, the
+more the comparison collapses toward the free control that is still unbuilt. Nothing it produces may
+ship until M2a is keyed.
 
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
 discipline, same hardware window, and the embedding model doubles as a mention-context

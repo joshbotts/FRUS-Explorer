@@ -72,6 +72,10 @@ One pass of each volume's TEI produces both:
 * **The detected layer** — candidates from an LM Studio chat model over the same text, grounded by
   exact-substring location. Optional, priced sample-first (§4).
 
+Set **`TEXT_DIR`** to the embeddings store's `text/` on both: every volume's extracted text is then
+checked character for character against the R-0 layer the vectors were computed from, which is what
+makes a mention offset and a chunk span the same coordinate (§5).
+
 Both come out of `harvest_ner.py`, which is stdlib-only like its sibling and runs on the stock macOS
 `python3`. It **imports** `harvest_embeddings.py` rather than copying its extractor, and asserts per
 volume that its own `(doc_id, ordinal, text)` list equals `extract_documents`'. A volume that
@@ -85,9 +89,9 @@ verified against a mock server:
 cd tools/semantic-harvest && SELFTEST=1 python3 harvest_ner.py
 ```
 
-23 checks, no corpus and no server needed: R-0 parity, `<persName>` offsets surviving a nested tag
-and a line break, the scope rule, hallucination grounding, overlap de-duplication, resume,
-byte-stable gzip, and the refusal in §4.3.
+26 checks, no corpus and no server needed: R-0 parity, the R-0 *store* check below, `<persName>`
+offsets surviving a nested tag and a line break, the scope rule, hallucination grounding, overlap
+de-duplication, resume, byte-stable gzip, and the refusal in §4.4.
 
 ---
 
@@ -98,9 +102,12 @@ and a copy of `FRUSExplorer/Resources/manifest.json` beside the script.
 
 ```
 cd ~/semantic-harvest                      # wherever the two scripts live
+export TEXT_DIR=~/frus-semantic-raw/text   # the R-0 layer Phase 3 wrote; see §5
 SCOPE_ONLY=1 python3 harvest_ner.py        # N-0: derive scope.json, stop
 python3 harvest_ner.py                     # N-1: the marked layer over that scope
 ```
+
+(On the Air, `TEXT_DIR` is wherever Phase 4 put the transferred store — `~/Development/frus-semantic-raw/text`.)
 
 **N-0 self-check: it must print 267.** The rule is m1a_survey.py's — a volume is in scope iff its
 TEI defines no `<persName xml:id=…>` anywhere. A different number means the corpus copy or the rule
@@ -121,29 +128,73 @@ that the pass is reading what M1a read.
 
 ## 4. Phase N-2 — the detector pilot
 
-### 4.1 Why a pilot and not a sweep
-
-The arithmetic, using the ride-along §4.4 convention (8B-class chat model on the M1 Max Studio at
-**~350–600 tok/s aggregate**) and the corpus's measured 4.16 chars/token:
+### 4.1 The token count, which no hardware choice changes
 
 | | |
 |---|---|
-| scope text | 705 M chars ≈ 176 M tokens |
+| scope text | 705 M chars ≈ 176 M tokens (at the corpus's measured 4.16 chars/token) |
 | chunks at 3200 chars / 480 overlap | ~230–260 k (mean document is ~3,540 chars, so most are one chunk) |
-| system prompt re-sent per chunk | ~190 tokens ⇒ **+~28%** on input |
+| system prompt re-sent per chunk | ~191 tokens ⇒ **+~26%** on input |
 | total through the model | ~225 M input + ~16 M generated ≈ **240 M tokens** |
-| **wall-clock, continuous** | **~5–8 days** |
 
-That is the same tier the ride-along assigned to the *adversarial review* (7–12 days), not to the
-overnight band the embedding pass occupies — and it would be spent before any ground truth exists to
-say whether the output is worth having. Against it, the same section prices Apple `NLTagger` over
-the same scope at **~1–2 h**: a 60–100× difference in cost that no leaderboard can settle for
-19th-century diplomatic prose, which is far from every NER model's training distribution.
+**94% of that is prompt processing, not generation** — which matters more than it looks, because
+those are different rates on Apple silicon. Decode is memory-bandwidth-bound and slow per token;
+prefill is compute-bound and batched. The ride-along's §4.4 figure (**~350–600 tok/s** for an
+8B-class model on the M1 Max Studio) is a single aggregate over a total, and for a workload this
+prefill-heavy it behaves like a prefill rate. Everything below inherits that assumption, and the
+pilot is what replaces it with a measurement.
 
-So the LM-Studio route is measured on a sample first, which is also what
-`Planning/People-Early-Era-Program.md` §5 requires of the whole program ("pilot before corpus").
+### 4.2 Model size and machine, derived
 
-### 4.2 Running the pilot
+Prefill cost is roughly linear in parameters, so the model band is the dominant lever — far larger
+than the choice of machine. Scaled from the 8B anchor above, against the 240 M tokens:
+
+| model band | est. tok/s, Studio | Studio wall-clock | **M5 Air**, 1.0–2.0× |
+|---|---|---|---|
+| 7–8B | 350–600 | 4.6–7.9 days | 4.6–16 days |
+| 3–4B | 700–1,300 | 2.1–4.0 days | 2.1–8 days |
+| **1.5–2B** | 1,600–2,700 | **25–42 h** | **25–84 h** |
+| **0.5–0.6B** | 4,500–8,000 | **8–15 h** | **8–30 h** |
+
+> **Every cell here is derived, none is measured.** The V-0 spike measured *embedding* throughput,
+> on the Studio only, and the ride-along's Air-side questions were left open by owner decision. Two
+> of them apply directly: whether llama.cpp under LM Studio drives the M5's per-core Neural
+> Accelerators at all (§5.1 of the ride-along says MLX does and llama.cpp may not, which is why the
+> Air band runs to 2×), and the fanless throttle on multi-hour loads (§4.0). The one thing that
+> favours the Air here is the same argument §4.0 makes for encoders: its real deficit against the
+> Studio is memory bandwidth (153 vs 400 GB/s), which bites *decode*, and this workload barely
+> decodes. The throttle penalty grows with run length, which is an argument for several resumable
+> evening runs over one continuous multi-day one — the shape the harness already has.
+
+**So the assessment does change with the model band, and the change is real: a ≤2 B model moves the
+full sweep out of the multi-day tier and into one or two overnight runs on the Air.** That is a
+schedulable job in a way the 8B figure never was.
+
+Three things it does not change, and one it makes worse:
+
+1. **Sample first anyway** — now more cheaply than before. At 1.5 B the §4.3 pilot is minutes, not
+   an hour, so there is even less reason to skip it.
+2. **Nothing ships without M2a** (§0, §5). A cheap sweep produces cheap candidates, not measured
+   ones.
+3. **`Planning/People-Early-Era-Program.md` §5's "pilot before corpus"** is a program constraint,
+   not a budget one.
+4. **The case against the free control gets weaker, not stronger.** Quality is the entire reason to
+   prefer an LLM over Apple `NLTagger`, and quality is exactly what degrades as the model shrinks —
+   schema adherence, hallucination, and the discipline to copy a name verbatim rather than normalise
+   it. At 8B the LLM route cost 60–100× NLTagger's ~1–2 h, so "is it better?" was a question about
+   quality at a large price. At 0.5–2 B the gap narrows to roughly 5–20×, and **a small model that
+   merely ties NLTagger has no reason to exist.** Today nothing can tell you which it is, because
+   the control is not built (§5). If a small-model sweep on the Air is the plan, build the control
+   first — it is the cheaper half of the comparison and the one that makes the other half mean
+   something.
+
+Two levers left unmeasured, both worth checking before a sweep: whether your LM Studio build serves
+**concurrent** requests (on prompts this short, concurrency is likely the largest remaining
+throughput factor — the harness sends one chunk at a time and would need a change to exploit it),
+and whether the plan's own **tiering** logic (§4.4 of the ride-along, written for review) applies to
+detection: a cheap model everywhere, a larger one over the uncertain band only.
+
+### 4.3 Running the pilot
 
 Load **one chat model** in LM Studio (server tab, server on 1234) and copy its id exactly from
 `curl -s localhost:1234/v1/models` — the harvester refuses an unlisted id, because LM Studio routes
@@ -156,6 +207,7 @@ this program was taken on, and the sample the M2a ground truth will be drawn fro
 ```
 cd ~/semantic-harvest
 DETECT=llm \
+TEXT_DIR=~/frus-semantic-raw/text \
 VOLUMES=frus1872p1,frus1867p2,frus1895p1,frus1904,frus1924v02,frus1929v02,frus1942v05,frus1937v02,frus1938v01,frus1948v05p2,frus1948v06,frus1949v06 \
 SAMPLE_DOCS=40 \
 MODEL="<id from /v1/models>" \
@@ -164,13 +216,19 @@ OUT_DIR=~/frus-ner-raw-pilot-<model> \
 caffeinate -i python3 harvest_ner.py 2>&1 | tee ner-pilot-<model>.log
 ```
 
-480 documents ≈ 600–700 chunks: **well under an hour**, and the closing line replaces that estimate
-with a measurement. `SAMPLE_DOCS` picks deterministically from `(SEED, volume id)`, so two models
+480 documents ≈ 600–700 chunks: **well under an hour** for an 8B-class model, and minutes for the
+≤2 B band §4.2 is really about — either way the closing line replaces the estimate with a
+measurement, which is the whole point of running it. `SAMPLE_DOCS` picks deterministically from `(SEED, volume id)`, so two models
 scored against each other see the *same* documents. Repeat with a fresh `OUT_DIR` per model; keep
 `SAMPLE_DOCS` and `SEED` identical across them or the comparison is not one.
 
 `MODEL_FILE` pins the GGUF's SHA-256 into provenance. The embedding spike captured it for only one
 of five stores and the V-0 verdict lists that as the gap to close; do not repeat it here.
+
+On the **Air**, add `BATCH_SLEEP` if a longer run is throttling (it inserts a pause between
+requests, trading throughput for sustained clock), and prefer several resumable evening runs to one
+continuous one — a completed volume is skipped on re-run, so stopping costs at most the volume in
+flight.
 
 **Model choice is still an open owner decision** (ride-along §6.4: "detector shortlist sign-off").
 What the harness needs of a candidate: it must be a *chat* model, it should honour
@@ -178,7 +236,7 @@ What the harness needs of a candidate: it must be a *chat* model, it should hono
 not), and it should sit in the 7–14 B band the cost table above assumes. Two or three, scored on the
 same sample, and the numbers decide.
 
-### 4.3 The refusal
+### 4.4 The refusal
 
 `DETECT=llm` over the whole derived scope with no sampling exits rather than running:
 
@@ -187,9 +245,9 @@ Refusing an unsampled LLM sweep over the whole scope: NER-RUNBOOK.md prices it a
 continuous Studio time, and no ground truth exists to score it.
 ```
 
-`FULL_SWEEP=1` overrides it. §5 is what should be true before you type that.
+`FULL_SWEEP=1` overrides it. §4.2's fourth point and §5 are what should be true before you type that.
 
-### 4.4 What to read in the output
+### 4.5 What to read in the output
 
 Per volume, `detected/<vol>.head.json`:
 
@@ -198,14 +256,14 @@ Per volume, `detected/<vol>.head.json`:
 | `mentions`, `novel`, `overlapping_marked` | how much the model adds beyond the editors' markup. M1a predicts roughly two unmarked mentions per marked one; a run where `novel` is near zero has found nothing the marked layer did not. |
 | `unlocated`, `unlocated_examples` | **the grounding signal.** A name the model returns that does not occur verbatim in the passage it was shown is stored nowhere and counted here. A high rate means the model is normalising or inventing; read the examples, they say which. |
 | `truncated`, `unparsable` | schema adherence. Non-zero `truncated` means `MAX_TOKENS` is clipping a dense passage. |
-| `prompt_tokens`, `completion_tokens`, `secs` | the real cost per chunk, which is what re-prices §4.1 for the model you actually ran. |
+| `prompt_tokens`, `completion_tokens`, `secs` | the real cost per chunk, which is what replaces §4.1's assumption and §4.2's table with a measurement for the model you actually ran. |
 
 Read a few dozen rows by hand as well — `unlocated_examples` catches invention, but only reading the
 kept rows catches the opposite failure, a model returning place names and ship names with perfect
 grounding. That is the same habit that caught the two `Ibid.` defects in #784: the sample is the
 review artifact.
 
-### 4.5 What the detector route cannot do, stated up front
+### 4.6 What the detector route cannot do, stated up front
 
 * **It is asked for distinct surface strings, not spans.** The harness locates every occurrence of
   each returned string, which cuts output tokens by an order of magnitude — but a surface the model
@@ -227,7 +285,7 @@ review artifact.
 **The gate: M2a is un-keyed.** The ride-along §3 defines it — extend `m1a_survey.py` to sample
 ~60–80 documents, era-stratified, for *exhaustive* person-mention annotation (~900–1,200 decisions),
 keyed by the owner alongside the M1a 300 rows that are also still un-keyed. Until that exists, every
-number in §4.4 is descriptive (how much did it find, how grounded was it) and none is evaluative
+number in §4.5 is descriptive (how much did it find, how grounded was it) and none is evaluative
 (was it right). Precision and recall are simply unavailable. This runbook cannot route around that
 and does not try.
 
@@ -238,20 +296,25 @@ writing the same `detected/` shape — which is real work and is deliberately no
 Without it, a pilot can tell you a model found things; it cannot tell you the model beat the free
 option.
 
-**R-2 (mention-context embeddings) needs the embeddings store**, which does not exist yet: the
-sibling runbook's Phase 3 has not run, and V-0 is not closed until the owner grades all 100 rows of
-`Planning/semantic-spike/blind-panel.csv` (before opening the key) and reads the Gemma licence.
+**R-2 (mention-context embeddings) is unblocked** — the sibling runbook's Phase 3 has run, so the
+embeddings store exists and with it the R-0 text layer for all 552 volumes. Two consequences here:
 
-Sequencing consequence, and it is practical rather than theoretical: **do not run N-2 in the same
-window as the embeddings harvest.** LM Studio would have to hold a chat model and an embedding model
-at once, and the embedding pass is the priority — R-2 depends on it, and its ~6.1 h run is the one
-with a measured ETA. N-0 and N-1 need no server at all and can run any time, including while the
-Studio is embedding, since they are a disk read.
+* **There is no sequencing constraint left.** An earlier draft of this file said not to run N-2 in
+  the same window as the embeddings harvest, because LM Studio would have to hold a chat model and
+  an embedding model at once. That harvest is done. Set `TEXT_DIR` and run whenever.
+* **`TEXT_DIR` is now the check that matters.** This store is offsets-only by design — it does not
+  copy the 705 MB of text, which exists in the TEI and again in the semantic store. The per-volume
+  parity assert against `extract_documents` catches a divergence in the *code*; pointing `TEXT_DIR`
+  at the store's `text/` catches a divergence in the *corpus*, which is the one that would actually
+  happen: R-2 embeds a context window around each mention against chunk vectors computed from the
+  stored text, so if the TEI on disk has moved since Phase 3, these offsets address a document those
+  vectors never saw and nothing downstream could tell. A mismatch aborts, naming the volume and the
+  first differing ordinal; a missing file aborts too, because the value of the check is that it ran.
 
-**The store is offsets-only, by design.** It does not copy the 705 MB of text: the text exists in
-the TEI, and after Phase 3 it exists again as the semantic store's R-0 layer. A consumer re-derives
-it with `harvest_embeddings.extract_documents`, and the per-volume parity assert is exactly what
-makes that safe.
+What is still open on the embeddings side does not gate anything here: V-0 does not close until the
+owner grades all 100 rows of `Planning/semantic-spike/blind-panel.csv` (before opening the key) and
+reads the Gemma licence — that verdict is about whether a *semantic axis* ships, not about whether
+the text layer is trustworthy as a coordinate space.
 
 ---
 
@@ -263,7 +326,7 @@ frus-ner-raw/
   marked/<vol>.jsonl.gz       # {"d","o","s","e","n","t","x","c"} per <persName>
   marked/<vol>.head.json      # done-marker + per-volume counts (written last)
   detected/<vol>.jsonl.gz     # {"d","o","s","e","n","ci"} per located candidate
-  detected/<vol>.head.json    # done-marker + the §4.4 numbers
+  detected/<vol>.head.json    # done-marker + the §4.5 numbers
   runs.jsonl                  # per-volume log, append-only across resumes
   run-manifest.json           # provenance: both script SHAs, model id + listing, GGUF SHA,
                               # system prompt, response schema, temperature, chunking, seed
@@ -290,12 +353,13 @@ SHA256SUMS`, and every line must say `OK`. An unverified transfer is not a raw s
 | `VOLUMES_DIR` | `~/frus-volumes` | a copy of `Development/frus/volumes` |
 | `MANIFEST` | `./manifest.json` | copy it next to the script |
 | `OUT_DIR` | `~/frus-ner-raw` | one store per detector run |
+| `TEXT_DIR` | — | the embeddings store's `text/`; verifies every volume against the R-0 layer (§5) |
 | `SCOPE_ONLY` | — | `=1` derives `scope.json` and stops |
 | `VOLUMES` | — | explicit ids, overriding the derived scope |
 | `DETECT` | `none` | `llm` adds the detector layer |
 | `SAMPLE_DOCS` | `0` (all) | documents per volume, chosen from `(SEED, volume id)` |
 | `SEED` | `234` | m1a_survey.py's seed; keep it fixed across compared runs |
-| `FULL_SWEEP` | — | `=1` to override §4.3 |
+| `FULL_SWEEP` | — | `=1` to override §4.4 |
 | `MODEL` / `MODEL_FILE` | — | required for `DETECT=llm`; never auto-picked |
 | `CHUNK_CHARS` / `OVERLAP_CHARS` | 3200 / 480 | the embeddings' chunk shape |
 | `MAX_TOKENS` / `TEMPERATURE` | 1024 / 0 | recorded in provenance |
@@ -310,6 +374,11 @@ SHA256SUMS`, and every line must say `OK`. An unverified transfer is not a raw s
 - `README.md` — the embeddings harvest, whose extractor and store discipline this reuses
 
 Version history:
+  1.1 — 2026-08-11: embeddings Phase 3 is done, so §5's sequencing constraint is void and TEXT_DIR
+        (new) verifies each volume against the R-0 layer the vectors were computed from. §4 is
+        re-cut: the token count separated from the throughput assumption, a model-band/machine
+        table for smaller models on the M5 Air, and the finding that a ≤2 B sweep is schedulable
+        but makes the unbuilt NLTagger control MORE necessary, not less.
   1.0 — 2026-08-11: initial runbook. Scope + marked layer + sampled detector pilot, with the
         full-sweep arithmetic that argues against scheduling one, and the M2a gate restated as
         the thing no phase here can route around.

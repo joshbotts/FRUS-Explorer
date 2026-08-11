@@ -27,6 +27,10 @@ Environment:
   VOLUMES_DIR    default ~/frus-volumes  (a copy of Development/frus/volumes)
   MANIFEST       default ./manifest.json (copy it next to this script)
   OUT_DIR        default ~/frus-ner-raw
+  TEXT_DIR       optional ~/frus-semantic-raw/text — the R-0 layer the embeddings
+                 harvest wrote. When set, every volume's extracted text is checked
+                 against the stored layer character for character. Use it: it is what
+                 makes a mention offset and a chunk span the same coordinate.
   VOLUMES        comma-separated volume ids (overrides the derived scope)
   SCOPE_ONLY     =1 writes scope.json and stops
   DETECT         none (default) | llm
@@ -83,6 +87,7 @@ URL = os.environ.get("LMSTUDIO_URL", "http://localhost:1234").rstrip("/")
 VOLUMES_DIR = os.path.expanduser(os.environ.get("VOLUMES_DIR", "~/frus-volumes"))
 MANIFEST = os.environ.get("MANIFEST", os.path.join(os.path.dirname(__file__) or ".", "manifest.json"))
 OUT = os.path.expanduser(os.environ.get("OUT_DIR", "~/frus-ner-raw"))
+TEXT_DIR = os.path.expanduser(os.environ.get("TEXT_DIR", "")) if os.environ.get("TEXT_DIR") else ""
 DETECT = os.environ.get("DETECT", "none").lower()
 SAMPLE_DOCS = int(os.environ.get("SAMPLE_DOCS", "0"))
 SEED = os.environ.get("SEED", "234")
@@ -395,6 +400,34 @@ def write_jsonl_gz(path, rows):
                     out.write(json.dumps(row, separators=(",", ":"), ensure_ascii=False) + "\n")
 
 
+def verify_against_r0(vol, docs):
+    """Check this volume's text against the embeddings store's R-0 layer, if given.
+
+    The parity assert below catches a divergence in the CODE; this catches a divergence
+    in the CORPUS. R-2 embeds a context window around each mention against chunk vectors
+    that were computed from the stored text — if the TEI on disk has moved since that
+    harvest, the offsets here address a document the vectors never saw, and nothing
+    downstream could tell. An absent file is an error, not a skip: the whole value of
+    the check is that it ran.
+    """
+    path = os.path.join(TEXT_DIR, vol + ".jsonl.gz")
+    if not os.path.exists(path):
+        sys.exit("TEXT_DIR is set but %s is missing. The R-0 layer must cover the scope, "
+                 "or unset TEXT_DIR and accept an unverified extraction." % path)
+    with gzip.open(path, "rt", encoding="utf-8") as handle:
+        stored = [(row["d"], row["o"], row["t"])
+                  for row in (json.loads(line) for line in handle if line.strip())]
+    mine = [(d, o, t) for d, o, t, _ in docs]
+    if mine == stored:
+        return
+    first = next((i for i, (a, b) in enumerate(zip(mine, stored)) if a != b), None)
+    sys.exit("R-0 STORE mismatch on %s: %d documents here vs %d stored%s\n"
+             "The corpus copy has moved since the embeddings harvest. Offsets from this "
+             "run would not address the text those vectors were computed from."
+             % (vol, len(mine), len(stored),
+                "" if first is None else " (first difference at ordinal %d)" % first))
+
+
 def layer_done(layer, vol):
     head = os.path.join(OUT, layer, vol + ".head.json")
     body = os.path.join(OUT, layer, vol + ".jsonl.gz")
@@ -435,6 +468,8 @@ def harvest_volume(vol, model, stats):
                  "%s\nRefusing to write a store whose offsets mean something else."
                  % (vol, len(mine), len(reference),
                     "" if first is None else " (first difference at ordinal %d)" % first))
+    if TEXT_DIR:
+        verify_against_r0(vol, docs)
 
     chars = sum(len(t) for _, _, t, _ in docs)
     marked_rows = [mark for _, _, _, marks in docs for mark in marks]
@@ -651,6 +686,7 @@ def main():
         "extractor_sha256": he.sha256(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                    "harvest_embeddings.py")),
         "machine": machine_description(),
+        "r0_text_layer_verified_against": TEXT_DIR or "not verified (TEXT_DIR unset)",
         "detect": DETECT,
         "model": model, "models_listing": listing,
         "model_file_sha256": he.sha256(model_file) if model_file else "not captured",

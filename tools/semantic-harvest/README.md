@@ -224,14 +224,17 @@ My Models list, reveal the GGUF in Finder, then run the harvest with
 **The NER pass (R-1) now has its own runbook and harness in this folder:
 `NER-RUNBOOK.md`, driven by `harvest_ner.py`** (stdlib-only like this one, verified by
 `SELFTEST=1 python3 harvest_ner.py`). It imports this script's extractor rather than copying it,
-and asserts per volume that it sees exactly the R-0 documents and text this one writes. Its scope
-and marked layer need no model at all and can run while the Studio is embedding; its detector
-pilot needs a chat model loaded, so it must NOT share a window with Phase 3.
+and asserts per volume that it sees exactly the R-0 documents and text this one writes. **Point its
+`TEXT_DIR` at this store's `text/`**: now Phase 3 has run, that check compares each volume against
+the layer the vectors were actually computed from, which is what makes a mention offset and a chunk
+span the same coordinate for R-2. With Phase 3 done there is no window conflict left.
 
 The M2a ground-truth sample still does not exist, so nothing R-1 produces may enter an artifact —
 the runbook's §0 and §5 carry that rule. The adversarial-review tier gets its harness after
 detection counts and M2a precision exist. Note for planning: GLiNER and spaCy do not run in LM
 Studio — the LM-Studio-native detection route is structured-output chat NER, which is priced
-sample-first (NER-RUNBOOK.md §4.1 puts a full sweep at ~5–8 days against NLTagger's ~1–2 h); the
-NLTagger control pass runs on the Air inside the repo, needs nothing from either runbook, and is
-not built.
+sample-first. NER-RUNBOOK.md §4.2 puts a full sweep at ~5–8 days for an 8B-class model on the
+Studio but only 8–42 h for the 0.5–2 B band — schedulable, at the cost of the quality that was the
+reason to prefer an LLM over NLTagger's ~1–2 h in the first place. The NLTagger control runs on the
+Air inside the repo, needs nothing from either runbook, and is **not built** — which the small-model
+option makes more of a gap, not less.
