@@ -464,6 +464,152 @@ struct ArchivalCollectionsDataTests {
         }
     }
 
+    // MARK: - One class grain (#826 / R-4)
+
+    /// A usage index over a synthetic corpus, built through the decoder because the type is
+    /// decode-only by design.
+    private static func usage(volumes: [String], noteCounts: [Int], classKeys: [String],
+                              rows: [(key: Int, volumes: [Int], counts: [Int])])
+        throws -> CollectionUsageIndex {
+        let rowJSON = rows.map { "{\"k\":\($0.key),\"v\":\($0.volumes),\"n\":\($0.counts)}" }
+            .joined(separator: ",")
+        // Swift already quotes String elements when it describes an array, so the vocabularies
+        // are interpolated bare — wrapping them again yields keys containing literal quote
+        // characters, which decode cleanly and then match nothing.
+        let json = """
+        {"categories":[],"classKeys":\(classKeys),
+         "classes":[\(rowJSON)],"collectionIds":[],"collections":[],
+         "coverage":{"authorityCollectionCount":0,"authorityCollectionsReached":0,
+           "noteCount":\(noteCounts.reduce(0,+)),"notesInACollection":0,
+           "notesWithAClassKey":\(noteCounts.reduce(0,+)),
+           "volumesScanned":\(volumes.count),"volumesWithNotes":\(volumes.count)},
+         "generated":"2026-08-10","schemaVersion":1,"volumeCategories":[],
+         "volumeNoteCounts":\(noteCounts),"volumes":\(volumes)}
+        """
+        return try JSONDecoder().decode(CollectionUsageIndex.self, from: Data(json.utf8))
+    }
+
+    @Test("Two designators in one family are one citing volume, not two")
+    func foldingDoesNotDoubleCountVolumes() throws {
+        // THE hazard of folding a per-(key, volume) tally: documents ADD across leaves, volumes
+        // do not. One volume citing POL 27 VIET S and POL 27 ARAB-ISR is one citing volume of
+        // POL 27. Summing the leaf volume counts would report two, and the error is invisible —
+        // a plausible number, slightly too large, on every folded row.
+        let index = try Self.usage(
+            volumes: ["v1"], noteCounts: [40],
+            classKeys: ["POL 27 ARAB-ISR", "POL 27 VIET S"],
+            rows: [(key: 0, volumes: [0], counts: [7]), (key: 1, volumes: [0], counts: [11])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968)])
+        let band = ArchivalEraBand.all[2]
+
+        let byDocuments = data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                                       hidingUmbrella: false).rows
+        #expect(byDocuments.count == 1, "the two leaves must rank as one family row")
+        #expect(byDocuments.first?.id == "POL 27")
+        #expect(byDocuments.first?.value == 18, "documents add across the leaves: 7 + 11")
+
+        let byVolumes = data.ranking(band: band, lens: .centralFileClasses, weight: .volumes,
+                                     hidingUmbrella: false).rows
+        #expect(byVolumes.first?.value == 1, """
+            The family reports \(byVolumes.first?.value ?? -1) citing volumes from a single \
+            volume. Volume counts must be a set union across the folded leaves, never a sum.
+            """)
+    }
+
+    @Test("A folded row keeps its leaves; a decimal file number is not a family")
+    func leavesSurviveTheFold() throws {
+        let index = try Self.usage(
+            volumes: ["v1"], noteCounts: [40],
+            classKeys: ["763.72", "POL 27 ARAB-ISR", "POL 27 VIET S"],
+            rows: [(key: 0, volumes: [0], counts: [30]),
+                   (key: 1, volumes: [0], counts: [7]),
+                   (key: 2, volumes: [0], counts: [11])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968)])
+        let rows = data.ranking(band: ArchivalEraBand.all[2], lens: .centralFileClasses,
+                                weight: .documents, hidingUmbrella: false).rows
+
+        let decimal = try #require(rows.first { $0.id == "763.72" })
+        #expect(!decimal.isFamily, """
+            A decimal file number is already the unit a pull slip names. Folding it, or drawing \
+            it with an expander that reveals only itself, would invent a hierarchy the filing \
+            system does not have.
+            """)
+
+        let family = try #require(rows.first { $0.id == "POL 27" })
+        #expect(family.isFamily)
+        // Heaviest leaf first — the reader's next question after "which family" is "which one".
+        #expect(family.leaves.map(\.key) == ["POL 27 VIET S", "POL 27 ARAB-ISR"])
+        #expect(family.leaves.map(\.documents) == [11, 7])
+        #expect(family.leaves.reduce(0) { $0 + $1.documents } == family.value,
+                "a family's leaves must account for exactly the row's own value")
+        // Each leaf also carries its own citing-volume count, so an expansion read under the
+        // volumes weight adds up to the bar above it instead of to a document total.
+        #expect(family.leaves.allSatisfy { $0.volumes == 1 })
+        #expect(family.leaves.map { $0.value(weight: .volumes) } == [1, 1])
+    }
+
+    @Test("Collections and the Network fold the class vocabulary the same way")
+    func foldParityWithTheNetwork() throws {
+        // The two surfaces disagreeing about what `POL 27` means would be worse than either
+        // grain alone. They cannot share a call site — the Network folds inside its own
+        // co-citation accumulation — so what is pinned is that both route through the one
+        // published rule, over the vocabulary that actually ships.
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        var checked = 0
+        for key in usage.classKeys {
+            let folded = CollectionKeying.subjectNumericGroup(key) ?? key
+            if CollectionKeying.isSubjectNumericClass(key) {
+                #expect(folded != key || key == folded,
+                        "a subject-numeric key must resolve through the shared fold")
+                #expect(!folded.isEmpty)
+            } else {
+                #expect(folded == key, "a decimal key must fold to itself: \(key)")
+            }
+            checked += 1
+        }
+        #expect(checked > 5_000, "the sweep covered \(checked) keys, which is too few")
+    }
+
+    // MARK: - The denominators (#826 / R-5)
+
+    @Test("A band's note total is read from the artifact, and the share is withheld when it would lie")
+    func denominatorsComeFromTheArtifact() throws {
+        let index = try Self.usage(
+            volumes: ["v1", "v2"], noteCounts: [40, 60],
+            classKeys: ["763.72"],
+            rows: [(key: 0, volumes: [0, 1], counts: [10, 15])])
+        let coverage = ["v1": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968),
+                        "v2": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968)]
+        let data = ArchivalCollectionsData.make(authority: [], usage: index, coverage: coverage)
+        let band = ArchivalEraBand.all[2]
+
+        #expect(data.noteCount(band: band) == 100, "40 + 60, from volumeNoteCounts")
+        let documents = data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                                     hidingUmbrella: false)
+        #expect(documents.bandNoteCount == 100)
+        #expect(documents.shownValue == 25)
+        #expect(documents.shownShare(weight: .documents) == 0.25)
+
+        let volumes = data.ranking(band: band, lens: .centralFileClasses, weight: .volumes,
+                                   hidingUmbrella: false)
+        #expect(volumes.shownShare(weight: .volumes) == nil, """
+            Under the volumes weight the numerator counts volumes and the denominator counts \
+            source notes. No share is better than a ratio of two different things.
+            """)
+    }
+
+    @Test("A missing usage index states no denominator rather than zero")
+    func denominatorIsAbsentWithoutTheArtifact() {
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: nil,
+            coverage: ["v1": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968)])
+        #expect(data.noteCount(band: ArchivalEraBand.all[2]) == nil)
+    }
+
     // MARK: - The shipped artifacts
 
     /// The derivation over what actually ships, built once for the whole suite.
@@ -487,6 +633,34 @@ struct ArchivalCollectionsDataTests {
                                             usage: CollectionUsageIndexStore.shared,
                                             coverage: coverage)
     }()
+
+    @Test("The default view's denominator is the measured one, end to end")
+    func shippedDenominatorReproduces() throws {
+        // The mode opens here: 1948–1960, named collections, documents, umbrella hidden. The
+        // whole point of R-5 is that this view draws twelve bars accounting for 9.4% of the
+        // band's sourced documents, so the number is pinned against the shipped artifacts rather
+        // than trusted — it travels through manifest coverage, band attribution, the usage
+        // index and the umbrella filter, and a regression in any of them moves it.
+        let data = try #require(Self.shipped)
+        let band = ArchivalEraBand.all[1]
+        #expect(data.noteCount(band: band) == 59_973, """
+            The 1948–1960 band's source-note total is \(data.noteCount(band: band) ?? -1), not \
+            59,973. That sum comes straight from volumeNoteCounts and the band attribution.
+            """)
+        let ranking = data.ranking(band: band, lens: .namedCollections, weight: .documents,
+                                   hidingUmbrella: true)
+        let share = try #require(ranking.shownShare(weight: .documents))
+        #expect(abs(share - 0.094) < 0.005, """
+            The opening view's twelve rows cover \(share.formatted(.percent)) of the band, not \
+            ~9.4%.
+            """)
+        // With the umbrella shown the same twelve rows cover 29.2%: the share is a function of
+        // the chip, so it must be recomputed with it rather than cached per band.
+        let shown = data.ranking(band: band, lens: .namedCollections, weight: .documents,
+                                 hidingUmbrella: false)
+        let shownShare = try #require(shown.shownShare(weight: .documents))
+        #expect(shownShare > share * 2)
+    }
 
     @Test("Every ranking the UI can ask for has unique labels")
     func shippedLabelsAreAlwaysUnique() throws {

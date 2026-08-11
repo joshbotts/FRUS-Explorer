@@ -265,7 +265,9 @@ struct ArchivalAnalyticsView: View {
                                        hidingUmbrella: hidesUmbrella)
             collectionsIntro
             filterRow(data: data)
+            denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
+            classFamilies(ranking)
             collectionsCaveats(data: data, ranking: ranking)
             perCollectionTimingPointer
         } else {
@@ -374,6 +376,127 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
+    // MARK: - The denominator line (#826/R-5)
+
+    /// What the drawn rows account for, against the band's own source-note total.
+    ///
+    /// The shipped artifact has carried `volumeNoteCounts` since #763 — described in its own
+    /// generator notes as "the per-volume source-note totals every share needs as a denominator"
+    /// — and nothing read it. Without it the mode opens on 1948–1960 drawing twelve bars that
+    /// account for **9.4%** of the band's sourced documents, with nothing on screen saying so.
+    /// The era asymmetry the caveat block describes in prose is, stated this way, the finding.
+    ///
+    /// The share is withheld rather than approximated under the volumes weight: the numerator
+    /// would be volumes and the denominator notes.
+    @ViewBuilder
+    private func denominatorLine(_ ranking: ArchivalRanking,
+                                 data: ArchivalCollectionsData) -> some View {
+        if let notes = data.noteCount(band: band) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(denominatorSentence(ranking, notes: notes))
+                    .font(.footnote.weight(.medium))
+                if let pointer = denominatorPointer(data: data) {
+                    Text(pointer).font(.footnote)
+                }
+            }
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// "N source notes in this era. The M rows below account for X% of them."
+    private func denominatorSentence(_ ranking: ArchivalRanking, notes: Int) -> String {
+        guard let share = ranking.shownShare(weight: weight) else {
+            return String(format: String(
+                localized: "archival.denominator.notes %lld %@",
+                defaultValue: "%1$lld source notes in %2$@."), Int64(notes), band.title)
+        }
+        return String(format: String(
+            localized: "archival.denominator.share %lld %@ %lld %@",
+            defaultValue: "%1$lld source notes in %2$@. The %3$lld rows below account for %4$@ of them."),
+            Int64(notes), band.title, Int64(ranking.rows.count),
+            share.formatted(.percent.precision(.fractionLength(share < 0.1 ? 1 : 0))))
+    }
+
+    /// The one comparison the collection/class overlap does not spoil: whether the *other* lens
+    /// reaches materially more of this band, which in the early eras it does by an order of
+    /// magnitude and is the whole reason the unit switch exists.
+    private func denominatorPointer(data: ArchivalCollectionsData) -> String? {
+        let other: ArchivalUnitLens = unitLens == .namedCollections ? .centralFileClasses
+                                                                    : .namedCollections
+        let mine = data.reach(band: band, lens: unitLens)
+        let theirs = data.reach(band: band, lens: other)
+        guard theirs > mine * 2 else { return nil }
+        switch other {
+        case .centralFileClasses:
+            return String(localized: "archival.denominator.tryClasses",
+                          defaultValue: "Most of this era's sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.")
+        case .namedCollections:
+            return String(localized: "archival.denominator.tryCollections",
+                          defaultValue: "Most of this era's sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.")
+        }
+    }
+
+    // MARK: - Class families (#826/R-4)
+
+    /// The way back from a folded family to the leaf a pull slip actually names.
+    ///
+    /// The fold is what makes the class lens rankable — at leaf grain half the subject-numeric
+    /// keys carry a single document — but `POL 27 VIET S` is what a researcher writes at NARA,
+    /// and `POL 27` is not. So every folded row can be opened to its leaves with their own
+    /// counts. Rows that fold nothing (every decimal file number, and a family with one leaf
+    /// under its own name) are omitted rather than listed as empty disclosures.
+    ///
+    /// A list below the chart rather than expansion inside it: the ranking is a Swift Charts
+    /// `Chart` whose categorical axis is one row per bar, and inserting leaf rows into it would
+    /// redraw the bars at a grain the axis does not describe.
+    @ViewBuilder
+    private func classFamilies(_ ranking: ArchivalRanking) -> some View {
+        let families = ranking.rows.filter(\.isFamily)
+        if unitLens == .centralFileClasses, !families.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "archival.families.title",
+                            defaultValue: "Inside these families"))
+                    .font(.subheadline.weight(.semibold))
+                Text(String(localized: "archival.families.caption",
+                            defaultValue: "Related file numbers are ranked together. Open one for the exact designator a pull slip needs."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(families) { family in
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(family.leaves) { leaf in
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(leaf.key)
+                                        .font(.caption.monospaced())
+                                    Spacer(minLength: 12)
+                                    // The weight's own unit, so a family's leaves add up to the
+                                    // bar above them under either Count-by.
+                                    Text(leaf.value(weight: weight), format: .number)
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                .accessibilityElement(children: .combine)
+                            }
+                        }
+                        .padding(.top, 2)
+                    } label: {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(family.name).font(.callout)
+                            Spacer(minLength: 12)
+                            Text(String(format: String(
+                                localized: "archival.families.count %lld",
+                                defaultValue: "%lld in family"), Int64(family.leaves.count)))
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - The ranking card
 
     @ViewBuilder
@@ -384,7 +507,8 @@ struct ArchivalAnalyticsView: View {
             band: band, lens: unitLens, weight: weight,
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount,
-            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
+            indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue)
         SeriesChartCard(
             title: title,
             caption: rankingCaption(ranking),
