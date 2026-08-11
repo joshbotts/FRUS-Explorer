@@ -184,6 +184,10 @@ struct ArchivalRanking: Sendable, Equatable {
 ///          and the per-band source-note denominator is read from the usage index at last
 ///   1.3 — Session 2026-08-10: #825 — `record(forId:)`, so a drawn row can find its authority
 ///          record without the view reaching into the derivation's tables
+///   1.4 — Session 2026-08-11: #835 — `ranking(bands:…)` merges several era bands before
+///         disambiguating (the merge cannot happen in a caller: 279 shipped names are
+///         carried by more than one record), and `ArchivalVolumeCoverage.map(from:limitedTo:)`
+///         becomes the one definition of what a scope means
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by

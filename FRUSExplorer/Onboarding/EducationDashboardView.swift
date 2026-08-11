@@ -77,6 +77,8 @@ enum EducationDashboard: String, Hashable {
 ///   1.2 — Analytics SA-2: renders `.seriesGeography`
 ///   1.3 — Analytics SA-3b: renders `.seriesSourcing`
 ///   1.4 — Analytics SA-2b: renders `.administrationProfiles`
+///   1.5 — Session 2026-08-11: #798 — forwards `presentationContext`, so a live dashboard
+///         can withhold an affordance that would open a sheet over the onboarding sheet
 struct EducationDashboardView: View {
 
     /// Which dashboard to render.

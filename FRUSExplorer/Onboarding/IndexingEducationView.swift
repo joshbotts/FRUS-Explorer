@@ -555,6 +555,9 @@ enum EducationCategory: String {
 ///          dashboard page, third under "About the Series"
 ///   1.5 — Analytics SA-2b: `all` now also includes the `administrationProfiles`
 ///          dashboard page, fourth under "About the Series"
+///   1.6 — Session 2026-08-11: #835 — an Archival Analytics walkthrough section (the tool
+///         appeared nowhere in the guide), and `presentationContext` forwarded to the
+///         dashboards through `iOSPageView`
 struct EducationPage: Identifiable {
     let id: String
     let title: String

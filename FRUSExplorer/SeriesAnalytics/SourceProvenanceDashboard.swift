@@ -58,6 +58,9 @@ import Charts
 ///          rider. macOS only; the iOS arm is withheld because this dashboard also renders
 ///          inside the mid-onboarding `WhileIndexingSheet`, where it would be a sheet over
 ///          a sheet during the first index (see `archivalAnalyticsLink`)
+///   1.8 — Session 2026-08-11: #835 — the `TopCollectionsCard` narrative layer, and #798's
+///         iOS arm of the cross-link, withheld mid-onboarding through a threaded
+///         `presentationContext` and presented locally rather than through the tab shell
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of

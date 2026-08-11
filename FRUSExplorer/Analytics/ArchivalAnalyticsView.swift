@@ -53,6 +53,9 @@ import Charts
 /// button, on macOS that left a window-modal sheet the reader could not dismiss. Capturing also
 /// keeps the list honest: it says "same as the chart", and it now means the chart it was opened
 /// from rather than whatever the chart became underneath it.
+///   1.9 — Session 2026-08-11: #835 — `onNavigateAway`, so a presenter that is itself a sheet
+///         closes behind a hand-off; a return link to the Research Guide; and the two store
+///         touches move inside `loadCollections`'s detached block, off the main actor
 private struct ArchivalAllUnitsPresentation: Identifiable {
     /// Fresh per presentation, which is all `.sheet(item:)` needs.
     let id = UUID()
