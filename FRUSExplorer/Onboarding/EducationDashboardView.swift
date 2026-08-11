@@ -82,6 +82,13 @@ struct EducationDashboardView: View {
     /// Which dashboard to render.
     let dashboard: EducationDashboard
 
+    /// Whether the guide is being read mid-onboarding or on its own (#798, owner decision (a)).
+    ///
+    /// Threaded rather than inferred: the Archival Sourcing page offers a door into Archival
+    /// Analytics, and during onboarding that would be a sheet over a sheet on a device still
+    /// building its first index. Defaulted so no existing caller changes meaning.
+    var presentationContext: IndexingEducationView.PresentationContext = .standalone
+
     var body: some View {
         switch dashboard {
         case .seriesProduction:
@@ -89,7 +96,7 @@ struct EducationDashboardView: View {
         case .seriesGeography:
             SeriesGeographyDashboard()
         case .seriesSourcing:
-            SourceProvenanceDashboard()
+            SourceProvenanceDashboard(presentationContext: presentationContext)
         case .administrationProfiles:
             AdministrationProfilesDashboard()
         }

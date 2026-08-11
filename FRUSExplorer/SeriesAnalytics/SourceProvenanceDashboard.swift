@@ -74,6 +74,13 @@ struct SourceProvenanceDashboard: View {
     /// in (#338). Absent on macOS and in the guide's own containers, where `.anyWindow` is right.
     @Environment(\.sceneID) private var sceneID
 
+    /// This scene's model context, only for handing its container to the Archival Analytics sheet
+    /// — which a sheet does not reliably inherit (#798).
+    @Environment(\.modelContext) private var modelContext
+
+    /// Closes the guide behind a navigation that lands on another surface (#798).
+    @Environment(\.dismiss) private var dismiss
+
     #if os(macOS)
     /// Opens the Archival Analytics window from the #795 cross-link. macOS-only, because
     /// `OpenWindowAction.fronting(id:)` is itself declared inside `#if os(macOS)`.
@@ -103,6 +110,14 @@ struct SourceProvenanceDashboard: View {
     /// The active subseries scope (#267). `@State`, resets per visit like the sibling
     /// dashboards — re-opening on a stale narrowed scope would misrepresent the series.
     @State private var scope = SeriesScope.whole
+
+    /// Whether the guide is read mid-onboarding, which withholds the iOS door into Archival
+    /// Analytics (#798, owner decision (a)). Defaulted, so the macOS window and any future caller
+    /// keep today's behaviour.
+    var presentationContext: IndexingEducationView.PresentationContext = .standalone
+
+    /// Whether the iOS Archival Analytics sheet is up (#798).
+    @State private var showsArchivalAnalytics = false
 
     /// The collection record whose detail sheet is up, set by a Top-collections row (#835).
     @State private var collectionDetail: AuthorityCollectionRecord?
@@ -167,6 +182,25 @@ struct SourceProvenanceDashboard: View {
                     .environment(\.sceneID, sceneID ?? .anyWindow)
             }
         }
+        #if os(iOS)
+        // Presented HERE, not through the hand-off: on iOS this page is itself a sheet inside the
+        // tab shell, and the shell cannot present a second one while presenting this. The three
+        // injections match `MainTabView.archivalSheet`. `onNavigateAway` closes the guide too —
+        // otherwise a Browse hand-off from a collection record lands underneath it and nothing
+        // appears to happen, the shape #844 fixed one level up.
+        .sheet(isPresented: $showsArchivalAnalytics) {
+            if let appState {
+                ArchivalAnalyticsView(onNavigateAway: {
+                    showsArchivalAnalytics = false
+                    dismiss()
+                })
+                .environment(appState)
+                .modelContainer(modelContext.container)
+                .environment(\.sceneID, sceneID ?? .anyWindow)
+                .statusBarHidden(false)
+            }
+        }
+        #endif
         .seriesExportPresentation(exportBox)
     }
 
@@ -488,15 +522,38 @@ struct SourceProvenanceDashboard: View {
     /// The #795 rider: a pointer from this dashboard's ten provenance *categories* to the named
     /// collections behind them.
     ///
-    /// **macOS only, deliberately.** On the Mac this dashboard only ever renders inside the
-    /// Research Guide window, so opening another window beside it is unremarkable. On iOS it also
-    /// renders inside `WhileIndexingSheet` mid-onboarding, where the same affordance would present
-    /// a sheet over a sheet while the first index is still building — and Archival Analytics needs
-    /// three explicit environment injections a sheet does not inherit (`BrowserView` makes them).
-    /// Deciding whether an onboarding reader should be offered that door at all is a design
-    /// question, not a mechanical one; it is filed rather than guessed at here.
+    /// **On iOS it is withheld mid-onboarding** (#798, owner decision (a)). The Mac has no
+    /// onboarding path for this page, so its arm is unconditional; on iOS the page also renders
+    /// inside `WhileIndexingSheet`, where the door would present a sheet over a sheet while the
+    /// first index is still building. `presentationContext` is threaded from
+    /// `IndexingEducationView` for exactly this decision.
+    ///
+    /// The iOS sheet is presented **locally** rather than through `AppState.openArchivalScope`:
+    /// that hand-off is consumed by `MainTabView`'s own presenter, and on iOS this page is itself
+    /// a sheet inside that shell — so the shell would be asked to present a second sheet while
+    /// already presenting one. The three environment injections a sheet does not inherit are made
+    /// here, as `MainTabView.archivalSheet` makes them.
     @ViewBuilder
     private var archivalAnalyticsLink: some View {
+        #if os(iOS)
+        if presentationContext == .standalone {
+            VStack(alignment: .leading, spacing: 4) {
+                Button {
+                    showsArchivalAnalytics = true
+                } label: {
+                    Label(String(localized: "series.provenance.archivalLink",
+                                 defaultValue: "Open Archival Analytics"),
+                          systemImage: "archivebox")
+                }
+                Text(String(localized: "series.provenance.archivalLink.detail",
+                            defaultValue: "This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
+        }
+        #endif
         #if os(macOS)
         VStack(alignment: .leading, spacing: 4) {
             Button {

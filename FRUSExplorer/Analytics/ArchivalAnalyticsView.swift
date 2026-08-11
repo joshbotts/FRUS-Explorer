@@ -87,6 +87,10 @@ struct ArchivalAnalyticsView: View {
     /// The collection a deep link asked to focus the Network on, consumed once by that mode.
     private let initialFocusId: String?
 
+    /// Invoked after this surface hands off and dismisses itself, so a presenter that is *also* a
+    /// sheet can close too (#798). `nil` wherever this view is the outermost presentation.
+    private let onNavigateAway: (() -> Void)?
+
     /// Whether the band still has to be moved to the initializer's scope. The move needs
     /// `appState`'s manifest, which no initializer has, so it happens on the first appearance.
     private let initialScopeNeedsBand: Bool
@@ -108,13 +112,16 @@ struct ArchivalAnalyticsView: View {
     ///   - mode: The mode to open on.
     ///   - focusCollectionId: An authority collection id for the Network's focus. Ignored by the
     ///     other modes, and ignored if the bundled authority does not carry it.
+    ///   - onNavigateAway: Invoked after this surface hands off and dismisses itself on iOS, so
+    ///     a presenter that is itself a sheet — the Research Guide (#798) — can close too.
     ///   - initialScope: A volume scope delivered by the presenter rather than through
     ///     `pendingArchivalScope`. iOS needs it: the tab shell consumes the hand-off in order to
     ///     decide whether to present at all, so by the time this view mounts the slot is already
     ///     empty. An empty volume set means no scope.
     init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil,
-         initialScope: ArchivalScopeRequest? = nil) {
+         initialScope: ArchivalScopeRequest? = nil, onNavigateAway: (() -> Void)? = nil) {
         _mode = State(initialValue: mode)
+        self.onNavigateAway = onNavigateAway
         self.initialFocusId = focusCollectionId
         if let initialScope, !initialScope.volumeIds.isEmpty {
             _scopeVolumeIds = State(initialValue: initialScope.volumeIds)
@@ -254,6 +261,11 @@ struct ArchivalAnalyticsView: View {
                         // Browse tab would land under it. Close both.
                         collectionDetail = nil
                         dismiss()
+                        // And whatever presented THIS surface, if it is itself a sheet. Reached
+                        // from the Research Guide (#798), dismissing only this one leaves the
+                        // guide sitting over the Browse tab that just navigated — the same
+                        // "nothing appears to have happened" shape one level further out.
+                        onNavigateAway?()
                         #endif
                     }
                     .environment(appState)
@@ -340,6 +352,18 @@ struct ArchivalAnalyticsView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.archivalAnalytics
+        }
+        ToolbarItem(placement: .primaryAction) {
+            // The return half of #835's cross-link: the Archival Sourcing page frames what these
+            // rankings are about, and until now the pointer ran one way only. Guarded because
+            // `ResearchGuideLinkButton` declares a NON-optional AppState, which traps on
+            // declaration, while this surface holds it optionally.
+            if appState != nil {
+                ResearchGuideLinkButton(
+                    pageId: "series-sourcing",
+                    label: String(localized: "archival.researchGuide",
+                                  defaultValue: "About Archival Sourcing"))
+            }
         }
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
