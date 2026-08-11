@@ -140,6 +140,15 @@ documented in the archived plan), force-merge only, never auto-splitting a recon
 NER over running prose in the early-era volumes, with adversarial review. M1a settled the scope
 question: roughly two-thirds of person mentions carry no markup, so detection is not optional.
 
+**The R-1 harvest has a runbook and a harness: `tools/semantic-harvest/NER-RUNBOOK.md`**
+(2026-08-11), driven by `harvest_ner.py`. Its scope pass and its **marked layer** — the 253,919
+`<persName>` mentions of §3, placed in the R-0 text's coordinate space — need no model and are
+M1b's input. Its detector layer is deliberately sampled: a full LM-Studio sweep prices at ~5–8 days
+of continuous Studio time for an 8B-class model, or 8–42 h for a 0.5–2 B one, against NLTagger's
+~1–2 h — and no ground truth exists to say whether any of them earns it. The cheaper the model, the
+more the comparison collapses toward the free control that is still unbuilt. Nothing it produces may
+ship until M2a is keyed.
+
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
 discipline, same hardware window, and the embedding model doubles as a mention-context
 reconciliation signal for identity clustering. The seam (what rides, what must not — gates and
