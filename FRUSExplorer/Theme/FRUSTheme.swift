@@ -249,7 +249,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "archival.info.units.title", defaultValue: "Collections and classes are different things"),
                     detail: String(localized: "archival.info.units.detail",
-                                   defaultValue: "A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. The two are never mixed in one ranking. Before 1948 the series cites classes far more than collections. After 1976 it barely cites classes at all.")),
+                                   defaultValue: "A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. The two are never mixed in one ranking. Classes are ranked at one depth: a decimal file number stands for itself, while subject-numeric designators are grouped to their category and number, and a grouped row opens to the exact designators underneath it. Before 1948 the series cites classes far more than collections. After 1976 it barely cites classes at all.")),
             ]
         )
     }

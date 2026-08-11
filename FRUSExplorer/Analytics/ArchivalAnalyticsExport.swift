@@ -46,6 +46,7 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///   1.0 — Session 2026-08-09: #787
 ///   1.1 — Session 2026-08-10: #832 — `lifecycles` retired with its card, `collectionTimeline`
 ///          added for the collection record's Cited Over Time chart
+///   1.2 — Session 2026-08-10: #826 — the ranking states its class grain and its denominator
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -95,7 +96,10 @@ enum ArchivalAnalyticsExport {
         if lens == .centralFileClasses {
             caveats.append(grainCaveat)
         }
-        if noteCount > 0 {
+        // Only under the documents weight: a "rows account for N of M" sentence over a volume
+        // count and a note total is the units error `ArchivalRanking.shownShare(weight:)`
+        // refuses on screen, and a CSV outlives the screen that produced it.
+        if noteCount > 0, weight == .documents {
             caveats.append(String(format: String(
                 localized: "archival.export.caveat.denominator %lld %lld",
                 defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),

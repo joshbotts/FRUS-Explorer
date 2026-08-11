@@ -466,6 +466,15 @@ struct ArchivalCollectionsDataTests {
 
     // MARK: - One class grain (#826 / R-4)
 
+    /// One app source file, for the drift guards that cannot reach the code they protect.
+    private static func source(_ relative: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/\(relative)")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
     /// A usage index over a synthetic corpus, built through the decoder because the type is
     /// decode-only by design.
     private static func usage(volumes: [String], noteCounts: [Int], classKeys: [String],
@@ -552,26 +561,50 @@ struct ArchivalCollectionsDataTests {
         #expect(family.leaves.map { $0.value(weight: .volumes) } == [1, 1])
     }
 
-    @Test("Collections and the Network fold the class vocabulary the same way")
-    func foldParityWithTheNetwork() throws {
+    @Test("Every class row is a fold fixed point, so the two surfaces cannot disagree on a family")
+    func classRowsAreFoldedToOneGrain() throws {
         // The two surfaces disagreeing about what `POL 27` means would be worse than either
         // grain alone. They cannot share a call site — the Network folds inside its own
-        // co-citation accumulation — so what is pinned is that both route through the one
-        // published rule, over the vocabulary that actually ships.
-        let usage = try #require(CollectionUsageIndexStore.shared)
+        // co-citation accumulation — so the claim pinned here is the observable one: nothing
+        // the ranking draws is a key that the shared rule would fold further. A raw leaf on the
+        // chart fails this; so does folding with any rule but `subjectNumericGroup`.
+        let data = try #require(Self.shipped)
+        var families = 0
         var checked = 0
-        for key in usage.classKeys {
-            let folded = CollectionKeying.subjectNumericGroup(key) ?? key
-            if CollectionKeying.isSubjectNumericClass(key) {
-                #expect(folded != key || key == folded,
-                        "a subject-numeric key must resolve through the shared fold")
-                #expect(!folded.isEmpty)
-            } else {
-                #expect(folded == key, "a decimal key must fold to itself: \(key)")
+        for band in ArchivalEraBand.all {
+            for weight in ArchivalWeight.allCases {
+                let rows = data.ranking(band: band, lens: .centralFileClasses, weight: weight,
+                                        hidingUmbrella: false, limit: 200).rows
+                for row in rows {
+                    let folded = CollectionKeying.subjectNumericGroup(row.id) ?? row.id
+                    #expect(folded == row.id, """
+                        The ranking drew \(row.id), which the shared fold reduces to \(folded). \
+                        A row at leaf grain means the Collections lens is ranking something the \
+                        co-citation network would call part of a larger family.
+                        """)
+                    if row.isFamily { families += 1 }
+                    checked += 1
+                }
             }
-            checked += 1
         }
-        #expect(checked > 5_000, "the sweep covered \(checked) keys, which is too few")
+        #expect(checked > 100, "the sweep covered \(checked) rows, which is too few to mean much")
+        #expect(families > 0, """
+            No drawn row folds anything, so this sweep would pass just as well against the \
+            unfolded ranking it exists to rule out.
+            """)
+    }
+
+    @Test("The shared fold is what both archival surfaces call")
+    func bothSurfacesCallTheSharedFold() throws {
+        // A source scan because the Network's fold is buried in its own accumulation and cannot
+        // be reached from here. It is the drift guard: a second, local fold in either file is
+        // how the two grains would part company again.
+        for relative in ["Analytics/ArchivalCollectionsData.swift",
+                         "Analytics/ArchivalNetworkData.swift"] {
+            let source = try Self.source(relative)
+            #expect(source.contains("CollectionKeying.subjectNumericGroup("),
+                    "\(relative) no longer routes through the shared fold")
+        }
     }
 
     // MARK: - The denominators (#826 / R-5)
