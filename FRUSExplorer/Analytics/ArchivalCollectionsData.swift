@@ -230,6 +230,14 @@ struct ArchivalCollectionsData: Sendable {
     private let classVolumes: [[String: Int]]
     /// Per-band leaves inside each folded class key, heaviest first.
     private let classLeaves: [[String: [ArchivalClassLeaf]]]
+    /// The label table class rows are read against.
+    ///
+    /// Injected rather than reached for, so a test can drive the derivation against a table with
+    /// TWO schedules. The shipped artifact carries one, which makes the whole renumbering rule —
+    /// and in particular the lower bound of a key's coverage span — unobservable through any
+    /// output: with a single schedule the clamp handles every lower bound that could matter. The
+    /// rule this parameter exists to test is the one the next schedule will land on.
+    private let labels: DecimalClassLabelTable?
     /// Per-band coverage span of the volumes citing each folded class key.
     ///
     /// The evidence a class label rests on. See ``gloss(forKey:bands:)``: a decimal key means
@@ -266,7 +274,9 @@ struct ArchivalCollectionsData: Sendable {
     ///     they cannot be attributed to a band without a coverage year.
     static func make(authority: [AuthorityCollectionRecord],
                      usage: CollectionUsageIndex?,
-                     coverage: [String: ArchivalVolumeCoverage]) -> ArchivalCollectionsData {
+                     coverage: [String: ArchivalVolumeCoverage],
+                     labels: DecimalClassLabelTable? = DecimalClassLabelStore.shared)
+        -> ArchivalCollectionsData {
         let bandCount = ArchivalEraBand.all.count
         var bandByVolume: [String: Int] = [:]
         bandByVolume.reserveCapacity(coverage.count)
@@ -322,6 +332,7 @@ struct ArchivalCollectionsData: Sendable {
             classDocuments: classDocuments,
             classVolumes: classVolumes,
             classLeaves: classLeaves,
+            labels: labels,
             classSpans: classSpans,
             bandVolumeCounts: bandVolumeCounts,
             bandNoteCounts: bandNoteCounts,
@@ -580,7 +591,7 @@ struct ArchivalCollectionsData: Sendable {
             high = max(high ?? span.upperBound, span.upperBound)
         }
         guard let low, let high else { return nil }
-        return DecimalClassLabelStore.shared?.gloss(for: key, coveringYears: low...high)
+        return labels?.gloss(for: key, coveringYears: low...high)
     }
 
     /// One class key's leaves across several bands, folded and re-ranked.

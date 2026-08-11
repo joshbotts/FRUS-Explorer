@@ -1247,6 +1247,45 @@ struct ArchivalCollectionsDataTests {
             """)
     }
 
+    @Test("A key's span reaches back to its earliest citing volume, not just its latest")
+    func spanWidensBackwards() throws {
+        // Unobservable against the shipped table, which carries one schedule: every lower bound
+        // that could matter is either below 1910 and clamped, or inside the only schedule there
+        // is. With two, it decides the answer — so the table is injected and the case is pinned
+        // here rather than left for the schedule that will depend on it.
+        let json = """
+        {"schemaVersion":1,"generated":"2026-08-11","provenance":"test","schedules":[
+          {"id":"1910-1949","startYear":1910,"endYear":1949,"source":"test",
+           "classes":{"8":"Internal Affairs of States"},"relationsClasses":["7"],
+           "countryArrangedClasses":["8"],"countries":{"91":"Iran"},"subjects":{}},
+          {"id":"1951-1959","startYear":1951,"endYear":1959,"source":"test",
+           "classes":{"8":"Other Internal Affairs"},"relationsClasses":["6"],
+           "countryArrangedClasses":["8"],"countries":{"91":"Iran"},"subjects":{}}]}
+        """
+        let table = try JSONDecoder().decode(DecimalClassLabelTable.self, from: Data(json.utf8))
+        // Both volumes have a coverage MIDPOINT in 1948–1960, so both land in band 1 and one
+        // band's own span has to cross the renumbering — the case a per-band union could not
+        // otherwise reach.
+        let index = try Self.usage(
+            volumes: ["v1948", "v1955"], noteCounts: [40, 40],
+            classKeys: ["891.00"],
+            rows: [(key: 0, volumes: [0, 1], counts: [5, 5])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1948": ArchivalVolumeCoverage(firstYear: 1947, lastYear: 1949),
+                       "v1955": ArchivalVolumeCoverage(firstYear: 1954, lastYear: 1956)],
+            labels: table)
+        let rows = data.ranking(band: ArchivalEraBand.all[1], lens: .centralFileClasses,
+                                weight: .documents, hidingUmbrella: false).rows
+        let row = try #require(rows.first { $0.id == "891.00" })
+        #expect(row.value == 10, "both volumes are in band 1")
+        #expect(row.gloss == nil, """
+            The span runs 1947–1956 and crosses 1950. A span that only widened forwards would end \
+            at 1954–1956, sit inside the later schedule, and name a country by a number half this \
+            key's documents predate.
+            """)
+    }
+
     @Test("A key cited only by undated volumes produces no row to label")
     func unplacedKeysStaySilent() throws {
         // The invariant behind `gloss(forKey:bands:)` treating a missing span as unreachable: a
