@@ -5080,6 +5080,43 @@ moved.
 
 ---
 
+## Session 2026-08-11 — #841: one definition of a subject-numeric family
+
+**Issue:** #841 · owner's decision: **option (a)** — the fold is the definition, the query follows it.
+
+Two definitions were live at once. `CollectionKeying.subjectNumericGroup` is greedy over the
+hyphenated number, so `POL 27-14 VIET` belongs to `POL 27-14`; `classLeafPatterns` carried a
+`key + "-%"` branch, so the SQL family for `POL 27` swallowed it. A row labelled 1,090 documents
+opened a document set drawn from a strictly wider population — **38 of the 102 class rows the
+ranking draws**, `POL 15` sweeping 73 keys, `POL 27-14` alone worth 220 documents in one band.
+
+The hyphen branch is now **decimal-only**. A decimal key is not folded, so no second definition
+exists to disagree with, and the corpus writes `611.51-A` subdivisions a reader asking for `611.51`
+means to include.
+
+### The residue is bounded, not excused
+
+The fold's regex needs two-to-six category letters, so the ten single-letter `E …` keys cannot be
+parsed and each becomes its own group. Two are prefixes of others, and the space branch — the one
+that finds `POL 27 VIET S` under `POL 27` — still crosses them: `E 1` reaches `E 1 JAPAN-US` and
+`E 1 US`. **Exactly those two**, pinned as an exact set, so a new leak from a change to either
+definition fails a test rather than going unnoticed. Down from 38 rows to 2 keys.
+
+### A stale caveat is worse than none
+
+Wave 1d added a screen sentence warning that a grouped row's documents include its sub-numbers.
+That is now false, so it is gone — and the test that demanded it now demands its **absence**, with
+the reason. A caveat that outlives its defect tells a reader the number in front of them is wrong
+when it is right.
+
+### Mutation sweep: 2 mutants, 2 killed
+
+Restore the hyphen branch for subject-numeric keys (the original defect); drop it for decimal keys
+too (the over-correction). Pinning both directions matters here because the fix is a narrowing, and
+narrowing too far is as wrong as not narrowing at all.
+
+---
+
 ## Session 2026-08-11 — wave 2a (#827): the Collections mode gets a scope
 
 **Issue:** #827 · the "value session" of the review's sequencing

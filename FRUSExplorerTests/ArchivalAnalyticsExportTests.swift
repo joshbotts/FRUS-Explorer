@@ -465,10 +465,14 @@ struct ArchivalExportWiringTests {
         #expect(source.contains("private func drillInHint("))
         #expect(source.contains("archival.ranking.drillIn.collections"))
         #expect(source.contains("archival.ranking.drillIn.classes"))
-        #expect(source.contains("include its sub-numbers"), """
-            A folded family row opens a document set drawn from a WIDER family than the bar (the \
-            SQL prefix match sweeps sub-numbers the artifact fold assigns elsewhere — see #841). \
-            Until that is reconciled the screen must say so.
+        // The sub-numbers disclosure is GONE, and its absence is the assertion: #841 made the
+        // query follow the fold, so a folded row's documents are now exactly its own family and
+        // a sentence warning otherwise would be false. ClassFamilyDefinitionTests holds the
+        // guarantee that replaced it.
+        #expect(!source.contains("include its sub-numbers"), """
+            The screen still warns that a grouped row's documents include its sub-numbers. Since \
+            #841 that is not true, and a stale caveat is worse than none: it tells a reader the \
+            number in front of them is wrong when it is right.
             """)
     }
 

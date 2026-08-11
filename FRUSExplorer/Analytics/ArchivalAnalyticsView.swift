@@ -607,7 +607,7 @@ struct ArchivalAnalyticsView: View {
                   ? String(localized: "archival.ranking.drillIn.collections",
                            defaultValue: "Tap a bar to open that collection's record, or use the list below.")
                   : String(localized: "archival.ranking.drillIn.classes",
-                           defaultValue: "Tap a bar to see that file number's documents, or use the list below. A grouped row's documents include its sub-numbers."),
+                           defaultValue: "Tap a bar to see that file number's documents, or use the list below."),
                   systemImage: "hand.tap")
                 .font(.caption)
                 .foregroundStyle(.secondary)
