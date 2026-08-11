@@ -416,33 +416,6 @@ struct ArchivalCollectionsDataTests {
         #expect(rows.first?.label == "Whitman File")
     }
 
-    // MARK: - Lifecycles
-
-    @Test("A lifecycle span reaches the real coverage endpoints, not the midpoints")
-    func lifecycleUsesCoverageEndpoints() throws {
-        var spans: [String: ArchivalVolumeCoverage] = [:]
-        spans["v1"] = ArchivalVolumeCoverage(firstYear: 1952, lastYear: 1954)
-        spans["v2"] = ArchivalVolumeCoverage(firstYear: 1969, lastYear: 1976)
-        let record = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
-                                               volumeIds: ["v1", "v2"])
-        let data = ArchivalCollectionsData.make(authority: [record], usage: nil, coverage: spans)
-        let span = try #require(data.lifecycleSpans.first)
-        #expect(span.firstYear == 1952)
-        #expect(span.lastYear == 1976, """
-            The span ends at \(span.lastYear). Using the coverage midpoint would end it at 1972 \
-            and understate every bar on the card by half a subseries.
-            """)
-        #expect(span.volumeCount == 2)
-    }
-
-    @Test("A collection whose volumes are all outside the manifest yields no lifecycle bar")
-    func lifecycleSkipsUnknownVolumes() {
-        let record = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
-                                               volumeIds: ["not-in-manifest"])
-        let data = ArchivalCollectionsData.make(authority: [record], usage: nil, coverage: [:])
-        #expect(data.lifecycleSpans.isEmpty)
-    }
-
     // MARK: - Degraded artifacts
 
     @Test("A missing usage index disables the document weight rather than reporting zeroes")
@@ -459,6 +432,36 @@ struct ArchivalCollectionsDataTests {
             The volume weight comes from the authority and must keep working when the usage \
             index is absent — otherwise a failed decode blanks the whole mode.
             """)
+    }
+
+    @Test("Removing the lifecycle card left the Volumes weight's only writer standing (#832c)")
+    func volumeWeightSurvivesTheLifecycleRemoval() throws {
+        // The loop that used to build the lifecycle spans also fills `collectionVolumes`, which
+        // is the SOLE source of the named-collection lens's Volumes weight. Deleting the loop
+        // with the card would not have failed a build or thrown — the ranking would simply have
+        // gone empty under that weight, in a mode whose other weight needs a bundled artifact
+        // this test deliberately withholds. Both bands are asserted because the per-band
+        // bookkeeping is what the removed span code was interleaved with.
+        let coverage = [
+            "v-early": ArchivalVolumeCoverage(firstYear: 1950, lastYear: 1952),
+            "v-late": ArchivalVolumeCoverage(firstYear: 1969, lastYear: 1976),
+        ]
+        let record = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
+                                               volumeIds: ["v-early", "v-late"])
+        let data = ArchivalCollectionsData.make(authority: [record], usage: nil,
+                                                coverage: coverage)
+        for band in ArchivalEraBand.all {
+            let rows = data.ranking(band: band, lens: .namedCollections, weight: .volumes,
+                                    hidingUmbrella: true).rows
+            let expected = coverage.values
+                .filter { ArchivalEraBand.band(forMidpointYear: $0.midpointYear).index == band.index }
+                .count
+            #expect(rows.first?.value ?? 0 == expected, """
+                Band \(band.title) counts \(rows.first?.value ?? 0) volumes, not \(expected). \
+                `collectionVolumes` has no other writer, so an empty Volumes weight here means \
+                the authority loop was removed along with the span bookkeeping it carried.
+                """)
+        }
     }
 
     // MARK: - The shipped artifacts

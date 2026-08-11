@@ -83,6 +83,10 @@ struct CollectionDetailView: View {
     @State private var showsAllRelated = false
     /// #762: citing volumes bucketed by coverage era. Empty when they reach fewer than two eras.
     @State private var timeline: [CollectionEraCount] = []
+    /// The Cited Over Time table, non-nil while its inspector sheet is up (#832b).
+    @State private var timelineInspector: ChartInspectorData?
+    /// Delivery for that chart's CSV — owns the share sheet and the failure alert.
+    @State private var timelineExportBox = SeriesExportBox()
     /// Whether the citing-volume list is expanded past ``CollectionRelations/previewRowCap``.
     @State private var showsAllVolumes = false
     #if os(iOS)
@@ -148,6 +152,10 @@ struct CollectionDetailView: View {
             .environment(\.sceneID, sceneID ?? .anyWindow)
         }
         #endif
+        // Anchored on the `List`, never inside the Section that draws the chart: a presentation
+        // modifier applied per section (or per `Group` child) mounts once per child.
+        .sheet(item: $timelineInspector) { ChartDataInspectorView(data: $0) }
+        .seriesExportPresentation(timelineExportBox)
         .task {
             loadTimeline()
             await loadRelated()
@@ -442,6 +450,7 @@ struct CollectionDetailView: View {
                     }
                 }
                 .frame(height: 92)
+                .axChartDescriptor(inspector: timelineTable, title: timelineExportTitle)
                 Text(String(format: String(
                     localized: "collection.detail.timeline.caption %@",
                     defaultValue: "Citing volumes by coverage era (the citing-volume list × the manifest's date ranges). %@"),
@@ -449,11 +458,66 @@ struct CollectionDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                timelineControls
             }
             .padding(.vertical, 4)
         } header: {
             Text(String(localized: "collection.detail.timeline.header",
                         defaultValue: "Cited Over Time"))
+        }
+    }
+
+    /// The chart's title wherever it is named outside the section header — the inspector sheet and
+    /// the export's methods statement, which both leave this screen and so cannot say only
+    /// "Cited Over Time".
+    private var timelineExportTitle: String {
+        String(format: String(localized: "collection.detail.timeline.exportTitle %@",
+                              defaultValue: "%@ — cited over time"), record.name)
+    }
+
+    /// The chart's tabular form: one value feeding the inspector, the CSV, and the Audio Graph
+    /// descriptor, so the numbers a reader sees, hears, and takes away cannot drift apart.
+    private var timelineTable: ChartInspectorData {
+        ChartInspectorData(
+            id: "collection.detail.timeline",
+            title: timelineExportTitle,
+            columns: [
+                String(localized: "collection.detail.timeline.x", defaultValue: "Coverage era"),
+                String(localized: "collection.detail.timeline.y", defaultValue: "Citing volumes"),
+            ],
+            rowCells: timeline.map { [$0.era.fullLabel, "\($0.volumeCount)"] })
+    }
+
+    /// "View as table" and the export menu (#832b), the pair every other analytics chart carries.
+    ///
+    /// Composed here rather than by adopting ``SeriesChartCard`` because this chart lives in a
+    /// `List` section whose header already names it; the card would draw a second heading directly
+    /// beneath the first. CSV only, no figure — the same shape as the Your Library cards.
+    private var timelineControls: some View {
+        HStack(spacing: 16) {
+            Spacer()
+            Button {
+                timelineInspector = timelineTable
+            } label: {
+                Label(String(localized: "series.inspector.viewTable",
+                             defaultValue: "View as table"),
+                      systemImage: "tablecells")
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text(String(
+                localized: "collection.detail.timeline.viewTable.a11y",
+                defaultValue: "View cited over time as a table")))
+            AnalyticsSectionExportControl(
+                isEnabled: !timeline.isEmpty,
+                exportCSV: {
+                    timelineExportBox.deliver(
+                        timelineTable,
+                        ArchivalAnalyticsExport.collectionTimeline(
+                            collectionName: record.name,
+                            eraCount: timeline.count,
+                            indexedVolumeCount: appState.indexedVolumeIds.count))
+                })
         }
     }
 

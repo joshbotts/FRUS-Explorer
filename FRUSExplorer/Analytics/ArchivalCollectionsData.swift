@@ -51,64 +51,6 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     let value: Int
 }
 
-// MARK: - ArchivalLifecycleSpan
-
-/// One horizontal span bar in the "Collection lifecycles" card: the coverage years of the
-/// volumes that cite a collection, from the earliest to the latest.
-/// The x-axis domain for the lifecycle chart.
-///
-/// Without an explicit domain Swift Charts infers one from the marks, and a `BarMark` anchors its
-/// numeric axis at **zero** — so a chart of coverage years rendered an axis running 0–1990 with
-/// every bar crushed against the right edge. The years are dates, not magnitudes: nothing is being
-/// measured *from* zero, so zero is not a meaningful origin.
-///
-/// Version history:
-///   1.0 — Session 2026-08-10: lifecycle x-axis fix
-enum ArchivalLifecycleAxis {
-
-    /// The floor a coverage-year axis opens at when the data starts later.
-    ///
-    /// FRUS begins with the 1861 volume, so 1860 is the round decade below the series' own start —
-    /// it gives the earliest bars somewhere to sit rather than beginning flush against the axis.
-    static let defaultFirstYear = 1860
-
-    /// The domain for `spans`, or `nil` when there is nothing to plot.
-    ///
-    /// - Parameter spans: The plotted lifecycles.
-    /// - Returns: The closed year range the axis should cover.
-    ///
-    /// The floor is a **default, not a clamp**: a span beginning before 1860 widens the axis rather
-    /// than being cut off. Clamping would hide the very records whose early coverage makes them
-    /// interesting, and it would do so silently — the bar would simply start at the edge.
-    static func domain(for spans: [ArchivalLifecycleSpan]) -> ClosedRange<Int>? {
-        guard !spans.isEmpty else { return nil }
-        let earliest = spans.map(\.firstYear).min() ?? defaultFirstYear
-        let latest = spans.map(\.lastYear).max() ?? defaultFirstYear
-        let lower = min(defaultFirstYear, earliest)
-        // A single-year span would otherwise give a zero-width domain, which Charts renders as an
-        // axis with no extent at all.
-        let upper = max(latest, lower + 1)
-        return lower...upper
-    }
-}
-
-struct ArchivalLifecycleSpan: Identifiable, Sendable, Equatable {
-    /// Authority collection id.
-    let id: String
-    /// Unique axis label.
-    let label: String
-    /// The record's own name.
-    let name: String
-    /// Custodian bucket.
-    let category: ArchivalRepositoryCategory
-    /// Earliest coverage year among citing volumes.
-    let firstYear: Int
-    /// Latest coverage year among citing volumes.
-    let lastYear: Int
-    /// Citing volumes — the bar's rank and its accessibility value.
-    let volumeCount: Int
-}
-
 // MARK: - ArchivalRanking
 
 /// A ranked list plus everything a caller must disclose about it.
@@ -131,7 +73,7 @@ struct ArchivalRanking: Sendable, Equatable {
 // MARK: - ArchivalCollectionsData
 
 /// The corpus-wide Collections-mode derivation: era band × archival unit, under either weight
-/// and either unit lens, plus the collection lifecycles.
+/// and either unit lens.
 ///
 /// ## Where the numbers come from
 /// - **Documents** come from `collection-usage-index.json` (#763) — per-(unit, volume) counts
@@ -172,9 +114,6 @@ struct ArchivalCollectionsData: Sendable {
     /// Rows shown per ranking before "Show more".
     static let rowCap = 12
 
-    /// Lifecycle bars shown, ranked by citing volumes.
-    static let lifecycleCap = 18
-
     /// Per-band document counts by authority collection id.
     private let collectionDocuments: [[String: Int]]
     /// Per-band citing-volume counts by authority collection id.
@@ -187,8 +126,6 @@ struct ArchivalCollectionsData: Sendable {
     private let bandVolumeCounts: [Int]
     /// Authority records by id, for labels and categories.
     private let records: [String: AuthorityCollectionRecord]
-    /// Every lifecycle span, ranked by citing volumes, capped.
-    private let lifecycles: [ArchivalLifecycleSpan]
 
     /// Whether document weights are available at all — `false` when the usage index is missing,
     /// in which case the Documents weight must be disabled rather than shown as zeroes.
@@ -222,26 +159,17 @@ struct ArchivalCollectionsData: Sendable {
         var records: [String: AuthorityCollectionRecord] = [:]
         records.reserveCapacity(authority.count)
         var collectionVolumes = [[String: Int]](repeating: [:], count: bandCount)
-        var spans: [ArchivalLifecycleSpan] = []
+        // This loop is the ranking's only source for two things: `records`, which supplies every
+        // row's label and custodian, and `collectionVolumes`, the **sole** writer of the named-
+        // collection lens's Volumes weight. It is not bookkeeping for a chart — deleting it would
+        // leave the ranking rendering an empty Volumes weight rather than failing.
         for record in authority {
             records[record.id] = record
-            var earliest: Int?
-            var latest: Int?
-            var citing = 0
             for volumeId in record.volumeIds {
-                guard let band = bandByVolume[volumeId], let span = coverage[volumeId] else {
-                    continue
-                }
+                // `bandByVolume` is populated from `coverage` above, so membership here already
+                // implies a coverage span; the band is all this pass needs from it.
+                guard let band = bandByVolume[volumeId] else { continue }
                 collectionVolumes[band][record.id, default: 0] += 1
-                earliest = min(earliest ?? span.firstYear, span.firstYear)
-                latest = max(latest ?? span.lastYear, span.lastYear)
-                citing += 1
-            }
-            if let earliest, let latest, citing > 0 {
-                spans.append(ArchivalLifecycleSpan(
-                    id: record.id, label: record.name, name: record.name,
-                    category: ArchivalRepositoryCategory.from(record),
-                    firstYear: earliest, lastYear: latest, volumeCount: citing))
             }
         }
 
@@ -257,17 +185,6 @@ struct ArchivalCollectionsData: Sendable {
                                  bandByVolume: bandByVolume, into: &classDocuments)
         }
 
-        // Ranked once here rather than per read: the cap is a display decision but the order is
-        // a property of the data, and re-sorting 4,423 spans on every band switch is waste.
-        let rankedSpans = spans
-            .sorted { a, b in
-                if a.volumeCount != b.volumeCount { return a.volumeCount > b.volumeCount }
-                if a.name != b.name { return a.name < b.name }
-                return a.id < b.id
-            }
-            .prefix(lifecycleCap)
-        let labelledSpans = disambiguate(Array(rankedSpans), records: records)
-
         return ArchivalCollectionsData(
             collectionDocuments: collectionDocuments,
             collectionVolumes: collectionVolumes,
@@ -275,7 +192,6 @@ struct ArchivalCollectionsData: Sendable {
             classVolumes: classVolumes,
             bandVolumeCounts: bandVolumeCounts,
             records: records,
-            lifecycles: labelledSpans,
             supportsDocumentWeight: usage != nil,
             volumesPlaced: bandByVolume.count)
     }
@@ -354,9 +270,6 @@ struct ArchivalCollectionsData: Sendable {
                                bandVolumeCount: bandVolumeCounts[band.index])
     }
 
-    /// The lifecycle span bars, ranked by citing volumes.
-    var lifecycleSpans: [ArchivalLifecycleSpan] { lifecycles }
-
     // MARK: - Label disambiguation
 
     /// Makes every label in a set unique, because a Swift Charts categorical axis keys on the
@@ -393,30 +306,11 @@ struct ArchivalCollectionsData: Sendable {
         }
     }
 
-    private static func disambiguate(_ spans: [ArchivalLifecycleSpan],
-                                     records: [String: AuthorityCollectionRecord])
-        -> [ArchivalLifecycleSpan] {
-        let repeated = repeatedNames(spans.map(\.name))
-        guard !repeated.isEmpty else { return spans }
-        var used = Set<String>()
-        return spans.map { span in
-            guard repeated.contains(span.name) else {
-                used.insert(span.label)
-                return span
-            }
-            var label = span.name
-            if let repository = records[span.id]?.repository {
-                label = "\(span.name) · \(repository)"
-            }
-            if used.contains(label) { label = "\(span.name) · \(span.id)" }
-            used.insert(label)
-            return ArchivalLifecycleSpan(id: span.id, label: label, name: span.name,
-                                         category: span.category, firstYear: span.firstYear,
-                                         lastYear: span.lastYear, volumeCount: span.volumeCount)
-        }
-    }
-
     /// Names carried by more than one row.
+    ///
+    /// Still shared-looking after the lifecycle card's removal left one caller: it is the whole
+    /// reason the ranking's labels are unique, and Swift Charts silently merges two bars that
+    /// share a label, so a regression here loses rows rather than mislabelling them.
     private static func repeatedNames(_ names: [String]) -> Set<String> {
         var seen = Set<String>()
         var repeated = Set<String>()

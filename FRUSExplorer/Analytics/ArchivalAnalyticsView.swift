@@ -264,12 +264,8 @@ struct ArchivalAnalyticsView: View {
             collectionsIntro
             filterRow(data: data)
             rankingCard(ranking, data: data)
-            // Lifecycles are a property of a *collection* — a class has no custodian and no
-            // arrival in the record — and the card is only meaningful with bars in it.
-            if unitLens == .namedCollections, !data.lifecycleSpans.isEmpty {
-                lifecycleCard(data)
-            }
             collectionsCaveats(data: data, ranking: ranking)
+            perCollectionTimingPointer
         } else {
             loadingState(String(localized: "archival.collections.loading",
                                 defaultValue: "Reading the archival authority…"))
@@ -376,7 +372,7 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
-    // MARK: - Card 1: the ranking
+    // MARK: - The ranking card
 
     @ViewBuilder
     private func rankingCard(_ ranking: ArchivalRanking, data: ArchivalCollectionsData) -> some View {
@@ -493,100 +489,6 @@ struct ArchivalAnalyticsView: View {
             rowCells: ranking.rows.map { [$0.label, $0.category.displayName, "\($0.value)"] })
     }
 
-    // MARK: - Card 2: lifecycles
-
-    private func lifecycleCard(_ data: ArchivalCollectionsData) -> some View {
-        let spans = data.lifecycleSpans
-        let provenance = ArchivalAnalyticsExport.lifecycles(
-            spanCount: spans.count, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0)
-        return SeriesChartCard(
-            title: String(localized: "archival.lifecycle.title",
-                          defaultValue: "Collection lifecycles in FRUS sourcing"),
-            caption: String(localized: "archival.lifecycle.caption",
-                            defaultValue: "Each collection here is one of those cited by the most volumes. Its bar runs from the earliest to the latest coverage year of those volumes, so it shows when a body of records enters the published record and how long the editors keep returning to it. This card does not change with the era filter."),
-            inspector: lifecycleTable(spans),
-            onInspect: { inspectorData = $0 },
-            controls: {
-                exportControl(table: lifecycleTable(spans), provenance: provenance) { format in
-                    deliverFigure(format, provenance: provenance,
-                                  chartHeight: CGFloat(spans.count) * 24 + 60) {
-                        lifecycleChart(spans)
-                    }
-                }
-            }
-        ) {
-            lifecycleChart(spans)
-                .frame(height: CGFloat(spans.count) * 24 + 60)
-        }
-    }
-
-    /// The lifecycle chart, separated from its card so the figure exporter can render it.
-    @ViewBuilder
-    private func lifecycleChart(_ spans: [ArchivalLifecycleSpan]) -> some View {
-        Chart {
-            ForEach(spans) { span in
-                BarMark(
-                    xStart: .value(String(localized: "archival.table.first",
-                                          defaultValue: "First coverage year"), span.firstYear),
-                    xEnd: .value(String(localized: "archival.table.last",
-                                        defaultValue: "Last coverage year"), span.lastYear),
-                    y: .value(String(localized: "archival.ranking.y",
-                                     defaultValue: "Archival unit"), span.label)
-                )
-                .foregroundStyle(by: .value(
-                    String(localized: "archival.ranking.legend", defaultValue: "Custodian"),
-                    span.category.displayName))
-                .cornerRadius(3)
-                .accessibilityLabel(Text(span.label))
-                .accessibilityValue(Text(String(
-                    format: String(localized: "archival.lifecycle.a11y %lld %lld %lld",
-                                   defaultValue: "%1$lld to %2$lld, cited by %3$lld volumes"),
-                    Int64(span.firstYear), Int64(span.lastYear), Int64(span.volumeCount))))
-            }
-        }
-        .chartForegroundStyleScale(
-            domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
-            range: ArchivalRepositoryCategory.ordered.map(\.color))
-        .chartYAxis {
-            AxisMarks(preset: .extended, position: .leading) { _ in
-                AxisValueLabel(horizontalSpacing: 8)
-            }
-        }
-        // The axis is years, not magnitudes: without an explicit domain a BarMark anchors at zero
-        // and the axis ran 0–1990 with every bar against the right edge.
-        .chartXScale(domain: ArchivalLifecycleAxis.domain(for: spans)
-                        ?? ArchivalLifecycleAxis.defaultFirstYear...(ArchivalLifecycleAxis.defaultFirstYear + 1))
-        .chartXAxis {
-            AxisMarks { _ in
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
-            }
-        }
-        .chartXAxisLabel(String(localized: "archival.lifecycle.x",
-                                defaultValue: "Coverage year"))
-    }
-
-    /// The lifecycle card's table — one value, used by both the inspector and the export, so the
-    /// numbers a reader sees and the numbers they take away cannot drift apart.
-    private func lifecycleTable(_ spans: [ArchivalLifecycleSpan]) -> ChartInspectorData {
-        ChartInspectorData(
-            id: "archival.lifecycle",
-            title: String(localized: "archival.lifecycle.title",
-                          defaultValue: "Collection lifecycles in FRUS sourcing"),
-            columns: [
-                String(localized: "archival.table.unit", defaultValue: "Archival unit"),
-                String(localized: "archival.table.custodian", defaultValue: "Custodian"),
-                String(localized: "archival.table.first", defaultValue: "First coverage year"),
-                String(localized: "archival.table.last", defaultValue: "Last coverage year"),
-                String(localized: "archival.weight.volumes", defaultValue: "Volumes"),
-            ],
-            rowCells: spans.map {
-                [$0.label, $0.category.displayName, "\($0.firstYear)", "\($0.lastYear)",
-                 "\($0.volumeCount)"]
-            })
-    }
-
     /// The per-card export control, in `SeriesChartCard`'s controls slot.
     ///
     /// Per-card rather than one control for the view, because this surface shows several charts
@@ -605,6 +507,26 @@ struct ArchivalAnalyticsView: View {
     }
 
     // MARK: - Collections caveats
+
+    /// Where a *single* collection's timing lives, now that the corpus-wide lifecycle card is gone.
+    ///
+    /// The card this replaces ranked collections by citing volumes and drew each one's first-to-last
+    /// coverage span. Two things made it an accident of derivation order rather than a finding: it
+    /// ignored the umbrella chip, so `Central Files` topped it whatever the reader had chosen, and
+    /// repository-grain records ranked beside collections. The same question — when did this body of
+    /// records enter the published series, and how long did the editors keep returning to it — is
+    /// answered per collection, and correctly, by `CollectionDetailView`'s Cited Over Time chart.
+    private var perCollectionTimingPointer: some View {
+        Label {
+            Text(String(localized: "archival.collections.timingPointer",
+                        defaultValue: "When one collection entered the published record, and how long the editors kept returning to it, is on that collection's own record, under Cited Over Time."))
+        } icon: {
+            Image(systemName: "info.circle")
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
 
     private func collectionsCaveats(data: ArchivalCollectionsData,
                                     ranking: ArchivalRanking) -> some View {
