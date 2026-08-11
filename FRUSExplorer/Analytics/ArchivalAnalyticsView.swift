@@ -74,9 +74,18 @@ struct ArchivalAnalyticsView: View {
     ///   - mode: The mode to open on.
     ///   - focusCollectionId: An authority collection id for the Network's focus. Ignored by the
     ///     other modes, and ignored if the bundled authority does not carry it.
-    init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil) {
+    ///   - initialScope: A volume scope delivered by the presenter rather than through
+    ///     `pendingArchivalScope`. iOS needs it: the tab shell consumes the hand-off in order to
+    ///     decide whether to present at all, so by the time this view mounts the slot is already
+    ///     empty. An empty volume set means no scope.
+    init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil,
+         initialScope: ArchivalScopeRequest? = nil) {
         _mode = State(initialValue: mode)
         self.initialFocusId = focusCollectionId
+        if let initialScope, !initialScope.volumeIds.isEmpty {
+            _scopeVolumeIds = State(initialValue: initialScope.volumeIds)
+            _scopeLabel = State(initialValue: initialScope.label)
+        }
     }
 
     /// The era band the Collections ranking covers.

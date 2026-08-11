@@ -108,7 +108,6 @@ struct BrowserView: View {
     @State private var analyticsParameters: AnalyticsParameters?
     @State private var showPersonAnalytics = false
     @State private var showCrossRefAnalytics = false
-    @State private var showArchivalAnalytics = false
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
     // #498: every one of these sheets presents a view that opens its OWN NavigationStack, which
@@ -205,18 +204,6 @@ struct BrowserView: View {
                 // #498: prophylactic. This sheet has no text field today, so it does not currently
                 // reproduce — but it is the same sheet → own-NavigationStack shape, and adding a
                 // field later would silently re-open the defect.
-                .statusBarHidden(false)
-        }
-        .sheet(isPresented: $showArchivalAnalytics) {
-            ArchivalAnalyticsView()
-                .environment(appState)
-                .modelContainer(modelContext.container)
-                // #338: publish this window's scene id so the Your Library rows' Archival
-                // Neighbors hand-off targets THIS window (a sheet doesn't reliably inherit it).
-                .environment(\.sceneID, sceneID)
-                // #498: prophylactic, matching the sibling analytics sheets — no text field
-                // today, same sheet → own-NavigationStack shape, and the Network mode's focus
-                // search would silently re-open the defect.
                 .statusBarHidden(false)
         }
         .sheet(isPresented: $showChronology) {
@@ -332,7 +319,10 @@ struct BrowserView: View {
                           systemImage: "point.3.connected.trianglepath.dotted")
                 }
                 Button {
-                    showArchivalAnalytics = true
+                    // Through the hand-off, like the word cloud below it: the tab shell is the
+                    // single iOS presenter (#833), so this button and the topic/search doors all
+                    // reach the same surface. An empty volume set means "no scope".
+                    appState.openArchivalScope(.unscoped, from: sceneID)
                 } label: {
                     Label(String(localized: "browse.archivalAnalytics.a11y",
                                  defaultValue: "Archival Analytics"),

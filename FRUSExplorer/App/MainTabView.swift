@@ -87,6 +87,9 @@ import SwiftData
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
+    /// This scene's model context, only for handing its container to the analytics sheets — a
+    /// sheet does not reliably inherit the container any more than it inherits `AppState`.
+    @Environment(\.modelContext) private var modelContext
 
     /// Per-window tab selection (#316). Backing the selection with `@SceneStorage` instead of
     /// the shared `appState` gives every iPad main window (Stage Manager / multiple windows) its
@@ -120,6 +123,15 @@ struct MainTabView: View {
     /// (#752). Local state, so another window's producer can no longer dismiss this sheet by
     /// overwriting the slot underneath it.
     @State private var presentedWordCloud: Handoff<WordCloudScope>?
+
+    /// The archival-scope hand-off this window has adopted, or `nil` (#833).
+    ///
+    /// The tab shell is the iOS presenter of Archival Analytics for the same reason it is the
+    /// presenter of the word cloud: the producers are spread across Search, Browse and the
+    /// subject sheets, and a hand-off whose only presenter lived inside one tab's own `@State`
+    /// could not be opened from the others. Before this, the search door switched to the Browse
+    /// tab and nothing appeared — the surface's only opener was a menu button in that tab.
+    @State private var presentedArchivalScope: Handoff<ArchivalScopeRequest>?
 
     var body: some View {
         @Bindable var appState = appState
@@ -252,6 +264,9 @@ struct MainTabView: View {
         // A's sheet — whose getter now returned nil — dismissed itself.
         .onChange(of: appState.pendingWordCloud) { _, _ in consumePendingWordCloud() }
         .onAppear { consumePendingWordCloud() }
+        .onChange(of: appState.pendingArchivalScope) { _, _ in consumePendingArchivalScope() }
+        .onAppear { consumePendingArchivalScope() }
+        .sheet(item: $presentedArchivalScope) { archivalSheet($0) }
         .sheet(item: $presentedWordCloud) { handoff in
             WordCloudView(scope: handoff.payload)
                 .environment(appState)
@@ -279,6 +294,38 @@ struct MainTabView: View {
     /// Consuming (rather than reading the slot live) is what stops window B's producer from
     /// dismissing window A's open sheet: once adopted, this window's presentation depends only on
     /// its own state.
+    /// The scoped Archival Analytics sheet.
+    ///
+    /// A function rather than an inline closure purely for the type-checker: the tab shell's body
+    /// is already at the limit and inlining this failed to solve in reasonable time. The three
+    /// injections are the ones `BrowserView`'s sheet made, for the same reason — a sheet does not
+    /// reliably inherit them, and this view reads all three.
+    @ViewBuilder
+    private func archivalSheet(_ handoff: Handoff<ArchivalScopeRequest>) -> some View {
+        ArchivalAnalyticsView(initialScope: handoff.payload)
+            .environment(appState)
+            .modelContainer(modelContext.container)
+            .environment(\.sceneID, SceneID(sceneIDToken))
+            // #498: prophylactic, matching the sibling analytics sheets.
+            .statusBarHidden(false)
+    }
+
+    /// Adopts a pending archival-scope hand-off addressed to this window (#833).
+    ///
+    /// The `presentedArchivalScope == nil` guard is what makes the two-presenter arrangement
+    /// deterministic. When a scope arrives while the sheet is already up, this consumer declines
+    /// it and leaves it in the slot, so the mounted `ArchivalAnalyticsView` adopts it and
+    /// re-scopes in place; when nothing is up, this consumer takes it and presents. The mounted
+    /// view therefore always wins, whichever `onChange` the runtime happens to run first.
+    private func consumePendingArchivalScope() {
+        guard presentedArchivalScope == nil else { return }
+        guard let handoff = appState.pendingArchivalScope else { return }
+        let mine = SceneID(sceneIDToken)
+        guard handoff.target == mine || handoff.target == .anyWindow else { return }
+        appState.pendingArchivalScope = nil
+        presentedArchivalScope = handoff
+    }
+
     private func consumePendingWordCloud() {
         guard presentedWordCloud == nil else { return }   // don't replace a sheet already up
         guard let handoff = appState.pendingWordCloud else { return }

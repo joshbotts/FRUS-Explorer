@@ -1974,6 +1974,11 @@ struct ArchivalScopeRequest: Equatable, Sendable {
         self.volumeIds = volumeIds.sorted()
         self.label = label
     }
+
+    /// Opens the surface with no scope at all — the whole series, as the menu button has always
+    /// done. It goes through the hand-off rather than round a side door so that iOS has exactly
+    /// one presenter of this surface (#833).
+    static let unscoped = ArchivalScopeRequest(volumeIds: [], label: "")
 }
 
 struct Handoff<Payload: Equatable & Sendable>: Equatable, Sendable, Identifiable {

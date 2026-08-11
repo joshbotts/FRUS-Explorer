@@ -295,14 +295,15 @@ struct SearchView: View {
             label = String(format: String(localized: "facets.provenance.openProfile.label %@",
                                           defaultValue: "Search: %@"), term)
         }
-        appState.openArchivalScope(ArchivalScopeRequest(volumeIds: volumeIds, label: label),
-                                   from: sceneID)
+        let request = ArchivalScopeRequest(volumeIds: volumeIds, label: label)
+        // Close the facet sheet FIRST, then hand off on the next turn. The destination is another
+        // sheet — the tab shell presents Archival Analytics — and a dismissal and a presentation
+        // in one state change drop the presentation. No tab switch: the shell hosts the sheet, so
+        // it opens over whichever tab the reader is on.
         showFacetSheet = false
-        // Same shape as `openSearchInAnalytics` below: the tab switch is the iOS half, and macOS
-        // routes to a window instead.
-        #if os(iOS)
-        appState.openTab(.browse, from: sceneID)
-        #endif
+        let appState = appState
+        let sceneID = sceneID
+        Task { @MainActor in appState.openArchivalScope(request, from: sceneID) }
     }
 
     var body: some View {
