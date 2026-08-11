@@ -57,6 +57,15 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
         public let source: String
         /// `"7"` → `"Political Relations of States"`.
         public let classes: [String: String]
+        /// The classes whose suffix is a SECOND COUNTRY rather than a subject.
+        ///
+        /// A strict subset of ``countryArrangedClasses``: in the 1910–49 schedule class 7 is
+        /// "Political Relations of States" and reads country-to-country, while class 8 is
+        /// "Internal Affairs of States" and reads country-plus-subject. Both are arranged by
+        /// country and their keys are the same shape, so the distinction cannot be inferred —
+        /// it is a property of the schedule and is stored as one.
+        public let relationsClasses: [String]
+
         /// The class digits arranged by country — the only ones a key decomposes in.
         ///
         /// Stored rather than inferred: it is a property of the schedule, and it changed at the
@@ -86,8 +95,9 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
         /// Creates a schedule.
         public init(id: String, startYear: Int, endYear: Int, source: String,
                     classes: [String: String], countryArrangedClasses: [String],
-                    countries: [String: String], subjects: [String: [String: String]],
-                    sources: Sources) {
+                    relationsClasses: [String], countries: [String: String],
+                    subjects: [String: [String: String]], sources: Sources) {
+            self.relationsClasses = relationsClasses
             self.id = id
             self.startYear = startYear
             self.endYear = endYear
@@ -169,8 +179,13 @@ public struct DecimalClassKey: Sendable, Equatable {
         guard schedule.countries[country.lowercased()] != nil else { return nil }
 
         let suffix = group(3)
-        // A suffix that is itself a country of this schedule reads as the other party.
-        let second = suffix.flatMap { schedule.countries[$0.lowercased()] != nil ? $0 : nil }
+        // The second country is read ONLY in a relations class. Class 8 of the 1910–49 schedule is
+        // *Internal Affairs of States* — one country and a subject — so reading its suffix as a
+        // second country turned `893.51` into "China and France" when it means China's internal
+        // affairs, subject .51. A suffix that merely LOOKS like a country code is not one.
+        let second = schedule.relationsClasses.contains(digit)
+            ? suffix.flatMap { schedule.countries[$0.lowercased()] != nil ? $0 : nil }
+            : nil
         return DecimalClassKey(classDigit: digit, countryNumber: country,
                                subject: second == nil ? suffix : nil, secondCountry: second)
     }

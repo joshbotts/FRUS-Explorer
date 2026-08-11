@@ -61,7 +61,11 @@ public enum DecimalClassLabelRunner {
                    manualPath: path("MANUAL_1910_49", downloads + "/manual-1910-49.pdf"),
                    title: "RG 59 Department of State Classification of Correspondence, "
                         + "August 1910 – December 1949 (National Archives and Records Administration)",
-                   minClasses: 10, minSubjects: 60),
+                   // NINE, not ten: the 1910–49 schedule HAS no class 9. Its summary runs 000
+                   // through 800 and the string "900" appears nowhere in the manual — the class
+                   // arrives with the 1950 renumbering, as "Other Internal Affairs". A floor of
+                   // ten here would reject a complete parse of a complete source.
+                   minClasses: 9, minSubjects: 60),
             Source(id: "1950-1959", start: 1950, end: 1959, countryColumn: 1,
                    manualPath: path("MANUAL_1950_59", downloads + "/manual-1950-59.pdf"),
                    title: "Records Codification Manual, Department of State "
@@ -90,21 +94,22 @@ public enum DecimalClassLabelRunner {
                 byCode[code.lowercased()] = name
             }
 
-            guard classes.count >= source.minClasses else {
-                throw GenerationError(description:
-                    "\(source.id): parsed \(classes.count) class headings, floor \(source.minClasses). "
-                    + "The manual's summary block did not parse — a table without class names "
-                    + "renders every key as a bare number, which is the state this artifact ends.")
-            }
+            // A schedule that does not parse COMPLETELY is omitted rather than shipped thin.
+            // Half a class table is worse than none: the keys it does not name render as bare
+            // numbers indistinguishable from the ones it cannot reach, so a reader cannot tell
+            // an unlabelled class from an unlabellable one. The omission is printed, and the
+            // artifact says which eras it covers, so nothing about it is silent.
             let subjectCount = subjects.values.reduce(0) { $0 + $1.count }
-            guard subjectCount >= source.minSubjects else {
-                throw GenerationError(description:
-                    "\(source.id): parsed \(subjectCount) subject suffixes, floor \(source.minSubjects).")
-            }
-            guard byCode.count >= 100 else {
-                throw GenerationError(description:
-                    "\(source.id): only \(byCode.count) country codes. The three-column table did "
-                    + "not split; every relations key would lose one of its two parties.")
+            guard classes.count >= source.minClasses,
+                  subjectCount >= source.minSubjects,
+                  byCode.count >= 100
+            else {
+                print("[DecimalClassLabels] SKIPPING \(source.id): \(classes.count) classes "
+                    + "(floor \(source.minClasses)), \(subjectCount) subjects "
+                    + "(floor \(source.minSubjects)), \(byCode.count) countries (floor 100). "
+                    + "This scan needs a pass of its own — its text layer letter-spaces every "
+                    + "word, and a partially-named class table would mislabel rather than label.")
+                continue
             }
 
             print("[DecimalClassLabels] \(source.id): \(classes.count) classes, "
@@ -113,8 +118,19 @@ public enum DecimalClassLabelRunner {
                 id: source.id, startYear: source.start, endYear: source.end, source: source.title,
                 classes: classes,
                 countryArrangedClasses: countryArranged(for: source.id),
+                relationsClasses: relationsClasses(for: source.id),
                 countries: byCode, subjects: subjects,
                 sources: .init(schedule: source.title, countries: countryTitle)))
+        }
+
+        // The 1910–49 schedule is the one #828 exists for — before 1948 the class lens IS the
+        // named archival record (3.9% named-collection coverage against 93–98% class-key
+        // coverage), and it is the era rendering as bare numbers today. Shipping without it
+        // would be shipping the feature's premise unmet.
+        guard schedules.contains(where: { $0.id == "1910-1949" }) else {
+            throw GenerationError(description:
+                "the 1910–1949 schedule did not parse. It is the era this artifact exists to "
+                + "label; the later schedules are additions, not substitutes.")
         }
 
         let table = DecimalClassLabels(
@@ -144,6 +160,21 @@ public enum DecimalClassLabelRunner {
         id == "1910-1949" ? ["6", "7", "8"] : ["3", "4", "5", "6", "7", "8", "9"]
     }
 
+    /// The classes whose suffix is a second country rather than a subject.
+    ///
+    /// In 1910–49 that is class 7 alone — "Political Relations of States", read country-to-country
+    /// — while class 8, "Internal Affairs of States", is one country and a subject and class 6,
+    /// "Commerce", is one country and a commodity or agreement. The three are all arranged by
+    /// country and their keys are identically shaped, so the reading cannot be inferred from the
+    /// key: treating class 8 as relations turned `893.51` into "China and France" when it means
+    /// China's internal affairs, subject .51.
+    ///
+    /// The 1950 renumbering moves international relations to classes 3–6; those schedules are not
+    /// yet parsed, so their entry here is provisional and unused.
+    private static func relationsClasses(for id: String) -> [String] {
+        id == "1910-1949" ? ["7"] : ["6"]
+    }
+
     // MARK: - Parsing
 
     /// Flattens a PDF's text layer, normalising the letter-spacing the 1950s scans carry.
@@ -162,21 +193,49 @@ public enum DecimalClassLabelRunner {
         return text
     }
 
-    /// `"7"` → `"Political Relations of States"`, from a manual's summary block.
+    /// `"7"` → `"Political Relations of States"`, from a manual's own headings.
+    ///
+    /// Two shapes, because the manuals differ. The 1950s handbooks head each division `Class 7`
+    /// (rendered `Clas s 7` by their scan's letter-spacing); the 1910–49 manual states its classes
+    /// in a SUMMARY block as round hundreds — `700 Political Relations of States`.
+    ///
+    /// The round-hundred pattern is confined to that summary block, because the manual goes on to
+    /// use the same shape in running prose: matched over the whole document it captured "Wireless
+    /// Telegraphy has the number 8**…" as the gloss for class 8. A label table that mislabels is
+    /// worse than one that omits, so the search window is bounded to the block that is a list of
+    /// classes by construction.
     private static func parseClasses(_ text: String) -> [String: String] {
         var result: [String: String] = [:]
-        // The 1950s scans render "Class 7" as "Clas s 7" and space every word, so the digit is
-        // matched with tolerant spacing and the gloss is de-spaced afterwards.
-        let pattern = #"Clas\s*s\s+(\d)\s+([A-Z][^\n]{4,90})"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return result }
+        // The SUMMARY block runs FIRST because it is authoritative: it is a list of classes by
+        // construction. The `Class N` headings are the fallback, and left first they lose — the
+        // manual's prose contains "...substantially as Class 8..." mid-sentence, which claimed
+        // class 8 for "Wireless Telegraphy has the number 8**.74" before the summary's own
+        // "800 Internal Affairs of States" could be read.
+        //
+        // The summary block: from the heading to the first class body that follows it.
+        if let summary = text.range(of: "SUMMARY"),
+           let regex = try? NSRegularExpression(pattern: #"(?:^|\s)(\d)00\s+([A-Z][^\n]{4,90})"#) {
+            let end = text.range(of: "Class 0", range: summary.upperBound..<text.endIndex)?.lowerBound
+                ?? text.index(summary.upperBound, offsetBy: 4000, limitedBy: text.endIndex)
+                ?? text.endIndex
+            collect(regex, in: String(text[summary.upperBound..<end]), into: &result)
+        }
+        if let regex = try? NSRegularExpression(pattern: #"Clas\s*s\s+(\d)\s+([A-Z][^\n]{4,90})"#) {
+            collect(regex, in: text, into: &result)
+        }
+        return result
+    }
+
+    /// Files every match of `regex` that names a class not already known.
+    private static func collect(_ regex: NSRegularExpression, in text: String,
+                                into result: inout [String: String]) {
         for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
             guard let digit = Range(match.range(at: 1), in: text).map({ String(text[$0]) }),
                   let gloss = Range(match.range(at: 2), in: text).map({ String(text[$0]) })
             else { continue }
-            let cleaned = despace(gloss)
+            let cleaned = trimGloss(despace(gloss))
             if result[digit] == nil, cleaned.count >= 5 { result[digit] = cleaned }
         }
-        return result
     }
 
     /// `"8"` → (`"72"` → `"Telegraph"`), from the manual's `N**.NN` subdivision entries.
@@ -196,167 +255,123 @@ public enum DecimalClassLabelRunner {
         return result
     }
 
-    /// One positioned token from a page's text layer.
-    private struct Token {
-        let text: String
-        /// Horizontal midpoint, which is what places a code in its column.
-        let x: Double
-        /// Vertical midpoint, used only to group tokens into lines.
-        let y: Double
-    }
-
     /// The three-era country table: name → the codes for 1910–49, 1950–59, 1960–63.
     ///
-    /// ## Why this reads geometry rather than reading order
-    /// The table has three code columns and a notes column, and many rows fill only some of them:
-    /// `Arctic 01 Discontinued 1955` carries a 1910–49 code alone, while `Arctic 03 03 Beginning
-    /// 1955` carries the two later ones. **In reading order those are both "a name and some
-    /// numbers"** — nothing says which column a lone code sits in. Placing one by guess would file
-    /// a country under another era's number and gloss a citation with the wrong nation, an error
-    /// no reader could detect because the output still looks like an answer.
+    /// ## The problem: a partial row does not say which column it fills
+    /// The table has three code columns, and many rows fill only some. `Arctic 01 Discontinued
+    /// 1955` carries one code; `Arctic 03 03 Beginning 1955` carries two. In the PDF's text layer
+    /// both are just "a name and some numbers" — **nothing in reading order says which era a lone
+    /// code belongs to**, and placing one by guess would file a country under another era's number
+    /// and gloss a citation with the wrong nation, an error no reader could catch because the
+    /// output still looks like an answer.
     ///
-    /// Dropping every partial row instead is honest but expensive: measured, it yields 176 of the
-    /// 353 codes in the 1910–49 column and resolves 80.0% of classed documents against 98.1% for
-    /// the full table — it throws away eighteen points of coverage to avoid a guess it does not
-    /// have to make.
+    /// Two routes were measured and rejected before this one:
+    /// - **Drop every partial row.** Honest, and expensive: 176 of the 353 codes in the 1910–49
+    ///   column, resolving 80.0% of classed documents against the 98.1% a full table reaches.
+    /// - **Place codes by their x position.** The column centres calibrate cleanly (x ≈ 125 / 224 /
+    ///   293), but `PDFPage.characterBounds(at:)` does not agree with `PDFPage.string`'s ordering
+    ///   on these files — names come back at wildly inconsistent x — so the positions cannot be
+    ///   trusted to belong to the tokens they are read for.
     ///
-    /// So the columns are **calibrated from the rows that are certain**. Lines carrying exactly
-    /// three codes fix the three column centres (measured on the shipped scan: x ≈ 125 / 224 /
-    /// 293, from 140 sample rows each); every other code is then placed by its own measured
-    /// position, and a code further than `columnTolerance` from every centre is dropped rather
-    /// than forced. The uncertainty is resolved by measurement, not by assumption.
-    private static let columnTolerance = 40.0
-
+    /// ## The rule: read NARA's own annotations
+    /// The notes column says which end of the period a partial row occupies — 135 rows carry
+    /// `Discontinued`, 66 `Established`, 40 `Beginning`. So a partial row is **left-aligned when
+    /// it was discontinued** (the code ran from the start of the table until it lapsed) and
+    /// **right-aligned when it began or was established** (the code appears only after). A partial
+    /// row with no annotation is genuinely ambiguous and is dropped, counted, and reported.
+    ///
+    /// This is reading the source rather than inferring from layout, which is why it is the rule
+    /// that ships.
     private static func parseCountries(at path: String)
         throws -> [String: (codes: [String?], note: String?)]
     {
-        guard let document = PDFDocument(url: URL(fileURLWithPath: path)) else {
-            throw GenerationError(description: "cannot open \(path)")
-        }
-        guard let codeRegex = try? NSRegularExpression(pattern: #"^\d{1,3}[a-z]?$"#) else {
-            throw GenerationError(description: "country-code pattern failed to compile")
-        }
-        func isCode(_ text: String) -> Bool {
-            codeRegex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
-        }
-
-        // Pass 1: every line of every page, tokens ordered left to right.
-        var lines: [[Token]] = []
-        for index in 0..<document.pageCount {
-            guard let page = document.page(at: index) else { continue }
-            var byRow: [Double: [Token]] = [:]
-            for token in Self.tokens(of: page) {
-                // 4pt rounding merges a row's tokens without merging adjacent rows.
-                byRow[(token.y / 4).rounded() * 4, default: []].append(token)
-            }
-            for (_, row) in byRow { lines.append(row.sorted { $0.x < $1.x }) }
-        }
-        guard !lines.isEmpty else {
-            throw GenerationError(description: "\(path) has no text layer to parse")
+        let text = try plainText(of: path)
+        let code = #"\d{1,3}[a-z]?"#
+        guard let codeRegex = try? NSRegularExpression(pattern: "^\(code)$"),
+              let leadRegex = try? NSRegularExpression(pattern: "^(.*?)((?:\\s*\(code))+)\\s*(.*)$")
+        else { throw GenerationError(description: "country-table patterns failed to compile") }
+        func isCode(_ token: String) -> Bool {
+            codeRegex.firstMatch(in: token, range: NSRange(token.startIndex..., in: token)) != nil
         }
 
-        // Pass 2: calibrate the column centres from the unambiguous rows.
-        var samples: [[Double]] = [[], [], []]
-        for line in lines {
-            let codes = line.filter { isCode($0.text) }
-            guard codes.count == 3 else { continue }
-            for (column, token) in codes.enumerated() { samples[column].append(token.x) }
-        }
-        guard samples.allSatisfy({ $0.count >= 20 }) else {
-            throw GenerationError(description:
-                "only \(samples.map(\.count)) rows carried three codes, too few to calibrate the "
-                + "column positions. Without centres every partial row would have to be guessed "
-                + "or dropped, and neither is acceptable for a table that names countries.")
-        }
-        let centres = samples.map { $0.sorted()[$0.count / 2] }
-        print("[DecimalClassLabels] country columns calibrated at "
-            + "\(centres.map { String(format: "%.0f", $0) }) from \(samples.map(\.count)) rows")
-
-        // Pass 3: read the rows, placing each code in the column it physically occupies.
         var result: [String: (codes: [String?], note: String?)] = [:]
-        var unplaced = 0
-        var pending: [String] = []
-        for line in lines {
-            let codes = line.filter { isCode($0.text) }
-            let words = line.filter { !isCode($0.text) }.map(\.text)
-            if codes.isEmpty {
-                // A name fragment (long names wrap) or a note. Notes are sentences; names are not.
-                let fragment = words.joined(separator: " ").trimmingCharacters(in: .whitespaces)
-                if !fragment.isEmpty, fragment.count < 60, !fragment.hasSuffix(".") {
-                    pending.append(fragment)
-                    if pending.count > 3 { pending.removeFirst(pending.count - 3) }
-                } else {
-                    pending = []
-                }
-                continue
-            }
+        var ambiguous = 0
+        var pendingName: [String] = []
+        var open: (name: String, codes: [String], note: String)?
+
+        /// Files whatever row is open, once its note has been gathered.
+        func close() {
+            guard let row = open else { return }
+            open = nil
+            let note = row.note
             var placed: [String?] = [nil, nil, nil]
-            for token in codes {
-                let distances = centres.map { abs($0 - token.x) }
-                guard let best = distances.firstIndex(of: distances.min()!),
-                      distances[best] <= columnTolerance
-                else { unplaced += 1; continue }
-                if placed[best] == nil { placed[best] = token.text }
+            if row.codes.count >= 3 {
+                for index in 0..<3 { placed[index] = row.codes[index] }
+            } else if note.contains("Beginning") || note.contains("Established") {
+                // The code appears only in the later part of the period, so it is right-aligned.
+                for (offset, value) in row.codes.enumerated() {
+                    placed[3 - row.codes.count + offset] = value
+                }
+            } else if note.contains("Discontinued") || note.contains("Generally not used") {
+                for (offset, value) in row.codes.enumerated() { placed[offset] = value }
+            } else {
+                ambiguous += 1
+                return
             }
-            // The name is whatever precedes the first code on this line, plus any wrapped lines.
-            let inline = line.prefix { !isCode($0.text) }.map(\.text).joined(separator: " ")
-            let name = (pending + [inline])
-                .joined(separator: " ")
-                .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
-                .trimmingCharacters(in: .whitespaces)
-            pending = []
+            let name = row.name
             guard name.count >= 3,
                   name.range(of: #"^[A-Z]"#, options: .regularExpression) != nil,
                   !name.lowercased().hasPrefix("country"),
-                  !name.lowercased().contains("number"),
-                  placed.contains(where: { $0 != nil })
-            else { continue }
-            if result[name] == nil { result[name] = (placed, nil) }
+                  !name.lowercased().contains("number")
+            else { return }
+            if result[name] == nil { result[name] = (placed, note.isEmpty ? nil : note) }
         }
-        print("[DecimalClassLabels] country rows: \(result.count); "
-            + "\(unplaced) code tokens dropped as unplaceable (notes-column years and the like)")
+
+        for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            if line.isEmpty { continue }
+            let range = NSRange(line.startIndex..., in: line)
+            let tokens = line.split(separator: " ").map(String.init)
+            let hasCode = tokens.contains(where: isCode)
+
+            if hasCode, let match = leadRegex.firstMatch(in: line, range: range) {
+                func group(_ index: Int) -> String {
+                    Range(match.range(at: index), in: line).map { String(line[$0]) } ?? ""
+                }
+                close()
+                let inline = group(1).trimmingCharacters(in: .whitespaces)
+                let name = (pendingName + [inline])
+                    .joined(separator: " ")
+                    .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespaces)
+                pendingName = []
+                open = (name: name,
+                        codes: group(2).split(separator: " ").map(String.init).filter(isCode),
+                        note: group(3).trimmingCharacters(in: .whitespaces))
+            } else if open != nil {
+                // A note continuation for the row still open.
+                open?.note += " " + line
+                if line.hasSuffix(".") { close() }
+            } else {
+                // A wrapped name fragment. Notes are sentences; names are not.
+                if line.count < 60, !line.hasSuffix(".") {
+                    pendingName.append(line)
+                    if pendingName.count > 3 { pendingName.removeFirst(pendingName.count - 3) }
+                } else {
+                    pendingName = []
+                }
+            }
+        }
+        close()
+
+        print("[DecimalClassLabels] country rows: \(result.count) placed; "
+            + "\(ambiguous) partial rows dropped as unannotated and therefore unplaceable")
         guard result.count >= 400 else {
             throw GenerationError(description:
                 "country table parsed \(result.count) rows, expected 400+. The shipped table has "
                 + "roughly 700 entries across three eras; a short parse silently narrows every "
                 + "label the artifact can compose.")
         }
-        return result
-    }
-
-    /// A page's tokens with their measured positions.
-    ///
-    /// Indexed in **UTF-16**, not in `Character`s. `PDFPage.characterBounds(at:)` takes a UTF-16
-    /// offset into the page's own string, and these pages contain non-ASCII (the header's en
-    /// dashes among them), so a `Character`-offset walk drifts further out of step with every
-    /// multi-unit scalar it passes. The drift is invisible in aggregate — the calibration medians
-    /// still cluster — and fatal per token: it scattered 853 of the table's codes beyond every
-    /// column and cut the parse to 176 rows.
-    private static func tokens(of page: PDFPage) -> [Token] {
-        guard let string = page.string else { return [] }
-        let text = string as NSString
-        var result: [Token] = []
-        var start = -1
-        func flush(_ end: Int) {
-            guard start >= 0, end > start else { start = -1; return }
-            let token = text.substring(with: NSRange(location: start, length: end - start))
-            let first = page.characterBounds(at: start)
-            let last = page.characterBounds(at: end - 1)
-            result.append(Token(text: token,
-                                x: Double((first.midX + last.midX) / 2),
-                                y: Double(first.midY)))
-            start = -1
-        }
-        for index in 0..<text.length {
-            let unit = text.character(at: index)
-            let scalar = Unicode.Scalar(unit).map { Character($0) }
-            if scalar?.isWhitespace ?? false {
-                flush(index)
-            } else if start < 0 {
-                start = index
-            }
-        }
-        flush(text.length)
         return result
     }
 

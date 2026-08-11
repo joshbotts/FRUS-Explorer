@@ -27,9 +27,10 @@ struct DecimalClassKeyTests {
         DecimalClassLabels.Schedule(
             id: "1910-1949", startYear: 1910, endYear: 1949, source: "test",
             classes: ["7": "Political Relations of States", "8": "Internal Affairs of States"],
-            countryArrangedClasses: ["6", "7", "8"],
+            countryArrangedClasses: ["6", "7", "8"], relationsClasses: ["7"],
             countries: ["61": "Union of Soviet Socialist Republics", "62": "Germany",
-                        "11": "United States", "51": "France", "51r": "Algeria", "91": "Iran"],
+                        "11": "United States", "51": "France", "51r": "Algeria", "91": "Iran",
+                        "93": "China"],
             subjects: ["8": ["11": "Public order, safety, health, works"]],
             sources: .init(schedule: "test", countries: "test"))
     }
@@ -40,6 +41,7 @@ struct DecimalClassKeyTests {
             id: "1950-1959", startYear: 1950, endYear: 1959, source: "test",
             classes: ["7": "Internal Political and National Defense Affairs"],
             countryArrangedClasses: ["3", "4", "5", "6", "7", "8", "9"],
+            relationsClasses: ["6"],
             countries: ["88": "Iran", "62": "Germany"],
             subjects: [:],
             sources: .init(schedule: "test", countries: "test"))
@@ -103,6 +105,25 @@ struct DecimalClassKeyTests {
             """)
         let late = try #require(DecimalClassKey.decompose("888.00", in: schedule1959))
         #expect(late.countryNumber == "88")
+    }
+
+    @Test("Only a relations class reads its suffix as a second country")
+    func relationsClassesAreASubset() throws {
+        // `893.51` is CHINA'S INTERNAL AFFAIRS, subject .51 — not "China and France". Class 8 is
+        // arranged by country and its keys are shaped exactly like class 7's, so the reading is a
+        // property of the schedule and cannot be inferred from the key. Reading every
+        // country-arranged class as relations produced exactly that mislabel.
+        let internalAffairs = try #require(DecimalClassKey.decompose("893.51", in: schedule1949))
+        #expect(internalAffairs.countryNumber == "93")
+        #expect(internalAffairs.secondCountry == nil, """
+            Class 8 is Internal Affairs of States. A suffix that merely looks like a country code \
+            is a subject here, and glossing it as a second nation invents a relationship.
+            """)
+        #expect(internalAffairs.subject == "51")
+
+        // The same shape in class 7 IS two countries.
+        let relations = try #require(DecimalClassKey.decompose("793.51", in: schedule1949))
+        #expect(relations.secondCountry == "51")
     }
 
     @Test("A schedule knows which years it governs")
