@@ -425,12 +425,16 @@ struct ArchivalExportWiringTests {
     func archivalAnalyticsIsAddressable() throws {
         let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
         #expect(source.contains(
-            "init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil)"),
+            "init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil,"),
                 """
-                Every parameter must be defaulted: both existing call sites use \
-                `ArchivalAnalyticsView()`, and one of them is pinned by a source-scan test in \
-                ArchivalLibraryQueryTests.
+                Every parameter must be defaulted: the macOS window scene still opens the surface \
+                as `ArchivalAnalyticsView()`, and that call site is pinned by a source-scan test \
+                in ArchivalLibraryQueryTests.
                 """)
+        #expect(source.contains("initialScope: ArchivalScopeRequest? = nil)"), """
+            The iOS presenter consumes the hand-off before this view mounts, so a scope that can \
+            only arrive through `pendingArchivalScope` cannot reach it there at all.
+            """)
         #expect(source.contains("_mode = State(initialValue: mode)"), """
             The mode is @State seeded by the initializer. Assigning it as a plain property would \
             reset the reader's own mode switch on every re-render.
@@ -599,6 +603,82 @@ struct ArchivalExportWiringTests {
             #expect(source.contains("appState.openArchivalScope("),
                     "\(host) must route through the scene-addressed hand-off")
         }
+    }
+
+    @Test("A subject opens the archival profile of the volumes covering it (#833)")
+    func subjectsOpenAnArchivalProfile() throws {
+        let sheet = try Self.source("../FRUSExplorer/Browser/VolumeSubjectsView.swift")
+        #expect(sheet.contains("appState.openArchivalScope("),
+                "the subject sheet must offer the topic door")
+        // The scope is the FULL covering set. The list above the button excludes the volume being
+        // viewed, and reusing that array would drop one volume from every profile opened from a
+        // volume page — a silent under-count no figure on the destination would reveal.
+        #expect(sheet.contains("volumesBySubjectRef[subject.ref]"), """
+            The scope must be every volume covering the subject. `otherVolumeIds` excludes the \
+            volume in hand, so scoping to it would under-count by one on every volume-page open.
+            """)
+        #expect(!sheet.contains("volumeIds: otherVolumeIds"), """
+            Scoping to the displayed list drops the current volume from the profile while the \
+            button's own count includes it.
+            """)
+        #expect(sheet.contains("if coveringVolumeIds.count > 1"), """
+            A one-volume "profile of volumes on this subject" is that volume's own profile under \
+            a topic's name — the exact misreading the footer exists to prevent.
+            """)
+        #expect(sheet.contains("not the documents about this subject inside them"), """
+            The load-bearing sentence. The scope is whole volumes whose profile ranks the \
+            subject; a reader will otherwise take the chart for the archives behind the \
+            documents on the topic.
+            """)
+    }
+
+    @Test("The iOS tab shell is the single presenter of Archival Analytics (#833)")
+    func theHandoffHasAPresenterOniOS() throws {
+        // WHY THIS EXISTS. Before #833 the ONLY iOS presenter of ArchivalAnalyticsView was a
+        // private `@State` bool inside BrowserView. The search door therefore switched to the
+        // Browse tab and nothing opened — a door that led nowhere, and no data-layer test could
+        // see it, because the defect is entirely in which view owns the presentation.
+        let shell = try Self.source("../FRUSExplorer/App/MainTabView.swift")
+        #expect(shell.contains("$presentedArchivalScope"), "the shell must present the surface")
+        #expect(shell.contains("ArchivalAnalyticsView(initialScope: handoff.payload)"), """
+            The shell consumes the hand-off in order to decide whether to present at all, so the \
+            payload has to travel through the initializer — by mount time the slot is empty.
+            """)
+        // The two-presenter arrangement is only safe because the shell declines while a sheet is
+        // already up, leaving the mounted view to re-scope in place.
+        #expect(shell.contains("guard presentedArchivalScope == nil else { return }"), """
+            Without this the shell could present a SECOND archival sheet over one already open \
+            when a scope arrives, and which presenter wins would depend on onChange ordering.
+            """)
+        let browser = try Self.source("../FRUSExplorer/Browser/BrowserView.swift")
+        #expect(browser.contains("appState.openArchivalScope(.unscoped, from: sceneID)"), """
+            Browse's own menu item must go through the same hand-off, or iOS has two presenters \
+            of one surface and a scope can land in the one that is not on screen.
+            """)
+        #expect(!browser.contains("showArchivalAnalytics"),
+                "the private presentation state must be gone, not merely unused")
+    }
+
+    @Test("A door that dismisses its own sheet hands off on the next turn (#833)")
+    func doorsDoNotDismissAndPresentAtOnce() throws {
+        // Dismissing one sheet and presenting another in the SAME state change drops the second.
+        // Both iOS doors close a sheet (the facet panel; the subject sheet) and both land on a
+        // sheet, so both have to hop. macOS lands on a window and does not.
+        for (file, hint) in [("../FRUSExplorer/Search/SearchView.swift", "the facet panel"),
+                             ("../FRUSExplorer/Browser/VolumeSubjectsView.swift",
+                              "the subject sheet")] {
+            let source = try Self.source(file)
+            #expect(source.contains("Task { @MainActor in appState.openArchivalScope("), """
+                \(hint) closes itself and opens a sheet; done in one state change the second \
+                presentation is dropped and the door appears to do nothing.
+                """)
+        }
+        // And the search door must no longer merely switch tabs — the shell hosts the sheet.
+        let search = try Self.source("../FRUSExplorer/Search/SearchView.swift")
+        #expect(!search.contains("appState.openTab(.browse, from: sceneID)\n    }"), """
+            Switching to Browse was the old no-op: the surface's only presenter lived inside \
+            that tab and nothing asked it to open.
+            """)
     }
 
     @Test("The share sheet and the error alert are anchored outside the mode switch")
