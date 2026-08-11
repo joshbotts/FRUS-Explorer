@@ -5335,10 +5335,48 @@ leaving it over the surface that just navigated.
 missing section. It now has one, mirrored into `Docs/EditableContent.md`, and the tool carries a
 return link to the Archival Sourcing page.
 
-### Mutation sweep: 12 mutants, 12 killed
+### The review found the card telling two untruths, and a guard that could not fire
+
+- **The population sentence was false.** It said the ranking "reads the archival authority, which
+  spans all 552 catalogued volumes and has no 1900 floor". Measured against the shipped artifacts:
+  the authority names **356** volumes and **none** with a pre-1900 coverage midpoint. The 552-and-
+  no-floor property belongs to the *usage* index, which is where the document counts come from —
+  so a row genuinely can rest on a volume the charts above leave out, but not for the reason given.
+  The sentence now names both artifacts and both numbers.
+- **The umbrella footnote asserted a magnitude it does not have.** "One undifferentiated record
+  carrying N here, which would flatten every other bar" is true for the default whole-range view
+  (17,587 against 7,056) and for 1948–1960 (12,060 against 1,643). For 1969–1976 it is 47 against
+  7,052 — a bar 0.7% of the tallest, described as scale-breaking. Withholding is still right in
+  every band; the copy now *compares* the two figures instead of asserting dominance, and the card
+  has no umbrella chip so this is the reader's only information.
+- **The stale-result guard could not fire.** `guard requested == scopeSignature` is live in the
+  instrument because its scope is `@State`, whose storage is shared across view-struct instances.
+  On the card the scope is a plain `let`, so a superseded run re-read its own captured value and
+  always matched itself — the guard was inert and a stale derivation could land last. `.task(id:)`
+  cancels the previous run, so `Task.isCancelled` is the signal that is actually about the current
+  view.
+
+Also folded: the iOS escape now carries the page's scope (`initialScope:` existed for exactly this
+and was unused, so the link discarded the narrowing the card above it describes); the collection
+sheet gained the `onNavigateAway` hook whose absence reintroduced the #844 dead-end; the reverse
+guide link is withheld when the guide is what presented the surface, or the guide becomes reachable
+from inside itself one sheet deeper each time; `isOnboarding` is actually passed, so the priority
+softening it exists for happens; a year range selecting no band reports a range problem instead of
+blaming the scope; the row's accessibility label carries the disambiguated form, since VoiceOver
+reading the bare name would announce several "White House Central Files" identically; and both
+manuals' standing "every chart offers View as table" claim is qualified, because the card is a list.
+
+**The band rule moved onto `ArchivalEraBand`.** It was briefly a static on the card, where the
+parity test could not call it: a `View` is `@MainActor`-isolated in Swift 6, and the test crashed on
+the actor check. It is a fact about the axis, so it lives beside `bandHoldingMost(of:)` — and is now
+tested directly rather than restated inline in the test, which is what the critic caught.
+
+### Mutation sweep: 16 mutants, 16 killed
 
 Six over the derivation (stop deduplicating bands; overwrite instead of summing; keep the
 denominators single-band; drop the umbrella disclosure; default an unparseable year instead of
-skipping; treat an empty scope as the whole corpus) and six over the card and links (show the door
+skipping; treat an empty scope as the whole corpus), six over the card and links (show the door
 mid-onboarding; stop forwarding the context through the iOS renderer; pin the card to one band;
-open rows with no authority record; show the umbrella; key the load on the year range).
+open rows with no authority record; show the umbrella; key the load on the year range), and four
+over the review fixes (containment instead of overlap; drop the scope from the escape; revert the
+population claim; drop the recursion guard).
