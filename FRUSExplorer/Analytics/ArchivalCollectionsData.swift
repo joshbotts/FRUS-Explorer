@@ -196,6 +196,8 @@ struct ArchivalRanking: Sendable, Equatable {
 ///         disambiguating (the merge cannot happen in a caller: 279 shipped names are
 ///         carried by more than one record), and `ArchivalVolumeCoverage.map(from:limitedTo:)`
 ///         becomes the one definition of what a scope means
+///   1.5 — Session 2026-08-11: #828 — class rows carry a `gloss`, attached where the row is
+///         BUILT so every surface reading a ranking gets it: chart, uncapped list, CSV, card
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
