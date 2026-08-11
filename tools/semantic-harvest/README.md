@@ -219,10 +219,19 @@ My Models list, reveal the GGUF in Finder, then run the harvest with
   nomic store was kept beside the Q8_0 re-run — same chunks, same prefix, one quant tier
   apart — as a free rung of the Phase 2 quantization ladder.
 
-## Later phases (not yet — after V-0)
+## Later phases
 
-The NER pass (R-1) and the adversarial-review tier get their own harnesses in this folder once
-the spike numbers and the M2a ground-truth sample exist. Note for planning: GLiNER and spaCy do
-not run in LM Studio — the LM-Studio-native detection route is structured-output chat NER, which
-is priced sample-first in the plan; the NLTagger control pass runs on the Air inside the repo and
-needs nothing from this runbook.
+**The NER pass (R-1) now has its own runbook and harness in this folder:
+`NER-RUNBOOK.md`, driven by `harvest_ner.py`** (stdlib-only like this one, verified by
+`SELFTEST=1 python3 harvest_ner.py`). It imports this script's extractor rather than copying it,
+and asserts per volume that it sees exactly the R-0 documents and text this one writes. Its scope
+and marked layer need no model at all and can run while the Studio is embedding; its detector
+pilot needs a chat model loaded, so it must NOT share a window with Phase 3.
+
+The M2a ground-truth sample still does not exist, so nothing R-1 produces may enter an artifact —
+the runbook's §0 and §5 carry that rule. The adversarial-review tier gets its harness after
+detection counts and M2a precision exist. Note for planning: GLiNER and spaCy do not run in LM
+Studio — the LM-Studio-native detection route is structured-output chat NER, which is priced
+sample-first (NER-RUNBOOK.md §4.1 puts a full sweep at ~5–8 days against NLTagger's ~1–2 h); the
+NLTagger control pass runs on the Air inside the repo, needs nothing from either runbook, and is
+not built.

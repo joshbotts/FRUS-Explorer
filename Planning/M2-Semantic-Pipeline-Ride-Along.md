@@ -103,7 +103,7 @@ Stages named to compose with the design doc's V-phases:
 | **V-0** | The design doc's spike, unchanged — 3 volumes × 3 models, quality gates, quantization ladder. **Run it on both machines** (§4.5: ~5 M tokens ≈ minutes each) — it doubles as the throughput measurement that collapses every [U] in §4. *(2026-08-10: executed **Studio-only** by owner decision, embeddings-only, five stores — see `tools/semantic-harvest/README.md` Field notes. The Studio [U]s are measured; the Air [U]s stay open.)* | corpus on the Studio |
 | **M2a** | Prose ground truth: extend `m1a_survey.py` to sample ~60–80 documents, era-stratified, for **exhaustive** person-mention annotation (~900–1,200 mention decisions). Owner keys it alongside the M1a 300. Nothing downstream is measurable without it. | — (parallel with V-0) |
 | **V-1 + R-0** | Stage-1 build with the extracted-text layer split out; full-corpus embed on the Studio. | V-0 |
-| **R-1** | NER pass over the no-list volumes from the R-0 text layer. Candidates: Apple `NLTagger` (near-free control — the app already runs it corpus-wide in ~1 h for word clouds), spaCy `en_core_web_trf`, GLiNER-medium. All three scored against M2a; 19th-century diplomatic prose is far from every NER model's training distribution and the winner is an empirical question. | R-0, M2a |
+| **R-1** | NER pass over the no-list volumes from the R-0 text layer. Candidates: Apple `NLTagger` (near-free control — the app already runs it corpus-wide in ~1 h for word clouds), spaCy `en_core_web_trf`, GLiNER-medium. All three scored against M2a; 19th-century diplomatic prose is far from every NER model's training distribution and the winner is an empirical question. *(2026-08-11: **runbook + harness landed** — `tools/semantic-harvest/NER-RUNBOOK.md` / `harvest_ner.py`. Two amendments it makes to this row: the scope and **marked** layers depend on neither R-0 nor M2a and can run today — the harness imports this pipeline's extractor and asserts per-volume parity with it, so a store built before the R-0 layer exists still shares its coordinates; and the LM-Studio detector is sampled, not swept, at §4.1's ~5–8 days. The NLTagger control needs a Swift harness and is still unbuilt, which is the gap that keeps this row open.)* | R-0, M2a |
 | **R-2** | Mention-context embedding pass over R-1's detections (the reconciliation signal). | V-1, R-1 |
 | **R-3** | Identity clustering: POCOM year-constraint + context-vector + surname blocking, scored against M2a; then the adversarial-review tier over the uncertain band (§4.4). | R-2, M1a keyed |
 | **R-4** | Artifacts: derived person entries in the synthetic-ref namespace, provenance-marked (M3's UI rules). Gated on R-3's measured precision. | R-3 |
@@ -285,6 +285,10 @@ What changes relative to §2/§3 of this doc and the design doc's Stage 1:
    before the spike, not after.
 
 Version history:
+  1.3 — 2026-08-11: R-1 has a runbook and a verified harness
+        (tools/semantic-harvest/NER-RUNBOOK.md, harvest_ner.py); §3's R-1 row records the two
+        amendments it makes — the free layers do not wait on R-0 or M2a, and the LM-Studio
+        detector is sampled rather than swept.
   1.2 — 2026-08-10: V-0 executed, Studio-only by owner decision (the Air spike is dropped and
         the Air-side [U]s stay open), embeddings-only, five stores including an accidental
         Q4_K_M-vs-Q8_0 nomic pair; measurements and field findings live in

@@ -5749,3 +5749,54 @@ hoping. A span ending before that floor still resolves to nothing, or the clamp 
 the first schedule. Every corpus figure above is unchanged; a decoded two-schedule table pins the
 straddling case, because the defect arrives with data rather than with code and nothing else in the
 suite would see it.
+
+---
+
+## Session 2026-08-11 — #234 R-1: a runbook for the NER harvest, and the harness under it
+
+The corpus is the one the #234 comments describe: the **268 volumes with no editor person list**
+(267 by the TEI rule), **199,246 documents — 62.9% of the corpus**, carrying **253,919
+`<persName>` elements and zero identity links**. `tools/semantic-harvest/NER-RUNBOOK.md` is the
+runbook; `harvest_ner.py` is the harness it drives, verified by `SELFTEST=1 python3 harvest_ner.py`
+(23 checks, no corpus and no LM Studio needed — the discipline `harvest_embeddings.py` was handed
+over under).
+
+### The pass splits into a free layer and a priced one
+
+The **marked layer** — the 253,919 editor-delimited names, placed in the R-0 text layer's
+coordinate space — needs no model, no server, and no LM Studio window. It is M1b's input and it
+falls out of a disk read. The **detected layer** is the LLM candidate pass, and it is sampled.
+
+That split is what makes R-1 startable now. The ride-along's stage table had R-1 depending on both
+R-0 and M2a; measured against the harness, the free half depends on neither.
+
+### Why no full sweep is scheduled, with the arithmetic in the runbook
+
+705 M chars ≈ 176 M tokens, ~230–260 k chunks, a ~191-token system prompt re-sent per chunk ⇒
+~240 M tokens through the model ⇒ **~5–8 days continuous** at the ride-along's 350–600 tok/s
+convention. That is the adversarial-review tier's cost, not the overnight band, and it would be
+spent before any ground truth exists to say whether the output is worth having. NLTagger over the
+same scope is ~1–2 h. So the harness **refuses** an unsampled full-scope LLM run unless
+`FULL_SWEEP=1` is set deliberately, and the runbook's pilot is M1a's twelve volumes × 40 documents
+— well under an hour, and the same documents for every model compared.
+
+### Three properties the harness has because the repo has been burned before
+
+- **R-0 parity is asserted, not assumed.** `harvest_ner.py` imports `harvest_embeddings.py` rather
+  than copying its extractor, and every volume checks its own `(doc_id, ordinal, text)` list against
+  `extract_documents`. A disagreement aborts instead of writing offsets that mean something slightly
+  different from the embeddings' text. `harvest_embeddings.py` is not edited — its SHA is pinned in
+  the provenance of a store that already exists.
+- **Detector output is grounded by exact substring search.** A name the model normalises, expands,
+  or invents is counted `unlocated` and stored nowhere; offsets asked of a model would be fiction.
+  The self-test pins this with a fixture name that appears nowhere in the text.
+- **gzip is written with `mtime=0`**, so re-running over the same input is byte-identical — the V-0
+  spike found gzip mtime to be the only difference between five otherwise-identical text layers.
+
+### What the runbook refuses to route around
+
+M2a — the exhaustive prose ground truth — is un-keyed, and so are M1a's 300 rows. Every number the
+harvest prints is descriptive (how much was found, how grounded it was); none is evaluative. The
+runbook says so in §0 and again in §5, along with the two things that are simply not built: the
+NLTagger control (needs a Swift harness, and without it a pilot cannot show a model beat the free
+option) and R-2, which waits on the embeddings store that Phase 3 has not yet produced.

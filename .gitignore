@@ -59,3 +59,7 @@ Planning/nara-record-group-catalog/series/
 # names the archive it came from under "Source of truth"; see e.g.
 # Planning/Onboarding-Glass-Flow-Plan.md.
 design_handoff_*/
+
+# Python bytecode from the stdlib-only tools in tools/
+__pycache__/
+*.pyc
