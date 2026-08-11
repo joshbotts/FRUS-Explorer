@@ -257,7 +257,7 @@ struct ArchivalAnalyticsEntryPointTests {
             """)
     }
 
-    @Test("The SA-3 dashboard points at it")
+    @Test("The SA-3 dashboard points at it, on both platforms, and not mid-onboarding")
     func seriesDashboardCrossLink() throws {
         // The #765 D-1 rider: the provenance dashboard's ten categories are the coarse view of
         // what Archival Analytics names collection by collection.
@@ -266,5 +266,97 @@ struct ArchivalAnalyticsEntryPointTests {
                 "the SA-3 dashboard has no cross-link into Archival Analytics (#795)")
         #expect(source.contains("series.provenance.archivalLink"),
                 "the cross-link needs a named, localized label")
+
+        // #798 option (a): the iOS arm exists, and it is WITHHELD during onboarding. The old
+        // version of this test read the whole file as one string and could not tell that the
+        // link sat inside `#if os(macOS)` — it passed whether or not an iOS arm existed.
+        #expect(source.contains("$showsArchivalAnalytics"), """
+            The iOS arm must present the surface itself. On iOS this page is a sheet inside the \
+            tab shell, so the shell cannot be asked to present another one over it.
+            """)
+        #expect(source.contains("if presentationContext == .standalone"), """
+            Mid-onboarding the door would open a sheet over a sheet while the first index is \
+            still building. Owner decision (a) is that it is withheld there.
+            """)
+        #expect(source.contains("ArchivalAnalyticsView(onNavigateAway:"), """
+            Without the hook, a Browse hand-off from a collection record closes the analytics \
+            sheet and leaves the GUIDE sitting over the surface that just navigated.
+            """)
+    }
+
+    @Test("The threading that suppresses the onboarding door actually reaches the page (#798)")
+    func presentationContextIsThreaded() throws {
+        // Three hops, and a break at any one of them silently defaults the page to `.standalone`
+        // — which would show the door in exactly the context it exists to be hidden from.
+        let education = try Self.source("Onboarding/IndexingEducationView.swift")
+        #expect(education.contains("iOSPageView(page: page, presentationContext: presentationContext)"))
+        #expect(education.components(
+            separatedBy: "EducationDashboardView(dashboard: dashboard,").count - 1 == 2, """
+            Both page renderers — macOS and iOS — must forward the context; the one that does not \
+            is the one that shows the door mid-onboarding.
+            """)
+        let dashboardHost = try Self.source("Onboarding/EducationDashboardView.swift")
+        #expect(dashboardHost.contains("SourceProvenanceDashboard(presentationContext: presentationContext)"))
+    }
+
+    @Test("The guide names Archival Analytics at all, and points back from it")
+    func theGuideAndTheToolPointAtEachOther() throws {
+        // Before this, "Archival Analytics" appeared NOWHERE in the 1,200-line walkthrough —
+        // not a missing sentence, a missing section. The #363 unreachable-surface shape, in the
+        // one place that exists to tell a reader what the app can do.
+        let education = try Self.source("Onboarding/IndexingEducationView.swift")
+        #expect(education.contains("id: \"archival-analytics\""),
+                "the walkthrough has no Archival Analytics section")
+        #expect(education.contains("or the Archival Analytics window (Mac)"),
+                "the section must say where to find it, like every sibling section")
+        // And the return pointer.
+        let view = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(view.contains("ResearchGuideLinkButton("), "the tool does not point back at the guide")
+        #expect(view.contains("pageId: \"series-sourcing\""), """
+            It must open the Archival Sourcing page — the one whose card this pairs with — not \
+            the general corpus-analysis page.
+            """)
+        #expect(view.contains("if appState != nil {"), """
+            `ResearchGuideLinkButton` declares a NON-optional AppState, which traps on \
+            DECLARATION; this surface holds it optionally.
+            """)
+    }
+
+    @Test("The guide card is one derivation with the instrument, and says what it ranks (#835)")
+    func guideCardWiring() throws {
+        let card = try Self.source("SeriesAnalytics/TopCollectionsCard.swift")
+        // Shared code, never a copy — the drift guard #835 makes non-negotiable.
+        #expect(card.contains("ArchivalVolumeCoverage.map(from: entries, limitedTo: scope.volumeIds)"))
+        #expect(card.contains("data.ranking(bands: bands, lens: .namedCollections"))
+        #expect(!card.contains("collectionDocuments"), "the card must not reach into the tables itself")
+
+        // The 2.5 MB decode is off-main, and the year range does NOT rebuild it.
+        #expect(card.contains("Task.detached(priority: priority)"))
+        #expect(card.contains("CollectionAuthorityStore.shared"), "the touch belongs in the task")
+        let taskLine = try #require(card.range(of: ".task(id: scopeSignature)"))
+        _ = taskLine
+        #expect(!card.contains(".task(id: \"\\(yearStart)"), """
+            Keying the load on the year range would rebuild ~2.5 MB on a slider drag; the range \
+            only picks bands out of a table that is already built.
+            """)
+
+        // The three sentences the card owes its reader.
+        #expect(card.contains("four custodians, not the ten categories above"))
+        #expect(card.contains("has no 1900 floor"))
+        #expect(card.contains("Eras here are coarser than the decades above"))
+        // The umbrella is withheld, so its size must be stated — there is no chip on this page.
+        #expect(card.contains("hidingUmbrella: true"))
+        #expect(card.contains("series.provenance.topCollections.umbrella"))
+
+        // Rows open records only when there IS one, and only behind an AppState guard.
+        let host = try Self.source("SeriesAnalytics/SourceProvenanceDashboard.swift")
+        #expect(host.contains("onOpenCollection: appState == nil ? nil :"), """
+            `CollectionDetailView` declares a non-optional AppState and traps on declaration; \
+            this page holds it optionally by design (#844).
+            """)
+        #expect(card.contains("data?.record(forId: row.id) != nil"), """
+            The documents table is keyed by the usage index, which can name an id the authority \
+            does not carry — such a row must not render as a control that does nothing.
+            """)
     }
 }
