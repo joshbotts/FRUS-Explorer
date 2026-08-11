@@ -5487,3 +5487,62 @@ un-inverted. `763.72` reads as Austria and Serbia, which is what an Austro-Serbi
 
 Read class 8's suffix as a second country; stop enforcing the renumbering boundary; stop
 un-inverting `World, The`; stop attaching the gloss to the rows.
+
+## Session 2026-08-11 — #828 follow-up: four wrong glosses retired
+
+Investigating the remaining manuals turned up something more urgent than the manuals: **the shipped
+1910–49 table was confidently wrong about four country codes**, and two of them were large.
+
+| code | shipped gloss | truth | documents |
+|---|---|---|---|
+| `01` | Arctic | not a 1910–49 code at all | **4,513** |
+| `52` | `Africa."` | Spain | **1,761** |
+| `11h` | Alaska | not a 1910–49 code | — |
+| `90c` | `Azerbaijan Azores` | two rows' names merged | 8 |
+
+`501.BB` alone — 1,628 documents — was glossed "Arctic". It is a **Class 5 United Nations key** and
+names no country whatever. This is the precise failure the table's whole design is meant to make
+impossible, and it was shipping.
+
+### Two causes, both now closed
+
+- **`Discontinued ⇒ left-align` was never sound.** `Arctic 01 Discontinued 1955. See 03.` does not
+  say that 01 is a 1910–49 code; the annotation is written from the perspective of a column the
+  text never names. The rule is deleted. `Beginning`/`Established` is kept, because it is
+  directional in the other sense — a code that begins mid-period cannot be in the earliest column,
+  so right-alignment removes possibilities rather than inventing one.
+- **Note prose was reaching the name slot.** A country name is a noun phrase; names carrying a
+  quote mark, ending in a full stop or comma, or running past six words are rejected.
+
+Spain joins the curated corrections under the same rule as Germany — established by the document's
+own dependants (`Adrar 52c`, `Annobon 52e`, `Alhucemas 52f`) under the parent-plus-letter
+convention NARA's hints sheet states, never from outside knowledge.
+
+### The coverage number went down and the table got better
+
+67.3% of keys / 78.8% of documents → **63.3% / 77.1%**. The old figure counted 6,274 documents
+carrying a wrong label as covered. Net *correct* coverage rose; the headline fell because it had
+been flattered.
+
+### What the analysis found for the rest, and what it costs
+
+Measured before any of it was built:
+
+- **The later schedules are worth less than they look.** 73.9% of decimal-class documents sit in
+  the first era band, 24.4% in 1948–1960, 1.7% after. And the era bands do not align with the
+  schedule boundaries — band 1 spans 1948–1960, which is three schedules — so **no band-level rule
+  can label it however many schedules are parsed**. Attributing per *key* instead (all contributing
+  volumes agreeing on one schedule) would unlock 6.2% for 1951–1959 and 0.3% for 1960–1963.
+- **The biggest single win is in the era already covered**: the 1910–49 manual holds 646 nested
+  `.NNN` continuation lines under its class-8 headings that the parser never sees, because the
+  pattern demands an `8**.` prefix while the tree is written as bare `.421 Academic`. Measured lift
+  **+18,750 documents**, class-8 suffix naming 55.8% → 83.7%. No new extractor needed.
+- **The cultural-relations supplement should not be parsed.** 13 keys, 155 documents, and **zero**
+  corpus keys use its parenthesised grammar — `SourceNoteParser` drops it upstream, so no
+  downstream change could render it. Its one real subject, `.427††`, is already in the parent
+  manual.
+- Three traps recorded for whoever builds the later schedules: class 3 is **not** country-arranged
+  (including it would mislabel 4,151 documents, the UN General Assembly among them as "South and
+  Central America"); the later relations classes are 2/4/5/6, not 6 alone; and every pattern must
+  be bounded to the body pages, since the back index yields 1,445 confident nonsense matches that
+  clear the floors by orders of magnitude.
