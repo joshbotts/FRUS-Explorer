@@ -1,8 +1,10 @@
 # Archival Analytics — Adversarial Review Against the Researcher-Value Bar
 
-**Date:** 2026-08-10 · **Version:** 1.0 · **Status:** review for owner — no code rides this
-document. Companion to `Archival-Analytics-Feasibility.md` (the plan of record, v1.9), which this
-review deliberately re-litigates from one specific angle.
+**Date:** 2026-08-10 · **Version:** 1.3 · **Status:** review for owner, with the tracker enrolment
+(§9) and the owner's decisions on the design handoff (§10) recorded against it. Companion to
+`Archival-Analytics-Feasibility.md` (the plan of record, v1.9), which this review deliberately
+re-litigates from one specific angle, and to
+`Archival-Analytics-Revision-Design-Handoff/` (the screens, §10).
 
 **The bar this review applies, as the owner set it:** corpus-wide aggregates are interesting, but
 the feature has to deliver most of its value by helping researchers understand **what archival
@@ -607,11 +609,13 @@ The recommendations are filed as issues; the mapping, with the review's sequenci
 |---|---|---|---|
 | **#825** | R-2 — close the dead ends (navigation, Open Collection, uncapped table, deep-link initializer) | S | 1 — polish session |
 | **#826** | R-4 + R-5 — one class grain everywhere; use the denominators | S | 1 — polish session |
-| **#832** | R-12 — authority-name concatenation (bug), Cited Over Time inspector/export, lifecycle umbrella decision | S | 1 — polish session |
+| **#832** | R-12 — authority-name concatenation (bug), Cited Over Time inspector/export, lifecycle umbrella decision (**resolved 2026-08-10: remove the card** — §10) | S | 1 — polish session |
+| **#838** | The handoff's plain-language relabel + ⓘ consolidation, and the copy rules for artboard-derived strings (§10) | S | 1 — polish session |
 | **#827** | R-1 — volume/subseries/administration scoping for Collections mode | S–M | 2 — the value session |
 | **#833** | R-10 — topic door (subject- and search-scoped profiles); rides #827 | M | 2 follow-on |
 | **#835** | §8 — sources-page collection-grain narrative card + both cross-links (with the existing **#798**); class half after #828 | S–M | 2–3 |
-| **#829** | R-7 — surface the stored external citations (document rail + collection-record inbound) | S–M | independent |
+| **#829** | R-7 — surface the stored external citations (document rail + collection-record inbound), plus the handoff's "Count by: Unprinted pointers" ranking weight (§10) | S–M | independent |
+| **#837** | The handoff's Cross-Reference Graph unprinted-citations layer + the 1f "See It as a Graph" hand-off (§10) | M–L | after waves 1–2 |
 | **#828** | R-3 — decimal-class label table (owner-gated on the 1910–49 schedule) | M | 3 — unlocks #834 |
 | **#834** | R-6 — external-citation decimal channel (gates recorded; after #828) | M–L | 3 |
 | **#830** | R-8 — Research Trip Packet T-0…T-3, per its own scoped plan | 4 sessions | capstone |
@@ -624,8 +628,116 @@ individually if picked up.
 
 ---
 
+## 10. The design handoff, and the owner's decisions on it (2026-08-10)
+
+A design handoff arrived after §9's enrolment and now lives in the repo at
+`Planning/Archival-Analytics-Revision-Design-Handoff/` — a README, the design file, and eleven
+artboards **1a–1k** rendering the enrolled issues as screens. Assessed against §9 and against the
+filed issue bodies, it is faithful to every issue's core scope and carries the honesty apparatus
+through (denominators, the measured/illustrative number convention, the measure-first gate, the
+uncovered-class rule).
+
+But its own opening paragraph records **"a later owner pass"** that added five items appearing in
+no issue body and in no row of §9's table. Left unenrolled, an implementer working from the
+tracker would either miss them or treat them as scope creep. The owner's decisions, taken the
+same day:
+
+| # | Decision |
+|---|---|
+| 1 | **Enrol the owner pass.** Body edits where the addition belongs to an existing issue; new issues where it does not. |
+| 2 | **Confirm the lifecycles removal** (#832(c)). Recorded on the issue with its blast radius; it reverts PR #820 in full, and #825(a)'s "lifecycle bars" clause disappears with the card. |
+| 3 | **Ratify "Count by: Unprinted pointers"** as #829(c), on the condition that the control's caption names the switch of evidence body. It is a weight *swap*, never a sum — the #783 rule in #829 continues to govern. |
+| 4 | **File the graph work separately** as **#837**, sequenced after waves 1–2, with the visual-vocabulary questions settled in the issue before any canvas work. #829 stays the small, independent issue it was scoped as. |
+| 5 | **#798 resolves to option (a)** — standalone Research Guide only, `presentationContext` threaded to suppress it during onboarding. **Option (c) remains acceptable** if the threading proves disproportionate: report the cost rather than forcing (a). |
+| 6 | **#833's outside-in entry chips stay in scope** — undrawn in 1g, not dropped. |
+| 7 | **Keep the sub-items the handoff quietly drops**: #825(a)'s class per-volume usage, 1e's Related Collections and Sub-Series sections, and #831's totals-invariant artifact test. |
+| 8 | **#830 gains an owner gate**: the first act of the T-0 session is to bring the repository-fact table to the owner for confirmation, item by item — the mocks turn those facts into printed sentences a researcher will act on. |
+
+### 10.1 Where the owner pass now lives
+
+| The addition | Home |
+|---|---|
+| Network **sector zones** (wedge selection, group chip, group card, Show Only This Group) — artboard 1c | #825, as added scope (f) |
+| **"Count by: Unprinted pointers"** ranking weight — 1a | #829, as added scope (c), with a measured implementation appendix |
+| **Cross-Reference Graph unprinted-citations layer** + the 1f "See It as a Graph" hand-off | **#837** (new) |
+| **Lifecycles card removed** from Collections mode — 1a | #832(c), resolved, with the verified blast radius |
+| **Plain-language relabel + ⓘ consolidation**, and the copy rules for artboard-derived strings | **#838** (new) |
+
+### 10.2 What the assessment measured, and what it changed
+
+Two findings altered scope rather than merely recording it.
+
+**#829(c) is a bigger change than an enum case.** The join is exact — all 995 of the shipped
+external index's target ids are present among the authority's 4,423 records, and the per-target
+rows carry volume ids, so era banding works unchanged. But `ranking()` drops zero-valued rows, so
+the weight **replaces the row set**: 1,014 usage collections disappear and 181 pointer-only units
+appear — and against the *fallback* view the app lands on whenever the usage index is missing, the
+drop is far larger, because every one of the authority's 4,423 records carries at least one
+in-coverage volume, so Volumes ranks all 4,423 against pointers' 995. The class lens has no
+external vocabulary at all, so `(classes, pointers)` must be
+disabled rather than rendered empty; the availability fallback is documents-shaped and needs its
+own gate; three shipped strings assert a two-weight world and one is pinned verbatim by a test
+over `allCases`; the export's base caveat is a drawn-from methods statement and needs the same
+branch `flows(…)` already takes. Under pointers the *Through 1947* band holds 26 units and 89
+references — the #784 era-reach artifact, not a finding, and it owes the disclosure the index's
+own doc comment demands.
+
+**#837's node layer is contract-touching, not additive.** `CrossReferenceEdge` carries four
+document-key fields, so a document → archival-unit edge cannot be represented; every node id is
+`"volumeId/documentId"` and three sites parse it by splitting on `/`; loading is whole-ego-graph
+with no lazy per-node mechanic; and the Session 161 vocabulary already spends **dashed** (volume
+not downloaded) and **orange** (outbound, chosen for color-blind safety) on other meanings. The
+issue therefore splits into a phase A that touches no canvas code — the mini-preview plus a
+context-menu route following the shipped **Archival Neighbors** pattern — and a phase B gated on
+four visual decisions. The row → collection-record join does not exist in either phase and must
+be written, reusing the #351 domain guard, with the miss path designed first (the corpus
+generator joined 96.0%, so per-document misses are certain).
+
+### 10.3 The handoff's own defects, recorded
+
+The mocks are a design artifact and four of their conventions must not ship: the ●/○
+measured/illustrative glyphs drawn inline in UI labels on every board; GitHub issue numbers in
+on-screen copy; artboard ids in on-screen copy; and British spellings, one of which the README's
+own text sanctions. Three drawn numbers are internally inconsistent (1d's destinations sum to
+3,599 against a claimed 4,412; 1h draws five rows under a "Top 8 shown" note; 1a's ranking rows
+carry the illustrative glyph over counts the README declares measured), and the README's
+real-number inventory omits one figure it declares measured. All of this is filed on #838, which
+owns the copy rules; nothing may be hard-coded from the PNGs.
+
+Two gaps in the set: #825(b)'s three-button node dock is described in prose and drawn nowhere,
+and the iPhone treatment of the three-segment Count by control is undesigned (only 1e and 1f are
+iPhone-width).
+
+One artboard-versus-spec distinction worth keeping straight, because it looks like a dropped
+feature and is not: 1e omits Related Collections and Sub-Series from the *drawing*, while the
+handoff's written section order for that screen includes both. The same is true of the NARA
+Catalog and Divided at NARA sections, which are conditional. Decision 7 keeps them; the spec never
+proposed otherwise.
+
+**Every measurement in §10 was re-checked adversarially before it reached an issue**, which is how
+the fallback denominator above was found — and how one error of mine was caught: an issue comment
+that named the *local* `externalCitationStats` as #829(b)'s data source, where both the handoff
+and #829's own body specify the **bundled** `ExternalCitationIndex` accessors. A local scalar
+cannot produce the per-volume list 1e draws. The correction is on the issue.
+
+### 10.4 What the handoff does not change
+
+The wave order in §9 stands, and so do the two owner gates outside the repo: #828's 1910–49
+filing schedule (which blocks #834 and both class halves) and #830's T-0 repository facts.
+Nothing in §10 revisits §8's relocate-no/layer-yes decision.
+
+---
+
 ## Version history
 
+- 1.3 (2026-08-10) — §10: the design handoff (now in the repo at
+  `Archival-Analytics-Revision-Design-Handoff/`) assessed against §9 and the filed issue bodies,
+  and the owner's eight decisions on it recorded. Five items from the handoff's own "later owner
+  pass" had no home in any issue or in §9's table; they are now enrolled — sector zones into
+  #825, the Unprinted-pointers weight into #829, the lifecycles removal resolving #832(c), and
+  two new issues (#837 the Cross-Reference Graph unprinted layer, #838 the plain-language and
+  copy-rules pass). §9's #829 and #832 rows corrected to match, and the two new issues added.
+  Also fixes the stale `Version: 1.0` header this document carried through 1.1 and 1.2.
 - 1.2 (2026-08-11) — §9: tracker enrolment. The recommendations filed as #825–#835 (R-2 →
   #825; R-4+R-5 → #826; R-1 → #827; R-3 → #828; R-7 → #829; R-8 → #830; R-9 → #831; R-12 →
   #832; R-10 → #833; R-6 → #834; §8 → #835), with the wave mapping and the recorded
