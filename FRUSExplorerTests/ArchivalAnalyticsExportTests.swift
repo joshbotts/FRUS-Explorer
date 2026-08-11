@@ -315,6 +315,92 @@ struct ArchivalExportWiringTests {
                 "the export presentation is anchored below a Section builder")
     }
 
+    @Test("Ranking rows open something, and the exported figure does not carry the hit test")
+    func rankingRowsAreNavigable() throws {
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("func interactiveRankingChart("), """
+            The tap-through must live on its own wrapper. Putting `.chartOverlay` inside \
+            `rankingChart` would bake a hit-test region into the rasterised figure export.
+            """)
+        #expect(source.contains("interactiveRankingChart(ranking, data: data)"),
+                "the screen must mount the interactive chart, not the bare one")
+        // The interactive wrapper must be mounted EXACTLY once — on screen. A second call site
+        // means it reached the figure exporter, which renders the same chart body into a PNG.
+        let interactiveCalls = source.components(separatedBy: "interactiveRankingChart(").count - 1
+        #expect(interactiveCalls == 2, """
+            `interactiveRankingChart` appears \(interactiveCalls) times (its declaration plus \
+            call sites). Exactly one call site is expected: the on-screen chart.
+            """)
+        #expect(source.contains("private func open(_ row: ArchivalRankingRow"),
+                "one routing function decides where a row goes")
+    }
+
+    @Test("The uncapped table exists, lifts the cap, and exports what it shows")
+    func everyUnitIsReachable() throws {
+        let view = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(view.contains("showAllUnitsButton("), "no way out of the 12-row cap")
+        #expect(view.contains("ArchivalAllUnitsSheet("), "the button opens nothing")
+
+        let sheet = try Self.source("Analytics/ArchivalAllUnitsSheet.swift")
+        #expect(sheet.contains("limit: .max"), """
+            The sheet must ask for the uncapped ranking. Without the lifted limit it would draw \
+            the same twelve rows under a title promising every unit.
+            """)
+        #expect(sheet.contains("AnalyticsSectionExportControl("), """
+            #825(c) is "the export follows it": a CSV that still carried twelve rows while the \
+            screen showed hundreds would be the same defect one layer down.
+            """)
+        #expect(sheet.contains("Text(row.label)"), """
+            The uncapped list must draw the DISAMBIGUATED label. `disambiguate` appends the \
+            repository to names carried by more than one record, and drawing `name` prints \
+            "White House Central Files" six times in one band — six identical rows, each \
+            opening a different collection.
+            """)
+        #expect(!sheet.contains("Text(row.name)"))
+        #expect(sheet.contains("rowCapApplied: false"), """
+            The uncapped table's methods statement must not blame a row cap for its shortfall: \
+            it has no rows below a cap.
+            """)
+        #expect(view.contains("Task { @MainActor in open(row, data: data) }"), """
+            Dismissing the all-units sheet and presenting the collection record in the SAME \
+            state change drops the second presentation.
+            """)
+    }
+
+    @Test("The uncapped export gets its own denominator sentence")
+    func uncappedExportDoesNotBlameTheRowCap() {
+        let capped = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[1], lens: .namedCollections, weight: .documents,
+            hiddenUmbrella: nil, unitsReached: 700, bandVolumeCount: 120,
+            indexedVolumeCount: 5, noteCount: 59_973, shownValue: 5_655)
+        let uncapped = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[1], lens: .namedCollections, weight: .documents,
+            hiddenUmbrella: nil, unitsReached: 700, bandVolumeCount: 120,
+            indexedVolumeCount: 5, noteCount: 59_973, shownValue: 13_238,
+            rowCapApplied: false)
+        #expect(capped.extraCaveats.joined().contains("below the row cap"))
+        #expect(!uncapped.extraCaveats.joined().contains("below the row cap"), """
+            The uncapped table listed every unit the era reaches, so "a unit below the row cap" \
+            names a population that does not exist in it.
+            """)
+        #expect(uncapped.extraCaveats.joined().contains("uncapped"))
+    }
+
+    @Test("The collection record's citing volumes open the volume (#825d)")
+    func citingVolumesAreNavigable() throws {
+        let source = try Self.source("SourceExplorer/CollectionDetailView.swift")
+        #expect(source.contains("openVolume(volumeId)"), """
+            These rows were inert from the section's first commit while the sibling list in \
+            VolumeSourcesView, showing the same volumes for the same collection, has been \
+            navigable since the UI audit that recorded "the rows used to be dead ends".
+            """)
+        #expect(source.contains("appState.openBrowseVolume(volumeId, from: sceneID)"),
+                "navigation must go through the hand-off both platforms consume")
+        // The cap and its disclosure are pinned by CollectionRelationsTests; this only checks
+        // that making the rows navigable did not displace them.
+        #expect(source.contains("CollectionRelations.previewRowCap"))
+    }
+
     @Test("The share sheet and the error alert are anchored outside the mode switch")
     func deliverySurfacesAreAnchoredOnce() throws {
         // The Group-modifier gotcha: a `.sheet` on a Group applies once per child, so anchoring

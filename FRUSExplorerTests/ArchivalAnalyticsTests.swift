@@ -607,6 +607,56 @@ struct ArchivalCollectionsDataTests {
         }
     }
 
+    // MARK: - Opening a row, and every row (#825)
+
+    @Test("A row id resolves to its authority record, and an unknown id opens nothing")
+    func rowsResolveToRecordsOrToNothing() {
+        let record = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
+                                               volumeIds: ["v1"])
+        let data = ArchivalCollectionsData.make(
+            authority: [record], usage: nil,
+            coverage: ["v1": ArchivalVolumeCoverage(firstYear: 1950, lastYear: 1952)])
+        #expect(data.record(forId: "lot:1")?.name == "Lot One")
+        // The documents table is keyed by the USAGE INDEX, which can name an id the authority
+        // does not carry. Such a row draws (the ranking falls back to the raw id for its label)
+        // and must simply not open — a navigation target invented for it would be a worse dead
+        // end than the one #825 is closing.
+        #expect(data.record(forId: "lot:not-in-authority") == nil)
+    }
+
+    @Test("The row cap is a display decision the uncapped table can lift")
+    func rankingCanBeUncapped() throws {
+        // 20 classes in one band, against a cap of 12. The "Show all N units" table asks for the
+        // same ranking with the cap lifted, so the two must agree on everything except length —
+        // if the cap were baked into the derivation instead, the full list could not exist.
+        let keys = (1...20).map { "76\($0).00" }
+        let index = try Self.usage(
+            volumes: ["v1"], noteCounts: [500], classKeys: keys.sorted(),
+            rows: keys.sorted().enumerated().map {
+                (key: $0.offset, volumes: [0], counts: [100 - $0.offset])
+            })
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968)])
+        let band = ArchivalEraBand.all[2]
+
+        let capped = data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                                  hidingUmbrella: false)
+        #expect(capped.rows.count == ArchivalCollectionsData.rowCap)
+        #expect(capped.unitsReached == 20, "the caption counts every unit, not the drawn ones")
+
+        let all = data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                               hidingUmbrella: false, limit: .max)
+        #expect(all.rows.count == 20)
+        #expect(all.unitsReached == 20)
+        #expect(Array(all.rows.prefix(ArchivalCollectionsData.rowCap)).map(\.id)
+                    == capped.rows.map(\.id), """
+            The uncapped list must open with exactly the rows the chart drew, in the same order. \
+            A reader who taps "show all" and finds a different top twelve has been shown two \
+            different rankings of one era.
+            """)
+    }
+
     // MARK: - The denominators (#826 / R-5)
 
     @Test("A band's note total is read from the artifact, and the share is withheld when it would lie")
