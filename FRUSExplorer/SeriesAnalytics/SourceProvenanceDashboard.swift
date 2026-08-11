@@ -70,6 +70,10 @@ struct SourceProvenanceDashboard: View {
     /// Resolves to `.regular` on macOS, so `isCompactWidth` is `false` there.
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    /// This scene, so a collection record opened from the card addresses the window the reader is
+    /// in (#338). Absent on macOS and in the guide's own containers, where `.anyWindow` is right.
+    @Environment(\.sceneID) private var sceneID
+
     #if os(macOS)
     /// Opens the Archival Analytics window from the #795 cross-link. macOS-only, because
     /// `OpenWindowAction.fronting(id:)` is itself declared inside `#if os(macOS)`.
@@ -99,6 +103,9 @@ struct SourceProvenanceDashboard: View {
     /// The active subseries scope (#267). `@State`, resets per visit like the sibling
     /// dashboards — re-opening on a stale narrowed scope would misrepresent the series.
     @State private var scope = SeriesScope.whole
+
+    /// The collection record whose detail sheet is up, set by a Top-collections row (#835).
+    @State private var collectionDetail: AuthorityCollectionRecord?
 
     /// The manifest entries the scope bar derives its subseries menu from: the diff's known set
     /// when a live refresh has happened, else the bundled set, else empty.
@@ -141,12 +148,25 @@ struct SourceProvenanceDashboard: View {
                 mixOverTimeChart
                 compositionChart
                 densityChart
+                TopCollectionsCard(entries: entries, scope: scope,
+                                   yearStart: yearStart, yearEnd: yearEnd,
+                                   onOpenCollection: appState == nil ? nil : { collectionDetail = $0 })
                 archivalAnalyticsLink
                 caveats
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        // Guarded on AppState: `CollectionDetailView` declares a NON-optional
+        // `@Environment(AppState.self)`, which traps on DECLARATION, and this page holds it
+        // optionally by design. #844 is the crash this shape prevents.
+        .sheet(item: $collectionDetail) { record in
+            if let appState {
+                CollectionDetailSheet(record: record)
+                    .environment(appState)
+                    .environment(\.sceneID, sceneID ?? .anyWindow)
+            }
+        }
         .seriesExportPresentation(exportBox)
     }
 

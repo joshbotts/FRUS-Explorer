@@ -418,6 +418,87 @@ struct ArchivalCollectionsDataTests {
         #expect(shown.rows.contains { $0.id == ArchivalCollectionsData.umbrellaCollectionId })
     }
 
+    // MARK: - Guide-card parity (#835)
+
+    @Test("The guide card's ranking is the instrument's ranking, over one real subseries")
+    func guideCardMatchesTheInstrument() throws {
+        // THE DRIFT GUARD. It is only meaningful because the two surfaces now reach the ranking
+        // by DIFFERENT routes: the dashboard calls `ranking(bands:)` with the bands its year
+        // range overlaps, the Collections mode calls `ranking(band:)`. Both are re-expressed
+        // through one implementation, and this asserts that re-expression holds over the real
+        // bundled manifest rather than a fixture.
+        let manifest = try #require(Self.bundledManifest(), "manifest.json is not readable")
+        let subseries = try #require(
+            Dictionary(grouping: manifest, by: \.subseries)
+                .filter { $0.value.count >= 4 }
+                .max(by: { $0.value.count < $1.value.count })?.value,
+            "no subseries with enough volumes to test")
+        let ids = Set(subseries.map(\.volumeId))
+
+        let coverage = ArchivalVolumeCoverage.map(from: manifest, limitedTo: ids)
+        #expect(!coverage.isEmpty, "the scope resolved to no dated volumes")
+        let data = ArchivalCollectionsData.make(
+            authority: CollectionAuthorityStore.shared?.collections ?? [],
+            usage: CollectionUsageIndexStore.shared, coverage: coverage)
+
+        // The card's own band selection: every band the default 1861…1993 range overlaps.
+        let bands = ArchivalEraBand.all.filter { $0.startYear <= 1993 && $0.endYear >= 1861 }
+        #expect(bands.count == ArchivalEraBand.all.count,
+                "the default range must cover the whole axis, or the card hides eras silently")
+
+        // Band by band, the card's route and the instrument's must agree exactly.
+        for band in ArchivalEraBand.all {
+            let instrument = data.ranking(band: band, lens: .namedCollections, weight: .documents,
+                                          hidingUmbrella: true, limit: ArchivalCollectionsData.rowCap)
+            let card = data.ranking(bands: [band], lens: .namedCollections, weight: .documents,
+                                    hidingUmbrella: true, limit: ArchivalCollectionsData.rowCap)
+            #expect(instrument.rows == card.rows, """
+                \(band.title): the guide card and the Collections mode drew different rows for \
+                one scope. They are supposed to be one derivation.
+                """)
+            #expect(instrument.shownShare(weight: .documents) == card.shownShare(weight: .documents))
+        }
+
+        // And the whole-range card is the union, with every label still unique.
+        let whole = data.ranking(bands: bands, lens: .namedCollections, weight: .documents,
+                                 hidingUmbrella: true, limit: .max)
+        #expect(Set(whole.rows.map(\.label)).count == whole.rows.count, """
+            Two rows share a label after merging the bands. A chart would draw them as one bar.
+            """)
+        #expect(whole.bandVolumeCount == coverage.count, """
+            The merged denominator must be every dated volume in the scope; otherwise the card's \
+            share sentence describes a population it did not rank.
+            """)
+    }
+
+    /// The shipped manifest, for the tests that must not run against a fixture.
+    private static func bundledManifest() -> [VolumeManifestEntry]? {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Resources/manifest.json")
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode([VolumeManifestEntry].self, from: data)
+    }
+
+    @Test("The shipped manifest bands as the axis documents it")
+    func shippedManifestBandDistribution() throws {
+        // Pins the coverage builder against the real corpus. The distribution is documented on
+        // `ArchivalEraBand.all`, so a builder change that silently re-dated volumes would show up
+        // here rather than as a quietly different chart.
+        let manifest = try #require(Self.bundledManifest())
+        let coverage = ArchivalVolumeCoverage.map(from: manifest)
+        var counts = [Int](repeating: 0, count: ArchivalEraBand.all.count)
+        for span in coverage.values {
+            counts[ArchivalEraBand.band(forMidpointYear: span.midpointYear).index] += 1
+        }
+        #expect(counts == [261, 120, 64, 66, 41], """
+            The band distribution moved. Either the manifest changed or the coverage builder \
+            re-dated volumes; both need a look before this number is updated.
+            """)
+        #expect(coverage.count == 552, "every catalogued volume must carry a parseable span")
+    }
+
     // MARK: - The shared coverage-map builder (#835)
 
     @Test("The shared coverage builder is the one definition of a scope")
