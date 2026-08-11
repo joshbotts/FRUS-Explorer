@@ -432,9 +432,13 @@ struct ArchivalExportWiringTests {
                 as `ArchivalAnalyticsView()`, and that call site is pinned by a source-scan test \
                 in ArchivalLibraryQueryTests.
                 """)
-        #expect(source.contains("initialScope: ArchivalScopeRequest? = nil)"), """
+        #expect(source.contains("initialScope: ArchivalScopeRequest? = nil,"), """
             The iOS presenter consumes the hand-off before this view mounts, so a scope that can \
             only arrive through `pendingArchivalScope` cannot reach it there at all.
+            """)
+        #expect(source.contains("onNavigateAway: (() -> Void)? = nil) {"), """
+            #835: a presenter that is ITSELF a sheet — the Research Guide — has to close behind \
+            a hand-off, or it sits over the surface that just navigated.
             """)
         #expect(source.contains("_mode = State(initialValue: mode)"), """
             The mode is @State seeded by the initializer. Assigning it as a plain property would \

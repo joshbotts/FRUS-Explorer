@@ -281,7 +281,8 @@ struct IndexingEducationView: View {
                 // page carries one (Analytics Prep-A); otherwise the usual
                 // section stack.
                 if let dashboard = page.dashboard {
-                    EducationDashboardView(dashboard: dashboard)
+                    EducationDashboardView(dashboard: dashboard,
+                                           presentationContext: presentationContext)
                         .padding(28)
                 } else {
                     VStack(alignment: .leading, spacing: 18) {
@@ -306,7 +307,7 @@ struct IndexingEducationView: View {
         VStack(spacing: 0) {
             TabView(selection: $pageIndex) {
                 ForEach(Array(EducationPage.all.enumerated()), id: \.offset) { idx, page in
-                    iOSPageView(page: page)
+                    iOSPageView(page: page, presentationContext: presentationContext)
                         .tag(idx)
                 }
             }
@@ -424,6 +425,11 @@ private struct iOSPageView: View {
 
     let page: EducationPage
 
+    /// Whether the guide is read mid-onboarding, forwarded to the live dashboards so the
+    /// Archival Sourcing page can withhold its cross-link there (#798).
+    var presentationContext: IndexingEducationView.PresentationContext = .standalone
+
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
@@ -446,7 +452,8 @@ private struct iOSPageView: View {
                 // page carries one (Analytics Prep-A); otherwise the usual
                 // section stack.
                 if let dashboard = page.dashboard {
-                    EducationDashboardView(dashboard: dashboard)
+                    EducationDashboardView(dashboard: dashboard,
+                                           presentationContext: presentationContext)
                         .padding(24)
                 } else {
                     VStack(alignment: .leading, spacing: 20) {
@@ -548,6 +555,9 @@ enum EducationCategory: String {
 ///          dashboard page, third under "About the Series"
 ///   1.5 — Analytics SA-2b: `all` now also includes the `administrationProfiles`
 ///          dashboard page, fourth under "About the Series"
+///   1.6 — Session 2026-08-11: #835 — an Archival Analytics walkthrough section (the tool
+///         appeared nowhere in the guide), and `presentationContext` forwarded to the
+///         dashboards through `iOSPageView`
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -1046,6 +1056,17 @@ private extension EducationPage {
                     "Where the graph traces one document\u{2019}s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network\u{2019}s shape \u{2014} a few heavily-cited landmarks and a long tail \u{2014} a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of \u{201C}landmark\u{201D} documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.",
                     "These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "archival-analytics",
+                heading: "Archival Analytics",
+                systemImage: "archivebox",
+                paragraphs: [
+                    "Every published FRUS document carries a source note naming the archival file its original was found in. Read one at a time they are citations; clustered across the whole series they answer a question no volume states outright \u{2014} which bodies of records each era\u{2019}s editors actually worked in. Archival Analytics is where that clustering is shown: era-by-era rankings of the collections and filing-system classes the volumes drew on, a co-citation network of which collections were used together, the editors\u{2019} cross-reference flows between archival units, and an archival profile of your own indexed volumes.",
+                    "Scope it to a subseries, a saved volume scope, a detected topic, or one president\u{2019}s volumes \u{2014} and note that it scopes over the whole series rather than over your library, so the same scope gives the same figures on any device, with nothing downloaded. Counts can be read as documents or as volumes; those are different questions and give different answers.",
+                    "These figures show where the editors drew their documents, which is an editorial and archival signal rather than a census of the archives themselves. The rankings say what was cited, not what exists.",
+                    "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Archival Analytics window (Mac). The Archival Sourcing page of this guide also links straight to it once your first index has finished."
                 ]
             ),
             EducationSection(

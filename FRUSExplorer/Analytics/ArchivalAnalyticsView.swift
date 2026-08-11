@@ -53,6 +53,9 @@ import Charts
 /// button, on macOS that left a window-modal sheet the reader could not dismiss. Capturing also
 /// keeps the list honest: it says "same as the chart", and it now means the chart it was opened
 /// from rather than whatever the chart became underneath it.
+///   1.9 — Session 2026-08-11: #835 — `onNavigateAway`, so a presenter that is itself a sheet
+///         closes behind a hand-off; a return link to the Research Guide; and the two store
+///         touches move inside `loadCollections`'s detached block, off the main actor
 private struct ArchivalAllUnitsPresentation: Identifiable {
     /// Fresh per presentation, which is all `.sheet(item:)` needs.
     let id = UUID()
@@ -87,6 +90,10 @@ struct ArchivalAnalyticsView: View {
     /// The collection a deep link asked to focus the Network on, consumed once by that mode.
     private let initialFocusId: String?
 
+    /// Invoked after this surface hands off and dismisses itself, so a presenter that is *also* a
+    /// sheet can close too (#798). `nil` wherever this view is the outermost presentation.
+    private let onNavigateAway: (() -> Void)?
+
     /// Whether the band still has to be moved to the initializer's scope. The move needs
     /// `appState`'s manifest, which no initializer has, so it happens on the first appearance.
     private let initialScopeNeedsBand: Bool
@@ -108,13 +115,16 @@ struct ArchivalAnalyticsView: View {
     ///   - mode: The mode to open on.
     ///   - focusCollectionId: An authority collection id for the Network's focus. Ignored by the
     ///     other modes, and ignored if the bundled authority does not carry it.
+    ///   - onNavigateAway: Invoked after this surface hands off and dismisses itself on iOS, so
+    ///     a presenter that is itself a sheet — the Research Guide (#798) — can close too.
     ///   - initialScope: A volume scope delivered by the presenter rather than through
     ///     `pendingArchivalScope`. iOS needs it: the tab shell consumes the hand-off in order to
     ///     decide whether to present at all, so by the time this view mounts the slot is already
     ///     empty. An empty volume set means no scope.
     init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil,
-         initialScope: ArchivalScopeRequest? = nil) {
+         initialScope: ArchivalScopeRequest? = nil, onNavigateAway: (() -> Void)? = nil) {
         _mode = State(initialValue: mode)
+        self.onNavigateAway = onNavigateAway
         self.initialFocusId = focusCollectionId
         if let initialScope, !initialScope.volumeIds.isEmpty {
             _scopeVolumeIds = State(initialValue: initialScope.volumeIds)
@@ -254,6 +264,11 @@ struct ArchivalAnalyticsView: View {
                         // Browse tab would land under it. Close both.
                         collectionDetail = nil
                         dismiss()
+                        // And whatever presented THIS surface, if it is itself a sheet. Reached
+                        // from the Research Guide (#798), dismissing only this one leaves the
+                        // guide sitting over the Browse tab that just navigated — the same
+                        // "nothing appears to have happened" shape one level further out.
+                        onNavigateAway?()
                         #endif
                     }
                     .environment(appState)
@@ -340,6 +355,21 @@ struct ArchivalAnalyticsView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.archivalAnalytics
+        }
+        ToolbarItem(placement: .primaryAction) {
+            // The return half of #835's cross-link: the Archival Sourcing page frames what these
+            // rankings are about, and until now the pointer ran one way only. Guarded because
+            // `ResearchGuideLinkButton` declares a NON-optional AppState, which traps on
+            // declaration, while this surface holds it optionally.
+            // Withheld when the guide is what presented THIS surface (`onNavigateAway` is the
+            // marker for that): on iOS the button opens its own guide sheet, so offering it there
+            // makes the guide reachable from inside itself, one sheet deeper each time.
+            if appState != nil, onNavigateAway == nil {
+                ResearchGuideLinkButton(
+                    pageId: "series-sourcing",
+                    label: String(localized: "archival.researchGuide",
+                                  defaultValue: "About Archival Sourcing"))
+            }
         }
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
@@ -1489,18 +1519,11 @@ struct ArchivalAnalyticsView: View {
     @MainActor
     private func volumeCoverage(limitedTo scope: [String]? = nil) -> [String: ArchivalVolumeCoverage] {
         guard let store = appState?.manifestStore else { return [:] }
-        let entries = store.diffResult?.known ?? store.bundledEntries
-        let allowed = scope.map(Set.init)
-        var result: [String: ArchivalVolumeCoverage] = [:]
-        result.reserveCapacity(allowed?.count ?? entries.count)
-        for entry in entries {
-            if let allowed, !allowed.contains(entry.volumeId) { continue }
-            let first = FRUSVolumeMetadata.firstYear(in: entry.dateRange.earliest)
-            let last = FRUSVolumeMetadata.firstYear(in: entry.dateRange.latest)
-            guard let start = first ?? last, let end = last ?? first else { continue }
-            result[entry.volumeId] = ArchivalVolumeCoverage(firstYear: start, lastYear: end)
-        }
-        return result
+        // The map is built by the shared builder (#835), not here: the coverage map IS the volume
+        // set, so a second copy of this loop would be a second definition of what a scope means —
+        // and the Archival Sourcing card scopes the same corpus by the same rule.
+        return ArchivalVolumeCoverage.map(from: store.diffResult?.known ?? store.bundledEntries,
+                                          limitedTo: scope.map(Set.init))
     }
 
     /// Every volume the **series** has, which is what the scope selector offers (#827).
@@ -1537,10 +1560,16 @@ struct ArchivalAnalyticsView: View {
         guard collectionsData == nil else { return }
         let requested = scopeSignature
         let coverage = volumeCoverage(limitedTo: scopeVolumeIds)
-        let authority = CollectionAuthorityStore.shared?.collections ?? []
-        let usage = CollectionUsageIndexStore.shared
+        // The `.shared` touches happen INSIDE the detached block. They are lazy `static let`
+        // globals, so whichever thread reaches one first pays its decode — and these two are
+        // 1.8 MB and 0.6 MB of JSON plus the authority's three lookup dictionaries. Read here,
+        // on the main actor, that is a visible stall before the spinner even appears; only
+        // `coverage` needs to cross the boundary.
         let built = await Task.detached(priority: .userInitiated) {
-            ArchivalCollectionsData.make(authority: authority, usage: usage, coverage: coverage)
+            ArchivalCollectionsData.make(
+                authority: CollectionAuthorityStore.shared?.collections ?? [],
+                usage: CollectionUsageIndexStore.shared,
+                coverage: coverage)
         }.value
         guard requested == scopeSignature else { return }
         collectionsData = built

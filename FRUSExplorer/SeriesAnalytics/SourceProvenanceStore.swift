@@ -18,7 +18,10 @@ import Foundation
 /// and `ManifestStore`: the resource is decoded from the app bundle once at init
 /// into `index`. When the resource is missing or malformed, `index` is `nil`
 /// (logged in DEBUG) — never a crash — and the dashboard degrades to its neutral
-/// empty state. Because the aggregate is ~4.5 KB, decoding is synchronous at init.
+/// empty state. Decoding is synchronous at init — which was written when the aggregate was
+/// ~4.5 KB and schema 1 carried decade rollups only. #267's per-volume table took it to
+/// ~134 KB, so this is a main-actor decode at app construction, not the trivial one the
+/// original note describes.
 ///
 /// The store is wired on `AppState` next to the other bundled-JSON stores, so the
 /// dashboard reaches it through the environment.

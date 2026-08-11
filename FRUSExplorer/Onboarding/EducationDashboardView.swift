@@ -77,10 +77,19 @@ enum EducationDashboard: String, Hashable {
 ///   1.2 — Analytics SA-2: renders `.seriesGeography`
 ///   1.3 — Analytics SA-3b: renders `.seriesSourcing`
 ///   1.4 — Analytics SA-2b: renders `.administrationProfiles`
+///   1.5 — Session 2026-08-11: #798 — forwards `presentationContext`, so a live dashboard
+///         can withhold an affordance that would open a sheet over the onboarding sheet
 struct EducationDashboardView: View {
 
     /// Which dashboard to render.
     let dashboard: EducationDashboard
+
+    /// Whether the guide is being read mid-onboarding or on its own (#798, owner decision (a)).
+    ///
+    /// Threaded rather than inferred: the Archival Sourcing page offers a door into Archival
+    /// Analytics, and during onboarding that would be a sheet over a sheet on a device still
+    /// building its first index. Defaulted so no existing caller changes meaning.
+    var presentationContext: IndexingEducationView.PresentationContext = .standalone
 
     var body: some View {
         switch dashboard {
@@ -89,7 +98,7 @@ struct EducationDashboardView: View {
         case .seriesGeography:
             SeriesGeographyDashboard()
         case .seriesSourcing:
-            SourceProvenanceDashboard()
+            SourceProvenanceDashboard(presentationContext: presentationContext)
         case .administrationProfiles:
             AdministrationProfilesDashboard()
         }

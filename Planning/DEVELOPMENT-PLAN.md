@@ -5275,3 +5275,108 @@ The band decision moved out of the view and into `ArchivalEraBand.bandHoldingMos
 sake of that sweep: the first test asserted only that the function was *called by name*, so the
 plurality, the tie-break and the empty case could all have been wrong and the suite would not have
 noticed. It is now tested against real coverage spans, including that every band is reachable.
+
+## Session 2026-08-11 — #835: the collection-grain card on Archival Sourcing
+
+§8's answer to the owner's relocation question was **relocate no, layer yes**: the *narrative*
+("which collections carried each era") is series-analytics subject matter, while the query-driven
+instrument stays in Analytics. This lands the narrative card, the derivation it needed, and the
+cross-links #835's 8.3d asked for.
+
+### Verifying the issue first overturned six of its premises
+
+- **"Authority/usage decode lazily" — already true**, but on whichever thread touches them first,
+  which is the actual problem. **"The page's current load is the 134 KB provenance index"** is
+  misleading in the other direction: `SourceProvenanceStore` is an eagerly-constructed stored
+  property on `AppState`, so this page's marginal load today is *zero* and #835 gives it its first
+  appearance-time cost. That strengthens the lazy/off-main requirement rather than weakening it.
+  (`SourceProvenanceStore`'s own "~4.5 KB" note, stale by 30× since #267, is corrected here.)
+- **`ArchivalAnalyticsView` is the counter-example, not the model** — it read both `.shared` stores
+  on the main actor *before* its detached block. Both touches now happen inside it.
+- **"Honouring the year range" had no API that could.** `ranking(band:)` takes exactly one band
+  and every per-band table is `private let`.
+- **Merging the bands in the view would have been a silent data-loss bug.** `disambiguate` runs per
+  ranking, and 279 shipped authority names are carried by more than one record: rows unique inside
+  their own band collide once merged, and Swift Charts draws two bars sharing a label as one. The
+  merge therefore happens inside the type, before disambiguation.
+- **Cross-band summation is exact under BOTH weights** — two of the verification lenses claimed
+  Volumes could not be summed. `make` writes `bandByVolume[volumeId]` exactly once, so the bands
+  *partition* the corpus and a unit's citing volumes in two bands are disjoint. The double-count
+  warning they were reading belongs to folding class *leaves within one band*, which is a different
+  situation that looks identical. Pinned by test rather than left as a comment.
+- **`CollectionDetailSheet` is not "self-contained"** — it wraps a view declaring a non-optional
+  `@Environment(AppState.self)`, which traps on *declaration*. The dashboard holds AppState
+  optionally by design, so every row is behind `if let appState`, the shape #844 fixed.
+
+### What the card owes its reader, and pays
+
+It is on a page whose charts count a **different population**: the provenance aggregate covers 522
+volumes and floors at decade 1900, the archival authority covers 552 with no floor (68 volumes sit
+in pre-1900 coverage decades). Its four custodian colours answer "who holds the records", not the
+ten categories' "what kind of citation is this". Its eras are coarser than the charts' decades. All
+three are stated on the card. The umbrella is withheld with its size named — there is no chip here
+to reveal it — and the share sentence is suppressed under the volumes weight, where a share of a
+note total would be a ratio of two different things.
+
+The year range selects the era bands it **overlaps**. Containment would have dropped the first band
+— 261 of 552 volumes — for any range starting after 1861.
+
+### #798 resolved to option (a), on a measured cost
+
+Owner decision 5 said build (a) and *report* the cost rather than force it. Measured: three files,
+about six lines, and `IndexingEducationView` already owned the value. The route the issue assumed
+does **not** work — `openArchivalScope` is consumed by `MainTabView`'s presenter, and on iOS this
+page is itself a sheet inside that shell, so the shell would be asked to present a second sheet
+while presenting. The door presents locally instead, and `ArchivalAnalyticsView` gained
+`onNavigateAway` so a Browse hand-off from a collection record closes the guide too rather than
+leaving it over the surface that just navigated.
+
+"Archival Analytics" appeared **nowhere** in the 1,200-line walkthrough — not a missing sentence, a
+missing section. It now has one, mirrored into `Docs/EditableContent.md`, and the tool carries a
+return link to the Archival Sourcing page.
+
+### The review found the card telling two untruths, and a guard that could not fire
+
+- **The population sentence was false.** It said the ranking "reads the archival authority, which
+  spans all 552 catalogued volumes and has no 1900 floor". Measured against the shipped artifacts:
+  the authority names **356** volumes and **none** with a pre-1900 coverage midpoint. The 552-and-
+  no-floor property belongs to the *usage* index, which is where the document counts come from —
+  so a row genuinely can rest on a volume the charts above leave out, but not for the reason given.
+  The sentence now names both artifacts and both numbers.
+- **The umbrella footnote asserted a magnitude it does not have.** "One undifferentiated record
+  carrying N here, which would flatten every other bar" is true for the default whole-range view
+  (17,587 against 7,056) and for 1948–1960 (12,060 against 1,643). For 1969–1976 it is 47 against
+  7,052 — a bar 0.7% of the tallest, described as scale-breaking. Withholding is still right in
+  every band; the copy now *compares* the two figures instead of asserting dominance, and the card
+  has no umbrella chip so this is the reader's only information.
+- **The stale-result guard could not fire.** `guard requested == scopeSignature` is live in the
+  instrument because its scope is `@State`, whose storage is shared across view-struct instances.
+  On the card the scope is a plain `let`, so a superseded run re-read its own captured value and
+  always matched itself — the guard was inert and a stale derivation could land last. `.task(id:)`
+  cancels the previous run, so `Task.isCancelled` is the signal that is actually about the current
+  view.
+
+Also folded: the iOS escape now carries the page's scope (`initialScope:` existed for exactly this
+and was unused, so the link discarded the narrowing the card above it describes); the collection
+sheet gained the `onNavigateAway` hook whose absence reintroduced the #844 dead-end; the reverse
+guide link is withheld when the guide is what presented the surface, or the guide becomes reachable
+from inside itself one sheet deeper each time; `isOnboarding` is actually passed, so the priority
+softening it exists for happens; a year range selecting no band reports a range problem instead of
+blaming the scope; the row's accessibility label carries the disambiguated form, since VoiceOver
+reading the bare name would announce several "White House Central Files" identically; and both
+manuals' standing "every chart offers View as table" claim is qualified, because the card is a list.
+
+**The band rule moved onto `ArchivalEraBand`.** It was briefly a static on the card, where the
+parity test could not call it: a `View` is `@MainActor`-isolated in Swift 6, and the test crashed on
+the actor check. It is a fact about the axis, so it lives beside `bandHoldingMost(of:)` — and is now
+tested directly rather than restated inline in the test, which is what the critic caught.
+
+### Mutation sweep: 16 mutants, 16 killed
+
+Six over the derivation (stop deduplicating bands; overwrite instead of summing; keep the
+denominators single-band; drop the umbrella disclosure; default an unparseable year instead of
+skipping; treat an empty scope as the whole corpus), six over the card and links (show the door
+mid-onboarding; stop forwarding the context through the iOS renderer; pin the card to one band;
+open rows with no authority record; show the umbrella; key the load on the year range), and four
+over the review fixes (containment instead of overlap; drop the scope from the escape; revert the
+population claim; drop the recursion guard).

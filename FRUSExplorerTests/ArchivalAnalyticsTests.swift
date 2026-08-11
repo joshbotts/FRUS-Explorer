@@ -268,6 +268,292 @@ struct ArchivalCollectionsDataTests {
         #expect(empty.bandVolumeCount == 0)
     }
 
+    /// One manifest entry, for the shared coverage builder's own tests.
+    private func manifestEntry(_ id: String, earliest: String, latest: String)
+        -> VolumeManifestEntry
+    {
+        VolumeManifestEntry(
+            volumeId: id, filename: "\(id).xml", subseries: "s", title: id,
+            dateRange: DateRange(earliest: earliest, latest: latest),
+            publicationDate: nil, status: .published, editors: [], generalEditor: nil,
+            documentCount: 0, sizeBytes: 0, tags: [])
+    }
+
+    // MARK: - Multi-band ranking (#835)
+
+    @Test("One band through the multi-band path is the single-band ranking, exactly")
+    func multiBandPassThroughIsIdentity() throws {
+        // The single-band call is now EXPRESSED as `ranking(bands: [band], …)`, so this is what
+        // makes that re-expression safe: if the merge changed anything for one band — ordering,
+        // labels, denominators — every existing caller would silently shift.
+        let spans = coverage([("v1", 1900), ("v2", 1950), ("v3", 1965), ("v4", 1972), ("v5", 1985)])
+        let a = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
+                                          volumeIds: ["v1", "v2", "v3", "v4", "v5"])
+        let b = AuthorityCollectionRecord(id: "lot:2", name: "Lot Two", lotFileNorm: "2",
+                                          volumeIds: ["v2", "v4"])
+        let index = try usage(volumes: ["v1", "v2", "v3", "v4", "v5"],
+                              collections: [("lot:1", [0, 1, 2, 3, 4], [3, 9, 4, 11, 6]),
+                                            ("lot:2", [1, 3], [5, 8])])
+        let data = ArchivalCollectionsData.make(authority: [a, b], usage: index, coverage: spans)
+
+        for band in ArchivalEraBand.all {
+            for weight in ArchivalWeight.allCases {
+                let single = data.ranking(band: band, lens: .namedCollections, weight: weight,
+                                          hidingUmbrella: true, limit: .max)
+                let viaSet = data.ranking(bands: [band], lens: .namedCollections, weight: weight,
+                                          hidingUmbrella: true, limit: .max)
+                #expect(single.rows == viaSet.rows, "\(band.title) / \(weight.title) diverged")
+                #expect(single.bandVolumeCount == viaSet.bandVolumeCount)
+                #expect(single.bandNoteCount == viaSet.bandNoteCount)
+                #expect(single.unitsReached == viaSet.unitsReached)
+            }
+        }
+    }
+
+    @Test("Merging every band sums the per-band values, under BOTH weights")
+    func multiBandSummationIsExact() throws {
+        // The property the whole multi-band API rests on: `make` writes one band per volume, so
+        // the bands PARTITION the corpus and a unit's citing volumes in two bands are disjoint.
+        // Under Volumes this is the difference between a correct total and the double-count that
+        // folding class leaves within one band really does produce.
+        let spans = coverage([("v1", 1900), ("v2", 1950), ("v3", 1965), ("v4", 1972), ("v5", 1985)])
+        let a = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
+                                          volumeIds: ["v1", "v2", "v3", "v4", "v5"])
+        let b = AuthorityCollectionRecord(id: "lot:2", name: "Lot Two", lotFileNorm: "2",
+                                          volumeIds: ["v2", "v4"])
+        let index = try usage(volumes: ["v1", "v2", "v3", "v4", "v5"],
+                              collections: [("lot:1", [0, 1, 2, 3, 4], [3, 9, 4, 11, 6]),
+                                            ("lot:2", [1, 3], [5, 8])])
+        let data = ArchivalCollectionsData.make(authority: [a, b], usage: index, coverage: spans)
+
+        for weight in ArchivalWeight.allCases {
+            // Expected totals accumulated from the FIVE single-band rankings, so the assertion is
+            // not the merged method checked against itself.
+            var expected: [String: Int] = [:]
+            for band in ArchivalEraBand.all {
+                for row in data.ranking(band: band, lens: .namedCollections, weight: weight,
+                                        hidingUmbrella: true, limit: .max).rows {
+                    expected[row.id, default: 0] += row.value
+                }
+            }
+            let merged = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                      weight: weight, hidingUmbrella: true, limit: .max)
+            #expect(Dictionary(uniqueKeysWithValues: merged.rows.map { ($0.id, $0.value) })
+                    == expected, "\(weight.title) did not sum across the bands")
+            #expect(merged.bandVolumeCount == 5, "every volume is counted once")
+        }
+
+        // Spelled out, so the arithmetic is visible rather than inferred: lot:1 cites all five
+        // volumes and lot:2 cites two, in two DIFFERENT bands.
+        let volumes = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                   weight: .volumes, hidingUmbrella: true, limit: .max)
+        #expect(volumes.rows.first(where: { $0.id == "lot:1" })?.value == 5)
+        #expect(volumes.rows.first(where: { $0.id == "lot:2" })?.value == 2)
+        let documents = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                     weight: .documents, hidingUmbrella: true, limit: .max)
+        #expect(documents.rows.first(where: { $0.id == "lot:1" })?.value == 33)
+        #expect(documents.rows.first(where: { $0.id == "lot:2" })?.value == 13)
+    }
+
+    @Test("A duplicated band is not counted twice")
+    func multiBandDeduplicates() throws {
+        let spans = coverage([("v1", 1950)])
+        let record = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
+                                               volumeIds: ["v1"])
+        let index = try usage(volumes: ["v1"], collections: [("lot:1", [0], [7])])
+        let data = ArchivalCollectionsData.make(authority: [record], usage: index, coverage: spans)
+        let band = ArchivalEraBand.all[1]
+        let doubled = data.ranking(bands: [band, band], lens: .namedCollections,
+                                   weight: .documents, hidingUmbrella: true)
+        #expect(doubled.rows.map(\.value) == [7], "a repeated band doubled every figure")
+        #expect(doubled.bandVolumeCount == 1)
+        #expect(doubled.bandNoteCount == data.ranking(band: band, lens: .namedCollections,
+                                                      weight: .documents,
+                                                      hidingUmbrella: true).bandNoteCount)
+    }
+
+    @Test("Two records sharing a name survive the merge with distinct labels")
+    func multiBandDisambiguatesAcrossBands() throws {
+        // THE reason the merge lives inside the type. Each record tops a DIFFERENT band, so they
+        // never collide in a single-band ranking and only meet once the bands are combined —
+        // and Swift Charts draws two bars sharing a label as one.
+        let spans = coverage([("v-early", 1950), ("v-late", 1972)])
+        let early = AuthorityCollectionRecord(id: "txt:truman library|white house central files",
+                                              name: "White House Central Files",
+                                              repository: "Truman Library",
+                                              volumeIds: ["v-early"])
+        let late = AuthorityCollectionRecord(id: "txt:nixon library|white house central files",
+                                             name: "White House Central Files",
+                                             repository: "Nixon Library",
+                                             volumeIds: ["v-late"])
+        let data = ArchivalCollectionsData.make(authority: [early, late], usage: nil,
+                                                coverage: spans)
+        let merged = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                  weight: .volumes, hidingUmbrella: true, limit: .max)
+        #expect(merged.rows.count == 2, "one of the two collections vanished in the merge")
+        #expect(Set(merged.rows.map(\.label)).count == 2, """
+            Both rows drew the same label. A chart would silently merge them into one bar, and \
+            a reader would see one collection where the corpus has two.
+            """)
+        for row in merged.rows { #expect(row.name == "White House Central Files") }
+    }
+
+    @Test("The umbrella disclosure adds up across the merged bands")
+    func multiBandUmbrellaValue() throws {
+        let spans = coverage([("v1", 1950), ("v2", 1972)])
+        let umbrella = AuthorityCollectionRecord(
+            id: "txt:department of state|central file", name: "Central File",
+            repository: "Department of State", volumeIds: ["v1", "v2"])
+        let other = AuthorityCollectionRecord(id: "lot:1", name: "Lot One", lotFileNorm: "1",
+                                              volumeIds: ["v1"])
+        let data = ArchivalCollectionsData.make(authority: [umbrella, other], usage: nil,
+                                                coverage: spans)
+        let hidden = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                  weight: .volumes, hidingUmbrella: true, limit: .max)
+        #expect(hidden.hiddenUmbrellaValue == 2, "the withheld figure must cover every band shown")
+        #expect(!hidden.rows.contains { $0.id == ArchivalCollectionsData.umbrellaCollectionId })
+        let shown = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                 weight: .volumes, hidingUmbrella: false, limit: .max)
+        #expect(shown.hiddenUmbrellaValue == nil)
+        #expect(shown.rows.contains { $0.id == ArchivalCollectionsData.umbrellaCollectionId })
+    }
+
+    // MARK: - Guide-card parity (#835)
+
+    @Test("The guide card's ranking is the instrument's ranking, over one real subseries")
+    func guideCardMatchesTheInstrument() throws {
+        // THE DRIFT GUARD. It is only meaningful because the two surfaces now reach the ranking
+        // by DIFFERENT routes: the dashboard calls `ranking(bands:)` with the bands its year
+        // range overlaps, the Collections mode calls `ranking(band:)`. Both are re-expressed
+        // through one implementation, and this asserts that re-expression holds over the real
+        // bundled manifest rather than a fixture.
+        let manifest = try #require(Self.bundledManifest(), "manifest.json is not readable")
+        let subseries = try #require(
+            Dictionary(grouping: manifest, by: \.subseries)
+                .filter { $0.value.count >= 4 }
+                .max(by: { $0.value.count < $1.value.count })?.value,
+            "no subseries with enough volumes to test")
+        let ids = Set(subseries.map(\.volumeId))
+
+        let coverage = ArchivalVolumeCoverage.map(from: manifest, limitedTo: ids)
+        #expect(!coverage.isEmpty, "the scope resolved to no dated volumes")
+        let data = ArchivalCollectionsData.make(
+            authority: CollectionAuthorityStore.shared?.collections ?? [],
+            usage: CollectionUsageIndexStore.shared, coverage: coverage)
+
+        // The CARD's own rule, called — not a predicate restated in the test, which would pass
+        // with the card pinned to one band.
+        let bands = ArchivalEraBand.bands(overlapping: 1861, through: 1993)
+        #expect(bands.count == ArchivalEraBand.all.count,
+                "the default range must cover the whole axis, or the card hides eras silently")
+
+        // Band by band, the card's route and the instrument's must agree exactly.
+        for band in ArchivalEraBand.all {
+            let instrument = data.ranking(band: band, lens: .namedCollections, weight: .documents,
+                                          hidingUmbrella: true, limit: ArchivalCollectionsData.rowCap)
+            let card = data.ranking(bands: [band], lens: .namedCollections, weight: .documents,
+                                    hidingUmbrella: true, limit: ArchivalCollectionsData.rowCap)
+            #expect(instrument.rows == card.rows, """
+                \(band.title): the guide card and the Collections mode drew different rows for \
+                one scope. They are supposed to be one derivation.
+                """)
+            #expect(instrument.shownShare(weight: .documents) == card.shownShare(weight: .documents))
+        }
+
+        // And the whole-range card is the union, with every label still unique.
+        let whole = data.ranking(bands: bands, lens: .namedCollections, weight: .documents,
+                                 hidingUmbrella: true, limit: .max)
+        #expect(Set(whole.rows.map(\.label)).count == whole.rows.count, """
+            Two rows share a label after merging the bands. A chart would draw them as one bar.
+            """)
+        #expect(whole.bandVolumeCount == coverage.count, """
+            The merged denominator must be every dated volume in the scope; otherwise the card's \
+            share sentence describes a population it did not rank.
+            """)
+    }
+
+    @Test("The card's year range selects the bands it OVERLAPS")
+    func cardBandSelection() {
+        // Containment would drop the first band — 261 of 552 volumes — for any range starting
+        // after 1861, which is most of them.
+        #expect(ArchivalEraBand.bands(overlapping: 1861, through: 1993).count
+                == ArchivalEraBand.all.count, "the default range must cover the whole axis")
+        #expect(ArchivalEraBand.bands(overlapping: 1900, through: 1993).contains(
+                    where: { $0.index == 0 }), """
+            A range starting after 1861 must still include the 1861–1947 band it overlaps; \
+            dropping it would silently discard 261 volumes.
+            """)
+
+        // A range inside one band selects exactly that band.
+        let sixties = ArchivalEraBand.bands(overlapping: 1962, through: 1966)
+        #expect(sixties.map(\.index) == [2])
+
+        // A range spanning a boundary selects both.
+        #expect(ArchivalEraBand.bands(overlapping: 1966, through: 1970).map(\.index) == [2, 3])
+
+        // Outside the axis entirely: no bands, which the card reports as a range problem rather
+        // than as a fact about the scope.
+        #expect(ArchivalEraBand.bands(overlapping: 1994, through: 2020).isEmpty)
+        #expect(ArchivalEraBand.bands(overlapping: 1700, through: 1800).isEmpty)
+
+        // Reversed endpoints order themselves rather than selecting nothing.
+        #expect(ArchivalEraBand.bands(overlapping: 1970, through: 1962).map(\.index) == [2, 3])
+    }
+
+    /// The shipped manifest, for the tests that must not run against a fixture.
+    private static func bundledManifest() -> [VolumeManifestEntry]? {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Resources/manifest.json")
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode([VolumeManifestEntry].self, from: data)
+    }
+
+    @Test("The shipped manifest bands as the axis documents it")
+    func shippedManifestBandDistribution() throws {
+        // Pins the coverage builder against the real corpus. The distribution is documented on
+        // `ArchivalEraBand.all`, so a builder change that silently re-dated volumes would show up
+        // here rather than as a quietly different chart.
+        let manifest = try #require(Self.bundledManifest())
+        let coverage = ArchivalVolumeCoverage.map(from: manifest)
+        var counts = [Int](repeating: 0, count: ArchivalEraBand.all.count)
+        for span in coverage.values {
+            counts[ArchivalEraBand.band(forMidpointYear: span.midpointYear).index] += 1
+        }
+        #expect(counts == [261, 120, 64, 66, 41], """
+            The band distribution moved. Either the manifest changed or the coverage builder \
+            re-dated volumes; both need a look before this number is updated.
+            """)
+        #expect(coverage.count == 552, "every catalogued volume must carry a parseable span")
+    }
+
+    // MARK: - The shared coverage-map builder (#835)
+
+    @Test("The shared coverage builder is the one definition of a scope")
+    func coverageBuilderRules() throws {
+        let entries = [
+            manifestEntry("v1", earliest: "1950-01-01", latest: "1952-12-31"),
+            manifestEntry("v2", earliest: "1970", latest: "1974"),
+            manifestEntry("v3", earliest: "", latest: ""),          // no parseable year
+            manifestEntry("v4", earliest: "1980", latest: "1976"),  // reversed endpoints
+        ]
+        let all = ArchivalVolumeCoverage.map(from: entries)
+        #expect(Set(all.keys) == ["v1", "v2", "v4"], """
+            A volume with no parseable year must be SKIPPED, not defaulted — an invented year \
+            would place it in a band on no evidence.
+            """)
+        #expect(all["v1"]?.midpointYear == 1951)
+        #expect(all["v4"]?.firstYear == 1976, "reversed endpoints must order themselves")
+
+        #expect(ArchivalVolumeCoverage.map(from: entries, limitedTo: ["v2"]).keys.sorted() == ["v2"])
+        #expect(ArchivalVolumeCoverage.map(from: entries, limitedTo: []).isEmpty, """
+            An empty scope is an empty map, never the whole corpus — the difference between \
+            "nothing selected" and "everything".
+            """)
+        #expect(ArchivalVolumeCoverage.map(from: entries, limitedTo: ["nope"]).isEmpty)
+    }
+
     @Test("Volumes weight counts the authority's citing volumes, documents weight the index's")
     func weightsCountDifferentPopulations() throws {
         // `frontOnly` is named in a volume's front matter and never resolved from a document

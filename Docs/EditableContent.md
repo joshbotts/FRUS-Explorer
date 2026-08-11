@@ -641,6 +641,18 @@ These are structural measures of how the editors linked documents, not a claim a
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
 
+<!-- section-id: archival-analytics -->
+
+**Archival Analytics**
+
+Every published FRUS document carries a source note naming the archival file its original was found in. Read one at a time they are citations; clustered across the whole series they answer a question no volume states outright — which bodies of records each era's editors actually worked in. Archival Analytics is where that clustering is shown: era-by-era rankings of the collections and filing-system classes the volumes drew on, a co-citation network of which collections were used together, the editors' cross-reference flows between archival units, and an archival profile of your own indexed volumes.
+
+Scope it to a subseries, a saved volume scope, a detected topic, or one president's volumes — and note that it scopes over the whole series rather than over your library, so the same scope gives the same figures on any device, with nothing downloaded. Counts can be read as documents or as volumes; those are different questions and give different answers.
+
+These figures show where the editors drew their documents, which is an editorial and archival signal rather than a census of the archives themselves. The rankings say what was cited, not what exists.
+
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Archival Analytics window (Mac), and from the "Open Archival Analytics" link on the Archival Sourcing page of this guide.
+
 <!-- section-id: source-explorer -->
 
 **Source Explorer & NARA Catalog**

@@ -34,6 +34,37 @@ struct ArchivalVolumeCoverage: Sendable, Equatable {
     }
 }
 
+extension ArchivalVolumeCoverage {
+
+    /// The coverage map both archival surfaces bucket by, built from manifest entries (#835).
+    ///
+    /// Shared rather than duplicated because the coverage map **is** the volume set: every scope
+    /// on both surfaces is expressed by restricting it, so two builders would be two definitions
+    /// of what a scope means. It is also the input the parity test needs to drive directly, which
+    /// a `@MainActor` view method could not offer.
+    ///
+    /// A volume with no parseable year at either end of its `dateRange` is **skipped**, not
+    /// defaulted — an invented year would place it in a band on no evidence.
+    ///
+    /// - Parameters:
+    ///   - entries: The manifest entries to read spans from.
+    ///   - allowed: The scope's volume ids, or `nil` for every entry.
+    /// - Returns: `volumeId -> span`, carrying only the in-scope, year-bearing volumes.
+    static func map(from entries: [VolumeManifestEntry],
+                    limitedTo allowed: Set<String>? = nil) -> [String: ArchivalVolumeCoverage] {
+        var result: [String: ArchivalVolumeCoverage] = [:]
+        result.reserveCapacity(allowed?.count ?? entries.count)
+        for entry in entries {
+            if let allowed, !allowed.contains(entry.volumeId) { continue }
+            let first = FRUSVolumeMetadata.firstYear(in: entry.dateRange.earliest)
+            let last = FRUSVolumeMetadata.firstYear(in: entry.dateRange.latest)
+            guard let start = first ?? last, let end = last ?? first else { continue }
+            result[entry.volumeId] = ArchivalVolumeCoverage(firstYear: start, lastYear: end)
+        }
+        return result
+    }
+}
+
 // MARK: - ArchivalRankingRow
 
 /// One bar in a Collections-mode ranking.
@@ -153,6 +184,10 @@ struct ArchivalRanking: Sendable, Equatable {
 ///          and the per-band source-note denominator is read from the usage index at last
 ///   1.3 — Session 2026-08-10: #825 — `record(forId:)`, so a drawn row can find its authority
 ///          record without the view reaching into the derivation's tables
+///   1.4 — Session 2026-08-11: #835 — `ranking(bands:…)` merges several era bands before
+///         disambiguating (the merge cannot happen in a caller: 279 shipped names are
+///         carried by more than one record), and `ArchivalVolumeCoverage.map(from:limitedTo:)`
+///         becomes the one definition of what a scope means
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
@@ -368,12 +403,59 @@ struct ArchivalCollectionsData: Sendable {
     ///   - limit: Rows returned.
     func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
                  hidingUmbrella: Bool, limit: Int = rowCap) -> ArchivalRanking {
-        let table: [String: Int]
-        switch (lens, weight) {
-        case (.namedCollections, .documents): table = collectionDocuments[band.index]
-        case (.namedCollections, .volumes): table = collectionVolumes[band.index]
-        case (.centralFileClasses, .documents): table = classDocuments[band.index]
-        case (.centralFileClasses, .volumes): table = classVolumes[band.index]
+        ranking(bands: [band], lens: lens, weight: weight,
+                hidingUmbrella: hidingUmbrella, limit: limit)
+    }
+
+    /// The same ranking over SEVERAL era bands at once — what a whole-scope card asks for (#835).
+    ///
+    /// ## The summation is exact, for both weights
+    /// `make` writes `bandByVolume[volumeId]` exactly once per volume, so **the bands partition
+    /// the corpus**. A unit's citing volumes in band *i* and band *j* are therefore disjoint sets,
+    /// and adding the per-band tables double-counts nothing — under Documents *or* under Volumes.
+    /// That is not the case for the class lens's *leaves within one band*, which is why
+    /// ``tallyClasses`` accumulates volume-id sets there; the two situations look alike and are
+    /// not, so the distinction is stated here rather than left to be rediscovered.
+    ///
+    /// ## Why the merge is here and not in a view
+    /// ``disambiguate(_:records:)`` runs per ranking, and 279 shipped authority names are carried
+    /// by more than one record. Rows unique inside their own band can collide the moment the bands
+    /// are merged — and Swift Charts silently draws two bars sharing a label as one. A caller that
+    /// merged five rankings itself would produce exactly that, so the merge happens before
+    /// disambiguation, inside the type that owns it.
+    ///
+    /// Per #763 no era rollup is stored: this sums the per-band rows at render time.
+    ///
+    /// - Parameters:
+    ///   - bands: The bands to combine. Order is irrelevant; duplicates would double-count, so
+    ///     they are dropped.
+    ///   - lens: Named collections or central-file classes.
+    ///   - weight: Documents or volumes.
+    ///   - hidingUmbrella: Whether to drop the `Central Files` umbrella record.
+    ///   - limit: Rows returned.
+    /// - Returns: The merged ranking. Its `bandVolumeCount` and `bandNoteCount` are the totals
+    ///   over the requested bands, so a share computed from them describes the same population.
+    func ranking(bands: [ArchivalEraBand], lens: ArchivalUnitLens, weight: ArchivalWeight,
+                 hidingUmbrella: Bool, limit: Int = rowCap) -> ArchivalRanking {
+        // Deduplicated so a caller passing the same band twice cannot silently double every
+        // figure in the card that draws it.
+        var seen = Set<Int>()
+        let indices = bands.map(\.index).filter { seen.insert($0).inserted }
+
+        var table: [String: Int] = [:]
+        for index in indices {
+            let source: [String: Int]
+            switch (lens, weight) {
+            case (.namedCollections, .documents): source = collectionDocuments[index]
+            case (.namedCollections, .volumes): source = collectionVolumes[index]
+            case (.centralFileClasses, .documents): source = classDocuments[index]
+            case (.centralFileClasses, .volumes): source = classVolumes[index]
+            }
+            if table.isEmpty {
+                table = source
+            } else {
+                table.merge(source, uniquingKeysWith: +)
+            }
         }
 
         let hidesUmbrella = hidingUmbrella && lens == .namedCollections
@@ -398,7 +480,7 @@ struct ArchivalCollectionsData: Sendable {
                 // filing system, so the whole lens is one colour. It is not "other".
                 return ArchivalRankingRow(id: key, label: key, name: key,
                                           category: .stateDepartment, value: value,
-                                          leaves: classLeaves[band.index][key] ?? [])
+                                          leaves: mergedLeaves(forKey: key, bands: indices))
             }
         }
 
@@ -406,9 +488,37 @@ struct ArchivalCollectionsData: Sendable {
         return ArchivalRanking(rows: labelled,
                                hiddenUmbrellaValue: (hiddenValue ?? 0) > 0 ? hiddenValue : nil,
                                unitsReached: ranked.count,
-                               bandVolumeCount: bandVolumeCounts[band.index],
-                               bandNoteCount: bandNoteCounts[band.index],
+                               bandVolumeCount: indices.reduce(0) { $0 + bandVolumeCounts[$1] },
+                               bandNoteCount: indices.reduce(0) { $0 + bandNoteCounts[$1] },
                                shownValue: labelled.reduce(0) { $0 + $1.value })
+    }
+
+    /// One class key's leaves across several bands, folded and re-ranked.
+    ///
+    /// Both figures add across bands for the reason the ranking's own note gives — the bands
+    /// partition the volumes — so a leaf's documents and its citing volumes are each a plain sum.
+    ///
+    /// - Parameters:
+    ///   - key: The folded class key whose leaves are wanted.
+    ///   - bands: The band indices to combine.
+    /// - Returns: The merged leaves, heaviest by documents first, then by key.
+    private func mergedLeaves(forKey key: String, bands: [Int]) -> [ArchivalClassLeaf] {
+        if bands.count == 1 { return classLeaves[bands[0]][key] ?? [] }
+        var documents: [String: Int] = [:]
+        var volumes: [String: Int] = [:]
+        for index in bands {
+            for leaf in classLeaves[index][key] ?? [] {
+                documents[leaf.key, default: 0] += leaf.documents
+                volumes[leaf.key, default: 0] += leaf.volumes
+            }
+        }
+        return documents
+            .map { ArchivalClassLeaf(key: $0.key, documents: $0.value,
+                                     volumes: volumes[$0.key] ?? 0) }
+            .sorted { a, b in
+                if a.documents != b.documents { return a.documents > b.documents }
+                return a.key < b.key
+            }
     }
 
     /// Documents one lens reaches in a band, across every unit — the numerator behind "how much

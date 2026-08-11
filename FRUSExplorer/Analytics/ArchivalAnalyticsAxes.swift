@@ -316,6 +316,27 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
         eraIndices.contains(CollectionRelations.eraIndex(forMidpointYear: midpointYear))
     }
 
+    /// The bands a year range OVERLAPS (#835).
+    ///
+    /// Overlap, not containment: the first band runs 1861–1947 and holds 261 of the 552 volumes,
+    /// so "the band starts inside the range" would drop it for any range beginning after 1861 —
+    /// silently discarding almost half the series.
+    ///
+    /// Lives on the axis rather than on the card that uses it for two reasons: it is a fact about
+    /// the axis, and a `View` is `@MainActor`-isolated in Swift 6, so a static declared there
+    /// could not be called from a plain test without tripping the actor check.
+    ///
+    /// - Parameters:
+    ///   - start: The range's first year.
+    ///   - end: The range's last year. Endpoints order themselves.
+    /// - Returns: The overlapping bands, earliest first; empty when the range lies entirely
+    ///   outside the axis, which a caller must report as a fact about the RANGE.
+    static func bands(overlapping start: Int, through end: Int) -> [ArchivalEraBand] {
+        let low = min(start, end)
+        let high = max(start, end)
+        return all.filter { $0.startYear <= high && $0.endYear >= low }
+    }
+
     /// The band holding the most of `coverage`, or `nil` when none of it lands in any band.
     ///
     /// The era-band control opens on 1948–1960 and is otherwise moved only by the reader, which
