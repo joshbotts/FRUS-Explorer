@@ -401,6 +401,90 @@ struct ArchivalExportWiringTests {
         #expect(source.contains("CollectionRelations.previewRowCap"))
     }
 
+    @Test("Network and Flows can open a collection's own record (#825b)")
+    func networkAndFlowsOpenCollections() throws {
+        // Both surfaces already RESOLVED an AuthorityCollectionRecord to offer Archival
+        // Neighbors; neither offered the record itself. That matters most for a reader with few
+        // volumes indexed, because Neighbors reads the LOCAL index and answers honestly-empty,
+        // leaving the dock with no route at all to what the app knows corpus-wide.
+        for relative in ["Analytics/ArchivalNetworkView.swift",
+                         "Analytics/ArchivalFlowsView.swift"] {
+            let source = try Self.source(relative)
+            #expect(source.contains("onOpenCollection(record)"),
+                    "\(relative) resolves a record but still offers no way to open it")
+            #expect(source.contains("let onOpenCollection: (AuthorityCollectionRecord) -> Void"),
+                    "\(relative) must take the action from its host, not present it itself")
+        }
+        let host = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(host.components(separatedBy: "onOpenCollection: { collectionDetail = $0 }")
+                    .count - 1 == 2,
+                "both modes must be wired to the host's collection-detail presentation")
+    }
+
+    @Test("The surface is addressable, and the bare initializer still works (#825e)")
+    func archivalAnalyticsIsAddressable() throws {
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains(
+            "init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil)"),
+                """
+                Every parameter must be defaulted: both existing call sites use \
+                `ArchivalAnalyticsView()`, and one of them is pinned by a source-scan test in \
+                ArchivalLibraryQueryTests.
+                """)
+        #expect(source.contains("_mode = State(initialValue: mode)"), """
+            The mode is @State seeded by the initializer. Assigning it as a plain property would \
+            reset the reader's own mode switch on every re-render.
+            """)
+        let network = try Self.source("Analytics/ArchivalNetworkView.swift")
+        #expect(network.contains("guard !hasSeededFocus else { return }"), """
+            The seed must apply once. Network re-appears whenever the mode picker returns to it, \
+            and re-seeding would throw away the focus the reader chose.
+            """)
+    }
+
+    @Test("Opening a collection is withheld when there is no AppState to give it")
+    func collectionDetailIsGuardedOnAppState() throws {
+        // `CollectionDetailView` declares a NON-optional `@Environment(AppState.self)`, and that
+        // traps on DECLARATION rather than on first use. This surface holds AppState optionally
+        // on purpose — its whole defensive pattern is to degrade to an empty state — so
+        // presenting the detail unguarded would crash exactly the configuration the optional
+        // exists for.
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("if let appState {\n                CollectionDetailSheet("),
+                "the detail sheet must be withheld rather than presented without an AppState")
+        #expect(source.contains("guard appState != nil, let record = data.record(forId: row.id)"),
+                "a row must not set a detail target it cannot present")
+    }
+
+    @Test("The chart says it can be tapped, and names the route that works without tapping")
+    func rankingAdvertisesItsTapTarget() throws {
+        // A `chartOverlay` tap is not an accessibility element, so an unannounced tap target is
+        // both undiscoverable and unreachable by VoiceOver. Two other charts in this app pair
+        // the same overlay with a hint; this one names the list as the alternative route.
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("private func drillInHint("))
+        #expect(source.contains("archival.ranking.drillIn.collections"))
+        #expect(source.contains("archival.ranking.drillIn.classes"))
+        #expect(source.contains("include its sub-numbers"), """
+            A folded family row opens a document set drawn from a WIDER family than the bar (the \
+            SQL prefix match sweeps sub-numbers the artifact fold assigns elsewhere — see #841). \
+            Until that is reconciled the screen must say so.
+            """)
+    }
+
+    @Test("A collection row's hand-off can close the host that presented it (#825d)")
+    func navigatingAwayClosesThePresentingHost() throws {
+        let detail = try Self.source("SourceExplorer/CollectionDetailView.swift")
+        #expect(detail.contains("var onNavigateAway: (() -> Void)?"))
+        #expect(detail.contains("onNavigateAway?()"), "the hook must actually fire")
+        let host = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(host.contains(".onNavigateAwayFromCollection {"), """
+            On iOS the analytics surface is itself a sheet, so a hand-off to the Browse tab lands \
+            underneath it: dismissing only the collection record leaves the reader looking at \
+            the analytics sheet, with nothing appearing to have happened.
+            """)
+    }
+
     @Test("The share sheet and the error alert are anchored outside the mode switch")
     func deliverySurfacesAreAnchoredOnce() throws {
         // The Group-modifier gotcha: a `.sheet` on a Group applies once per child, so anchoring

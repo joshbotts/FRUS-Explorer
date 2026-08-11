@@ -40,6 +40,10 @@ struct ArchivalNetworkView: View {
     let usage: CollectionUsageIndex?
     /// Opens Archival Neighbors for a collection.
     let onOpenNeighbors: (AuthorityCollectionRecord) -> Void
+    /// Opens a collection's own authority record (#825b).
+    let onOpenCollection: (AuthorityCollectionRecord) -> Void
+    /// An authority collection id to open focused on, or `nil` to open unfocused (#825e).
+    var initialFocusId: String?
     /// Opens Archival Neighbors for a central-file class.
     let onOpenClassNeighbors: (String) -> Void
     /// Hands a table and its methods statement up to the shell, which owns the share sheet.
@@ -51,7 +55,12 @@ struct ArchivalNetworkView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     /// The collection at the centre.
+    /// The collection whose neighbourhood is drawn. Seeded from ``initialFocusId`` on first
+    /// appearance so a deep link can arrive focused (#825e); user-driven after that.
     @State private var focus: AuthorityCollectionRecord?
+    /// Whether the initial focus has been applied, so re-appearing does not undo the reader's
+    /// own choice of focus.
+    @State private var hasSeededFocus = false
     /// Where the user has been, so re-centring is reversible.
     @State private var history: [AuthorityCollectionRecord] = []
     /// The computed neighbourhood.
@@ -115,6 +124,18 @@ struct ArchivalNetworkView: View {
         // One trigger, keyed on everything the graph depends on. `.task(id:)` also *cancels* a
         // rebuild that is still running when the reader drags the threshold slider again, which
         // an `.onChange` per input would not.
+        // Seeded before the first rebuild, so a deep link draws its focus immediately rather
+        // than drawing an unfocused graph and then replacing it. Guarded, because this view
+        // re-appears whenever the mode picker returns to Network and the reader's own focus
+        // must survive that.
+        .task {
+            guard !hasSeededFocus else { return }
+            hasSeededFocus = true
+            if let initialFocusId,
+               let record = collections.first(where: { $0.id == initialFocusId }) {
+                focus = record
+            }
+        }
         .task(id: rebuildToken) { await rebuild() }
     }
 
@@ -497,6 +518,17 @@ struct ArchivalNetworkView: View {
                     Label(String(localized: "archival.network.neighbors",
                                  defaultValue: "Show Archival Neighbors"),
                           systemImage: "square.stack.3d.up")
+                }
+                // #825b: the approved dock listed this beside the other two and it was dropped
+                // unrecorded. Archival Neighbors reads the LOCAL index, so for a reader with few
+                // volumes indexed it answers honestly-empty — and without this the dock had no
+                // route at all to what the app knows about the collection corpus-wide.
+                Button {
+                    onOpenCollection(record)
+                } label: {
+                    Label(String(localized: "archival.network.openCollection",
+                                 defaultValue: "Open Collection"),
+                          systemImage: "archivebox")
                 }
             }
         case .centralFileClass:

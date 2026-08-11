@@ -69,6 +69,14 @@ struct CollectionDetailView: View {
     /// Closes this view after an iOS hand-off, so the destination is not left under the sheet or
     /// the push this view was presented in (#825d). Harmless when the view is not presented.
     @Environment(\.dismiss) private var dismiss
+    /// Told when a row hands off to a different surface, so a host that is ITSELF presented can
+    /// get out of the way (#825d).
+    ///
+    /// Dismissing this view is not enough when it was opened from another sheet: on iOS the
+    /// Archival Analytics surface is a sheet, so a hand-off to the Browse tab lands underneath
+    /// it and the reader sees nothing happen. Only the host knows it is presented, so only the
+    /// host can close itself.
+    var onNavigateAway: (() -> Void)?
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
@@ -542,6 +550,7 @@ struct CollectionDetailView: View {
         #else
         appState.openTab(.browse, from: sceneID)
         dismiss()
+        onNavigateAway?()
         #endif
     }
 
@@ -813,12 +822,15 @@ struct CollectionDetailSheet: View {
 
     /// The bundled authority record being shown.
     let record: AuthorityCollectionRecord
+    /// Forwarded to ``CollectionDetailView/onNavigateAway``, so a host that is itself presented
+    /// can close when a row hands off to another surface (#825d).
+    var onNavigateAway: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            CollectionDetailView(record: record)
+            CollectionDetailView(record: record, onNavigateAway: onNavigateAway)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
@@ -828,5 +840,21 @@ struct CollectionDetailSheet: View {
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 480)
         #endif
+    }
+}
+
+// MARK: - Presenting hosts
+
+extension CollectionDetailSheet {
+
+    /// Runs `action` when a row inside the record hands off to another surface.
+    ///
+    /// A modifier rather than an initializer argument because the closure is about the *host's*
+    /// presentation, not about the record: the four existing call sites do not need it and
+    /// should not have to name it.
+    func onNavigateAwayFromCollection(_ action: @escaping () -> Void) -> CollectionDetailSheet {
+        var copy = self
+        copy.onNavigateAway = action
+        return copy
     }
 }
