@@ -693,6 +693,64 @@ struct ArchivalCollectionsDataTests {
         #expect(data.noteCount(band: ArchivalEraBand.all[2]) == nil)
     }
 
+    // MARK: - Volume scoping (#827)
+
+    @Test("A scope is a filter on the coverage map, so every figure narrows together")
+    func scopingNarrowsEveryFigure() throws {
+        // The derivation is a pure function of (authority, usage, coverage), so scoping is a
+        // filter on ONE input. That is what makes the ranking, the denominator, the band volume
+        // count and the units-reached caption move together — none of them can be scoped
+        // separately, and so none of them can be left describing the wider population.
+        let index = try Self.usage(
+            volumes: ["v-in", "v-out"], noteCounts: [100, 900],
+            classKeys: ["763.72", "764.00"],
+            rows: [(key: 0, volumes: [0, 1], counts: [10, 90]),
+                   (key: 1, volumes: [1], counts: [200])])
+        let span = ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968)
+        let band = ArchivalEraBand.all[2]
+
+        let whole = ArchivalCollectionsData.make(
+            authority: [], usage: index, coverage: ["v-in": span, "v-out": span])
+        let scoped = ArchivalCollectionsData.make(
+            authority: [], usage: index, coverage: ["v-in": span])
+
+        #expect(whole.noteCount(band: band) == 1_000)
+        #expect(scoped.noteCount(band: band) == 100, """
+            The denominator must be the SCOPE's notes. Leaving it corpus-wide would put a \
+            scoped numerator over a series-wide denominator — a share of the wrong thing, and \
+            wrong in the direction that flatters the scope.
+            """)
+
+        let wholeRanking = whole.ranking(band: band, lens: .centralFileClasses,
+                                         weight: .documents, hidingUmbrella: false)
+        let scopedRanking = scoped.ranking(band: band, lens: .centralFileClasses,
+                                           weight: .documents, hidingUmbrella: false)
+        #expect(wholeRanking.bandVolumeCount == 2)
+        #expect(scopedRanking.bandVolumeCount == 1, "the caption counts the scope's volumes")
+        #expect(wholeRanking.unitsReached == 2)
+        #expect(scopedRanking.unitsReached == 1, """
+            `764.00` exists only in the excluded volume, so a scoped ranking must not reach it — \
+            and the "draw on N units" caption must not count it.
+            """)
+        #expect(scopedRanking.rows.first?.value == 10, "only the in-scope volume's documents")
+        #expect(scopedRanking.shownShare(weight: .documents) == 0.1)
+    }
+
+    @Test("An empty scope yields an empty derivation rather than the whole corpus")
+    func emptyScopeIsNotWholeCorpus() throws {
+        // The failure mode worth ruling out: a scope that resolves to no volumes silently
+        // falling back to everything, so the reader sees the series while the chip claims a
+        // narrow set.
+        let index = try Self.usage(
+            volumes: ["v1"], noteCounts: [100], classKeys: ["763.72"],
+            rows: [(key: 0, volumes: [0], counts: [10])])
+        let data = ArchivalCollectionsData.make(authority: [], usage: index, coverage: [:])
+        let band = ArchivalEraBand.all[2]
+        #expect(data.noteCount(band: band) == nil)
+        #expect(data.ranking(band: band, lens: .centralFileClasses, weight: .documents,
+                             hidingUmbrella: false).rows.isEmpty)
+    }
+
     // MARK: - The shipped artifacts
 
     /// The derivation over what actually ships, built once for the whole suite.

@@ -40,6 +40,8 @@ import Charts
 ///          surface becomes addressable through a defaulted initializer
 ///   1.6 — Session 2026-08-11: #838 — plain labels on the controls, the standing method
 ///          statement moved into the info popover, the conditional disclosures left on the page
+///   1.7 — Session 2026-08-11: #827 — volume scoping over the SERIES (not the local index),
+///          applied to the derivation's coverage map so every figure narrows together
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -91,6 +93,11 @@ struct ArchivalAnalyticsView: View {
     /// Documents or volumes. Persisted for the same reason.
     @AppStorage("frus.archivalAnalytics.weight")
     private var weightRaw: String = ArchivalWeight.documents.rawValue
+
+    /// The volume set the Collections mode describes, or `nil` for the whole series (#827).
+    @State private var scopeVolumeIds: [String]?
+    /// The active scope's human label, shown on the chip and stamped on the export.
+    @State private var scopeLabel: String?
 
     /// Whether the `Central Files` umbrella is filtered out. Per-visit, like every other
     /// narrowing in the analytics family.
@@ -205,6 +212,7 @@ struct ArchivalAnalyticsView: View {
                 ArchivalAllUnitsSheet(
                     band: band, lens: unitLens, weight: weight, hidingUmbrella: hidesUmbrella,
                     data: data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+                    scopeLabel: scopeLabel,
                     onOpen: { row in
                         showsAllUnits = false
                         // Presented on the NEXT update, not this one: dismissing a sheet and
@@ -352,11 +360,71 @@ struct ArchivalAnalyticsView: View {
     }
 
 
+    // MARK: - Scope (#827)
+
+    /// Sets the scope and drops the derivation, so the next `task` rebuilds it.
+    private func setScope(_ ids: [String]?, label: String?) {
+        scopeVolumeIds = ids
+        scopeLabel = label
+    }
+
+    /// The scope chip and the administration presets.
+    ///
+    /// `AnalyticsScopeBar` is the machinery the rest of the analytics family already uses, so a
+    /// reader who has scoped a word cloud knows this control. What differs is the POPULATION it
+    /// offers — see ``scopableVolumeIds``: this mode scopes over the **series**, not over the
+    /// reader's library, because its derivation is the bundled corpus-wide authority and is
+    /// honest with nothing downloaded.
+    ///
+    /// The administrations are a second menu rather than `AdministrationPresetMenu`, which binds
+    /// a **year range** and is documented as belonging to coverage-year surfaces only. Here an
+    /// administration is a volume SET, taken from the bundled profile index's own per-volume
+    /// breakdown, so "the Nixon administration" means the volumes that index attributes to it
+    /// rather than a date window this surface would then have to reconcile with its era bands.
+    @ViewBuilder
+    private var scopeControls: some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: scopableVolumeIds,
+            volumeTitle: { appState?.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
+            scopeVolumeIds: Binding(get: { scopeVolumeIds },
+                                    set: { scopeVolumeIds = $0 }),
+            scopeLabel: Binding(get: { scopeLabel }, set: { scopeLabel = $0 }),
+            onChange: {},
+            presentation: .chip)
+        administrationMenu
+    }
+
+    /// Scope to one presidential administration's volumes.
+    @ViewBuilder
+    private var administrationMenu: some View {
+        let profiles = appState?.administrationProfilesStore.index?.administrations ?? []
+        if !profiles.isEmpty {
+            Menu {
+                ForEach(profiles, id: \.id) { profile in
+                    Button(profile.president) {
+                        let ids = profile.volumes.map(\.volumeId)
+                            .filter { scopableVolumeIds.contains($0) }
+                        guard !ids.isEmpty else { return }
+                        setScope(ids.sorted(), label: profile.president)
+                    }
+                }
+            } label: {
+                chipLabel(systemImage: "person.crop.square",
+                          caption: String(localized: "archival.filter.administration",
+                                          defaultValue: "Administration"),
+                          value: String(localized: "archival.filter.administration.choose",
+                                        defaultValue: "Choose"))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
     /// The era / units / weight controls, wrapped so they stack on a narrow window.
     private func filterRow(data: ArchivalCollectionsData) -> some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) { filterChips(data: data); Spacer(minLength: 0) }
-            VStack(alignment: .leading, spacing: 8) { filterChips(data: data) }
+            HStack(spacing: 8) { scopeControls; filterChips(data: data); Spacer(minLength: 0) }
+            VStack(alignment: .leading, spacing: 8) { scopeControls; filterChips(data: data) }
         }
     }
 
@@ -474,15 +542,21 @@ struct ArchivalAnalyticsView: View {
 
     /// "N source notes in this era. The M rows below account for X% of them."
     private func denominatorSentence(_ ranking: ArchivalRanking, notes: Int) -> String {
+        // The population's name, not just the era: once a scope is on, "22,737 source notes in
+        // 1961–1968" would be read as the series' 1961–1968 when it is the scope's.
+        let population = scopeLabel.map {
+            String(format: String(localized: "archival.denominator.scoped %@ %@",
+                                  defaultValue: "%1$@, %2$@"), $0, band.title)
+        } ?? band.title
         guard let share = ranking.shownShare(weight: weight) else {
             return String(format: String(
                 localized: "archival.denominator.notes %lld %@",
-                defaultValue: "%1$lld source notes in %2$@."), Int64(notes), band.title)
+                defaultValue: "%1$lld source notes in %2$@."), Int64(notes), population)
         }
         return String(format: String(
             localized: "archival.denominator.share %lld %@ %lld %@",
             defaultValue: "%1$lld source notes in %2$@. The %3$lld rows below account for %4$@ of them."),
-            Int64(notes), band.title, Int64(ranking.rows.count), Self.shareText(share))
+            Int64(notes), population, Int64(ranking.rows.count), Self.shareText(share))
     }
 
     /// A share, never rounded to a number that reads as nothing.
@@ -687,7 +761,8 @@ struct ArchivalAnalyticsView: View {
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount,
             indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
-            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue)
+            noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue,
+            scopeLabel: scopeLabel)
         SeriesChartCard(
             title: title,
             caption: rankingCaption(ranking),
@@ -1268,18 +1343,34 @@ struct ArchivalAnalyticsView: View {
     /// Read on the main actor because `ManifestStore` is `@MainActor`; the value is a plain
     /// dictionary, so the derivations that consume it can run anywhere.
     @MainActor
-    private func volumeCoverage() -> [String: ArchivalVolumeCoverage] {
+    private func volumeCoverage(limitedTo scope: [String]? = nil) -> [String: ArchivalVolumeCoverage] {
         guard let store = appState?.manifestStore else { return [:] }
         let entries = store.diffResult?.known ?? store.bundledEntries
+        let allowed = scope.map(Set.init)
         var result: [String: ArchivalVolumeCoverage] = [:]
-        result.reserveCapacity(entries.count)
+        result.reserveCapacity(allowed?.count ?? entries.count)
         for entry in entries {
+            if let allowed, !allowed.contains(entry.volumeId) { continue }
             let first = FRUSVolumeMetadata.firstYear(in: entry.dateRange.earliest)
             let last = FRUSVolumeMetadata.firstYear(in: entry.dateRange.latest)
             guard let start = first ?? last, let end = last ?? first else { continue }
             result[entry.volumeId] = ArchivalVolumeCoverage(firstYear: start, lastYear: end)
         }
         return result
+    }
+
+    /// Every volume the **series** has, which is what the scope selector offers (#827).
+    ///
+    /// Deliberately NOT `appState.indexedVolumeIds`, which is what every other analytics surface
+    /// scopes over. Those surfaces read the local index and can only describe what is
+    /// downloaded; this mode's derivation is the bundled corpus-wide authority and usage index,
+    /// and it is honest about all 552 volumes with none of them downloaded. Intersecting with
+    /// the library would silently answer a different question for every reader — "the collections
+    /// of the 1969–76 subseries" would mean the eleven volumes they happen to hold.
+    private var scopableVolumeIds: Set<String> {
+        guard let store = appState?.manifestStore else { return [] }
+        let entries = store.diffResult?.known ?? store.bundledEntries
+        return Set(entries.map(\.volumeId))
     }
 
     /// Volumes in the series, for the library footer's "more exist" clause.
@@ -1291,7 +1382,7 @@ struct ArchivalAnalyticsView: View {
     /// Builds the corpus-wide derivation off the main actor.
     private func loadCollections() async {
         guard collectionsData == nil else { return }
-        let coverage = volumeCoverage()
+        let coverage = volumeCoverage(limitedTo: scopeVolumeIds)
         let authority = CollectionAuthorityStore.shared?.collections ?? []
         let usage = CollectionUsageIndexStore.shared
         collectionsData = await Task.detached(priority: .userInitiated) {

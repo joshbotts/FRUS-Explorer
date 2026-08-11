@@ -489,6 +489,47 @@ struct ArchivalExportWiringTests {
             """)
     }
 
+    @Test("The scope reaches the label, the caveats, and the uncapped list (#827)")
+    func exportsCarryTheScope() throws {
+        let scoped = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[2], lens: .namedCollections, weight: .documents,
+            hiddenUmbrella: nil, unitsReached: 214, bandVolumeCount: 11,
+            indexedVolumeCount: 5, noteCount: 8_124, shownValue: 1_616,
+            scopeLabel: "Vietnam volumes")
+        #expect(scoped.scopeLabel?.contains("Vietnam volumes") == true, """
+            A CSV headed only with an era is read as the whole series' era, which is a different \
+            and much larger population than a scoped one.
+            """)
+        let caveats = scoped.extraCaveats.joined(separator: " ")
+        #expect(caveats.contains("only the volumes in"))
+        #expect(caveats.contains("not narrowed to what this device has downloaded"), """
+            The scope is over the SERIES, not the library. Without that sentence a reader would \
+            reasonably assume a scoped figure reflects their own downloads.
+            """)
+
+        let unscoped = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[2], lens: .namedCollections, weight: .documents,
+            hiddenUmbrella: nil, unitsReached: 214, bandVolumeCount: 64, indexedVolumeCount: 5)
+        #expect(!unscoped.extraCaveats.joined().contains("only the volumes in"),
+                "an unscoped export must not claim a scope")
+    }
+
+    @Test("Collections scopes over the series, never over the local index")
+    func scopeIsCorpusWide() throws {
+        let source = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(source.contains("indexedVolumeIds: scopableVolumeIds"), """
+            Passing `appState.indexedVolumeIds` here would silently answer a different question \
+            for every reader: "the collections of the 1969–76 subseries" would mean whichever of \
+            its volumes they happen to hold. This mode's derivation is the bundled corpus-wide \
+            authority and is honest with nothing downloaded.
+            """)
+        #expect(source.contains("private var scopableVolumeIds: Set<String>"))
+        #expect(source.contains("volumeCoverage(limitedTo: scopeVolumeIds)"), """
+            The scope must be applied to the coverage map — the derivation's own input — so every \
+            figure narrows together instead of one of them being filtered downstream.
+            """)
+    }
+
     @Test("The share sheet and the error alert are anchored outside the mode switch")
     func deliverySurfacesAreAnchoredOnce() throws {
         // The Group-modifier gotcha: a `.sheet` on a Group applies once per child, so anchoring
