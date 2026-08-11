@@ -599,8 +599,37 @@ re-assessing; today the hosting facts foreclose it.
 
 ---
 
+## 9. Tracker enrolment (2026-08-11)
+
+The recommendations are filed as issues; the mapping, with the review's sequencing:
+
+| Issue | Carries | Effort | Wave |
+|---|---|---|---|
+| **#825** | R-2 — close the dead ends (navigation, Open Collection, uncapped table, deep-link initializer) | S | 1 — polish session |
+| **#826** | R-4 + R-5 — one class grain everywhere; use the denominators | S | 1 — polish session |
+| **#832** | R-12 — authority-name concatenation (bug), Cited Over Time inspector/export, lifecycle umbrella decision | S | 1 — polish session |
+| **#827** | R-1 — volume/subseries/administration scoping for Collections mode | S–M | 2 — the value session |
+| **#833** | R-10 — topic door (subject- and search-scoped profiles); rides #827 | M | 2 follow-on |
+| **#835** | §8 — sources-page collection-grain narrative card + both cross-links (with the existing **#798**); class half after #828 | S–M | 2–3 |
+| **#829** | R-7 — surface the stored external citations (document rail + collection-record inbound) | S–M | independent |
+| **#828** | R-3 — decimal-class label table (owner-gated on the 1910–49 schedule) | M | 3 — unlocks #834 |
+| **#834** | R-6 — external-citation decimal channel (gates recorded; after #828) | M–L | 3 |
+| **#830** | R-8 — Research Trip Packet T-0…T-3, per its own scoped plan | 4 sessions | capstone |
+| **#831** | R-9 — provenance-flow schema 2 (measure first; lowest-priority lane) | M | last, if earned |
+
+R-11's remaining items (guide "Find it from…" line, reverse guide link) ride #835 beside the
+pre-existing #798. §7's candidate insights are deliberately **not** enrolled, matching the
+parked-items convention — they are recorded in §7 with derivations and limits, to be filed
+individually if picked up.
+
+---
+
 ## Version history
 
+- 1.2 (2026-08-11) — §9: tracker enrolment. The recommendations filed as #825–#835 (R-2 →
+  #825; R-4+R-5 → #826; R-1 → #827; R-3 → #828; R-7 → #829; R-8 → #830; R-9 → #831; R-12 →
+  #832; R-10 → #833; R-6 → #834; §8 → #835), with the wave mapping and the recorded
+  non-enrolment of §7's candidates.
 - 1.1 (2026-08-10) — §8: assessed the owner's relocation question (corpus-level archival
   insights → the series-analytics sources page). Answer: relocate no — the guide's three
   hosting containers (Settings-sheet on iOS, onboarding sheet, reference window) and the
