@@ -4875,3 +4875,68 @@ always been CSV-only). `EditableContent.md` loses three blocks and gains the new
 **38 stale `lines:` pointers** into the two shrunk files were recomputed against the source rather
 than hand-edited — 0 keys unresolved, which is also a check that no block references a string that
 no longer exists.
+
+---
+
+## Session 2026-08-10 — wave 1b (#826): one class grain, and the denominators that shipped unread
+
+**Issue:** #826 · **Filed en route:** #841 · **PR:** the second implementation session of the revamp
+
+### The fold's real hazard is the volumes weight
+
+Folding subject-numeric leaves to category+number is what makes the class lens
+rankable — at leaf grain half the keys carry one document. But the per-(key, volume)
+tally that was correct at leaf grain **double-counts the moment leaves merge**: a volume
+citing `POL 27 VIET S` and `POL 27 ARAB-ISR` is one citing volume of `POL 27`. The error
+is not marginal, it is absurd — summing the pairs reports `POL 1` as cited by 101 volumes
+in a band containing 64 volumes in total. The class pass therefore accumulates a **set**
+of volume ids per folded key, and a test drives the exact two-leaf case.
+
+The leaf is the pull-slip unit, so every folded row keeps its leaves under the chart.
+
+### The denominators reproduce exactly, so they are pinned rather than trusted
+
+`volumeNoteCounts` has been in the artifact since #763, described in its own generator
+notes as the denominator every share needs, and nothing read it. Measured independently
+here and by the pre-flight, #826's table reproduces to the digit: 150,764 / 59,973 /
+22,737 / 18,381 / 12,609 notes, and top-12 coverage of 3.0% / **9.4%** / 43.1% / 71.3% /
+46.7%. That 9.4% — the view the mode *opens* on — is now a test against the shipped
+artifacts, travelling through manifest coverage, band attribution, the usage index and
+the umbrella chip, which moves it to 29.2% when the umbrella is shown.
+
+One wrinkle worth recording: **#826's own two percentage columns use different
+populations.** "Lands in any named collection" includes the umbrella; "the 12 shown rows
+cover" excludes it. With the umbrella hidden the 1948–1960 figure is 22.1%, not 42.2%.
+The on-screen sentence picks one convention.
+
+### The pre-flight earned its keep, twice over
+
+It confirmed the two non-obvious decisions (the `?? key` fallback — 10 shipped keys are
+unfoldable and would VANISH without it — and the distinct-volume set), and then found
+**five defects in this session's own code**, four invisible from the screen. The worst was
+a **tautological test**: `#expect(folded != key || key == folded)` is `A || !A`. The test
+guarding the one property this issue exists to establish asserted nothing at all, and it
+passed, and it would have passed forever. Replaced with a fixed-point sweep that a
+mutation now kills.
+
+Also: leaf counts rendered in documents under both weights (a bar of 36 expanding to
+hundreds), leaves sorted by documents while displaying volumes, an unguarded export
+caveat committing to CSV the units error the screen refuses, and a sub-1% share rendering
+as "0%" above three visible bars.
+
+### Filed rather than fixed
+
+**#841** — two live definitions of a subject-numeric family. The artifact fold is greedy
+over the hyphen (`POL 27-14 VIET` → `POL 27-14`); the live-index query's
+`classLeafPatterns` includes a `POL 27-%` pattern and swallows it. The Network already
+hands folded labels to that query, so the mismatch ships today; #826 only makes it
+reachable from a second surface. Worth 220 documents in one band.
+
+The handoff's own worked example for that family is wrong in two positions — recorded on
+#838, whose job is the "never hard-code from the mocks" rule.
+
+### Mutation sweep: 7 mutants, 7 killed
+
+Volume-set → per-pair count; stop folding; drop the note accumulation; let the volumes
+weight state a share; leaves report documents under both weights; unfold (against the
+replaced parity test specifically); drop the shared fold from the Network.
