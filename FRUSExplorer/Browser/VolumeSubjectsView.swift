@@ -265,7 +265,7 @@ struct VolumeSubjectVolumesSheet: View {
                 // which is what a reader will assume unless told otherwise.
                 Text(String(format: String(
                     localized: "browser.volume.subjectVolumes.archival.footer %lld",
-                    defaultValue: "Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them."),
+                    defaultValue: "Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them — and the subjects themselves are detected automatically, not editorial headings."),
                     Int64(coveringVolumeIds.count)))
             }
         }

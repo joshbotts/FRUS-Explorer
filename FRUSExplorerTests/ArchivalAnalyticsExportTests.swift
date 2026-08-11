@@ -625,6 +625,12 @@ struct ArchivalExportWiringTests {
             A one-volume "profile of volumes on this subject" is that volume's own profile under \
             a topic's name — the exact misreading the footer exists to prevent.
             """)
+        // #833 requires the door to inherit the subject profile's own caveats, so the reader
+        // is not handed a chart built on tags they were never told are machine-derived.
+        #expect(sheet.contains("detected automatically, not editorial headings"), """
+            The scope rests on automatically detected subject tags. A chart offered without that \
+            clause presents a derived topic set as if it were an editorial subject heading.
+            """)
         #expect(sheet.contains("not the documents about this subject inside them"), """
             The load-bearing sentence. The scope is whole volumes whose profile ranks the \
             subject; a reader will otherwise take the chart for the archives behind the \
