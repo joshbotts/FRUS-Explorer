@@ -30,6 +30,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — Session 2026-08-11: #825(b) Open Collection on the node dock
+///   1.2 — Session 2026-08-11: #825(f) the custodian wedges become tap targets, with a group
+///          card, a group filter that discloses its own re-scale, and corner labels
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -67,6 +70,10 @@ struct ArchivalNetworkView: View {
     @State private var graph: ArchivalNetworkGraph?
     /// The selected node's id, which drives the dock and the node's ring.
     @State private var selectedNodeId: String?
+    /// The custodian sector being inspected as a group, or `nil` for all four (#825f).
+    @State private var selectedSector: ArchivalRepositoryCategory?
+    /// Whether the graph is filtered to `selectedSector`'s partners only.
+    @State private var showsOnlySelectedSector = false
     /// The focus search field's text.
     @State private var searchText = ""
     /// Whether the focus picker is showing.
@@ -103,7 +110,7 @@ struct ArchivalNetworkView: View {
             controls
             Divider()
             if let graph, !graph.nodes.isEmpty {
-                graphRegion(graph)
+                graphRegion(drawnGraph(graph))
                 Divider()
                 infoDock(graph)
                     .frame(height: isShortScreen ? 116 : 168)
@@ -210,6 +217,27 @@ struct ArchivalNetworkView: View {
         .buttonStyle(.bordered)
         .controlSize(.small)
 
+        if let selectedSector {
+            Button {
+                clearSector()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "circle.grid.2x2").font(.caption2)
+                    Text(String(localized: "archival.network.group", defaultValue: "Group"))
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text(selectedSector.displayName).font(.caption.weight(.medium))
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .tint(selectedSector.color)
+            .accessibilityLabel(String(format: String(
+                localized: "archival.network.group.clear %@",
+                defaultValue: "Clear the %@ group"), selectedSector.displayName))
+        }
+
         if let graph, !graph.nodes.isEmpty {
             // CSV only. Nothing in this app has ever rendered a `Canvas` through
             // `AnalyticsFigureExporter`, so a figure here would be an unproven render path
@@ -272,6 +300,9 @@ struct ArchivalNetworkView: View {
                 let layout = ArchivalNetworkBuilder.layout(graph, in: geometry.size)
                 ZStack(alignment: .topLeading) {
                     canvas(graph, layout: layout)
+                    // Wedges BEFORE nodes: later views win a tap, so a node always beats the
+                    // sector it sits in. Reversing these two lines makes every node untappable.
+                    sectorZones(layout, size: geometry.size)
                     hitAreas(graph, layout: layout)
                 }
                 .scaleEffect(scale, anchor: .center)
@@ -347,8 +378,41 @@ struct ArchivalNetworkView: View {
                         startAngle: .degrees(start), endAngle: .degrees(start + 90),
                         clockwise: false)
             path.closeSubpath()
-            context.fill(path, with: .color(category.color.opacity(0.07)))
+            // Selection reads as emphasis rather than as a new colour: the same tint, stronger
+            // on the chosen sector and fainter on the rest, so a sector never changes what it
+            // means. 0.07 is the resting tint for all four.
+            let opacity: Double
+            if let selectedSector {
+                opacity = selectedSector == category ? 0.17 : 0.04
+            } else {
+                opacity = 0.07
+            }
+            context.fill(path, with: .color(category.color.opacity(opacity)))
+            if selectedSector == category {
+                context.stroke(path, with: .color(category.color.opacity(0.45)),
+                               style: StrokeStyle(lineWidth: 1))
+            }
+            drawSectorLabel(&context, category: category, start: start, layout: layout)
         }
+    }
+
+    /// The custodian's name in its own corner.
+    ///
+    /// The wedges have carried meaning since #765 and said so only in a legend below the canvas.
+    /// Now that a wedge is a tap target the name has to be *on* it, or the affordance is a
+    /// quarter of the screen that does something unexplained. Placed at 45° into the wedge, just
+    /// inside the outer radius, so it sits in the corner rather than over the nodes.
+    private func drawSectorLabel(_ context: inout GraphicsContext,
+                                 category: ArchivalRepositoryCategory,
+                                 start: Double, layout: ArchivalNetworkLayout) {
+        let angle = (start + 45) * .pi / 180
+        let radius = layout.outerRadius * 0.93
+        let point = CGPoint(x: layout.center.x + cos(angle) * radius,
+                            y: layout.center.y + sin(angle) * radius)
+        let text = Text(category.displayName.uppercased())
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundStyle(category.color.opacity(selectedSector == category ? 0.95 : 0.55))
+        context.draw(context.resolve(text), at: point, anchor: .center)
     }
 
     /// The dashed guide rings. Each marks a fraction of the *strongest* link in this graph, so
@@ -463,6 +527,89 @@ struct ArchivalNetworkView: View {
         return String(name.prefix(14)) + "… · " + String(qualifier.prefix(10))
     }
 
+    /// The graph as drawn, which is the built graph unless a group filter is on.
+    ///
+    /// Filtering here rather than in the builder keeps the rebuild out of it: the underlying
+    /// neighbourhood has not changed, only what is shown. `strongestMeasureValue` is recomputed
+    /// over the survivors, which is exactly why the group card discloses the re-scale — the
+    /// guide rings are fractions of the strongest link *drawn*, so a partner can sit at a
+    /// different radius under the filter while meaning the same thing.
+    private func drawnGraph(_ graph: ArchivalNetworkGraph) -> ArchivalNetworkGraph {
+        guard showsOnlySelectedSector, let selectedSector else { return graph }
+        let kept = graph.nodes.filter { $0.category == selectedSector }
+        guard !kept.isEmpty else { return graph }
+        return ArchivalNetworkGraph(
+            focus: graph.focus,
+            focusCategory: graph.focusCategory,
+            nodes: kept,
+            nodesAboveThreshold: graph.nodesAboveThreshold,
+            partnersTotal: graph.partnersTotal,
+            strongestMeasureValue: kept.map(\.measureValue).max() ?? graph.strongestMeasureValue,
+            expandedUmbrella: graph.expandedUmbrella)
+    }
+
+    // MARK: - Sector zones (#825f)
+
+    /// The four custodian wedges as their own tap targets, **under** the node buttons.
+    ///
+    /// Order is the whole safety property here: these are emitted before ``hitAreas(_:layout:)``
+    /// in the same `ZStack`, so a tap that lands on a node hits the node. A wedge covers a
+    /// quarter of the canvas and would otherwise swallow every node in it.
+    ///
+    /// The wedge is a **quadrant of the canvas**, matching `drawSectors`' four 90° arcs, so the
+    /// hit shape and the drawn shape are the same geometry rather than two descriptions of it.
+    @ViewBuilder
+    private func sectorZones(_ layout: ArchivalNetworkLayout, size: CGSize) -> some View {
+        let quadrants: [(ArchivalRepositoryCategory, Double)] = [
+            (.stateDepartment, 180), (.lotFile, 270), (.presidentialLibrary, 0),
+            (.otherInstitution, 90),
+        ]
+        ForEach(quadrants, id: \.0) { category, start in
+            Button {
+                if selectedSector == category {
+                    clearSector()
+                } else {
+                    selectedSector = category
+                    showsOnlySelectedSector = false
+                    selectedNodeId = nil
+                }
+            } label: {
+                Path { path in
+                    path.move(to: layout.center)
+                    path.addArc(center: layout.center, radius: layout.outerRadius,
+                                startAngle: .degrees(start), endAngle: .degrees(start + 90),
+                                clockwise: false)
+                    path.closeSubpath()
+                }
+                .fill(Color.clear)
+                .contentShape(Path { path in
+                    path.move(to: layout.center)
+                    path.addArc(center: layout.center, radius: layout.outerRadius,
+                                startAngle: .degrees(start), endAngle: .degrees(start + 90),
+                                clockwise: false)
+                    path.closeSubpath()
+                })
+            }
+            .buttonStyle(.plain)
+            .frame(width: size.width, height: size.height)
+            .accessibilityLabel(category.displayName)
+            .accessibilityHint(String(localized: "archival.network.sector.hint",
+                                      defaultValue: "Select to inspect this custodian's partners as a group"))
+        }
+    }
+
+    /// Restores all four sectors and drops any group filter.
+    private func clearSector() {
+        selectedSector = nil
+        showsOnlySelectedSector = false
+    }
+
+    /// The partners in the inspected sector, drawn or not.
+    private func sectorPartners(_ graph: ArchivalNetworkGraph) -> [ArchivalNetworkNode] {
+        guard let selectedSector else { return [] }
+        return graph.nodes.filter { $0.category == selectedSector }
+    }
+
     // MARK: - Hit areas
 
     @ViewBuilder
@@ -553,12 +700,72 @@ struct ArchivalNetworkView: View {
             VStack(alignment: .leading, spacing: 8) {
                 if let node = graph.nodes.first(where: { $0.id == selectedNodeId }) {
                     selectedCard(node, in: graph)
+                } else if let selectedSector {
+                    groupCard(selectedSector, in: graph)
                 } else {
                     dockPlaceholder(graph)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
+        }
+    }
+
+    /// What one custodian's partners amount to, for a reader who tapped the wedge rather than a
+    /// node (#825f).
+    ///
+    /// The strongest partner is named because "four of twelve" is a shape without a subject; the
+    /// reader's next question is always which one. `Show Only This Group` **re-scales the
+    /// radius**, since the rings are fractions of the strongest link *drawn*, and dropping the
+    /// other sectors can change which link that is — so the card says so rather than letting the
+    /// same collection appear to move.
+    @ViewBuilder
+    private func groupCard(_ category: ArchivalRepositoryCategory,
+                           in graph: ArchivalNetworkGraph) -> some View {
+        let partners = sectorPartners(graph)
+        let strongest = partners.max { $0.sharedVolumeCount < $1.sharedVolumeCount }
+        Text(category.displayName).font(.headline)
+        Text(String(localized: "archival.network.group.caption",
+                    defaultValue: "Group — tap any wedge to inspect it on its own, or a node for one collection."))
+            .font(.caption).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        if partners.isEmpty {
+            Text(String(format: String(
+                localized: "archival.network.group.none %@",
+                defaultValue: "None of this focus's partners above the link threshold are held by %@. Lowering the threshold may bring some in."),
+                category.displayName.lowercased()))
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            Text(String(format: String(
+                localized: "archival.network.group.detail %lld %lld %@ %@ %lld",
+                defaultValue: "%1$lld of this focus's %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes."),
+                Int64(partners.count), Int64(graph.nodes.count),
+                category.displayName.lowercased(), strongest?.label ?? "",
+                Int64(strongest?.sharedVolumeCount ?? 0)))
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if showsOnlySelectedSector {
+                Text(String(localized: "archival.network.group.rescaled",
+                            defaultValue: "Only this group is drawn, and the rings have re-scaled to its strongest link — distances are not comparable with the full graph."))
+                    .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 12) {
+                Button {
+                    showsOnlySelectedSector.toggle()
+                } label: {
+                    Label(showsOnlySelectedSector
+                          ? String(localized: "archival.network.group.showAll",
+                                   defaultValue: "Show Every Group")
+                          : String(localized: "archival.network.group.only",
+                                   defaultValue: "Show Only This Group"),
+                          systemImage: "line.3.horizontal.decrease")
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .labelStyle(.titleAndIcon)
         }
     }
 
