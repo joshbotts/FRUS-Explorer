@@ -93,6 +93,14 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     var isFamily: Bool {
         leaves.count > 1 || (leaves.count == 1 && leaves[0].key != id)
     }
+    /// The class key's reading in plain words, or `nil` (#828).
+    ///
+    /// Declared LAST so the memberwise initialiser takes it last and no existing call site has to
+    /// move. Only the class lens carries one, and only where the bundled schedule covers the era
+    /// and knows the country. Kept BESIDE the key rather than replacing it: the key is what a pull
+    /// slip needs, so every surface shows both.
+    var gloss: String?
+
 }
 
 // MARK: - ArchivalClassLeaf
@@ -188,6 +196,8 @@ struct ArchivalRanking: Sendable, Equatable {
 ///         disambiguating (the merge cannot happen in a caller: 279 shipped names are
 ///         carried by more than one record), and `ArchivalVolumeCoverage.map(from:limitedTo:)`
 ///         becomes the one definition of what a scope means
+///   1.5 — Session 2026-08-11: #828 — class rows carry a `gloss`, attached where the row is
+///         BUILT so every surface reading a ranking gets it: chart, uncapped list, CSV, card
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
@@ -442,6 +452,12 @@ struct ArchivalCollectionsData: Sendable {
         var seen = Set<Int>()
         let indices = bands.map(\.index).filter { seen.insert($0).inserted }
 
+        // The years these bands cover, which is what decides whether any schedule can speak for
+        // the keys in them. A selection straddling the 1950 renumbering is covered by no single
+        // schedule and is therefore left unlabelled — see `Schedule.governs(_:)`.
+        let bandSpan = indices.compactMap { index in ArchivalEraBand.all.first { $0.index == index } }
+        let span = (bandSpan.map(\.startYear).min() ?? 0)...(bandSpan.map(\.endYear).max() ?? 0)
+
         var table: [String: Int] = [:]
         for index in indices {
             let source: [String: Int]
@@ -478,9 +494,14 @@ struct ArchivalCollectionsData: Sendable {
             case .centralFileClasses:
                 // Every class key is a heading inside the State Department's own central
                 // filing system, so the whole lens is one colour. It is not "other".
+                // The single injection point: every surface that draws a class row — the
+                // ranking, the uncapped list, the exports, the guide card — reaches it through
+                // this call, which is what #828's "one label source" means in practice.
                 return ArchivalRankingRow(id: key, label: key, name: key,
                                           category: .stateDepartment, value: value,
-                                          leaves: mergedLeaves(forKey: key, bands: indices))
+                                          leaves: mergedLeaves(forKey: key, bands: indices),
+                                          gloss: DecimalClassLabelStore.shared?
+                                              .gloss(for: key, coveringYears: span))
             }
         }
 

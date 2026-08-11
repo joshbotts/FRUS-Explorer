@@ -1016,7 +1016,11 @@ struct ArchivalAnalyticsView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                .accessibilityLabel(Text(row.label))
+                // #828: the axis keeps the bare key — it is the disambiguation key, and a chart
+                // silently merges two bars sharing a label — but VoiceOver reads the gloss, which
+                // is the one place a reader cannot glance at the row beneath for it.
+                .accessibilityLabel(Text([row.label, row.gloss].compactMap { $0 }
+                    .joined(separator: ", ")))
                 .accessibilityValue(Text(accessibilityValue(for: row)))
             }
         }

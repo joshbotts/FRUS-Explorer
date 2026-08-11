@@ -113,9 +113,18 @@ struct ArchivalAllUnitsSheet: View {
                 // the authority id) to names carried by more than one record. Drawing `name`
                 // here would print `White House Central Files` six times over in one band —
                 // six identical rows, each opening a different collection.
-                Text(row.label)
-                    .font(.callout)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(row.label)
+                        .font(.callout)
+                    // #828: the key stays, because the key is what a pull slip needs; the gloss
+                    // sits under it so a reader who does not already know `793.94` can read it.
+                    if let gloss = row.gloss {
+                        Text(gloss)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Text(row.value, format: .number)
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -166,7 +175,12 @@ struct ArchivalAllUnitsSheet: View {
                 String(localized: "archival.table.custodian", defaultValue: "Custodian"),
                 weight.title,
             ],
-            rowCells: ranking.rows.map { [$0.label, $0.category.displayName, "\($0.value)"] })
+            rowCells: ranking.rows.map {
+                // The gloss travels into the CSV too: a spreadsheet of bare decimal numbers is
+                // the same problem one layer out.
+                [[$0.label, $0.gloss].compactMap { $0 }.joined(separator: " — "),
+                 $0.category.displayName, "\($0.value)"]
+            })
     }
 
     private var provenance: AnalyticsProvenance {
