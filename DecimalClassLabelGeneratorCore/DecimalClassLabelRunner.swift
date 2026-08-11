@@ -89,9 +89,25 @@ public enum DecimalClassLabelRunner {
             let classes = parseClasses(text)
             let subjects = parseSubjects(text)
             let era = countries.compactMapValues { $0.codes[source.countryColumn] }
+            // Several names legitimately share one code — 65 is both `Italy` and `Rhodes Island`,
+            // because Italy held the Dodecanese for the period this schedule covers. First-wins
+            // over a Dictionary resolved that by hash order, which is how the table came to gloss
+            // 65 as "Rhodes Island". The shortest name wins instead, ties broken alphabetically:
+            // deterministic, and it prefers the sovereign state over the territory filed under it.
             var byCode: [String: String] = [:]
-            for (name, code) in era where byCode[code.lowercased()] == nil {
-                byCode[code.lowercased()] = name
+            var shared = 0
+            // Sorted by the NAME's length — `lhs.key` — not the code's. Sorting on `value`
+            // ordered by code length, which is nearly constant, so the tie-break never ran and
+            // 51 came back as "Corsica" rather than "France".
+            for (name, code) in era.sorted(by: { lhs, rhs in
+                lhs.key.count != rhs.key.count ? lhs.key.count < rhs.key.count : lhs.key < rhs.key
+            }).map({ ($0.key, $0.value) }) {
+                let key = code.lowercased()
+                if byCode[key] == nil { byCode[key] = name } else { shared += 1 }
+            }
+            if shared > 0 {
+                print("[DecimalClassLabels] \(source.id): \(shared) further names share a code "
+                    + "already taken (territories filed under the power holding them)")
             }
 
             // A schedule that does not parse COMPLETELY is omitted rather than shipped thin.
@@ -327,9 +343,25 @@ public enum DecimalClassLabelRunner {
             if result[name] == nil { result[name] = (placed, note.isEmpty ? nil : note) }
         }
 
+        /// Whether a code-less line continues the previous row's note rather than starting a name.
+        ///
+        /// Notes are sentences and cross-references; names are noun phrases. The table's own
+        /// vocabulary does the work — `Discontinued`, `Established`, `Beginning`, `See`, `Prior
+        /// to`, `Generally not used` — plus the ordinary marks of running prose.
+        func looksLikeNote(_ line: String) -> Bool {
+            if line.hasSuffix(".") { return true }
+            if let first = line.first, first.isLowercase || first.isNumber { return true }
+            return ["Discontinued", "Established", "Beginning", "Restored", "See", "Prior to",
+                    "Generally not used"].contains { line.contains($0) }
+        }
+
         for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
             let line = rawLine.trimmingCharacters(in: .whitespaces)
             if line.isEmpty { continue }
+            // The column headers repeat on every page, and a row straddling a page break has them
+            // injected between its name and its codes — which is how `Germany` lost its 62.
+            // Skipped without disturbing the pending name, so the row closes across the break.
+            if Self.pageFurniture.contains(line) { continue }
             let range = NSRange(line.startIndex..., in: line)
             let tokens = line.split(separator: " ").map(String.init)
             let hasCode = tokens.contains(where: isCode)
@@ -348,11 +380,17 @@ public enum DecimalClassLabelRunner {
                 open = (name: name,
                         codes: group(2).split(separator: " ").map(String.init).filter(isCode),
                         note: group(3).trimmingCharacters(in: .whitespaces))
-            } else if open != nil {
+            } else if open != nil, looksLikeNote(line) {
                 // A note continuation for the row still open.
                 open?.note += " " + line
                 if line.hasSuffix(".") { close() }
             } else {
+                // Not a note: it is the START OF THE NEXT NAME, so the open row ends here.
+                // Without this test every line after a code row was swallowed as note text, and
+                // a name that wraps — `Union of Soviet Socialist Republics` runs to three lines
+                // before its codes — was consumed by the row above it. That is why 61 and 62,
+                // the Soviet Union and Germany, were missing from a 429-row table.
+                close()
                 // A wrapped name fragment. Notes are sentences; names are not.
                 if line.count < 60, !line.hasSuffix(".") {
                     pendingName.append(line)
@@ -374,6 +412,14 @@ public enum DecimalClassLabelRunner {
         }
         return result
     }
+
+    /// The column headers reprinted on every page of the country table.
+    ///
+    /// Not content: a row that straddles a page break has these lines dropped into the middle of
+    /// it, and treating them as name fragments or note text severed the name from its codes.
+    private static let pageFurniture: Set<String> = [
+        "Country", "Number", "Notes", "1910-1949", "1950-1959", "1960-1963",
+    ]
 
     /// Collapses the letter-spacing NARA's 1950s scans carry (`"Clas s 0"` → `"Class 0"`).
     private static func despace(_ text: String) -> String {
