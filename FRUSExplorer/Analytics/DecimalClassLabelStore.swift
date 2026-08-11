@@ -45,6 +45,18 @@ struct DecimalClassLabelTable: Decodable, Sendable {
         /// `"62"` → `"Germany"`, for this era only.
         let countries: [String: String]
         /// `classDigit` → (`suffix` → gloss).
+        ///
+        /// Class 8's entries run the manual's whole tree, not just its ten stems: `.6363` is
+        /// Petroleum, beneath `.636` Carbon. Graphite, beneath `.63` Mines. Mining. That depth is
+        /// what lets `812.6363` read as Mexico's oil files rather than as "Mexico".
+        ///
+        /// **A gloss is not unique.** 99 of the 693 suffixes share wording with another — `.711`
+        /// and `.731` are both "Laws and regulations", of postal and of cable service, and `.2225`
+        /// and `.3225` are both "Discharge", from the army and from the navy. Qualifying them by
+        /// their parent was measured and dropped: it does not separate the largest family (the
+        /// military/naval pairs differ two levels up, so the qualifier would have to be the whole
+        /// chain) and the key itself is always displayed beside the gloss, which is the
+        /// discriminator a reader needs.
         let subjects: [String: [String: String]]
 
         /// Whether this schedule governs every year in `span`.
@@ -79,7 +91,7 @@ struct DecimalClassLabelTable: Decodable, Sendable {
     /// - Parameters:
     ///   - key: A decimal class key as a source note wrote it (`"793.94"`).
     ///   - span: The coverage years the surface's figures describe.
-    /// - Returns: `"China and Japan"`, `"Mexico — internal affairs"`, or `nil`.
+    /// - Returns: `"China and Japan"`, `"Mexico — Petroleum"`, or `nil`.
     func gloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
         guard let schedule = schedules.first(where: { $0.governs(span) }) else { return nil }
         let parts = key.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
@@ -98,9 +110,15 @@ struct DecimalClassLabelTable: Decodable, Sendable {
                           Self.readable(nation), Self.readable(other))
         }
         if let suffix, let subject = schedule.subjects[digit]?[suffix] {
+            // The subject keeps the manual's own capitalisation. It was lower-cased while the
+            // table held 61 subject headings, all of them common nouns ("Political affairs"); the
+            // nested subdivisions are full of proper nouns, and any rule that lower-cases a first
+            // word turns `.00N` into "Haiti — nazi. nazi activities" and `.142` into "United
+            // States — red cross". These are headings in a filing manual, and reading them as the
+            // manual prints them is both correct and the only rule with no wrong cases.
             return String(format: String(localized: "archival.classLabel.subject %@ %@",
                                          defaultValue: "%1$@ — %2$@"),
-                          Self.readable(nation), subject.lowercased())
+                          Self.readable(nation), subject)
         }
         return Self.readable(nation)
     }

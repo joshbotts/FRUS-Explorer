@@ -5546,3 +5546,102 @@ Measured before any of it was built:
   Central America"); the later relations classes are 2/4/5/6, not 6 alone; and every pattern must
   be bounded to the body pages, since the back index yields 1,445 confident nonsense matches that
   clear the floors by orders of magnitude.
+
+## Session 2026-08-11 — #828 follow-up: the class-8 subdivision tree
+
+`812.6363` used to read "Mexico". It is the Mexican oil file — class 8, country 12, subject
+`.6363 Petroleum` — and the manual states it, three levels down a branch whose class is printed
+once at the top. The shipped table had the 61 stems and none of the tree.
+
+### Why one pass could not do it, and why the second one is line-anchored
+
+The stem pass demands a literal `8**.` on every entry, which is how the manual writes the top of a
+subdivision and nothing else; beneath it the class and the country are dropped and the suffix is
+printed alone (`.421 Academic.`, `.4211 Popular.`). Carrying the class forward from the last stem
+is the whole of the fix, and an earlier attempt at this got it wrong in a way worth recording: it
+split the text at every suffix occurrence, so each mid-entry pointer ("For apprenticeship, see
+8**.605") became a fragment whose remainder was the next entry's prose, and first-writer-wins locked
+it in — `8**.42` came back as "Division of Trade Agreements".
+
+The measurement that settles it: over the class-8 body, **not one of its 755 subdivision lines is a
+cross-reference, and not one cross-reference begins a line.** Anchoring at the line start removes
+the failure mode rather than guarding against it. Only four lines in the body carry anything before
+a suffix-shaped token; three are exactly that prose (`For armament control, United States, see
+711.00111 Armament control.`) and the fourth is `]8**.77 Railway.`, an OCR bracket — which is why
+one leading mark is tolerated and a leading word is not.
+
+### Class 8 only, and that is a property of the other classes
+
+Classes 6 and 7 are country-arranged too and neither writes a general bare suffix. Class 7's bare
+children belong to the *whole numbers* heading them — `.01 Right of residence` sits under `701
+Diplomatic representation`, meaning `701.01`; filed as a class-7 subject it would gloss `761.01` as
+the Soviet Union's right of residence, which the manual does not say. Its genuinely general
+subdivisions all carry the second-country marker (`.††11 War. Peace. Friendship.`) and are compound
+keys the one-suffix lookup cannot express. Class 6's are `††`-marked throughout. Running the pass
+anywhere else would invent readings, so it runs on class 8 and on the 1910–49 manual alone (blind
+against the two later scans it yields 507 and 311 further suffixes — numbers that mean nothing
+until someone has read what they say).
+
+### Three parse rules, each found by reading the output rather than by a test
+
+- **An entry the manual did not finish is not a label.** Every finished entry ends in a full stop.
+  One that does not either wrapped — and a wrapped phrase resumes in LOWER CASE, where a
+  sub-descriptor of the entry above starts a new capitalised sentence — or ran into the facing
+  column. Joining on that test recovered five truncated entries and refused the one case where the
+  next line was a second column. What is still unterminated is dropped, which is what stops
+  `.541 Industrial property. ** Country in which protection`, `.542 Patents is sought. For
+  treaties, conventions,`, `.543 Trade-marks. Trade names. arrangements, ect., add country number
+  ††,` and `.796104 Inspection. ** Country of regulation,` from shipping. The same rule costs four
+  entries the manual states perfectly well but forgot to punctuate (`.512 Taxation`, `.4511 Dress`,
+  `.61345 Soya beans`, `.2222F Foreign Nationals`); their keys render bare.
+- **Where bleed survives punctuation, it is cut.** `.544 Copyrights. using smaller number of
+  country for **.` ends in a full stop and is still two columns. A sentence resuming in lower case
+  is the second column starting, and so is a `**`/`††` followed by a capital — while `country **`
+  mid-phrase, which the manual writes constantly, is followed by a lower-case word and is left
+  alone.
+- **A gloss must begin with a letter.** The scan splits some numbers across a space; without the
+  rule, suffix `42` takes the gloss "31 Engineering" from `.42 31 Engineering` and overwrites
+  Education with a fragment.
+
+A country-scoped stem suspends inheritance: `800.88 Foreign carrying trade` has eight route termini
+under it (`.8810 North America.`) that are subdivisions of country 00, The World. Inherited by the
+class they would gloss `862.8810` as Germany's North America.
+
+### The subject keeps the manual's capitalisation
+
+Lower-casing it was right for 61 common nouns and wrong for a tree full of proper ones — it turned
+`.00N` into "Haiti — nazi. nazi activities" and `.142` into "United States — red cross". Any rule
+that lower-cases a first word breaks the proper-noun-initial entries, so the glosses now read as the
+manual prints them. This changes the appearance of every subject label already shipping and is the
+one item on the visual-review list.
+
+### Measured, with the app's own gloss code over the real corpus
+
+Over the Through-1947 era band — 261 volumes, 5,881 class keys, 135,432 documents:
+
+| | keys naming their subject | documents |
+|---|---|---|
+| before | 878 (14.9%) | 49,551 (36.6%) |
+| after | 2,069 (35.2%) | 69,851 (51.6%) |
+
+**1,191 keys and 20,300 documents gained a named subject.** The measure is *names the subject*, not
+*has a gloss*: an unresolved suffix already fell back to the country alone, so "keys glossed" is
+identical before and after (69.9%) and cannot see this change at all.
+
+Reading the largest of them is what the artifact is held to, and they are recognisable files:
+`812.6363 Mexico — Petroleum` (419), `882.5048 Liberia — Slavery. Compulsory labor. Peonage` (139),
+`891.51A Iran — Financial adviser` (142), `817.812 Nicaragua — Canals` (124), `837.61351 Cuba —
+Cane` (217), `893.0146 China — Territory occupied by foreign military forces` (127), `867.4016
+Turkey — Race problems` (89), `862.4016 Germany — Race problems` (86).
+
+### Known and deliberate: a gloss is not unique
+
+99 of the 693 suffixes share wording with another — `.711` and `.731` are both "Laws and
+regulations", of postal and of cable service; `.2225` and `.3225` are both "Discharge", from the
+army and from the navy. Qualifying them by their parent was measured and dropped: it does not
+separate the largest family (the military/naval pairs differ two levels up, so the qualifier would
+have to be the whole chain) and the key itself is always displayed beside the gloss.
+
+The subject floor rose 60 → 650. Sixty is met by the stem pass alone, so a nested pass that
+silently stopped matching would leave a table that still passes, still ships, and still labels
+`812.6363` "Mexico".

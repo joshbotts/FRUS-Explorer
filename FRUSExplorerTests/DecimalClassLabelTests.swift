@@ -114,6 +114,64 @@ struct DecimalClassLabelTests {
         #expect(table.gloss(for: "", coveringYears: band0) == nil)
     }
 
+    @Test("The class-8 tree reaches the subject, not just the top of its branch")
+    func nestedSubjects() throws {
+        let table = try table()
+        let band0 = 1861...1947
+
+        // The three keys behind the largest gains, each a file a reader would recognise. Before
+        // the subdivision tree was parsed all three glossed as the bare country name.
+        #expect(table.gloss(for: "812.6363", coveringYears: band0) == "Mexico — Petroleum", """
+            419 documents. `.6363` sits under `.636 Carbon. Graphite` under `.63 Mines. Mining`, \
+            and the manual states the class once at the top of that branch.
+            """)
+        #expect(table.gloss(for: "882.5048", coveringYears: band0)
+            == "Liberia — Slavery. Compulsory labor. Peonage")
+        #expect(table.gloss(for: "891.51A", coveringYears: band0) == "Iran — Financial adviser")
+
+        // The subject keeps the manual's capitalisation. Lower-casing it was fine for 61 common
+        // nouns and wrong for a tree full of proper ones.
+        #expect(table.gloss(for: "838.00N", coveringYears: band0) == "Haiti — Nazi. Nazi activities")
+        #expect(table.gloss(for: "811.142", coveringYears: band0) == "United States — Red Cross")
+    }
+
+    @Test("Nothing the scan mangled reached the table")
+    func nestedParseDefectsAreAbsent() throws {
+        let table = try table()
+        let schedule = try #require(table.schedules.first)
+        let subjects = try #require(schedule.subjects["8"])
+
+        // Four entries with the facing column's note welded onto them by the text layer. The
+        // manual prints `.541 Industrial property.` and a separate right-hand note reading
+        // "** Country in which protection is sought. For treaties, conventions, arrangements,
+        // ect., add country number ††, using smaller number of country for **."
+        for suffix in ["541", "542", "543", "796104"] {
+            #expect(subjects[suffix] == nil, """
+                \(suffix) would ship the facing column. "Patents is sought" is confident nonsense, \
+                and a reader cannot tell it from a label.
+                """)
+        }
+        #expect(subjects["544"] == "Copyrights", "the same bleed, cut where the second column starts")
+
+        // Route termini under `800.88 Foreign carrying trade` — subdivisions of country 00, The
+        // World, not of the class.
+        #expect(subjects["8810"] == nil)
+        #expect(table.gloss(for: "862.8810", coveringYears: 1861...1947) == "Germany", """
+            Inherited by the class this would read "Germany — North America". Unglossed suffixes \
+            fall back to the country alone, which is what the key meant before #828 and is still \
+            true of it.
+            """)
+
+        // Class 7's bare children belong to the whole numbers heading them (`701.01`), and class
+        // 6's name a second country, so neither contributes a general suffix.
+        #expect(schedule.subjects["7"] == nil, """
+            `.01 Right of residence` sits under `701 Diplomatic representation`. Filed as a class-7 \
+            subject it would gloss `761.01` as the Soviet Union's right of residence.
+            """)
+        #expect(schedule.subjects["6"]?.count == 1)
+        #expect(subjects.keys.contains { $0.contains("†") } == false)
+    }
+
     @Test("The ranking hands every surface the same gloss")
     func rankingCarriesTheGloss() throws {
         // The single injection point: if this works, the chart, the uncapped list, the exports and
