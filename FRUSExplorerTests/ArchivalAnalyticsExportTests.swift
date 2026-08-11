@@ -918,6 +918,20 @@ struct ArchivalExportWiringTests {
             The door must sit outside the branch the caveat lives in, or an empty breakdown \
             takes it down with the rows.
             """)
+        // Position alone is not the property — a row-count guard ON the door would restore the
+        // defect while leaving the door exactly where it sits. The condition must be the section
+        // kind and nothing else.
+        let before = panel[..<door.lowerBound]
+        let lastIf = try #require(before.range(of: "if kind == ", options: .backwards))
+        let headerLine = before[lastIf.lowerBound...]
+            .prefix { $0 != "\n" }
+            .trimmingCharacters(in: .whitespaces)
+        #expect(headerLine == "if kind == .provenance {", """
+            The door's only condition may be the section it belongs to; found "\(headerLine)". \
+            Any predicate over this section's ROWS re-couples it to a breakdown it is not made \
+            of, which is the defect — and it would leave the door exactly where it sits, so \
+            position alone does not pin this.
+            """)
         #expect(panel.contains("facets.provenance.openProfile.preparing"), """
             The volume breakdown loads in the background, so the wait must be stated rather than \
             leaving a control to materialise seconds later.
