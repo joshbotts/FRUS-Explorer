@@ -206,6 +206,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          VoiceOver can announce the selection, the glyph now fills for any active reading
 ///          (it tracked only Timeline), and Save as Working Corpus moves to `moreMenu` beside
 ///          Save this search — it is an action, not a reading.
+///   1.19 — Session 2026-08-11: #833 — the facet panel's provenance section opens an archival
+///          profile of the volumes the results sit in
 
 struct SearchView: View {
 
@@ -279,6 +281,33 @@ struct SearchView: View {
     ) {
         _vm = State(initialValue: SearchViewModel(searchService: searchService))
         self.initialParameters = initialParameters
+    }
+
+    /// Opens Archival Analytics scoped to this result set's volumes (#833).
+    ///
+    /// A method rather than an inline closure: the facet panel's initializer is already a large
+    /// expression and the type-checker could not solve it with this inside.
+    private func openArchivalProfile(volumeIds: [String], query: String) {
+        // The query the FACETS describe, handed over by the panel. The view model's own property
+        // is a live text-field buffer (#833 review).
+        let term = query.trimmingCharacters(in: .whitespaces)
+        let label: String
+        if term.isEmpty {
+            label = String(localized: "facets.provenance.openProfile.label.results",
+                           defaultValue: "Search results")
+        } else {
+            label = String(format: String(localized: "facets.provenance.openProfile.label %@",
+                                          defaultValue: "Search: %@"), term)
+        }
+        let request = ArchivalScopeRequest(volumeIds: volumeIds, label: label)
+        // Close the facet sheet FIRST, then hand off on the next turn. The destination is another
+        // sheet — the tab shell presents Archival Analytics — and a dismissal and a presentation
+        // in one state change drop the presentation. No tab switch: the shell hosts the sheet, so
+        // it opens over whichever tab the reader is on.
+        showFacetSheet = false
+        let appState = appState
+        let sceneID = sceneID
+        Task { @MainActor in appState.openArchivalScope(request, from: sceneID) }
     }
 
     var body: some View {
@@ -395,6 +424,7 @@ struct SearchView: View {
                                 showFacetSheet = false
                                 Task { await runSearch() }
                             },
+                            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                             onDiscloseSection: { section in
                                 Task {
                                     await facetController.load(

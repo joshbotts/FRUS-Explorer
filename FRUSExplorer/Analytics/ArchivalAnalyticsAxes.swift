@@ -281,6 +281,9 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
+///   1.1 — Session 2026-08-11: #833 — `bandHoldingMost(of:)`, so a scope arriving from a topic
+///         or a search lands on an era its volumes actually occupy, and so that decision can be
+///         tested against real spans rather than asserted by name in a source scan
 struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 
     /// Position in ``all``; also `id`.
@@ -311,6 +314,33 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
     /// Whether a coverage midpoint falls inside this band.
     func contains(midpointYear: Int) -> Bool {
         eraIndices.contains(CollectionRelations.eraIndex(forMidpointYear: midpointYear))
+    }
+
+    /// The band holding the most of `coverage`, or `nil` when none of it lands in any band.
+    ///
+    /// The era-band control opens on 1948–1960 and is otherwise moved only by the reader, which
+    /// is right for a scope they picked while looking at the chart and wrong for one arriving
+    /// from a topic or a search: a 1970s subject would open on an empty chart under its own name,
+    /// which reads as "FRUS cites no archives for this" rather than "wrong decade" (#833).
+    ///
+    /// A free function on the axis rather than a view method so the decision — the plurality, the
+    /// tie-break, and the empty case — can be tested against real spans instead of asserted by
+    /// name in a source scan.
+    ///
+    /// - Parameter coverage: The scoped volumes' coverage spans, keyed by volume id.
+    /// - Returns: The band containing the most volumes, ties going to the EARLIER band so the
+    ///   answer is stable rather than dictionary-ordered; `nil` for empty coverage.
+    static func bandHoldingMost(of coverage: [String: ArchivalVolumeCoverage]) -> ArchivalEraBand? {
+        var counts: [Int: Int] = [:]
+        for span in coverage.values {
+            let midpoint = span.midpointYear
+            if let band = all.first(where: { $0.contains(midpointYear: midpoint) }) {
+                counts[band.index, default: 0] += 1
+            }
+        }
+        guard let best = counts.max(by: { ($0.value, -$0.key) < ($1.value, -$1.key) })?.key
+        else { return nil }
+        return all.first { $0.index == best }
     }
 
     /// The five bands, earliest first.

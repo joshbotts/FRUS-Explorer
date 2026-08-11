@@ -223,7 +223,7 @@ a hierarchy.
 
 **Volume view** — Click a volume to see its front matter, chapters, and appendices. Each chapter entry shows the number of documents it contains.
 
-A **Top subjects** section on the volume view lists the subjects most characteristic of that volume — derived from experimental subject data and grouped by category — and it appears even before the volume is downloaded, so you can size up an unfamiliar volume's themes before committing to it. Click a subject to see the *other* FRUS volumes across the whole corpus that cover the same subject (downloaded or not) and jump straight to any of them in the browser. (These are automatically detected topics, and the profiles behind them — which also power the detected-topic filters in Search, Analytics, and the Word Cloud — were vetted for era consistency in this update, removing a handful of anachronistic mistags.)
+A **Top subjects** section on the volume view lists the subjects most characteristic of that volume — derived from experimental subject data and grouped by category — and it appears even before the volume is downloaded, so you can size up an unfamiliar volume's themes before committing to it. Click a subject to see the *other* FRUS volumes across the whole corpus that cover the same subject (downloaded or not) and jump straight to any of them in the browser. That sheet also offers **Archival profile of these volumes**, which opens Archival Analytics (Section 13.7) on the collections the subject's volumes draw on. (These are automatically detected topics, and the profiles behind them — which also power the detected-topic filters in Search, Analytics, and the Word Cloud — were vetted for era consistency in this update, removing a handful of anachronistic mistags.)
 
 **Chapter / Compilation view** — Click a chapter to see individual document listings with their dateline, source note, and document number.
 
@@ -370,7 +370,10 @@ document type and archival provenance.
   A common-term search can span 552 volumes and thousands of people; the panel will not
   pretend otherwise.
 - **Archival provenance is descriptive only.** It tells you how the match is sourced, but
-  there is no provenance filter to narrow to, so those rows are not clickable.
+  there is no provenance filter to narrow to, so those rows are not clickable. The section does offer
+  **Open archival profile of these results**, which opens Archival Analytics (Section 13.7)
+  ranking the collections behind all the volumes your matches sit in — whole volumes, not the
+  matches themselves.
 - With Checklist Mode on, the panel reminds you that it still describes every match, not just
   the rows still showing.
 
@@ -1136,6 +1139,8 @@ Corpus Analytics tracks terms, Person Analytics tracks people, Cross-Reference A
 A **Scope** chip narrows the whole mode to a volume set — a subseries, a single volume, one of your saved volume scopes, a detected topic, or (from the **Administration** chip) one president's volumes. Everything moves together: the ranking, the era denominator, the volume count in the caption, the units-reached figure, and the CSV, which names the scope in its methods block.
 
 One thing to know about what a scope covers. Every other analytics surface scopes over the volumes **you have indexed**, because it reads your local index. This one does not: its figures come from bundled corpus-wide data and are the same with nothing downloaded, so it scopes over the **whole series**. "The 1969–1976 subseries" means all of it, not the part of it you happen to hold.
+
+**Two doors open a scope for you.** The archival profile can be reached from the question you were already asking, instead of from a chip you have to fill in. In the search **Facets** panel (Section 5.5), the archival-provenance section — which is descriptive only, and can never become a filter — now offers **Open archival profile of these results**: it ranks the collections behind all the volumes your matches sit in. And on a volume's **Top subjects** chips (Section 4.1), the sheet listing the volumes covering a subject offers **Archival profile of these volumes**. Both scope by *whole volumes*, not by the matching documents or by the documents about the subject: a volume enters whole or not at all, and the copy on each door says so. The era band moves to wherever the scoped volumes actually are, so a 1970s topic does not open on the 1950s.
 
 - **Era** — one of five spans of the years the volumes *cover*: Through 1947, 1948–1960, 1961–1968, 1969–1976, 1977–1992. These are groupings of the same era buckets the Cited Over Time chart uses on a collection's own page (Section 12), so the two never disagree.
 - **Show** — **Named collections** (a body of records with a custodian, like the Johnson Library's National Security File) or **Central-file classes** (a subject heading inside the State Department's filing system, like 763.72 for the European War, or POL 27 VIET S for the war in South Vietnam). These are different kinds of thing and are never mixed in one chart. Classes are ranked at one depth: a decimal file number stands for itself, while subject-numeric designators are grouped to their category and number — `POL 27 VIET S` and `POL 27 ARAB-ISR` both count under `POL 27`, because at full length half of them carry a single document. **Inside these families**, below the chart, opens any grouped row to the exact designators and their counts, which is what a pull slip needs. The switch matters most at the two ends of the series: before 1948 the volumes cite classes far more than collections, and after 1976 they barely cite classes at all.

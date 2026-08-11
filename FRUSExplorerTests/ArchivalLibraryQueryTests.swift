@@ -209,11 +209,15 @@ struct ArchivalAnalyticsEntryPointTests {
     @Test("The iOS Analysis Tools menu offers it, presents it, and names it in its help")
     func iOSEntryPoint() throws {
         let source = try Self.source("Browser/BrowserView.swift")
-        #expect(source.contains("showArchivalAnalytics = true"),
+        // #833 moved the presentation to the tab shell. The row and the presenter are now in
+        // different files, so this test spans both — the property it protects is unchanged and is
+        // the #363 unreachable-pane shape: a row that sets state nothing presents.
+        #expect(source.contains("appState.openArchivalScope(.unscoped, from: sceneID)"),
                 "the Analysis Tools menu has no row that opens Archival Analytics")
-        #expect(source.contains(".sheet(isPresented: $showArchivalAnalytics)"),
-                "the row sets state nothing presents — the #363 unreachable-pane shape")
-        #expect(source.contains("ArchivalAnalyticsView()"))
+        let shell = try Self.source("App/MainTabView.swift")
+        #expect(shell.contains(".sheet(item: $presentedArchivalScope)"),
+                "the row produces a hand-off nothing presents — the #363 unreachable-pane shape")
+        #expect(shell.contains("ArchivalAnalyticsView(initialScope:"))
         // R-8: the iPadOS toolbar-overflow row re-derives its name from the label closure, so a
         // bare Image would ship an unnamed item.
         #expect(source.contains("browse.archivalAnalytics.a11y"),

@@ -5154,3 +5154,124 @@ administration is taken as a volume set directly. Same feature, right primitive.
 
 Scope the library instead of the series; ignore the scope when building coverage; drop the scope
 from the export.
+
+## Session 2026-08-11 — #833: the topic door (subject- and search-scoped archival profiles)
+
+Two doors into Archival Analytics' volume scope, from the questions a reader is already asking:
+the search facet panel's archival-provenance section (scope = the volumes the matches sit in) and
+the subject sheet reached from a volume's **Top subjects** chips (scope = every volume whose
+profile carries that subject). Both travel as an `ArchivalScopeRequest` on the scene-addressed
+`pendingArchivalScope` hand-off — macOS to the singleton window, iOS to the producing scene.
+
+### The surface had no presenter outside one tab
+
+Before this, the only iOS presenter of `ArchivalAnalyticsView` was a private `@State` bool inside
+`BrowserView`. The search door could therefore switch to the Browse tab and *nothing would open* —
+a door with nothing behind it, and no data-layer test could see it, because the whole defect is in
+which view owns the presentation. `MainTabView` is now the single iOS presenter (the shape the word
+cloud has used since #752), Browse's own menu row produces `ArchivalScopeRequest.unscoped` through
+the same hand-off, and the view gained `init(initialScope:)` because the shell must consume the
+hand-off in order to decide whether to present at all.
+
+Two presenters remain in play on iOS — the shell and an already-mounted sheet — and the
+arrangement is deterministic because the shell **declines** while a sheet is up: a scope arriving
+then stays in the slot for the mounted view to adopt and re-scope in place. The mounted view always
+wins, whichever `onChange` the runtime runs first.
+
+### #827 shipped a scope that changed nothing, and this session's fix for it shipped a wedge
+
+The scope bar changed the chip and left the chart alone: `.task` was unkeyed, `loadCollections`
+early-returns while `collectionsData != nil`, and `setScope` did not clear it. Keying the task on
+the scope fixed that and introduced a worse failure, which the pre-flight review caught before the
+PR: picking a scope **that is already active** — the checked "Whole corpus" row, the same
+administration twice, the same door twice for one query — drops the derivation while leaving the
+signature byte-identical, so nothing restarts the load. The chart sits on its spinner for the life
+of the view, and the scope chip lives inside the `if let data` branch, so the only control that
+could undo it has vanished with the data. The signature now carries a `scopeGeneration` counter and
+every invalidation path goes through one `invalidateCollections()`.
+
+The same review found a second one: `Task.detached` does not inherit cancellation and `Task.value`
+does not throw, so a superseded load still resumes past its `await` and used to assign
+unconditionally. The macOS window reproduces the overlap on **every** scoped open — it mounts
+unscoped, starts a corpus-wide build, then consumes the hand-off — so corpus-wide figures could
+land last under the scope's own name. `loadCollections` now admits its result only if the signature
+it started with is still current.
+
+### Three more from the review, each a real dead end
+
+- The search door was gated on `facets.volumes`, which is computed only when the reader expands the
+  **Volumes** section. So the door rendered only for someone who had opened a different section
+  first — and Provenance, the dead-end section the door exists to open a way out of, was the one
+  hiding it. Disclosing Provenance now also asks for the volume breakdown (loading a section does
+  not expand it).
+- A scope arriving from a door landed on the default 1948–1960 band whatever era its volumes cover,
+  so a 1970s subject opened on an **empty chart under its own name** — which reads as "FRUS cites
+  no archives for this topic", not "wrong decade". Arriving scopes now move the band to wherever
+  their volumes are; a scope the reader picks from the bar does not, because a control that moves
+  itself while in use is worse than a wrong default.
+- Two doc comments were silently re-attributed by insertion: `ArchivalScopeRequest` landed inside
+  `Handoff`'s, and the new `archivalSheet` helper inside the word-cloud consumer's.
+
+### The subject door scopes to N volumes while the list above it shows N−1
+
+`otherVolumeIds` excludes the volume being viewed, which is right for "where else can I read about
+this" and wrong for the profile — dropping one volume from every profile opened from a volume page
+would be an under-count no figure on the destination could reveal. The door reads
+`volumesBySubjectRef` and its own count says which set it means. It is withheld below two volumes:
+a one-volume "profile of volumes on this subject" is that volume's own profile under a topic's name.
+
+### A second review, of the fixes themselves
+
+The six repairs above were then reviewed the same way, from three lenses with two independent
+refutation angles per finding. **All 21 findings against the fixes were refuted** — the repairs
+hold. The completeness critic, asked what all three lenses had missed, found five things that
+were not, of which four were real and are fixed here:
+
+- The `init` doc comment still said "scope parameters are deliberately **not** here yet",
+  two paragraphs above the scope parameter, and still claimed both call sites pass none.
+- The door was hidden by the very section it belongs to: it sat inside the `else` of
+  `if buckets.isEmpty`, so a provenance breakdown with **no rows** — no matched document carrying
+  a resolvable source note — showed "Nothing to break down here." and offered no way on. That is
+  precisely when the volumes' archival profile is worth most. The door's only condition is now the
+  section it belongs to, and the test pins the condition rather than the position (the first
+  version passed with a row-count guard bolted back on).
+- Both hosts labelled the scope from a **live text-field buffer** — macOS documents `queryText`
+  as exactly that — so a reader who typed a new term without committing it got the OLD result
+  set's volumes under the NEW term's name. `FacetPanelController` now records the query its
+  breakdown was computed against, and both doors take the label from there.
+- Disclosing Provenance runs a second aggregation in the background for the volume breakdown the
+  door is made of. On a broad match that is the same size as the one the reader is already waiting
+  for, and the control used to materialise silently seconds later; the wait is now stated.
+- The macOS subject door was the only launcher of the archival window not clearing the tool's
+  provenance. Now it does, like its four siblings.
+
+**And one defect that is not ours to fix here.** On macOS the facet panel is a long-lived
+inspector, so `expanded` survives a search; `onDiscloseSection` fires only from the header toggle;
+and `invalidate` clears the data. An already-open section therefore renders *completely empty* —
+no rows, no caveat, no door — after any re-search, until it is collapsed and re-opened. Verified
+present on `origin/v2`, affecting every section, so it is filed separately rather than widened
+into this branch.
+
+### The all-units sheet could be emptied out from under the reader
+
+`ArchivalAllUnitsSheet` read the live derivation and owns its only Done button. Once a scope change
+drops that derivation, a hand-off arriving from another window blanked the sheet — on macOS leaving
+a window-modal sheet with no dismiss control. It now takes a snapshot of the whole input (data,
+band, lens, weight, umbrella, label) at the moment it opens, which also makes its "same as the
+chart" claim true of the chart it was opened from rather than whatever the chart became.
+
+### Mutation sweep: 20 mutants, 20 killed
+
+Seven over the doors (scope the displayed list; drop the one-volume guard; soften the load-bearing
+footer; remove the shell's second-sheet guard; hand off in the same state change as the dismissal;
+revert Browse's row to private state; never pass the payload), seven over the first round of review
+fixes (the generation leaves the signature; the scope bar nils without moving the key; drop the
+stale-load guard; stop asking for the volume facet; two band-move paths; re-orphan the doc
+comment), and six over the second (flip the band tie-break; answer band zero for empty coverage;
+stop observing the hand-off slot; revert the all-units sheet to the live derivation; re-couple the
+door to the section's rows; label the scope from an empty string).
+
+The band decision moved out of the view and into `ArchivalEraBand.bandHoldingMost(of:)` for the
+sake of that sweep: the first test asserted only that the function was *called by name*, so the
+plurality, the tie-break and the empty case could all have been wrong and the suite would not have
+noticed. It is now tested against real coverage spans, including that every band is reachable.

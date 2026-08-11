@@ -42,6 +42,34 @@ import Charts
 ///          statement moved into the info popover, the conditional disclosures left on the page
 ///   1.7 — Session 2026-08-11: #827 — volume scoping over the SERIES (not the local index),
 ///          applied to the derivation's coverage map so every figure narrows together
+///   1.8 — Session 2026-08-11: #833 — `initialScope:`, because the iOS presenter consumes the
+///         hand-off before this view mounts; and the load task is keyed on the scope, which
+///         is what #827 shipped without (the chip changed, the chart did not)
+/// The uncapped "Every Unit" sheet's whole input, captured at the moment it opens (#833 review).
+///
+/// The sheet used to read the host's live `collectionsData`, `band`, `unitLens`, `weight` and
+/// `hidesUmbrella`. Since a scope change drops the derivation, a hand-off arriving from another
+/// window while the sheet was open emptied its body — and because the sheet owns the only Done
+/// button, on macOS that left a window-modal sheet the reader could not dismiss. Capturing also
+/// keeps the list honest: it says "same as the chart", and it now means the chart it was opened
+/// from rather than whatever the chart became underneath it.
+private struct ArchivalAllUnitsPresentation: Identifiable {
+    /// Fresh per presentation, which is all `.sheet(item:)` needs.
+    let id = UUID()
+    /// The derivation the list is drawn from.
+    let data: ArchivalCollectionsData
+    /// The era it describes.
+    let band: ArchivalEraBand
+    /// Named collections or central-file classes.
+    let lens: ArchivalUnitLens
+    /// Documents or volumes.
+    let weight: ArchivalWeight
+    /// Whether the Central Files umbrella was withheld.
+    let hidingUmbrella: Bool
+    /// The scope's label, for the CSV's methods block.
+    let scopeLabel: String?
+}
+
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
@@ -59,24 +87,42 @@ struct ArchivalAnalyticsView: View {
     /// The collection a deep link asked to focus the Network on, consumed once by that mode.
     private let initialFocusId: String?
 
+    /// Whether the band still has to be moved to the initializer's scope. The move needs
+    /// `appState`'s manifest, which no initializer has, so it happens on the first appearance.
+    private let initialScopeNeedsBand: Bool
+
     /// Opens the surface, optionally aimed at a mode and a collection (#825e).
     ///
-    /// Every parameter is defaulted, so `ArchivalAnalyticsView()` remains valid — both existing
-    /// call sites use it, and one of them is pinned by a source-scan test.
+    /// Every parameter is defaulted, so `ArchivalAnalyticsView()` remains valid — the macOS
+    /// window scene still opens the surface that way, and that call site is pinned by a
+    /// source-scan test.
     ///
     /// This is what makes the surface addressable at all: until now every selection was
     /// `@State` with no way in, so `CollectionDetailView` could not offer "see this collection's
     /// co-citation neighbourhood" and the Research Guide's iOS cross-link (#798) had nothing to
-    /// hand a destination to. Scope parameters are deliberately **not** here yet — #827 adds
-    /// volume scoping, and a parameter that no caller can act on would be an empty promise.
+    /// hand a destination to. #833 added the third parameter for the same reason: iOS delivers a
+    /// scope through the initializer because its presenter drains the hand-off slot before this
+    /// view mounts.
     ///
     /// - Parameters:
     ///   - mode: The mode to open on.
     ///   - focusCollectionId: An authority collection id for the Network's focus. Ignored by the
     ///     other modes, and ignored if the bundled authority does not carry it.
-    init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil) {
+    ///   - initialScope: A volume scope delivered by the presenter rather than through
+    ///     `pendingArchivalScope`. iOS needs it: the tab shell consumes the hand-off in order to
+    ///     decide whether to present at all, so by the time this view mounts the slot is already
+    ///     empty. An empty volume set means no scope.
+    init(mode: ArchivalAnalyticsMode = .collections, focusCollectionId: String? = nil,
+         initialScope: ArchivalScopeRequest? = nil) {
         _mode = State(initialValue: mode)
         self.initialFocusId = focusCollectionId
+        if let initialScope, !initialScope.volumeIds.isEmpty {
+            _scopeVolumeIds = State(initialValue: initialScope.volumeIds)
+            _scopeLabel = State(initialValue: initialScope.label)
+            self.initialScopeNeedsBand = true
+        } else {
+            self.initialScopeNeedsBand = false
+        }
     }
 
     /// The era band the Collections ranking covers.
@@ -115,8 +161,15 @@ struct ArchivalAnalyticsView: View {
     @State private var inspectorData: ChartInspectorData?
     /// The collection record to present, set when a ranking row is opened (#825a).
     @State private var collectionDetail: AuthorityCollectionRecord?
-    /// Whether the uncapped "every unit in this era" table is up (#825c).
-    @State private var showsAllUnits = false
+    /// The uncapped "every unit in this era" table's presentation, or `nil` (#825c).
+    ///
+    /// Holds a SNAPSHOT rather than a flag. The sheet used to read `collectionsData` live, and
+    /// since a scope change now drops that derivation (#833), a hand-off arriving from another
+    /// window while the sheet was up emptied it — and the sheet owns the only Done button, so on
+    /// macOS that left a window-modal sheet with no way to dismiss it. The band, lens, weight and
+    /// umbrella state are captured with it so the list cannot end up describing a different era
+    /// from the one it was opened for.
+    @State private var allUnits: ArchivalAllUnitsPresentation?
     /// The file waiting to be shared (iOS) after an export.
     @State private var exportShareItem: AnalyticsExportFile?
     /// An export failure, surfaced rather than swallowed.
@@ -207,20 +260,19 @@ struct ArchivalAnalyticsView: View {
                     .environment(\.sceneID, sceneID ?? .anyWindow)
             }
         }
-        .sheet(isPresented: $showsAllUnits) {
-            if let data = collectionsData {
-                ArchivalAllUnitsSheet(
-                    band: band, lens: unitLens, weight: weight, hidingUmbrella: hidesUmbrella,
-                    data: data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
-                    scopeLabel: scopeLabel,
-                    onOpen: { row in
-                        showsAllUnits = false
-                        // Presented on the NEXT update, not this one: dismissing a sheet and
-                        // presenting another in the same state change drops the second.
-                        Task { @MainActor in open(row, data: data) }
-                    },
-                    canOpen: { canOpen($0, data: data) })
-            }
+        .sheet(item: $allUnits) { presentation in
+            ArchivalAllUnitsSheet(
+                band: presentation.band, lens: presentation.lens, weight: presentation.weight,
+                hidingUmbrella: presentation.hidingUmbrella,
+                data: presentation.data, indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
+                scopeLabel: presentation.scopeLabel,
+                onOpen: { row in
+                    allUnits = nil
+                    // Presented on the NEXT update, not this one: dismissing a sheet and
+                    // presenting another in the same state change drops the second.
+                    Task { @MainActor in open(row, data: presentation.data) }
+                },
+                canOpen: { canOpen($0, data: presentation.data) })
         }
         // D3 (#787): anchored on the outermost view, not on a `Group` child — see the
         // Group-modifier gotcha, which applies the presentation once per child.
@@ -256,7 +308,18 @@ struct ArchivalAnalyticsView: View {
             }
         }
         #endif
-        .task { await loadCollections() }
+        // KEYED ON THE SCOPE. `.task` without an id runs once per appearance, and
+        // `loadCollections` early-returns while `collectionsData` is non-nil — so an unkeyed
+        // task means changing the scope changes nothing on screen. The scope is the id, and
+        // `scopeSignature` is a value `.task(id:)` can compare.
+        .task(id: scopeSignature) { await loadCollections() }
+        .onChange(of: appState?.pendingArchivalScope) { _, _ in consumePendingScope() }
+        .task {
+            if initialScopeNeedsBand, let ids = scopeVolumeIds {
+                moveToTheBandTheScopeLivesIn(ids)
+            }
+            consumePendingScope()
+        }
         .task(id: libraryLoadToken) { await loadLibraryIfNeeded() }
     }
 
@@ -346,7 +409,7 @@ struct ArchivalAnalyticsView: View {
             denominatorLine(ranking, data: data)
             rankingCard(ranking, data: data)
             drillInHint(ranking)
-            showAllUnitsButton(ranking)
+            showAllUnitsButton(ranking, data: data)
             classFamilies(ranking)
             // The conditional disclosures stay on the page — they describe THIS view, change with
             // the controls, and a reader who never opens the popover must still see them.
@@ -360,12 +423,85 @@ struct ArchivalAnalyticsView: View {
     }
 
 
+    // MARK: - The topic door (#833)
+
+    /// Applies a scope handed in from elsewhere, once.
+    ///
+    /// Consumed rather than merely read: the hand-off is cleared on arrival, so re-entering the
+    /// mode does not re-apply a scope the reader has since changed. An **empty** volume set is
+    /// treated as no scope, because a topic that matches no volume is a fact about the topic and
+    /// an empty chart under its name would read as a broken filter.
+    private func consumePendingScope() {
+        guard let appState, let handoff = appState.pendingArchivalScope else { return }
+        #if os(macOS)
+        let isForThisScene = handoff.target == .macArchivalAnalytics
+        #else
+        let isForThisScene = handoff.target == (sceneID ?? .anyWindow)
+        #endif
+        guard isForThisScene else { return }
+        appState.pendingArchivalScope = nil
+        mode = .collections
+        guard !handoff.payload.volumeIds.isEmpty else { return }
+        setScope(handoff.payload.volumeIds, label: handoff.payload.label)
+        moveToTheBandTheScopeLivesIn(handoff.payload.volumeIds)
+    }
+
     // MARK: - Scope (#827)
 
-    /// Sets the scope and drops the derivation, so the next `task` rebuilds it.
+    /// The scope as one comparable value, so `.task(id:)` can watch it.
+    ///
+    /// `[String]?` is `Equatable`, but the id also has to change when only the LABEL changes —
+    /// two different topics can select the same volumes, and the chart's own sentences name the
+    /// label.
+    ///
+    /// **`scopeGeneration` is in the key because the scope value alone is not enough.** Picking a
+    /// scope that is ALREADY active — tapping the checked "Whole corpus" row, re-picking the same
+    /// administration, using the same door twice for the same query — drops the derivation and
+    /// leaves the signature byte-identical, so a value-only key would never restart the load. The
+    /// chart would sit on its spinner permanently, and the scope chip lives inside the
+    /// `if let data` branch, so the control that could undo it would have vanished with the data.
+    private var scopeSignature: String {
+        "\(scopeGeneration)|\(scopeLabel ?? "")|\(scopeVolumeIds?.joined(separator: ",") ?? "")"
+    }
+
+    /// Bumped by every invalidation, so an idempotent re-pick still restarts the keyed load.
+    @State private var scopeGeneration = 0
+
+    /// Drops the derivation AND moves the key that rebuilds it. Always both, never one.
+    private func invalidateCollections() {
+        collectionsData = nil
+        scopeGeneration += 1
+    }
+
+    /// Sets the scope and drops the derivation, so the keyed task rebuilds it.
+    ///
+    /// Both halves are load-bearing and neither is enough alone: without clearing
+    /// `collectionsData` the reload early-returns, and without the keyed `.task` nothing re-runs
+    /// the reload. Every setter of the scope goes through here for that reason — the scope bar's
+    /// own bindings included.
     private func setScope(_ ids: [String]?, label: String?) {
         scopeVolumeIds = ids
         scopeLabel = label
+        invalidateCollections()
+    }
+
+    /// Moves the era band to wherever the scoped volumes actually are.
+    ///
+    /// The band opens on 1948–1960 and is otherwise only ever moved by the reader's own segmented
+    /// control — which is right when the reader picked the scope while looking at the chart, and
+    /// wrong for a scope arriving from somewhere else. A subject like Vietnamization or a search
+    /// for a 1970s term selects volumes that no part of the default band covers, so the door would
+    /// land on an empty chart under the topic's name: a reader has every reason to read that as
+    /// "FRUS cites no archives for this topic" rather than "you are looking at the wrong decade".
+    ///
+    /// Applied ONLY to a scope handed in from elsewhere. Moving the band under a reader who is
+    /// working the scope bar would be a control changing itself while they use it.
+    ///
+    /// - Parameter ids: The scope's volumes.
+    private func moveToTheBandTheScopeLivesIn(_ ids: [String]) {
+        guard let best = ArchivalEraBand.bandHoldingMost(of: volumeCoverage(limitedTo: ids))
+        else { return }
+        band = best
     }
 
     /// The scope chip and the administration presets.
@@ -386,10 +522,14 @@ struct ArchivalAnalyticsView: View {
         AnalyticsScopeBar(
             indexedVolumeIds: scopableVolumeIds,
             volumeTitle: { appState?.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
+            // The bar writes both halves through `setScope`, so its selections invalidate the
+            // derivation exactly as the administration menu's do. Assigning the state directly
+            // here is what let a scope change leave the chart untouched.
             scopeVolumeIds: Binding(get: { scopeVolumeIds },
-                                    set: { scopeVolumeIds = $0 }),
-            scopeLabel: Binding(get: { scopeLabel }, set: { scopeLabel = $0 }),
-            onChange: {},
+                                    set: { setScope($0, label: scopeLabel) }),
+            scopeLabel: Binding(get: { scopeLabel },
+                                set: { setScope(scopeVolumeIds, label: $0) }),
+            onChange: { invalidateCollections() },
             presentation: .chip)
         administrationMenu
     }
@@ -624,10 +764,14 @@ struct ArchivalAnalyticsView: View {
     /// table inspector and the CSV both carried the capped twelve, so the full list was
     /// unobtainable in the app *and* out of it. Withheld when nothing is capped.
     @ViewBuilder
-    private func showAllUnitsButton(_ ranking: ArchivalRanking) -> some View {
+    private func showAllUnitsButton(_ ranking: ArchivalRanking, data: ArchivalCollectionsData)
+        -> some View
+    {
         if ranking.unitsReached > ranking.rows.count {
             Button {
-                showsAllUnits = true
+                allUnits = ArchivalAllUnitsPresentation(
+                    data: data, band: band, lens: unitLens, weight: weight,
+                    hidingUmbrella: hidesUmbrella, scopeLabel: scopeLabel)
             } label: {
                 Label(String(format: String(
                     localized: "archival.allUnits.button %lld",
@@ -1380,14 +1524,26 @@ struct ArchivalAnalyticsView: View {
     }
 
     /// Builds the corpus-wide derivation off the main actor.
+    ///
+    /// **The result is admitted only if the scope has not moved under it.** `Task.detached` does
+    /// not inherit cancellation and `Task.value` is non-throwing, so when `.task(id:)` cancels a
+    /// run in flight the work still finishes and this function still resumes after the `await`.
+    /// Two runs overlap whenever a scope arrives while the first load is going — the macOS window
+    /// mounts unscoped and consumes the hand-off a moment later, which is precisely that shape —
+    /// and an unconditional assignment lets the superseded UNSCOPED derivation land last. The
+    /// chart would then show corpus-wide figures under the scope's own name and label, with no
+    /// visible sign anything was wrong.
     private func loadCollections() async {
         guard collectionsData == nil else { return }
+        let requested = scopeSignature
         let coverage = volumeCoverage(limitedTo: scopeVolumeIds)
         let authority = CollectionAuthorityStore.shared?.collections ?? []
         let usage = CollectionUsageIndexStore.shared
-        collectionsData = await Task.detached(priority: .userInitiated) {
+        let built = await Task.detached(priority: .userInitiated) {
             ArchivalCollectionsData.make(authority: authority, usage: usage, coverage: coverage)
         }.value
+        guard requested == scopeSignature else { return }
+        collectionsData = built
     }
 
     /// Runs the two grouped queries and folds them, once per visit.
