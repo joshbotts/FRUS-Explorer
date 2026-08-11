@@ -44,6 +44,9 @@ struct ArchivalAllUnitsSheet: View {
     let data: ArchivalCollectionsData
     /// Volumes indexed on this device, for the export's methods statement.
     let indexedVolumeCount: Int
+    /// The active volume scope's label, so this list's CSV names the same population the chart's
+    /// does (#827).
+    var scopeLabel: String?
     /// Opens one row, delegated to the host so the destination logic lives in one place.
     let onOpen: (ArchivalRankingRow) -> Void
     /// Whether a row has a destination at all.
@@ -172,6 +175,6 @@ struct ArchivalAllUnitsSheet: View {
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount, indexedVolumeCount: indexedVolumeCount,
             noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue,
-            rowCapApplied: false)
+            rowCapApplied: false, scopeLabel: scopeLabel)
     }
 }

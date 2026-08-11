@@ -5077,3 +5077,43 @@ from this handoff; they had simply never been checked.
 
 A ● in a shipped string; an issue number in a caption; the method statement altered rather than
 moved.
+
+---
+
+## Session 2026-08-11 — wave 2a (#827): the Collections mode gets a scope
+
+**Issue:** #827 · the "value session" of the review's sequencing
+
+### The seam was already there
+
+`ArchivalCollectionsData.make(authority:usage:coverage:)` is a pure function of its three inputs,
+and the **coverage map is the volume set**. So scoping is a filter on one input rather than a new
+code path — which is exactly what makes the ranking, the per-band denominator, the caption's volume
+count, the units-reached figure and the CSV all narrow *together*. None of them can be scoped
+separately, so none can be left describing the wider population.
+
+### The decision that matters: scope over the series, not the library
+
+Every other analytics surface passes `appState.indexedVolumeIds` to `AnalyticsScopeBar`, because
+those surfaces read the local index and can only describe what is downloaded. This mode's
+derivation is the bundled corpus-wide authority and usage index — it is honest about all 552 volumes
+with **none** of them downloaded. Passing the library here would silently answer a different
+question for every reader: "the collections of the 1969–76 subseries" would mean whichever eleven
+of its volumes they happen to hold.
+
+So the surface passes a manifest-derived `scopableVolumeIds`, and the export says so in as many
+words: *the same scope gives the same figures on any device*. This is the handoff's "do not
+intersect with the local index" rule, which appears in no issue body.
+
+### The issue's own component assumption did not survive contact
+
+#827 names `AdministrationPresetMenu` as the administration control. That component binds a **year
+range**, and its doc comment restricts it to coverage-year surfaces — it cannot produce a volume
+set, and wiring it here would have put a second date axis beside the era bands for them to disagree
+over. The bundled administration profiles carry their own **per-volume** breakdown, so an
+administration is taken as a volume set directly. Same feature, right primitive.
+
+### Mutation sweep: 3 mutants, 3 killed
+
+Scope the library instead of the series; ignore the scope when building coverage; drop the scope
+from the export.

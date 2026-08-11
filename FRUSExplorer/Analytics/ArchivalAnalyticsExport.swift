@@ -47,6 +47,7 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///   1.1 — Session 2026-08-10: #832 — `lifecycles` retired with its card, `collectionTimeline`
 ///          added for the collection record's Cited Over Time chart
 ///   1.2 — Session 2026-08-10: #826 — the ranking states its class grain and its denominator
+///   1.3 — Session 2026-08-11: #827 — the ranking's scope reaches the label and the caveats
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -81,7 +82,8 @@ enum ArchivalAnalyticsExport {
     static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
                         hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
                         indexedVolumeCount: Int, noteCount: Int = 0,
-                        shownValue: Int = 0, rowCapApplied: Bool = true) -> AnalyticsProvenance {
+                        shownValue: Int = 0, rowCapApplied: Bool = true,
+                        scopeLabel: String? = nil) -> AnalyticsProvenance {
         var caveats = [baseCaveat, weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
             caveats.append(String(format: String(
@@ -95,6 +97,12 @@ enum ArchivalAnalyticsExport {
             Int64(bandVolumeCount), Int64(unitsReached)))
         if lens == .centralFileClasses {
             caveats.append(grainCaveat)
+        }
+        if let scopeLabel {
+            caveats.append(String(format: String(
+                localized: "archival.export.caveat.scope.volumes %@",
+                defaultValue: "Scope: only the volumes in \"%@\" are counted. The derivation behind this table is corpus-wide and is not narrowed to what this device has downloaded, so the same scope gives the same figures on any device."),
+                scopeLabel))
         }
         // Only under the documents weight: a "rows account for N of M" sentence over a volume
         // count and a note total is the units error `ArchivalRanking.shownShare(weight:)`
@@ -119,7 +127,12 @@ enum ArchivalAnalyticsExport {
             axisLabel: String(format: String(localized: "archival.export.axis.ranking %@ %@",
                                              defaultValue: "Ranked by %1$@, %2$@ volumes"),
                               weight.title.lowercased(), band.title),
-            scopeLabel: band.title,
+            // The scope, when there is one: a CSV headed only with an era would be read as the
+            // whole series' era, which is a different and much larger population.
+            scopeLabel: scopeLabel.map {
+                String(format: String(localized: "archival.export.scope %@ %@",
+                                      defaultValue: "%1$@ — %2$@"), $0, band.title)
+            } ?? band.title,
             indexedVolumeCount: indexedVolumeCount,
             yearRange: band.startYear...band.endYear,
             // Nothing here reads a document's date: the era comes from the VOLUME's coverage
