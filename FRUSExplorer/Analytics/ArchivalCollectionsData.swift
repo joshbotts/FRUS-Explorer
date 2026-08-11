@@ -369,8 +369,15 @@ struct ArchivalCollectionsData: Sendable {
                 guard let band = bandByVolume[volumeId] else { continue }
                 documents[band][group, default: 0] += row.counts[position]
                 volumeSets[band][group, default: []].insert(volumeId)
-                // Widened at the FOLDED key, so a subject-numeric group's span covers every leaf
-                // that folded into it — the same grain the label is looked up at.
+                // The span is WIDENED across every contributor, not overwritten: a key cited from
+                // both sides of the 1950 renumbering must span it and stay unlabelled, and a rule
+                // that tracked the last volume seen would label it from whichever one the row
+                // happened to end on.
+                //
+                // Keyed by the FOLDED key, matching `documents` on the line above and the grain
+                // the label is looked up at. Only subject-numeric keys fold, and none of those
+                // resolves against a decimal schedule, so today this is a choice about what the
+                // structure MEANS rather than one any output can distinguish.
                 if let years = coverage[volumeId] {
                     let existing = spans[band][group]
                     let low = min(existing?.lowerBound ?? years.firstYear, years.firstYear)
@@ -559,8 +566,11 @@ struct ArchivalCollectionsData: Sendable {
     /// - Parameters:
     ///   - key: A folded class key.
     ///   - bands: The band indices being ranked.
-    /// - Returns: The gloss, or `nil` when no schedule covers the key's coverage — or when the
-    ///   key has no recorded span, which means it did not come from the class tally.
+    /// - Returns: The gloss, or `nil` when no schedule covers the key's coverage. A key with no
+    ///   recorded span also yields `nil`, though that branch is unreachable: the tally writes a
+    ///   span and a document count in the same step, under the same guard, so a row that exists
+    ///   has a span. Reaching for the band's years there would be the one place the replaced rule
+    ///   survived, and only for the rows whose evidence was missing.
     private func gloss(forKey key: String, bands: [Int]) -> String? {
         var low: Int?
         var high: Int?

@@ -210,7 +210,8 @@ struct DecimalClassLabelTests {
         // the guard that would catch a rule that labelled by proximity rather than by coverage.
         for index in 2...4 {
             #expect(glossed(ArchivalEraBand.all[index]).isEmpty, """
-                Band \(index) opens in 1961. Nothing in the bundled table covers it, and a label                 there could only come from reading a key against the wrong schedule.
+                Band \(index) opens in 1961. Nothing in the bundled table covers it, and a label \
+                there could only come from reading a key against the wrong schedule.
                 """)
         }
     }
