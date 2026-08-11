@@ -26,6 +26,8 @@ import Accessibility
 /// Version history:
 ///   1.0 — Session 3 / #236: extracted the shared chart card; title carries the
 ///          `.isHeader` accessibility trait
+///   1.1 — Session 2026-08-10: #832(b) — the Audio Graph descriptor gains a
+///          `View.axChartDescriptor` entry point for charts this card cannot host
 struct SeriesChartCard<Controls: View, Content: View>: View {
 
     /// The chart's title, shown in the header and exposed as a VoiceOver heading.

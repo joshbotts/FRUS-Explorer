@@ -44,6 +44,8 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #787
+///   1.1 — Session 2026-08-10: #832 — `lifecycles` retired with its card, `collectionTimeline`
+///          added for the collection record's Cited Over Time chart
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they

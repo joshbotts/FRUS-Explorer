@@ -95,6 +95,8 @@ struct ArchivalRanking: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
+///   1.1 — Session 2026-08-10: #832(c) — the lifecycle span type and its derivation removed;
+///          the authority loop stays because it is the Volumes weight's only writer
 struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by

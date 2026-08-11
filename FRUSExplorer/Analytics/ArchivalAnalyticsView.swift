@@ -30,6 +30,8 @@ import Charts
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1 (Collections + Your Library)
 ///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
+///   1.2 — Session 2026-08-10: #832(c) removes the lifecycle card; the mode ends with a
+///          pointer to where one collection's own timing lives
 struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.

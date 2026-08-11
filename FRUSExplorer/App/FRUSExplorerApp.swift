@@ -92,7 +92,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
-/// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, lifecycles, your library |
+/// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, co-citation network, reference flows, your library |
 /// | `"frus.wordcloud"`              | Window        | Word cloud (note the lowercase `c`)              |
 /// | `"frus.chronology"`             | Window        | Chronology                                       |
 /// | `"frus.research"`               | Window        | Research — notes, tags, collections, highlights  |
@@ -850,7 +850,7 @@ struct FRUSExplorerApp: App {
         // MARK: - Archival Analytics Window (#765)
         //
         // Where the editors found what they published: era × collection rankings and collection
-        // lifecycles from the bundled authority + usage index (corpus-wide, needs no downloads),
+        // rankings from the bundled authority + usage index (corpus-wide, needs no downloads),
         // and the archival profile of the user's own indexed volumes from `document_sources`.
         Window(String(localized: "archival.window.title", defaultValue: "Archival Analytics"),
                id: "frus.archivalAnalytics") {

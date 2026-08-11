@@ -4819,3 +4819,59 @@ All eight are in `Archival-Analytics-Adversarial-Review.md` §10, with the enrol
 gates outside the repo are unchanged and remain the critical path: #828's 1910–49 filing schedule,
 and #830's repository facts — now an explicit gate on that issue, because the packet mocks turn
 those facts into printed sentences a researcher acts on.
+
+---
+
+## Session 2026-08-10 — wave 1a: the lifecycle card goes, Cited Over Time becomes a real chart
+
+**Issues:** #832 (b) and (c) · **PR:** the first implementation session of the archival revamp
+
+(a), the authority-name concatenation, is deliberately **not** in this PR: it is a generator fix
+whose re-clustering may ripple through three bundled artifacts that key on authority ids
+(`collection-usage-index`, `external-citation-index`, `provenance-flow-index`), not the one the
+issue names. That needs measuring on its own.
+
+### The removal's real hazard was not the deletion
+
+The lifecycle card was self-contained across three files with one mount point. What made it
+dangerous is that the loop building its spans **also** fills `collectionVolumes` — the sole writer
+of the named-collection lens's Volumes weight — and `records`, which supplies every ranking row's
+label. Deleting the loop with the card compiles, throws nothing, and leaves the ranking quietly
+empty under a weight whose alternative needs a bundled artifact that may be absent. Only the span
+bookkeeping came out, and a new test asserts the per-band volume counts with the usage index
+withheld, so that failure mode is now caught rather than merely avoided. `repeatedNames` survives
+with one caller for the same class of reason: it is what stops Swift Charts silently *merging* two
+bars that share a label.
+
+This reverts #820 in full — its 1860 axis floor had no consumer outside the removed chart.
+
+### (b) needed three things the issue named as one
+
+Cited Over Time had no inspector, no export, and no Audio Graph descriptor. It could not simply
+adopt `SeriesChartCard`: the chart sits in a `List` section whose header already names it, so the
+card would draw a second heading beneath the first. So the pieces were composed instead, which
+surfaced two costs the issue did not carry — the descriptor modifier was `private`, and now has a
+`View.axChartDescriptor` entry point (also the route for the four chart families #268 has not
+reached); and **no** existing `AnalyticsProvenance` factory fit, the nearest being the one (c)
+deletes.
+
+### Mutation sweep: 5 mutants, 5 killed — and two pattern-misses worth recording
+
+M1 (drop the `collectionVolumes` increment), M2 (counting unit Volumes→Documents), M3 (drop the
+base caveat), M4 (drop the descriptor), M5 (sheet moved inside the Section) all KILLED.
+
+Two runs first reported SURVIVED and were wrong, both times because the *harness* missed rather
+than the test: `-only-testing FRUSExplorerTests/ArchivalAnalyticsTests` names a **file**, while the
+suite type is `ArchivalCollectionsDataTests`, so zero tests ran; and one `perl -0pi` regex silently
+matched nothing, which `git status` showed as a clean tree. Both are the standing PATTERN-MISS
+verdict, not evidence about the tests. Check that the mutation applied and that the intended tests
+actually ran before believing a survivor.
+
+### Docs
+
+Both manuals lose the removed card and gain the pointer; the macOS figure-export sentence was
+carrying a **second, already-false** clause (it promised figure export for Your Library, which has
+always been CSV-only). `EditableContent.md` loses three blocks and gains the new export caveat, and
+**38 stale `lines:` pointers** into the two shrunk files were recomputed against the source rather
+than hand-edited — 0 keys unresolved, which is also a check that no block references a string that
+no longer exists.

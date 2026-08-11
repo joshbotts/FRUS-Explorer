@@ -279,6 +279,42 @@ struct ArchivalExportWiringTests {
         }
     }
 
+    @Test("Cited Over Time carries the table, the export, and the Audio Graph descriptor (#832b)")
+    func collectionTimelineIsAFullChart() throws {
+        // It was the one chart in the archival family with none of the three. The scan is on the
+        // wiring rather than on rendered output because each piece is a single call that a later
+        // edit can drop silently: the chart still draws, and nothing fails.
+        let source = try Self.source("SourceExplorer/CollectionDetailView.swift")
+        #expect(source.contains("timelineInspector = timelineTable"),
+                "the \"View as table\" button no longer opens the inspector")
+        #expect(source.contains("AnalyticsSectionExportControl("),
+                "the chart offers no export")
+        #expect(source.contains("ArchivalAnalyticsExport.collectionTimeline("), """
+            The CSV must carry the collection-timeline methods statement. The generic archival \
+            base caveat alone would head a series-wide volume count with a statement about \
+            document source notes and say nothing about which population the bars count.
+            """)
+        #expect(source.contains(".axChartDescriptor(inspector: timelineTable"), """
+            Without the descriptor the chart is one opaque element to VoiceOver — the gap #268 \
+            closed everywhere SeriesChartCard reaches, which this chart deliberately does not.
+            """)
+    }
+
+    @Test("Cited Over Time's sheets are anchored on the List, not on its Section")
+    func collectionTimelineSheetsAreAnchoredOnce() throws {
+        // A presentation modifier inside a Section (or a Group) mounts once per child. Both of
+        // this chart's presentations must sit on the outermost List, which is where the
+        // navigation title is — every Section builder is below the first `// MARK:`.
+        let source = try Self.source("SourceExplorer/CollectionDetailView.swift")
+        let inspectorSheet = try #require(source.range(of: ".sheet(item: $timelineInspector)"))
+        let exportBox = try #require(source.range(of: ".seriesExportPresentation(timelineExportBox)"))
+        let firstSectionBuilder = try #require(source.range(of: "// MARK: - Overview"))
+        #expect(inspectorSheet.upperBound < firstSectionBuilder.lowerBound,
+                "the inspector sheet is anchored below a Section builder, so it mounts per row")
+        #expect(exportBox.upperBound < firstSectionBuilder.lowerBound,
+                "the export presentation is anchored below a Section builder")
+    }
+
     @Test("The share sheet and the error alert are anchored outside the mode switch")
     func deliverySurfacesAreAnchoredOnce() throws {
         // The Group-modifier gotcha: a `.sheet` on a Group applies once per child, so anchoring
