@@ -266,6 +266,47 @@ struct ResumeScopeTests {
                                                 requesting: ["d1"]) == false)
     }
 
+    @Test("Both input directories are checked up front, and TEXT_DIR by name")
+    func inputDirectoriesAreValidated() throws {
+        // The guard exists because the failure it prevents is invisible: a TEXT_DIR that names a
+        // real directory but the wrong one (dropping the trailing `text/` is the whole typo)
+        // makes every volume throw, every throw is caught and filed as "missing", and the run
+        // writes a manifest of zeroes and exits 0. `run` takes its environment as a parameter
+        // precisely so this can be driven without a corpus.
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        let store = root.appendingPathComponent("store")
+        let text = root.appendingPathComponent("text")
+        try FileManager.default.createDirectory(at: store.appendingPathComponent("marked"),
+                                                withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: text, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        func environment(store storePath: URL, text textPath: URL) -> [String: String] {
+            ["STORE": storePath.path, "TEXT_DIR": textPath.path,
+             "OUT_DIR": root.appendingPathComponent("out").path, "VOLUMES": "frusTest"]
+        }
+
+        // TEXT_DIR absent: refused by name, rather than every volume silently going missing.
+        let absentText = root.appendingPathComponent("frus-semantic-raw")   // the typo's shape
+        #expect(throws: DetectorError.self) {
+            try EarlyEraNERControlRunner.run(
+                environment: environment(store: store, text: absentText))
+        }
+        // And STORE absent is still refused, so the new guard did not displace the old one.
+        #expect(throws: DetectorError.self) {
+            try EarlyEraNERControlRunner.run(
+                environment: environment(store: root.appendingPathComponent("nope"), text: text))
+        }
+        // A file where a directory belongs is not a directory — `fileExists` alone says it is.
+        let fileNotDirectory = root.appendingPathComponent("text-file")
+        try Data("x".utf8).write(to: fileNotDirectory)
+        #expect(throws: DetectorError.self) {
+            try EarlyEraNERControlRunner.run(
+                environment: environment(store: store, text: fileNotDirectory))
+        }
+    }
+
     @Test("An unreadable head resumes nothing rather than failing the run")
     func unreadableHeadIsAbsent() throws {
         let directory = FileManager.default.temporaryDirectory

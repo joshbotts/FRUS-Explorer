@@ -413,15 +413,36 @@ def run():
           (result["volumes_refused"], result["documents_scored"]))
 
     # The same accounting on the baseline side, where it decides the number the whole
-    # detector-versus-free-layer question is settled against.
+    # detector-versus-free-layer question is settled against — and driven through `main()`,
+    # not by re-assembling its steps. The defect was in main's CALL, which discarded the
+    # refusal list (`, _`) and passed a literal `[]`; a check that called collect_predictions
+    # and score_one itself passed against the bug, which a mutation sweep proved by restoring
+    # it and watching the suite stay green.
     thin_marked = os.path.join(root, "marked-thin")
     os.makedirs(os.path.join(thin_marked, "marked"), exist_ok=True)
     shutil.copy(os.path.join(store_dir, "marked", volumes[0] + ".jsonl.gz"),
                 os.path.join(thin_marked, "marked", volumes[0] + ".jsonl.gz"))
-    _, marked_refused = score_detections.collect_predictions(thin_marked, "marked", gold, False)
-    result = score_detections.score_one("baseline", {}, gold, bands, marked_refused)
+    scored_path = os.path.join(root, "scored.json")
+    saved = (score_detections.GROUND_TRUTH, score_detections.DETECTORS,
+             score_detections.MARKED_STORE, score_detections.TEXT_DIR, score_detections.OUT)
+    try:
+        score_detections.GROUND_TRUTH = os.path.join(out_dir, "m2a-ground-truth.jsonl")
+        score_detections.DETECTORS = [subset_store]
+        score_detections.MARKED_STORE = thin_marked
+        score_detections.TEXT_DIR = text_dir
+        score_detections.OUT = scored_path
+        score_detections.TEXT_CACHE.clear()
+        score_detections.main()
+    finally:
+        (score_detections.GROUND_TRUTH, score_detections.DETECTORS,
+         score_detections.MARKED_STORE, score_detections.TEXT_DIR,
+         score_detections.OUT) = saved
+    written = json.load(open(scored_path, encoding="utf-8"))
+    baseline_row = written["results"][0]
     check("the baseline reports the volumes whose marked layer is missing",
-          result["volumes_refused"] == [volumes[1]], result["volumes_refused"])
+          baseline_row["detector"].startswith("editor markup")
+          and baseline_row["volumes_refused"] == [volumes[1]],
+          (baseline_row["detector"], baseline_row["volumes_refused"]))
 
     # The R-0 text directory gets the same both-present refusal the layer reader has. It had its
     # own resolver, which silently preferred the .gz — in the one directory the Swift control
