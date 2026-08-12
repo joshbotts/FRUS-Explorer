@@ -658,6 +658,35 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - SemanticVectorsKit
+
+        /// The semantic-vector artifact contract, shared between the offline packer and the app —
+        /// the `WordCloudKit`/`SourceNoteKit` arrangement, and for the same reason: the two sides
+        /// must not be able to disagree about what a byte in the artifact means.
+        ///
+        /// Holds the artifact shapes and binary layouts, the document-id run-length encoding that
+        /// keys every row, mmap-backed readers for the bundled corpus tier and the per-volume
+        /// shards, and the retrieval kernel. Compiled into the app targets through `project.yml`
+        /// **and** as an SPM library target, so `SemanticVectorsGenerator` writes through exactly
+        /// the declarations the device reads through.
+        ///
+        /// Deliberately excludes everything generator-side — pooling, quantization, the raw-store
+        /// reader — because the app never produces vectors, only reads them.
+        .target(
+            name: "SemanticVectorsKit",
+            path: "SemanticVectorsKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for the kit: row keying, binary readers over synthesised artifacts, and the
+        /// retrieval kernel's tie-breaks.
+        .testTarget(
+            name: "SemanticVectorsKitTests",
+            dependencies: [.target(name: "SemanticVectorsKit")],
+            path: "SemanticVectorsKitTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - SemanticVectorsGenerator
 
         /// Stage 2 of the semantic-vectors pipeline (V-1): the deterministic packer that turns the
@@ -671,7 +700,10 @@ let package = Package(
         /// wrong for 4.8% of the corpus.
         .target(
             name: "SemanticVectorsGeneratorCore",
-            dependencies: [.target(name: "GeneratorKit")],
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "SemanticVectorsKit"),
+            ],
             path: "SemanticVectorsGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -689,7 +721,10 @@ let package = Package(
         /// bundled artifacts.
         .testTarget(
             name: "SemanticVectorsGeneratorTests",
-            dependencies: [.target(name: "SemanticVectorsGeneratorCore")],
+            dependencies: [
+                .target(name: "SemanticVectorsGeneratorCore"),
+                .target(name: "SemanticVectorsKit"),
+            ],
             path: "SemanticVectorsGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
