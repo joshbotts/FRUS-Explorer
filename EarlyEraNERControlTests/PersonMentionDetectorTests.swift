@@ -174,9 +174,20 @@ struct StoreIOTests {
             DetectedRow(document: "d1", ordinal: 0, start: 9, end: 14, surface: "\"Q\""),
         ], to: url)
         let written = try String(contentsOf: url, encoding: .utf8)
-        #expect(written.hasPrefix("{\"d\":\"d1\",\"o\":0,\"s\":3,\"e\":7,\"n\":\"Fish\",\"ci\":0}"))
+        #expect(written.hasPrefix("{\"d\":\"d1\",\"o\":0,\"s\":3,\"e\":7,\"n\":\"Fish\"}"))
         #expect(written.contains("\\\"Q\\\""))     // quotes escaped the way json.dumps escapes them
         #expect(written.hasSuffix("\n"))
+        // `ci` is the one place the two writers DIVERGE, and the divergence is the point:
+        // `harvest_ner.py` closes its detected row with `"ci": chunk_index` because a windowed
+        // LLM pass has a chunk to name, and this detector does not chunk. Writing a constant 0
+        // would fabricate a field a reader could believe; its absence raises a KeyError in a
+        // consumer that wants it, which is the loud failure. Asserted rather than merely omitted
+        // from the prefix above, because a prefix match cannot tell a missing field from a
+        // reordered one — and this test shipped expecting `,"ci":0}`, which is how it went in red.
+        #expect(written.contains("\"ci\"") == false, """
+            The control writes no chunk index. See NERStoreIO.writeDetected's own note: a constant \
+            0 here is a fabricated field, not a harmless default.
+            """)
     }
 
     @Test("A ground-truth file groups documents by volume")

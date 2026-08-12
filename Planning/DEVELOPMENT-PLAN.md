@@ -5882,3 +5882,24 @@ The one worth naming on its own: **a `y` on an untouched file** collected the ed
 ground truth and printed "measured markup share: 100.0% — this is the real measurement". The staged
 bytes are now hashed into the manifest and an unchanged file is refused; `none` is how you say
 "read it, nothing to add". Both suites now run 26 and 27 checks, no corpus and no server needed.
+
+## Session 2026-08-12 — #863 follow-up 1: the suite goes green
+
+`swift test` was red on `v2` from the moment #863 merged: 1,033 tests, one failure.
+
+`writesRowShape` expected the detected row to end `,"ci":0}`. `NERStoreIO.writeDetected` omits
+`ci` deliberately and argues the case in its own comment — a windowed LLM pass has a chunk index to
+name, this detector does not chunk, and "writing a constant 0 would fabricate a field a reader could
+believe." The writer is right; the test was written from the wrong side of the contract.
+
+The two producers genuinely differ here, and that is the whole content of the fix. `harvest_ner.py`
+closes its detected row with `"ci": chunk_index` (line 548); the control closes at `n`. So the
+expectation is corrected **and** the absence is asserted in its own right, because a `hasPrefix`
+match cannot distinguish a missing field from a reordered one — which is precisely how a test
+expecting `,"ci":0}` shipped green-looking and went in red.
+
+Mutation-checked: making the writer emit `,"ci":0` fails the test with two issues (the prefix and
+the new assertion). Full SPM suite back to 1,033 passing.
+
+Nothing else is touched. The nine silent-success findings from the same review are a separate pass —
+they share a theme and want one set of tests, and this one had to be able to land on its own.
