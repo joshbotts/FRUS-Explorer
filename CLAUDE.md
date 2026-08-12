@@ -145,6 +145,25 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
 | `Theme/` | `FRUSTheme` (colors, typography constants) |
 | `Resources/` | Bundled JSON: manifest, taxonomy, subject tags, TEI config |
 
+- `SemanticVectorsKit` — the semantic-vector artifact contract: binary layouts, the
+  document-id run-length encoding that keys every row, mmap readers for the bundled
+  corpus tier and the per-volume shards, and the retrieval kernel. Compiled into the app
+  targets via `project.yml` (the WordCloudKit/FTS5Store pattern) **and** an SPM library
+  target, so `SemanticVectorsGenerator` writes through the declarations the device reads
+  through. **The kernel's tie-breaks are the measurement**: driving it over the shipped
+  artifacts reproduces the corpus gates' reference neighbour lists in exact order for
+  600/600 queries, so changing one silently invalidates the recall the artifact states.
+  Two device-side rules worth knowing before touching it — a full corpus Hamming scan is
+  1.43 ms and the whole funnel 2.44 ms (so no ANN index, measured rather than assumed),
+  and identity NEVER comes from a shard's position in local XML but always from the
+  bundled index's segments, because a re-published volume changes the XML and not the
+  artifact. App-side, `BundledSemanticVectors` (prepare()-shape loader, maps the 10.23 MB
+  binary) and `SemanticShardStore` (filesystem-truthed, no SQLite registry — the app
+  already reads downloaded-ness from disk, and a table would drift) are in
+  `FRUSExplorer/Semantic/`. **Tier 2 has no host yet**: shards arrive through
+  `adoptShard(from:for:)`, which validates before it keeps, and that is the seam a fetch
+  will use.
+
 **SPM package targets** (separate from the app, in `Package.swift`):
 - `ManifestGenerator`, `TaxonomyGenerator`, `FTS5Store` (reusable SQLite FTS5 actor)
 - `WordCloudKit` — the word-cloud tokenizer stack (`WordCloudTokenizer`,

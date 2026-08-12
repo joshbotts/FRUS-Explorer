@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import SemanticVectorsKit
 @testable import SemanticVectorsGeneratorCore
 
 // MARK: - Quantization

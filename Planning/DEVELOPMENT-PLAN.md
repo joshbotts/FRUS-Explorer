@@ -6110,3 +6110,58 @@ in Python, identity checked against all 314,483 store ids, runner failure modes)
 
 One finding was refuted on verification (a claim that `decode` traps on malformed segment shapes —
 the behaviour reproduces but is the documented refusal path, not a defect).
+
+## Session 2026-08-12 — V-2: the device substrate, and two kernel defects the reference caught
+
+The device half of the semantic program: the code that reads the V-1 artifacts, keyed and scored the
+way the corpus gates measured. No UI and no similarity axis — that is V-3.
+
+**`SemanticVectorsKit`** now holds the artifact contract and is compiled into the app *and* the
+packer, on the WordCloudKit precedent: two copies of a binary layout are how a byte's meaning drifts.
+It carries the shapes and layouts (moved out of `SemanticVectorsGeneratorCore`), the document-id
+encoding, mmap readers for both tiers, and the retrieval kernel. The generator keeps only what a
+packer needs.
+
+**The kernel is verified against the measurement, not merely unit-tested.** Driving the shipping code
+over the real shipped artifacts reproduces the numpy reference the corpus gates ran on for **600 of
+600 queries, in exact order** — so the recall number the artifact states describes what the device
+does. That check found two defects a unit test would not have:
+
+- It returned the right candidate **set** in row order while its own doc comment promised "nearest
+  first". Invisible behind a rerank; wrong for a caller with no shard, which is every volume today.
+- Its eligibility filter ran during collection, *after* the cutoff had been computed over rows that
+  were then discarded — a 50-candidate request returned 28.
+
+Both are now a proper counting sort (histogram → prefix-sum offsets → placement), with the tie-break
+falling out of the traversal and a property test pinning it against a naive sort.
+
+**Performance is measured, and the two dominant costs were not the arithmetic.** Materialising a
+`[Int8]` per candidate: 5.59 → 4.78 ms. Resolving each candidate through `document(at:)`, which builds
+an id `String` the caller then hashes: 4.78 → **2.44 ms**. `volumeSlot(containing:)` exists for that —
+at 800 candidates a query, the string and its hash cost about what the entire 314,483-document scan
+costs (1.43 ms). Every performance sentence in the doc comments is one of these measurements; an
+earlier draft cited a number from a scratch harness that the shipping path never achieved, and that
+was corrected rather than shipped.
+
+**Two design deviations, both argued in code:**
+
+- **No SQLite registry table for shards.** The app already answers "is this volume downloaded" from
+  the filesystem, nothing here reconciles a table against disk, and a registry would need maintaining
+  in three hand-kept lists (`auxDeleteVolume`'s eleven tables, `removeAllVolumesFromIndex`'s parallel
+  list, and `PRAGMA user_version`, which `FTS5Connection` owns). Presence is a `stat`; provenance is
+  the shard's own header; neither can lie.
+- **Shards live in their own directory**, not beside the volume XML. Three places sweep the Volumes
+  directory by extension and all three look for `.xml`, so a `.vec` there would outlive its volume.
+
+Teardown is wired at both paths the scouts found: `onVolumeDeleted` (which the Settings hubs fire
+twice, hence idempotence) and `ResetService.resetLocalData`, which deletes XML directly and therefore
+never fires that callback at all.
+
+**Tier 2 still has no host.** The design names an app-owned GitHub repo; creating and publishing it
+is the owner's call, so this ships the seam rather than a fetch: `adoptShard(from:for:)` validates
+header, provenance digest and row count before keeping a file, which is what a network fetch will
+call. Tier 1 is bundled and works with zero downloads today.
+
+Owed next: the oldest-device latency measurement (desktop numbers only so far), the Tier-2 host
+decision, and V-3's axis — which lands into a ranker where `isSelfNormalising` does not yet exist and
+where generators run regardless of weight, both of which V-3 must handle rather than discover.

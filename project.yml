@@ -90,6 +90,11 @@ targets:
       # target so CloudVectorsGenerator tokenises the corpus through the app's own code
       # rather than a second copy — see Package.swift.
       - path: WordCloudKit
+      # SemanticVectorsKit is compiled directly into the app, like WordCloudKit — the artifact
+      # contract (binary layouts, the document-id encoding that keys every row, the readers and the
+      # retrieval kernel) is shared with SemanticVectorsGenerator so the packer writes through the
+      # same declarations the device reads through. A second copy is how a byte's meaning drifts.
+      - path: SemanticVectorsKit
       # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).
       # eval-baseline.txt / eval-report.txt are the committed SourceNoteEvalGenerator
       # BEFORE/AFTER snapshots, not app content.
@@ -262,6 +267,11 @@ targets:
       # target so CloudVectorsGenerator tokenises the corpus through the app's own code
       # rather than a second copy — see Package.swift.
       - path: WordCloudKit
+      # SemanticVectorsKit is compiled directly into the app, like WordCloudKit — the artifact
+      # contract (binary layouts, the document-id encoding that keys every row, the readers and the
+      # retrieval kernel) is shared with SemanticVectorsGenerator so the packer writes through the
+      # same declarations the device reads through. A second copy is how a byte's meaning drifts.
+      - path: SemanticVectorsKit
       # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).
       # eval-baseline.txt / eval-report.txt are the committed SourceNoteEvalGenerator
       # BEFORE/AFTER snapshots, not app content.

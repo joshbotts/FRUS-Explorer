@@ -15,6 +15,7 @@
 import Testing
 import CryptoKit
 import Foundation
+import SemanticVectorsKit
 @testable import SemanticVectorsGeneratorCore
 
 /// Artifact tests over the **committed** semantic-vector artifacts.

@@ -15,6 +15,7 @@
 import CryptoKit
 import Foundation
 import GeneratorKit
+import SemanticVectorsKit
 
 /// Stage 2 of the semantic-vectors pipeline: the deterministic packer.
 ///

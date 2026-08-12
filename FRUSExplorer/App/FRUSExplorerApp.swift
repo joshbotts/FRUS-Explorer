@@ -1167,6 +1167,20 @@ struct FRUSExplorerApp: App {
                     // `.unavailable(.noArtifact)` — a failure indistinguishable from a missing
                     // bundle resource, so the feature would look wired and be permanently dark.
                     await BundledKeynessBaseline.prepare()
+                    // Same schedule again: the semantic index decode and the 10.23 MB binary's
+                    // mapping both belong after the first frame. The shard store is built only
+                    // once the pin it validates against exists, so a build with missing or
+                    // mismatched artifacts leaves it nil and every semantic surface reports
+                    // unavailable rather than empty.
+                    await BundledSemanticVectors.prepare()
+                    if let semanticIndex = BundledSemanticVectors.index {
+                        appState.semanticShardStore = SemanticShardStore(
+                            directory: Self.makeSemanticVectorsDirectory(),
+                            provenance: semanticIndex.provenance,
+                            expectedCounts: Dictionary(
+                                semanticIndex.volumes.map { ($0.volumeID, $0.documentCount) },
+                                uniquingKeysWith: { first, _ in first }))
+                    }
                     // Before anything can edit a synced model. Cheap: one notification observer.
                     modificationStamper.start(observing: modelContainer.mainContext)
                 }
@@ -1850,6 +1864,11 @@ struct FRUSExplorerApp: App {
                     // Drop any cached document ASTs so a re-download can never
                     // serve stale content from the deleted file.
                     await appState.documentASTCache.removeVolume(volumeId)
+                    // And the volume's semantic shard. It lives outside the Volumes
+                    // directory, so no extension sweep would ever reach it; without this
+                    // it would outlive the volume it describes and be re-adopted on a
+                    // re-download without being re-validated.
+                    await appState.semanticShardStore?.removeShard(for: volumeId)
                 }
             }
         )
@@ -2165,6 +2184,20 @@ struct FRUSExplorerApp: App {
     private static func makeVolumesDirectory() -> URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let dir = base.appendingPathComponent("FRUSExplorer/Volumes", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    /// Returns (and creates if necessary) the semantic-vector shard directory.
+    /// `{Application Support}/FRUSExplorer/SemanticVectors/`
+    ///
+    /// Deliberately **not** the Volumes directory. Three places sweep that directory by extension —
+    /// `ResetService.resetLocalData`, the download engine's destination move, and cancellation
+    /// cleanup — and all three look for `.xml`, so a `.vec` sitting beside its volume would survive
+    /// every one of them and outlive the volume it describes.
+    static func makeSemanticVectorsDirectory() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("FRUSExplorer/SemanticVectors", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
