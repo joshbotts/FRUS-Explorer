@@ -1,0 +1,1553 @@
+{
+  "contract": {
+    "corpus_reconciliation": {
+      "chars_vs_planning_1374B": {
+        "explanation_measured": "reproduced EXACTLY corpus-wide: the harvester's extraction (tag-strip + whitespace collapse + truncate each document at the next <div or </body>) over today's ~/frus-volumes yields 1,332,974,542 chars \u2014 the store's total to the digit. The same extraction WITHOUT the truncation rule yields 1,373,922,235 \u2014 the ride-along's '1.374 B chars' to the digit. The 40,947,693-char (3.07%) difference is back-matter bleed (back-of-book indexes gluing onto each volume's final document), which the harvester's truncation exists to remove (docstring cites frus1941-43's 347 KB index).",
+        "no_truncation_chars_measured": 1373922235,
+        "ride_along_chars": 1374000000,
+        "store_chars": 1332974542,
+        "truncation_chars_measured": 1332974542
+      },
+      "docs_vs_app_index": {
+        "app_display_rows": 316839,
+        "app_only_ids_classified": {
+          "ch": 1181,
+          "editorial_flag": 0,
+          "front_matter_flag": 1012,
+          "other": 163
+        },
+        "app_only_other_examples": [
+          {
+            "id": "comp2",
+            "vol": "frus1864p1"
+          },
+          {
+            "id": "contents2",
+            "vol": "frus1872p2v5"
+          },
+          {
+            "id": "comp31",
+            "vol": "frus1876"
+          },
+          {
+            "id": "comp30",
+            "vol": "frus1876"
+          },
+          {
+            "id": "comp11",
+            "vol": "frus1893"
+          },
+          {
+            "id": "comp7",
+            "vol": "frus1895p1"
+          },
+          {
+            "id": "comp2",
+            "vol": "frus1901China"
+          },
+          {
+            "id": "comp41",
+            "vol": "frus1910"
+          },
+          {
+            "id": "comp34",
+            "vol": "frus1912"
+          },
+          {
+            "id": "comp31",
+            "vol": "frus1913"
+          },
+          {
+            "id": "comp16",
+            "vol": "frus1914"
+          },
+          {
+            "id": "comp1",
+            "vol": "frus1915"
+          }
+        ],
+        "net_gap": 2356,
+        "packer_requirement": "store doc ids are a STRICT SUBSET of document_cache (0 exceptions corpus-wide): every store (volume_id, d) joins an app row directly. 2,356 app display rows have no vector: 1,181 ch* chapter-structure divs, 1,012 is_front_matter rows, 163 other structural divs (comp*/appendix* in pre-1920 volumes). None are editorial notes \u2014 all 8,467 is_editorial_note rows ARE embedded. The frus1919Parisv13 outlier (app 170 / store 2) is 168 ch* rows, not an extraction failure.",
+        "sample_volume_id_diffs": [
+          {
+            "app": 170,
+            "app_only_flags": {
+              "ch1": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch10": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch10subch1": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch10subsubch1": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch11": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch11subch1": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch1": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch10": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch11": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch12": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch13": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              }
+            },
+            "only_in_app": [
+              "ch1",
+              "ch10",
+              "ch10subch1",
+              "ch10subsubch1",
+              "ch11",
+              "ch11subch1",
+              "ch12",
+              "ch12subch1",
+              "ch12subch10",
+              "ch12subch11",
+              "ch12subch12",
+              "ch12subch13",
+              "ch12subch14",
+              "ch12subch2",
+              "ch12subch3",
+              "ch12subch4",
+              "ch12subch5",
+              "ch12subch6",
+              "ch12subch7",
+              "ch12subch8",
+              "ch12subch9",
+              "ch12subsubch1",
+              "ch12subsubch2",
+              "ch12subsubsubch1",
+              "ch12subsubsubch2",
+              "ch12subsubsubch3",
+              "ch13",
+              "ch13subch1",
+              "ch13subch2",
+              "ch13subch3",
+              "ch13subch4",
+              "ch13subch5",
+              "ch13subch6",
+              "ch13subch7",
+              "ch13subch8",
+              "ch14",
+              "ch14subch1",
+              "ch14subch2",
+              "ch14subch3",
+              "ch14subch4",
+              "ch14subch5",
+              "ch14subsubch1",
+              "ch14subsubch2",
+              "ch14subsubch3",
+              "ch14subsubch4",
+              "ch14subsubsubch1",
+              "ch14subsubsubch2",
+              "ch14subsubsubch3",
+              "ch15",
+              "ch15subch1"
+            ],
+            "only_in_app_count": 168,
+            "only_in_store": [],
+            "only_in_store_count": 0,
+            "store": 2,
+            "vol": "frus1919Parisv13"
+          },
+          {
+            "app": 807,
+            "app_only_flags": {
+              "ch11": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch11subch1": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch11subch2": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch2": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch3": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch12subch4": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch13subch2": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch13subch3": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch13subch4": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch13subch5": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch13subch6": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch13subch7": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              }
+            },
+            "only_in_app": [
+              "ch11",
+              "ch11subch1",
+              "ch11subch2",
+              "ch12subch2",
+              "ch12subch3",
+              "ch12subch4",
+              "ch13subch2",
+              "ch13subch3",
+              "ch13subch4",
+              "ch13subch5",
+              "ch13subch6",
+              "ch13subch7",
+              "ch13subch8",
+              "ch14subch7",
+              "ch14subch8",
+              "ch14subch9",
+              "ch15",
+              "ch15subch1",
+              "ch16subch4",
+              "ch16subch5",
+              "ch17",
+              "ch17subch1",
+              "ch17subch2",
+              "ch18subch2",
+              "ch18subch3",
+              "ch18subch4",
+              "ch19",
+              "ch19subch1",
+              "ch2",
+              "ch20subch2",
+              "ch21subch2",
+              "ch22",
+              "ch22subch1",
+              "ch22subch2",
+              "ch23",
+              "ch23subch1",
+              "ch2subch1",
+              "ch2subch2",
+              "ch2subch3",
+              "ch2subch4",
+              "ch2subch5",
+              "ch3",
+              "ch3subch1",
+              "ch3subch2",
+              "ch4subch2",
+              "ch4subch3",
+              "ch4subch4",
+              "ch4subch5",
+              "ch4subch6",
+              "ch5subch2"
+            ],
+            "only_in_app_count": 60,
+            "only_in_store": [],
+            "only_in_store_count": 0,
+            "store": 747,
+            "vol": "frus1946v05"
+          },
+          {
+            "app": 784,
+            "app_only_flags": {
+              "ch1subch10": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch11": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch12": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch3": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch4": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch5": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch6": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch7": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch8": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch1subch9": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch2subch2": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              },
+              "ch2subch3": {
+                "is_editorial_note": 0,
+                "is_front_matter": 0
+              }
+            },
+            "only_in_app": [
+              "ch1subch10",
+              "ch1subch11",
+              "ch1subch12",
+              "ch1subch3",
+              "ch1subch4",
+              "ch1subch5",
+              "ch1subch6",
+              "ch1subch7",
+              "ch1subch8",
+              "ch1subch9",
+              "ch2subch2",
+              "ch2subch3",
+              "ch3subch3",
+              "ch4subch3",
+              "ch5",
+              "ch5subch1",
+              "ch6",
+              "ch6subch1",
+              "ch7subch1",
+              "ch7subch8",
+              "ch8subch1",
+              "ch8subch13",
+              "ch8subch5",
+              "ch8subch6",
+              "ch8subch9",
+              "ch8subsubch10",
+              "ch8subsubch10a",
+              "ch8subsubch10b",
+              "ch8subsubch13",
+              "ch8subsubch15",
+              "ch8subsubch4a",
+              "ch8subsubch4b",
+              "ch8subsubch4c",
+              "ch8subsubch4d",
+              "ch8subsubch9",
+              "ch8subsubsubch1",
+              "ch8subsubsubch2",
+              "preface",
+              "terms"
+            ],
+            "only_in_app_count": 39,
+            "only_in_store": [],
+            "only_in_store_count": 0,
+            "store": 745,
+            "vol": "frus1947v03"
+          }
+        ],
+        "store_docs": 314483,
+        "store_ids_not_in_app_corpuswide": 0,
+        "top10_deltas": [
+          {
+            "app": 170,
+            "delta": 168,
+            "store": 2,
+            "vol": "frus1919Parisv13"
+          },
+          {
+            "app": 807,
+            "delta": 60,
+            "store": 747,
+            "vol": "frus1946v05"
+          },
+          {
+            "app": 784,
+            "delta": 39,
+            "store": 745,
+            "vol": "frus1947v03"
+          },
+          {
+            "app": 870,
+            "delta": 38,
+            "store": 832,
+            "vol": "frus1942v01"
+          },
+          {
+            "app": 742,
+            "delta": 32,
+            "store": 710,
+            "vol": "frus1942v06"
+          },
+          {
+            "app": 1945,
+            "delta": 30,
+            "store": 1915,
+            "vol": "frus1915"
+          },
+          {
+            "app": 864,
+            "delta": 30,
+            "store": 834,
+            "vol": "frus1919v02"
+          },
+          {
+            "app": 743,
+            "delta": 26,
+            "store": 717,
+            "vol": "frus1943v06"
+          },
+          {
+            "app": 1890,
+            "delta": 25,
+            "store": 1865,
+            "vol": "frus1914"
+          },
+          {
+            "app": 1241,
+            "delta": 25,
+            "store": 1216,
+            "vol": "frus1945v09"
+          }
+        ],
+        "volumes_differing": 484,
+        "volumes_equal": 68
+      },
+      "docs_vs_design": {
+        "design_tei_document_divs": "~314,479 (lexical assessment s1b approximation)",
+        "ride_along_measured_divs_2026_08_07": 314483,
+        "store_docs": 314483,
+        "verdict": "store matches the ride-along's measured div count exactly; the design doc's ~314,479 is 4 low (0.001%, a stated approximation)"
+      },
+      "store_totals": {
+        "chars": 1332974542,
+        "chunks": 605643,
+        "docs": 314483,
+        "embed_secs": 21454.3,
+        "est_tokens": 320426572,
+        "head_sums_match_manifest": true,
+        "note": "independently re-summed over all 552 head.json; also matches runs.jsonl sums (integrity.json check4)"
+      },
+      "tokens_and_chunks_vs_m2_prediction": {
+        "actual": {
+          "chunks": 605643,
+          "embedded_chars_incl_overlap": 1471503277,
+          "est_embedded_tokens_incl_overlap": 353726749,
+          "est_tokens_basis": "document chars / 4.16 \u2014 EXCLUDES overlap and prefix",
+          "est_tokens_manifest": 320426572,
+          "mean_chunk_chars": 2429.7,
+          "mean_chunk_tokens_est": 584,
+          "overlap_inflation_realized": 1.1039,
+          "single_chunk_docs": 208567,
+          "single_chunk_share": 0.6632
+        },
+        "explanation": "The ride-along prediction DID include overlap (380M = ~330M x 1.15); overlap is NOT the cause of the chunk-count gap. The +27.5% gap (605,643 vs ~475k) is the per-document chunking boundary: 66.3% of documents (208,567 of 314,483) fit in a single window and multi-chunk documents end in remainder tails, so the realized mean chunk is 2,429.7 chars (~584 tokens), not the full-window ~800 the prediction divided by (CHUNK_CHARS 3200 is itself ~769 tokens, a minor second contributor). Realized overlap inflation is 10.4%, under the assumed 15%, for the same reason \u2014 single-chunk docs have no overlap. Net: FEWER embedded tokens than predicted (~354M incl overlap vs ~380M) across MORE, smaller chunks.",
+        "predicted": {
+          "chunks_at_800_tokens": "~475k",
+          "embedded_tokens_after_15pct_overlap": "~380M",
+          "est_bpe_tokens": "~310-344M, call ~330M"
+        }
+      }
+    },
+    "cross_agent_inputs": {
+      "integrity_json": "parallel agent verified SHA256SUMS 2208/2208 OK, file census 552/552, head==runs==manifest totals, single continuous run \u2014 consistent with everything measured here"
+    },
+    "generated": "2026-08-12",
+    "manifest_contract": {
+      "batch": {
+        "recorded": 64
+      },
+      "chunk_chars": {
+        "actual": 3200,
+        "expected": 3200,
+        "pass": true
+      },
+      "dim": {
+        "actual": 768,
+        "expected": 768,
+        "note": "uniform across all 552 head.json",
+        "pass": true
+      },
+      "generated": {
+        "note": "written at end of the single continuous run 14:21:50-20:19:04 (runs.jsonl, 552 monotonic rows)",
+        "pass": true,
+        "recorded": "2026-08-10T20:19:04"
+      },
+      "machine": {
+        "pass": true,
+        "recorded": {
+          "arch": "arm64",
+          "cpu": "Apple M1 Max",
+          "hw_model": "Mac13,1",
+          "node": "Joshuas-Mac-Studio.local",
+          "python": "3.9.6"
+        }
+      },
+      "model": {
+        "actual": "text-embedding-embeddinggemma-300m-qat",
+        "expected": "text-embedding-embeddinggemma-300m-qat",
+        "note": "id present in the captured models_listing (first entry); all 552 head.json agree",
+        "pass": true
+      },
+      "model_file_sha256": {
+        "actual": "5a9e0645541b06367dec3fd14d0019015b872cfe36d35dfb2a9d752dade09020",
+        "hex64": true,
+        "not_captured_sentinel": false,
+        "note": "V-0 s1 gap closed. The GGUF is no longer on disk (LM Studio models dir now holds no embedding models; Spotlight finds none), so the hash cannot be re-verified against the file today \u2014 it was computed by the harvester at run time over MODEL_FILE.",
+        "pass": true,
+        "present": true
+      },
+      "overlap_chars": {
+        "actual": 480,
+        "expected": 480,
+        "pass": true
+      },
+      "prefix": {
+        "actual_raw_json_bytes": "title: none | text: ",
+        "expected": "title: none | text: ",
+        "pass": true,
+        "trailing_space_present_in_raw_bytes": true
+      },
+      "volumes_missing": {
+        "actual": [],
+        "expected": [],
+        "pass": true
+      },
+      "volumes_requested": {
+        "actual": 552,
+        "expected": 552,
+        "pass": true
+      }
+    },
+    "ok": true,
+    "script_drift": {
+      "commits": [
+        {
+          "blob_sha256": "fca032820e4f38367375ad3e461c3382d73164c918d4f2eac47174512cec8c27",
+          "date": "2026-08-07",
+          "matches": "manifest",
+          "sha": "0dec26a8978c57b99f3db823ce3eacffaa6b4962"
+        },
+        {
+          "blob_sha256": "77a1af999923da6ba6b4f109c880285c46aec26fc833b58973085c24dffcdd0b",
+          "date": "2026-08-10 12:07:32 -0400",
+          "matches": "repo HEAD (unchanged since)",
+          "sha": "6027692d58558c3f8699c3e8c321d33c9251d87e"
+        }
+      ],
+      "equal": false,
+      "explained": true,
+      "explanation": "manifest hash == the blob committed 2026-08-07 in 0dec26a8 (PR #744) exactly; repo hash == the blob committed 2026-08-10 12:07:32 -0400 in 6027692d (PR #811). The diff between the two versions is ONLY two fail-fast guards: (a) pick_model() rejects a MODEL id not in the server's /v1/models listing (LM Studio silently routes unknown ids to whatever is loaded); (b) MODEL_FILE existence is validated up front instead of failing at manifest-write after the last volume. No change to extraction, chunking, prefix handling, embedding calls, or any output format. The run (started 14:21:50, ~2h after #811 was committed) used the pre-#811 copy of the script; both risks the #811 guards address demonstrably did not occur in this run \u2014 the recorded model id IS in the captured listing, and model_file_sha256 WAS captured.",
+      "manifest_script_sha256": "fca032820e4f38367375ad3e461c3382d73164c918d4f2eac47174512cec8c27",
+      "repo_script_sha256": "77a1af999923da6ba6b4f109c880285c46aec26fc833b58973085c24dffcdd0b"
+    },
+    "task": "provenance-contract audit of /Users/jbotts/frus-semantic-raw vs the V-0-authorized Phase-3 contract",
+    "text_freshness": {
+      "all_decompress_and_match": true,
+      "bonus_corpuswide": "re-running the harvester's extraction over today's /Users/jbotts/frus-volumes reproduces the store's total chars EXACTLY (1,332,974,542) across all 552 volumes \u2014 the text layer matches the current corpus copy at extraction level corpus-wide, and per-volume head chars matched on every volume individually spot-checked (5/5).",
+      "checks": [
+        {
+          "chars": 3375953,
+          "decompress_ok": true,
+          "docs": 661,
+          "error": null,
+          "head_chars": 3375953,
+          "head_docs": 661,
+          "match": true,
+          "vol": "frus1949v03"
+        },
+        {
+          "chars": 815497,
+          "decompress_ok": true,
+          "docs": 120,
+          "error": null,
+          "head_chars": 815497,
+          "head_docs": 120,
+          "match": true,
+          "vol": "frus1961-63v06"
+        },
+        {
+          "chars": 3753025,
+          "decompress_ok": true,
+          "docs": 1915,
+          "error": null,
+          "head_chars": 3753025,
+          "head_docs": 1915,
+          "match": true,
+          "vol": "frus1915"
+        },
+        {
+          "chars": 4030348,
+          "decompress_ok": true,
+          "docs": 857,
+          "error": null,
+          "head_chars": 4030348,
+          "head_docs": 857,
+          "match": true,
+          "vol": "frus1948v02"
+        },
+        {
+          "chars": 2367630,
+          "decompress_ok": true,
+          "docs": 480,
+          "error": null,
+          "head_chars": 2367630,
+          "head_docs": 480,
+          "match": true,
+          "vol": "frus1964-68v33"
+        },
+        {
+          "chars": 2212690,
+          "decompress_ok": true,
+          "docs": 208,
+          "error": null,
+          "head_chars": 2212690,
+          "head_docs": 208,
+          "match": true,
+          "vol": "frus1969-76v35"
+        },
+        {
+          "chars": 2107955,
+          "decompress_ok": true,
+          "docs": 803,
+          "error": null,
+          "head_chars": 2107955,
+          "head_docs": 803,
+          "match": true,
+          "vol": "frus1920v02"
+        },
+        {
+          "chars": 2809794,
+          "decompress_ok": true,
+          "docs": 425,
+          "error": null,
+          "head_chars": 2809794,
+          "head_docs": 425,
+          "match": true,
+          "vol": "frus1969-76ve12"
+        },
+        {
+          "chars": 1840125,
+          "decompress_ok": true,
+          "docs": 351,
+          "error": null,
+          "head_chars": 1840125,
+          "head_docs": 351,
+          "match": true,
+          "vol": "frus1964-68v02"
+        },
+        {
+          "chars": 2400975,
+          "decompress_ok": true,
+          "docs": 336,
+          "error": null,
+          "head_chars": 2400975,
+          "head_docs": 336,
+          "match": true,
+          "vol": "frus1950v01"
+        }
+      ],
+      "requested_check": "10 random volumes, seed 18610810, decompress + match head chars/docs",
+      "volumes": [
+        "frus1949v03",
+        "frus1961-63v06",
+        "frus1915",
+        "frus1948v02",
+        "frus1964-68v33",
+        "frus1969-76v35",
+        "frus1920v02",
+        "frus1969-76ve12",
+        "frus1964-68v02",
+        "frus1950v01"
+      ]
+    },
+    "wall_clock": {
+      "delta_pct": -2.3,
+      "embed_secs": 21454.3,
+      "hours": 5.96,
+      "note": "within band. The 6.1h extrapolation was priced against the 1.374B-char corpus measure; the harvest embedded 1.333B (see chars reconciliation) at 98.7% of spike throughput.",
+      "pass": true,
+      "spike_chars_per_sec": 62920,
+      "spike_extrapolation_hours": 6.1,
+      "throughput_chars_per_sec": 62131
+    }
+  },
+  "generated": "2026-08-12",
+  "integrity": {
+    "check1_checksums": {
+      "coverage": {
+        "dotfile_entries_in_sums": [],
+        "listed_count": 2208,
+        "listed_not_present": [],
+        "pass": true,
+        "present_count": 2208,
+        "present_not_listed": []
+      },
+      "failed": 0,
+      "failed_lines": [],
+      "ok": 2208,
+      "pass": true,
+      "shasum_exit_code": 0,
+      "total_lines": 2208
+    },
+    "check2_file_census": {
+      "dotfile_noise": [],
+      "expected_volume_count": 552,
+      "pass": true,
+      "unexpected_files": [],
+      "volume_count": 552,
+      "volumes_missing_artifacts": {}
+    },
+    "check3_per_volume_reconciliation": {
+      "failures": [],
+      "pass": true,
+      "runs_jsonl": {
+        "distinct_volumes": 552,
+        "duplicate_volumes": [],
+        "line_count": 552,
+        "pass": true,
+        "rows_for_unknown_volumes": []
+      },
+      "volumes_checked": 552
+    },
+    "check4_global_reconciliation": {
+      "dims_seen": [
+        768
+      ],
+      "head_sums": {
+        "chars": 1332974542,
+        "chunks": 605643,
+        "docs": 314483
+      },
+      "manifest_totals_this_run": {
+        "chars": 1332974542,
+        "chunks": 605643,
+        "docs": 314483
+      },
+      "pass": true,
+      "runs_sums": {
+        "chars": 1332974542,
+        "chunks": 605643,
+        "docs": 314483
+      }
+    },
+    "check5_volume_set_vs_app_manifest": {
+      "manifest_count": 552,
+      "manifest_not_in_store": [],
+      "pass": true,
+      "store_count": 552,
+      "store_not_in_manifest": []
+    },
+    "extras": {
+      "model_uniform": {
+        "models_by_head_count": {
+          "text-embedding-embeddinggemma-300m-qat": 552
+        },
+        "pass": true
+      },
+      "runs_jsonl_timestamps": {
+        "max": "2026-08-10T20:19:04",
+        "min": "2026-08-10T14:21:50",
+        "monotonic_sorted": true,
+        "note": "552 rows, one continuous invocation; span 5.96h matches embed_secs 21454.3s; no resume"
+      }
+    },
+    "generated": "2026-08-12",
+    "ok": true,
+    "store": "/Users/jbotts/frus-semantic-raw"
+  },
+  "neighbors": {
+    "bands": {
+      "doc_counts": {
+        "1900_1945": 140238,
+        "post1945": 137892,
+        "pre1900": 36353
+      },
+      "docs_below_char_floor": {
+        "1900_1945": 297,
+        "post1945": 225,
+        "pre1900": 407
+      },
+      "docs_below_char_floor_total": 929,
+      "volume_counts": {
+        "1900_1945": 169,
+        "post1945": 315,
+        "pre1900": 68
+      }
+    },
+    "char_floor": 200,
+    "corpus_docs": 314483,
+    "elapsed_secs": 291.9,
+    "near_duplicate_share_top1_cosine": {
+      "gt_0.98": {
+        "1900_1945": 0.005,
+        "overall": 0.0175,
+        "post1945": 0.0183,
+        "pre1900": 0.0292
+      },
+      "gt_0.995": {
+        "1900_1945": 0.0017,
+        "overall": 0.0075,
+        "post1945": 0.0117,
+        "pre1900": 0.0092
+      }
+    },
+    "neighbor_structure": {
+      "float768": {
+        "1900_1945": {
+          "same_band_top1": 0.9892,
+          "same_band_top10": 0.9684,
+          "same_volume_top1": 0.8183,
+          "same_volume_top10": 0.6265
+        },
+        "overall": {
+          "same_band_top1": 0.9883,
+          "same_band_top10": 0.9677,
+          "same_volume_top1": 0.7822,
+          "same_volume_top10": 0.6017
+        },
+        "post1945": {
+          "same_band_top1": 0.995,
+          "same_band_top10": 0.9748,
+          "same_volume_top1": 0.7625,
+          "same_volume_top10": 0.609
+        },
+        "pre1900": {
+          "same_band_top1": 0.9808,
+          "same_band_top10": 0.9599,
+          "same_volume_top1": 0.7658,
+          "same_volume_top10": 0.5697
+        }
+      },
+      "shipping_hamming200_int8_256": {
+        "1900_1945": {
+          "same_band_top1": 0.9883,
+          "same_band_top10": 0.9692,
+          "same_volume_top1": 0.8033,
+          "same_volume_top10": 0.5976
+        },
+        "overall": {
+          "same_band_top1": 0.9889,
+          "same_band_top10": 0.9651,
+          "same_volume_top1": 0.77,
+          "same_volume_top10": 0.5787
+        },
+        "post1945": {
+          "same_band_top1": 0.9933,
+          "same_band_top10": 0.9698,
+          "same_volume_top1": 0.7467,
+          "same_volume_top10": 0.5788
+        },
+        "pre1900": {
+          "same_band_top1": 0.985,
+          "same_band_top10": 0.9562,
+          "same_volume_top1": 0.76,
+          "same_volume_top10": 0.5597
+        }
+      }
+    },
+    "peak_rss_gb": 3.01,
+    "procedures": {
+      "hamming": "XOR + np.bitwise_count over packed 256-bit sign vectors; top-200 tie-break (dist asc, row asc); rerank lexsort((cands,-scores))",
+      "int8": "exact integer dots (f32 GEMM, |dot|<2^24) cast to float64 x scale outer product == spike_gates int8_scores bit-for-bit",
+      "sampling": "random.Random(18610810).sample over sorted eligible rows per band, band order pre1900,1900_1945,post1945; chars >= 200 floor",
+      "truth": "float32 GEMM doc_f32_768 @ doc_f32_768.T (gate_b's sims), top-10 via lexsort tie-break (score desc, row asc), self excluded"
+    },
+    "queries": {
+      "per_band": {
+        "1900_1945": 1200,
+        "post1945": 1200,
+        "pre1900": 1200
+      },
+      "total": 3600
+    },
+    "recall_at_10_vs_float768": {
+      "hamming200->int8-256": {
+        "1900_1945": 0.7293,
+        "overall": 0.728,
+        "post1945": 0.7036,
+        "pre1900": 0.751
+      },
+      "hamming200->int8-512": {
+        "1900_1945": 0.8148,
+        "overall": 0.8163,
+        "post1945": 0.7937,
+        "pre1900": 0.8405
+      },
+      "int8-256": {
+        "1900_1945": 0.7508,
+        "overall": 0.7493,
+        "post1945": 0.7312,
+        "pre1900": 0.766
+      },
+      "int8-512": {
+        "1900_1945": 0.8637,
+        "overall": 0.8637,
+        "post1945": 0.8538,
+        "pre1900": 0.8737
+      }
+    },
+    "rerank_pool": 200,
+    "seed": 18610810,
+    "task": "corpus-scale nearest-neighbor structure + quantization ladder",
+    "top1_cosine_float768": {
+      "1900_1945": {
+        "max": 1.0,
+        "median": 0.8706,
+        "min": 0.7163,
+        "p25": 0.8414,
+        "p75": 0.8963
+      },
+      "overall": {
+        "max": 1.0,
+        "median": 0.873,
+        "min": 0.6807,
+        "p25": 0.8403,
+        "p75": 0.9005
+      },
+      "post1945": {
+        "max": 1.0,
+        "median": 0.8734,
+        "min": 0.6807,
+        "p25": 0.8397,
+        "p75": 0.898
+      },
+      "pre1900": {
+        "max": 0.9995,
+        "median": 0.8773,
+        "min": 0.7035,
+        "p25": 0.8398,
+        "p75": 0.9109
+      }
+    },
+    "top1_float_cosine_of_shipping_top1": {
+      "1900_1945": {
+        "max": 1.0,
+        "median": 0.8688,
+        "min": 0.6611,
+        "p25": 0.8379,
+        "p75": 0.8959
+      },
+      "overall": {
+        "max": 1.0,
+        "median": 0.8712,
+        "min": 0.6611,
+        "p25": 0.8368,
+        "p75": 0.8996
+      },
+      "post1945": {
+        "max": 1.0,
+        "median": 0.8698,
+        "min": 0.6667,
+        "p25": 0.8371,
+        "p75": 0.8973
+      },
+      "pre1900": {
+        "max": 0.9995,
+        "median": 0.8763,
+        "min": 0.6804,
+        "p25": 0.8358,
+        "p75": 0.9099
+      }
+    },
+    "top_k": 10,
+    "top_pairs_file": "neighbors_top_pairs.jsonl"
+  },
+  "pool_stats": {
+    "chunks_read": 605643,
+    "doc_id_nonstandard": 949,
+    "doc_id_ord_fallback": 0,
+    "docs_pooled": 314483,
+    "dup_int8_256": {
+      "examples": [
+        [
+          {
+            "d": "d224",
+            "v": "frus1894app2"
+          },
+          {
+            "d": "d442",
+            "v": "frus1894app2"
+          }
+        ],
+        [
+          {
+            "d": "d241",
+            "v": "frus1894app2"
+          },
+          {
+            "d": "d448",
+            "v": "frus1894app2"
+          }
+        ],
+        [
+          {
+            "d": "d221",
+            "v": "frus1903"
+          },
+          {
+            "d": "d271",
+            "v": "frus1903"
+          }
+        ],
+        [
+          {
+            "d": "d1362",
+            "v": "frus1915"
+          },
+          {
+            "d": "d1419",
+            "v": "frus1915"
+          }
+        ],
+        [
+          {
+            "d": "d684",
+            "v": "frus1918Russiav02"
+          },
+          {
+            "d": "d761",
+            "v": "frus1918Russiav02"
+          }
+        ]
+      ],
+      "groups": 639,
+      "rate": 0.00408,
+      "rows_in_groups": 1282
+    },
+    "elapsed_secs": 27.6,
+    "head_totals": {
+      "chunks": 605643,
+      "docs": 314483
+    },
+    "inf_count": 0,
+    "int8_256": {
+      "nan_in_cut": 0,
+      "scale_max": 0.00447471346706152,
+      "scale_min": 0.001126944669522345,
+      "zero_scales": 0
+    },
+    "int8_512": {
+      "nan_in_cut": 0,
+      "scale_max": 0.004419670440256596,
+      "scale_min": 0.0013442662311717868,
+      "zero_scales": 0
+    },
+    "key_collisions": [],
+    "manifest_totals": {
+      "chunks": 605643,
+      "docs": 314483
+    },
+    "meta_text_order_mismatch": [],
+    "nan_count": 0,
+    "nonstandard_id_examples": [
+      {
+        "d": "d373a",
+        "v": "frus1865p1"
+      },
+      {
+        "d": "d2a",
+        "v": "frus1894app2"
+      },
+      {
+        "d": "d639a",
+        "v": "frus1896"
+      },
+      {
+        "d": "d711a",
+        "v": "frus1898"
+      },
+      {
+        "d": "d712a",
+        "v": "frus1898"
+      },
+      {
+        "d": "d1190a",
+        "v": "frus1898"
+      },
+      {
+        "d": "d1190b",
+        "v": "frus1898"
+      },
+      {
+        "d": "d122a",
+        "v": "frus1901"
+      },
+      {
+        "d": "d133a",
+        "v": "frus1901"
+      },
+      {
+        "d": "d218a",
+        "v": "frus1901"
+      }
+    ],
+    "per_volume_mismatches": [],
+    "pooled_inf_count": 0,
+    "pooled_nan_count": 0,
+    "pooled_norm_max": 1.0000000302392784,
+    "pooled_norm_min": 0.9999999698964044,
+    "raw_chunk_norms": {
+      "full_max": 1.000000068613175,
+      "full_median": 1.0000000001012646,
+      "full_min": 0.9999999321620764,
+      "sample_max": 1.0000000676607776,
+      "sample_median": 0.9999999998136738,
+      "sample_min": 0.9999999381485322,
+      "sample_n": 50471,
+      "sample_stride": 12
+    },
+    "tiling": {
+      "c0_first_nonzero": 0,
+      "c1_last_ne_textlen": 0,
+      "ci_not_dense": 0,
+      "meta_o_mismatch": 0,
+      "no_overlap": 0
+    },
+    "tiling_examples": {
+      "c0_first_nonzero": [],
+      "c1_last_ne_textlen": [],
+      "ci_not_dense": [],
+      "meta_o_mismatch": [],
+      "no_overlap": []
+    },
+    "volumes": 552,
+    "zero_chunk_vectors": 0,
+    "zero_norm_pooled_docs": 0,
+    "zero_weight_docs": 0
+  },
+  "rerank_pool_sweep": {
+    "queries": 3600,
+    "recall_at_10_vs_float768": {
+      "hamming1600->int8-256": {
+        "1900_1945": 0.7481,
+        "overall": 0.7474,
+        "post1945": 0.7294,
+        "pre1900": 0.7648
+      },
+      "hamming1600->int8-512": {
+        "1900_1945": 0.8568,
+        "overall": 0.8579,
+        "post1945": 0.8461,
+        "pre1900": 0.8708
+      },
+      "hamming200->int8-256": {
+        "1900_1945": 0.7293,
+        "overall": 0.728,
+        "post1945": 0.7036,
+        "pre1900": 0.751
+      },
+      "hamming200->int8-512": {
+        "1900_1945": 0.8148,
+        "overall": 0.8163,
+        "post1945": 0.7937,
+        "pre1900": 0.8405
+      },
+      "hamming400->int8-256": {
+        "1900_1945": 0.7406,
+        "overall": 0.7394,
+        "post1945": 0.7179,
+        "pre1900": 0.7598
+      },
+      "hamming400->int8-512": {
+        "1900_1945": 0.8377,
+        "overall": 0.8387,
+        "post1945": 0.8223,
+        "pre1900": 0.8563
+      },
+      "hamming800->int8-256": {
+        "1900_1945": 0.7453,
+        "overall": 0.7449,
+        "post1945": 0.7264,
+        "pre1900": 0.7628
+      },
+      "hamming800->int8-512": {
+        "1900_1945": 0.85,
+        "overall": 0.851,
+        "post1945": 0.8368,
+        "pre1900": 0.8662
+      }
+    },
+    "seed": 18610810,
+    "top_k": 10
+  },
+  "scripts": "tools/semantic-harvest/corpus-gates/ (pinned to spike_gates.py procedures)",
+  "seed": 18610810,
+  "store": "~/frus-semantic-raw (run-manifest generated 2026-08-10T20:19:04, model text-embedding-embeddinggemma-300m-qat, dim 768, chunk 3200/480, prefix 'title: none | text: ')",
+  "task": "Phase-3 full-harvest store assessment: integrity/contract validation + corpus-scale gates",
+  "weakpos": {
+    "candidate_poolsize_self_excluded": 314482,
+    "caveats": [
+      "Edge labels are noisy: page-anchor resolution maps 'see p. N' to whichever document spans that page, so absolute numbers understate retrieval quality; at corpus scale this is a distribution, not a verdict.",
+      "Ranks over 314,483 candidates are not directly comparable to the spike's ranks over 2,197; compare rank-percentile (rank/poolsize) columns instead."
+    ],
+    "census": {
+      "distinct_missing_endpoints": 15364,
+      "dropped": {
+        "cross_volume": 0,
+        "not_in_store": 26359,
+        "self": 1390,
+        "unresolved_page": 33390
+      },
+      "edges_retained": 124382,
+      "edges_retained_cross_volume": 35404,
+      "not_in_store_breakdown": {
+        "measured_by": "separate classification pass over the same pinned edge scan (sums to 26359)",
+        "note": "Every not_in_store drop is a structural anchor (front-matter source, footnote anchor, whole-volume or section target), never a document the embedding harvest missed. The app's navigation resolves dNfnM->dN; the pinned load_edges takes document anchors as stored, so those 17,017 drop here.",
+        "source_missing_nondocument_anchor": 3242,
+        "source_missing_top_shapes": {
+          "about-this-digital-edition": 39,
+          "chN": 306,
+          "chNsubchN": 253,
+          "chNsubsubchN": 47,
+          "compN": 426,
+          "compilations": 302,
+          "errata": 138,
+          "introduction": 95,
+          "preface": 998,
+          "pressrelease": 184,
+          "print-volume-summary": 44,
+          "summary": 302
+        },
+        "source_volume_absent_from_store": 0,
+        "target_docid_is_volume_id": 5650,
+        "target_footnote_anchor_dNfnM": 17017,
+        "target_other_section_ids": 423,
+        "target_url_shaped": 27,
+        "target_volume_absent_from_store": 0
+      },
+      "not_in_store_url_shaped_targets": 27,
+      "resolved_pairs": 118099,
+      "scanned_clean_edges": 185521
+    },
+    "configs": {
+      "float_768": {
+        "by_era_band": {
+          "1900_1945": {
+            "hit@10": 0.2305,
+            "hit@100": 0.4877,
+            "hit@50": 0.4096,
+            "median_rank": 114,
+            "median_rank_pct": 0.000363,
+            "mrr@10": 0.0998,
+            "p90_rank": 11262,
+            "p90_rank_pct": 0.035812,
+            "pairs": 33921,
+            "queries": 21548
+          },
+          "post1945": {
+            "hit@10": 0.4505,
+            "hit@100": 0.6907,
+            "hit@50": 0.6248,
+            "median_rank": 16,
+            "median_rank_pct": 5.1e-05,
+            "mrr@10": 0.2561,
+            "p90_rank": 2341,
+            "p90_rank_pct": 0.007445,
+            "pairs": 83353,
+            "queries": 48349
+          },
+          "pre1900": {
+            "hit@10": 0.2972,
+            "hit@100": 0.5752,
+            "hit@50": 0.4773,
+            "median_rank": 62,
+            "median_rank_pct": 0.000199,
+            "mrr@10": 0.1223,
+            "p90_rank": 12521,
+            "p90_rank_pct": 0.039816,
+            "pairs": 825,
+            "queries": 572
+          }
+        },
+        "by_relevant_set": {
+          "cross_volume_only": {
+            "hit@10": 0.1963,
+            "hit@100": 0.4164,
+            "hit@50": 0.3432,
+            "median_rank": 220,
+            "median_rank_pct": 0.0007,
+            "mrr@10": 0.0933,
+            "p90_rank": 20290,
+            "p90_rank_pct": 0.06452,
+            "pairs": 23733,
+            "queries": 15006
+          },
+          "mixed": {
+            "hit@10": 0.4614,
+            "hit@100": 0.7384,
+            "hit@50": 0.666,
+            "median_rank": 14,
+            "median_rank_pct": 4.5e-05,
+            "mrr@10": 0.2516,
+            "p90_rank": 749,
+            "p90_rank_pct": 0.002382,
+            "pairs": 20004,
+            "queries": 5314
+          },
+          "same_volume_only": {
+            "hit@10": 0.4292,
+            "hit@100": 0.6792,
+            "hit@50": 0.6106,
+            "median_rank": 18,
+            "median_rank_pct": 5.7e-05,
+            "mrr@10": 0.2366,
+            "p90_rank": 2536,
+            "p90_rank_pct": 0.008065,
+            "pairs": 74362,
+            "queries": 50149
+          }
+        },
+        "overall": {
+          "hit@10": 0.382,
+          "hit@100": 0.6277,
+          "hit@50": 0.5578,
+          "median_rank": 29,
+          "median_rank_pct": 9.2e-05,
+          "mrr@10": 0.2072,
+          "p90_rank": 4539,
+          "p90_rank_pct": 0.014434,
+          "pairs": 118099,
+          "queries": 70469
+        }
+      },
+      "int8_256": {
+        "by_era_band": {
+          "1900_1945": {
+            "hit@10": 0.2157,
+            "hit@100": 0.4553,
+            "hit@50": 0.3818,
+            "median_rank": 156,
+            "median_rank_pct": 0.000496,
+            "mrr@10": 0.0939,
+            "p90_rank": 19237,
+            "p90_rank_pct": 0.061174,
+            "pairs": 33921,
+            "queries": 21548
+          },
+          "post1945": {
+            "hit@10": 0.4321,
+            "hit@100": 0.6718,
+            "hit@50": 0.6042,
+            "median_rank": 19,
+            "median_rank_pct": 6e-05,
+            "mrr@10": 0.244,
+            "p90_rank": 3068,
+            "p90_rank_pct": 0.009756,
+            "pairs": 83353,
+            "queries": 48349
+          },
+          "pre1900": {
+            "hit@10": 0.278,
+            "hit@100": 0.5315,
+            "hit@50": 0.4476,
+            "median_rank": 76,
+            "median_rank_pct": 0.000242,
+            "mrr@10": 0.1176,
+            "p90_rank": 37956,
+            "p90_rank_pct": 0.120695,
+            "pairs": 825,
+            "queries": 572
+          }
+        },
+        "by_relevant_set": {
+          "cross_volume_only": {
+            "hit@10": 0.1867,
+            "hit@100": 0.3938,
+            "hit@50": 0.3231,
+            "median_rank": 290,
+            "median_rank_pct": 0.000922,
+            "mrr@10": 0.0888,
+            "p90_rank": 28683,
+            "p90_rank_pct": 0.091207,
+            "pairs": 23733,
+            "queries": 15006
+          },
+          "mixed": {
+            "hit@10": 0.4507,
+            "hit@100": 0.7247,
+            "hit@50": 0.6494,
+            "median_rank": 15,
+            "median_rank_pct": 4.8e-05,
+            "mrr@10": 0.2417,
+            "p90_rank": 910,
+            "p90_rank_pct": 0.002896,
+            "pairs": 20004,
+            "queries": 5314
+          },
+          "same_volume_only": {
+            "hit@10": 0.4088,
+            "hit@100": 0.6548,
+            "hit@50": 0.5862,
+            "median_rank": 22,
+            "median_rank_pct": 7e-05,
+            "mrr@10": 0.2248,
+            "p90_rank": 3704,
+            "p90_rank_pct": 0.011779,
+            "pairs": 74362,
+            "queries": 50149
+          }
+        },
+        "overall": {
+          "hit@10": 0.3647,
+          "hit@100": 0.6045,
+          "hit@50": 0.5349,
+          "median_rank": 36,
+          "median_rank_pct": 0.000114,
+          "mrr@10": 0.1971,
+          "p90_rank": 6660,
+          "p90_rank_pct": 0.021178,
+          "pairs": 118099,
+          "queries": 70469
+        }
+      }
+    },
+    "db": "frus.db",
+    "edge_semantics": "spike_gates.load_edges with cross-volume targets retained; page anchors resolve through target volume's arabic page_ranges; NULL target_volume_id means same volume",
+    "float_768_subsampled": false,
+    "generated": "2026-08-12T15:54:47",
+    "missing_endpoint_sample": [
+      {
+        "docId": "ch19",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1946v07",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d168fn8",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1952-54v07p1",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d488fn5",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1955-57v22",
+        "volume_in_store": true
+      },
+      {
+        "docId": "frus1952-54v16",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1955-57v23p2",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d1fn7",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1961-63v04",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d6fn5",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1961-63v24",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d134fn2",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1964-68v10",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d142fn2",
+        "occurrences": 2,
+        "side": "target",
+        "volume": "frus1969-76v41",
+        "volume_in_store": true
+      },
+      {
+        "docId": "d90fn2",
+        "occurrences": 4,
+        "side": "target",
+        "volume": "frus1977-80v04",
+        "volume_in_store": true
+      },
+      {
+        "docId": "frus1981-88v03",
+        "occurrences": 1,
+        "side": "target",
+        "volume": "frus1981-88v01",
+        "volume_in_store": true
+      }
+    ],
+    "pool_docs": 314483,
+    "pooling": "char-length-weighted mean of unit-norm chunk vectors, L2-renormalized",
+    "queries": 70469,
+    "query_band_counts": {
+      "1900_1945": 21548,
+      "post1945": 48349,
+      "pre1900": 572
+    },
+    "query_split_counts": {
+      "cross_volume_only": 15006,
+      "mixed": 5314,
+      "same_volume_only": 50149
+    },
+    "seed": 18610810,
+    "spike_reference": {
+      "config": "gemma int8-256 overall, 3-volume spike store, pool 2197",
+      "hit@10": 0.2189,
+      "hit@100": 0.5849,
+      "hit@50": 0.4528,
+      "median_rank": 67,
+      "median_rank_pct": 0.03051,
+      "mrr@10": 0.0733,
+      "queries": 265,
+      "resolved_pairs": 369
+    },
+    "task": "Gate A weak positives at corpus scale (cross-volume retained)",
+    "tie_break": "score desc, then row asc (lexsort-equivalent, computed by exact counting)",
+    "volumes_with_query": 526
+  }
+}

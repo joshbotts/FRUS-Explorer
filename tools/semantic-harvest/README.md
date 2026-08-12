@@ -173,6 +173,14 @@ truncation, quantization, the `SemanticVectorsGenerator` packer with artifact te
 scoring gates. A pooling-rule change never costs you a re-run — the store keeps chunk vectors
 precisely so the deterministic side can be redone freely.
 
+**Executed 2026-08-12** (store at `~/frus-semantic-raw` on the Studio): validation clean at
+every grain, and the V-0 gates re-ran at corpus scale — Gate A over 70,469 queries against
+all 314k candidates, the quantization ladder + a RERANK_POOL sweep, and the neighbor-structure
+questions the spike deferred. Verdict and every number:
+`Planning/semantic-spike/Phase3-Store-Assessment.md` + `corpus-gates.json`; the analysis
+scripts live in `corpus-gates/` beside this file. What remains Claude-side is the
+`SemanticVectorsGenerator` packer; the panel keying and licence read stay the owner's two acts.
+
 ## What this store contains (the contract)
 
 ```

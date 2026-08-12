@@ -155,6 +155,15 @@ Kill criteria (lexical §0.11, adopted verbatim by design §8): overall <60% goo
 moderate kills the axis UI; **pre-1900 failing alone while the rest passes** era-scopes
 or kills it — and per §2 above, the panel is the only pre-1900 evidence there is.
 
+> **Superseded for V-3 by owner decision 2026-08-12** (`Phase3-Store-Assessment.md` §0a):
+> the panel will not be keyed before the axis ships. The axis ships **experimental,
+> opt-in at weight 0.0, and unscoped**, with app-tester feedback as the quality
+> instrument instead of these criteria. The consequence to state plainly wherever the
+> axis is described: pre-1900 semantic quality is an **unmeasured unknown**, not a
+> measured pass — Gate A reaches only 572 pre-1900 queries corpus-wide. The panel
+> artifacts stay staged and un-keyed, so keying them remains the cheap fallback if
+> feedback proves thin.
+
 Noted for V-2 rather than judged here: all 100 top-1 neighbors are same-volume. With
 three era-disjoint volumes that is the expected geometry, not yet the lexical
 assessment's "same-volume collapse" — measure it again when cross-era candidates exist.
@@ -175,6 +184,12 @@ licence read — then `caffeinate -i python3 harvest_embeddings.py` with the win
 ---
 
 Version history:
+  1.2 — 2026-08-12: Phase 3 executed (2026-08-10) and assessed — the full-corpus store
+        validated clean and the gates re-ran at corpus scale; see
+        `Phase3-Store-Assessment.md` + `corpus-gates.json` beside this file. Owner
+        decision the same day: the panel stays un-keyed and no longer gates the axis,
+        which ships experimental with tester feedback as the instrument (§5's kill
+        criteria carry a superseded note).
   1.1 — 2026-08-10: owner decision — Phase 3 proceeds on gemma. The blind panel remains
         open and still gates the AXIS (V-3 shipping), not the harvest: vectors are needed
         under every panel outcome, including an era-scoped one.

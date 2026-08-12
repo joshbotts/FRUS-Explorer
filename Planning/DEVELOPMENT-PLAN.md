@@ -5959,3 +5959,58 @@ Docs: `CLAUDE.md` said the round trip was 17 checks and the runbook said 27 in o
 another — all three now say 30, while the two "26 checks" lines are left alone because they describe
 `selftest_harvest_ner.py`, a different suite, and it does have 26. The §8 store contract had a
 clause duplicated verbatim; one copy removed.
+
+## Session 2026-08-12 — Phase-3 harvest assessed: the store is valid, and the gates now run at corpus scale
+
+The full-corpus embedding harvest (2026-08-10, gemma, 552 volumes / 314,483 docs / 605,643
+chunks) validated end to end and assessed for proceeding. Full verdict:
+`Planning/semantic-spike/Phase3-Store-Assessment.md`; machine copy `corpus-gates.json`
+beside it; analysis scripts `tools/semantic-harvest/corpus-gates/` (numpy, seeded, pinned
+to `spike_gates.py`'s procedures).
+
+- **Store: sound.** 2,208/2,208 checksums; every count reconciles to the digit at every
+  grain; one continuous run; contract matches what Phase 2 gated (prefix trailing space
+  included); the V-0 provenance gap (GGUF SHA) closed. Script drift vs the repo copy is
+  the two #811 fail-fast guards only — the run used the pre-#811 `~/semantic-harvest`
+  copy, and both guarded failures demonstrably did not occur.
+- **Every planning-number discrepancy reconciled exactly**: 1.374B vs 1.333B chars is the
+  truncate-at-next-div rule (40.9M chars of index bleed, reproduced to the digit both
+  ways); 605,643 vs ~475k chunks is per-document chunking (66.3% of docs are
+  single-chunk; realized mean chunk ~584 tokens, not 800); wall clock −2.3% vs the
+  extrapolation.
+- **Gate A at corpus scale**: 70,469 queries / 118,099 pairs against all 314,482
+  candidates — int8-256 median rank 36 (top 0.011% of the pool; the spike could only say
+  top 3.05% of 2,197), hit@10 0.365. First cross-volume evidence: 15,006 queries,
+  hit@10 0.187. Weakest band is 1900–1945 (0.216), not pre-1900 — but pre-1900 has 572
+  queries total, so the un-keyed blind panel is still the only real pre-1900 gate.
+- **The deferred same-volume question**: the spike's 100% same-volume top-1 relaxes to
+  78% at corpus scale — but 97% of top-10 slots are same-era. The space is
+  era-stratified; a cross-era discovery surface must be an explicit projection, not a
+  nearest-neighbor hope.
+- **The §10.4 dims decision is fully priced**: corpus-scale recall@10 0.749 (int8-256)
+  vs 0.864 (int8-512); the Hamming funnel's tax is a parameter — widening RERANK_POOL
+  200→800 recovers 512's funnel recall 0.816→0.851 at ~0.4M MACs/query. P≥800 should
+  ship regardless of dims.
+- **New V-3 requirement found by reading the top pairs**: 27 of the 30 highest-cosine
+  neighbor pairs are cross-volume *edition twins* (Iran/IranEd2, e15p2/Ed2 — same docId,
+  cosine 1.0). Neighbor surfaces must suppress edition pairs, a cheap volume-pair rule.
+- **The packer's id contract, measured**: store ids are a strict subset of
+  `document_cache` (join on `(volume_id, d)`); the 2,356 vector-less app rows are all
+  structural (`ch*`/front-matter/`comp*`) and must render typed-unavailable; 949
+  letter-suffixed idExceptions (0.302%, as designed); 0 collisions, 0 tiling violations.
+
+Next: V-1's `SemanticVectorsGenerator` packer (the only unbuilt Claude-side piece before
+V-2), the Tier-0 UMAP stage (gates V-4 only), and the two standing owner acts — key the
+blind panel (gates V-3), read the Gemma licence (gates V-5).
+
+**Owner decision, same day — the blind panel is retired as a gate.** The axis ships
+**experimental, opt-in at weight 0.0, and unscoped**; app-tester feedback replaces the
+100-row panel as the quality instrument, on the reasoning that a cohort of researchers
+working their own questions judges the feature better than one annotator. Recorded in
+`Phase3-Store-Assessment.md` §0a, with the superseded notes written into
+`V0-Spike-Verdict.md` §5 and the design doc's §8. The trade in one line: the opt-in
+default is what makes shipping-before-measuring survivable, and **pre-1900 quality is now
+a declared unknown rather than a measured pass** — Gate A reaches only 572 pre-1900
+queries, so nothing automatic speaks for the era the feature most exists for. V-3
+therefore owes an experimental label in the UI and a tester-feedback path that names the
+19th-century question; the panel artifacts stay staged and un-keyed as the cheap fallback.

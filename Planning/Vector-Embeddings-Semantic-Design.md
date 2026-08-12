@@ -470,6 +470,15 @@ Kill criteria mirror the lexical assessment's, plus one: **if no model clears th
 the axis ships Cold-War-scoped or not at all** — do not ship a semantic axis whose headline
 population is the one it fails on.
 
+> **Owner decision 2026-08-12 — this criterion is retired for V-3.** The panel will not be
+> keyed; the axis ships **experimental, opt-in at weight 0.0, and unscoped**, with app-tester
+> feedback as the quality instrument. The trade is stated in
+> `Planning/semantic-spike/Phase3-Store-Assessment.md` §0a: the opt-in default is what makes
+> shipping-before-measuring survivable, and pre-1900 quality becomes a **declared unknown**
+> rather than a measured pass — the corpus-scale Gate A reaches only 572 pre-1900 queries, so
+> nothing automatic can speak for the era this feature most exists for. V-3 therefore owes an
+> experimental label in the UI and a tester-feedback path that names the 19th-century question.
+
 ## 9. Phasing
 
 | Phase | Work | Depends on |
@@ -501,5 +510,11 @@ nothing touches CloudKit schema; the OS-27 doc's workstreams A/B proceed (or don
 ---
 
 Version history:
+  1.1 — 2026-08-12: §8's pre-1900 kill criterion retired for V-3 by owner decision — the axis
+        ships experimental, opt-in, and unscoped, with tester feedback replacing the blind
+        panel. The full-corpus harvest is validated and its gates re-measured at corpus scale
+        (`Planning/semantic-spike/Phase3-Store-Assessment.md`): §10.4's dims question is priced
+        (int8-256 recall 0.749 vs int8-512 0.864) and gains a companion rule (RERANK_POOL ≥800),
+        and neighbor surfaces gain a new requirement — suppress cross-volume edition twins.
   1.0 — 2026-08-03: initial recommendations (precomputed-corpus design, Mac Studio pipeline,
         three-tier distribution, feature feasibility, spike gates). Unreviewed.
