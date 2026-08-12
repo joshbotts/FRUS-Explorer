@@ -60,9 +60,18 @@ enum RelatedDocumentsRanker {
         universe.remove(anchor)
         guard !universe.isEmpty else { return ([], 0) }
 
-        // 2. Normalise each generator axis's raw strengths to [0, 1] by that axis's own max.
+        // 2. Normalise each generator axis's raw strengths to [0, 1] by that axis's own max —
+        //    EXCEPT an axis that already produces an absolute similarity, which is clamped instead.
+        //    #643: max-normalisation is right for a count and destructive for a cosine, because it
+        //    hands a document's only semantic neighbour a 1.0 no matter how unlike it actually is.
         var generatorNormalised: [SimilarityAxis: [DocumentKey: Double]] = [:]
         for (axis, strengths) in generatorStrengths {
+            if axis.isSelfNormalising {
+                // Clamped, not passed through: a similarity below zero is not evidence of
+                // relatedness, and float reconstruction can land a hair above one.
+                generatorNormalised[axis] = strengths.mapValues { min(1.0, max(0.0, $0)) }
+                continue
+            }
             let maxStrength = strengths.values.max() ?? 0
             guard maxStrength > 0 else { continue }
             generatorNormalised[axis] = strengths.mapValues { $0 / maxStrength }
@@ -122,6 +131,10 @@ enum RelatedDocumentsEngine {
     @MainActor static let generators: [any SimilarityGenerator] = [
         ArchivalProvenanceGenerator(),
         CrossReferenceGenerator(),
+        // Listed last: on a key produced by several generators the FIRST one's record wins the
+        // engine's merge, and this generator's records come from the same `document_cache` rows as
+        // the others', so ordering changes nothing except which equivalent copy is kept.
+        SemanticSimilarityGenerator(),
     ]
 
     /// The rankers over the generated candidates.
@@ -176,7 +189,8 @@ enum RelatedDocumentsEngine {
         // would double-count; the largest is the one whose truncation bounds what a scorer could
         // have surfaced at all.
         var poolCutFrom: Int?
-        for generator in generators {
+        for generator in generators
+        where !generator.axis.skipsGenerationAtZeroWeight || weights[generator.axis] > 0 {
             let pool = (try? await generator.candidates(
                 for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
                 scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? .empty

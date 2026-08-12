@@ -47,6 +47,16 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     case sharedPersons
     /// Overlap of detected subject topics (Phase 3 document-grain data; inert until then). A scorer.
     case sharedSubjects
+    /// Nearness in the corpus's embedding space (`SemanticVectorsKit`, V-1/V-2 artifacts). A
+    /// generator, and the only axis that can reach a document with no archival key and no citation —
+    /// the 46,234 documents whose Related list is empty today, 98.2% of them pre-1900.
+    ///
+    /// **Ships experimental and opt-in at weight 0.** Owner decision 2026-08-12: the blind panel that
+    /// would have graded pre-1900 quality was retired as a gate in favour of tester feedback, so
+    /// early-era quality here is a declared unknown rather than a measured pass. The corpus-scale
+    /// automatic gate reaches only 572 pre-1900 queries, because the citation idiom it needs
+    /// postdates 1945.
+    case semanticSimilarity
 
     var id: String { rawValue }
 
@@ -54,7 +64,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// them. Generators drive the candidate universe; scorers rank it (design §6.2).
     var isGenerator: Bool {
         switch self {
-        case .archivalProvenance, .crossReference: return true
+        case .archivalProvenance, .crossReference, .semanticSimilarity: return true
         case .dateProximity, .subseries, .sharedPersons, .sharedSubjects: return false
         }
     }
@@ -77,6 +87,12 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
             return String(localized: "related.axis.persons", defaultValue: "Shared people")
         case .sharedSubjects:
             return String(localized: "related.axis.subjects", defaultValue: "Shared topics")
+        case .semanticSimilarity:
+            // "Experimental" is in the NAME, not only in a tooltip: the axis ships without the
+            // quality gate its own design specified, and a user moving this slider is the
+            // instrument that replaced it. Saying so where the slider is is the least this owes.
+            return String(localized: "related.axis.semantic",
+                          defaultValue: "Semantically similar (experimental)")
         }
     }
 
@@ -89,6 +105,42 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .subseries:          return "books.vertical"
         case .sharedPersons:      return "person.2"
         case .sharedSubjects:     return "tag"
+        case .semanticSimilarity: return "text.magnifyingglass"
+        }
+    }
+
+    /// Whether this axis's raw strengths are already an absolute similarity in [0, 1], and must
+    /// therefore bypass the ranker's per-axis max-normalisation.
+    ///
+    /// **This exists because of #643.** `RelatedDocumentsRanker.rank` step 2 divides every generator
+    /// axis's strengths by that axis's own max, which is right for a count (citations, archival
+    /// adjacency) and destructive for a similarity: a cosine of 0.55 becomes 1.0 whenever it happens
+    /// to be the best of a weak field, so a document's *only* semantic neighbour always reads as a
+    /// perfect match. The lexical-similarity assessment documented that as a way to weaponise a thin
+    /// axis, and proposed exactly this escape.
+    ///
+    /// Scorers already enter the ranker raw and absolute; this gives a generator the same contract.
+    var isSelfNormalising: Bool {
+        switch self {
+        case .semanticSimilarity: return true
+        case .archivalProvenance, .crossReference, .dateProximity, .subseries,
+             .sharedPersons, .sharedSubjects: return false
+        }
+    }
+
+    /// Whether this axis's generator should be skipped entirely when the user's weight is 0.
+    ///
+    /// The engine deliberately runs generators regardless of weight, because a candidate one axis
+    /// produced can still be ranked by another — narrowing that would change results for every
+    /// existing user. The semantic axis is the exception, and for a reason no other axis has: its
+    /// generation can trigger a **network fetch** of the Tier-2 shards it scores with. Doing that for
+    /// a user who has left the axis at its default 0 would spend their bandwidth on a feature they
+    /// have not opted into.
+    var skipsGenerationAtZeroWeight: Bool {
+        switch self {
+        case .semanticSimilarity: return true
+        case .archivalProvenance, .crossReference, .dateProximity, .subseries,
+             .sharedPersons, .sharedSubjects: return false
         }
     }
 
@@ -104,6 +156,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .subseries:          return 0.3
         case .sharedPersons:      return 0.7
         case .sharedSubjects:     return 0.0
+        case .semanticSimilarity: return 0.0
         }
     }
 }

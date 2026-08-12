@@ -481,7 +481,11 @@ struct CorpusProximityTests {
         func rawValuesAreFrozen() {
             #expect(SimilarityAxis.allCases.map(\.rawValue) == [
                 "archivalProvenance", "crossReference", "dateProximity",
-                "subseries", "sharedPersons", "sharedSubjects"
+                "subseries", "sharedPersons", "sharedSubjects",
+                // V-3. APPENDED, never inserted: `allCases` order is this list's order, and a
+                // reordering would read here as a rename — which is the one thing the test exists
+                // to catch, because a renamed token ships as a silent zero weight.
+                "semanticSimilarity",
             ])
         }
 
