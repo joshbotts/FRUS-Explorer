@@ -54,21 +54,32 @@ def read_jsonl_gz(path):
         return [json.loads(line) for line in handle if line.strip()]
 
 
-def layer_path(store, layer, volume_id):
-    """The path to one volume's layer file, gzipped or plain, or None if neither exists.
+def one_jsonl(directory, volume_id, label):
+    """One volume's JSON-lines file in `directory`, gzipped or plain, or None if neither exists.
 
-    Refuses when BOTH exist. The two readers of this store resolved the ambiguity in
-    opposite orders — Python preferred the gzip, the Swift control preferred the plain
-    file — so a stale copy left beside a fresh one had them scoring different rows with
-    nothing to say so. Refusing costs an `rm`; disagreeing costs a wrong comparison.
+    Refuses when BOTH exist. The readers of these directories resolved the ambiguity in
+    opposite orders — Python preferred the gzip, the Swift control prefers the plain file —
+    so a stale copy left beside a fresh one had them reading different rows with nothing to
+    say so. Refusing costs an `rm`; disagreeing costs a wrong comparison.
+
+    Shared by `layer_path` and `volume_text` rather than written twice, which is how the R-0
+    text directory came to have no refusal at all: `volume_text` had its own loop, took the
+    first extension it found, and so silently preferred the gzip in the one directory the
+    Swift control ALSO reads — the exact disagreement this function exists to prevent, in the
+    exact place it mattered most.
     """
-    present = [os.path.join(store, layer, volume_id + suffix)
+    present = [os.path.join(directory, volume_id + suffix)
                for suffix in (".jsonl", ".jsonl.gz")
-               if os.path.exists(os.path.join(store, layer, volume_id + suffix))]
+               if os.path.exists(os.path.join(directory, volume_id + suffix))]
     if len(present) > 1:
         raise SystemExit("%s/%s exists as both .jsonl and .jsonl.gz — delete the stale one; "
-                         "a reader cannot tell which you meant." % (layer, volume_id))
+                         "a reader cannot tell which you meant." % (label, volume_id))
     return present[0] if present else None
+
+
+def layer_path(store, layer, volume_id):
+    """The path to one volume's layer file, gzipped or plain, or None if neither exists."""
+    return one_jsonl(os.path.join(store, layer), volume_id, layer)
 
 
 def scope_volumes(store):
@@ -81,12 +92,7 @@ def scope_volumes(store):
 
 def volume_text(text_dir, volume_id):
     """{doc_id: text} for one volume, from the embeddings store's R-0 layer."""
-    path = None
-    for suffix in (".jsonl.gz", ".jsonl"):
-        candidate = os.path.join(text_dir, volume_id + suffix)
-        if os.path.exists(candidate):
-            path = candidate
-            break
+    path = one_jsonl(text_dir, volume_id, "text")
     if path is None:
         raise SystemExit("R-0 text layer missing: %s\nPoint TEXT_DIR at the embeddings "
                          "store's text/ directory."

@@ -219,3 +219,167 @@ struct StoreIOTests {
         #expect(json.contains("\"overlapping_marked\""))
     }
 }
+
+// MARK: - ResumeScopeTests
+
+/// The guards that keep a run from finishing clean while having done nothing, or the wrong thing
+/// (#863 follow-up).
+@Suite("Control run — scope and resume guards")
+struct ResumeScopeTests {
+
+    private func summary(sampled: Bool, ids: [String]?) -> VolumeSummary {
+        VolumeSummary(volume: "frusTest", model: "test", sampled: sampled, sampledDocIds: ids,
+                      docsScanned: ids?.count ?? 9, docsInVolume: 9, charsScanned: 100,
+                      mentions: 3, overlappingMarked: 2, novel: 1, markedInScannedDocs: 4,
+                      forcedEnglish: true, secs: 0.1)
+    }
+
+    @Test("A sampled pass never stands in for a full sweep")
+    func sampledDoesNotCoverFull() {
+        // The defect this rule exists for: the runbook's fast path samples three documents a
+        // volume against the ground truth, and the head it writes is indistinguishable from a
+        // full pass's at the grain the old resume test used — file existence. The full sweep
+        // that followed skipped those volumes, and the manifest, which re-derives its totals
+        // from every head, folded three documents into what it called a complete pass.
+        let sampled = summary(sampled: true, ids: ["d1", "d2", "d3"])
+        #expect(EarlyEraNERControlRunner.covers(sampled, requesting: nil) == false)
+    }
+
+    @Test("A full pass covers any sample, so a complete store is never redone")
+    func fullCoversSample() {
+        let full = summary(sampled: false, ids: nil)
+        #expect(EarlyEraNERControlRunner.covers(full, requesting: nil))
+        #expect(EarlyEraNERControlRunner.covers(full, requesting: ["d4"]))
+    }
+
+    @Test("A sampled pass is reused only for documents it actually names")
+    func sampledCoversItsOwnSubset() {
+        let sampled = summary(sampled: true, ids: ["d1", "d2", "d3"])
+        #expect(EarlyEraNERControlRunner.covers(sampled, requesting: ["d1", "d3"]))
+        #expect(EarlyEraNERControlRunner.covers(sampled, requesting: ["d1", "d9"]) == false, """
+            `d9` was never scanned. Reusing this head would report a document the detector \
+            never saw as one it found nothing in.
+            """)
+        // A sample that did not record WHICH documents cannot cover anything: the scorer already
+        // refuses such a store, and the resume path must not quietly accept it either.
+        #expect(EarlyEraNERControlRunner.covers(summary(sampled: true, ids: nil),
+                                                requesting: ["d1"]) == false)
+    }
+
+    @Test("Both input directories are checked up front, and TEXT_DIR by name")
+    func inputDirectoriesAreValidated() throws {
+        // The guard exists because the failure it prevents is invisible: a TEXT_DIR that names a
+        // real directory but the wrong one (dropping the trailing `text/` is the whole typo)
+        // makes every volume throw, every throw is caught and filed as "missing", and the run
+        // writes a manifest of zeroes and exits 0. `run` takes its environment as a parameter
+        // precisely so this can be driven without a corpus.
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        let store = root.appendingPathComponent("store")
+        let text = root.appendingPathComponent("text")
+        try FileManager.default.createDirectory(at: store.appendingPathComponent("marked"),
+                                                withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: text, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        func environment(store storePath: URL, text textPath: URL) -> [String: String] {
+            ["STORE": storePath.path, "TEXT_DIR": textPath.path,
+             "OUT_DIR": root.appendingPathComponent("out").path, "VOLUMES": "frusTest"]
+        }
+
+        // TEXT_DIR absent: refused by name, rather than every volume silently going missing.
+        let absentText = root.appendingPathComponent("frus-semantic-raw")   // the typo's shape
+        #expect(throws: DetectorError.self) {
+            try EarlyEraNERControlRunner.run(
+                environment: environment(store: store, text: absentText))
+        }
+        // And STORE absent is still refused, so the new guard did not displace the old one.
+        #expect(throws: DetectorError.self) {
+            try EarlyEraNERControlRunner.run(
+                environment: environment(store: root.appendingPathComponent("nope"), text: text))
+        }
+        // A file where a directory belongs is not a directory — `fileExists` alone says it is.
+        let fileNotDirectory = root.appendingPathComponent("text-file")
+        try Data("x".utf8).write(to: fileNotDirectory)
+        #expect(throws: DetectorError.self) {
+            try EarlyEraNERControlRunner.run(
+                environment: environment(store: store, text: fileNotDirectory))
+        }
+    }
+
+    @Test("An unreadable head resumes nothing rather than failing the run")
+    func unreadableHeadIsAbsent() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let truncated = directory.appendingPathComponent("frusTest.head.json")
+        try Data("{\"volume\":\"frusTe".utf8).write(to: truncated)
+        #expect(EarlyEraNERControlRunner.storedSummary(at: truncated) == nil, """
+            A head truncated by a killed run should send the volume back through the detector, \
+            not abort the sweep.
+            """)
+        #expect(EarlyEraNERControlRunner.storedSummary(
+            at: directory.appendingPathComponent("absent.head.json")) == nil)
+    }
+}
+
+// MARK: - WhitespaceTrimTests
+
+/// A person name never begins or ends with whitespace, and a span that says otherwise is off by
+/// exactly that much against the editors' markup (#863 follow-up).
+@Suite("Control detector — span whitespace")
+struct WhitespaceTrimTests {
+
+    @Test("A token range carrying whitespace yields the name's own offsets")
+    func trimsToTheName() throws {
+        let text = "To Mr. Fish , and then"
+        let start = text.index(text.startIndex, offsetBy: 2)     // the space before "Mr."
+        let end = text.index(text.startIndex, offsetBy: 12)      // the space after "Fish"
+        let mentions = try PersonMentionDetector.mentions(in: text, tokenRanges: [start..<end])
+        let mention = try #require(mentions.first)
+        #expect(mention.surface == "Mr. Fish")
+        #expect(mention.start == 3 && mention.end == 11, """
+            Untrimmed this is [2,12) with the surface " Mr. Fish ", which still slices back to \
+            itself — so `spanMismatch` never fires and the scorer's own span check passes. It \
+            would show up only as a zeroed strict-precision column, read as a weakness in the \
+            recogniser rather than a bug in the harness.
+            """)
+    }
+
+    @Test("Offsets stay in code points when the trimmed text is not ASCII")
+    func trimsAroundNonASCII() throws {
+        // The whole reason this arithmetic is factored out: it is right for ASCII either way.
+        let text = "Sr. Muñoz  wrote"
+        let start = text.startIndex
+        let end = text.index(text.startIndex, offsetBy: 11)
+        let mention = try #require(
+            PersonMentionDetector.mentions(in: text, tokenRanges: [start..<end]).first)
+        #expect(mention.surface == "Sr. Muñoz")
+        #expect(mention.start == 0 && mention.end == 9)
+    }
+
+    @Test("A range holding only whitespace yields no mention at all")
+    func dropsEmptyRanges() throws {
+        let text = "a   b"
+        let start = text.index(text.startIndex, offsetBy: 1)
+        let end = text.index(text.startIndex, offsetBy: 4)
+        #expect(try PersonMentionDetector.mentions(in: text, tokenRanges: [start..<end]).isEmpty)
+    }
+
+    @Test("Trimming does not disturb the running cursor for later spans")
+    func cursorSurvivesTrimming() throws {
+        // The offsets are produced by one forward cursor, so a trimmed range has to leave it
+        // where the NEXT range expects it. A fixture with one span is blind to this.
+        let text = "Mr. Fish  met  Lord Grey today"
+        func range(_ lower: Int, _ upper: Int) -> Range<String.Index> {
+            text.index(text.startIndex, offsetBy: lower)..<text.index(text.startIndex,
+                                                                     offsetBy: upper)
+        }
+        let mentions = try PersonMentionDetector.mentions(
+            in: text, tokenRanges: [range(0, 9), range(14, 24)])
+        #expect(mentions.map(\.surface) == ["Mr. Fish", "Lord Grey"])
+        #expect(mentions.map(\.start) == [0, 15])
+        #expect(mentions.map(\.end) == [8, 24])
+    }
+}

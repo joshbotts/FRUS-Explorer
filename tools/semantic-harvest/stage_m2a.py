@@ -144,7 +144,9 @@ def stage():
     staged = []
     skipped = {"volumes_without_marked_layer": 0, "volumes_without_text_layer": 0,
                "documents_with_bracket_char": 0,
-               "documents_with_overlapping_marked_spans": 0}
+               "documents_with_overlapping_marked_spans": 0,
+               "documents_with_span_mismatch": 0}
+    span_mismatches = []
     outside_window = 0
 
     # DOCS is the number of documents, not a hint: floor division twice made the achievable
@@ -158,7 +160,6 @@ def stage():
         picker = random.Random("%s:%s" % (SEED, band))
         pool = sorted(by_band[band])
         chosen_volumes = sorted(picker.sample(pool, min(VOLS_PER_BAND, len(pool))))
-        staged_in_band = len(staged)
         # Documents are drawn per volume so the sample spreads across the band rather
         # than landing in whichever volume happens to be largest.
         base, extra = divmod(band_target, len(chosen_volumes))
@@ -193,7 +194,20 @@ def stage():
                     skipped["documents_with_bracket_char"] += 1
                     continue
                 doc_spans = spans.get(doc_id, [])
-                store.check_spans(text, doc_spans, "%s/%s" % (volume, doc_id))
+                # Counted, not aborted. `check_spans` raises SystemExit, and raising it HERE is
+                # exactly what the comment above the text-layer skip says must not happen: the
+                # .txt files staged so far are already on disk, while progress.csv, the
+                # instructions and the manifest are all written after this loop — a directory
+                # that looks staged, cannot be collected, and re-stages over its own orphans on
+                # the next run. The mismatch is still fatal, just fatal AFTER the output
+                # directory is coherent; see the exit below the manifest write.
+                try:
+                    store.check_spans(text, doc_spans, "%s/%s" % (volume, doc_id))
+                except SystemExit as mismatch:
+                    skipped["documents_with_span_mismatch"] += 1
+                    if len(span_mismatches) < 5:
+                        span_mismatches.append(str(mismatch))
+                    continue
                 if any(a[1] > b[0] for a, b in zip(doc_spans, doc_spans[1:])):
                     skipped["documents_with_overlapping_marked_spans"] += 1
                     continue
@@ -232,6 +246,19 @@ def stage():
                "documents_outside_length_window": outside_window,
                "skipped": skipped, "documents": staged},
               open(os.path.join(OUT, "m2a-manifest.json"), "w"), indent=1, sort_keys=True)
+
+    # Now that progress.csv, the instructions and the manifest exist, a span mismatch can be
+    # fatal without leaving a half-written directory behind. It IS fatal: the marked layer and
+    # the R-0 text describing different corpora is not a per-document accident, and a sample
+    # quietly missing whichever documents tripped it would be keyed, annotated, and quoted as
+    # the measurement. The staged files stay on disk so the failure can be inspected.
+    if skipped["documents_with_span_mismatch"]:
+        sys.exit("%d document(s) were skipped because their marked spans do not slice back out "
+                 "of the R-0 text — the two describe different corpora.\n%s\n"
+                 "Everything else is staged in %s and the manifest records the skips; re-harvest "
+                 "the marked layer against this text before keying the sample."
+                 % (skipped["documents_with_span_mismatch"],
+                    "\n".join("  " + m for m in span_mismatches), OUT))
 
     if not staged:
         sys.exit("staged nothing: %d documents fell outside the %d–%d character window and %d "

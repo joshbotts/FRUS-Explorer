@@ -104,13 +104,29 @@ public struct RunManifest: Codable, Sendable {
     /// The ground-truth file that restricted the run, when one did.
     public let onlyDocuments: String?
 
-    /// Volumes requested.
+    /// Volumes this invocation asked for.
+    ///
+    /// PER-INVOCATION, unlike ``totals``, and the two are not comparable. `totals` is re-derived
+    /// from every head in the store so a resumed run does not overwrite a complete manifest with
+    /// its own tail; this field describes the command that was just typed. Re-running one volume
+    /// of a finished 268-volume store leaves `volumesRequested: 1` beside totals covering all
+    /// 268, and a reader dividing one by the other gets 40,000 documents per volume. Both scopes
+    /// are now labelled and ``volumesInStore`` states the other denominator outright.
     public let volumesRequested: Int
 
-    /// Volumes with no text layer, named rather than counted.
+    /// Volumes with no text layer, named rather than counted. PER-INVOCATION.
     public let volumesMissing: [String]
 
-    /// Totals across the run.
+    /// Volumes with a stored pass — the population ``totals`` actually describes.
+    public let volumesInStore: Int
+
+    /// Volumes this invocation reused from a previous one rather than scanning. PER-INVOCATION.
+    public let volumesReused: Int
+
+    /// Volumes rescanned because the stored pass covered a different scope. PER-INVOCATION.
+    public let volumesRescanned: Int
+
+    /// Totals across the whole STORE, not this invocation.
     public let totals: Totals
 
     /// Run totals.
@@ -143,6 +159,9 @@ public struct RunManifest: Codable, Sendable {
         case onlyDocuments = "only_documents"
         case volumesRequested = "volumes_requested"
         case volumesMissing = "volumes_missing"
+        case volumesInStore = "volumes_in_store"
+        case volumesReused = "volumes_reused"
+        case volumesRescanned = "volumes_rescanned"
         case totals
     }
 }
@@ -202,12 +221,24 @@ public enum EarlyEraNERControlRunner {
         // A mistyped STORE is not detectable later: `markedLayer` returns [] for an absent file
         // — correct for a volume the harvest skipped — so the run would finish clean and report
         // 100% of its detections as novel. Check the directory once, up front.
+        //
+        // TEXT_DIR needs the same check for the same reason, and it is the likelier typo: the
+        // path ends in `text/`, so dropping that one component leaves a directory that exists.
+        // Every `textLayer` call then throws `.missingInput`, every volume is caught below and
+        // filed as missing, and the run finishes with zero documents, zero mentions, a manifest
+        // of zeroes, and exit 0. The `totalOverlap == 0` warning cannot fire either, because it
+        // is guarded on `totalMentions > 0`. Nothing anywhere says the pass did not happen.
         var isDirectory: ObjCBool = false
         let markedDir = store.appendingPathComponent("marked")
         guard FileManager.default.fileExists(atPath: markedDir.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw DetectorError.missingInput(markedDir.path
                 + " — set STORE to the NER store harvest_ner.py wrote (N-1)")
+        }
+        guard FileManager.default.fileExists(atPath: textDir.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw DetectorError.missingInput(textDir.path
+                + " — set TEXT_DIR to the embeddings store's text/ directory (R-0)")
         }
 
         let detectedDir = outDir.appendingPathComponent("detected")
@@ -236,10 +267,25 @@ public enum EarlyEraNERControlRunner {
         var totalDocs = 0, totalChars = 0, totalMentions = 0, totalOverlap = 0
         let runStarted = Date()
 
+        var reused = 0, redone = 0
         for (index, volume) in volumes.enumerated() {
             let headURL = detectedDir.appendingPathComponent(volume + ".head.json")
-            if FileManager.default.fileExists(atPath: headURL.path) {
-                continue                              // resume: a finished volume is not redone
+            if let stored = Self.storedSummary(at: headURL) {
+                // Resume, but only from a pass that covers what this invocation asks for. The
+                // marker used to be the head's mere EXISTENCE, and a head written by an
+                // `ONLY_DOCUMENTS` pass is indistinguishable from a full one at that grain — so
+                // the runbook's own fast path (§5: sample three documents per volume against the
+                // ground truth) poisoned the store for the full sweep that follows it. The full
+                // run skipped every sampled volume, and the manifest, which re-derives totals
+                // from every head, folded three documents into what it reported as a complete
+                // pass, with `volumes_missing: []` and no warning anywhere.
+                if Self.covers(stored, requesting: onlyDocuments?[volume]) {
+                    reused += 1
+                    continue
+                }
+                generatorLog("  .. \(volume): stored pass has a different scope "
+                             + "(\(Self.scopeDescription(stored))), rescanning")
+                redone += 1
             }
             let started = Date()
             let documents: [TextLayerDocument]
@@ -331,11 +377,13 @@ public enum EarlyEraNERControlRunner {
         // killed at volume 200 and resumed would otherwise overwrite a complete manifest with
         // the 68 volumes of the second invocation and read as a much smaller corpus.
         var storedDocs = 0, storedChars = 0, storedMentions = 0, storedOverlap = 0
+        var storedVolumes = 0
         let decoder = JSONDecoder()
         let heads = (try? FileManager.default.contentsOfDirectory(atPath: detectedDir.path)) ?? []
         for name in heads.sorted() where name.hasSuffix(".head.json") {
             guard let data = try? Data(contentsOf: detectedDir.appendingPathComponent(name)),
                   let head = try? decoder.decode(VolumeSummary.self, from: data) else { continue }
+            storedVolumes += 1
             storedDocs += head.docsScanned
             storedChars += head.charsScanned
             storedMentions += head.mentions
@@ -351,6 +399,7 @@ public enum EarlyEraNERControlRunner {
             forcedEnglish: forceEnglish, textDir: textDir.path, store: store.path,
             onlyDocuments: environment["ONLY_DOCUMENTS"],
             volumesRequested: volumes.count, volumesMissing: missing,
+            volumesInStore: storedVolumes, volumesReused: reused, volumesRescanned: redone,
             totals: RunManifest.Totals(docs: storedDocs, chars: storedChars,
                                        mentions: storedMentions, overlappingMarked: storedOverlap,
                                        secs: (totalSeconds * 10).rounded() / 10))
@@ -362,6 +411,43 @@ public enum EarlyEraNERControlRunner {
             (\(storedMentions - storedOverlap) beyond the editors' markup) in the store; \
             \(totalDocs) this invocation -> \(outDir.path)
             """)
+    }
+
+    /// The stored per-volume head at `url`, or `nil` when there is none to resume from.
+    ///
+    /// An unreadable head is treated as absent rather than fatal: the volume is simply rescanned,
+    /// which is what a truncated file from a killed run deserves.
+    ///
+    /// - Parameter url: The `<volume>.head.json` path.
+    /// - Returns: The decoded summary, or `nil`.
+    static func storedSummary(at url: URL) -> VolumeSummary? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(VolumeSummary.self, from: data)
+    }
+
+    /// Whether a stored pass already covers what this invocation is asking for.
+    ///
+    /// The asymmetry is deliberate and is the whole rule: a **full** pass covers any sample, so a
+    /// complete store is never redone just because a later run scoped itself down; a **sampled**
+    /// pass covers only the documents it names, so it can be reused for a subset of those and for
+    /// nothing else. Anything the stored pass does not cover is rescanned, which overwrites the
+    /// head and keeps the manifest's store-wide totals describing one kind of sweep.
+    ///
+    /// - Parameters:
+    ///   - stored: The head written by an earlier invocation.
+    ///   - requested: The documents this invocation wants, or `nil` for the whole volume.
+    /// - Returns: `true` when the stored pass may stand in for the requested one.
+    static func covers(_ stored: VolumeSummary, requesting requested: Set<String>?) -> Bool {
+        guard stored.sampled else { return true }        // a full pass covers everything
+        guard let requested else { return false }        // a sample cannot stand in for a sweep
+        return requested.isSubset(of: Set(stored.sampledDocIds ?? []))
+    }
+
+    /// A stored pass's scope, for the line that says why a volume is being rescanned.
+    static func scopeDescription(_ stored: VolumeSummary) -> String {
+        stored.sampled
+            ? "sampled \(stored.sampledDocIds?.count ?? 0) of \(stored.docsInVolume)"
+            : "full, \(stored.docsScanned) documents"
     }
 
     /// The detector's identity string, OS build included.
