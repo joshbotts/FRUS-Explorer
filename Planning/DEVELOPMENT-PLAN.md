@@ -5959,3 +5959,154 @@ Docs: `CLAUDE.md` said the round trip was 17 checks and the runbook said 27 in o
 another — all three now say 30, while the two "26 checks" lines are left alone because they describe
 `selftest_harvest_ner.py`, a different suite, and it does have 26. The §8 store contract had a
 clause duplicated verbatim; one copy removed.
+
+## Session 2026-08-12 — Phase-3 harvest assessed: the store is valid, and the gates now run at corpus scale
+
+The full-corpus embedding harvest (2026-08-10, gemma, 552 volumes / 314,483 docs / 605,643
+chunks) validated end to end and assessed for proceeding. Full verdict:
+`Planning/semantic-spike/Phase3-Store-Assessment.md`; machine copy `corpus-gates.json`
+beside it; analysis scripts `tools/semantic-harvest/corpus-gates/` (numpy, seeded, pinned
+to `spike_gates.py`'s procedures).
+
+- **Store: sound.** 2,208/2,208 checksums; every count reconciles to the digit at every
+  grain; one continuous run; contract matches what Phase 2 gated (prefix trailing space
+  included); the V-0 provenance gap (GGUF SHA) closed. Script drift vs the repo copy is
+  the two #811 fail-fast guards only — the run used the pre-#811 `~/semantic-harvest`
+  copy, and both guarded failures demonstrably did not occur.
+- **Every planning-number discrepancy reconciled exactly**: 1.374B vs 1.333B chars is the
+  truncate-at-next-div rule (40.9M chars of index bleed, reproduced to the digit both
+  ways); 605,643 vs ~475k chunks is per-document chunking (66.3% of docs are
+  single-chunk; realized mean chunk ~584 tokens, not 800); wall clock −2.3% vs the
+  extrapolation.
+- **Gate A at corpus scale**: 70,469 queries / 118,099 pairs against all 314,482
+  candidates — int8-256 median rank 36 (top 0.011% of the pool; the spike could only say
+  top 3.05% of 2,197), hit@10 0.365. First cross-volume evidence: 15,006 queries,
+  hit@10 0.187. Weakest band is 1900–1945 (0.216), not pre-1900 — but pre-1900 has 572
+  queries total, so the un-keyed blind panel is still the only real pre-1900 gate.
+- **The deferred same-volume question**: the spike's 100% same-volume top-1 relaxes to
+  78% at corpus scale — but 97% of top-10 slots are same-era. The space is
+  era-stratified; a cross-era discovery surface must be an explicit projection, not a
+  nearest-neighbor hope.
+- **The §10.4 dims decision is fully priced**: corpus-scale recall@10 0.749 (int8-256)
+  vs 0.864 (int8-512); the Hamming funnel's tax is a parameter — widening RERANK_POOL
+  200→800 recovers 512's funnel recall 0.816→0.851 at ~0.4M MACs/query. P≥800 should
+  ship regardless of dims.
+- **New V-3 requirement found by reading the top pairs**: 27 of the 30 highest-cosine
+  neighbor pairs are cross-volume *edition twins* (Iran/IranEd2, e15p2/Ed2 — same docId,
+  cosine 1.0). Neighbor surfaces must suppress edition pairs, a cheap volume-pair rule.
+- **The packer's id contract, measured**: store ids are a strict subset of
+  `document_cache` (join on `(volume_id, d)`); the 2,356 vector-less app rows are all
+  structural (`ch*`/front-matter/`comp*`) and must render typed-unavailable; 949
+  letter-suffixed idExceptions (0.302%, as designed); 0 collisions, 0 tiling violations.
+
+Next: V-1's `SemanticVectorsGenerator` packer (the only unbuilt Claude-side piece before
+V-2), the Tier-0 UMAP stage (gates V-4 only), and the two standing owner acts — key the
+blind panel (gates V-3), read the Gemma licence (gates V-5).
+
+**Owner decision, same day — the blind panel is retired as a gate.** The axis ships
+**experimental, opt-in at weight 0.0, and unscoped**; app-tester feedback replaces the
+100-row panel as the quality instrument, on the reasoning that a cohort of researchers
+working their own questions judges the feature better than one annotator. Recorded in
+`Phase3-Store-Assessment.md` §0a, with the superseded notes written into
+`V0-Spike-Verdict.md` §5 and the design doc's §8. The trade in one line: the opt-in
+default is what makes shipping-before-measuring survivable, and **pre-1900 quality is now
+a declared unknown rather than a measured pass** — Gate A reaches only 572 pre-1900
+queries, so nothing automatic speaks for the era the feature most exists for. V-3
+therefore owes an experimental label in the UI and a tester-feedback path that names the
+19th-century question; the panel artifacts stay staged and un-keyed as the cheap fallback.
+
+## Session 2026-08-12 — V-1: the packer, and the keying rule that was wrong
+
+`SemanticVectorsGenerator` (SPM: `SemanticVectorsGeneratorCore` + executable + 36 tests) turns the
+validated raw store into shippable tiers. Stage 1 is the owner-run neural harvest — non-reproducible
+and pinned by provenance; this is the deterministic half, and a repack is byte-identical across all
+three artifact kinds and all 552 shards.
+
+Artifacts: `semantic-vectors-index.json` (73KB, bundled) + `semantic-vectors-binary.bin` (10.23MB,
+bundled — 314,483 sign-bit rows then 659 volume/subseries centroids) + 552 gitignored
+`Planning/semantic-vectors/shards/<volume>.vec` (79MB, ~148KB/volume, the download tier) +
+a committed `shards-manifest.json` carrying per-shard SHA-256 and the provenance pin.
+
+- **The design's implicit keying is refuted, and the refutation is the session's main finding.**
+  §4.1 proposed `d{ordinal+1}` plus a ~949-row exception table for the letter-suffixed ids. Measured:
+  that mis-keys **15,097 documents (4.8%)**. The 949 is real but it is a count of odd *ids*, not of
+  wrong *keys* — one suffixed id (`frus1865p1`'s `d373a`) shifts every document behind it, so a
+  single exception mis-keys a whole tail. A running-counter variant fails outright in 23 of 552
+  volumes. **A wrong key here never fails**: every vector resolves, every score is plausible, and the
+  neighbours shown belong to other documents. Identity is therefore stored, run-length encoded —
+  1,605 segments for all 314,483 ids (~14KB) — and the generator round-trips every volume before
+  writing and throws on a mismatch.
+- **Parity with the measured pipeline is measured, not asserted.** Against the numpy matrices every
+  published recall number came from: sign bits bit-identical for all 314,483 documents; **11** of
+  80,507,648 int8 components differ by exactly ±1; scales differ ~3e-7 relative. The number that
+  matters: **shipping-config top-10 neighbour lists identical on 6,000 of 6,000 slots** over 600 gate
+  queries, rank-1 600/600.
+- **The first explanation of that residual was wrong, and the review caught it.** This entry
+  originally blamed a chunk-normalisation width difference (float32 vs Double). There is none — the
+  reference `pool_docs.py` normalises chunks in float64, exactly as the Swift does, and
+  `spike_gates.py` does not normalise chunks at all, so pooling contributes nothing. The cause is
+  `truncate`'s norm: numpy sums **pairwise**, a Swift loop sums sequentially, and over 256 squares
+  the two disagree by ~1e-7, re-rounding the occasional component. Accumulating that norm in Double
+  took the divergence from 54 components to 11, which is the artifact now committed. Worth recording
+  because the wrong explanation pointed at the one stage that was already identical.
+- **Two pinned steps are easy to get plausibly wrong**, so both have named tests: rounding is
+  half-to-even (numpy `rint`; Swift's bare `rounded()` is half-away-from-zero), and sign packing is
+  MSB-first with zero packing as a SET bit (`np.packbits(m >= 0)`). Either backwards yields plausible
+  Hamming distances that are not the measured ones.
+- **RERANK_POOL ships at 800**, not the design's 200, per the assessment's sweep — and the measured
+  value travels *in* the artifact so a device need not read a planning doc to know what its recall
+  number describes.
+- Every artifact carries one provenance digest (model + GGUF SHA + dims + chunking + prefix +
+  pooling + quantization, separator-joined so the prompt's trailing space cannot go invisible). The
+  family rule: no consumer mixes two generations.
+- Two departures from §4.3's shard sketch, both toward fewer sources of truth: Float32 scales rather
+  than Float16 (the design's own size table budgeted 4 bytes), and no id rows in shards (the bundled
+  index already has them; a second copy is a second place for identity to be wrong).
+- The generator throws rather than writing on an unpinned model, a missing volume, an id encoding
+  that does not round-trip, or a vector/centroid that cancels to zero.
+
+New bundle resources, so this took the one-time `xcodegen generate` + scheme restore; the pbxproj
+diff is exactly the 12 new resource references. **The +10.23MB is the design §10.1 app-size decision
+being taken** on its recommendation — reversible to a first-launch download without touching the
+generator.
+
+Still open: Tier 0's map layer (2-D coordinates + cluster labels) waits on the UMAP/HDBSCAN stage and
+its pinned non-stdlib Python environment — it gates V-4 only, and the centroids it would have shipped
+beside are already in the binary. Next is V-2, the device substrate: loaders, the shard fetch and
+registry in DownloadManager/IndexingPipeline, the mmap scan kernels, and oldest-device latency.
+
+### Review pass on the packer (same session)
+
+A four-lens adversarial review (arithmetic vs `spike_gates.py`, binary layout re-parsed independently
+in Python, identity checked against all 314,483 store ids, runner failure modes) raised 10 findings,
+9 confirmed by execution. All are fixed here; the artifacts were regenerated and re-verified.
+
+- **`measuredRecallAt10` was a single constant while `DIMS` is a documented lever.** A 512-dim
+  artifact would have shipped 256's 0.7449 — understating its own measured quality by 0.106 while
+  citing the document that contradicts it. The whole point of carrying the number in the artifact is
+  that a consumer need not read that document, so the wrong number is the one that gets believed.
+  Now keyed by width (`[256: 0.7449, 512: 0.8510]`), and a width with no corpus-scale measurement is
+  refused rather than given a borrowed number. The artifact test pins the value for the artifact's
+  own width instead of a `> 0.7` floor, which 256's number cleared at every width.
+- **`DIMS` was unvalidated and reached preconditions.** Verified: `DIMS=7` and `DIMS=1024` exited 133
+  by SIGTRAP, and in a release build preconditions keep their teeth but lose their messages, so the
+  operator got no diagnostic at all; `DIMS=abc` silently packed at 256 as though unset. Now validated
+  before anything is read, with an error naming the variable and the accepted widths.
+- **An interrupted run could leave two generations of shards side by side.** Shards are written per
+  volume, the manifest once at the end, and the directory is gitignored — so nothing in the
+  repository would ever show it. A successful run now prunes every `.vec` it did not publish.
+- **Nothing verified a shard's bytes.** The artifact test checked that each `sha256` field was 64 hex
+  characters and never opened a file. It now hashes every shard present (skipping cleanly when they
+  are absent, as on a fresh clone) and checks size, magic, and the provenance digest.
+- **A zero chunk row was reported as a degenerate document**, sending the reader to inspect a
+  document when the fault is a row in the store. Its own error case now names the chunk.
+- **`numericPart` now refuses a multi-digit leading zero.** `decode` re-mints interior ids from a
+  value, so `d006, d007` would have decoded as `d006, d7` — the round-trip guard would have aborted a
+  552-volume pack rather than corrupt anything, but refusing the parse makes such ids literal
+  segments and makes "exact by construction" actually true. No such id exists in the corpus today
+  (0 of 314,483); this is about the next one.
+- Three doc figures corrected against measurement: the index is 73 KB not ~90 KB, and the id segments
+  are 7.5 KB of literals / 48 KB encoded, not "~14 KB".
+
+One finding was refuted on verification (a claim that `decode` traps on malformed segment shapes —
+the behaviour reproduces but is the documented refusal path, not a defect).

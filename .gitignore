@@ -48,6 +48,12 @@ notarization-*.json
 # SourceExplorerExportGenerator; only the summary + sample are committed.
 Planning/source-explorer-export/source-explorer-export.json
 
+# V-1: the Tier-2 semantic shards are ~82MB across 552 volumes and are a DOWNLOAD tier, not a
+# bundled one — they ship from the vectors repo, fetched beside each volume's XML. Regenerate with
+# SemanticVectorsGenerator. shards-manifest.json (checksums + the provenance pin the app refuses a
+# mismatch against) IS committed; the .vec files are not.
+Planning/semantic-vectors/shards/
+
 # The record-group catalog index shards are ~165MB across the 22 record groups (RG 59 alone is a
 # large share) — regenerate with RecordGroupCatalogGenerator. The manifest, the four censuses, the
 # creator authority index and series-sample.json ARE committed; only the full per-group index is not.
