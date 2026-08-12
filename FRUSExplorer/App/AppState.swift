@@ -464,6 +464,35 @@ final class AppState {
     /// never as *no similar documents*.
     var semanticShardStore: SemanticShardStore?
 
+    /// Fetches Tier-2 shards from the app-owned vectors repository. `nil` under the same conditions
+    /// as `semanticShardStore`, plus a bundled shard manifest that disagrees with the bundled index.
+    var semanticShardFetcher: SemanticShardFetcher?
+
+    /// Fetches a volume's semantic shard if it is missing, on a detached background task.
+    ///
+    /// Called from two places, and the split is deliberate. A volume's own download hook fetches
+    /// eagerly, because 148 KB beside a ~6 MB volume is invisible and it makes the volume
+    /// semantic-ready exactly when it becomes search-ready. Everything already on disk is fetched
+    /// **lazily**, when a semantic surface first wants that volume — so an existing library does not
+    /// silently pull 82 MB at launch to enable a feature the user has not opened yet.
+    ///
+    /// - Parameter volumeID: Manifest `volumeId`.
+    func fetchSemanticShardIfNeeded(for volumeID: String) {
+        guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
+        guard isOnline else { return }
+        Task.detached(priority: .utility) {
+            guard await store.shard(for: volumeID) == nil else { return }
+            guard await fetcher.hasShard(for: volumeID) else { return }
+            do {
+                try await fetcher.fetchShard(for: volumeID, into: store)
+            } catch {
+                #if DEBUG
+                print("[AppState] semantic shard fetch failed for \(volumeID): \(error)")
+                #endif
+            }
+        }
+    }
+
     // MARK: - Download Queue
 
     /// Volume IDs currently queued for download (active + pending).

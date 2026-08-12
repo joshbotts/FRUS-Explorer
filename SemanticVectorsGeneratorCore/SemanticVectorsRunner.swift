@@ -256,10 +256,13 @@ public enum SemanticVectorsRunner {
             shards: shardDigests.map {
                 ShardManifest.Shard(volumeID: $0.volume, sha256: $0.sha256, bytes: $0.bytes)
             })
+        // The shard manifest is BUNDLED, not left beside the shards: the device needs it to verify
+        // what it downloads (a truncated shard fails the header's size check, but a flipped byte in
+        // the payload does not), and to know a shard exists at all before asking for it. It is ~60 KB
+        // for 552 rows, which is the cheapest integrity check in the program.
         let shardData = try encoder.encode(shardManifest)
         try shardData.write(
-            to: shardsDir.deletingLastPathComponent()
-                .appendingPathComponent("shards-manifest.json"), options: .atomic)
+            to: outputDir.appendingPathComponent("semantic-shards-manifest.json"), options: .atomic)
 
         // Shards are written per volume inside the loop while the manifest is written once at the
         // end, so an interrupted run leaves files this manifest does not describe — from an earlier

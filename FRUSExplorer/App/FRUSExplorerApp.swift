@@ -1180,6 +1180,20 @@ struct FRUSExplorerApp: App {
                             expectedCounts: Dictionary(
                                 semanticIndex.volumes.map { ($0.volumeID, $0.documentCount) },
                                 uniquingKeysWith: { first, _ in first }))
+                        // The two bundled manifests must describe the same generation, or the app
+                        // would verify downloads against digests for vectors it cannot use — every
+                        // fetch would succeed and every shard would then be refused by its header.
+                        if SemanticShardFetcher.bundledProvenanceDigest()
+                            == semanticIndex.provenance.digestHex,
+                           let expectations = SemanticShardFetcher.bundledExpectations() {
+                            appState.semanticShardFetcher = SemanticShardFetcher(
+                                expectations: expectations)
+                        } else {
+                            #if DEBUG
+                            print("[FRUSExplorer] shard manifest missing or from another "
+                                + "generation — Tier 2 fetch disabled")
+                            #endif
+                        }
                     }
                     // Before anything can edit a synced model. Cheap: one notification observer.
                     modificationStamper.start(observing: modelContainer.mainContext)
@@ -1841,6 +1855,9 @@ struct FRUSExplorerApp: App {
                         )
                     }
 
+                    // Semantic-ready when search-ready: 148 KB beside the ~6 MB volume the user
+                    // just chose to download.
+                    await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId) }
                     #if DEBUG
                     print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif
