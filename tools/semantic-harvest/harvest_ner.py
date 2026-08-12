@@ -560,6 +560,11 @@ def detect_volume(vol, docs, marked_rows, model, stats):
     summary = {
         "volume": vol, "model": model, "sampled": sampled,
         "docs_scanned": len(chosen), "docs_in_volume": len(docs),
+        # Which documents, not just how many: score_detections.py evaluates a detector
+        # only over what it actually looked at, and a document it never saw would
+        # otherwise count as a page of misses and depress recall by an arbitrary amount.
+        # Recorded only for a sample — for a full volume the answer is "all of them".
+        "sampled_doc_ids": sorted(d for d, _, _, _ in chosen) if sampled else None,
         "chars_scanned": sum(len(t) for _, _, t, _ in chosen),
         "mentions": len(rows), "overlapping_marked": overlap, "novel": len(rows) - overlap,
         "marked_in_scanned_docs": sum(1 for r in marked_rows
