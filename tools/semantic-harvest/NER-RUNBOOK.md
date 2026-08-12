@@ -8,10 +8,11 @@ analytics, and the co-mention graph currently see nothing at all.
 This is the sibling of `README.md` (the embeddings harvest) and executes stage **R-1** of
 `Planning/M2-Semantic-Pipeline-Ride-Along.md` §3. It replaces that file's placeholder line — *"the
 NER pass gets its own harness in this folder once the spike numbers and the M2a ground-truth sample
-exist"* — for the half that is now true: the spike numbers exist
-(`Planning/semantic-spike/V0-Spike-Verdict.md`). **M2a does not.** What that means for what you may
-do with the output is the first section below, because it is the only rule in this file that cannot
-be worked around.
+exist"*. The spike numbers exist (`Planning/semantic-spike/V0-Spike-Verdict.md`), the harness is
+here, the free control detector is built (§5), and M2a can now be staged, collected and scored
+(§6–7) — but **M2a is not keyed**, and until it is, everything this produces is descriptive.
+What that means for what you may do with the output is the first section below, because it is the
+only rule in this file that cannot be worked around.
 
 ---
 
@@ -24,7 +25,7 @@ archived wave plan and restated in `Planning/People-Early-Era-Program.md` §5, a
 formality — **a confidently-wrong person is this app's most serious defect class**, and #259 was
 closed not-planned for proposing merges that would have undone the guardrails an audit installed.
 
-So: run every phase here whenever you like. Publish nothing from it until §5 is satisfied.
+So: run every phase here whenever you like. Publish nothing from it until §6 has been keyed and §7 has scored it.
 
 **It detects spans, not people.** This pass answers "where in the text is a person named". It does
 not decide *which* person, does not merge, does not mint an identity, and does not touch the
@@ -69,14 +70,15 @@ One pass of each volume's TEI produces both:
 * **The marked layer** — the 253,919 `<persName>` elements the editors already delimit, placed in
   the R-0 text layer's coordinate space. No model, no server, no LM Studio, no cost. This is M1b's
   input, and it is worth having on disk whatever happens to the detector question.
-* **The detected layer** — candidates from an LM Studio chat model over the same text, grounded by
-  exact-substring location. Optional, priced sample-first (§4).
+* **The detected layer** — candidates over the same text, from either of two detectors that write
+  the same shape into their own stores: an LM Studio chat model (§4, priced sample-first, grounded
+  by exact-substring location) or the free `NLTagger` control (§5).
 
 Set **`TEXT_DIR`** to the embeddings store's `text/` on both: every volume's extracted text is then
 checked character for character against the R-0 layer the vectors were computed from, which is what
-makes a mention offset and a chunk span the same coordinate (§5).
+makes a mention offset and a chunk span the same coordinate (§8).
 
-Both come out of `harvest_ner.py`, which is stdlib-only like its sibling and runs on the stock macOS
+The scope and marked layers come out of `harvest_ner.py`, which is stdlib-only like its sibling and runs on the stock macOS
 `python3`. It **imports** `harvest_embeddings.py` rather than copying its extractor, and asserts per
 volume that its own `(doc_id, ordinal, text)` list equals `extract_documents`'. A volume that
 disagrees aborts the run instead of writing offsets that mean something slightly different from the
@@ -102,7 +104,7 @@ and a copy of `FRUSExplorer/Resources/manifest.json` beside the script.
 
 ```
 cd ~/semantic-harvest                      # wherever the two scripts live
-export TEXT_DIR=~/frus-semantic-raw/text   # the R-0 layer Phase 3 wrote; see §5
+export TEXT_DIR=~/frus-semantic-raw/text   # the R-0 layer Phase 3 wrote; see §8
 SCOPE_ONLY=1 python3 harvest_ner.py        # N-0: derive scope.json, stop
 python3 harvest_ner.py                     # N-1: the marked layer over that scope
 ```
@@ -245,7 +247,7 @@ Refusing an unsampled LLM sweep over the whole scope: NER-RUNBOOK.md prices it a
 continuous Studio time, and no ground truth exists to score it.
 ```
 
-`FULL_SWEEP=1` overrides it. §4.2's fourth point and §5 are what should be true before you type that.
+`FULL_SWEEP=1` overrides it. §4.2's fourth point, plus a keyed §6 and a §7 table with the control in it, are what should be true before you type that.
 
 ### 4.5 What to read in the output
 
@@ -280,65 +282,170 @@ review artifact.
 
 ---
 
-## 5. Phase N-3 onward — what closes R-1, and what is not built
+## 5. Phase N-3 — the control detector
 
-**The gate: M2a is un-keyed.** The ride-along §3 defines it — extend `m1a_survey.py` to sample
-~60–80 documents, era-stratified, for *exhaustive* person-mention annotation (~900–1,200 decisions),
-keyed by the owner alongside the M1a 300 rows that are also still un-keyed. Until that exists, every
-number in §4.5 is descriptive (how much did it find, how grounded was it) and none is evaluative
-(was it right). Precision and recall are simply unavailable. This runbook cannot route around that
-and does not try.
+**Built** (`swift run -c release EarlyEraNERControl`, SPM-only, no `xcodegen`). It is the ~1–2 h
+free baseline §4.2 argues every LLM run has to beat, and it exists so that argument can be checked
+rather than asserted.
 
-**The control detector is not built.** Apple `NLTagger` over the same scope is the ~1–2 h baseline
-every LLM result should be read against, and the app already runs it corpus-wide for word clouds
-(`WordCloudKit`). It needs a small Swift harness — an SPM executable reading the same scope and
-writing the same `detected/` shape — which is real work and is deliberately not in this runbook.
-Without it, a pilot can tell you a model found things; it cannot tell you the model beat the free
-option.
+```
+swift run -c release EarlyEraNERControl        # from the repo root
+```
 
-**R-2 (mention-context embeddings) is unblocked** — the sibling runbook's Phase 3 has run, so the
-embeddings store exists and with it the R-0 text layer for all 552 volumes. Two consequences here:
+with, as needed:
 
-* **There is no sequencing constraint left.** An earlier draft of this file said not to run N-2 in
-  the same window as the embeddings harvest, because LM Studio would have to hold a chat model and
-  an embedding model at once. That harvest is done. Set `TEXT_DIR` and run whenever.
-* **`TEXT_DIR` is now the check that matters.** This store is offsets-only by design — it does not
-  copy the 705 MB of text, which exists in the TEI and again in the semantic store. The per-volume
-  parity assert against `extract_documents` catches a divergence in the *code*; pointing `TEXT_DIR`
-  at the store's `text/` catches a divergence in the *corpus*, which is the one that would actually
-  happen: R-2 embeds a context window around each mention against chunk vectors computed from the
-  stored text, so if the TEI on disk has moved since Phase 3, these offsets address a document those
-  vectors never saw and nothing downstream could tell. A mismatch aborts, naming the volume and the
-  first differing ordinal; a missing file aborts too, because the value of the check is that it ran.
+| variable | |
+|---|---|
+| `STORE` | the NER store with `scope.json` + `marked/` (default `~/frus-ner-raw`) |
+| `TEXT_DIR` | the embeddings store's `text/` (default `~/frus-semantic-raw/text`) |
+| `OUT_DIR` | its own store (default `~/frus-ner-raw-control`) |
+| `ONLY_DOCUMENTS` | an `m2a-ground-truth.jsonl` — restricts the pass to the annotated documents, which is what makes it scoreable in minutes rather than hours |
+| `LANGUAGE` | `english` (default, matching `WordCloudKit`) or `auto` |
 
-What is still open on the embeddings side does not gate anything here: V-0 does not close until the
-owner grades all 100 rows of `Planning/semantic-spike/blind-panel.csv` (before opening the key) and
-reads the Gemma licence — that verdict is about whether a *semantic axis* ships, not about whether
-the text layer is trustworthy as a coordinate space.
+It reads the **R-0 text layer, not the TEI**, so its offsets are the marked layer's offsets by
+construction; it runs Apple's `NLTagger` with the same walk the app already runs corpus-wide for
+word clouds; and it writes the same `detected/` shape `harvest_ner.py` writes — uncompressed
+`.jsonl`, which `ner_store.py` reads either way — so `score_detections.py` scores it beside the
+LLM stores with no adapter.
+
+Three things to know before quoting its numbers:
+
+* **`NLTagger`'s output is a property of the OS build.** Every `head.json` and the run manifest
+  record `operatingSystemVersionString`. Two stores from different machines are not comparable, and
+  nothing else in the pipeline would tell you.
+* **`detected/*.jsonl` is byte-identical across runs on one build; the head files are not** — they
+  carry `secs` and the date stamp. Diff the rows, not the heads, when checking for drift.
+* **It is a control, not a candidate.** It has no confidence, no identity, no roles; it answers
+  only "where in the text is a person named", which is exactly the question the LLM route answers,
+  which is what makes them comparable.
 
 ---
 
-## 6. The store contract
+## 6. Phase N-4 — the M2a ground truth (the gate)
+
+Nothing above can be *scored* until a human has marked every person mention in a stratified sample.
+That was the ride-along's M2a, and it is now two mechanical halves around one irreducible sitting.
 
 ```
-frus-ner-raw/
+cd tools/semantic-harvest
+SELFTEST=1 python3 stage_m2a.py            # 27 checks, no corpus needed — run this first
+python3 stage_m2a.py                       # stage ~72 documents, era-stratified
+#   ... the sitting: read M2a-INSTRUCTIONS.md in the output directory, annotate,
+#       and mark each finished file `y` in progress.csv ...
+COLLECT=1 python3 stage_m2a.py             # -> m2a-ground-truth.jsonl + a summary
+```
+
+**Annotation is by editing text, not by typing offsets.** Each document is written out as its exact
+R-0 text with the editors' own `<persName>` mentions already wrapped in `⟦…⟧`; you wrap the ones
+they left unmarked. Three properties make that safe, and each is pinned by the self-test:
+
+* offsets are *derived* by removing the brackets, so an annotation lands in exactly the coordinate
+  space the detectors and the chunk vectors use — there is no way to type a wrong number;
+* the collector strips the brackets and requires the result to equal the R-0 text character for
+  character, so an accidental edit to the prose is **rejected by name** instead of silently shifting
+  every later span in that document;
+* seeding with the editors' markup cuts the work by about a third and makes disagreement visible —
+  a removed `⟦…⟧` is recorded as a rejected editor span, and that count is the only evidence anyone
+  checked them rather than trusting them.
+
+The collector refuses a `y` on a file that is **byte-identical to what was staged**: an untouched
+document would otherwise collect the editors' own seed as ground truth and report the markup share
+as 100%, which is a measurement of nothing phrased as the real one. If you read a document and
+there is genuinely nothing to add, mark it `none`. It also refuses a duplicated `progress.csv` row,
+a row naming a file that is no longer there, a stray or nested bracket, and re-staging over a
+directory that already holds annotated work (`FORCE=1` if you mean it).
+
+The seeding has a cost and the script says so: it biases an annotator toward accepting editor
+markup. The instructions ask for each seeded span to be checked; `editor_spans_rejected` in the
+collection summary is what shows it happened.
+
+The collector also produces a number this program has wanted since M1a: the **measured markup
+share**, seeded-kept over total. M1a's ~34% came from a bare-surname regex over de-tagged text and
+called itself a lower bound. This is the real measurement, on a proper exhaustive sample, per band.
+
+## 7. Phase N-5 — scoring
+
+```
+GROUND_TRUTH=~/frus-m2a/m2a-ground-truth.jsonl \
+DETECTORS=~/frus-ner-raw-pilot-<model>,~/frus-ner-raw-control \
+python3 score_detections.py
+```
+
+One table, one row per detector, plus **the editors' own markup scored as if it were a detector** —
+its recall is the share of mentions the free layer already gives you, and it is the number that
+says what detection is *for*. Two matching rules, and neither is the real one alone: **strict**
+(exact span — what matters for anything that will later slice text by offset) and **relaxed** (a
+maximum-cardinality one-to-one matching over any overlap — whether the detector found the *mention*
+while disagreeing about where a title ends, the commonest boundary quarrel in this corpus).
+
+What the scorer refuses to do, in each case because the alternative is a wrong number rather than
+an error:
+
+* it **verifies the ground truth against the R-0 text before reading any detector** — a gold file
+  staged against an older copy of the corpus still parses and would score a perfect detector as a
+  total failure;
+* it scores a detector **only over documents it actually scanned**, and refuses a store that sampled
+  without recording which (or whose run was killed mid-volume, leaving a body with no head);
+* it refuses to run at all when `STORE` has no `marked/` layer, because the baseline row would
+  otherwise read 0.000 recall and look like a finding.
+
+Read `score-detections.json` afterwards for the per-band breakdown and, more usefully, the false
+positives and misses it samples — a detector with good aggregate numbers and place names in its
+false-positive list is telling you something the aggregate cannot.
+
+---
+
+## 8. The store contract
+
+```
+frus-ner-raw/                 # harvest_ner.py: the scope and the free marked layer
   scope.json                  # the derived scope: rule, counts, the volume list
   marked/<vol>.jsonl.gz       # {"d","o","s","e","n","t","x","c"} per <persName>
   marked/<vol>.head.json      # done-marker + per-volume counts (written last)
   detected/<vol>.jsonl.gz     # {"d","o","s","e","n","ci"} per located candidate
-  detected/<vol>.head.json    # done-marker + the §4.5 numbers
+  detected/<vol>.head.json    # done-marker + the §4.5 numbers, incl. sampled_doc_ids
   runs.jsonl                  # per-volume log, append-only across resumes
   run-manifest.json           # provenance: both script SHAs, model id + listing, GGUF SHA,
                               # system prompt, response schema, temperature, chunking, seed
   SHA256SUMS                  # transfer integrity
+
+frus-ner-raw-control/         # EarlyEraNERControl: one store per detector, same shape
+  detected/<vol>.jsonl        # UNCOMPRESSED — nothing in the Swift repo speaks gzip, and
+                              # ner_store.py reads either extension (it refuses when BOTH
+                              # exist for one volume, since the two readers preferred
+                              # opposite orders and a stale copy would score differently)
+  detected/<vol>.head.json    # + the OS build, because NLTagger's output is a property of it
+  run-manifest.json           # totals re-derived from every head.json, so a resumed run
+                              # reports what a single run would
+
+frus-m2a/                     # stage_m2a.py: the ground truth
+  <vol>__<doc>.txt            # the R-0 text with mentions wrapped in ⟦…⟧
+  progress.csv                # the owner marks each finished file `y`
+  m2a-manifest.json           # per document: band, char count, text SHA-256, seeded spans
+  M2a-INSTRUCTIONS.md         # the annotation rule, matching the detector prompt's definition
+  m2a-ground-truth.jsonl      # COLLECT=1 output: {"v","d","s","e","n","seeded","band"}
+  m2a-collection-summary.json # incl. the measured markup share, per band
 ```
 
-`d`/`o` are the document's `xml:id` and its ordinal in the volume; `s`/`e` are **character offsets
-into the R-0 text of that document**, half-open; `n` is the substring they cut (stored so a row is
+`d`/`o` are the document's `xml:id` and its ordinal in the volume; `s`/`e` are **Unicode code-point
+offsets into the R-0 text of that document**, half-open — not bytes, not characters in the Swift
+sense, and not offsets into the TEI. Every producer here is Python except the control, which is why
+that detector's offset arithmetic is a separately tested function rather than inline: code points,
+grapheme clusters and UTF-16 units all agree on ASCII, which is exactly what would make the bug
+invisible. `n` is the substring they cut (stored so a row is readable on its own and so any consumer
+can check itself); `n` is the substring they cut (stored so a row is
 readable on its own and so any consumer can check itself); `t`/`x`/`c` are the `type`, `xml:id` and
 `corresp`/`ref` attributes when present. gzip members are written with `mtime=0`, so re-running over
 the same input yields byte-identical files — the V-0 spike found gzip mtime to be the *only*
 difference between five otherwise-identical text layers, and that noise is now gone.
+
+**Why `TEXT_DIR` matters more than it looks.** The per-volume parity assert against
+`extract_documents` catches a divergence in the *code*; pointing `TEXT_DIR` at the embeddings
+store's `text/` catches one in the *corpus*, which is the failure that would actually happen. R-2
+embeds a context window around each mention against chunk vectors computed from the stored text, so
+if the TEI on disk has moved since Phase 3 these offsets address a document those vectors never saw
+and nothing downstream could tell. A mismatch aborts naming the volume and the first differing
+ordinal; a missing file aborts too, because the value of the check is that it ran.
 
 Transfer, if the harvest ran on the Studio and the analysis happens on the Air, is the embeddings
 runbook's Phase 4 unchanged: copy or `rsync` the store, then `cd <store> && shasum -a 256 -c
@@ -346,14 +453,14 @@ SHA256SUMS`, and every line must say `OK`. An unverified transfer is not a raw s
 
 ---
 
-## 7. Environment reference
+## 9. Environment reference
 
 | variable | default | note |
 |---|---|---|
 | `VOLUMES_DIR` | `~/frus-volumes` | a copy of `Development/frus/volumes` |
 | `MANIFEST` | `./manifest.json` | copy it next to the script |
 | `OUT_DIR` | `~/frus-ner-raw` | one store per detector run |
-| `TEXT_DIR` | — | the embeddings store's `text/`; verifies every volume against the R-0 layer (§5) |
+| `TEXT_DIR` | — | the embeddings store's `text/`; verifies every volume against the R-0 layer (§8) |
 | `SCOPE_ONLY` | — | `=1` derives `scope.json` and stops |
 | `VOLUMES` | — | explicit ids, overriding the derived scope |
 | `DETECT` | `none` | `llm` adds the detector layer |
@@ -365,15 +472,34 @@ SHA256SUMS`, and every line must say `OK`. An unverified transfer is not a raw s
 | `MAX_TOKENS` / `TEMPERATURE` | 1024 / 0 | recorded in provenance |
 | `BATCH_SLEEP` | 0 | seconds between requests, for thermal headroom on the Air |
 
-## 8. Related
+`EarlyEraNERControl` (§5) takes `STORE`, `TEXT_DIR`, `OUT_DIR`, `VOLUMES`, `ONLY_DOCUMENTS`,
+`LANGUAGE`, `GENERATED_DATE`. `stage_m2a.py` (§6) takes `STORE`, `TEXT_DIR`, `OUT_DIR`, `DOCS` (72),
+`VOLS_PER_BAND` (6), `MIN_CHARS`/`MAX_CHARS` (800/8000 — a stated sampling bias: it excludes both
+the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py` (§7) takes
+`GROUND_TRUTH`, `DETECTORS`, `STORE`, `TEXT_DIR`, `OUT`.
+
+## 10. Related
 
 - `Planning/People-Early-Era-Program.md` — the program, its gates, and the constraints in §5
 - `Planning/early-era-people/M1a-Findings.md` — where §1's markup and POCOM figures come from
 - `Planning/M2-Semantic-Pipeline-Ride-Along.md` — the stage list (R-0…R-4) and the cost model
 - `Planning/semantic-spike/V0-Spike-Verdict.md` — the spike this runbook's sibling is waiting on
 - `README.md` — the embeddings harvest, whose extractor and store discipline this reuses
+- `harvest_ner.py` / `selftest_harvest_ner.py` — the scope, marked and LLM-detected layers (26 checks)
+- `stage_m2a.py` / `score_detections.py` / `ner_store.py` / `selftest_m2a.py` — the ground-truth
+  loop and the scorer (17 checks, one round trip: stage → annotate → collect → score)
+- `EarlyEraNERControlCore/` + `EarlyEraNERControl/` — the control detector; `swift test` covers the
+  offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
+  1.2 — 2026-08-11: the control detector is BUILT (§5, `EarlyEraNERControl`), and M2a is now
+        stageable, collectable and scoreable (§6–7, `stage_m2a.py` / `score_detections.py`) — the
+        sample is annotated by editing bracketed text so offsets are derived rather than typed,
+        and the scorer verifies the ground truth against the R-0 text before reading any detector.
+        Adversarially reviewed before landing: a mutation pass over the self-test found 16 of 23
+        mutants surviving, and the checks that close them — an untouched file marked annotated,
+        precision/recall denominators, scored-only-what-was-scanned — are in the suite (27).
+        Still un-keyed, so §0's rule is unchanged.
   1.1 — 2026-08-11: embeddings Phase 3 is done, so §5's sequencing constraint is void and TEXT_DIR
         (new) verifies each volume against the R-0 layer the vectors were computed from. §4 is
         re-cut: the token count separated from the throughput assumption, a model-band/machine

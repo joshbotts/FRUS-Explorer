@@ -5830,3 +5830,55 @@ shrinks, and the price gap narrows from 60–100× to roughly 5–20× — **a s
 NLTagger has no reason to exist**, and nothing can say which it is, because the control is still
 unbuilt. The recommendation therefore sharpens rather than relaxes: build the Swift control harness
 before spending an Air-night on a small-model sweep.
+
+---
+
+## Session 2026-08-11 — #234 R-1: the control detector, and the M2a loop that makes it mean something
+
+N-0 and N-1 are run (owner). This session builds the two things the runbook named as unbuilt and
+gating: the **free control detector** and the **M2a ground-truth loop**, plus the scorer that joins
+them.
+
+### The control: `EarlyEraNERControl` (SPM-only, Core + executable + Tests)
+
+Apple's `NLTagger` over the same no-list scope, writing the same `detected/` layer, so
+`score_detections.py` scores it beside an LLM store with no adapter. It exists to make one
+comparison possible: §4.2 of the runbook prices NLTagger at ~1–2 h against ~5–8 days for an
+8B-class model and 8–42 h for a 0.5–2 B one, so the cheaper the hosted model gets, the more the
+question stops being *is it good* and becomes *does it beat the free option* — and until now
+nothing could answer it.
+
+- **It reads the R-0 text layer, not the TEI**, so its offsets are the marked layer's by
+  construction rather than by agreement, and it needs no XML parser.
+- **The offset unit is the Unicode code point.** Every other producer here is Python. Swift offers
+  three plausible answers and all three agree on ASCII, which is exactly what would make the bug
+  invisible — so the arithmetic is a separately tested function pinned against a decomposed accent
+  (grapheme offsets land one short) and an astral character (UTF-16 lands one long).
+- The tagger walk is deliberately `WordCloudKit`'s own, so "the control" means the recogniser the
+  app already ships. `NLTagger`'s output is a property of the OS build, so every head and the run
+  manifest record it.
+
+### M2a: annotation by editing text, not by typing offsets
+
+`stage_m2a.py` writes each sampled document as its exact R-0 text with the editors' `<persName>`
+mentions already wrapped in `⟦…⟧`; the owner wraps the rest; `COLLECT=1` strips the brackets and
+**requires the result to equal the R-0 text character for character**. Offsets are therefore derived,
+never typed, and land in the same coordinate space as the detectors and the chunk vectors.
+
+`score_detections.py` reports strict and relaxed (maximum-cardinality, not greedy) P/R/F1 per band,
+plus **the editors' own markup scored as a detector** — the number that says what detection is for.
+
+### The review found what a compiler could not
+
+Four adversarial reviewers ran over code that cannot be compiled in this environment. The Swift
+reads clean (one construct pre-emptively rewritten), but the behavioural findings were real and are
+fixed: the scorer never verified the **ground truth itself** against the R-0 text (a stale gold file
+scores a perfect detector as a total strict failure, with no error anywhere); a resumed control run
+overwrote its manifest with partial totals; `DOCS` was not the number of documents staged; and a
+mutation pass over the self-test found **16 of 23 mutants surviving** — including swapping
+precision's and recall's denominators, and staging every document with none of its seeds.
+
+The one worth naming on its own: **a `y` on an untouched file** collected the editors' seed as
+ground truth and printed "measured markup share: 100.0% — this is the real measurement". The staged
+bytes are now hashed into the manifest and an unchanged file is refused; `none` is how you say
+"read it, nothing to add". Both suites now run 26 and 27 checks, no corpus and no server needed.

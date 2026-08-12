@@ -962,6 +962,41 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - EarlyEraNERControl
+
+        /// The `NLTagger` control detector for the #234 R-1 early-era person harvest — the free
+        /// baseline (~1–2 h over the 268-volume scope) that a hosted LLM detector has to beat
+        /// before it earns a sweep costing days. Reads the R-0 text layer and the `marked/` layer
+        /// written by `tools/semantic-harvest/harvest_ner.py`, writes the same `detected/` shape,
+        /// and is scored beside the LLM stores by `tools/semantic-harvest/score_detections.py`.
+        /// Runbook: `tools/semantic-harvest/NER-RUNBOOK.md`.
+        .target(
+            name: "EarlyEraNERControlCore",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "EarlyEraNERControlCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls EarlyEraNERControlRunner.run() and exits.
+        .executableTarget(
+            name: "EarlyEraNERControl",
+            dependencies: [.target(name: "EarlyEraNERControlCore")],
+            path: "EarlyEraNERControl",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests: the code-point offset arithmetic that joins this detector to a
+        /// Python-produced store (tested on strings where code points, characters and UTF-16
+        /// units disagree — they all agree on ASCII, which is what makes the bug invisible),
+        /// the store row shapes, and a recogniser smoke test asserted only on properties that
+        /// survive an OS update.
+        .testTarget(
+            name: "EarlyEraNERControlTests",
+            dependencies: [.target(name: "EarlyEraNERControlCore")],
+            path: "EarlyEraNERControlTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - FTS5Store
 
         /// SQLite FTS5 Swift wrapper. Actor-based, async/await, Swift 6 strict concurrency.
