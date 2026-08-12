@@ -244,11 +244,17 @@ nearest neighbors.
 
 Everything Claude-side that Phase 5 hands over is now done except the packer. In order:
 
-1. **V-1 remainder — `SemanticVectorsGenerator`** (Swift SPM, deterministic, artifact
-   tests): reads the raw store, applies the pinned pooling rule, emits Tier 0/1/2 per
-   design §4 with the full provenance pin (model SHA `5a9e0645…`, dims, chunking,
-   prefix). Its id contract is §2 above: direct `(volume_id, d)` join, 949-row
-   idExceptions table, 2,356 typed-unavailable structural rows.
+1. ~~**V-1 remainder — `SemanticVectorsGenerator`**~~ — **landed 2026-08-12, same day.**
+   Emits `semantic-vectors-index.json` (73 KB) + `semantic-vectors-binary.bin`
+   (10.23 MB, bundled) + 552 `.vec` shards (79 MB, the download tier) + a shard
+   manifest. Repack is byte-identical; the shipping-config top-10 neighbour lists are
+   identical to the numpy matrices these gates were measured on for 6,000 of 6,000
+   slots. **One design premise died in the building**: §2's "949-row idExceptions"
+   read of the id contract was right about the *count of odd ids* and wrong about the
+   *keying* — `d{ordinal+1}` mis-keys 15,097 documents (4.8%), because one suffixed id
+   shifts every document behind it. Identity is now stored, not derived (1,605 run
+   segments, ~14 KB). The `(volume_id, d)` join and the 2,356 typed-unavailable
+   structural rows stand as measured.
 2. **Tier 0's map stage is not yet run**: PCA→UMAP→HDBSCAN + c-TF-IDF labels (design
    §3.1) needs a pinned non-stdlib Python environment (`uv`-managed, per the design) —
    the one remaining Python-side build. It gates V-4 only; V-3 needs Tiers 1/2.

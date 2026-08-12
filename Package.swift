@@ -658,6 +658,42 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - SemanticVectorsGenerator
+
+        /// Stage 2 of the semantic-vectors pipeline (V-1): the deterministic packer that turns the
+        /// owner-run neural harvest into shippable tiers. Pools chunk vectors to documents under the
+        /// pinned rule, applies the Matryoshka cut, quantizes to int8 and to sign bits, and emits
+        /// the bundled index + corpus binary plus one downloadable int8 shard per volume.
+        ///
+        /// The arithmetic mirrors `tools/semantic-harvest/spike_gates.py` exactly, because every
+        /// recall number the program has describes those steps; the document-id encoding stores
+        /// identity rather than deriving it, because the design's implicit-keying rule was measured
+        /// wrong for 4.8% of the corpus.
+        .target(
+            name: "SemanticVectorsGeneratorCore",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "SemanticVectorsGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls SemanticVectorsRunner.run() and exits.
+        .executableTarget(
+            name: "SemanticVectorsGenerator",
+            dependencies: [.target(name: "SemanticVectorsGeneratorCore")],
+            path: "SemanticVectorsGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests: the pinned quantization rules, the id run-length encoding and its round
+        /// trip, binary layout round-trips, and the artifact tests that read the committed
+        /// bundled artifacts.
+        .testTarget(
+            name: "SemanticVectorsGeneratorTests",
+            dependencies: [.target(name: "SemanticVectorsGeneratorCore")],
+            path: "SemanticVectorsGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - GeneratorKit
 
         /// Reusable utilities shared across the corpus-scanning generators: a deterministic

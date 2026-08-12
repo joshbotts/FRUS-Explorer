@@ -178,8 +178,16 @@ every grain, and the V-0 gates re-ran at corpus scale — Gate A over 70,469 que
 all 314k candidates, the quantization ladder + a RERANK_POOL sweep, and the neighbor-structure
 questions the spike deferred. Verdict and every number:
 `Planning/semantic-spike/Phase3-Store-Assessment.md` + `corpus-gates.json`; the analysis
-scripts live in `corpus-gates/` beside this file. What remains Claude-side is the
-`SemanticVectorsGenerator` packer; the panel keying and licence read stay the owner's two acts.
+scripts live in `corpus-gates/` beside this file.
+
+**The packer landed the same day** — `swift run -c release SemanticVectorsGenerator` (CLAUDE.md
+carries the full entry) reads this store and writes the bundled index + binary and the 552
+downloadable `.vec` shards, deterministically and with the harvest's provenance carried through.
+Two things it needs from a future harvest, both learned here: set `MODEL_FILE` (the packer refuses
+a store whose `model_file_sha256` is not 64 hex — a shipped artifact must name its weights), and
+keep the run in ONE invocation where practical, since `totals_this_run` describes the invocation
+rather than the store. What remains owner-side is unchanged: the licence read before V-5. The blind
+panel is no longer a gate (owner decision 2026-08-12) and stays staged un-keyed as the fallback.
 
 ## What this store contains (the contract)
 

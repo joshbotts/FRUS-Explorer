@@ -230,6 +230,7 @@
 		36CDFA52541406F20DF89A33 /* FRUSExplorerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */; };
 		36D76D25698B40EEDED221ED /* SyncDiagnosticsLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8460078DCD8F36D3E283BB0 /* SyncDiagnosticsLog.swift */; };
 		371CB2BECA901E0949FBB968 /* curated-library-resolutions.json in Resources */ = {isa = PBXBuildFile; fileRef = 8680C5035EF2B6B6615C76C8 /* curated-library-resolutions.json */; };
+		3748523402A1D58D854A439B /* semantic-vectors-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 993F87F7B11C384040667129 /* semantic-vectors-index.json */; };
 		375BE17C379040FE41606010 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */; };
 		37A0504453CB50DFC4BED5D7 /* RelatedDocumentsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAF5353C2A01C28B87BC8E46 /* RelatedDocumentsEngine.swift */; };
 		37A50312D842442B2FA0E6A5 /* AnalyticsExportDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B3C9EA4795837E7228864 /* AnalyticsExportDelivery.swift */; };
@@ -571,6 +572,7 @@
 		897A97CD26A0B027C111D214 /* DecimalClassLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6EE89402A46D51FB9EC0319 /* DecimalClassLabelTests.swift */; };
 		89BDCB81C27A6A281357E259 /* person-authority-index.json in Resources */ = {isa = PBXBuildFile; fileRef = D5F8698F22479B30B2FFFB1F /* person-authority-index.json */; };
 		89D2304163ECDADBF301BF4F /* CorpusDispersionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A5058BFC4CE50663FBF77EB /* CorpusDispersionTests.swift */; };
+		8A3AF542DF87902F35374ADB /* semantic-vectors-binary.bin in Resources */ = {isa = PBXBuildFile; fileRef = 522ECA5FE116B33376C7F6C5 /* semantic-vectors-binary.bin */; };
 		8A626B3A14477C583F4704B2 /* CollocationWiringAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A755F6AA7F47CB787524406 /* CollocationWiringAuditTests.swift */; };
 		8AD82F7CD20EFB074B8B70FA /* StoreSchemaMismatchAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01092BC91BE7D0016D7CAE6C /* StoreSchemaMismatchAlert.swift */; };
 		8ADE6F2938400C4AF779D6DF /* SeriesProductionDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B8F0DF7B2B2ABDF8953008 /* SeriesProductionDataTests.swift */; };
@@ -581,6 +583,7 @@
 		8C7485682362B982A3D9BC51 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */; };
 		8C77F49346B1F25379457AAD /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
 		8CF602D696D83050CDBBEFE0 /* LotResolutionAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5398170C2499845B1FC5D1E3 /* LotResolutionAcceptance.swift */; };
+		8D0539BDB19C37853F03CDB1 /* semantic-vectors-binary.bin in Resources */ = {isa = PBXBuildFile; fileRef = 522ECA5FE116B33376C7F6C5 /* semantic-vectors-binary.bin */; };
 		8D0B914D5F09985659557B9C /* ArchivalLibraryProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2785A1AFBFC76D7A7DD9D6B6 /* ArchivalLibraryProfile.swift */; };
 		8D568E2B137438B543F5B4B2 /* CollectionAuthority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B014C2967533C3DAEC54D /* CollectionAuthority.swift */; };
 		8D6C1BAA56FF7CB2FD697240 /* WorkingCorpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75611D891C39B761AB3548C /* WorkingCorpus.swift */; };
@@ -1104,6 +1107,7 @@
 		FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */; };
 		FAAC15247ACB572EB1F9D688 /* SavedSearchFidelityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E1A2F5803ADF0994EAD922E /* SavedSearchFidelityTests.swift */; };
 		FAB4ECAAEDFEAEEEFB72FD3E /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9B404596114A62C4B89698 /* BackgroundSummarizationSettingsView.swift */; };
+		FAB6A7F9CE5D34D8970A6A07 /* semantic-vectors-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 993F87F7B11C384040667129 /* semantic-vectors-index.json */; };
 		FAC84606D6138FEEC487DB34 /* RelatedDocumentsRankerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E8D47DBB921612B1511C77C /* RelatedDocumentsRankerTests.swift */; };
 		FADCAFE6A34EF48ACE449DB2 /* ManuscriptRepositoryGuidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CBE2BF523042C5C2877BF42 /* ManuscriptRepositoryGuidance.swift */; };
 		FB1DB2C10E3F673EC35C25AB /* PendingCloudBackdropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 444BDFC4896729F579FCC6F2 /* PendingCloudBackdropTests.swift */; };
@@ -1372,6 +1376,7 @@
 		501B372A37F778939C006313 /* ResearchSessionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchSessionsView.swift; sourceTree = "<group>"; };
 		5175DA5DB0C781AF94092EFC /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		522924485B8BCC275CFB229A /* ZoteroAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroAPIModels.swift; sourceTree = "<group>"; };
+		522ECA5FE116B33376C7F6C5 /* semantic-vectors-binary.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = "semantic-vectors-binary.bin"; sourceTree = "<group>"; };
 		52F9BA4CF041AA29FA5F41C3 /* series-facts-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "series-facts-index.json"; sourceTree = "<group>"; };
 		536A71597B7315E933F81136 /* frus-selection.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "frus-selection.js"; sourceTree = "<group>"; };
 		5398170C2499845B1FC5D1E3 /* LotResolutionAcceptance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotResolutionAcceptance.swift; sourceTree = "<group>"; };
@@ -1574,6 +1579,7 @@
 		9744323A28A14AEF580A72E5 /* ResetInventoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetInventoryTests.swift; sourceTree = "<group>"; };
 		979F9D639250AD785AC82C4D /* QueryMethodAppendix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryMethodAppendix.swift; sourceTree = "<group>"; };
 		9863245E183A705A15D03E63 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		993F87F7B11C384040667129 /* semantic-vectors-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "semantic-vectors-index.json"; sourceTree = "<group>"; };
 		9948E709929FAB592E9B615E /* KeychainStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
 		99B198234CB42E88D3372AD2 /* ZoteroJSONExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroJSONExporter.swift; sourceTree = "<group>"; };
 		99C3C5368784539EAAB2C4D5 /* CentralFilesClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralFilesClassifierTests.swift; sourceTree = "<group>"; };
@@ -2561,6 +2567,8 @@
 				B12CD722E256106A8F68B211 /* provenance-flow-index.json */,
 				ECF2ABC0D8250520BF7BFAF4 /* resolved-edge-index.json */,
 				453586FFB0F7A69BD36FF9CA /* roll-scans-index.json */,
+				522ECA5FE116B33376C7F6C5 /* semantic-vectors-binary.bin */,
+				993F87F7B11C384040667129 /* semantic-vectors-index.json */,
 				52F9BA4CF041AA29FA5F41C3 /* series-facts-index.json */,
 				91C3D7D7C865E52E2876AF0C /* source-provenance-index.json */,
 				CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */,
@@ -3067,6 +3075,8 @@
 				269E0E1D183BADA3007A306B /* provenance-flow-index.json in Resources */,
 				B2B8FC9414552CF58F5145A9 /* resolved-edge-index.json in Resources */,
 				AA4FC5BED59799FB1F29743D /* roll-scans-index.json in Resources */,
+				8A3AF542DF87902F35374ADB /* semantic-vectors-binary.bin in Resources */,
+				FAB6A7F9CE5D34D8970A6A07 /* semantic-vectors-index.json in Resources */,
 				CECD8932AA765C287CF4299E /* series-facts-index.json in Resources */,
 				AEC0C13A0AE3C68E22145609 /* source-provenance-index.json in Resources */,
 				B5D098DE0C404DF13282B1A2 /* tei-rendering-config.json in Resources */,
@@ -3110,6 +3120,8 @@
 				263F4FC9EB162DC97B997BDF /* provenance-flow-index.json in Resources */,
 				05CCA6B2D4BFEEC42286192D /* resolved-edge-index.json in Resources */,
 				F049F76284DA333B7709860C /* roll-scans-index.json in Resources */,
+				8D0539BDB19C37853F03CDB1 /* semantic-vectors-binary.bin in Resources */,
+				3748523402A1D58D854A439B /* semantic-vectors-index.json in Resources */,
 				A8BD335008954A4FBB89D7EA /* series-facts-index.json in Resources */,
 				D36445897D232B7D91E81EDC /* source-provenance-index.json in Resources */,
 				DA08A8C0BF8FE6E727A1DF46 /* tei-rendering-config.json in Resources */,

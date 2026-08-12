@@ -233,6 +233,15 @@ the decode window matters at 317k records) + one small `semantic-map-meta.json`:
 - Per document: int16×2 grid coordinates (quantized from UMAP output), u16 cluster id. Documents
   keyed implicitly: volumes in manifest order, docs by ordinal, `idExceptions` side table (~18 KB)
   for the 0.30%. 6 B/doc ≈ **1.9 MB**.
+
+  > **The implicit-keying rule is refuted, measured 2026-08-12 (V-1).** `d{ordinal+1}` mis-keys
+  > **15,097 documents (4.8%)**, not 949 (0.30%) — the 0.30% counts *letter-suffixed ids*, but each
+  > one shifts every document behind it in its volume, so one exception mis-keys a whole tail
+  > (`frus1865p1`'s `d373a` at ordinal 373 is the type case). A running-counter variant of the rule
+  > fails outright in 23 of 552 volumes. V-1 therefore **stores identity rather than deriving it**,
+  > run-length encoded: 1,605 segments carry all 314,483 ids in ~14 KB, and the generator
+  > round-trips every volume before writing. A Tier-0 map layer must use the same segment table
+  > (`SemanticVectorsGeneratorCore/DocumentIDSegments.swift`), never the ordinal rule.
 - Per cluster (expect ~300–1500): label (c-TF-IDF top terms through the **WordCloudKit tokenizer
   and stopword stack**, so labels speak the same vocabulary as every cloud surface), centroid
   coords, member count, era histogram. Tens of KB.
@@ -483,8 +492,8 @@ population is the one it fails on.
 
 | Phase | Work | Depends on |
 |---|---|---|
-| **V-0** | Model/quality/quantization spike (§8) | corpus on the Studio |
-| **V-1** | Stage-1 pipeline + raw store; `SemanticVectorsGenerator` packer + artifact tests; full-corpus run | V-0 |
+| **V-0** | Model/quality/quantization spike (§8) — **done** 2026-08-10 | corpus on the Studio |
+| **V-1** | Stage-1 pipeline + raw store; `SemanticVectorsGenerator` packer + artifact tests; full-corpus run — **done** 2026-08-12 except the Tier-0 map layer, which waits on the UMAP/HDBSCAN stage and its pinned Python environment | V-0 |
 | **V-2** | Device substrate: Tier 0/1 loaders, shard fetch/registry/teardown in DownloadManager+IndexingPipeline, mmap scan kernels, oldest-device latency measurement | V-1 |
 | **V-3** | `semanticSimilarity` axis (self-normalised, weight 0) + render-time chips; leads centroid + off-index volume tier | V-2; ideally after #645/route-arm fixes |
 | **V-4** | Discovery map — V-4a Metal LOD spike first, then lenses/slices/lasso | V-2 (Tier 0 only) |
