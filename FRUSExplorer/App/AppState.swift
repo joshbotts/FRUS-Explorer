@@ -454,6 +454,16 @@ final class AppState {
     /// Views that need to trigger downloads should guard against `nil` gracefully.
     var downloadManager: DownloadManager?
 
+    // MARK: - Semantic Vectors
+
+    /// The Tier-2 semantic shard store, once the bundled index has loaded.
+    ///
+    /// `nil` until `BundledSemanticVectors.prepare()` succeeds, and permanently `nil` on a build
+    /// whose bundled artifacts are missing or provenance-mismatched — the store cannot exist without
+    /// the pin it validates shards against. Callers treat `nil` as *semantic scoring unavailable*,
+    /// never as *no similar documents*.
+    var semanticShardStore: SemanticShardStore?
+
     // MARK: - Download Queue
 
     /// Volume IDs currently queued for download (active + pending).
