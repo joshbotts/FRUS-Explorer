@@ -73,10 +73,16 @@ def scanned_documents(store_dir, volume, fallback_documents):
     """
     head = store.layer_head(store_dir, "detected", volume)
     if head is None:
-        # A body with no head is a killed run, not a volume the detector skipped: the head is
-        # written last precisely so its absence means "unfinished". Refuse it by name rather
-        # than dropping its documents out of the denominator without saying so.
-        return None if store.layer_path(store_dir, "detected", volume) else set()
+        # Neither head nor body: this detector produced NOTHING for a volume the ground truth
+        # covers. Returning an empty set here read as "it scanned zero of these documents", which
+        # drops every one of them out of BOTH the numerator and the denominator — so a detector
+        # that died on a volume scored identically to one that swept the whole sample, with
+        # `volumes_refused: []` and only `documents_scored` quietly lower. Refuse by name, which
+        # is what the next line already does for the killed-run case.
+        #
+        # A body with no head is that killed run: the head is written last precisely so its
+        # absence means "unfinished".
+        return None
     if "sampled" not in head:
         return None                    # cannot tell a full pass from a sample: refuse
     if not head["sampled"]:
@@ -189,6 +195,22 @@ def score_one(name, per_document_predictions, gold, bands, skipped_volumes):
     }
 
 
+TEXT_CACHE = {}
+
+
+def cached_volume_text(volume):
+    """{doc_id: text} for one volume, decompressed once per RUN rather than once per detector.
+
+    The gold-verification pass and every detector read the same R-0 layer; without this, three
+    detectors over a 24-volume ground truth gunzip and parse hundreds of megabytes 96 times
+    instead of 24. The comment on the verification loop already says "one decompression per
+    volume, not per document"; this finishes the thought across detectors.
+    """
+    if volume not in TEXT_CACHE:
+        TEXT_CACHE[volume] = store.volume_text(TEXT_DIR, volume)
+    return TEXT_CACHE[volume]
+
+
 def collect_predictions(store_dir, layer, gold, verify_text):
     """{(volume, document): [(s, e, surface)]} for the ground-truth documents it scanned."""
     wanted = {}
@@ -211,7 +233,7 @@ def collect_predictions(store_dir, layer, gold, verify_text):
                 continue
             scanned = documents
         by_document = store.spans_by_document(rows)
-        texts = store.volume_text(TEXT_DIR, volume) if verify_text else None
+        texts = cached_volume_text(volume) if verify_text else None
         for document in sorted(documents & scanned):
             spans = by_document.get(document, [])
             if texts is not None:
@@ -242,7 +264,7 @@ def main():
         for (volume, document), spans in gold.items():
             by_volume.setdefault(volume, []).append((document, spans))
         for volume in sorted(by_volume):          # one decompression per volume, not per document
-            texts = store.volume_text(TEXT_DIR, volume)
+            texts = cached_volume_text(volume)
             for document, spans in sorted(by_volume[volume]):
                 if document not in texts:
                     sys.exit("ground truth names %s/%s, which the R-0 text layer does not hold."
@@ -256,8 +278,16 @@ def main():
                  "finding." % MARKED_STORE)
 
     results = []
-    baseline_predictions, _ = collect_predictions(MARKED_STORE, "marked", gold, verify_text)
-    results.append(score_one("editor markup (baseline)", baseline_predictions, gold, bands, []))
+    # The baseline's refusals are reported for the same reason a detector's are, and it is the
+    # more consequential of the two: the editor-markup row is the number the whole "does a
+    # detector beat the free layer" question is decided against. Dropping the list here (it was
+    # `, _` and a literal `[]`) let a volume whose marked layer was never harvested vanish from
+    # the baseline with `volumes_refused: []` printed beside it — a recall computed over part of
+    # the sample, presented as the whole.
+    baseline_predictions, baseline_refused = collect_predictions(
+        MARKED_STORE, "marked", gold, verify_text)
+    results.append(score_one("editor markup (baseline)", baseline_predictions, gold, bands,
+                             baseline_refused))
     for path in DETECTORS:
         expanded = os.path.expanduser(path)
         predictions, refused = collect_predictions(expanded, "detected", gold, verify_text)

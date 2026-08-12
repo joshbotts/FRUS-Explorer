@@ -328,7 +328,7 @@ That was the ride-along's M2a, and it is now two mechanical halves around one ir
 
 ```
 cd tools/semantic-harvest
-SELFTEST=1 python3 stage_m2a.py            # 27 checks, no corpus needed — run this first
+SELFTEST=1 python3 stage_m2a.py            # 30 checks, no corpus needed — run this first
 python3 stage_m2a.py                       # stage ~72 documents, era-stratified
 #   ... the sitting: read M2a-INSTRUCTIONS.md in the output directory, annotate,
 #       and mark each finished file `y` in progress.csv ...
@@ -432,9 +432,8 @@ offsets into the R-0 text of that document**, half-open — not bytes, not chara
 sense, and not offsets into the TEI. Every producer here is Python except the control, which is why
 that detector's offset arithmetic is a separately tested function rather than inline: code points,
 grapheme clusters and UTF-16 units all agree on ASCII, which is exactly what would make the bug
-invisible. `n` is the substring they cut (stored so a row is readable on its own and so any consumer
-can check itself); `n` is the substring they cut (stored so a row is
-readable on its own and so any consumer can check itself); `t`/`x`/`c` are the `type`, `xml:id` and
+invisible. `n` is the substring they cut (stored so a row is readable on its own and so
+any consumer can check itself); `t`/`x`/`c` are the `type`, `xml:id` and
 `corresp`/`ref` attributes when present. gzip members are written with `mtime=0`, so re-running over
 the same input yields byte-identical files — the V-0 spike found gzip mtime to be the *only*
 difference between five otherwise-identical text layers, and that noise is now gone.
@@ -487,7 +486,7 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py
 - `README.md` — the embeddings harvest, whose extractor and store discipline this reuses
 - `harvest_ner.py` / `selftest_harvest_ner.py` — the scope, marked and LLM-detected layers (26 checks)
 - `stage_m2a.py` / `score_detections.py` / `ner_store.py` / `selftest_m2a.py` — the ground-truth
-  loop and the scorer (17 checks, one round trip: stage → annotate → collect → score)
+  loop and the scorer (30 checks, one round trip: stage → annotate → collect → score)
 - `EarlyEraNERControlCore/` + `EarlyEraNERControl/` — the control detector; `swift test` covers the
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 

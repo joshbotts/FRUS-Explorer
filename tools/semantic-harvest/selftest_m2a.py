@@ -38,10 +38,18 @@ CHECKS = []
 
 
 def _raises(thunk):
-    """True when `thunk` exits or raises — used to pin guards that must refuse."""
+    """True when `thunk` refuses with SystemExit — used to pin guards that must refuse.
+
+    SystemExit specifically, not BaseException. Catching everything meant a guard test passed
+    when the code under test raised NameError, AttributeError or TypeError instead of refusing:
+    misspell a variable inside `check_spans` and the suite still printed 27 ok, while the only
+    check pinning the corpus-mismatch guard measured nothing at all. Every guard in these
+    scripts refuses with `sys.exit`, so anything else reaching here is a bug in the guard and
+    should fail the round trip rather than satisfy it.
+    """
     try:
         thunk()
-    except BaseException:
+    except SystemExit:
         return True
     return False
 
@@ -384,10 +392,47 @@ def run():
           result["documents_scored"] == 1
           and result["strict"]["gold"] == len(gold[one_key]), result["strict"])
 
-    baseline, _ = score_detections.collect_predictions(store_dir, "marked", gold, False)
-    result = score_detections.score_one("editor markup", baseline, gold, bands, [])
+    baseline, baseline_refused = score_detections.collect_predictions(
+        store_dir, "marked", gold, False)
+    result = score_detections.score_one("editor markup", baseline, gold, bands, baseline_refused)
     check("the editor baseline scores below 1.0 recall (it is the gap M2 is for)",
           0 < result["strict"]["recall"] < 1.0, result["strict"])
+
+    # A volume the ground truth covers and the detector produced NOTHING for. This used to read
+    # as "it scanned zero of those documents", dropping them out of BOTH sides of the ratio: a
+    # detector that died on a volume scored identically to one that swept the whole sample.
+    volumes = sorted({volume for volume, _ in gold})
+    partial = {key: spans for key, spans in gold.items() if key[0] == volumes[0]}
+    partial_store = write_detector(root, "det-partial", partial)
+    predictions, refused = score_detections.collect_predictions(partial_store, "detected",
+                                                                gold, False)
+    result = score_detections.score_one("partial", predictions, gold, bands, refused)
+    check("a volume the detector produced nothing for is refused by name, not scored as empty",
+          volumes[1] in result["volumes_refused"]
+          and result["documents_scored"] < result["documents_in_ground_truth"],
+          (result["volumes_refused"], result["documents_scored"]))
+
+    # The same accounting on the baseline side, where it decides the number the whole
+    # detector-versus-free-layer question is settled against.
+    thin_marked = os.path.join(root, "marked-thin")
+    os.makedirs(os.path.join(thin_marked, "marked"), exist_ok=True)
+    shutil.copy(os.path.join(store_dir, "marked", volumes[0] + ".jsonl.gz"),
+                os.path.join(thin_marked, "marked", volumes[0] + ".jsonl.gz"))
+    _, marked_refused = score_detections.collect_predictions(thin_marked, "marked", gold, False)
+    result = score_detections.score_one("baseline", {}, gold, bands, marked_refused)
+    check("the baseline reports the volumes whose marked layer is missing",
+          result["volumes_refused"] == [volumes[1]], result["volumes_refused"])
+
+    # The R-0 text directory gets the same both-present refusal the layer reader has. It had its
+    # own resolver, which silently preferred the .gz — in the one directory the Swift control
+    # also reads, and which prefers the plain file.
+    ambiguous = os.path.join(root, "ambiguous-text")
+    os.makedirs(ambiguous, exist_ok=True)
+    shutil.copy(os.path.join(text_dir, volumes[0] + ".jsonl.gz"),
+                os.path.join(ambiguous, volumes[0] + ".jsonl.gz"))
+    open(os.path.join(ambiguous, volumes[0] + ".jsonl"), "w").write("")
+    check("the text layer refuses a volume present as both .jsonl and .jsonl.gz",
+          _raises(lambda: ner_store.volume_text(ambiguous, volumes[0])))
 
     shutil.rmtree(root, ignore_errors=True)
     failed = [label for label, ok, _ in CHECKS if not ok]

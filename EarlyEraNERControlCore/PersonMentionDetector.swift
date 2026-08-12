@@ -163,7 +163,19 @@ public struct PersonMentionDetector: Sendable {
         mentions.reserveCapacity(tokenRanges.count)
         var cursor = text.startIndex
         var cursorOffset = 0
-        for tokenRange in tokenRanges {
+        for rawRange in tokenRanges {
+            // Whitespace is trimmed off the range BEFORE the offsets are taken, because a person
+            // name never begins or ends with it and a span that carries one is off by that much
+            // against the gold. `WordCloudTokenizer.accumulateEntities` — the walk this detector
+            // deliberately mirrors — trims the same ranges, but only to normalise a string for
+            // counting; it produces no offsets, so its trim could not protect this one.
+            //
+            // It matters here because the error is invisible: an untrimmed span still slices back
+            // to its own surface, so `spanMismatch` never fires and the scorer's own span check
+            // passes. It would surface only as a systematically zeroed strict-precision column,
+            // which reads as a weakness in the recogniser rather than a bug in the harness — the
+            // exact misattribution this control exists to rule out.
+            guard let tokenRange = Self.trimmingWhitespace(rawRange, in: text) else { continue }
             cursorOffset += text.unicodeScalars.distance(from: cursor, to: tokenRange.lowerBound)
             cursor = tokenRange.lowerBound
             let length = text.unicodeScalars.distance(from: tokenRange.lowerBound,
@@ -187,5 +199,26 @@ public struct PersonMentionDetector: Sendable {
             cursor = tokenRange.upperBound
         }
         return mentions
+    }
+
+    /// `range` with leading and trailing whitespace removed, or `nil` when nothing is left.
+    ///
+    /// Trimming by INDEX rather than by trimming the substring and searching for it again: the
+    /// offsets are the product here, and a re-search would find the first occurrence rather than
+    /// this one — wrong for any name that appears twice in a document, which is most of them.
+    ///
+    /// - Parameters:
+    ///   - range: A tagger token range.
+    ///   - text: The document the range indexes into.
+    /// - Returns: The trimmed range, or `nil` if it held only whitespace.
+    static func trimmingWhitespace(_ range: Range<String.Index>,
+                                   in text: String) -> Range<String.Index>? {
+        var lower = range.lowerBound
+        var upper = range.upperBound
+        while lower < upper, text[lower].isWhitespace { lower = text.index(after: lower) }
+        while lower < upper, text[text.index(before: upper)].isWhitespace {
+            upper = text.index(before: upper)
+        }
+        return lower < upper ? lower..<upper : nil
     }
 }

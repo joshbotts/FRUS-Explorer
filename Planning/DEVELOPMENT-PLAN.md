@@ -5903,3 +5903,59 @@ the new assertion). Full SPM suite back to 1,033 passing.
 
 Nothing else is touched. The nine silent-success findings from the same review are a separate pass —
 they share a theme and want one set of tests, and this one had to be able to land on its own.
+
+## Session 2026-08-12 — #863 follow-up 2: a run that fails must not report success
+
+Nine findings from the #863 review, and they are one theme. Each sits beside a comment already
+arguing for the guard that is missing twenty lines away.
+
+### The Swift control
+
+- **`TEXT_DIR` is validated up front, like `STORE`.** The comment above the `STORE` guard explains
+  exactly why it exists — "the run would finish clean and report 100% of its detections as novel" —
+  and `TEXT_DIR` had no such check while being the likelier typo: the path ends in `text/`, so
+  dropping that component leaves a directory that exists. Every volume then threw, was filed as
+  missing, and the run wrote a manifest of zeroes and exited 0. The `totalOverlap == 0` warning
+  could not fire either, being guarded on `totalMentions > 0`.
+- **Resume compares scope, not file existence.** A head written by an `ONLY_DOCUMENTS` pass is
+  indistinguishable from a full one at that grain, so the runbook's own fast path poisoned the
+  store for the sweep that follows it: the full run skipped those volumes and the manifest folded
+  three documents into what it called a complete pass. The rule is asymmetric and that is the whole
+  of it — a full pass covers any sample, a sampled pass covers only the documents it names.
+- **The manifest labels its two scopes.** `totals` is re-derived store-wide (deliberately, so a
+  resumed run does not shrink a complete manifest) while `volumes_requested` describes the command
+  just typed. Re-running one volume of a finished 268-volume store left `volumes_requested: 1`
+  beside totals for all 268. `volumes_in_store` now states the other denominator, and
+  `volumes_reused` / `volumes_rescanned` say what this invocation actually did.
+- **Spans are trimmed of whitespace before the offsets are taken.** `WordCloudTokenizer` trims the
+  same ranges but only to normalise a string for counting — it produces no offsets, so its trim
+  could not protect this one. The error is invisible by construction: an untrimmed span still
+  slices back to its own surface, so neither `spanMismatch` nor the scorer's span check fires, and
+  it would surface only as a zeroed strict-precision column read as a weakness in the recogniser.
+
+### The Python loop
+
+- **A volume the detector produced nothing for is refused by name.** Returning an empty set read as
+  "it scanned zero of these documents" and dropped them from both sides of the ratio, so a detector
+  that died on a volume scored identically to one that swept the sample.
+- **The baseline reports its refusals.** They were discarded at the call site (`, _`, then a literal
+  `[]`), and the editor-markup row is the number the whole detector-versus-free-layer question is
+  decided against.
+- **`volume_text` shares the layer reader's both-present refusal.** It had its own resolver that
+  silently preferred the `.gz` — in the one directory the Swift control also reads, and which
+  prefers the plain file. That is the exact disagreement `layer_path`'s comment describes.
+- **A span mismatch no longer aborts mid-staging.** It is counted, and fatal *after* progress.csv,
+  the instructions and the manifest exist — so the failure is loud and the directory is coherent
+  rather than a half-written one that re-stages over its own orphans.
+- **`_raises` narrows to `SystemExit`.** Catching `BaseException` meant a guard test passed when the
+  code raised `NameError`. This was not hypothetical: writing the new both-present check, a wrong
+  module name raised `NameError` inside `_raises` — under the old version it would have printed
+  `ok`.
+
+Four checks added to the M2a round trip (30, was 27) and eight Swift tests. Both suites green: SPM
+1,041 tests in 119 suites; selftest 30/30.
+
+Docs: `CLAUDE.md` said the round trip was 17 checks and the runbook said 27 in one place and 17 in
+another — all three now say 30, while the two "26 checks" lines are left alone because they describe
+`selftest_harvest_ner.py`, a different suite, and it does have 26. The §8 store contract had a
+clause duplicated verbatim; one copy removed.

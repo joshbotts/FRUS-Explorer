@@ -61,7 +61,8 @@ public struct MarkedMention: Sendable, Equatable {
 /// `Compression` framework speaks raw DEFLATE rather than the gzip container. Rather than hand-roll
 /// a header parser in code that ships without a compile on the machine that wrote it, this reads a
 /// plain `<volume>.jsonl` when one is present and otherwise shells out to `/usr/bin/gunzip -c`.
-/// That gives an operator a way around the subprocess entirely (`gunzip -k` one volume) if it ever
+/// That gives an operator a way around the subprocess entirely (`gunzip` one volume — plain, NOT
+/// `-k`, which keeps the `.gz` and leaves both present, the one state `jsonLines` refuses) if it ever
 /// misbehaves, which a bespoke inflater would not.
 ///
 /// Output is written **uncompressed** for the same reason inverted: the store is read by
