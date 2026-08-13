@@ -20,11 +20,19 @@ import simd
 ///
 /// ## Why a linear scan is the right answer here
 ///
-/// 314,483 placements at 6 bytes each is 1.9 MB of mapped memory read straight through — no pointer
-/// chasing, no allocation, perfectly predictable. A spatial index would be faster asymptotically and
-/// slower in practice at this size, and it would be a second structure to keep in step with the
-/// artifact. The scan also runs **once per tap**, not per frame: the budget is a human's patience,
-/// not a frame. `SemanticMapPickingTests` measures it rather than assuming.
+/// 314,483 positions is a contiguous array read straight through — no pointer chasing, no
+/// allocation, perfectly predictable. A spatial index would be faster asymptotically and slower in
+/// practice at this size, and it would be a second structure to keep in step. The scan also runs
+/// **once per tap**, not per frame: the budget is a human's patience, not a frame. The suite measures
+/// it rather than assuming.
+///
+/// ## It scans the DISPLAYED positions, not the artifact
+///
+/// The map can lay the same documents out two ways — the packed UMAP plane, and a semantic-axis
+/// slice that computes new coordinates. Picking against the artifact would be right in one mode and
+/// silently wrong in the other, selecting whatever happened to sit under the finger *on the map*
+/// while the reader was looking at a slice. Row identity is unchanged by re-layout, so the caller
+/// passes whatever it is currently drawing and everything downstream still resolves.
 ///
 /// The comparison happens in **grid space**, not screen space, so the tolerance has to be converted:
 /// a fixed 22-point finger radius is a different number of grid units at every zoom level, and
@@ -105,8 +113,6 @@ enum SemanticMapPicking {
         /// Its grid position, for drawing the selection where the document actually is rather than
         /// where the finger landed.
         let position: SIMD2<Float>
-        /// Its cluster, or `SemanticMapArtifacts.unclustered`.
-        let cluster: UInt16
     }
 
     /// Finds every document inside a freeform region the reader drew.
@@ -122,7 +128,7 @@ enum SemanticMapPicking {
     ///
     /// - Parameters:
     ///   - path: The lasso in view points. Treated as closed; fewer than 3 points selects nothing.
-    ///   - map: The mapped placements.
+    ///   - positions: The **displayed** grid positions, one per row.
     ///   - camera: Where the camera is looking.
     ///   - size: The view's size in points.
     ///   - limit: Keep at most this many rows.
@@ -133,7 +139,7 @@ enum SemanticMapPicking {
     ///   when the numerator filled up would be worse than no denominator.
     static func rows(
         inside path: [CGPoint],
-        map: SemanticMapVectors,
+        positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
         size: CGSize,
         limit: Int
@@ -156,19 +162,14 @@ enum SemanticMapPicking {
 
         var found: [Int] = []
         var total = 0
-        map.withPlacements { base, count in
-            for row in 0..<count {
-                let offset = row * SemanticMapArtifacts.bytesPerDocument
-                let x = Float(Int16(bitPattern: base.loadUnaligned(
-                    fromByteOffset: offset, as: UInt16.self).littleEndian))
-                if x < minX || x > maxX { continue }
-                let y = Float(Int16(bitPattern: base.loadUnaligned(
-                    fromByteOffset: offset + 2, as: UInt16.self).littleEndian))
-                if y < minY || y > maxY { continue }
-                guard contains(polygon: polygon, x: x, y: y) else { continue }
-                total += 1
-                if found.count < limit { found.append(row) }
-            }
+        for row in 0..<positions.count {
+            let x = Float(positions[row].x)
+            if x < minX || x > maxX { continue }
+            let y = Float(positions[row].y)
+            if y < minY || y > maxY { continue }
+            guard contains(polygon: polygon, x: x, y: y) else { continue }
+            total += 1
+            if found.count < limit { found.append(row) }
         }
         return (found, total)
     }
@@ -200,14 +201,14 @@ enum SemanticMapPicking {
     ///
     /// - Parameters:
     ///   - point: Where the reader tapped, in view points.
-    ///   - map: The mapped placements.
+    ///   - positions: The **displayed** grid positions, one per row.
     ///   - camera: Where the camera is looking.
     ///   - size: The view's size in points.
     ///   - radius: How far a tap may miss, in view points.
     /// - Returns: The nearest document within the radius, or `nil` when the tap landed on empty map.
     static func hit(
         at point: CGPoint,
-        map: SemanticMapVectors,
+        positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
         size: CGSize,
         radius: CGFloat = tapRadius
@@ -228,32 +229,24 @@ enum SemanticMapPicking {
         var bestRow = -1
         var bestDistance = Float.greatestFiniteMagnitude
         var bestPosition = SIMD2<Float>(0, 0)
-        var bestCluster = SemanticMapArtifacts.unclustered
 
-        map.withPlacements { base, count in
-            for row in 0..<count {
-                let offset = row * SemanticMapArtifacts.bytesPerDocument
-                let x = Float(Int16(bitPattern: base.loadUnaligned(
-                    fromByteOffset: offset, as: UInt16.self).littleEndian))
-                let dx = x - target.x
-                // Cheap rejection on one axis before touching the second. Most of the corpus is
-                // nowhere near any given tap, and this is the whole reason the scan is fast enough.
-                if dx * dx > toleranceSquared { continue }
-                let y = Float(Int16(bitPattern: base.loadUnaligned(
-                    fromByteOffset: offset + 2, as: UInt16.self).littleEndian))
-                let dy = y - target.y
-                let distance = dx * dx + dy * dy
-                if distance < bestDistance && distance <= toleranceSquared {
-                    bestDistance = distance
-                    bestRow = row
-                    bestPosition = SIMD2<Float>(x, y)
-                    bestCluster = base.loadUnaligned(
-                        fromByteOffset: offset + 4, as: UInt16.self).littleEndian
-                }
+        for row in 0..<positions.count {
+            let x = Float(positions[row].x)
+            let dx = x - target.x
+            // Cheap rejection on one axis before touching the second. Most of the corpus is
+            // nowhere near any given tap, and this is the whole reason the scan is fast enough.
+            if dx * dx > toleranceSquared { continue }
+            let y = Float(positions[row].y)
+            let dy = y - target.y
+            let distance = dx * dx + dy * dy
+            if distance < bestDistance && distance <= toleranceSquared {
+                bestDistance = distance
+                bestRow = row
+                bestPosition = SIMD2<Float>(x, y)
             }
         }
 
         guard bestRow >= 0 else { return nil }
-        return Hit(row: bestRow, position: bestPosition, cluster: bestCluster)
+        return Hit(row: bestRow, position: bestPosition)
     }
 }
