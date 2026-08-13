@@ -6410,3 +6410,81 @@ App suite 3,433 green, SPM 1,119 green, both platforms build.
 
 Still to come: cluster labels drawn on the map, tap-to-open, lasso into a `WorkingCorpus`, and the
 design's semantic-axis slices.
+
+## Session 2026-08-13 — the map drew nothing, and three of my explanations for it were wrong
+
+The owner opened the screen and reported **no visible map**. Every artifact check was green; the
+screen was blank.
+
+**What is established.** The renderer was created inside the representable's `makeUIView`, which then
+performed two `@State` writes during a view update: `renderer = made`, and then `unavailable = …`
+from an eager load that ran before `BundledSemanticMap.prepare()` had and so found no map. Two
+writes, and the owner's console carried exactly two "Modifying state during view update" lines.
+Nothing was ever uploaded.
+
+**What is not established, and this session's main lesson.** The first version of this entry — and of
+the doc comment — went further and said the `.task` closure "had captured the view struct from before
+the renderer was assigned, so its `if let renderer` saw `nil`", and that the body swapping the
+surface out "destroyed the renderer". An adversarial review of my own diff refuted both. A `@State`
+property reads through a SwiftUI-owned location, which is exactly why ordinary `.task` and
+button-action bodies see current values; there is no snapshot to go stale. And the renderer was held
+by that same `@State` while `MTKView.delegate` is `weak`, so the swap tore down the view and nothing
+else. Worse, the two stories contradict each other: if the write stuck, the renderer survived the
+swap; if it did not, the renderer died when `makeMap` returned and the stale-capture story is
+superfluous. SwiftUI documents a state write during a view update as undefined behaviour, and the
+honest account is that the code invoked it and the map never appeared. **The fix removes the
+undefined behaviour rather than reasoning about which write survived it** — which is also why the
+always-mounted surface is justified on its real merit (a transient unavailable state no longer tears
+down the drawable) rather than on a rescue that never happened.
+
+**The fix is an ownership change.** `SemanticMapModel` (`@MainActor @Observable`) owns the renderer
+and builds it from the `.task`; the representable creates no state and only *attaches* what exists,
+which is usually nothing yet — `updateUIView` is the path that actually connects it. Extracting a
+plain class is what made the load testable. (The closure parameters instead of an `AppState` are
+ergonomics; `AppState()` is default-constructible and the suite builds one in dozens of places. The
+first draft of this entry claimed otherwise.)
+
+**The first test I wrote for it was a tautology.** It asserted `model.placedCount == documentCount`
+under the message "every placement must reach the vertex buffer" — but `placedCount` is assigned from
+the array the model has just built, one statement after `setPoints` and with no dependency on it.
+Stub `setPoints` to an empty body and all three new tests stayed green over a blank screen: exactly
+the defect they were written for. `SemanticMapRenderer` now exposes `uploadedPointCount` (read
+*through* `pointBuffer`, so it also catches a `makeBuffer` returning nil) and `uploadCount`, and the
+tests assert those. Idempotence needed the counter specifically — a full re-upload of the same corpus
+leaves every other number identical, so "does not re-upload" was previously unfalsifiable.
+
+**Four more defects the review found in code I had just written**, all confirmed against source:
+
+- The map was drawn **stretched on every device**. `frameAll` was called with a hardcoded `aspect: 1`
+  and `mtkView(_:drawableSizeWillChange:)` was empty, while the shader normalises by `scale` in both
+  axes. Aspect and viewport now come from the drawable; `scale` is derived from a `halfExtent` plus
+  that aspect, so a resize cannot disturb the camera and a zoom cannot distort the map. Pan converts
+  through the real viewport instead of a constant 300 points.
+- The lens picker and point-size slider **were not reachable on iPhone**: a grouped `Form` capped at
+  `maxHeight: 130` spent the budget on section insets and rendered an empty card. Now a plain stack.
+- A lens chosen *during* the load was dropped and overwritten, because `apply` refuses until the index
+  exists. The `.task` re-applies after the await.
+- Doc comments that said the blending was additive ("what makes density legible") when the factors are
+  ordinary source-over, and that the vertex buffer is 4 bytes per document when `MapPoint` strides at
+  8. Both corrected; a real density layer is still owed.
+
+**The format diagnostic has a mechanism after all, and it is worth carrying elsewhere.** I had
+written that the nine `String(format:)` complaints paired a format string from one line with an
+argument type from another and that I could not reproduce them. Both wrong. The line was
+
+```swift
+String(format: "%.0f fps equivalent", ms > 0 ? 1000 / ms : 0)   // ms is a Double
+```
+
+Under a `CVarArg...` parameter the ternary's branches are erased to the existential **independently**,
+so the bare literal `0` takes its default type `Int`. Verified by running it: a `CVarArg...` probe
+prints `Int` when `ms == 0` and `Double` otherwise. It fired only while `frameMilliseconds` was still
+zero — the frames before `StatsSink` publishes its first 30-sample window — which is why there were
+about nine and then no more. `LocalizedStringKey` was never involved. The general rule:
+**`cond ? someDouble : 0` under `CVarArg` is an `Int` half the time.**
+
+**Verified on device, not from the build.** iPhone 17 simulator: the map draws 314,483 documents at
+0.14 ms mean / 0.24 ms worst, and the app console carries zero format diagnostics and zero
+state-during-update warnings. The previous entry ended "verified by rendering the shipped bytes
+through the headless Metal tool rather than trusting the build" — that was true, the bytes were fine,
+and the screen was blank anyway.

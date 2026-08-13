@@ -27,10 +27,15 @@ import simd
 ///
 /// ## What it does
 ///
-/// Uploads every document's int16 grid position once — 4 bytes each, 1.26 MB for the corpus — and
-/// then moves only the camera. Points are drawn as round sprites in a single instanced draw call;
-/// colour is a palette *index* per point, so switching lens rewrites 314 KB rather than 5 MB and the
-/// palette can follow the theme without touching positions.
+/// Uploads every document's grid position once and then moves only the camera. Points are drawn as
+/// round sprites in a single instanced draw call; colour is a palette *index* per point, so switching
+/// lens rewrites 314 KB rather than 5 MB and the palette can follow the theme without touching
+/// positions.
+///
+/// The artifact packs a placement into 6 bytes, but `MapPoint` measures **size 6, alignment 4, stride
+/// 8** — `Array.withUnsafeBytes` hands `makeBuffer` the strided length, so the vertex buffer is 8
+/// bytes per document, 2.5 MB for the corpus rather than the 1.26 MB an earlier version of this
+/// comment claimed. The Metal struct has the same layout, which is what makes the indexing agree.
 ///
 /// ## What it deliberately does not do yet
 ///
@@ -76,19 +81,57 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         set { statsSink.onStats = newValue }
     }
 
-    private let device: MTLDevice
+    /// The colour format the pipeline is built for; the MTKView must be given the same one, and
+    /// `SemanticMapSurfaceTests` asserts they agree because nothing else does.
+    static let pixelFormat: MTLPixelFormat = .bgra8Unorm
+
+    /// The device the pipeline was built on; the MTKView must be given the same one.
+    let device: MTLDevice
     private let queue: MTLCommandQueue
     private let pipeline: MTLRenderPipelineState
     private var pointBuffer: MTLBuffer?
     private var paletteBuffer: MTLBuffer
     private var pointCount = 0
 
+    /// Documents actually in the vertex buffer — what `draw(in:)` gates on.
+    ///
+    /// **This exists so a test can tell an upload from a counter.** The first version of the map's
+    /// suite asserted the model's own `placedCount`, which the model assigns from the array it just
+    /// built; stubbing `setPoints` to do nothing left every assertion green over a blank screen. This
+    /// reads through `pointBuffer`, so it also catches a `makeBuffer` that returned nil.
+    var uploadedPointCount: Int { pointBuffer == nil ? 0 : pointCount }
+
+    /// How many times points have been uploaded.
+    ///
+    /// Idempotence is not observable from `uploadedPointCount` — a re-upload of the same corpus
+    /// leaves it identical — so the claim "preparing twice does not re-upload" needs its own counter
+    /// or it cannot be tested at all.
+    private(set) var uploadCount = 0
+
     /// Camera state, driven by the view's gestures.
     var centre = SIMD2<Float>(0, 0)
-    /// Grid units per screen point. Set from the data's extent on first load.
-    var scale = SIMD2<Float>(32_768, 32_768)
     /// Sprite size in pixels.
     var pointSize: Float = 2.0
+
+    /// Half-height of the visible grid window. Zoom multiplies this; aspect is applied separately, so
+    /// a resize can never disturb the camera and a zoom can never distort the map.
+    private(set) var halfExtent: Float = 32_768
+    /// Viewport width divided by height, from the drawable rather than assumed.
+    private(set) var aspect: Float = 1
+    /// The viewport in points, for converting a gesture's translation into grid units.
+    private(set) var viewportPoints = CGSize(width: 600, height: 600)
+
+    /// Grid units per half-viewport, in each axis.
+    ///
+    /// Derived rather than stored: the shader maps `(grid - centre) / scale` straight to clip space,
+    /// where both axes span [-1,1] whatever shape the viewport is, so a single scale value stretches
+    /// the map non-uniformly. It shipped that way — `frameAll` was called with a hardcoded `aspect: 1`
+    /// and `drawableSizeWillChange` was empty — and the corpus was drawn distorted on every device.
+    var scale: SIMD2<Float> {
+        aspect >= 1
+            ? SIMD2<Float>(halfExtent * aspect, halfExtent)
+            : SIMD2<Float>(halfExtent, halfExtent / aspect)
+    }
 
     /// Accumulates GPU frame times off the main actor and publishes a value type when the window
     /// rolls over. GPU-reported timestamps are the honest measure; CPU wall time around `commit` is
@@ -119,9 +162,12 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction = vertexFunction
         descriptor.fragmentFunction = fragmentFunction
-        descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        // Additive-over-alpha blending: overlapping documents accumulate into a brighter region,
-        // which is what makes density legible without a separate heat layer.
+        descriptor.colorAttachments[0].pixelFormat = Self.pixelFormat
+        // Ordinary source-over compositing. `.add` here is the *combine operation*, and with
+        // `.sourceAlpha` / `.oneMinusSourceAlpha` factors that is plain alpha blending — overlapping
+        // documents saturate toward the source colour rather than accumulating. An earlier version of
+        // this comment called it "additive … which is what makes density legible without a separate
+        // heat layer"; that is not what these factors do, and a real density layer is still owed.
         descriptor.colorAttachments[0].isBlendingEnabled = true
         descriptor.colorAttachments[0].rgbBlendOperation = .add
         descriptor.colorAttachments[0].alphaBlendOperation = .add
@@ -148,6 +194,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// - Parameter points: One entry per document, in artifact row order.
     func setPoints(_ points: [MapPoint]) {
         pointCount = points.count
+        uploadCount += 1
         statsSink.setPointCount(points.count)
         guard !points.isEmpty else { pointBuffer = nil; return }
         pointBuffer = points.withUnsafeBytes { raw in
@@ -183,19 +230,49 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         }
     }
 
-    /// Frames the whole dataset in the view.
+    /// Frames the whole dataset, whatever shape the viewport currently is.
     ///
-    /// - Parameters:
-    ///   - extent: The grid half-extent to fit.
-    ///   - aspect: Viewport width divided by height.
-    func frameAll(extent: Float, aspect: Float) {
+    /// - Parameter extent: The grid half-extent to fit.
+    func frameAll(extent: Float) {
         centre = SIMD2<Float>(0, 0)
-        scale = aspect >= 1
-            ? SIMD2<Float>(extent * aspect, extent)
-            : SIMD2<Float>(extent, extent / aspect)
+        halfExtent = extent
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+    /// Multiplies the zoom about the centre.
+    /// - Parameter factor: >1 magnifies.
+    func zoom(by factor: Float) {
+        guard factor.isFinite, factor > 0 else { return }
+        halfExtent /= factor
+    }
+
+    /// Pans by a gesture translation in points.
+    ///
+    /// Converts through the real viewport rather than a constant. The first version divided by a
+    /// hardcoded 300, which is right only on a 600-point-wide view.
+    ///
+    /// - Parameter translation: The delta in points.
+    func pan(by translation: CGSize) {
+        let halfWidth = Float(max(1, viewportPoints.width / 2))
+        let halfHeight = Float(max(1, viewportPoints.height / 2))
+        centre.x -= Float(translation.width) / halfWidth * scale.x
+        centre.y += Float(translation.height) / halfHeight * scale.y
+    }
+
+    /// Records the viewport so framing and panning use the real shape.
+    ///
+    /// This was an empty method, which is why the map was drawn stretched: the shader normalises by
+    /// `scale` in both axes, so without the true aspect a wide viewport squashes the layout.
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        aspect = Float(size.width / size.height)
+        #if os(macOS)
+        let factor = view.window?.backingScaleFactor ?? 2
+        #else
+        let factor = view.contentScaleFactor
+        #endif
+        let points = max(factor, 1)
+        viewportPoints = CGSize(width: size.width / points, height: size.height / points)
+    }
 
     func draw(in view: MTKView) {
         guard let descriptor = view.currentRenderPassDescriptor,
