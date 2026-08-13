@@ -42,10 +42,6 @@ struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    #if os(macOS) && DEBUG
-    /// Opens the semantic map's own window; a Metal surface does not survive this pane's sheets.
-    @Environment(\.openWindow) private var openWindow
-    #endif
 
     @State private var syncSummary = SyncLogSummary()
     @State private var showSyncResetConfirmation = false
@@ -60,9 +56,6 @@ struct DataRecoveryView: View {
     /// The screens this door leads to.
     enum SubScreen: String, Identifiable {
         case brokenReferences, syncLog, schemaStatus, semanticFeedback, eraseEverything
-        #if DEBUG
-        case semanticMapSpike
-        #endif
         var id: String { rawValue }
     }
 
@@ -98,12 +91,6 @@ struct DataRecoveryView: View {
                      detail: String(
                         localized: "settings.dataRecovery.semanticFeedback.detail",
                         defaultValue: "Rate experimental semantic matches and export your verdicts"))
-                #if DEBUG
-                // V-4a: a measurement, not a feature. Debug-only until the map surface exists.
-                link(.semanticMapSpike,
-                     label: "Semantic Map",
-                     detail: "The corpus as a map of its own vocabulary")
-                #endif
             } header: {
                 Text(String(localized: "settings.dataRecovery.diagnostics.header",
                             defaultValue: "Diagnostics"))
@@ -294,14 +281,6 @@ struct DataRecoveryView: View {
                       destructive: Bool = false) -> some View {
         #if os(macOS)
         Button {
-            #if DEBUG
-            // The semantic map is a Metal surface and does not survive a SwiftUI sheet — see the
-            // `frus.semanticMap` scene for the measurement. It gets a window of its own.
-            if screen == .semanticMapSpike {
-                openWindow.fronting(id: "frus.semanticMap")
-                return
-            }
-            #endif
             sheet = screen
         } label: {
             HStack {
@@ -333,9 +312,6 @@ struct DataRecoveryView: View {
         case .syncLog:          SyncDiagnosticsView()
         case .schemaStatus:     SchemaDeployStatusView()
         case .semanticFeedback: SemanticFeedbackView()
-        #if DEBUG
-        case .semanticMapSpike: SemanticMapSpikeView(appState: appState)
-        #endif
         case .eraseEverything:  EraseEverythingView()
         }
     }

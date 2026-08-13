@@ -6807,3 +6807,78 @@ like a measurement, and the plane behind it is not one.
 Verified on the iPhone 17 simulator: an axis from `frus1936v04` (China, 1936) toward `frus1949v06`
 (Iran, 1949) re-lays the corpus into year bands with the regions still coloured, and returns to the
 map when the poles are cleared.
+
+## Session 2026-08-13 — the map gets an address
+
+The semantic map has been a `#if DEBUG` row in Settings ▸ Data & Recovery since V-4a, where it
+belonged when it was a *measurement* — can one draw call hold 314,483 points — and where it stayed
+through labels, tap-to-open, lasso capture and axis slices, long after it had stopped being one. It
+is now **Semantic Analytics**, a sibling of Corpus, Person, Cross-Reference and Archival Analytics,
+reached the same way each of those is.
+
+- **macOS**: `Window("Semantic Analytics", id: "frus.semanticAnalytics")`, out of `#if DEBUG`, with
+  an Analytics-menu item using the same `bindTool` + `openWindow.fronting(id:)` shape as its
+  siblings. `fronting`, not a bare `openWindow(id:)` — `MacWindowFrontingTests` fails the suite if
+  one reappears (#749: a bare open leaves an already-open window buried).
+- **iOS**: a row in the Analysis Tools menu in `BrowserView`, presented as a `.sheet` like Person and
+  Cross-Reference Analytics.
+- `ToolWindowID.semanticAnalytics` joins the four existing analytics tools so window provenance
+  routes the same way — **and the map's macOS Open Document goes through
+  `appState.openDocument(_:from: .tool(.semanticAnalytics), using:)` to make that true.** The first
+  version of this entry claimed the routing while the open button minted a standalone window
+  directly "matching Citation Lookup", which is the one case `ToolWindowID`'s own doc comment says
+  is deliberately excluded from the enum: both launchers wrote a binding nothing read. Routing also
+  puts the document where the reader launched the map from, and with no live host `openDocument`
+  mints the standalone window anyway, so nothing is lost.
+
+**The iOS sheet was the one thing not to assume.** An `MTKView` in a SwiftUI sheet on *macOS* draws,
+presents, and never reaches the screen — that cost two sessions. UIKit presents a sheet as a view
+controller, so it *ought* to be fine, which is precisely the reasoning that failed last time.
+Verified: the map renders in the iOS sheet at 0.05 ms mean over 314,483 documents. The hazard is
+AppKit's, now established by observation on both platforms rather than inferred from one.
+
+**An unplanned improvement, and a correction to it.** The sheet has no tab bar and no iCloud status
+banner over it, so the lens picker and point-size slider are fully visible — the reachability problem
+that forced the lasso toggle into the toolbar was an artifact of the Settings-tab presentation, not
+of the controls. But that observation covered only the bottom controls row: the *toolbar* needs a
+navigation container, and a bare sheet supplies none, so the first version of `SemanticAnalyticsView`
+took the lasso toggle and the document push away on iOS while appearing to improve reachability. The
+view wraps itself in a `NavigationStack` for exactly that reason, as its siblings do.
+
+**The new view says what the surface measures**, which the map never did. Every other analytics
+window measures something the corpus states: who is named, what cites what, where a document came
+from. This one measures a model's reading of the language, ships **experimental** by the owner
+decision that traded a blind quality panel for tester judgement, and carries pre-1900 quality as a
+declared unknown. A reader meeting it for the first time learns that in the window rather than from
+a release note. The header is dismissible and remembers that it was dismissed.
+
+Semantic Match Feedback stays in Data & Recovery: it is an export-and-diagnostics surface for the
+Related Documents axis, not a view of the corpus, and moving it would put a data-management screen
+inside an analytics window.
+
+**Two renderer changes the promotion forced, both of them properties of a window a reader keeps
+open rather than of a diagnostics row they visit once.**
+
+*The map now draws on demand.* It was configured `isPaused = false` / `enableSetNeedsDisplay = false`
+— a free-running display link re-issuing the same 314,483-point draw call sixty times a second, for
+as long as the surface existed, to produce an identical frame. That is a fair trade for a spike being
+measured and not one for a window left open beside a document. The view is now paused with
+set-needs-display on, and every renderer mutator marks the surface dirty: `pointSize`, `camera` and
+`aspect` through `didSet`, `setPoints`/`setColourIndices`/`setPalette` explicitly. **The dirty mark
+goes to a weak LIST of views, not to one reference**, because SwiftUI realizes this representable
+more than once and a single slot could hold the discarded instance — which is the shape of two
+earlier blank-surface defects, and would here mean a map that never redraws at all rather than one
+that redraws needlessly. Measured on the simulator: opening the map costs **2 frames**, a pan takes
+it to 11, and a lens switch to 12. Before this it would have been in the thousands.
+
+That change also broke the statistics overlay's one useful property, which is worth recording because
+the fix is not obvious: `StatsSink` published only when a window of 30 samples closed, so a map that
+had plainly drawn read `0 frames presented · 0.00 ms mean` — the exact false reading the frame counter
+was added to prevent. It now publishes every frame and keeps the timings from the last closed window.
+
+*The pipeline is compiled once per process.* `SemanticMapModel` builds its renderer in `init`, and a
+`@State` initial-value expression is evaluated on **every** initialisation of the view struct, not
+only the first; SwiftUI discards the duplicates after the shader has already been compiled. A static
+device-keyed cache behind an `NSLock` makes a discarded construction a dictionary lookup. The
+ordering fix that put the renderer in `init` — no view may exist before the renderer does — is
+unchanged; only its cost is.

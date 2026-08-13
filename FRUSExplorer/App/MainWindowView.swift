@@ -302,8 +302,8 @@ struct MainWindowView: View {
 
             Divider().frame(height: 20)
 
-            // Analytics — Corpus / Person / Cross-Reference / Archival analytics · Chronology ·
-            // Word Cloud. Membership and ORDER mirror the menu-bar Analytics menu
+            // Analytics — Corpus / Person / Cross-Reference / Archival / Semantic analytics ·
+            // Chronology · Word Cloud. Membership and ORDER mirror the menu-bar Analytics menu
             // (`AnalyticsMenuContent`) deliberately: #795 is what happens when the two drift.
             Menu {
                 Button {
@@ -339,6 +339,14 @@ struct MainWindowView: View {
                     Label(String(localized: "mainwindow.tools.archivalAnalytics",
                                  defaultValue: "Archival Analytics"), systemImage: "archivebox")
                 }
+                Button {
+                    appState.bindTool(.semanticAnalytics, to: hostID)
+                    openWindow.fronting(id: "frus.semanticAnalytics")
+                } label: {
+                    Label(String(localized: "mainwindow.tools.semanticAnalytics",
+                                 defaultValue: "Semantic Analytics"),
+                          systemImage: "point.3.filled.connected.trianglepath.dotted")
+                }
                 Divider()
                 Button {
                     appState.bindTool(.chronology, to: hostID)
@@ -361,10 +369,12 @@ struct MainWindowView: View {
             }
             // Handoff: "Analytics menu (▾)" — visible name + the default disclosure chevron.
             .labelStyle(.titleAndIcon)
-            // `.v2`: the menu gained a window, so the string's meaning changed — a new key, not an
-            // edit under the old one.
-            .help(String(localized: "mainwindow.tools.analytics.menu.help.v2",
-                         defaultValue: "Corpus, Person, Cross-Reference, and Archival analytics, Chronology, and Word Cloud"))
+            // `.v3`: the menu gained Semantic Analytics, so the string's meaning changed again — a
+            // new key, not an edit under the old one. This lagged one release behind its iOS twin
+            // (`browse.analysisTools.help`), which is the same drift #795 is cited for three lines
+            // below, so the entry-point suite now pins both.
+            .help(String(localized: "mainwindow.tools.analytics.menu.help.v3",
+                         defaultValue: "Corpus, Person, Cross-Reference, Archival, and Semantic analytics, Chronology, and Word Cloud"))
 
             Divider().frame(height: 20)
 

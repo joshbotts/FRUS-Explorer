@@ -278,15 +278,83 @@ struct SemanticMapSurfaceTests {
     /// another file, or every draw call fails at validation. Both now read one constant, and this is
     /// what holds them together.
     @MainActor
-    @Test("The MTKView is configured to drive frames, in the pipeline's own pixel format",
+    @Test("The MTKView draws on demand, in the pipeline's own pixel format",
           .enabled(if: semanticMapHasMetal))
-    func surfaceConfiguresContinuousDrawing() throws {
+    func surfaceConfiguresOnDemandDrawing() throws {
         let view = SemanticMapSurface(model: SemanticMapModel()).makeMap()
         #expect(view.colorPixelFormat == SemanticMapRenderer.pixelFormat)
-        #expect(view.isPaused == false, "a paused view never asks its delegate to draw")
-        #expect(view.enableSetNeedsDisplay == false,
-                "with no invalidation source, set-needs-display mode draws once and stops")
+        #expect(view.isPaused, "a free-running display link redraws a still image 60 times a second")
+        #expect(view.enableSetNeedsDisplay,
+                "paused without this, a dirty mark produces no frame and the map never draws")
         #expect(view.preferredFramesPerSecond > 0)
+    }
+
+    /// On-demand drawing has one failure mode and it is total: a mutator that does not mark the
+    /// surface dirty leaves the map frozen at whatever it last drew. `UIView` exposes no readable
+    /// `needsDisplay`, so the renderer counts requests and this drives each mutator in turn — a
+    /// deleted `didSet` fails here rather than reaching a reader as a map that will not pan.
+    @MainActor
+    @Test("Every mutator asks for a frame, and the view is on the redraw list",
+          .enabled(if: semanticMapHasMetal))
+    func mutatorsRequestARedraw() throws {
+        let model = SemanticMapModel()
+        let renderer = try #require(model.renderer)
+        let view = SemanticMapSurface(model: model).makeMap()
+        #expect(renderer.attachedViewCount == 1, "an unregistered view is never marked dirty")
+
+        var seen = renderer.redrawRequestCount
+        func expectRequest(_ what: String, _ change: () -> Void) {
+            change()
+            #expect(renderer.redrawRequestCount > seen, "\(what) drew nothing new")
+            seen = renderer.redrawRequestCount
+        }
+
+        expectRequest("panning") { renderer.pan(by: CGSize(width: 10, height: 10)) }
+        expectRequest("zooming") { renderer.zoom(by: 1.5) }
+        expectRequest("framing") { renderer.frameAll(extent: 1000) }
+        expectRequest("resizing") {
+            renderer.mtkView(view, drawableSizeWillChange: CGSize(width: 800, height: 400))
+        }
+        expectRequest("point size") { renderer.pointSize = 4 }
+        expectRequest("uploading points") {
+            renderer.setPoints([.init(position: SIMD2<Int16>(0, 0), colourIndex: 0, flags: 0)])
+        }
+        expectRequest("recolouring") { renderer.setColourIndices([1]) }
+        expectRequest("repalettising") { renderer.setPalette(SemanticMapRenderer.defaultPalette) }
+    }
+
+    /// SwiftUI may realize a representable more than once, which is how this surface went blank
+    /// twice. A single view reference would hold whichever instance attached last — possibly the
+    /// discarded one — so both are kept and both are marked.
+    @MainActor
+    @Test("A second realization joins the redraw list rather than replacing the first",
+          .enabled(if: semanticMapHasMetal))
+    func everyRealizationJoinsTheRedrawList() throws {
+        let model = SemanticMapModel()
+        let renderer = try #require(model.renderer)
+        let surface = SemanticMapSurface(model: model)
+        let first = surface.makeMap()
+        let second = surface.makeMap()
+        #expect(renderer.attachedViewCount == 2)
+        // Re-asserting an existing attachment must not add a duplicate.
+        surface.attach(to: first)
+        surface.attach(to: second)
+        #expect(renderer.attachedViewCount == 2)
+        #expect(first.delegate === renderer)
+        #expect(second.delegate === renderer)
+    }
+
+    /// The renderer is constructed more often than it is used — a `@State` initial-value expression
+    /// runs on every initialisation of the view struct, and SwiftUI throws the duplicates away after
+    /// the shader has already been compiled. This asserts the *identity* of the returned pipeline
+    /// rather than that two constructions succeed, which they would either way.
+    @Test("Compiling the pipeline twice for one device returns the same object",
+          .enabled(if: semanticMapHasMetal))
+    func pipelineIsCompiledOncePerDevice() throws {
+        let device = try #require(MTLCreateSystemDefaultDevice())
+        let first = try #require(SemanticMapRenderer.pipeline(for: device))
+        let second = try #require(SemanticMapRenderer.pipeline(for: device))
+        #expect(first === second, "a second compile means every discarded view struct pays for one")
     }
 
     /// The model decodes placements by hand from the raw block for speed; `SemanticMapVectors`

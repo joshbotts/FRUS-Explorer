@@ -110,6 +110,8 @@ struct BrowserView: View {
     @State private var analyticsParameters: AnalyticsParameters?
     @State private var showPersonAnalytics = false
     @State private var showCrossRefAnalytics = false
+    /// Semantic Analytics (the map, its lenses and slices).
+    @State private var showSemanticAnalytics = false
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
     // #498: every one of these sheets presents a view that opens its OWN NavigationStack, which
@@ -194,6 +196,19 @@ struct BrowserView: View {
                 // #498: same fix, same reason — this sheet's two person-search fields reproduced
                 // the cycle too (bounded, ~30 detections per rotation rather than a wedge, but the
                 // same defect). One line here covers every field on the sheet.
+                .statusBarHidden(false)
+        }
+        .sheet(isPresented: $showSemanticAnalytics) {
+            // A sheet, matching its siblings — and note this is an iOS-only presentation. On macOS
+            // the same view is a Window scene, because an MTKView in a SwiftUI sheet there draws,
+            // presents, and never reaches the screen. That is an AppKit `SheetPresentationWindow`
+            // behaviour; UIKit presents a sheet as a view controller and the map renders. Verified
+            // on the simulator rather than assumed, because the macOS failure looked exactly like
+            // this and cost two sessions.
+            SemanticAnalyticsView(appState: appState)
+                .environment(appState)
+                .modelContainer(modelContext.container)
+                .environment(\.sceneID, sceneID)
                 .statusBarHidden(false)
         }
         .sheet(isPresented: $showCrossRefAnalytics) {
@@ -331,6 +346,13 @@ struct BrowserView: View {
                           systemImage: "archivebox")
                 }
                 Button {
+                    showSemanticAnalytics = true
+                } label: {
+                    Label(String(localized: "browse.semanticAnalytics.a11y",
+                                 defaultValue: "Semantic Analytics"),
+                          systemImage: "point.3.filled.connected.trianglepath.dotted")
+                }
+                Button {
                     appState.openWordCloud(.corpus, from: sceneID)
                 } label: {
                     Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
@@ -341,8 +363,8 @@ struct BrowserView: View {
             }
             .controlHelp(
                 Self.analysisToolsName,
-                detail: String(localized: "browse.analysisTools.help.v2",
-                               defaultValue: "Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, and the corpus Word Cloud"),
+                detail: String(localized: "browse.analysisTools.help.v3",
+                               defaultValue: "Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and the corpus Word Cloud"),
                 systemImage: "chart.bar.xaxis"
             )
         }
