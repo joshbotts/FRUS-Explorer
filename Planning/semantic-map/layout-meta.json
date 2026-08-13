@@ -1,0 +1,40 @@
+{
+  "documents": 314483,
+  "firstKey": {
+    "chars": 1013,
+    "d": "d1",
+    "o": 0,
+    "v": "frus1861"
+  },
+  "generated": "2026-08-12T22:35:52",
+  "grid": {
+    "extent": 30000.0,
+    "layout": "int16 x, int16 y, uint16 cluster (0xFFFF=none)"
+  },
+  "hdbscan": {
+    "clusters": 179,
+    "minClusterSize": 250,
+    "minSamples": 10,
+    "seconds": 489.6,
+    "unclustered": 88207
+  },
+  "pca": {
+    "components": 50,
+    "explainedVariancePercent": 58.36
+  },
+  "projectedFromDims": 256,
+  "seed": 18610810,
+  "sourceMatrix": "doc_f32_768.npy",
+  "sourceMatrixSHA256": "7f6d4f7a173964d9fc7c4f9f30e1950cd7258ca97c5cd7fc0d3ebe36e5e7590a",
+  "umap": {
+    "metric": "cosine",
+    "minDist": 0.1,
+    "nNeighbors": 15,
+    "seconds": 397.5
+  },
+  "versions": {
+    "numpy": "2.0.2",
+    "sklearn": "1.5.2",
+    "umap": "0.5.6"
+  }
+}

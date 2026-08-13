@@ -69,3 +69,7 @@ design_handoff_*/
 # Python bytecode from the stdlib-only tools in tools/
 __pycache__/
 *.pyc
+
+# V-4 layout stage: the pinned Python environment for PCA/UMAP/HDBSCAN. Regenerable from
+# tools/semantic-map/requirements.txt; ~400MB of wheels has no business in the repository.
+.cache/semantic-map-venv/

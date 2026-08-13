@@ -1,0 +1,16 @@
+# The V-4 layout stage's pinned environment (design §3.1: "a pinned Python embed/project stage").
+#
+# Created with the system python3 (3.9.6 on the owner's machines), which is what constrains these
+# versions — scikit-learn 1.7 and numpy 2.1+ both require 3.10 or newer. Recreate with:
+#
+#     python3 -m venv .cache/semantic-map-venv
+#     .cache/semantic-map-venv/bin/python -m pip install -r tools/semantic-map/requirements.txt
+#
+# The exact resolved set, including transitive pins, is in requirements-lock.txt beside this.
+#
+# NOTE the standalone `hdbscan` package is deliberately absent: scikit-learn has shipped
+# `sklearn.cluster.HDBSCAN` since 1.3, so the clustering the design asks for needs no extra
+# dependency, no separate build, and no second maintenance surface.
+numpy==2.0.2
+scikit-learn==1.5.2
+umap-learn==0.5.6
