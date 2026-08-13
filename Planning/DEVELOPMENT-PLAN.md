@@ -6333,3 +6333,44 @@ log its explained variance — a full pass over 314,483 × 256 for a number alre
 
 Next: pack Tier-0 into the bundled artifact (`SemanticVectorsGenerator` reads `layout.bin`, emits
 coordinates + cluster ids, generates the labels), then the surface itself.
+
+## Session 2026-08-12 — V-4 Tier 0 packed, and 168 of 179 labels were wrong
+
+The map artifact: `semantic-map.bin` (1.89 MB — 314,483 placements, 179 clusters, 28.0%
+unclustered) and `semantic-map-index.json` (25 KB — labels, cluster centres, per-cluster era
+histograms). A **separate** artifact from the vector tiers because the access patterns differ, and a
+**separate, skippable pass** in the packer because the map's layout comes from a 15-minute Python
+stage and a packer that refused to emit vectors without one would hold the shipping feature hostage
+to an experimental one.
+
+**The finding that matters is a defect I had already eyeballed and approved.** The first c-TF-IDF
+used `log(1 + N/df)`, with a comment asserting the `+1` made a universal term score zero. It floors
+it at `log(2) ≈ 0.69` instead — enough for a word occupying 98% of a cluster's tokens to beat one
+appearing nowhere else. I read the output, saw `chinese, china, japanese, nanking` against the China
+cluster and `israel, arab, israeli` against the Middle East one, and called them historically
+coherent. **They were the wrong labels.** A fixture where `government` beat `kearsarge` caught it, and
+correcting the formula to plain `log(N/df)` changed **168 of 179 labels**:
+
+| cluster | before | after |
+|---|---|---|
+| 8 (38,652 docs) | chinese, china, japanese, nanking | nanking, shanghai, hankow, chinese |
+| 108 (8,094) | british, united, war, american | maize, cottonseed, oversea, lansing |
+| 20 (15,520) | israel, arab, israeli, say | israel, israeli, arab, baath |
+
+Generic words gave way to distinctive ones in every case. **Plausibility is what made it invisible,
+and plausibility is all an eye can check** — the same lesson as the V-3 evidence label that was
+computed, tested and never rendered.
+
+Two smaller decisions, both recorded in code. Labels are Swift's, not Python's, because the design
+wants them through the WordCloudKit tokenizer and a second tokenizer would mint a second vocabulary —
+the failure `BundledKeynessBaseline` exists to prevent. And date chrome (`apr` named a cluster) is
+filtered **in the labeller**, not in the shared stopword payload: `BundledKeynessBaseline` pins that
+payload's SHA-256 — verified, the digests match — so editing it would make every keyness read report
+a configuration mismatch until a ~50-minute `CloudVectorsGenerator` run, and would silently re-price
+the entire corpus reference. Disproportionate for one cosmetic term in one label of 179.
+
+Labels are **sampled** — c-TF-IDF over up to 300 stride-sampled documents per cluster, 53,087 read of
+226,276 clustered — and the artifact says so, because a label built from part of a cluster should
+disclose that rather than let a reader assume it saw everything. The stride runs over members in row
+order (which is volume order) so a sample spans a cluster instead of concentrating in whichever
+volumes sort first.

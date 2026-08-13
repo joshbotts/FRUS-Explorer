@@ -30,10 +30,12 @@ import Foundation
 /// run-manifest.json         model id + GGUF SHA + chunk/prefix params + machine + totals
 /// ```
 ///
-/// The text layer (`text/<vol>.jsonl.gz`) is deliberately **not** read: the packer needs document
-/// identity and chunk spans, both of which live in the meta layer, and skipping the 400 MB of
-/// gzipped prose keeps a full pack to minutes. The integrity sweep already proved the two layers
-/// carry identical document-id sets per volume.
+/// The vector pack does not read the text layer (`text/<vol>.jsonl.gz`): it needs document identity
+/// and chunk spans, both of which live in the meta layer, and skipping the 400 MB of gzipped prose
+/// keeps a full pack to minutes. The integrity sweep already proved the two layers carry identical
+/// document-id sets per volume. The **map** pack does read it, for cluster labels — see
+/// `documentTexts(for:at:)`, which explains why those labels come from this text and not from the
+/// TEI.
 public enum SemanticRawStore {
 
     // MARK: - Provenance
@@ -321,6 +323,62 @@ public enum SemanticRawStore {
                 weight: Int(total),
                 vector: pooled)
         }
+    }
+
+    /// Reads a volume's R-0 text layer — the exact text the vectors were computed from.
+    ///
+    /// The map's cluster labels describe clusters of *vectors*, so they should be built from the text
+    /// those vectors saw. The alternative on hand, `TEIBodyTextExtractor`, re-derives body text from
+    /// the TEI and differs from the harvest's extraction by the truncate-at-next-div rule — 40.9 M
+    /// characters of back-of-book index bleed, measured. That difference is immaterial to a top-terms
+    /// label and material to the principle: one extraction, many consumers.
+    ///
+    /// Decompressed through `/usr/bin/gunzip -c` because nothing in this repository's Swift speaks
+    /// gzip and the R-0 layer is `.jsonl.gz`; the NER control established the same route. A plain
+    /// `<volume>.jsonl` is preferred when present, so an operator can bypass the subprocess.
+    ///
+    /// - Parameters:
+    ///   - volumeID: The volume to read.
+    ///   - storeURL: Root of the raw store.
+    /// - Returns: Document id to body text, or `nil` when the layer is unreadable.
+    public static func documentTexts(for volumeID: String, at storeURL: URL) -> [String: String]? {
+        let directory = storeURL.appendingPathComponent("text")
+        let plain = directory.appendingPathComponent("\(volumeID).jsonl")
+        let gzipped = directory.appendingPathComponent("\(volumeID).jsonl.gz")
+
+        let payload: Data?
+        if let data = try? Data(contentsOf: plain) {
+            payload = data
+        } else if FileManager.default.fileExists(atPath: gzipped.path) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/gunzip")
+            process.arguments = ["-c", gzipped.path]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            guard (try? process.run()) != nil else { return nil }
+            // Read before waiting: a volume's text layer is megabytes and a full pipe buffer would
+            // deadlock a process this waited on first.
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            payload = process.terminationStatus == 0 ? data : nil
+        } else {
+            payload = nil
+        }
+        guard let payload, let text = String(data: payload, encoding: .utf8) else { return nil }
+
+        var texts: [String: String] = [:]
+        let decoder = JSONDecoder()
+        for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
+            guard let row = try? decoder.decode(TextRow.self, from: Data(line.utf8)) else { continue }
+            texts[row.d] = row.t
+        }
+        return texts
+    }
+
+    /// One `text/<volume>.jsonl` row.
+    private struct TextRow: Decodable {
+        let d: String
+        let t: String
     }
 
     /// One `meta.jsonl` row: the document id, its ordinal, the chunk index, and the chunk's

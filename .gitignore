@@ -73,3 +73,8 @@ __pycache__/
 # V-4 layout stage: the pinned Python environment for PCA/UMAP/HDBSCAN. Regenerable from
 # tools/semantic-map/requirements.txt; ~400MB of wheels has no business in the repository.
 .cache/semantic-map-venv/
+
+# V-4: the layout stage's intermediate. Byte-redundant with the bundled semantic-map.bin, which
+# carries the same placements behind a header — committing both stores the same 1.89MB twice.
+# Regenerate with tools/semantic-map/build_layout.py (~15 min) when the packer needs it.
+Planning/semantic-map/layout.bin

@@ -703,6 +703,9 @@ let package = Package(
             dependencies: [
                 .target(name: "GeneratorKit"),
                 .target(name: "SemanticVectorsKit"),
+                // The map's cluster labels are tokenised through the app's own stack, so a label
+                // speaks the vocabulary every word-cloud surface speaks.
+                .target(name: "WordCloudKit"),
             ],
             path: "SemanticVectorsGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]

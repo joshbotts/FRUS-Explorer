@@ -279,6 +279,33 @@ public enum SemanticVectorsRunner {
         }
         if pruned > 0 { generatorLog("pruned \(pruned) shard(s) not published by this run") }
 
+        // Tier 0, the map — a SEPARATE pass, and skippable. Its layout comes from a 15-minute
+        // Python stage, and a packer that refused to emit vectors because no layout existed would
+        // hold the shipping feature hostage to an experimental one.
+        let layoutDir = URL(fileURLWithPath: env["LAYOUT_DIR"] ?? "Planning/semantic-map")
+        if FileManager.default.fileExists(
+            atPath: layoutDir.appendingPathComponent("layout.bin").path) {
+            let eras = try loadVolumeEras(manifestPath)
+            let packed = try SemanticMapPacker.pack(
+                layoutDir: layoutDir,
+                index: SemanticVectorIndex(file: index),
+                storeURL: storeURL,
+                eraForVolume: { eras[$0] ?? "unknown" },
+                lexiconsPath: env["LEXICONS"] ?? "FRUSExplorer/Resources/word-cloud-lexicons.json",
+                stopwordsPath: env["STOPWORDS"] ?? "FRUSExplorer/Resources/word-cloud-stopwords.json",
+                generated: generated)
+            try packed.binary.write(
+                to: outputDir.appendingPathComponent("semantic-map.bin"), options: .atomic)
+            try encoder.encode(packed.meta).write(
+                to: outputDir.appendingPathComponent("semantic-map-index.json"), options: .atomic)
+            generatorLog("  semantic-map.bin              \(packed.binary.count) bytes | "
+                + "\(packed.meta.documentCount) placements, \(packed.meta.clusters.count) clusters, "
+                + "\(packed.meta.layout.unclusteredCount) unclustered")
+        } else {
+            generatorLog("no layout.bin under \(layoutDir.path) — Tier 0 (map) skipped; "
+                + "run tools/semantic-map/build_layout.py to produce one")
+        }
+
         generatorLog("""
 
             wrote:
@@ -379,6 +406,39 @@ public enum SemanticVectorsRunner {
     private struct ManifestVolume {
         let id: String
         let subseries: String
+    }
+
+    /// Coverage era per volume, banded the way the app bands everything else.
+    ///
+    /// The raw value of the app's `CoverageEra`, not a scheme invented here, so a cluster's era
+    /// histogram is comparable with every other era-split surface.
+    ///
+    /// - Parameter path: Path to `manifest.json`.
+    /// - Returns: Volume id to era raw value.
+    private static func loadVolumeEras(_ path: String) throws -> [String: String] {
+        guard let data = FileManager.default.contents(atPath: path) else {
+            throw GeneratorError.missingFile(path)
+        }
+        struct Entry: Decodable {
+            struct Range: Decodable { let earliest: String; let latest: String }
+            let volumeId: String
+            let dateRange: Range?
+        }
+        let entries = try JSONDecoder().decode([Entry].self, from: data)
+        var eras: [String: String] = [:]
+        for entry in entries {
+            guard let range = entry.dateRange,
+                  let earliest = Int(range.earliest.prefix(4)),
+                  let latest = Int(range.latest.prefix(4))
+            else { eras[entry.volumeId] = "unknown"; continue }
+            switch (earliest + latest) / 2 {
+            case ..<1900:     eras[entry.volumeId] = "0"
+            case 1900...1944: eras[entry.volumeId] = "1"
+            case 1945...1990: eras[entry.volumeId] = "2"
+            default:          eras[entry.volumeId] = "3"
+            }
+        }
+        return eras
     }
 
     /// Reads the app manifest's volume list, preserving its order — which is the artifact's row
