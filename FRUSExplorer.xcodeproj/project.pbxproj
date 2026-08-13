@@ -195,6 +195,7 @@
 		2C11F536879BAC97EBA6FDFA /* DocumentViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D8BE5332FFC2F2CBCDF4E4 /* DocumentViewTests.swift */; };
 		2C801BC7789950F1492445DE /* WorkingCorpusVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7729E7ECD239B193AC7772 /* WorkingCorpusVisibilityTests.swift */; };
 		2C9048C93034F2F9777EF382 /* VolumeSourcesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFC3D2EF12D1AB4841E13DE /* VolumeSourcesView.swift */; };
+		2CA083E2EF9F1445FF0EC82C /* SemanticMapRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0E3E2C8510E06FF4E43CB /* SemanticMapRenderer.swift */; };
 		2CA89F2357210239C28C134D /* VolumeStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FCCD03E349C0DB27DEA489 /* VolumeStructure.swift */; };
 		2CE2897C230039CEEA847CFF /* NARACatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEBCC915167AB40F815AD6B /* NARACatalogClient.swift */; };
 		2D28E5B002304D58424B5EDA /* NavBarFullTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E099012C9338BFC7C655B092 /* NavBarFullTitle.swift */; };
@@ -289,6 +290,7 @@
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
 		43BDB6A22D792DEAC07A783F /* PresidentialLibraryIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1DB6D82807F8D83FF105FE /* PresidentialLibraryIndex.swift */; };
 		43FF348D49B0CEEC8D89DC7D /* NotesPaneSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0D35614EA326028BDB9F63 /* NotesPaneSnapshot.swift */; };
+		4425324898536729E5E57E14 /* SemanticMapRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0E3E2C8510E06FF4E43CB /* SemanticMapRenderer.swift */; };
 		444014D465C3809C781C93D2 /* UserTagCountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C4888303721B60B3C4308 /* UserTagCountTests.swift */; };
 		44C38CF030971E130CB5C460 /* CollectionExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE13446F4368DB7721139BAE /* CollectionExportSheet.swift */; };
 		45AB710B07E4CE0F24DA7125 /* SettingsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8E5ACAE8EEC2B4C468C4D0 /* SettingsComponents.swift */; };
@@ -627,6 +629,7 @@
 		918FD6684EAC94D52F1A70C5 /* RefreshBypassAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44130EB924BD896526D3659D /* RefreshBypassAuditTests.swift */; };
 		919B3AF045B80278A6A976F3 /* CollectionEntryRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6904FDC72F4181A11B29926 /* CollectionEntryRows.swift */; };
 		91D4115ABA72491519E91CDD /* WordCloudExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A803BE62D1B38E2C378588BA /* WordCloudExport.swift */; };
+		922834A5FABE52F3AAA09E4C /* SemanticMapSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F788AD5264864EFAE17D1EDF /* SemanticMapSpikeView.swift */; };
 		923E93633583F757607FA6CD /* CollectionAuthority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B014C2967533C3DAEC54D /* CollectionAuthority.swift */; };
 		925E948C23C194636ECE04F7 /* DownloadsSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB3CD7C0774D261220D22FB /* DownloadsSettingsViewTests.swift */; };
 		92B9EB3945288B5DE008F4BA /* ChartScrubRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DEDC9B980EE1D4F5EE65114 /* ChartScrubRange.swift */; };
@@ -639,6 +642,7 @@
 		944A05325FBAE71430BEE37A /* ExportHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A479E87E9FB696001E9EBDFF /* ExportHistoryEntry.swift */; };
 		946AA967DCEFE8A5B2525C0E /* SettingsComponentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1833B983A1F48A74A952442 /* SettingsComponentsTests.swift */; };
 		949DEFCEC1F6C0C25CBBD918 /* CustomScopesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2F9B965F27786F60BE298A /* CustomScopesView.swift */; };
+		949EBC8C6CD50EB3D369944F /* SemanticMapSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F788AD5264864EFAE17D1EDF /* SemanticMapSpikeView.swift */; };
 		94A856DF4268B8DE6596AEBB /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
 		94BC00BF905453BE083AA9F2 /* CloudSurfaceBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B0CA2F61C314585BC498A6 /* CloudSurfaceBackground.swift */; };
 		9508E24FC4CA4A4009814881 /* OrphanedTagRepairTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8097E38779F64B29F7357C /* OrphanedTagRepairTests.swift */; };
@@ -1475,6 +1479,7 @@
 		640382B0D20BAA1974542856 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		649CCFCFF3F93C639587B8B5 /* KWICLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KWICLine.swift; sourceTree = "<group>"; };
 		64A77D5BA13AE64BC008855D /* CodingStandardsAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodingStandardsAuditTests.swift; sourceTree = "<group>"; };
+		64D0E3E2C8510E06FF4E43CB /* SemanticMapRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapRenderer.swift; sourceTree = "<group>"; };
 		6568CE099F61DF20CEB537BE /* WordCloudLexiconSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLexiconSet.swift; sourceTree = "<group>"; };
 		65AFB8371F24254AC6D7E541 /* SummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationService.swift; sourceTree = "<group>"; };
 		65C1AFE40CEF473CBD3D87F6 /* SearchNearHighlightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchNearHighlightTests.swift; sourceTree = "<group>"; };
@@ -1884,6 +1889,7 @@
 		F6BB80A12385D9D95BD525D1 /* ZoteroAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroAPIClient.swift; sourceTree = "<group>"; };
 		F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsChartChrome.swift; sourceTree = "<group>"; };
 		F74C290A39D67DA7AAF3AD79 /* NotesPaneSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesPaneSnapshotTests.swift; sourceTree = "<group>"; };
+		F788AD5264864EFAE17D1EDF /* SemanticMapSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapSpikeView.swift; sourceTree = "<group>"; };
 		F79CFD3B1F85F9CF39FD5D72 /* WordCloudSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudSettingsView.swift; sourceTree = "<group>"; };
 		F7D611F71ADEEC070328185E /* DecimalClassLabelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalClassLabelStore.swift; sourceTree = "<group>"; };
 		F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
@@ -2106,6 +2112,15 @@
 			path = Citation;
 			sourceTree = "<group>";
 		};
+		52363B3703507DEAE34A7A51 /* Map */ = {
+			isa = PBXGroup;
+			children = (
+				64D0E3E2C8510E06FF4E43CB /* SemanticMapRenderer.swift */,
+				F788AD5264864EFAE17D1EDF /* SemanticMapSpikeView.swift */,
+			);
+			path = Map;
+			sourceTree = "<group>";
+		};
 		562F1C6B224D25EC8785D6BA /* FRUSExplorerWidgets */ = {
 			isa = PBXGroup;
 			children = (
@@ -2142,6 +2157,7 @@
 		5DD60E7D10A68976A9F5A617 /* Semantic */ = {
 			isa = PBXGroup;
 			children = (
+				52363B3703507DEAE34A7A51 /* Map */,
 				CBE94AA9FE60469904C09F6B /* BundledSemanticVectors.swift */,
 				09A023463EA56B0D8BF43881 /* SemanticFeedbackLog.swift */,
 				81881562215EEB75EA40274A /* SemanticShardFetcher.swift */,
@@ -3541,6 +3557,8 @@
 				979A7C4D67D61AF058C8F5AE /* SearchViewModel.swift in Sources */,
 				411487B2AEB9ABC2EC92AEA1 /* SemanticFeedbackLog.swift in Sources */,
 				B5B6E69E52ED438C5A37C630 /* SemanticFeedbackView.swift in Sources */,
+				4425324898536729E5E57E14 /* SemanticMapRenderer.swift in Sources */,
+				949EBC8C6CD50EB3D369944F /* SemanticMapSpikeView.swift in Sources */,
 				F6B3BA8663CB1C1F2508B916 /* SemanticRetrievalKernel.swift in Sources */,
 				24605E8B4C649198F76F4386 /* SemanticShardFetcher.swift in Sources */,
 				0C93C1C80E2910609D5377DB /* SemanticShardStore.swift in Sources */,
@@ -3962,6 +3980,8 @@
 				10261AAAA628A1097825EB9F /* SearchViewModel.swift in Sources */,
 				5AC73FE6017B9B2A5AEB4DDF /* SemanticFeedbackLog.swift in Sources */,
 				9067A80270AE4F3D82B9AB7C /* SemanticFeedbackView.swift in Sources */,
+				2CA083E2EF9F1445FF0EC82C /* SemanticMapRenderer.swift in Sources */,
+				922834A5FABE52F3AAA09E4C /* SemanticMapSpikeView.swift in Sources */,
 				5506948F7100145D1BED3754 /* SemanticRetrievalKernel.swift in Sources */,
 				B4AE2BF20BE3EB0251A79DDB /* SemanticShardFetcher.swift in Sources */,
 				BA3E88462EE2F4578C702481 /* SemanticShardStore.swift in Sources */,
