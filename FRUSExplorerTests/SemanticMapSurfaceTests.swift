@@ -473,13 +473,16 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
+        // array the model uploads — so the tests go through the same accessor the model does.
+        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
 
         // Aim at a document the artifact actually holds, and require that one back.
         let target = try #require(map.placement(at: 12_345))
         let onScreen = SemanticMapLabelLayout.project(
             SIMD2<Float>(Float(target.x), Float(target.y)), camera: camera, size: size)
         let hit = try #require(SemanticMapPicking.hit(
-            at: onScreen, map: map, camera: camera, size: size))
+            at: onScreen, positions: positions, camera: camera, size: size))
         #expect(hit.position.x == Float(target.x))
         #expect(hit.position.y == Float(target.y))
 
@@ -487,7 +490,7 @@ struct SemanticMapSurfaceTests {
         let empty = SemanticMapLabelLayout.project(
             SIMD2<Float>(Float(map.gridExtent) * 4, Float(map.gridExtent) * 4),
             camera: camera, size: size)
-        #expect(SemanticMapPicking.hit(at: empty, map: map, camera: camera, size: size) == nil)
+        #expect(SemanticMapPicking.hit(at: empty, positions: positions, camera: camera, size: size) == nil)
     }
 
     /// The row a pick returns is only useful if it resolves to a document, and identity is STORED in
@@ -502,6 +505,9 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
+        // array the model uploads — so the tests go through the same accessor the model does.
+        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
 
         // Include the volume whose ids are NOT `dN` — `frus1958-60v05mSupp` keys its 628 documents
         // `eta_d1…`, which is exactly the case a shape assumption would break on.
@@ -512,7 +518,7 @@ struct SemanticMapSurfaceTests {
             let point = SemanticMapLabelLayout.project(
                 SIMD2<Float>(Float(placement.x), Float(placement.y)), camera: camera, size: size)
             let hit = try #require(SemanticMapPicking.hit(
-                at: point, map: map, camera: camera, size: size), "row \(row)")
+                at: point, positions: positions, camera: camera, size: size), "row \(row)")
             let document = try #require(index.document(at: hit.row), "row \(hit.row)")
             #expect(!document.volumeID.isEmpty)
             // NOT `hasPrefix("d")`. A first draft asserted that and passed only because the sampled
@@ -539,12 +545,15 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
+        // array the model uploads — so the tests go through the same accessor the model does.
+        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
 
         let start = ContinuousClock.now
         var found = 0
         for step in 0..<20 {
             let point = CGPoint(x: 40 + Double(step) * 26, y: 40 + Double(step) * 26)
-            if SemanticMapPicking.hit(at: point, map: map, camera: camera, size: size) != nil {
+            if SemanticMapPicking.hit(at: point, positions: positions, camera: camera, size: size) != nil {
                 found += 1
             }
         }
@@ -592,19 +601,22 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
+        // array the model uploads — so the tests go through the same accessor the model does.
+        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
 
         // A box around the whole grid encloses the entire corpus.
         let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
                           CGPoint(x: 650, y: 650), CGPoint(x: -50, y: 650)]
         let all = SemanticMapPicking.rows(
-            inside: everything, map: map, camera: camera, size: size, limit: 100)
+            inside: everything, positions: positions, camera: camera, size: size, limit: 100)
         #expect(all.total == map.documentCount, "every document is inside a lasso around everything")
         #expect(all.rows.count == 100, "but only the limit is kept")
 
         // Degenerate paths select nothing rather than everything.
         #expect(SemanticMapPicking.rows(
             inside: [CGPoint(x: 10, y: 10), CGPoint(x: 20, y: 20)],
-            map: map, camera: camera, size: size, limit: 100).total == 0)
+            positions: positions, camera: camera, size: size, limit: 100).total == 0)
 
         // A small box around one document's own position must contain it.
         let target = try #require(map.placement(at: 200_000))
@@ -613,7 +625,7 @@ struct SemanticMapSurfaceTests {
         let tight = [CGPoint(x: at.x - 6, y: at.y - 6), CGPoint(x: at.x + 6, y: at.y - 6),
                      CGPoint(x: at.x + 6, y: at.y + 6), CGPoint(x: at.x - 6, y: at.y + 6)]
         let near = SemanticMapPicking.rows(
-            inside: tight, map: map, camera: camera, size: size, limit: 5_000)
+            inside: tight, positions: positions, camera: camera, size: size, limit: 5_000)
         #expect(near.rows.contains(200_000), "the lasso must contain the point it was drawn around")
     }
 
@@ -628,11 +640,14 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
+        // array the model uploads — so the tests go through the same accessor the model does.
+        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
         let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
                           CGPoint(x: 650, y: 650), CGPoint(x: -50, y: 650)]
 
         let capped = SemanticMapPicking.rows(
-            inside: everything, map: map, camera: camera, size: size,
+            inside: everything, positions: positions, camera: camera, size: size,
             limit: SemanticMapPicking.corpusCaptureLimit)
         #expect(capped.rows.count == SemanticMapPicking.corpusCaptureLimit)
         #expect(capped.total == map.documentCount)
@@ -647,6 +662,77 @@ struct SemanticMapSurfaceTests {
         let whole = SemanticMapPicking.LassoResult(
             documentKeys: ["v/d1", "v/d2"], total: 2, regionNames: [])
         #expect(!whole.isTruncated)
+    }
+
+    // MARK: - Semantic axis
+
+    /// The axis is the normalised difference of two poles, and two poles that are the same point have
+    /// no direction between them — normalising that would produce a direction made of rounding.
+    @Test("An axis is the unit difference of its poles, and identical poles make none")
+    func axisIsNormalisedDifference() throws {
+        let axis = try #require(SemanticAxis.between(
+            negative: [1, 0, 0, 0], negativeLabel: "a",
+            positive: [0, 1, 0, 0], positiveLabel: "b"))
+        let length = axis.direction.reduce(Float(0)) { $0 + $1 * $1 }.squareRoot()
+        #expect(abs(length - 1) < 1e-5, "direction must be unit-norm, was \(length)")
+        #expect(axis.direction[0] < 0, "away from the negative pole")
+        #expect(axis.direction[1] > 0, "toward the positive pole")
+
+        #expect(SemanticAxis.between(negative: [1, 2, 3], negativeLabel: "a",
+                                     positive: [1, 2, 3], positiveLabel: "b") == nil)
+        #expect(SemanticAxis.between(negative: [], negativeLabel: "a",
+                                     positive: [], positiveLabel: "b") == nil)
+        #expect(SemanticAxis.between(negative: [1, 0], negativeLabel: "a",
+                                     positive: [0, 1, 0], positiveLabel: "b") == nil,
+                "mismatched widths have no difference")
+    }
+
+    /// The bit convention is the artifact's and must not be re-derived: MSB-first, with zero packed
+    /// as a SET bit. Get it backwards and every coordinate is still a plausible number.
+    @Test("Projection reads sign bits MSB-first, set-bit-positive")
+    func projectionReadsTheArtifactsBitOrder() {
+        // A 16-dimension axis pointing entirely at dimension 0.
+        var direction = [Float](repeating: 0, count: 16)
+        direction[0] = 1
+        let axis = SemanticAxis(direction: direction, negativeLabel: "a", positiveLabel: "b")
+
+        // 0b1000_0000 sets the MOST significant bit, which is dimension 0.
+        var bytes: [UInt8] = [0b1000_0000, 0b0000_0000]
+        var high = Float(0)
+        bytes.withUnsafeBytes { raw in
+            high = axis.project(signBitsAt: raw.baseAddress!, row: 0, bytesPerRow: 2)
+        }
+        #expect(high > 0, "a set high bit is +1 along dimension 0")
+
+        bytes = [0b0111_1111, 0b1111_1111]
+        var low = Float(0)
+        bytes.withUnsafeBytes { raw in
+            low = axis.project(signBitsAt: raw.baseAddress!, row: 0, bytesPerRow: 2)
+        }
+        #expect(low < 0, "a clear high bit is -1 along dimension 0")
+        #expect(abs(high + low) < 1e-5, "the two must be exact opposites on this axis")
+
+        // The coordinate is a cosine: a document whose every bit agrees with a uniform axis lands at
+        // exactly 1, which is what bounds the slice grid.
+        let uniform = SemanticAxis(
+            direction: [Float](repeating: 1 / Float(16).squareRoot(), count: 16),
+            negativeLabel: "a", positiveLabel: "b")
+        var allSet: [UInt8] = [0xFF, 0xFF]
+        var extreme = Float(0)
+        allSet.withUnsafeBytes { raw in
+            extreme = uniform.project(signBitsAt: raw.baseAddress!, row: 0, bytesPerRow: 2)
+        }
+        #expect(abs(extreme - 1) < 1e-5, "all bits agreeing is the +1 end, was \(extreme)")
+    }
+
+    /// Dequantizing a centroid is `code * scale`, and the poles depend on it being exactly that.
+    @Test("Centroid dequantization is code times scale")
+    func centroidDequantization() {
+        let vector = SemanticAxis.dequantize(codes: [127, -128, 0, 64], scale: 0.01)
+        #expect(abs(vector[0] - 1.27) < 1e-5)
+        #expect(abs(vector[1] + 1.28) < 1e-5)
+        #expect(vector[2] == 0)
+        #expect(abs(vector[3] - 0.64) < 1e-5)
     }
 
     /// Builds a cluster record for the layout tests.

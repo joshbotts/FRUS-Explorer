@@ -6758,3 +6758,52 @@ saved, and the corpus appears in Working Corpora rendered by the existing view w
 provenance "Semantic map selection · Captured Aug 13, 2026 · against 2 indexed volumes".
 
 Still to come: the design's semantic-axis slices.
+
+## Session 2026-08-13 — the axis you can state
+
+The last of the design's V-4 features: *"a semantic axis = normalised difference of two centroid
+vectors, where the user picks the poles … project visible documents onto it and drive the x-axis with
+it while y stays date. This is honest in a way the UMAP plane is not."* That last clause is the
+point — the map's plane preserves neighbourhoods, not distances, so "these two regions are far apart"
+means nothing on it. An axis has a definition a reader can say out loud.
+
+**The data decided which poles exist, and it is two of the design's four.** Verified against the
+shipped bytes rather than the doc comments: the binary carries 552 volume centroids then 107
+subseries centroids, int8 with a Float32 scale, L2-normalised before quantization — so those poles
+are exact. A **cluster pole is not offerable at all**, because the Tier-0 map records a cluster centre
+only as 2-D *layout* coordinates and nowhere in embedding space; term-set poles need an on-device
+encoder the design defers and calls optional. Offering a pole the artifact cannot support would be
+worse than offering fewer.
+
+**Projection runs on sign bits, because that is the only corpus-wide per-document tier there is.**
+One bit per dimension, so a document reads as ±1 and the coordinate is `Σ sign·direction / √dims` — a
+real cosine against the sign pattern. int8 exists only in downloaded shards, and using it would make
+the axis mean one thing for some rows and another for the rest.
+
+**Poles are picked by tapping a document, not from a list.** 552 volumes and 107 subseries do not fit
+in a menu anyone would read, and the reader is already pointing at what they mean.
+
+**The coupling that would have been a silent wrong answer:** picking and lasso read the *artifact's*
+placements. A slice draws different coordinates for the same rows, so a tap would have selected
+whatever sat under the finger *on the map* while the reader was looking at a slice. Both now scan the
+displayed positions, and cluster identity is looked up by ROW — which survives re-layout, because a
+row still means the same document. Five existing tests moved onto the same accessor the model uploads
+through, so the tests and the renderer no longer hold two copies of one decode.
+
+**Three defects found by looking at it, two predicted and one not.** The lens was silently discarded
+(`setPoints` rewrites every colour byte, so the slice came out in slot 0 — the dim "between regions"
+grey); region labels stayed at their map positions, naming regions that are no longer there; and —
+unpredicted — the x-spread was a narrow smear, because a sign-bit cosine against a
+difference-of-centroids axis concentrates near zero when most of the corpus is unrelated to both
+poles. The first two are fixed, the third is scaled to the observed range **and disclosed**, since
+the order along the axis is the content and the absolute magnitude of a sign-bit cosine is not
+interpretable on its own.
+
+**The map now carries a caveat at all**, which it never has. On the plane it states the UMAP
+limitation; on a slice it names the poles, the precision, the scaling, and that up–down is the
+*volume's* coverage midpoint rather than the document's date. A projection onto a stated axis looks
+like a measurement, and the plane behind it is not one.
+
+Verified on the iPhone 17 simulator: an axis from `frus1936v04` (China, 1936) toward `frus1949v06`
+(Iran, 1949) re-lays the corpus into year bands with the regions still coloured, and returns to the
+map when the poles are cleared.

@@ -84,6 +84,22 @@ final class SemanticMapModel {
     /// The document the reader last tapped, if any.
     private(set) var selection: SemanticMapPicking.Selection?
 
+    /// The axis the corpus is currently laid out along, when it is not on the map's own plane.
+    private(set) var slice: SemanticAxis?
+
+    /// The volumes chosen as the axis's poles, low end first.
+    ///
+    /// Poles are picked by **tapping a document**, not from a list. 552 volumes and 107 subseries do
+    /// not fit in a menu anyone would read, and the reader is already pointing at the thing they mean
+    /// — "away from what this document is, toward what that one is" is the question a slice answers.
+    private(set) var poles: (negative: String?, positive: String?) = (nil, nil)
+
+    /// The grid positions currently on screen, one per row.
+    ///
+    /// Kept because the map has two layouts — the packed UMAP plane and a semantic-axis slice — and
+    /// every interaction has to agree with what is drawn rather than with the artifact.
+    private(set) var positions: [SIMD2<Int16>] = []
+
     /// The lasso being drawn, in view points. Empty when not drawing.
     private(set) var lassoPath: [CGPoint] = []
     /// What the last completed lasso enclosed.
@@ -158,6 +174,7 @@ final class SemanticMapModel {
                     colourIndex: 0, flags: 0))
             }
         }
+        positions = points.map(\.position)
         renderer.setPoints(points)
         renderer.frameAll(extent: Float(map.gridExtent))
         camera = renderer.camera
@@ -180,7 +197,7 @@ final class SemanticMapModel {
     func select(at point: CGPoint, size: CGSize, isReadable: (String) -> Bool) {
         guard let map = BundledSemanticMap.vectors, let index else { return }
         guard let hit = SemanticMapPicking.hit(
-            at: point, map: map, camera: camera, size: size) else {
+            at: point, positions: positions, camera: camera, size: size) else {
             selection = nil
             return
         }
@@ -193,7 +210,13 @@ final class SemanticMapModel {
             #endif
             return
         }
-        let region = clusters.first { $0.id == Int(hit.cluster) }
+        // The cluster comes from the artifact by ROW, not from the hit: a slice re-lays the same
+        // documents out, so a position means something different, but a row still means the same
+        // document and therefore the same region.
+        let clusterID = map.placement(at: hit.row)?.cluster ?? SemanticMapArtifacts.unclustered
+        let region = clusterID == SemanticMapArtifacts.unclustered
+            ? nil
+            : clusters.first { $0.id == Int(clusterID) }
         selection = SemanticMapPicking.Selection(
             row: hit.row,
             volumeID: document.volumeID,
@@ -227,7 +250,7 @@ final class SemanticMapModel {
             return
         }
         let found = SemanticMapPicking.rows(
-            inside: lassoPath, map: map, camera: camera, size: size,
+            inside: lassoPath, positions: positions, camera: camera, size: size,
             limit: SemanticMapPicking.corpusCaptureLimit)
         guard !found.rows.isEmpty else { lassoResult = nil; return }
 
@@ -255,6 +278,153 @@ final class SemanticMapModel {
 
     /// Clears the last lasso result.
     func clearLasso() { lassoResult = nil }
+
+    /// A volume's centroid, dequantized into the float vector a pole needs.
+    ///
+    /// The centroid block stores **volumes in index order first, then subseries**, so a volume's slot
+    /// is its position in `index.volumes` — the one place this ordering is relied on, and the reason
+    /// it is stated here rather than assumed at the call site.
+    ///
+    /// - Parameter volumeID: The volume.
+    /// - Returns: Its centroid, or `nil` when the artifact does not carry one.
+    func centroid(forVolume volumeID: String) -> [Float]? {
+        guard let index,
+              let vectors = BundledSemanticVectors.corpusVectors,
+              let slot = index.volumes.firstIndex(where: { $0.volumeID == volumeID }),
+              let stored = vectors.centroid(at: slot) else { return nil }
+        return SemanticAxis.dequantize(codes: stored.codes, scale: stored.scale)
+    }
+
+    /// Makes the selected document's volume one of the axis's poles.
+    ///
+    /// - Parameters:
+    ///   - volumeID: The volume to use.
+    ///   - isPositive: Whether it is the high end.
+    ///   - yearForVolume: A volume's coverage midpoint, for the slice's y-axis.
+    func setPole(volumeID: String, isPositive: Bool,
+                 yearForVolume: (String) -> Int?,
+                 reapplyLens: (() -> Void)? = nil) {
+        if isPositive { poles.positive = volumeID } else { poles.negative = volumeID }
+        guard let negativeID = poles.negative, let positiveID = poles.positive else { return }
+        guard negativeID != positiveID,
+              let negative = centroid(forVolume: negativeID),
+              let positive = centroid(forVolume: positiveID),
+              let axis = SemanticAxis.between(
+                negative: negative, negativeLabel: negativeID,
+                positive: positive, positiveLabel: positiveID) else {
+            // Two poles that are the same volume have no direction between them. Say nothing and
+            // stay on the map rather than drawing a slice made of rounding error.
+            return
+        }
+        setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
+    }
+
+    /// Clears the poles and returns to the map's own plane.
+    /// - Parameter yearForVolume: A volume's coverage midpoint.
+    func clearSlice(yearForVolume: (String) -> Int?, reapplyLens: (() -> Void)? = nil) {
+        poles = (nil, nil)
+        setSlice(axis: nil, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
+    }
+
+    /// Lays the corpus out along a semantic axis, or returns it to the map's own plane.
+    ///
+    /// **x is the projection, y is the volume's coverage year** — the design's "drive the x-axis with
+    /// it while y stays date". The date is the *volume's* coverage midpoint, not the document's,
+    /// because that is what the bundle knows for all 552 volumes; a per-document date exists only for
+    /// volumes this device has indexed, and a y-axis that meant one thing for some rows and another
+    /// for the rest would be worse than a coarse one that means the same thing everywhere.
+    ///
+    /// - Parameters:
+    ///   - axis: The axis to slice along, or `nil` to restore the map.
+    ///   - yearForVolume: A volume's coverage midpoint year.
+    func setSlice(axis: SemanticAxis?,
+                  yearForVolume: (String) -> Int?,
+                  reapplyLens: (() -> Void)? = nil) {
+        slice = axis
+        defer { reapplyLens?() }
+        guard let renderer, let map = BundledSemanticMap.vectors else { return }
+        guard let axis else {
+            // Back to the artifact's own coordinates.
+            var points = Self.mapPoints(from: map)
+            positions = points.map(\.position)
+            renderer.setPoints(points)
+            renderer.frameAll(extent: Float(map.gridExtent))
+            camera = renderer.camera
+            points.removeAll()
+            return
+        }
+        guard let index, let vectors = BundledSemanticVectors.corpusVectors else { return }
+
+        // Year per ROW, resolved once per volume rather than once per document: 552 lookups instead
+        // of 314,483.
+        var yearByRow = [Int16](repeating: 0, count: map.documentCount)
+        var minYear = Int.max, maxYear = Int.min
+        for volume in index.volumes {
+            guard let rows = index.rows(forVolume: volume.volumeID),
+                  let year = yearForVolume(volume.volumeID) else { continue }
+            minYear = min(minYear, year); maxYear = max(maxYear, year)
+            for row in rows where row < yearByRow.count { yearByRow[row] = Int16(clamping: year) }
+        }
+        let yearSpan = Float(max(1, maxYear - minYear))
+
+        let extent = Float(SemanticAxis.sliceExtent)
+
+        // Project first, then scale to what was actually observed. A sign-bit cosine against a
+        // difference-of-centroids axis concentrates near zero — most of the corpus is unrelated to
+        // both poles — so the true range is a narrow band and an unscaled slice is a vertical smear.
+        // The ORDER along the axis is the content; the absolute magnitude of a sign-bit cosine is not
+        // interpretable on its own, so filling the width costs no meaning. The caveat says it.
+        var projections = [Float](repeating: 0, count: map.documentCount)
+        var lowest = Float.greatestFiniteMagnitude
+        var highest = -Float.greatestFiniteMagnitude
+        vectors.withSignBits { base, count in
+            for row in 0..<min(count, map.documentCount) {
+                let value = axis.project(signBitsAt: base, row: row,
+                                         bytesPerRow: vectors.bytesPerRow)
+                projections[row] = value
+                lowest = min(lowest, value)
+                highest = max(highest, value)
+            }
+        }
+        let spread = max(1e-6, highest - lowest)
+
+        var points = [SemanticMapRenderer.MapPoint]()
+        points.reserveCapacity(map.documentCount)
+        for row in 0..<map.documentCount {
+            let x = ((projections[row] - lowest) / spread) * 2 - 1
+            let year = Int(yearByRow[row])
+            let normalisedYear = year == 0 ? Float(0) : (Float(year - minYear) / yearSpan) * 2 - 1
+            points.append(SemanticMapRenderer.MapPoint(
+                position: SIMD2<Int16>(Int16(clamping: Int(x * extent)),
+                                       Int16(clamping: Int(normalisedYear * extent))),
+                colourIndex: 0, flags: 0))
+        }
+        positions = points.map(\.position)
+        renderer.setPoints(points)
+        renderer.frameAll(extent: extent)
+        camera = renderer.camera
+    }
+
+    /// Reads the artifact's own placements into renderer points.
+    /// - Parameter map: The mapped placements.
+    /// - Returns: One point per document, in row order.
+    static func mapPoints(from map: SemanticMapVectors) -> [SemanticMapRenderer.MapPoint] {
+        var points = [SemanticMapRenderer.MapPoint]()
+        points.reserveCapacity(map.documentCount)
+        map.withPlacements { base, count in
+            for row in 0..<count {
+                let offset = row * SemanticMapArtifacts.bytesPerDocument
+                points.append(SemanticMapRenderer.MapPoint(
+                    position: SIMD2<Int16>(
+                        Int16(bitPattern: base.loadUnaligned(
+                            fromByteOffset: offset, as: UInt16.self).littleEndian),
+                        Int16(bitPattern: base.loadUnaligned(
+                            fromByteOffset: offset + 2, as: UInt16.self).littleEndian)),
+                    colourIndex: 0, flags: 0))
+            }
+        }
+        return points
+    }
 
     /// Pans the camera by a gesture translation in points.
     /// - Parameter translation: The delta since the last change.
@@ -405,6 +575,7 @@ struct SemanticMapSpikeView: View {
                 selectionCard
                 lassoCard
             }
+            provenanceCaveat
             controls
         }
         .navigationTitle(String(localized: "semanticMap.title", defaultValue: "Semantic Map"))
@@ -444,11 +615,81 @@ struct SemanticMapSpikeView: View {
         }
     }
 
+    /// What the reader is looking at, and what it does and does not mean.
+    ///
+    /// **The design requires this and names the reason**: *"This is honest in a way the UMAP plane is
+    /// not — UMAP preserves neighborhoods, not global distances, and the UI copy should say so."* The
+    /// map has shipped without any such caveat until now; a slice makes the omission worse, because a
+    /// projection onto a stated axis *looks* like a measurement and the plane behind it is not one.
+    @ViewBuilder
+    private var provenanceCaveat: some View {
+        Group {
+            if let slice = model.slice {
+                Text(verbatim: Self.sliceCaveat(from: slice.negativeLabel, to: slice.positiveLabel))
+            } else {
+                Text(String(
+                    localized: "semanticMap.caveat.map",
+                    defaultValue: """
+                        Layout preserves local similarity; distances between far regions are not \
+                        meaningful.
+                        """))
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 4)
+    }
+
+    /// The caveat a slice carries.
+    /// - Parameters:
+    ///   - negative: The low-end pole.
+    ///   - positive: The high-end pole.
+    /// - Returns: The sentence.
+    private static func sliceCaveat(from negative: String, to positive: String) -> String {
+        String(format: String(
+            localized: "semanticMap.caveat.slice %@ %@",
+            defaultValue: """
+                Left–right is each document's projection onto %@ → %@, from 256-bit signatures, \
+                scaled to the observed range. Up–down is the volume's coverage midpoint, not the \
+                document's date.
+                """), negative, positive)
+    }
+
     /// A volume's coverage era, from the manifest.
     /// - Parameter volumeID: The volume.
     /// - Returns: Its era, when the manifest knows one.
     private func eraForVolume(_ volumeID: String) -> CoverageEra? {
         appState.manifestStore.eraForVolume(volumeID)
+    }
+
+    /// Re-applies the active lens.
+    ///
+    /// `setPoints` rewrites every colour byte, so a re-layout silently drops the lens and paints the
+    /// corpus in slot 0 — which is the dim "between regions" colour, so the slice came out grey. The
+    /// layout changes; what a colour means does not.
+    private func applyLens() {
+        model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded)
+    }
+
+    /// A volume's coverage midpoint year, for the slice's vertical axis.
+    ///
+    /// The VOLUME's, not the document's: the manifest knows a coverage range for all 552 volumes,
+    /// where a per-document date exists only for volumes this device has indexed. A y-axis that meant
+    /// one thing for some rows and another for the rest would be worse than a coarse one that means
+    /// the same everywhere — and the caveat says which it is.
+    ///
+    /// - Parameter volumeID: The volume.
+    /// - Returns: The midpoint year, when the manifest has a range.
+    private func yearForVolume(_ volumeID: String) -> Int? {
+        guard let entry = appState.manifestStore.entry(forVolumeId: volumeID) else { return nil }
+        // The manifest stores coverage as ISO-ish strings; the leading four characters are the year,
+        // which is all a vertical axis over 160 years of corpus needs.
+        let years = [entry.dateRange.earliest, entry.dateRange.latest]
+            .compactMap { $0.flatMap { Int($0.prefix(4)) } }
+            .filter { $0 > 1700 && $0 < 2200 }
+        guard !years.isEmpty else { return nil }
+        return years.reduce(0, +) / years.count
     }
 
     /// Whether a volume is indexed on this device — the `availability` lens's question.
@@ -541,8 +782,15 @@ struct SemanticMapSpikeView: View {
     @ViewBuilder
     private var labelOverlay: some View {
         GeometryReader { proxy in
-            let labels = SemanticMapLabelLayout.labels(
-                for: model.clusters, camera: model.camera, size: proxy.size)
+            // A cluster's centre is a coordinate in the MAP's plane. In a slice the same documents
+            // sit somewhere else entirely, so a label drawn at that centre names a region that is no
+            // longer there — decoration over unrelated coordinates. Hidden rather than recomputed:
+            // a slice's x is a projection and its y is a date, and the centroid of a region in that
+            // space is a different claim needing its own justification.
+            let labels = model.slice == nil
+                ? SemanticMapLabelLayout.labels(
+                    for: model.clusters, camera: model.camera, size: proxy.size)
+                : []
             ForEach(labels) { label in
                 Text(label.text)
                     .font(.caption2.weight(.medium))
@@ -606,6 +854,26 @@ struct SemanticMapSpikeView: View {
                                 defaultValue: "Between regions"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                // Poles come from tapped documents, so the control lives on the selection card.
+                HStack(spacing: 8) {
+                    Button(String(localized: "semanticMap.axis.poleFrom",
+                                  defaultValue: "Axis: from here")) {
+                        model.setPole(volumeID: selection.volumeID, isPositive: false,
+                                      yearForVolume: yearForVolume,
+                                      reapplyLens: applyLens)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    Button(String(localized: "semanticMap.axis.poleTo",
+                                  defaultValue: "…to here")) {
+                        model.setPole(volumeID: selection.volumeID, isPositive: true,
+                                      yearForVolume: yearForVolume,
+                                      reapplyLens: applyLens)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(model.poles.negative == nil)
                 }
                 if selection.isDownloaded {
                     openButton(for: selection)
