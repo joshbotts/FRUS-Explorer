@@ -6209,3 +6209,51 @@ Still owed: the "why related" chip currently states the cosine as a percentage, 
 thing this axis knows — the design's shared-distinctive-terms chip is separate work. And the
 tester-feedback path the retired blind panel was traded for still needs to exist: shipping an
 experiment nobody can report on is not evidence-gathering.
+
+## Session 2026-08-12 — V-3 follow-ups: the chip, and the feedback path the panel was traded for
+
+Two things the axis shipped without, plus a defect the scouting found in what did ship.
+
+**THE SEMANTIC EVIDENCE LABEL WAS NEVER RENDERED.** V-3 added
+`SemanticSimilarityGenerator.evidenceLabel`, tested it, and carried it to
+`RelatedDocumentRow.axisEvidenceLabel` — but `whyRelatedChips` had no `.semanticSimilarity` arm, so
+it fell through `default:` to a bare percentage and the label's only consumer was its own unit test.
+A test on the producing function passed the whole time. This is the "tests must drive the real
+emitter" failure in its purest form, and the fix is source-scanned rather than unit-tested for that
+reason.
+
+**The "why related" chip** (`SemanticSharedTerms`) now computes shared *distinctive* terms at render
+time for the displayed rows only — the design's §6.1 shape. Ranking is by corpus rarity from
+`BundledKeynessBaseline`, because two FRUS documents share "government" the way two sentences share
+"the". Three details are load-bearing:
+- **A term the baseline does not price is skipped, not treated as maximally rare.** The artifact
+  keeps a 20,000-term head, so "unpriced" also means "tokenisation debris" — which would otherwise
+  win every chip precisely because it is meaningless.
+- **The display form comes from the anchor's own text.** `WordCloudTokenizer` emits lowercased
+  lemmas; printing them would render the ship *Kearsarge* as `kearsarge`. A guard also rejects a
+  surface form far longer than its lemma, so "ration" inside "corporations" is not shown.
+- The pass runs **after** ranking and is guarded on the same reload key as the load, so a late
+  result cannot write terms for a previous anchor onto the current rows. Rows display the percentage
+  until it lands, and permanently where no distinctive vocabulary is shared.
+
+Observation recorded rather than fixed: the rarest shared terms are often personal names, which
+overlaps the `sharedPersons` axis. Filtering them would need a second entity pass per document, and
+which a historian prefers is what the feedback path is for.
+
+**The tester feedback path** (`SemanticFeedbackLog` + Settings ▸ Data & Recovery ▸ Semantic Match
+Feedback) is the other half of the decision to retire the blind panel. **Every field exists to answer
+the question the panel would have answered**: the anchor's `CoverageEra` — the app's own banding, not
+a second one — plus the cosine, whether the pair are volume-mates, and the artifact generation. A log
+without the era would record enthusiasm and prove nothing, and the Settings screen shows the era
+split on screen rather than burying it in the export, because zero pre-1900 verdicts after a beta
+means the panel was retired and nothing replaced it.
+
+It is deliberately **not** a `@Model`: that changes the CloudKit schema and needs a Production deploy
+before shipping (#488), and a tester's notes about the app are not their research. It follows
+`SyncDiagnosticsLog` — an actor over a bounded JSON file in Application Support, local by
+construction, exportable through `ShareLink`. A second verdict on the same pair replaces the first,
+so one indecisive row cannot outweigh ten rows of agreement.
+
+The row control is a context menu (the row is already a Button, and a button inside a button is a
+hit-testing argument nobody wins) and appears only on rows the semantic axis actually scored — a
+verdict on a row it did not produce would be evidence about a different axis.

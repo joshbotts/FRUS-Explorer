@@ -223,6 +223,14 @@ enum WhyRelatedChip: Hashable, Sendable {
     /// A generator axis whose evidence is binary and unnamed — the chip states presence only.
     /// The fallback when a match path produced no human-readable container name.
     case presence
+    /// A semantic axis, naming the distinctive vocabulary the two documents share.
+    ///
+    /// A cosine explains nothing, and every other generator axis names its evidence. The terms are
+    /// display forms taken from the anchor's own text, never lemmas or stems, and they are ranked by
+    /// corpus rarity — "government" is shared by everything and says nothing. When no distinctive
+    /// overlap survives, the axis states its percentage instead, which is honest about having found
+    /// a resemblance it cannot put into words.
+    case sharedTerms([String])
     /// A scorer axis, whose `[0, 1]` score is an absolute measure and rounds to a percent.
     case percent(Int)
 }
@@ -355,6 +363,16 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
                     // No recognised container name — presence is still the honest reading, and is
                     // never a percentage for the reason #643 established.
                     return (axis, .presence)
+                case .semanticSimilarity:
+                    // The terms are computed at RENDER time for the displayed rows only and written
+                    // back into `axisEvidenceLabel`, so this arm is empty on first paint and fills
+                    // in when that pass lands. A percentage is the honest interim reading — and the
+                    // permanent one where the two documents share no distinctive vocabulary.
+                    if let joined = axisEvidenceLabel[axis], !joined.isEmpty {
+                        let terms = joined.split(separator: "\u{1F}").map(String.init)
+                        if !terms.isEmpty { return (axis, .sharedTerms(terms)) }
+                    }
+                    return (axis, .percent(Int((score * 100).rounded())))
                 default:
                     return (axis, .percent(Int((score * 100).rounded())))
                 }
