@@ -117,6 +117,28 @@ enum SemanticMapLabelLayout {
             y: CGFloat((1 - normalized.y) * 0.5) * size.height)
     }
 
+    /// Turns a point in the view back into a grid coordinate.
+    ///
+    /// The exact inverse of `project(_:camera:size:)`, and it has to be — a tap resolved through a
+    /// slightly different rule would select a document next to the one under the reader's finger,
+    /// which is the kind of wrongness that looks like imprecision rather than a bug.
+    ///
+    /// - Parameters:
+    ///   - point: A position in view points.
+    ///   - camera: Where the camera is looking.
+    ///   - size: The view's size in points.
+    /// - Returns: The grid coordinate under that point.
+    static func unproject(_ point: CGPoint, camera: SemanticMapCamera, size: CGSize)
+        -> SIMD2<Float> {
+        guard size.width > 0, size.height > 0 else { return camera.centre }
+        let aspect = Float(size.width / size.height)
+        let scale = camera.scale(aspect: aspect)
+        let normalized = SIMD2<Float>(
+            Float(point.x / size.width) * 2 - 1,
+            1 - Float(point.y / size.height) * 2)
+        return normalized * scale + camera.centre
+    }
+
     /// Lays out the names for the visible regions.
     ///
     /// - Parameters:

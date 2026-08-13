@@ -435,6 +435,124 @@ struct SemanticMapSurfaceTests {
         }
     }
 
+    // MARK: - Picking
+
+    /// A tap resolved through a slightly different rule than the one that drew the point would select
+    /// the document *next to* the reader's finger — wrongness that reads as imprecision, not a bug.
+    /// So the inverse is pinned against the forward projection rather than derived again.
+    @Test("Unprojecting a projected point returns the same grid coordinate")
+    func unprojectInvertsProject() {
+        let cameras = [
+            SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 30_000),
+            SemanticMapCamera(centre: SIMD2<Float>(-12_000, 4_500), halfExtent: 3_000),
+        ]
+        let sizes = [CGSize(width: 400, height: 400), CGSize(width: 900, height: 300),
+                     CGSize(width: 300, height: 900)]
+        let grids = [SIMD2<Float>(0, 0), SIMD2<Float>(7_500, -2_500), SIMD2<Float>(-14_000, 9_000)]
+        for camera in cameras {
+            for size in sizes {
+                for grid in grids {
+                    let round = SemanticMapLabelLayout.unproject(
+                        SemanticMapLabelLayout.project(grid, camera: camera, size: size),
+                        camera: camera, size: size)
+                    #expect(abs(round.x - grid.x) < 1, "x for \(grid) at \(size)")
+                    #expect(abs(round.y - grid.y) < 1, "y for \(grid) at \(size)")
+                }
+            }
+        }
+    }
+
+    /// Tapping a document must select that document — and tapping empty map must select nothing,
+    /// because a pick that always returns *something* would hand the reader an arbitrary document
+    /// from across the corpus and call it a result.
+    @MainActor
+    @Test("A tap selects the document under it, and empty map selects nothing")
+    func pickingFindsTheNearestDocument() async throws {
+        await BundledSemanticMap.prepare()
+        let map = try #require(BundledSemanticMap.vectors)
+        let size = CGSize(width: 600, height: 600)
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
+                                       halfExtent: Float(map.gridExtent))
+
+        // Aim at a document the artifact actually holds, and require that one back.
+        let target = try #require(map.placement(at: 12_345))
+        let onScreen = SemanticMapLabelLayout.project(
+            SIMD2<Float>(Float(target.x), Float(target.y)), camera: camera, size: size)
+        let hit = try #require(SemanticMapPicking.hit(
+            at: onScreen, map: map, camera: camera, size: size))
+        #expect(hit.position.x == Float(target.x))
+        #expect(hit.position.y == Float(target.y))
+
+        // Far outside the grid there is nothing to select, however generous the radius.
+        let empty = SemanticMapLabelLayout.project(
+            SIMD2<Float>(Float(map.gridExtent) * 4, Float(map.gridExtent) * 4),
+            camera: camera, size: size)
+        #expect(SemanticMapPicking.hit(at: empty, map: map, camera: camera, size: size) == nil)
+    }
+
+    /// The row a pick returns is only useful if it resolves to a document, and identity is STORED in
+    /// the artifact rather than derived from the ordinal — the design's implicit keying mis-keyed
+    /// 15,097 documents, so this checks the pick lands in the keying that replaced it.
+    @MainActor
+    @Test("A picked row resolves to a real volume and document")
+    func pickedRowResolvesToADocument() async throws {
+        await BundledSemanticMap.prepare()
+        let map = try #require(BundledSemanticMap.vectors)
+        let index = try #require(BundledSemanticVectors.index)
+        let size = CGSize(width: 600, height: 600)
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
+                                       halfExtent: Float(map.gridExtent))
+
+        // Include the volume whose ids are NOT `dN` — `frus1958-60v05mSupp` keys its 628 documents
+        // `eta_d1…`, which is exactly the case a shape assumption would break on.
+        var rows = Array(stride(from: 0, to: map.documentCount, by: 41_000))
+        if let odd = index.rows(forVolume: "frus1958-60v05mSupp")?.lowerBound { rows.append(odd) }
+        for row in rows {
+            let placement = try #require(map.placement(at: row))
+            let point = SemanticMapLabelLayout.project(
+                SIMD2<Float>(Float(placement.x), Float(placement.y)), camera: camera, size: size)
+            let hit = try #require(SemanticMapPicking.hit(
+                at: point, map: map, camera: camera, size: size), "row \(row)")
+            let document = try #require(index.document(at: hit.row), "row \(hit.row)")
+            #expect(!document.volumeID.isEmpty)
+            // NOT `hasPrefix("d")`. A first draft asserted that and passed only because the sampled
+            // rows happened to be `dN`: `frus1958-60v05mSupp` keys its 628 documents `eta_d1…`, and
+            // the corpus also carries `d373a`, `appA` and `s05sub04`. Asserting the shape would
+            // have baked in the same assumption that mis-keyed 15,097 documents when the design
+            // tried to derive ids from ordinals.
+            #expect(!document.documentID.isEmpty, "row \(hit.row)")
+            #expect(index.rows(forVolume: document.volumeID)?.contains(hit.row) == true)
+            #expect(index.row(documentID: document.documentID,
+                              volumeID: document.volumeID) == hit.row,
+                    "identity must round-trip for \(document.volumeID)/\(document.documentID)")
+        }
+    }
+
+    /// The scan runs once per tap, not per frame — but "once per tap" is still a human waiting, so
+    /// the cost is measured rather than assumed. A linear pass over 1.9 MB should be well under the
+    /// threshold; if this ever fails, a spatial index has become worth its second source of truth.
+    @MainActor
+    @Test("Picking the whole corpus is fast enough for a tap")
+    func pickingIsFastEnough() async throws {
+        await BundledSemanticMap.prepare()
+        let map = try #require(BundledSemanticMap.vectors)
+        let size = CGSize(width: 600, height: 600)
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
+                                       halfExtent: Float(map.gridExtent))
+
+        let start = ContinuousClock.now
+        var found = 0
+        for step in 0..<20 {
+            let point = CGPoint(x: 40 + Double(step) * 26, y: 40 + Double(step) * 26)
+            if SemanticMapPicking.hit(at: point, map: map, camera: camera, size: size) != nil {
+                found += 1
+            }
+        }
+        let each = (ContinuousClock.now - start) / 20
+        #expect(each < .milliseconds(60), "a tap took \(each)")
+        #expect(found > 0, "20 taps down the diagonal of a full-corpus map should hit something")
+    }
+
     /// Builds a cluster record for the layout tests.
     /// - Parameters:
     ///   - id: Cluster id.
