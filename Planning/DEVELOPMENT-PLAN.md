@@ -6604,6 +6604,61 @@ has repeatedly needed and not had. Map suite 17 green; verified on the iPhone 17
 
 Still to come: tap-to-open, lasso into a `WorkingCorpus`, and the design's semantic-axis slices.
 
+## Session 2026-08-12 — #234 R-1: the detector pilot, measured
+
+Three arms over the twelve M1a volumes on the Air (Apple M5, 32 GB). `prompt_tokens` came out
+identical at 548,177 for both LLMs, so the two saw the same 824 chunks and the comparison is one.
+
+| | docs | mentions | novel | unlocated | truncated | wall clock | scope extrapolation |
+|---|---|---|---|---|---|---|---|
+| `NLTagger` control | 9,935 | 71,358 | 95% | n/a | — | 0.4 min | **~8 min** |
+| Qwen3 1.7 B | 480 | 2,031 | 85% | **7.3%** | 244 (30%) | 421 min | **~120 days** |
+| Qwen3 14 B | 480 | 2,264 | 82% | **0.8%** | 231 (28%) | 1,754 min | **~501 days** |
+
+### The timings measure a misconfiguration, not a model
+
+§4.1 designs this workload to be 94% prompt processing. It ran at **52.8% generation** — 613,375
+completion tokens against 548,177 prompt, **~735 per chunk** where the answer is ~25 tokens of JSON
+(the models returned about two strings per chunk). That is Qwen3's reasoning trace, on by default.
+The run became **decode**-bound, the one axis the Air is worst on, inverting §4.2's own argument for
+using it. At 733 tokens in 127.68 s the 14 B decoded at ~5.7 tok/s against a ceiling near 10 for a
+15 GB model on 153 GB/s; the 1.7 B got 24 of a possible ~85, the rest being the fanless throttle
+over 7- and 29-hour runs.
+
+The 28–30% truncation rate is the tell, and §4.5 pointed the wrong way at it — "`MAX_TOKENS` is
+clipping a dense passage" is right for a non-reasoning model and actively misleading here, where
+raising the ceiling makes the run slower and changes no answer. Both §4.2's table and §4.5's row are
+now annotated.
+
+Two corrections fell out: the chunk count is **1.72 per document**, so the scope is ~339,000 chunks
+rather than §4.1's 230–260 k; and the control ran **8–15× faster than its own ~1–2 h estimate**.
+§4.2's "at 0.5–2 B the gap narrows to roughly 5–20×" does not survive — measured, it is ~21,000×.
+
+### The quality finding is clean, and is why two arms were run
+
+On byte-identical input, Qwen3 1.7 B failed to copy **112 of 1,538** returned strings verbatim
+(7.3%) against the 14 B's **13 of 1,634** (0.8%). A string not occurring verbatim is located nowhere
+and contributes no mention, so that is one mention in fourteen deleted silently. With the 1.7 B
+alone, 7.3% could have been the model or the prompt; the 14 B on the same chunks says it is the
+model. **Shortlist sign-off: 1.7 B out on verbatim-copy discipline, 14 B stands with its cost
+unmeasured.** `unparsable` was 0 for both.
+
+Two traps recorded for whoever reads the table next. `novel` is not quality — the control finds 7.2
+mentions per document against the 14 B's 4.7, and whether its extra half are people or ships is
+exactly what M2a decides. And the control's `unlocated` is **n/a, not 0.0%**: that counter is
+written only by the LLM path, so a summariser defaulting it to zero shows the control as flawless at
+something it never does.
+
+### The re-run, and the provenance gap it carries
+
+`detect_chunk` sends a fixed body with no hook for `chat_template_kwargs`, so thinking is disabled
+LM Studio-side and the manifest cannot record it — it records `system_prompt`, `response_format`,
+`temperature` and `max_tokens` only. The *effect* is recorded (`completion_tokens` per chunk,
+`truncated` per volume), so a store still says which mode produced it; §4.8 says to name the store
+for it. §4.8 also carries a one-chunk probe through the harness's own `detect_chunk`, so the check
+uses the real prompt: ~25 completion tokens means thinking is off, ~700 means it is not, and that
+costs ten seconds against a 30-hour mistake.
+
 ## Session 2026-08-13 — tap a point, open the document
 
 The map could be read but not used. Now a tap selects the nearest document, names it, and opens it.
@@ -6657,3 +6712,4 @@ letter, from the region the labeller named *shevardnadze*. The map's semantics c
 tap.
 
 Still to come: lasso into a `WorkingCorpus`, and the design's semantic-axis slices.
+

@@ -158,6 +158,13 @@ than the choice of machine. Scaled from the 8B anchor above, against the 240 M t
 | **1.5–2B** | 1,600–2,700 | **25–42 h** | **25–84 h** |
 | **0.5–0.6B** | 4,500–8,000 | **8–15 h** | **8–30 h** |
 
+> **SUPERSEDED FOR THE ≤2 B AND 14 B ROWS BY THE MEASUREMENT IN §4.7 — and not by a little.**
+> The 1.5–2 B row predicts 25–84 h on the Air; Qwen3 1.7 B measured **~120 days**, and Qwen3 14 B
+> **~501 days**. Read §4.7 before quoting any cell below. The cause was configuration rather than
+> hardware — both models emitted ~735 generated tokens per chunk where the answer is ~25 — but the
+> lesson survives the fix: this table has now been wrong by two orders of magnitude once, and
+> nothing in it should be treated as a budget.
+>
 > **Every cell here is derived, none is measured.** The V-0 spike measured *embedding* throughput,
 > on the Studio only, and the ride-along's Air-side questions were left open by owner decision. Two
 > of them apply directly: whether llama.cpp under LM Studio drives the M5's per-core Neural
@@ -257,7 +264,7 @@ Per volume, `detected/<vol>.head.json`:
 |---|---|
 | `mentions`, `novel`, `overlapping_marked` | how much the model adds beyond the editors' markup. M1a predicts roughly two unmarked mentions per marked one; a run where `novel` is near zero has found nothing the marked layer did not. |
 | `unlocated`, `unlocated_examples` | **the grounding signal.** A name the model returns that does not occur verbatim in the passage it was shown is stored nowhere and counted here. A high rate means the model is normalising or inventing; read the examples, they say which. |
-| `truncated`, `unparsable` | schema adherence. Non-zero `truncated` means `MAX_TOKENS` is clipping a dense passage. |
+| `truncated`, `unparsable` | schema adherence. Non-zero `truncated` means `MAX_TOKENS` is clipping — but read `completion_tokens` before concluding the passage was dense. On a hybrid-reasoning model with thinking left ON, ~30% of chunks truncate because the model is still reasoning at the ceiling, and **raising `MAX_TOKENS` there makes the run slower and changes no answer**. See §4.7. |
 | `prompt_tokens`, `completion_tokens`, `secs` | the real cost per chunk, which is what replaces §4.1's assumption and §4.2's table with a measurement for the model you actually ran. |
 
 Read a few dozen rows by hand as well — `unlocated_examples` catches invention, but only reading the
@@ -279,6 +286,82 @@ review artifact.
   the date, or the correspondents.
 * **No roles, no dates, no identities.** Those are R-2/R-3, and POCOM's 63.9% unique-by-year is
   their prior, not this pass's.
+
+### 4.7 The pilot, measured (2026-08-12, Air / Apple M5, 32 GB)
+
+Three arms over the twelve M1a volumes, `SAMPLE_DOCS=40 SEED=234` on both LLMs — `prompt_tokens`
+came out **identical at 548,177** for the two of them, which is the hard confirmation that they saw
+the same 824 chunks and that the comparison is one.
+
+| | docs | mentions | novel | unlocated | truncated | wall clock | **extrapolated to the 197,534-doc scope** |
+|---|---|---|---|---|---|---|---|
+| `NLTagger` control | 9,935 | 71,358 | 95% | n/a | — | **0.4 min** | **~8 min** |
+| Qwen3 1.7 B | 480 | 2,031 | 85% | **7.3%** | 244 (30%) | 421 min | **~120 days** |
+| Qwen3 14 B | 480 | 2,264 | 82% | **0.8%** | 231 (28%) | 1,754 min | **~501 days** |
+
+**Two findings, and only one of them is about the models.**
+
+**(a) The timings measure a misconfiguration, not a model.** §4.1 designs this workload to be 94%
+prompt processing. It ran at **52.8% generation**: 613,375 completion tokens against 548,177 prompt,
+or **~735 generated tokens per chunk** where the correct answer — the models returned ~2 strings per
+chunk — is roughly 25 tokens of JSON. That is Qwen3's reasoning trace, which is on by default. The
+run therefore became **decode**-bound, which is the one axis the Air is worst on, and inverts §4.2's
+own argument for using it ("this workload barely decodes"). At 733 tokens in 127.68 s the 14 B
+decoded at ~5.7 tok/s against a ceiling near 10 for a 15 GB model on 153 GB/s; the 1.7 B managed 24
+of a possible ~85. The remainder is the fanless throttle over 7- and 29-hour runs.
+
+Two corrections fall out of it. The chunk count is **1.72 per document**, so the scope is ~339,000
+chunks and not §4.1's 230–260 k. And the control came in **8–15× faster than its own ~1–2 h
+estimate** — §4.2's "at 0.5–2 B the gap narrows to roughly 5–20×" is not the shape of this at all;
+measured, the gap is ~21,000×, and a perfect fix removes the decode-bound majority but leaves a
+prefill floor nobody has measured on this machine.
+
+**(b) The quality finding is clean, and it is why two arms were run.** On byte-identical input,
+Qwen3 1.7 B failed to copy **112 of 1,538** returned strings verbatim (7.3%) against the 14 B's
+**13 of 1,634** (0.8%). A string that does not occur verbatim in the passage is located nowhere and
+contributes no mention, so that is one mention in fourteen deleted silently. With the 1.7 B alone,
+7.3% could have been the model or the prompt; the 14 B on the same chunks says it is the model.
+
+> **Shortlist sign-off (ride-along §6.4).** **Qwen3 1.7 B is out** — disqualified on verbatim-copy
+> discipline, and no speed fix reaches that. **Qwen3 14 B stands**, with its cost unmeasured until
+> the re-run in §4.8. `unparsable` was 0 for both, so schema adherence is not the issue for either.
+
+Do not read `novel` as quality. The control finds 7.2 mentions per document against the 14 B's 4.7,
+and whether its extra half are people or ships and legations is exactly what §6 decides. The
+control's `unlocated` is **n/a, not 0.0%** — that counter is written only by the LLM path, and a
+summariser that defaults it to zero will show the control as flawless at a thing it never does.
+
+### 4.8 The no-think re-run
+
+The harness sends a fixed body (`detect_chunk`) with no hook for `chat_template_kwargs`, so
+thinking is turned off **on the LM Studio side**, and that is a provenance gap worth stating: the
+run manifest records `system_prompt`, `response_format`, `temperature` and `max_tokens`, and cannot
+record a server-side toggle. What it *does* record is the effect — `completion_tokens` per chunk and
+`truncated` per volume — so a store still says unambiguously which mode produced it. Name the store
+and the log accordingly.
+
+**Probe before committing 30 hours.** One chunk through the harness's own `detect_chunk`, so the
+probe uses the real system prompt, response format and `MAX_TOKENS` rather than an approximation:
+
+```
+cd tools/semantic-harvest && python3 -c "
+import harvest_ner as hn
+names, prompt, completion, status = hn.detect_chunk('<id from /v1/models>', open('probe.txt').read())
+print('completion_tokens', completion, '| status', status, '| names', names)
+"
+```
+
+**~25 means thinking is off. ~700 means it is still on** — fix the setting, do not start the sweep.
+
+Then re-run the 14 B only (the 1.7 B is out on (b), and re-timing a disqualified model buys
+nothing), into a store whose name says what changed:
+
+```
+OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink
+```
+
+everything else — `VOLUMES`, `SAMPLE_DOCS=40`, `SEED=234` — held identical, or it is not the same
+480 documents and the before/after is not a comparison.
 
 ---
 
