@@ -35,6 +35,10 @@ private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
 ///         just built — a tautology that stayed green with `setPoints` stubbed out. They now read
 ///         the renderer's own `uploadedPointCount` and `uploadCount`. `.serialized` added: seven
 ///         cases drive `BundledSemanticMap`'s static state and one resets it.
+///   1.3 — V-4: the map was still blank on **macOS**, where SwiftUI realizes the representable more
+///         than once and the attach landed on an instance that was never composited. The
+///         late-attach test is replaced by one that makes several views from one surface and
+///         requires every one of them to be born attached.
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
@@ -187,8 +191,8 @@ struct SemanticMapSurfaceTests {
         let map = try #require(BundledSemanticMap.vectors)
 
         let model = SemanticMapModel()
-        #expect(model.renderer == nil, "a fresh model must not have built anything yet")
-        #expect(model.placedCount == 0)
+        #expect(model.renderer != nil, "the renderer is built in init, before any view can exist")
+        #expect(model.placedCount == 0, "but nothing is uploaded until prepare runs")
 
         await model.prepare(eraForVolume: { _ in nil }, isDownloaded: { _ in false })
 
@@ -228,30 +232,39 @@ struct SemanticMapSurfaceTests {
         #expect(first.uploadedPointCount == map.documentCount)
     }
 
-    /// The representable is built before the model's `.task` has produced a renderer — that ordering
-    /// is the whole reason this shape exists — so it must survive being made empty and pick the
-    /// renderer up on the next update rather than only working when it happens to be late.
+    /// The macOS regression test, reproduced headlessly.
     ///
-    /// This drives `attach(to:)`, which is what `updateUIView`/`updateNSView` call. Those two
-    /// one-line forwarders are themselves unexercised: `Context` is not constructible outside
-    /// SwiftUI, so no unit test can call them. Recorded rather than glossed.
+    /// The map was blank on macOS because SwiftUI realized the representable **more than once** — a
+    /// `.sheet` is where that happens — and connection depended on a later `updateNSView` landing on
+    /// the right instance. It landed on the wrong one, so the visible `MTKView` kept `delegate ==
+    /// nil`; an `MTKView` with no delegate never draws, so its layer had no contents and the sheet's
+    /// white showed through.
+    ///
+    /// No unit test can call `updateNSView` (`Context` is not constructible), and there is no macOS
+    /// test host. But the *seam* is reproducible: create the view more than once from one surface,
+    /// as SwiftUI does, and require that **every** view is usable. Under the old shape the first one
+    /// came back with no delegate.
     @MainActor
-    @Test("The surface attaches a renderer that arrives after the view was created",
+    @Test("Every view the surface creates is born attached, however many it makes",
           .enabled(if: semanticMapHasMetal))
-    func surfaceAttachesLateRenderer() async throws {
+    func everyRealizationIsBornAttached() async throws {
         let model = SemanticMapModel()
         let surface = SemanticMapSurface(model: model)
+        let renderer = try #require(model.renderer)
 
-        let view = surface.makeMap()
-        #expect(view.device != nil, "an MTKView with no device has no drawable to render into")
-        #expect(view.delegate == nil, "nothing to attach yet")
+        // Three realizations: the discarded measurement pass, the real one, and a rebuild.
+        let views = [surface.makeMap(), surface.makeMap(), surface.makeMap()]
+        for (index, view) in views.enumerated() {
+            #expect(view.delegate === renderer, "view \(index) was created without a delegate")
+            #expect(view.device === renderer.device, "view \(index) must share the pipeline's device")
+        }
 
+        // And loading later must not disturb any of them — whichever one SwiftUI composited.
         await model.prepare(eraForVolume: { _ in nil }, isDownloaded: { _ in false })
-        surface.attach(to: view)
-
-        #expect(view.delegate === model.renderer)
-        #expect(view.device === model.renderer?.device,
-                "the pipeline was built on the renderer's device; the view must share it")
+        for (index, view) in views.enumerated() {
+            surface.attach(to: view)
+            #expect(view.delegate === renderer, "view \(index) lost its delegate")
+        }
     }
 
     /// The view's configuration decides whether a frame is ever produced, and none of it is checked

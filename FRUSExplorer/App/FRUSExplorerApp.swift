@@ -746,6 +746,25 @@ struct FRUSExplorerApp: App {
         // and corpus graphs were readable.
         .defaultSize(width: 900, height: 640)
 
+        #if DEBUG
+        // MARK: - Semantic Map Window (V-4 diagnostics)
+        //
+        // A window rather than the sheet the other Data & Recovery sub-screens use, and the reason
+        // is a measurement rather than taste. The map is a Metal surface, and in a SwiftUI `.sheet`
+        // it renders nothing a reader can see: a faithful standalone reproduction shows the MTKView
+        // attached, sized, in `SheetPresentationWindow`, and presenting 600 frames at a clean 60 fps
+        // while the sheet shows its own background. The same content hosted in an ordinary window
+        // renders. Whether SwiftUI's sheet compositing is genuinely at fault is NOT established —
+        // nothing in that reproduction could photograph the screen — so this is the cheapest way to
+        // find out, and it is a fix if it is.
+        Window("Semantic Map", id: "frus.semanticMap") {
+            SemanticMapSpikeView(appState: appState)
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 900, height: 700)
+        #endif
+
         // MARK: - Source Explorer Window
         Window("Source Explorer", id: "frus.sourceExplorer") {
             SourceExplorerWindowView()

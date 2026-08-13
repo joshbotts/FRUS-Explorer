@@ -6488,3 +6488,64 @@ about nine and then no more. `LocalizedStringKey` was never involved. The genera
 state-during-update warnings. The previous entry ended "verified by rendering the shipped bytes
 through the headless Metal tool rather than trusting the build" — that was true, the bytes were fine,
 and the screen was blank anyway.
+
+## Session 2026-08-13 — the map was still blank on macOS, and I do not know why
+
+PR #874 fixed the map on iOS. The owner reported it **still blank on macOS**, with the stats overlay
+confidently reading "314483 documents · 4.09 ms mean · 245 fps equivalent". This entry records a
+failure to diagnose, because three confident explanations for this one screen have now been wrong and
+the pattern is worth more than another story.
+
+**Two things I read wrong in that screenshot.** The stats do not prove the surface was drawing:
+`StatsSink` publishes one window per 30 samples and the model then *keeps* that value, so a frozen
+overlay is indistinguishable from a live one. And I reached for a mechanism before measuring.
+
+**The one solid lemma.** `clearColor` is not a property an `MTKView` paints — it is the `.clear` load
+action inside `currentRenderPassDescriptor` — so a layer nobody presented to has **no contents at
+all** and composites transparent. White meant "nothing reached the screen"; dark would have meant
+"attached but idle". The surface had no way to say which, which is why one screenshot could not
+settle it, and fixing *that* is the most useful thing this session produced.
+
+**Nineteen candidate mechanisms were reviewed adversarially and every one was refuted.** Two of the
+refutations were themselves measurements: the bare `MTKView()` initializer does NOT skip MetalKit's
+setup (MTKView's own Objective-C method list carries `initWithFrame:` on macOS 26.6.1), and the
+"4.09 ms implies a large drawable" inference is unfounded.
+
+**My own probe was wrong, and I over-claimed on it.** A simplified AppKit probe showed `updateNSView`
+firing once and the view never drawing, and I reported that as the measured cause. It was an artifact
+of the probe: the ticking state sat on the *presenting* view, so the sheet's content never
+re-evaluated. A **faithful** reproduction — same shader, the real 314,483 placements, the same
+model/representable/sheet structure — shows the opposite and is the one to trust:
+
+```
+>>> updateNSView view=-37073 window=SheetPresentationWindow frame=(0,0,520,333) delegate=nil
+>>> ATTACHED to view=-37073 window=SheetPresentationWindow
+[draw #600] view=-37073 window=SheetPresentationWindow vis=true drawable=(1040,666) inTree=true
+```
+
+The view is attached, sized, visible, in the layer tree, and presenting 600 frames at a clean 60 fps.
+So neither "it never gets a delegate" nor "the sheet realizes it twice" is what happens.
+
+**And the faithful reproduction's own conclusion is also unfounded.** It reported "SwiftUI's sheet
+never composites the layer" and cited a screenshot; there is no screenshot among its artifacts and no
+pixel readback anywhere in its code. It could not see the screen. Its logs establish that the view
+*draws*; they establish nothing about what *appears*. Its bisect also contains a counter-example in
+which the sheet case rendered. Treat "the sheet is at fault" as an untested hypothesis.
+
+**What shipped, and why each part is defensible without the diagnosis.**
+
+- `draw(in:)` encodes an **empty pass** when there is nothing to draw, so an attached-but-idle surface
+  clears to dark instead of staying contentless. This converts the next observation into a
+  measurement: dark = attached and presenting, white = neither.
+- `Stats` gained a running `presentedFrames`, because the averages alone could not distinguish a live
+  surface from a dead one — the precise ambiguity that misled me.
+- `SemanticMapModel` builds its renderer in `init`, so a renderer can no longer arrive after the last
+  `update*View`. A real hole, mutation-tested (with `makeMap` returning an unattached view the new
+  test fails three times with `view.delegate → nil`) — but NOT known to be the macOS cause.
+- Frames from a window-less view are ignored, so the statistics describe the surface on screen.
+- **macOS opens the map in its own `Window` scene instead of the sheet.** The cheapest way to test the
+  one hypothesis still standing: if it draws there, the sheet was the problem; if it is still white in
+  an ordinary window, the hypothesis is dead and the `[SemanticMapRenderer]` probe lines say what is.
+
+**The honest status: unresolved, instrumented, and testable in one look.** No macOS test host exists
+and screen access was declined, so the observation itself has to be the owner's.
