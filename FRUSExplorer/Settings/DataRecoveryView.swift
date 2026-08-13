@@ -97,8 +97,8 @@ struct DataRecoveryView: View {
                 #if DEBUG
                 // V-4a: a measurement, not a feature. Debug-only until the map surface exists.
                 link(.semanticMapSpike,
-                     label: "Semantic Map (spike)",
-                     detail: "Metal rendering measurement for the discovery map")
+                     label: "Semantic Map",
+                     detail: "The corpus as a map of its own vocabulary")
                 #endif
             } header: {
                 Text(String(localized: "settings.dataRecovery.diagnostics.header",
@@ -322,7 +322,7 @@ struct DataRecoveryView: View {
         case .schemaStatus:     SchemaDeployStatusView()
         case .semanticFeedback: SemanticFeedbackView()
         #if DEBUG
-        case .semanticMapSpike: SemanticMapSpikeView()
+        case .semanticMapSpike: SemanticMapSpikeView(appState: appState)
         #endif
         case .eraseEverything:  EraseEverythingView()
         }

@@ -224,6 +224,24 @@ public final class ManifestStore {
     ///
     /// Version history:
     ///   1.0 — New UI scaffolding
+    /// The coverage era a volume falls into, from its manifest date range.
+    ///
+    /// Uses the app's own `CoverageEra` banding rather than a scheme invented at the call site, so
+    /// an era-coloured map, an era-split analytics chart and an era-banded feedback log all mean the
+    /// same thing by "before 1900".
+    ///
+    /// - Parameter volumeId: The volume to band.
+    /// - Returns: The era, or `nil` when the volume has no usable date range.
+    func eraForVolume(_ volumeId: String) -> CoverageEra? {
+        guard let entry = entry(forVolumeId: volumeId),
+              let earliest = entry.dateRange.earliest.flatMap({ Int($0.prefix(4)) }),
+              let latest = entry.dateRange.latest.flatMap({ Int($0.prefix(4)) })
+        else { return nil }
+        // The midpoint, matching every other era-banding in the app: a volume belongs to exactly one
+        // era, and its span is what decides which.
+        return CoverageEra.bucket(year: (earliest + latest) / 2)
+    }
+
     public func entry(forVolumeId id: String) -> VolumeManifestEntry? {
         entryIndex[id]
     }
