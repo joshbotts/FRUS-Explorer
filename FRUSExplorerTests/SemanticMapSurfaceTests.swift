@@ -553,6 +553,102 @@ struct SemanticMapSurfaceTests {
         #expect(found > 0, "20 taps down the diagonal of a full-corpus map should hit something")
     }
 
+    // MARK: - Lasso
+
+    /// Even-odd, not winding: a hand-drawn path that crosses itself should leave the overlap
+    /// *outside*, matching what the stroke looks like. A winding rule would swallow it.
+    @Test("Containment is even-odd, and the boundary does not speckle")
+    func polygonContainment() {
+        let square = [SIMD2<Float>(0, 0), SIMD2<Float>(10, 0),
+                      SIMD2<Float>(10, 10), SIMD2<Float>(0, 10)]
+        #expect(SemanticMapPicking.contains(polygon: square, x: 5, y: 5))
+        #expect(!SemanticMapPicking.contains(polygon: square, x: 15, y: 5))
+        #expect(!SemanticMapPicking.contains(polygon: square, x: 5, y: -1))
+
+        // A horizontal edge at the test point's own height is where a naive crossing test counts a
+        // vertex twice and punches holes along the edge. Walk a row straight through it.
+        for step in 1..<10 {
+            #expect(SemanticMapPicking.contains(polygon: square, x: Float(step), y: 5),
+                    "hole at x=\(step)")
+        }
+
+        // A concave "C": the notch is outside even though it is inside the bounding box.
+        let cShape = [SIMD2<Float>(0, 0), SIMD2<Float>(10, 0), SIMD2<Float>(10, 3),
+                      SIMD2<Float>(3, 3), SIMD2<Float>(3, 7), SIMD2<Float>(10, 7),
+                      SIMD2<Float>(10, 10), SIMD2<Float>(0, 10)]
+        #expect(SemanticMapPicking.contains(polygon: cShape, x: 1, y: 5), "the spine is inside")
+        #expect(!SemanticMapPicking.contains(polygon: cShape, x: 7, y: 5), "the notch is outside")
+    }
+
+    /// The lasso must select what the reader drew — and the denominator must keep counting past the
+    /// capture limit, because `WorkingCorpus` stores it as the thing a truncated capture is a
+    /// fraction *of*.
+    @MainActor
+    @Test("A lasso selects the documents inside it and counts every one",
+          .enabled(if: semanticMapHasMetal))
+    func lassoSelectsEnclosedDocuments() async throws {
+        await BundledSemanticMap.prepare()
+        let map = try #require(BundledSemanticMap.vectors)
+        let size = CGSize(width: 600, height: 600)
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
+                                       halfExtent: Float(map.gridExtent))
+
+        // A box around the whole grid encloses the entire corpus.
+        let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
+                          CGPoint(x: 650, y: 650), CGPoint(x: -50, y: 650)]
+        let all = SemanticMapPicking.rows(
+            inside: everything, map: map, camera: camera, size: size, limit: 100)
+        #expect(all.total == map.documentCount, "every document is inside a lasso around everything")
+        #expect(all.rows.count == 100, "but only the limit is kept")
+
+        // Degenerate paths select nothing rather than everything.
+        #expect(SemanticMapPicking.rows(
+            inside: [CGPoint(x: 10, y: 10), CGPoint(x: 20, y: 20)],
+            map: map, camera: camera, size: size, limit: 100).total == 0)
+
+        // A small box around one document's own position must contain it.
+        let target = try #require(map.placement(at: 200_000))
+        let at = SemanticMapLabelLayout.project(
+            SIMD2<Float>(Float(target.x), Float(target.y)), camera: camera, size: size)
+        let tight = [CGPoint(x: at.x - 6, y: at.y - 6), CGPoint(x: at.x + 6, y: at.y - 6),
+                     CGPoint(x: at.x + 6, y: at.y + 6), CGPoint(x: at.x - 6, y: at.y + 6)]
+        let near = SemanticMapPicking.rows(
+            inside: tight, map: map, camera: camera, size: size, limit: 5_000)
+        #expect(near.rows.contains(200_000), "the lasso must contain the point it was drawn around")
+    }
+
+    /// The capture limit is the synced record's size budget, so a lasso must respect it and say so
+    /// rather than quietly writing a corpus larger than the model was designed for.
+    @MainActor
+    @Test("A lasso over everything is capped, and reports what it left out",
+          .enabled(if: semanticMapHasMetal))
+    func lassoRespectsTheCaptureLimit() async throws {
+        await BundledSemanticMap.prepare()
+        let map = try #require(BundledSemanticMap.vectors)
+        let size = CGSize(width: 600, height: 600)
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
+                                       halfExtent: Float(map.gridExtent))
+        let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
+                          CGPoint(x: 650, y: 650), CGPoint(x: -50, y: 650)]
+
+        let capped = SemanticMapPicking.rows(
+            inside: everything, map: map, camera: camera, size: size,
+            limit: SemanticMapPicking.corpusCaptureLimit)
+        #expect(capped.rows.count == SemanticMapPicking.corpusCaptureLimit)
+        #expect(capped.total == map.documentCount)
+
+        let result = SemanticMapPicking.LassoResult(
+            documentKeys: (0..<capped.rows.count).map { "v/d\($0)" },
+            total: capped.total, regionNames: [])
+        #expect(result.isTruncated, "a capture that kept 7,500 of 314,483 is truncated")
+
+        // And a capture inside the limit must NOT claim truncation — `wasTruncatedAtCapture` is a
+        // three-state read where a wrong `true` is as misleading as a wrong `false`.
+        let whole = SemanticMapPicking.LassoResult(
+            documentKeys: ["v/d1", "v/d2"], total: 2, regionNames: [])
+        #expect(!whole.isTruncated)
+    }
+
     /// Builds a cluster record for the layout tests.
     /// - Parameters:
     ///   - id: Cluster id.

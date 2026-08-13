@@ -84,6 +84,11 @@ final class SemanticMapModel {
     /// The document the reader last tapped, if any.
     private(set) var selection: SemanticMapPicking.Selection?
 
+    /// The lasso being drawn, in view points. Empty when not drawing.
+    private(set) var lassoPath: [CGPoint] = []
+    /// What the last completed lasso enclosed.
+    private(set) var lassoResult: SemanticMapPicking.LassoResult?
+
     /// Where the camera is looking, mirrored out of the renderer.
     ///
     /// The renderer is not `@Observable` — it is driven by a display link and must not publish per
@@ -201,6 +206,56 @@ final class SemanticMapModel {
     /// Clears the selection.
     func clearSelection() { selection = nil }
 
+    /// Extends the lasso being drawn.
+    /// - Parameter point: The latest point, in view points.
+    func extendLasso(to point: CGPoint) {
+        // Thin the stroke as it is drawn rather than after: a finger produces a point per frame, and
+        // the containment test walks every edge for every candidate, so an unthinned path makes the
+        // scan several times more expensive for a shape the reader cannot tell apart.
+        if let last = lassoPath.last,
+           abs(last.x - point.x) < 4, abs(last.y - point.y) < 4 { return }
+        lassoPath.append(point)
+    }
+
+    /// Closes the lasso and resolves what it enclosed.
+    ///
+    /// - Parameter size: The view's size in points.
+    func finishLasso(size: CGSize) {
+        defer { lassoPath = [] }
+        guard let map = BundledSemanticMap.vectors, let index, lassoPath.count >= 3 else {
+            lassoResult = nil
+            return
+        }
+        let found = SemanticMapPicking.rows(
+            inside: lassoPath, map: map, camera: camera, size: size,
+            limit: SemanticMapPicking.corpusCaptureLimit)
+        guard !found.rows.isEmpty else { lassoResult = nil; return }
+
+        // Resolve identity only for the rows that will be kept. `document(at:)` mints a String and
+        // walks a volume's id segments; doing it for a discarded row is pure waste.
+        var keys: [String] = []
+        keys.reserveCapacity(found.rows.count)
+        var regionCounts: [Int: Int] = [:]
+        for row in found.rows {
+            guard let document = index.document(at: row) else { continue }
+            keys.append("\(document.volumeID)/\(document.documentID)")
+            if let placement = map.placement(at: row),
+               placement.cluster != SemanticMapArtifacts.unclustered {
+                regionCounts[Int(placement.cluster), default: 0] += 1
+            }
+        }
+        let names = regionCounts.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            .prefix(3)
+            .compactMap { entry in
+                clusters.first { $0.id == entry.key }?.terms.prefix(2).joined(separator: " ")
+            }
+        lassoResult = SemanticMapPicking.LassoResult(
+            documentKeys: keys, total: found.total, regionNames: Array(names))
+    }
+
+    /// Clears the last lasso result.
+    func clearLasso() { lassoResult = nil }
+
     /// Pans the camera by a gesture translation in points.
     /// - Parameter translation: The delta since the last change.
     func pan(by translation: CGSize) {
@@ -280,6 +335,11 @@ struct SemanticMapSpikeView: View {
     @State private var pointSize: Double = 2.0
     /// The surface's size, which picking needs and a gesture does not carry.
     @State private var surfaceSize = CGSize.zero
+    /// Whether a drag draws a lasso instead of panning.
+    @State private var isLassoing = false
+    /// What was saved, so the card can say so instead of leaving the reader guessing.
+    @State private var savedCorpusName: String?
+    @Environment(\.modelContext) private var modelContext
     #if os(iOS)
     /// The document to push, when the reader opens one.
     @State private var openedDocument: DocumentBrowserEntry?
@@ -301,6 +361,7 @@ struct SemanticMapSpikeView: View {
             ZStack(alignment: .bottomLeading) {
                 SemanticMapSurface(model: model)
                     .overlay { labelOverlay }
+                    .overlay { lassoOverlay }
                     .overlay { selectionMarker }
                     .overlay(alignment: .topLeading) { statsOverlay }
                     .overlay { unavailableOverlay }
@@ -313,14 +374,25 @@ struct SemanticMapSpikeView: View {
                             })
                     .onGeometryChange(for: CGSize.self) { $0.size } action: { surfaceSize = $0 }
                     .gesture(
-                        DragGesture()
+                        DragGesture(minimumDistance: 1)
                             .onChanged { value in
-                                model.pan(by: CGSize(
-                                    width: value.translation.width - pan.width,
-                                    height: value.translation.height - pan.height))
-                                pan = value.translation
+                                if isLassoing {
+                                    model.extendLasso(to: value.location)
+                                } else {
+                                    model.pan(by: CGSize(
+                                        width: value.translation.width - pan.width,
+                                        height: value.translation.height - pan.height))
+                                    pan = value.translation
+                                }
                             }
-                            .onEnded { _ in pan = .zero })
+                            .onEnded { _ in
+                                if isLassoing {
+                                    savedCorpusName = nil
+                                    model.finishLasso(size: surfaceSize)
+                                } else {
+                                    pan = .zero
+                                }
+                            })
                     .gesture(
                         MagnifyGesture()
                             .onChanged { value in
@@ -328,11 +400,33 @@ struct SemanticMapSpikeView: View {
                                 zoom = value.magnification
                             }
                             .onEnded { _ in zoom = 1.0 })
+                // Siblings, not overlays, for the reason the Open button taught: an overlay of the
+                // gestured surface has its buttons swallowed by that surface's gestures.
                 selectionCard
+                lassoCard
             }
             controls
         }
         .navigationTitle(String(localized: "semanticMap.title", defaultValue: "Semantic Map"))
+        // In the toolbar rather than beside the point-size slider, and that is a fix: the controls
+        // row sits at the bottom of the screen where the iCloud status banner overlays it, so the
+        // toggle was drawn but could not be tapped — the drag kept panning. A mode switch has to be
+        // reachable whatever transient chrome the app is showing.
+        .toolbar {
+            ToolbarItem {
+                Toggle(isOn: $isLassoing) {
+                    Label(String(localized: "semanticMap.lasso", defaultValue: "Lasso"),
+                          systemImage: "lasso")
+                }
+                .toggleStyle(.button)
+                // A mode, not a modifier key: the same drag has to pan on one device and enclose on
+                // another, and there is no chord a finger can hold.
+                .onChange(of: isLassoing) { _, _ in
+                    model.clearLasso()
+                    savedCorpusName = nil
+                }
+            }
+        }
         #if os(iOS)
         // The map is pushed inside the Settings stack, which carries no document destination of its
         // own. macOS opens a real document window instead and needs none.
@@ -566,6 +660,155 @@ struct SemanticMapSpikeView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.small)
         #endif
+    }
+
+    /// The lasso as it is drawn.
+    @ViewBuilder
+    private var lassoOverlay: some View {
+        if model.lassoPath.count > 1 {
+            Path { path in
+                path.addLines(model.lassoPath)
+                path.closeSubpath()
+            }
+            .stroke(.white, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+            // Closed while drawing, because containment is decided against the closed shape — showing
+            // an open stroke would let the reader believe a gap excludes what it does not.
+            .background(
+                Path { path in
+                    path.addLines(model.lassoPath)
+                    path.closeSubpath()
+                }
+                .fill(.white.opacity(0.10)))
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// What the lasso caught, and what can be done with it.
+    @ViewBuilder
+    private var lassoCard: some View {
+        if let result = model.lassoResult {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(verbatim: Self.documentCount(result.total))
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 12)
+                    Button {
+                        model.clearLasso()
+                        savedCorpusName = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "semanticMap.lasso.dismiss",
+                                               defaultValue: "Dismiss"))
+                }
+                if !result.regionNames.isEmpty {
+                    Text(verbatim: result.regionNames.joined(separator: " · "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if result.isTruncated {
+                    // Say it before the corpus is made, not only in its provenance afterwards.
+                    Text(verbatim: Self.truncationNote(kept: result.documentKeys.count,
+                                                       total: result.total))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                // **A lasso is the first capture path that can enclose documents this device cannot
+                // search.** Every corpus before it came from a search result set, so its members
+                // were indexed by construction; the map draws all 552 volumes. Applying a corpus
+                // silently narrows to the indexed keys, and one with none is refused outright — so
+                // the coverage is stated here, at capture, rather than discovered later in Search.
+                Text(verbatim: coverage(for: result).coverageDescription)
+                    .font(.caption)
+                    .foregroundStyle(coverage(for: result).isComplete
+                                     ? Color.secondary : Color.orange)
+                if let saved = savedCorpusName {
+                    Label(saved, systemImage: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                } else {
+                    Button(String(localized: "semanticMap.lasso.save",
+                                  defaultValue: "Save as Working Corpus")) {
+                        savedCorpusName = saveWorkingCorpus(result)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: 340)
+            .padding(12)
+        }
+    }
+
+    /// How much of a lasso this device could actually search.
+    ///
+    /// Uses `WorkingCorpusResolver` rather than counting volumes here, so the number shown at capture
+    /// is produced by the same code that decides what a corpus searches when it is applied. Two
+    /// implementations of "reachable" would eventually disagree, and the reader would be told one
+    /// number and given the other.
+    ///
+    /// - Parameter result: What the lasso enclosed.
+    /// - Returns: The resolution against this device's index.
+    private func coverage(for result: SemanticMapPicking.LassoResult) -> WorkingCorpusResolution {
+        WorkingCorpusResolver(indexedVolumeIds: appState.indexedVolumeIds)
+            .resolve(WorkingCorpus(name: "", documentKeys: result.documentKeys))
+    }
+
+    /// Creates a working corpus from a lasso and returns its name.
+    ///
+    /// - Parameter result: What the lasso enclosed.
+    /// - Returns: The corpus name, or `nil` when the save failed.
+    private func saveWorkingCorpus(_ result: SemanticMapPicking.LassoResult) -> String? {
+        // Names are NOT unique by design, and both `SearchFilterView` and `SettingsView` look
+        // corpora up BY NAME — so two lassos over the same regions must not produce the same string.
+        // The capture time disambiguates them and is also the most useful thing to see in a list.
+        let regions = result.regionNames.isEmpty
+            ? String(localized: "semanticMap.lasso.defaultName", defaultValue: "Map selection")
+            : result.regionNames.joined(separator: ", ")
+        let stamp = Date().formatted(date: .abbreviated, time: .shortened)
+        let name = "\(regions) — \(stamp)"
+        let corpus = WorkingCorpus(
+            name: name,
+            documentKeys: result.documentKeys,
+            // No query produced this set, and `sourceQuery` exists so a corpus can be re-derived by
+            // hand. A lasso cannot be, so claiming one would be worse than leaving it empty.
+            sourceQuery: nil,
+            sourceDescription: String(localized: "semanticMap.lasso.source",
+                                      defaultValue: "Semantic map selection"),
+            indexedVolumeCountAtCapture: appState.indexedVolumeIds.count,
+            wasTruncatedAtCapture: result.isTruncated,
+            totalMatchCountAtCapture: result.total)
+        modelContext.insert(corpus)
+        do {
+            try modelContext.save()
+        } catch {
+            #if DEBUG
+            print("[SemanticMapSpikeView] working corpus save failed: \(error)")
+            #endif
+            return nil
+        }
+        return name
+    }
+
+    /// "N documents", localised for plurals.
+    /// - Parameter count: How many.
+    /// - Returns: The phrase.
+    private static func documentCount(_ count: Int) -> String {
+        String(format: String(localized: "semanticMap.lasso.count %lld",
+                              defaultValue: "%lld documents"), count)
+    }
+
+    /// The note shown when a lasso caught more than a corpus may hold.
+    /// - Parameters:
+    ///   - kept: How many will be saved.
+    ///   - total: How many were enclosed.
+    /// - Returns: The sentence.
+    private static func truncationNote(kept: Int, total: Int) -> String {
+        String(format: String(localized: "semanticMap.lasso.truncated %lld %lld",
+                              defaultValue: "Saving the first %lld of %lld."), kept, total)
     }
 
     /// The message shown when there is nothing to draw.

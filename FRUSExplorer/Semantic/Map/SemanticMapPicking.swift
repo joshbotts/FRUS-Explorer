@@ -34,6 +34,24 @@ import simd
 ///   1.0 — V-4: initial implementation
 enum SemanticMapPicking {
 
+    /// What a completed lasso enclosed, resolved to what a `WorkingCorpus` needs.
+    ///
+    /// Carries `total` separately from `documentKeys.count` on purpose: when a lasso encloses more
+    /// than the capture limit those two differ, and the difference is the whole content of
+    /// `WorkingCorpus.wasTruncatedAtCapture` / `totalMatchCountAtCapture`. Collapsing them would make
+    /// every over-large capture claim to be the whole answer.
+    struct LassoResult: Equatable, Sendable {
+        /// `"volumeId/documentId"` keys, capped at the capture limit.
+        let documentKeys: [String]
+        /// Every document inside the lasso, capped or not.
+        let total: Int
+        /// The regions the lasso touched, most-enclosed first, for naming the corpus.
+        let regionNames: [String]
+
+        /// Whether the capture stopped short of what the reader drew.
+        var isTruncated: Bool { total > documentKeys.count }
+    }
+
     /// The document a tap selected, resolved to something a reader can act on.
     struct Selection: Equatable, Sendable, Identifiable {
         /// The artifact row.
@@ -56,6 +74,23 @@ enum SemanticMapPicking {
         var id: Int { row }
     }
 
+    /// The most documents a lasso will put in a working corpus.
+    ///
+    /// **This is the record's size budget, not a search cap.** `WorkingCorpus` sizes itself against
+    /// exactly this number — "at most 7,500 keys … around 190 KB as a value array, well inside a
+    /// CloudKit record" — because until now the only capture path was a search result set and
+    /// macOS's `searchHardLimit` is 7,500. A lasso has no such natural bound: it can enclose the
+    /// whole corpus. Capturing more would make the map the first writer to break the assumption the
+    /// synced record was designed under.
+    ///
+    /// It is not spelled `MacSearchViewModel.searchHardLimit` because that type is macOS-only and
+    /// this surface builds on both platforms — and because the constraint genuinely belongs to the
+    /// record, not to a search view model that happens to share the number.
+    ///
+    /// Exceeding it is not an error. The capture records `wasTruncatedAtCapture` and the full count,
+    /// which is the model's existing vocabulary for precisely this situation.
+    static let corpusCaptureLimit = 7_500
+
     /// How close a tap must land, in view points, to select a document.
     ///
     /// Sized for a fingertip rather than a cursor: on a dense map an exact hit is impossible, and a
@@ -72,6 +107,93 @@ enum SemanticMapPicking {
         let position: SIMD2<Float>
         /// Its cluster, or `SemanticMapArtifacts.unclustered`.
         let cluster: UInt16
+    }
+
+    /// Finds every document inside a freeform region the reader drew.
+    ///
+    /// The path arrives in **view points** and is converted to grid space once, rather than
+    /// projecting 314,483 documents into view space — same reason the tap radius is converted rather
+    /// than the corpus: the transform is affine, so doing it to the small side is both cheaper and
+    /// exactly equivalent.
+    ///
+    /// Containment is the **even-odd crossing rule**, which is what a hand-drawn lasso wants: a path
+    /// that crosses itself leaves the overlap outside, matching what the stroke looks like. A winding
+    /// rule would swallow the overlap and surprise the reader.
+    ///
+    /// - Parameters:
+    ///   - path: The lasso in view points. Treated as closed; fewer than 3 points selects nothing.
+    ///   - map: The mapped placements.
+    ///   - camera: Where the camera is looking.
+    ///   - size: The view's size in points.
+    ///   - limit: Keep at most this many rows.
+    /// - Returns: The kept rows, ascending, and `total` — **every** document inside the path, not
+    ///   just the kept ones. The scan deliberately runs to completion rather than stopping at the
+    ///   limit, because `WorkingCorpus` records `totalMatchCountAtCapture` beside its membership so a
+    ///   truncated capture can say what it is a fraction *of*. A denominator that stopped counting
+    ///   when the numerator filled up would be worse than no denominator.
+    static func rows(
+        inside path: [CGPoint],
+        map: SemanticMapVectors,
+        camera: SemanticMapCamera,
+        size: CGSize,
+        limit: Int
+    ) -> (rows: [Int], total: Int) {
+        guard path.count >= 3, size.width > 0, size.height > 0, limit > 0 else {
+            return ([], 0)
+        }
+        let polygon = path.map {
+            SemanticMapLabelLayout.unproject($0, camera: camera, size: size)
+        }
+
+        // A bounding box first: most of the corpus is outside any lasso, and a box test is two
+        // comparisons against the crossing test's walk of every edge.
+        var minX = Float.greatestFiniteMagnitude, maxX = -Float.greatestFiniteMagnitude
+        var minY = Float.greatestFiniteMagnitude, maxY = -Float.greatestFiniteMagnitude
+        for point in polygon {
+            minX = min(minX, point.x); maxX = max(maxX, point.x)
+            minY = min(minY, point.y); maxY = max(maxY, point.y)
+        }
+
+        var found: [Int] = []
+        var total = 0
+        map.withPlacements { base, count in
+            for row in 0..<count {
+                let offset = row * SemanticMapArtifacts.bytesPerDocument
+                let x = Float(Int16(bitPattern: base.loadUnaligned(
+                    fromByteOffset: offset, as: UInt16.self).littleEndian))
+                if x < minX || x > maxX { continue }
+                let y = Float(Int16(bitPattern: base.loadUnaligned(
+                    fromByteOffset: offset + 2, as: UInt16.self).littleEndian))
+                if y < minY || y > maxY { continue }
+                guard contains(polygon: polygon, x: x, y: y) else { continue }
+                total += 1
+                if found.count < limit { found.append(row) }
+            }
+        }
+        return (found, total)
+    }
+
+    /// Even-odd containment.
+    ///
+    /// - Parameters:
+    ///   - polygon: The closed path in grid space.
+    ///   - x: Grid x.
+    ///   - y: Grid y.
+    /// - Returns: Whether the point is inside.
+    static func contains(polygon: [SIMD2<Float>], x: Float, y: Float) -> Bool {
+        var inside = false
+        var j = polygon.count - 1
+        for i in 0..<polygon.count {
+            let a = polygon[i], b = polygon[j]
+            // Half-open on y so a vertex exactly at the ray's height is counted once, not twice or
+            // zero times — the classic source of speckled holes along a horizontal edge.
+            if (a.y > y) != (b.y > y) {
+                let t = (y - a.y) / (b.y - a.y)
+                if x < a.x + t * (b.x - a.x) { inside.toggle() }
+            }
+            j = i
+        }
+        return inside
     }
 
     /// Finds the document nearest a point in the view, within the tap radius.
