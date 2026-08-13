@@ -51,10 +51,9 @@ this is Metal, not Canvas. The second half is now priced:
   §3), which is a different argument and should be made on its own terms.
 - **A device measurement is still owed.** An M1 Max is a strong GPU; the headroom is 5× at 60 fps,
   so a GPU 4–5× slower still fits, but that is arithmetic, not a measurement.
-- **UMAP will make the fill-rate picture worse.** PCA spreads points evenly — measured, 50.8% of a
-  256×256 grid is occupied and the densest cell holds 38 points. UMAP concentrates points into
-  clusters with empty space between, which raises overdraw exactly where users will look. Re-measure
-  after the layout exists rather than assuming this result transfers.
+- **UMAP changes the fill-rate picture in both directions — measured, see §3a.** The prediction that
+  it would be strictly worse was half right: overdraw inside clusters rises sharply, but total lit
+  area falls, and which wins depends on point size.
 
 ## 3. The finding the spike was not looking for
 
@@ -68,16 +67,46 @@ variance looks like. It settles two things:
   to render worth rendering, and every remaining §6.3 feature — colour lenses, semantic-axis slices,
   lasso-to-`WorkingCorpus` — is downstream of it.
 
+## 3a. Re-measured against the real layout (2026-08-12, same session)
+
+The layout stage ran, so the "re-measure after the layout exists" caveat below is closed rather than
+outstanding. UMAP-2D over the same 314,483 documents: **6.6 min** for the projection, 8.2 min for
+HDBSCAN, 179 clusters, 28.0% unclustered. Picture: `v4-umap-layout-2560.png`.
+
+The clumping arrived as predicted — the densest 256×256 cell holds **452 documents against PCA's
+38**, while overall occupancy *drops* from 50.8% to 31.4% (clusters and voids, rather than an even
+spread). The frame cost follows both facts at once:
+
+| points | PCA layout | UMAP layout |
+|---|---|---|
+| 2 px | 3.28 ms | **1.90 ms** |
+| 4 px | 3.41 ms | 3.23 ms |
+| 8 px | 4.03 ms | **5.91 ms** |
+
+**The two layouts cross over.** At small point sizes UMAP is *cheaper* — a third of the screen is
+empty, so there are fewer covered pixels than the even PCA spread produces. At 8 px the dense cores
+overdraw and it becomes 47% more expensive. That is the same fill-rate story §1 told, now with the
+mechanism visible: cost tracks *covered pixels*, and clumping trades a smaller lit area against far
+heavier overdraw inside it.
+
+The conclusion is unchanged and now rests on the real artifact: the worst measured case is **5.9 ms**,
+still nearly 3× inside a 60 fps frame, so level-of-detail stays an optimisation. The practical lever
+is the one this table shows — **point size** — and a map that scales sprite size with zoom is doing
+LOD's job for a fraction of LOD's complexity.
+
 ## 4. What V-4 should do next
 
-1. **The Tier-0 layout stage**, which is now the critical path: a pinned Python environment
-   (`uv`-managed, per design §3.1) running PCA-50 → UMAP-2D with a fixed `random_state`, plus
-   HDBSCAN or k-means for cluster ids and c-TF-IDF labels through the WordCloudKit tokenizer. Then
-   extend `SemanticVectorsGenerator` to pack coordinates + cluster ids into the bundled artifact
-   (~1.9 MB at 6 B/doc, the design's §4.1 estimate; the coordinate half measured at 1.26 MB here).
-2. **Re-measure this spike against the UMAP layout** before deciding whether a density layer is
-   needed, because the clumping changes the fill-rate answer and nothing else does.
-3. Only then the interaction design: lenses, slices, lasso, selection → `WorkingCorpus`.
+1. ~~**The Tier-0 layout stage**~~ — **done** (`tools/semantic-map/build_layout.py`). `layout.bin` is
+   1.89 MB for 314,483 documents at 6 B each, which is the design's §4.1 estimate to two decimal
+   places. Cluster *ids* only: labels are Swift's job, because the design wants them through the
+   WordCloudKit tokenizer and a second vocabulary here would disagree with every word-cloud surface
+   in the app.
+2. ~~**Re-measure this spike against the UMAP layout**~~ — **done**, §3a. A density layer is not
+   needed for performance; scale point size with zoom instead.
+3. **Pack Tier-0 into the bundled artifact**: extend `SemanticVectorsGenerator` to read `layout.bin`,
+   emit coordinates + cluster ids, and generate c-TF-IDF cluster labels through `WordCloudKit`. This
+   is the next step and the last one before the surface itself.
+4. Only then the interaction design: lenses, slices, lasso, selection → `WorkingCorpus`.
 
 ## 5. Notes for whoever picks this up
 

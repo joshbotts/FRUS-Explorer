@@ -6289,3 +6289,47 @@ failure this program keeps designing against.
 Next: the Tier-0 layout stage (pinned Python, PCA-50 → UMAP-2D with a fixed seed, clusters and
 c-TF-IDF labels, packed by `SemanticVectorsGenerator`), then re-measure this spike against the real
 clumped layout before deciding whether a density layer is needed.
+
+## Session 2026-08-12 — V-4 layout stage: the map has a shape
+
+The Tier-0 layout the V-4a spike identified as V-4's critical path. Tool:
+`tools/semantic-map/build_layout.py`; environment pinned in `tools/semantic-map/requirements.txt`
+(+ a resolved lock beside it); picture: `Planning/semantic-map/v4-umap-layout-2560.png`.
+
+**Measured**: PCA-50 (58.4% of the variance in the components UMAP consumes) → UMAP-2D in **6.6 min**
+→ HDBSCAN in 8.2 min, giving **179 clusters and 28.0% unclustered**. `layout.bin` is **1.89 MB** for
+314,483 documents at 6 B each — the design's §4.1 estimate to two decimal places.
+
+**The picture is the point.** PCA-2D was a featureless blob (10.0% of the variance); UMAP gives
+continents, filaments, islands and voids — something a reader can navigate. That contrast is why the
+layout stage, not the renderer, was V-4's blocker.
+
+**The fill-rate caveat is closed, and the prediction was half wrong.** I expected UMAP's clumping to
+be strictly worse for the renderer. Measured, the two layouts *cross over*: the densest cell holds
+452 documents against PCA's 38, but overall occupancy *falls* from 50.8% to 31.4%, so at 2 px UMAP is
+**cheaper** (1.90 ms vs 3.28) and at 8 px it is 47% **dearer** (5.91 vs 4.03). Cost tracks covered
+pixels, and clumping trades a smaller lit area against heavier overdraw inside it. Worst measured
+case is 5.9 ms — still nearly 3× inside a 60 fps frame — so level-of-detail stays an optimisation,
+and the practical lever is point size: a map that scales sprites with zoom does LOD's job for a
+fraction of LOD's complexity.
+
+Environment notes worth keeping. The machines have **Python 3.9 only**, which is what pins
+scikit-learn below 1.7 and numpy below 2.1 — a future machine with 3.12 would resolve differently.
+The standalone `hdbscan` package is deliberately absent: scikit-learn has shipped
+`sklearn.cluster.HDBSCAN` since 1.3, so the clustering needs no extra dependency. `random_state` is
+pinned despite costing UMAP its parallelism, because a layout that rearranges itself between runs
+cannot be diffed or regression-tested and would move every document on screen after a rebuild that
+changed nothing. Clustering runs on the **2-D embedding**, not the 50-D space, so the clusters a
+reader sees are the ones the map draws.
+
+The stage emits cluster **ids only**. Labels are Swift's job (c-TF-IDF through the WordCloudKit
+tokenizer, per design §4.1) — labelling in Python would mint a second vocabulary that silently
+disagrees with every word-cloud surface, which is the cross-source-join failure this repo keeps
+re-learning.
+
+Two defects fixed on the first run: `np.asarray` on a memmap whose dtype already matches returns a
+READ-ONLY view, so the in-place renormalise threw; and PCA was being fitted a second time purely to
+log its explained variance — a full pass over 314,483 × 256 for a number already in the estimator.
+
+Next: pack Tier-0 into the bundled artifact (`SemanticVectorsGenerator` reads `layout.bin`, emits
+coordinates + cluster ids, generates the labels), then the surface itself.
