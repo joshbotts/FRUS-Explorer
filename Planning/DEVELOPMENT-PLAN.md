@@ -6257,3 +6257,35 @@ so one indecisive row cannot outweigh ten rows of agreement.
 The row control is a context menu (the row is already a Button, and a button inside a button is a
 hit-testing argument nobody wins) and appears only on rows the semantic axis actually scored — a
 verdict on a row it did not produce would be evidence about a different axis.
+
+## Session 2026-08-12 — V-4a: the renderer is fine, the layout is the problem
+
+The spike the design asks for before any of the discovery map's interaction design gets built.
+Verdict and numbers: `Planning/semantic-map/V4a-Rendering-Spike.md`; the picture it produced is
+`v4a-pca-layout-2560.png` beside it.
+
+**Rendering is not the bottleneck the design budgeted for.** One draw call over all 314,483
+documents costs **3.3 ms** at 2560×1440 on the M1 Max — five times inside a 60 fps frame. §6.3
+budgets level-of-detail machinery as a prerequisite ("a session, not an afternoon"); it is an
+optimisation for weaker GPUs. **The cost is fill rate, not vertex count**: 8-pixel points cost 50%
+more than 2-pixel ones, and zooming in — same vertices, fewer covered pixels — drops the frame to
+0.6 ms.
+
+**And the spike found something it was not looking for: PCA-2D is unusable as a layout.** The two
+leading components carry 10.0% of the variance and the corpus renders as one featureless cloud. That
+is not a rendering defect, it is what 10% looks like — and it means **V-4's blocking dependency is
+the Tier-0 layout artifact, not the renderer**, which inverts the order the design assumed. Until
+UMAP/HDBSCAN runs there is nothing worth rendering, and every remaining §6.3 feature is downstream of
+it.
+
+Two engineering notes worth keeping. The shaders compile at **runtime** rather than from a `.metal`
+file, because a build-time shader needs the Metal toolchain component and a multi-gigabyte developer
+download is a strange prerequisite for finding out whether a draw call is fast; if the map ships,
+that becomes a deliberate decision. And the spike **deliberately bundles no placeholder layout** — it
+reads a developer-supplied coordinate file and falls back to a synthetic cloud that says so on
+screen, because a file in `Resources` that looks like the measured artifact and is not is exactly the
+failure this program keeps designing against.
+
+Next: the Tier-0 layout stage (pinned Python, PCA-50 → UMAP-2D with a fixed seed, clusters and
+c-TF-IDF labels, packed by `SemanticVectorsGenerator`), then re-measure this spike against the real
+clumped layout before deciding whether a density layer is needed.

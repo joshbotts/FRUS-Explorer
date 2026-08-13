@@ -56,6 +56,9 @@ struct DataRecoveryView: View {
     /// The screens this door leads to.
     enum SubScreen: String, Identifiable {
         case brokenReferences, syncLog, schemaStatus, semanticFeedback, eraseEverything
+        #if DEBUG
+        case semanticMapSpike
+        #endif
         var id: String { rawValue }
     }
 
@@ -91,6 +94,12 @@ struct DataRecoveryView: View {
                      detail: String(
                         localized: "settings.dataRecovery.semanticFeedback.detail",
                         defaultValue: "Rate experimental semantic matches and export your verdicts"))
+                #if DEBUG
+                // V-4a: a measurement, not a feature. Debug-only until the map surface exists.
+                link(.semanticMapSpike,
+                     label: "Semantic Map (spike)",
+                     detail: "Metal rendering measurement for the discovery map")
+                #endif
             } header: {
                 Text(String(localized: "settings.dataRecovery.diagnostics.header",
                             defaultValue: "Diagnostics"))
@@ -312,6 +321,9 @@ struct DataRecoveryView: View {
         case .syncLog:          SyncDiagnosticsView()
         case .schemaStatus:     SchemaDeployStatusView()
         case .semanticFeedback: SemanticFeedbackView()
+        #if DEBUG
+        case .semanticMapSpike: SemanticMapSpikeView()
+        #endif
         case .eraseEverything:  EraseEverythingView()
         }
     }
