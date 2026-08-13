@@ -6374,3 +6374,39 @@ Labels are **sampled** — c-TF-IDF over up to 300 stride-sampled documents per 
 disclose that rather than let a reader assume it saw everything. The stride runs over members in row
 order (which is volume order) so a sample spans a cluster instead of concentrating in whichever
 volumes sort first.
+
+## Session 2026-08-12 — V-4: the map reads its own artifact
+
+The surface stops being a spike. `BundledSemanticMap` loads the shipped Tier-0 artifact —
+`SemanticMapVectors` mmaps `semantic-map.bin` the way the corpus tier is mapped — and the view draws
+from it. **The developer-file path and the synthetic-cloud fallback are gone**: they existed because
+the layout did not, and a device with no map now says so rather than drawing something invented.
+
+The loader **refuses a map whose provenance digest disagrees with the loaded vectors**, and this is
+the one refusal in the family that is not pedantry: coordinates are computed *from* vectors, so a map
+of one generation drawn against another places every document where different vectors put it — wrong
+in a way no reader could ever detect.
+
+**Three colour lenses**, all computable from data the app already carries: `cluster` (the map's own
+bytes), `era` (the manifest's dates, banded by the app's own `CoverageEra` so an era-coloured map, an
+era-split chart and an era-banded feedback log all mean the same thing by "before 1900"), and
+`availability` (which volumes are indexed — the reader's own library against the whole corpus).
+
+Two implementation notes that are really one idea. A point carries a palette **index**, not a colour,
+so switching lens rewrites one byte per document — 314 KB against the 5 MB a colour-per-point buffer
+would cost — and never touches a coordinate; `setColourIndices` exists for exactly that. And every
+lens except `cluster` is a property of a *volume*, and the map's rows are contiguous per volume, so a
+lens is a few hundred range fills rather than 314,483 lookups.
+
+The palettes differ by lens on purpose: `era` is ordered and gets a sequential ramp, `availability` is
+a two-state contrast, `cluster` is categorical. Drawing an ordered variable with categorical hues is
+the commonest way a map lies about its data. Cluster colours **cycle** through 16 slots for 179
+clusters — adjacency is what the colour conveys, and the label at a region's centre is what names it;
+a map that tried to give 179 regions distinguishable hues would distinguish none of them.
+
+Verified by rendering the **shipped bytes** through the headless Metal tool rather than trusting the
+build: 314,483 placements, 179 clusters, 28.0% unclustered, all cross-checked against the index.
+App suite 3,433 green, SPM 1,119 green, both platforms build.
+
+Still to come: cluster labels drawn on the map, tap-to-open, lasso into a `WorkingCorpus`, and the
+design's semantic-axis slices.

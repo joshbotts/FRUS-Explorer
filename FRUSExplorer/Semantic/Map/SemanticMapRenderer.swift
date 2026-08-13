@@ -155,6 +155,23 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         }
     }
 
+    /// Replaces only the per-document colour indices, leaving positions untouched.
+    ///
+    /// This is why a point carries a palette *index* rather than a colour: switching lens rewrites
+    /// one byte per document — 314 KB — against the 5 MB a colour-per-point buffer would cost, and
+    /// the position half of the buffer is never re-uploaded at all.
+    ///
+    /// - Parameter colours: One palette index per document, in artifact row order.
+    func setColourIndices(_ colours: [UInt8]) {
+        guard let pointBuffer, colours.count == pointCount else { return }
+        let stride = MemoryLayout<MapPoint>.stride
+        let base = pointBuffer.contents()
+        for row in 0..<colours.count {
+            base.advanced(by: row * stride + MemoryLayout<SIMD2<Int16>>.size)
+                .storeBytes(of: colours[row], as: UInt8.self)
+        }
+    }
+
     /// Replaces the colour palette.
     ///
     /// - Parameter colours: Up to 16 RGBA colours; a point's `colourIndex` selects one.
