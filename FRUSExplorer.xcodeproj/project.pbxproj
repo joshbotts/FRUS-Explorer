@@ -90,6 +90,7 @@
 		10FEA71DF161917DCE4728C1 /* keyness-baseline.json in Resources */ = {isa = PBXBuildFile; fileRef = CD0BCCE9ACC924CAC60C8286 /* keyness-baseline.json */; };
 		111F2FA876F7552C0F43E17E /* FRUSCanonicalURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B85F860A301E0F20849EB2 /* FRUSCanonicalURL.swift */; };
 		114C6880CBD9CC362E81CCA0 /* TagEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA327B9761498E155E163443 /* TagEditorView.swift */; };
+		11675C62D0C39F2F1F7C291A /* SemanticMapPicking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */; };
 		11CD24BCD38112373C2CE737 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7054B9A8AF2304B2C17F34BF /* SourceNoteParser.swift */; };
 		1217B46F1BDD8A434E5EE6A2 /* ProjectContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3072096E5D180CCA514717CA /* ProjectContextView.swift */; };
 		124B1615811292FE81B4EAFA /* FRUSTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B864FAA0FBEB4ECA349A89 /* FRUSTheme.swift */; };
@@ -698,6 +699,7 @@
 		9DADF73802FFA65382F17FA2 /* SummarizationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC7B26DC3D2C323E479A1AC /* SummarizationUITests.swift */; };
 		9DF7181B3A3418A44F1A8960 /* SummarizationRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 540EDA76D1A4603E2DC3FFCE /* SummarizationRetryPolicyTests.swift */; };
 		9E1BE14B19B5250DDA53A534 /* SeriesChartExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910D9E41AD53AA49C88E7227 /* SeriesChartExport.swift */; };
+		9E54DB42B5093763B151ECDE /* SemanticMapPicking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */; };
 		9E969DB873526FB979B44591 /* ZoteroAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522924485B8BCC275CFB229A /* ZoteroAPIModels.swift */; };
 		9EA3CB3FFDB94ED688819FD1 /* ParsedTEIHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 629A78D564067AC753D2604B /* ParsedTEIHeader.swift */; };
 		9EBEFA74CE4DE532831B26E3 /* CrossReferenceGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7D01A4B33C4FF10103FA6B /* CrossReferenceGraphTests.swift */; };
@@ -1584,6 +1586,7 @@
 		81468F37DEEF01DF5BC14F13 /* WordCloudLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLayout.swift; sourceTree = "<group>"; };
 		81881562215EEB75EA40274A /* SemanticShardFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticShardFetcher.swift; sourceTree = "<group>"; };
 		8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabViewTests.swift; sourceTree = "<group>"; };
+		839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapPicking.swift; sourceTree = "<group>"; };
 		83C045D23CCE9990D712AF39 /* SeriesProductionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesProductionData.swift; sourceTree = "<group>"; };
 		8451D12FC5745CBE33E56D7B /* ArchivalAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivalAnalyticsView.swift; sourceTree = "<group>"; };
 		8464DD9BF3C20E420E77D44F /* SimilarityScorers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarityScorers.swift; sourceTree = "<group>"; };
@@ -2141,6 +2144,7 @@
 				7630C7DA36E2FF9092BCA9DD /* BundledSemanticMap.swift */,
 				A5833F20FAAE4E3140E49995 /* SemanticMapLabels.swift */,
 				381866ABD29F1E9DB9A7700A /* SemanticMapLens.swift */,
+				839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */,
 				64D0E3E2C8510E06FF4E43CB /* SemanticMapRenderer.swift */,
 				F788AD5264864EFAE17D1EDF /* SemanticMapSpikeView.swift */,
 			);
@@ -3596,6 +3600,7 @@
 				C8116663859AD26EC50B73DE /* SemanticMapArtifacts.swift in Sources */,
 				15F31743927E19BC0FD1F326 /* SemanticMapLabels.swift in Sources */,
 				0BBE00F1C0A9922AF34EE933 /* SemanticMapLens.swift in Sources */,
+				9E54DB42B5093763B151ECDE /* SemanticMapPicking.swift in Sources */,
 				2124188E9682E2ABFF6E5005 /* SemanticMapReader.swift in Sources */,
 				4425324898536729E5E57E14 /* SemanticMapRenderer.swift in Sources */,
 				949EBC8C6CD50EB3D369944F /* SemanticMapSpikeView.swift in Sources */,
@@ -4024,6 +4029,7 @@
 				574707E60FBD1728EEBA8EE4 /* SemanticMapArtifacts.swift in Sources */,
 				DBAAEA0541F3F5230664B78A /* SemanticMapLabels.swift in Sources */,
 				CC9AD3A3BAAFF92A47219F05 /* SemanticMapLens.swift in Sources */,
+				11675C62D0C39F2F1F7C291A /* SemanticMapPicking.swift in Sources */,
 				A703F7DCF8D5C9B4D8124C86 /* SemanticMapReader.swift in Sources */,
 				2CA083E2EF9F1445FF0EC82C /* SemanticMapRenderer.swift in Sources */,
 				922834A5FABE52F3AAA09E4C /* SemanticMapSpikeView.swift in Sources */,

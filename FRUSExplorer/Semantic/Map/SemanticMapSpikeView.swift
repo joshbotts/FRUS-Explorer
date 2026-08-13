@@ -81,6 +81,9 @@ final class SemanticMapModel {
     /// The regions the artifact names, for the label layer.
     private(set) var clusters: [SemanticMapArtifacts.Cluster] = []
 
+    /// The document the reader last tapped, if any.
+    private(set) var selection: SemanticMapPicking.Selection?
+
     /// Where the camera is looking, mirrored out of the renderer.
     ///
     /// The renderer is not `@Observable` — it is driven by a display link and must not publish per
@@ -159,6 +162,45 @@ final class SemanticMapModel {
         apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded)
     }
 
+    /// Selects the document nearest a tap, or clears the selection when the tap found nothing.
+    ///
+    /// - Parameters:
+    ///   - point: Where the reader tapped, in view points.
+    ///   - size: The view's size in points.
+    ///   - isReadable: Whether a volume's XML is on disk — **not** whether it is indexed. The two
+    ///     are different gates and this one is the one that matters: on iOS, opening a document
+    ///     whose volume is absent leaves `DocumentView` on "Opening document…" forever with no
+    ///     error, so a wrong answer here is a dead end rather than a message. A volume that is
+    ///     downloaded but not yet indexed reads perfectly well.
+    func select(at point: CGPoint, size: CGSize, isReadable: (String) -> Bool) {
+        guard let map = BundledSemanticMap.vectors, let index else { return }
+        guard let hit = SemanticMapPicking.hit(
+            at: point, map: map, camera: camera, size: size) else {
+            selection = nil
+            return
+        }
+        guard let document = index.document(at: hit.row) else {
+            // A row the artifact places but cannot name is a keying failure, not an empty tap, and
+            // saying so is better than silently selecting nothing.
+            selection = nil
+            #if DEBUG
+            print("[SemanticMapModel] row \(hit.row) has a placement but no document id")
+            #endif
+            return
+        }
+        let region = clusters.first { $0.id == Int(hit.cluster) }
+        selection = SemanticMapPicking.Selection(
+            row: hit.row,
+            volumeID: document.volumeID,
+            documentID: document.documentID,
+            position: hit.position,
+            regionName: region.map { $0.terms.prefix(3).joined(separator: " ") },
+            isDownloaded: isReadable(document.volumeID))
+    }
+
+    /// Clears the selection.
+    func clearSelection() { selection = nil }
+
     /// Pans the camera by a gesture translation in points.
     /// - Parameter translation: The delta since the last change.
     func pan(by translation: CGSize) {
@@ -236,6 +278,15 @@ struct SemanticMapSpikeView: View {
     @State private var zoom: Double = 1.0
     @State private var pan = CGSize.zero
     @State private var pointSize: Double = 2.0
+    /// The surface's size, which picking needs and a gesture does not carry.
+    @State private var surfaceSize = CGSize.zero
+    #if os(iOS)
+    /// The document to push, when the reader opens one.
+    @State private var openedDocument: DocumentBrowserEntry?
+    #endif
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -243,29 +294,52 @@ struct SemanticMapSpikeView: View {
             // replacing it. Not because a swap would destroy the renderer — it would not, the model
             // owns it — but because a transient or premature unavailable state would otherwise tear
             // down the drawable and rebuild it, which is exactly the churn the old shape produced.
-            SemanticMapSurface(model: model)
-                .overlay { labelOverlay }
-                .overlay(alignment: .topLeading) { statsOverlay }
-                .overlay { unavailableOverlay }
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            model.pan(by: CGSize(
-                                width: value.translation.width - pan.width,
-                                height: value.translation.height - pan.height))
-                            pan = value.translation
-                        }
-                        .onEnded { _ in pan = .zero })
-                .gesture(
-                    MagnifyGesture()
-                        .onChanged { value in
-                            model.zoom(by: Float(value.magnification / zoom))
-                            zoom = value.magnification
-                        }
-                        .onEnded { _ in zoom = 1.0 })
+            // The card is a SIBLING of the gestured surface, not an overlay on it — and that is a
+            // fix, not a preference. As an overlay it sat inside the view the tap/drag gestures are
+            // attached to, so the surface's `SpatialTapGesture` swallowed the Open button: the
+            // button highlighted and nothing opened. A sibling in the ZStack gets its own hits.
+            ZStack(alignment: .bottomLeading) {
+                SemanticMapSurface(model: model)
+                    .overlay { labelOverlay }
+                    .overlay { selectionMarker }
+                    .overlay(alignment: .topLeading) { statsOverlay }
+                    .overlay { unavailableOverlay }
+                    // Before the drag gesture, so a tap is a tap and a drag is still a pan.
+                    .gesture(
+                        SpatialTapGesture()
+                            .onEnded { value in
+                                model.select(at: value.location, size: surfaceSize,
+                                             isReadable: isReadable)
+                            })
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { surfaceSize = $0 }
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                model.pan(by: CGSize(
+                                    width: value.translation.width - pan.width,
+                                    height: value.translation.height - pan.height))
+                                pan = value.translation
+                            }
+                            .onEnded { _ in pan = .zero })
+                    .gesture(
+                        MagnifyGesture()
+                            .onChanged { value in
+                                model.zoom(by: Float(value.magnification / zoom))
+                                zoom = value.magnification
+                            }
+                            .onEnded { _ in zoom = 1.0 })
+                selectionCard
+            }
             controls
         }
         .navigationTitle(String(localized: "semanticMap.title", defaultValue: "Semantic Map"))
+        #if os(iOS)
+        // The map is pushed inside the Settings stack, which carries no document destination of its
+        // own. macOS opens a real document window instead and needs none.
+        .navigationDestination(item: $openedDocument) { entry in
+            DocumentView(entry: entry)
+        }
+        #endif
         .task {
             await model.prepare(lens: lens, eraForVolume: eraForVolume,
                                 isDownloaded: isDownloaded)
@@ -283,11 +357,27 @@ struct SemanticMapSpikeView: View {
         appState.manifestStore.eraForVolume(volumeID)
     }
 
-    /// Whether a volume is indexed on this device.
+    /// Whether a volume is indexed on this device — the `availability` lens's question.
     /// - Parameter volumeID: The volume.
-    /// - Returns: `true` when the reader can open it.
+    /// - Returns: `true` when the volume is in the search index.
     private func isDownloaded(_ volumeID: String) -> Bool {
         appState.indexedVolumeIds.contains(volumeID)
+    }
+
+    /// Whether a volume's XML is on disk — the question that decides whether a tap can open it.
+    ///
+    /// **Deliberately a different gate from `isDownloaded`.** Reading a document needs the file;
+    /// being in the search index is a later, separate step. A volume downloaded but not yet indexed
+    /// reads perfectly well, and gating the Open button on the index would refuse it. The colour
+    /// lens keeps its own question — that one really is about the index.
+    ///
+    /// Before boot completes there is no `downloadManager` and nothing is readable, which is honest
+    /// rather than conservative: opening would fail then too.
+    ///
+    /// - Parameter volumeID: The volume.
+    /// - Returns: `true` when the document can actually be opened.
+    private func isReadable(_ volumeID: String) -> Bool {
+        appState.downloadManager?.isVolumeDownloaded(volumeID) ?? false
     }
 
     /// Frame statistics, for judging the renderer while the surface is still experimental.
@@ -370,6 +460,112 @@ struct SemanticMapSpikeView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+
+    /// A ring on the selected document, drawn where the document is rather than where the finger was.
+    @ViewBuilder
+    private var selectionMarker: some View {
+        if let selection = model.selection {
+            GeometryReader { proxy in
+                let point = SemanticMapLabelLayout.project(
+                    selection.position, camera: model.camera, size: proxy.size)
+                Circle()
+                    .strokeBorder(.white, lineWidth: 2)
+                    .frame(width: 18, height: 18)
+                    .shadow(color: .black.opacity(0.8), radius: 3)
+                    .position(point)
+                    .allowsHitTesting(false)
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// What the reader tapped, and what they can do about it.
+    ///
+    /// An **overlay, never a sheet**: a SwiftUI sheet on macOS does not composite the Metal layer
+    /// underneath it, which is what made this whole screen blank for two sessions. Anything that
+    /// covers the map has to be drawn over it in the same window.
+    @ViewBuilder
+    private var selectionCard: some View {
+        if let selection = model.selection {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(verbatim: "\(selection.volumeID) · \(selection.documentID)")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 12)
+                    Button {
+                        model.clearSelection()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "semanticMap.selection.dismiss",
+                                               defaultValue: "Dismiss"))
+                }
+                if let region = selection.regionName {
+                    Text(verbatim: region)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(String(localized: "semanticMap.selection.betweenRegions",
+                                defaultValue: "Between regions"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if selection.isDownloaded {
+                    openButton(for: selection)
+                } else {
+                    // The map draws the whole corpus; this device holds part of it. Saying so beats
+                    // an Open button that fails.
+                    Text(String(localized: "semanticMap.selection.notDownloaded",
+                                defaultValue: "This volume is not on this device."))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: 320)
+            .padding(12)
+        }
+    }
+
+    /// The action that opens the selected document, per platform.
+    ///
+    /// - Parameter selection: The selected document.
+    /// - Returns: The button.
+    @ViewBuilder
+    private func openButton(for selection: SemanticMapPicking.Selection) -> some View {
+        #if os(macOS)
+        // A real document window, matching Citation Lookup: the map stays put while the document
+        // opens beside it, which is the whole point of picking things off a map.
+        Button(String(localized: "semanticMap.selection.open", defaultValue: "Open Document")) {
+            openWindow(value: DocumentWindowID(
+                volumeId: selection.volumeID,
+                documentId: selection.documentID,
+                header: "\(selection.volumeID) — \(selection.documentID)"))
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        #else
+        // `navigationDestination(item:)` driven from state, NOT a value-based `NavigationLink`.
+        // Measured: with the link, the destination is registered by a view that is *itself* a pushed
+        // destination of the Settings stack, and the push did not stick — the document was built
+        // (the log shows its WebKit content loading) and the reader stayed on the map. Binding the
+        // push to state removes the registration race.
+        Button(String(localized: "semanticMap.selection.open", defaultValue: "Open Document")) {
+            openedDocument = DocumentBrowserEntry(
+                documentId: selection.documentID,
+                volumeId: selection.volumeID,
+                documentNumber: nil,
+                header: "\(selection.volumeID) — \(selection.documentID)",
+                dateline: nil,
+                sourceNote: nil)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        #endif
     }
 
     /// The message shown when there is nothing to draw.

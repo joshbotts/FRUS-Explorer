@@ -6603,3 +6603,57 @@ crowding, culling, the cap and the clamp all tested without a GPU, which is the 
 has repeatedly needed and not had. Map suite 17 green; verified on the iPhone 17 simulator.
 
 Still to come: tap-to-open, lasso into a `WorkingCorpus`, and the design's semantic-axis slices.
+
+## Session 2026-08-13 — tap a point, open the document
+
+The map could be read but not used. Now a tap selects the nearest document, names it, and opens it.
+
+**The gate is the point of the feature, not a detail.** The map draws all 552 volumes; a reader has
+downloaded some. The obvious implementation offers "Open" on every document and fails on most — and
+on iOS it fails *silently*: `DocumentView` sits on "Opening document…" forever with no error when the
+volume is absent, because there is no not-downloaded affordance in the iOS reader at all. So the
+selection carries whether the document is readable and the card says "This volume is not on this
+device" instead.
+
+**And the first version asked the wrong question.** It checked `indexedVolumeIds` — the *search
+index* — where opening needs the XML on disk (`downloadManager.isVolumeDownloaded`). A volume
+downloaded but not yet indexed reads perfectly well and would have been refused. The colour lens
+keeps `indexedVolumeIds`, because that one really is about the index; they are two different
+questions and are now two different functions.
+
+**Picking is a linear scan and that is the right answer.** 1.9 MB of mapped placements read straight
+through with a one-axis early rejection, once per tap rather than per frame. A spatial index would be
+faster asymptotically, slower here, and a second structure to keep in step with the artifact. The
+cost is measured, not assumed. The tolerance converts through the camera, because a 22-point
+fingertip is a different number of grid units at every zoom, and `unproject` is pinned against
+`project` by a round-trip test — a tap resolved through a slightly different rule selects the
+document *next to* the reader's finger, wrongness that reads as imprecision rather than a bug.
+
+**Two integration defects, both found by driving the app rather than by the suite.**
+
+1. The Open button did nothing. The card was an `.overlay` *on* the surface, so it sat inside the
+   view carrying the `SpatialTapGesture` and the gesture swallowed the button. It is now a sibling in
+   a `ZStack`. This would have hit the macOS `Button` identically.
+2. It *still* did nothing — and the app log settled what three screenshots could not:
+   `WebPageProxy::loadDataWithNavigation` and a completed page load, i.e. `DocumentView` was built and
+   rendered its TEI, then the push failed to stick. A value-based `NavigationLink` needs its
+   `navigationDestination(for:)` registered before the link activates, and it was declared on a view
+   that is itself a pushed destination of the Settings stack. Bound to state
+   (`navigationDestination(item:)`) instead.
+
+**A test assertion that was green and wrong.** It required `documentID.hasPrefix("d")` and passed only
+because the sampled rows happened to be `dN`. `frus1958-60v05mSupp` keys its 628 documents `eta_d1…`,
+and the corpus also carries `d373a`, `appA`, `s05sub04` — the same assumption that mis-keyed 15,097
+documents when the design tried deriving ids from ordinals. The test now samples that volume by name
+and asserts identity **round-trips** through `row(documentID:volumeID:)` rather than asserting a shape.
+
+**Verified end to end on the simulator, including the path that opens.** A volume was downloaded
+specifically so the affirmative case could be exercised rather than reasoned about: the `Downloaded`
+lens showed one green region beside *nato edc*; zooming in resolved *abm icbm*, *nuclear soviet*,
+*nsc atomic*, *shevardnadze soviet*; tapping a green point selected `frus1989-92v31 · d173`; and Open
+produced **"Letter From Soviet Foreign Minister Shevardnadze and Soviet Defense Minister Yazov to
+Secretary of State Baker and Secretary of Defense Cheney", Moscow, December 6, 1990** — a Shevardnadze
+letter, from the region the labeller named *shevardnadze*. The map's semantics check out under a
+tap.
+
+Still to come: lasso into a `WorkingCorpus`, and the design's semantic-axis slices.
