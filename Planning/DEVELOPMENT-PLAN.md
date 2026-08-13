@@ -6713,3 +6713,48 @@ tap.
 
 Still to come: lasso into a `WorkingCorpus`, and the design's semantic-axis slices.
 
+
+## Session 2026-08-13 — draw a region, keep the documents
+
+The map could be read and tapped. Now a freeform lasso captures what it encloses into a
+`WorkingCorpus` — the app's existing document-grain, synced, citable set.
+
+**The model already fitted, and that decided the design.** `WorkingCorpus.documentKeys` is a value
+array of `"volumeId/documentId"`, so a lasso is **one insert**, not five thousand — no membership
+`@Model`, no relationship, and therefore **no CloudKit schema-deploy gate**. Provenance goes in the
+existing `sourceDescription`, the route the search capture already takes. Nothing was added to the
+model.
+
+**The 7,500 ceiling is the record's, not a search's.** `WorkingCorpus` sizes itself against macOS's
+`searchHardLimit` because until now the only capture path was a result set — "at most 7,500 keys …
+around 190 KB as a value array, well inside a CloudKit record". A lasso has no natural bound: it can
+enclose the corpus. So the capture caps there, and the scan **deliberately runs past the cap** to
+count everything inside, because `totalMatchCountAtCapture` is the thing a truncated capture is a
+fraction *of*. A denominator that stopped counting when the numerator filled would be worse than none.
+
+**A lasso is the first capture path that can enclose documents this device cannot search.** Every
+corpus before it came from a search result set, so its members were indexed by construction; the map
+draws all 552 volumes. Applying such a corpus silently narrows to the indexed keys, and one with none
+is refused outright. The card therefore states coverage **at capture**, computed through
+`WorkingCorpusResolver` rather than counted locally — so the number shown is produced by the same code
+that later decides what the corpus actually searches.
+
+**Even-odd containment, not winding**: a hand-drawn path that crosses itself leaves the overlap
+outside, matching what the stroke looks like. The crossing test is half-open in y so a vertex at the
+ray's height is counted once — the classic source of speckled holes along a horizontal edge, and one
+of the geometry tests walks a row straight through one. The lasso is converted to grid space once
+rather than projecting 314,483 documents into view space, for the same reason the tap radius is.
+
+**Three controls on this screen have now been drawn correctly and done nothing**, each for a different
+reason, and none visible to the suite: the Open button swallowed by the surface's tap gesture; the
+Open button again, built but never pushed (a `NavigationLink` registration race, found in the system
+log); and now the Lasso toggle, rendered *underneath the iCloud status banner* at the bottom of the
+screen, so the drag kept panning. It moved to the toolbar — a mode switch has to be reachable
+whatever transient chrome the app is showing.
+
+**Verified end to end.** Lassoing the China cluster reported **40,599 documents**, region *nanking
+shanghai*, "Saving the first 7500 of 40599", and "0 of 7500 documents indexed on this device" — then
+saved, and the corpus appears in Working Corpora rendered by the existing view with no changes:
+provenance "Semantic map selection · Captured Aug 13, 2026 · against 2 indexed volumes".
+
+Still to come: the design's semantic-axis slices.
