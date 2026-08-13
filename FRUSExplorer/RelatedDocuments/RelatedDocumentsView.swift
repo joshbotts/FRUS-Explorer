@@ -152,6 +152,16 @@ struct RelatedDocumentsContent: View {
                         ForEach(rows) { row in
                             Button { open(row) } label: { rowLabel(row) }
                                 .buttonStyle(.plain)
+                                // The semantic axis shipped without the quality gate its design
+                                // specified, on the understanding that testers would judge it
+                                // instead. This is where they do that. Only rows the semantic axis
+                                // actually scored carry the menu — a verdict on a row it did not
+                                // produce would be evidence about a different axis.
+                                .contextMenu {
+                                    if row.axisScores[.semanticSimilarity] != nil {
+                                        semanticFeedbackButtons(for: row)
+                                    }
+                                }
                         }
                         if totalBeforeLimit > rows.count {
                             Text(String(
@@ -208,6 +218,84 @@ struct RelatedDocumentsContent: View {
             totalBeforeLimit = result.totalBeforeLimit
             poolCutFrom = result.poolCutFrom
             isLoading = false
+
+            // The semantic axis's "why related" evidence, computed AFTER ranking and only for the
+            // rows actually on screen — the design's §6.1 shape. Doing it in the generator would
+            // tokenise candidates the ranker then discarded, and would still miss rows another axis
+            // promoted into view. The rows are already displayed with a percentage while this runs,
+            // so a slow pass degrades to the interim chip rather than delaying the list.
+            await attachSemanticEvidence(claimedKey: claimedKey)
+        }
+    }
+
+    /// The tester-feedback controls for one semantic row.
+    ///
+    /// A context menu rather than an inline control because the row is already a `Button`, and a
+    /// button inside a button is a hit-testing argument nobody wins.
+    ///
+    /// - Parameter row: The ranked row being judged.
+    @ViewBuilder
+    private func semanticFeedbackButtons(for row: RelatedDocumentRow) -> some View {
+        Button {
+            recordSemanticFeedback(row: row, verdict: .helpful)
+        } label: {
+            Label(String(localized: "related.semantic.helpful",
+                         defaultValue: "Semantic match: helpful"),
+                  systemImage: "hand.thumbsup")
+        }
+        Button {
+            recordSemanticFeedback(row: row, verdict: .notHelpful)
+        } label: {
+            Label(String(localized: "related.semantic.notHelpful",
+                         defaultValue: "Semantic match: not useful"),
+                  systemImage: "hand.thumbsdown")
+        }
+    }
+
+    /// Records a tester's verdict on a semantic row.
+    ///
+    /// Captures the anchor's era, because that is the question the retired blind panel existed to
+    /// answer and a verdict without it cannot answer it. The era comes from the app's own
+    /// `CoverageEra` banding rather than a second one, so this feedback is comparable with every
+    /// other era-split surface in the app.
+    ///
+    /// - Parameters:
+    ///   - row: The row being judged.
+    ///   - verdict: The tester's verdict.
+    private func recordSemanticFeedback(
+        row: RelatedDocumentRow, verdict: SemanticFeedbackEntry.Verdict
+    ) {
+        let entry = SemanticFeedbackEntry(
+            recordedAt: Date(),
+            anchor: request.anchor.compositeString,
+            neighbour: row.key.compositeString,
+            verdict: verdict,
+            cosine: row.axisScores[.semanticSimilarity],
+            era: request.anchorYear.map { CoverageEra.bucket(year: $0).rawValue.description },
+            sameVolume: row.key.volumeId == request.anchor.volumeId,
+            provenanceDigest: BundledSemanticVectors.provenance?.digestHex)
+        Task { await SemanticFeedbackLog.shared.record(entry) }
+    }
+
+    /// Fills in the shared-distinctive-terms chip for the displayed semantic rows.
+    ///
+    /// Guarded on `claimedKey` the same way the load is: a scope switch or a weight change starts a
+    /// new load, and a late-arriving evidence pass must not write terms computed for the previous
+    /// anchor onto the current rows. Terms are joined with a unit separator because
+    /// `axisEvidenceLabel` is the `[SimilarityAxis: String]` the engine already carries — adding a
+    /// parallel `[SimilarityAxis: [String]]` for one axis would be a second thing to keep in step.
+    ///
+    /// - Parameter claimedKey: The reload identity this pass belongs to.
+    private func attachSemanticEvidence(claimedKey: String) async {
+        let semanticRows = rows.filter { $0.axisScores[.semanticSimilarity] != nil }
+        guard !semanticRows.isEmpty else { return }
+        let terms = await SemanticSharedTerms.sharedTerms(
+            anchor: request.anchor, candidates: semanticRows.map(\.key), appState: appState)
+        guard !terms.isEmpty, !Task.isCancelled, lastLoadedKey == claimedKey else { return }
+        for index in rows.indices {
+            guard let found = terms[rows[index].key], !found.isEmpty else { continue }
+            rows[index].axisEvidenceLabel[.semanticSimilarity] =
+                found.joined(separator: "\u{1F}")
         }
     }
 
@@ -399,6 +487,11 @@ struct RelatedDocumentsContent: View {
                         case .presence:
                             return String(localized: "related.why.sameProvenance",
                                           defaultValue: "same provenance")
+                        case .sharedTerms(let terms):
+                            // The anchor's own spelling, never a lemma — see SemanticSharedTerms.
+                            return String(format: String(localized: "related.why.sharedTerms %@",
+                                                         defaultValue: "shares: %@"),
+                                          terms.joined(separator: ", "))
                         case .percent(let pct):
                             // A real but sub-1% contribution reads as "<1%", never "0%".
                             return pct == 0
@@ -409,7 +502,10 @@ struct RelatedDocumentsContent: View {
                     }()
                     HStack(spacing: 2) {
                         Image(systemName: axis.systemImage)
-                        Text(display).monospacedDigit()
+                        // The shared-terms chip is far wider than a percentage and this row is a
+                        // single non-wrapping HStack, so it is allowed to truncate rather than
+                        // squeeze the axes beside it out of the row.
+                        Text(display).monospacedDigit().lineLimit(1).truncationMode(.tail)
                     }
                     .font(.caption2)
                     .foregroundStyle(.tertiary)

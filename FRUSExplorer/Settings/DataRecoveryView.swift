@@ -55,7 +55,7 @@ struct DataRecoveryView: View {
 
     /// The screens this door leads to.
     enum SubScreen: String, Identifiable {
-        case brokenReferences, syncLog, schemaStatus, eraseEverything
+        case brokenReferences, syncLog, schemaStatus, semanticFeedback, eraseEverything
         var id: String { rawValue }
     }
 
@@ -83,6 +83,14 @@ struct DataRecoveryView: View {
                                    defaultValue: "Sync Log"),
                      detail: syncSummary.text())
                 if appState.cloudKitSyncEnabled { schemaRow }
+                // The semantic axis ships experimental because a quality gate was traded for
+                // tester judgement; this is where that judgement is collected and exported.
+                link(.semanticFeedback,
+                     label: String(localized: "settings.dataRecovery.semanticFeedback",
+                                   defaultValue: "Semantic Match Feedback"),
+                     detail: String(
+                        localized: "settings.dataRecovery.semanticFeedback.detail",
+                        defaultValue: "Rate experimental semantic matches and export your verdicts"))
             } header: {
                 Text(String(localized: "settings.dataRecovery.diagnostics.header",
                             defaultValue: "Diagnostics"))
@@ -303,6 +311,7 @@ struct DataRecoveryView: View {
         case .brokenReferences: BrokenReferencesReportView()
         case .syncLog:          SyncDiagnosticsView()
         case .schemaStatus:     SchemaDeployStatusView()
+        case .semanticFeedback: SemanticFeedbackView()
         case .eraseEverything:  EraseEverythingView()
         }
     }
