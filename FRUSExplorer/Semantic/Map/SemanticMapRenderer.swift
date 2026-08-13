@@ -73,6 +73,13 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         var frameMilliseconds: Double = 0
         /// Worst frame in the recent window.
         var worstMilliseconds: Double = 0
+        /// Frames presented since the renderer was built.
+        ///
+        /// **The overlay was unable to tell "drawing" from "drew once and stopped".** A window is
+        /// published every 30 samples and the model then keeps that value, so the blank macOS
+        /// surface showed a confident "4.09 ms mean" that proved only that some frames had happened
+        /// at some point. A running total makes a frozen surface visible.
+        var presentedFrames: Int = 0
     }
 
     /// Called on the main actor whenever the statistics window rolls over.
@@ -132,6 +139,11 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             ? SIMD2<Float>(halfExtent * aspect, halfExtent)
             : SIMD2<Float>(halfExtent, halfExtent / aspect)
     }
+
+    #if DEBUG
+    /// Draw calls received, for the blank-surface probe.
+    private var drawCallCount = 0
+    #endif
 
     /// Accumulates GPU frame times off the main actor and publishes a value type when the window
     /// rolls over. GPU-reported timestamps are the honest measure; CPU wall time around `commit` is
@@ -275,23 +287,51 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     }
 
     func draw(in view: MTKView) {
+        #if DEBUG
+        // The blank-macOS-surface probe, kept rather than deleted. Six candidate mechanisms were
+        // reviewed and all six were refuted, so if the surface is ever blank again the next report
+        // should be conclusive instead of another round of theories. One line every ~2 seconds per
+        // view, on a DEBUG-only screen.
+        drawCallCount += 1
+        if drawCallCount % 120 == 1 {
+            print("[SemanticMapRenderer] draw view=\(ObjectIdentifier(view)) "
+                  + "window=\(view.window != nil) bounds=\(view.bounds.size) "
+                  + "drawable=\(view.drawableSize) delegateIsSelf=\(view.delegate === self) "
+                  + "uploaded=\(uploadedPointCount) frame=\(drawCallCount)")
+        }
+        #endif
+
+        // A view with no window is not the one the reader is looking at. SwiftUI can realize a
+        // representable more than once — a macOS sheet is where this actually happens — and a
+        // discarded view whose display link is still running would otherwise contribute phantom
+        // frames to the statistics, making them describe a surface nobody can see.
+        guard view.window != nil else { return }
+
+        // NOTE the points are NOT part of this guard. `clearColor` is not something an MTKView
+        // paints on its own: it is the `.clear` load action inside `currentRenderPassDescriptor`,
+        // and it reaches the screen only if a pass is encoded and presented. Returning early with a
+        // drawable in hand would leave the layer with NO CONTENTS — transparent, showing whatever is
+        // behind it — which is exactly the white rectangle the macOS map presented, and it is
+        // indistinguishable by eye from not being attached at all. Encoding an empty pass costs
+        // nothing and makes "dark" mean attached-and-idle, "white" mean not-attached.
         guard let descriptor = view.currentRenderPassDescriptor,
               let drawable = view.currentDrawable,
-              let buffer = queue.makeCommandBuffer(),
-              let pointBuffer, pointCount > 0
+              let buffer = queue.makeCommandBuffer()
         else { return }
 
         var uniforms = Uniforms(
             centre: centre, scale: scale, pointSize: pointSize, alpha: 1.0)
 
         if let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) {
-            encoder.setRenderPipelineState(pipeline)
-            encoder.setVertexBuffer(pointBuffer, offset: 0, index: 0)
-            encoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)
-            encoder.setVertexBuffer(paletteBuffer, offset: 0, index: 2)
-            // ONE draw call for the entire corpus. If this is fast enough, the design's
-            // level-of-detail machinery becomes an optimisation rather than a prerequisite.
-            encoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: pointCount)
+            if let pointBuffer, pointCount > 0 {
+                encoder.setRenderPipelineState(pipeline)
+                encoder.setVertexBuffer(pointBuffer, offset: 0, index: 0)
+                encoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)
+                encoder.setVertexBuffer(paletteBuffer, offset: 0, index: 2)
+                // ONE draw call for the entire corpus. If this is fast enough, the design's
+                // level-of-detail machinery becomes an optimisation rather than a prerequisite.
+                encoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: pointCount)
+            }
             encoder.endEncoding()
         }
 
@@ -318,6 +358,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         private let lock = NSLock()
         private var samples: [Double] = []
         private var pointCount = 0
+        private var presentedFrames = 0
         /// Published when a window closes; assigned on the main actor before rendering starts.
         var onStats: (@Sendable @MainActor (Stats) -> Void)?
 
@@ -332,11 +373,13 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         func record(_ milliseconds: Double) {
             lock.lock()
             samples.append(milliseconds)
+            presentedFrames += 1
             guard samples.count >= 30 else { lock.unlock(); return }
             let stats = Stats(
                 pointCount: pointCount,
                 frameMilliseconds: samples.reduce(0, +) / Double(samples.count),
-                worstMilliseconds: samples.max() ?? 0)
+                worstMilliseconds: samples.max() ?? 0,
+                presentedFrames: presentedFrames)
             samples.removeAll(keepingCapacity: true)
             let sink = onStats
             lock.unlock()

@@ -42,6 +42,10 @@ struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    #if os(macOS) && DEBUG
+    /// Opens the semantic map's own window; a Metal surface does not survive this pane's sheets.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var syncSummary = SyncLogSummary()
     @State private var showSyncResetConfirmation = false
@@ -290,6 +294,14 @@ struct DataRecoveryView: View {
                       destructive: Bool = false) -> some View {
         #if os(macOS)
         Button {
+            #if DEBUG
+            // The semantic map is a Metal surface and does not survive a SwiftUI sheet — see the
+            // `frus.semanticMap` scene for the measurement. It gets a window of its own.
+            if screen == .semanticMapSpike {
+                openWindow.fronting(id: "frus.semanticMap")
+                return
+            }
+            #endif
             sheet = screen
         } label: {
             HStack {

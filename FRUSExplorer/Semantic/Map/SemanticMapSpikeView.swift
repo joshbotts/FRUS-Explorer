@@ -37,8 +37,32 @@ import simd
 /// survived it.
 ///
 /// The renderer does not need the `MTKView`; the `MTKView` needs the renderer. So it is built here,
-/// on the main actor, from a `.task`, and the representable only attaches what already exists —
-/// which may be nothing yet, which is why `attach(to:)` runs again on every update.
+/// on the main actor — **synchronously, in `init`** — and the representable attaches it the moment it
+/// creates a view.
+///
+/// **Building it eagerly closes a real hole. It is NOT known to be the macOS cause**, and the record
+/// of what was and was not established is worth more here than a tidy story — three confident
+/// explanations for this one screen have already been wrong.
+///
+/// What is solid: an unpresented `CAMetalLayer` has no contents at all, because `clearColor` is not
+/// a property the view paints — it is the `.clear` load action inside `currentRenderPassDescriptor`.
+/// So the blank macOS map was WHITE (nothing reached the screen) rather than the dark an
+/// attached-but-idle surface would give.
+///
+/// What is not: **why**. A faithful standalone reproduction — same shader, the real 314,483
+/// placements, the same model/representable/sheet structure — logs the `MTKView` attached, sized, in
+/// `SheetPresentationWindow`, and presenting 600 frames at a clean 60 fps. So "the view never gets a
+/// delegate" is *not* what happens, and neither is "the sheet realizes it twice"; `updateNSView`
+/// fires twice and attaches. Whether the sheet then fails to composite the layer is unverified,
+/// because nothing in that reproduction could photograph the screen. Nineteen candidate mechanisms
+/// were reviewed adversarially and every one was refuted.
+///
+/// So: this ordering fix is defensible on its own terms — a renderer that arrives after the last
+/// update could never be attached, and now cannot arrive late at all — but the macOS surface is
+/// additionally moved out of the sheet into its own `Window` scene, which is the cheapest way to
+/// find out whether the sheet was ever the problem. The companion change in `draw(in:)` — encoding
+/// an empty pass when there is nothing to draw — is what makes the next observation mean something,
+/// because dark now means attached-and-presenting and only white means neither.
 ///
 /// Extracting a plain class is what made the load testable: a test can hold one, drive `prepare()`,
 /// and read the renderer back. (The two volume lookups are **closures rather than an `AppState`** for
@@ -65,10 +89,26 @@ final class SemanticMapModel {
     /// Whether the points have been uploaded.
     private var isLoaded = false
 
-    /// Creates an empty model.
-    init() {}
+    /// Creates the model and its renderer.
+    ///
+    /// The renderer is built here rather than in `prepare()` so that no view can ever be created
+    /// before it exists. Costs one `MTLCreateSystemDefaultDevice()` and one runtime shader
+    /// compilation — a few milliseconds, once, against a surface that would otherwise be silently
+    /// blank on macOS.
+    init() {
+        guard let device = MTLCreateSystemDefaultDevice(),
+              let made = SemanticMapRenderer(device: device) else {
+            unavailable = String(localized: "semanticMap.noMetal",
+                                 defaultValue: "This device has no Metal renderer.")
+            return
+        }
+        made.onStats = { [weak self] measured in
+            Task { @MainActor in self?.stats = measured }
+        }
+        renderer = made
+    }
 
-    /// Builds the renderer and loads the bundled map. Idempotent.
+    /// Loads the bundled map into the renderer. Idempotent.
     ///
     /// - Parameters:
     ///   - lens: The lens to colour the first frame by.
@@ -79,18 +119,6 @@ final class SemanticMapModel {
         eraForVolume: (String) -> CoverageEra?,
         isDownloaded: (String) -> Bool
     ) async {
-        if renderer == nil {
-            guard let device = MTLCreateSystemDefaultDevice(),
-                  let made = SemanticMapRenderer(device: device) else {
-                unavailable = String(localized: "semanticMap.noMetal",
-                                     defaultValue: "This device has no Metal renderer.")
-                return
-            }
-            made.onStats = { [weak self] measured in
-                Task { @MainActor in self?.stats = measured }
-            }
-            renderer = made
-        }
         guard !isLoaded, let renderer else { return }
 
         await BundledSemanticMap.prepare()
@@ -270,6 +298,10 @@ struct SemanticMapSpikeView: View {
             Text(verbatim: "\(Self.milliseconds(model.stats.frameMilliseconds)) ms mean · "
                  + "\(Self.milliseconds(model.stats.worstMilliseconds)) ms worst")
             Text(verbatim: Self.framesPerSecond(model.stats.frameMilliseconds))
+            // The running total is here because the averages alone could not tell a live surface
+            // from one that drew thirty frames and stopped — which is exactly the ambiguity the
+            // blank macOS map hid behind.
+            Text(verbatim: "\(model.stats.presentedFrames) frames presented")
         }
         .font(.caption2.monospacedDigit())
         .padding(8)
@@ -350,11 +382,15 @@ struct SemanticMapSpikeView: View {
 /// whole fix for the blank map — a representable that builds and publishes state during
 /// `makeNSView`/`makeUIView` is writing to SwiftUI mid-update, which is undefined behaviour.
 ///
-/// `makeMap()` normally runs *before* the model's `.task` has produced anything, so it attaches
-/// nothing and `updateNSView`/`updateUIView` is the path that actually connects the renderer. Those
-/// two one-line forwarders are the only part of this file a test cannot drive — `Context` is not
-/// constructible — so the suite exercises `attach(to:)` directly and this comment is the record that
-/// the forwarding itself is unverified.
+/// **Every view it creates is attached before it is returned**, because the model builds its renderer
+/// in `init`. That is deliberate and it is the macOS fix: SwiftUI may realize a representable more
+/// than once — a `.sheet` is where it does — and when connection depended on a later
+/// `updateNSView`, the instance that received the update was not the one composited. The visible
+/// `MTKView` kept `delegate == nil`, never drew, and showed the window straight through.
+///
+/// `update*View` still calls `attach(to:)`, now purely as a belt-and-braces re-assert. Those two
+/// one-line forwarders are the only part of this file a test cannot drive — `Context` is not
+/// constructible — which is precisely why the fix does not rely on them.
 struct SemanticMapSurface {
 
     /// The model holding the renderer.
@@ -367,7 +403,12 @@ struct SemanticMapSurface {
     /// this shape is that the surface is created before the model's `.task` has run.
     @MainActor
     func makeMap() -> MTKView {
-        let view = MTKView()
+        // `init(frame:device:)` rather than the bare `MTKView()` the first version used. This is
+        // tidiness, NOT a fix: it was proposed as the cause of the blank macOS surface and that was
+        // measured false on macOS 26.6.1 — MTKView's own method list carries `initWithFrame:`, so
+        // `MTKView()` lands in MTKView's implementation and its common setup does run. Handing the
+        // device in up front is simply possible now that the renderer exists before any view does.
+        let view = MTKView(frame: .zero, device: model.renderer?.device)
         view.enableSetNeedsDisplay = false
         view.isPaused = false
         view.preferredFramesPerSecond = 60
@@ -375,7 +416,7 @@ struct SemanticMapSurface {
         // so both sides read one constant and a test asserts they agree.
         view.colorPixelFormat = SemanticMapRenderer.pixelFormat
         view.clearColor = MTLClearColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1)
-        view.device = model.renderer?.device ?? MTLCreateSystemDefaultDevice()
+        if view.device == nil { view.device = MTLCreateSystemDefaultDevice() }
         attach(to: view)
         return view
     }
