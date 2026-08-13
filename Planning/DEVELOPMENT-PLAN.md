@@ -6165,3 +6165,47 @@ call. Tier 1 is bundled and works with zero downloads today.
 Owed next: the oldest-device latency measurement (desktop numbers only so far), the Tier-2 host
 decision, and V-3's axis — which lands into a ranker where `isSelfNormalising` does not yet exist and
 where generators run regardless of weight, both of which V-3 must handle rather than discover.
+
+## Session 2026-08-12 — V-2b + V-3: the axis, and the two shared changes it needed
+
+**Tier 2 got a host** (owner decision, beta): 552 shards / 82 MB published at
+`github.com/joshbotts/frus-semantic-vectors` — derived data only, with the shard format, the
+provenance pin and the measured recall in its README. The app fetches from raw.githubusercontent but
+deliberately **not** through `DownloadManager`: that engine hardcodes `<volumesDirectory>/<id>.xml`,
+routes by `taskDescription == volumeId` so a second per-volume transfer has no representable key, and
+exposes a single delegate slot a second attacher would displace. A shard is 148 KB; background
+sessions are for transfers that must survive suspension.
+
+The shard manifest moved into the bundle (66 KB) so a download is checked against its recorded length
+and SHA-256 before the store re-validates header, provenance and row count. That is more than the app
+does for volume XML, and deliberately: a corrupt volume is visibly wrong, a corrupt vector is a
+plausible wrong answer. Fetch policy is split — eager beside a volume's own download (148 KB against
+~6 MB), lazy for everything already on disk, so an existing full library does not silently pull 82 MB
+at launch for a feature nobody has opened.
+
+**V-3 — `SimilarityAxis.semanticSimilarity`** ships as a generator at weight 0 with "experimental" in
+its display name. A generator rather than a scorer because a scorer cannot widen the candidate
+universe, and the 46,234 documents with an empty Related list are the entire point.
+
+Two changes to shared code, both of which the ranker applies on behalf of every axis:
+
+- **`isSelfNormalising`** — the #643 escape, which existed only as a proposal in two planning docs.
+  Step 2 of the ranker divides each generator axis by its own max, which is right for a count and
+  destructive for a cosine: a document's *only* semantic neighbour would read 1.0 however unlike it
+  is. Self-normalising axes are clamped to [0,1] instead — a negative similarity is not evidence.
+- **`skipsGenerationAtZeroWeight`** — generators otherwise run regardless of weight, on purpose (one
+  axis's candidates are scorable by another). The semantic axis is the exception because its
+  generation can trigger a **network fetch**, and spending a user's bandwidth on an axis they left at
+  0 is not defensible. Both properties are false for all six existing axes, and a test asserts that.
+
+The generator applies the display fence *inside* the scan as a precomputed per-row eligibility array
+built from indexed volumes' row ranges — filtering afterwards is what V-2 measured returning 28
+candidates for a request of 50. It scores only candidates whose shard is present and **drops the
+rest rather than falling back to Hamming**: raw binary recalls 0.53 against the funnel's 0.745 and the
+two are different scales, so a list mixing them would be sorted by a number meaning different things
+in different rows. Missing volumes are queued so the next query is better.
+
+Still owed: the "why related" chip currently states the cosine as a percentage, which is the only
+thing this axis knows — the design's shared-distinctive-terms chip is separate work. And the
+tester-feedback path the retired blind panel was traded for still needs to exist: shipping an
+experiment nobody can report on is not evidence-gathering.

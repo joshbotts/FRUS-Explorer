@@ -48,13 +48,22 @@ struct SimilarityAxisTests {
 
     @Test("all six axes are present")
     func allCases() {
-        #expect(SimilarityAxis.allCases.count == 6)
+        #expect(SimilarityAxis.allCases.count == 7)   // + semanticSimilarity (V-3)
     }
 
-    @Test("only archival provenance and cross-reference are generators")
+    @Test("archival provenance, cross-reference and semantic similarity are the generators")
     func generatorSplit() {
         let generators = SimilarityAxis.allCases.filter(\.isGenerator)
-        #expect(Set(generators) == [.archivalProvenance, .crossReference])
+        #expect(Set(generators) == [.archivalProvenance, .crossReference, .semanticSimilarity])
+    }
+
+    /// V-3 ships the semantic axis opt-in, and the reason is not caution about the ranker: the
+    /// blind panel that would have graded its early-era quality was retired as a gate, so this
+    /// weight is what stands between an unmeasured axis and every user's Related list.
+    @Test("semantic similarity defaults to weight 0 (experimental, opt-in)")
+    func semanticDefaultOff() {
+        #expect(SimilarityAxis.semanticSimilarity.defaultWeight == 0)
+        #expect(SimilarityAxis.semanticSimilarity.isGenerator)
     }
 
     @Test("shared subjects defaults to weight 0 (gated, opt-in)")

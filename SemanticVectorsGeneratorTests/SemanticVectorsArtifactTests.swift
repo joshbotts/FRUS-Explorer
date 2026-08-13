@@ -201,9 +201,10 @@ struct SemanticVectorsArtifactTests {
     /// for a volume whose rows live somewhere else entirely.
     @Test("Shard manifest matches the index's volumes, order, and provenance")
     func shardManifestAgreesWithIndex() throws {
-        let url = Self.repoRoot
-            .appendingPathComponent("Planning/semantic-vectors/shards-manifest.json")
-        let data = try #require(try? Data(contentsOf: url), "shards-manifest.json missing")
+        // Bundled since V-2b: the device verifies a downloaded shard against these digests, so the
+        // manifest ships rather than sitting beside the (gitignored) shards it describes.
+        let url = Self.resources.appendingPathComponent("semantic-shards-manifest.json")
+        let data = try #require(try? Data(contentsOf: url), "semantic-shards-manifest.json missing")
         let manifest = try JSONDecoder().decode(
             SemanticVectorsRunner.ShardManifest.self, from: data)
 
@@ -229,8 +230,7 @@ struct SemanticVectorsArtifactTests {
     /// machine that has just run the generator gets the full check.
     @Test("Where shards exist, their bytes match the manifest's digests and headers")
     func shardBytesMatchTheirManifestRows() throws {
-        let url = Self.repoRoot
-            .appendingPathComponent("Planning/semantic-vectors/shards-manifest.json")
+        let url = Self.resources.appendingPathComponent("semantic-shards-manifest.json")
         let manifest = try JSONDecoder().decode(
             SemanticVectorsRunner.ShardManifest.self, from: try #require(try? Data(contentsOf: url)))
         let shardsDir = Self.repoRoot.appendingPathComponent("Planning/semantic-vectors/shards")

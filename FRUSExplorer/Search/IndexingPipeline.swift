@@ -6295,6 +6295,57 @@ public actor IndexingPipeline {
 
     /// Body text for the given documents, **keyed** by `"volumeId/documentId"`.
     ///
+    /// Display rows for a set of documents, keyed — the fence itself, as a query.
+    ///
+    /// A key with no `document_cache` row simply does not come back. That is not an error path: it is
+    /// how the display fence is enforced for a generator whose candidates come from somewhere other
+    /// than SQL. The semantic axis produces candidates from a bundled vector block that covers the
+    /// whole corpus including volumes this device has never downloaded, so filtering through this
+    /// query is what keeps it from offering a document the reader cannot open.
+    ///
+    /// Chunked at 500 keys per statement to stay under SQLite's variable limit; the caller's pool is
+    /// bounded well below that today, and the chunking is here so a future wider pool cannot make
+    /// this the thing that breaks.
+    ///
+    /// - Parameter keys: The documents to look up.
+    /// - Returns: A record per key that exists in the cache.
+    /// - Throws: `IndexingError.sqliteError` on a statement failure.
+    func candidateRecords(
+        forKeys keys: [DocumentKey]
+    ) async throws -> [DocumentKey: CandidateRecord] {
+        guard !keys.isEmpty else { return [:] }
+        var results: [DocumentKey: CandidateRecord] = [:]
+        for chunk in stride(from: 0, to: keys.count, by: 500).map({
+            Array(keys[$0..<min($0 + 500, keys.count)])
+        }) {
+            let placeholders = Array(repeating: "(?, ?)", count: chunk.count).joined(separator: ", ")
+            let sql = """
+                SELECT volume_id, document_id, header, dateline, document_number, is_editorial_note
+                FROM document_cache
+                WHERE (volume_id, document_id) IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var position: Int32 = 1
+            for key in chunk {
+                sqlite3_bind_text(stmt, position, key.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, position + 1, key.documentId, -1, SQLITE_TRANSIENT_IP)
+                position += 2
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let key = DocumentKey(
+                    volumeId: auxColumnString(stmt, 0) ?? "",
+                    documentId: auxColumnString(stmt, 1) ?? "")
+                results[key] = CandidateRecord(
+                    header: auxColumnString(stmt, 2) ?? "",
+                    dateline: auxColumnString(stmt, 3),
+                    documentNumber: auxColumnString(stmt, 4),
+                    isEditorialNote: sqlite3_column_int(stmt, 5) != 0)
+            }
+        }
+        return results
+    }
+
     /// The sibling ``documentBodyTexts(forKeys:)`` returns a bare `[String]`, which is right for the
     /// word cloud — it tokenises the lot and never asks which document a word came from. A
     /// concordance does ask: every line names its source document, so the body has to arrive
