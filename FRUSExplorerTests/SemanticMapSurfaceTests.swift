@@ -35,10 +35,14 @@ private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
 ///         just built — a tautology that stayed green with `setPoints` stubbed out. They now read
 ///         the renderer's own `uploadedPointCount` and `uploadCount`. `.serialized` added: seven
 ///         cases drive `BundledSemanticMap`'s static state and one resets it.
-///   1.3 — V-4: the map was still blank on **macOS**, where SwiftUI realizes the representable more
-///         than once and the attach landed on an instance that was never composited. The
-///         late-attach test is replaced by one that makes several views from one surface and
-///         requires every one of them to be born attached.
+///   1.3 — V-4: the map was still blank on **macOS**. The cause turned out to be the SwiftUI
+///         `.sheet` — a Metal layer hosted in one draws and presents and never reaches the screen —
+///         and NOT, as this entry first claimed, SwiftUI realizing the representable more than once;
+///         it is realized once. The late-attach test is still replaced by one that makes several
+///         views from one surface and requires every one to be born attached, because that closes a
+///         real ordering hole even though it was not the macOS cause.
+///   1.4 — V-4: adds the region-label layout tests. Pure functions of (clusters, camera, size), so
+///         they run without a GPU — the thing this surface has repeatedly needed and not had.
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
@@ -313,6 +317,138 @@ struct SemanticMapSurfaceTests {
             #expect(sample.x == reference.x, "row \(row) x")
             #expect(sample.y == reference.y, "row \(row) y")
         }
+    }
+
+    // MARK: - Region labels
+
+    /// The label layer has to land text on the same pixels a point lands on, so its projection is
+    /// pinned to the shader's rule: `(grid - centre) / scale`, y up, [-1,1] across the viewport.
+    @Test("A region at the camera's centre is drawn at the centre of the view")
+    func projectionCentres() {
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 30_000)
+        let size = CGSize(width: 400, height: 200)
+        let middle = SemanticMapLabelLayout.project(SIMD2<Float>(0, 0), camera: camera, size: size)
+        #expect(abs(middle.x - 200) < 0.001)
+        #expect(abs(middle.y - 100) < 0.001)
+
+        // Aspect is applied to the horizontal half-extent, so on a 2:1 viewport the grid's own
+        // half-height reaches the top edge while its half-width reaches only the middle of the right.
+        let top = SemanticMapLabelLayout.project(SIMD2<Float>(0, 30_000), camera: camera, size: size)
+        #expect(abs(top.y) < 0.001, "y is flipped: grid up is view down")
+        let right = SemanticMapLabelLayout.project(
+            SIMD2<Float>(30_000, 0), camera: camera, size: size)
+        #expect(abs(right.x - 300) < 0.001)
+    }
+
+    /// Panning must move the names with the points, or the map lies about what it is naming.
+    @Test("Moving the camera moves the labels the opposite way")
+    func projectionFollowsCamera() {
+        let size = CGSize(width: 400, height: 400)
+        let origin = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 30_000)
+        let moved = SemanticMapCamera(centre: SIMD2<Float>(15_000, 0), halfExtent: 30_000)
+        let before = SemanticMapLabelLayout.project(SIMD2<Float>(0, 0), camera: origin, size: size)
+        let after = SemanticMapLabelLayout.project(SIMD2<Float>(0, 0), camera: moved, size: size)
+        #expect(after.x < before.x, "camera moved right, so the region moves left on screen")
+
+        // Zooming in spreads two regions apart.
+        let close = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 15_000)
+        let wideGap = abs(
+            SemanticMapLabelLayout.project(SIMD2<Float>(10_000, 0), camera: origin, size: size).x
+            - before.x)
+        let closeGap = abs(
+            SemanticMapLabelLayout.project(SIMD2<Float>(10_000, 0), camera: close, size: size).x
+            - before.x)
+        #expect(closeGap > wideGap)
+    }
+
+    /// 179 regions and room for two dozen names: the rule is rank by size, then drop anything that
+    /// collides with a name already placed. Ranking by size rather than proximity is what keeps the
+    /// labelling stable while panning.
+    @Test("Crowded regions yield one label, and the largest region wins it")
+    func labelsResolveCrowding() {
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 30_000)
+        let size = CGSize(width: 400, height: 400)
+        let crowd = [
+            makeCluster(id: 1, terms: ["small", "one"], x: 0, y: 0, documents: 100),
+            makeCluster(id: 2, terms: ["big", "two"], x: 60, y: 60, documents: 9_000),
+            makeCluster(id: 3, terms: ["far", "three"], x: 20_000, y: 0, documents: 500),
+        ]
+        let labels = SemanticMapLabelLayout.labels(for: crowd, camera: camera, size: size)
+        #expect(labels.count == 2, "the two overlapping regions must collapse to one name")
+        #expect(labels.first?.id == 2, "and the larger of them keeps it")
+        #expect(labels.contains { $0.id == 3 })
+        #expect(labels.allSatisfy { $0.text.split(separator: " ").count == 2 })
+    }
+
+    /// A name for a region nobody can see is noise, and the limit is what keeps the map readable.
+    @Test("Off-screen regions are dropped and the count is capped")
+    func labelsCullAndCap() {
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 1_000)
+        let size = CGSize(width: 400, height: 400)
+        let offScreen = [makeCluster(id: 9, terms: ["gone"], x: 25_000, y: 0, documents: 5_000)]
+        #expect(SemanticMapLabelLayout.labels(for: offScreen, camera: camera, size: size).isEmpty)
+
+        // Spread apart, and kept clear of the edges: a centre near the edge is pulled inward by the
+        // clamp, and three of those pulled to the same edge would collide and be dropped — which is
+        // the clamp working, not the cap, and would make this test measure the wrong thing.
+        let many = (0..<60).map { index in
+            makeCluster(id: index, terms: ["t\(index)"],
+                        x: -500 + index * 17, y: (index % 2 == 0) ? -900 : 900,
+                        documents: 1_000 - index)
+        }
+        let capped = SemanticMapLabelLayout.labels(
+            for: many, camera: camera, size: size, limit: 5, spacing: 1)
+        #expect(capped.count == 5)
+        #expect(capped.map(\.id) == [0, 1, 2, 3, 4], "the largest five, in size order")
+
+        #expect(SemanticMapLabelLayout.labels(
+            for: many, camera: camera, size: .zero).isEmpty, "no view, no labels")
+    }
+
+    /// A name running off the edge is worse than a name nudged inward — the first build drew
+    /// "srael israeli" and a truncated "seward dayton" against the viewport edges.
+    @Test("Labels near an edge are pulled inside the view")
+    func labelsStayInsideTheView() {
+        let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: 10_000)
+        let size = CGSize(width: 400, height: 400)
+        // Centres hard against each edge of the visible grid.
+        let edges = [
+            makeCluster(id: 1, terms: ["left"], x: -10_000, y: 0, documents: 900),
+            makeCluster(id: 2, terms: ["right"], x: 10_000, y: 0, documents: 800),
+            makeCluster(id: 3, terms: ["top"], x: 0, y: 10_000, documents: 700),
+            makeCluster(id: 4, terms: ["bottom"], x: 0, y: -10_000, documents: 600),
+        ]
+        let labels = SemanticMapLabelLayout.labels(for: edges, camera: camera, size: size)
+        #expect(labels.count == 4)
+        for label in labels {
+            #expect(label.position.x > 0 && label.position.x < size.width, "\(label.text) x")
+            #expect(label.position.y > 0 && label.position.y < size.height, "\(label.text) y")
+        }
+        // The clamp must not smuggle two names on top of each other.
+        for (index, label) in labels.enumerated() {
+            for other in labels.dropFirst(index + 1) {
+                let gap = hypot(label.position.x - other.position.x,
+                                label.position.y - other.position.y)
+                #expect(gap >= SemanticMapLabelLayout.defaultSpacing,
+                        "\(label.text) and \(other.text) collide after clamping")
+            }
+        }
+    }
+
+    /// Builds a cluster record for the layout tests.
+    /// - Parameters:
+    ///   - id: Cluster id.
+    ///   - terms: Its label terms.
+    ///   - x: Grid x of its centre.
+    ///   - y: Grid y of its centre.
+    ///   - documents: How many documents it holds.
+    /// - Returns: The cluster.
+    private func makeCluster(
+        id: Int, terms: [String], x: Int, y: Int, documents: Int
+    ) -> SemanticMapArtifacts.Cluster {
+        SemanticMapArtifacts.Cluster(
+            id: id, terms: terms, documentCount: documents,
+            centreX: x, centreY: y, eraCounts: [:])
     }
 
     // MARK: - Wiring

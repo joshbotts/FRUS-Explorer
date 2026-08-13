@@ -40,29 +40,24 @@ import simd
 /// on the main actor — **synchronously, in `init`** — and the representable attaches it the moment it
 /// creates a view.
 ///
-/// **Building it eagerly closes a real hole. It is NOT known to be the macOS cause**, and the record
-/// of what was and was not established is worth more here than a tidy story — three confident
-/// explanations for this one screen have already been wrong.
+/// **The macOS cause was the SwiftUI `.sheet`, confirmed by observation**: moving this screen into
+/// its own `Window` scene made the map appear, with nothing else changed. A Metal layer hosted in a
+/// SwiftUI sheet on macOS draws and presents — a faithful reproduction logged the `MTKView` attached,
+/// sized, in `SheetPresentationWindow`, presenting 600 frames at a clean 60 fps — and none of it
+/// reaches the screen. **Do not put an `MTKView` in a SwiftUI sheet on macOS.**
 ///
-/// What is solid: an unpresented `CAMetalLayer` has no contents at all, because `clearColor` is not
-/// a property the view paints — it is the `.clear` load action inside `currentRenderPassDescriptor`.
-/// So the blank macOS map was WHITE (nothing reached the screen) rather than the dark an
-/// attached-but-idle surface would give.
+/// Two things about how that was found are worth keeping, because the failure was in the diagnosing
+/// rather than the code. Nineteen candidate mechanisms were reviewed adversarially and every one was
+/// refuted, including two of mine; the sheet hypothesis survived only as the last one standing and
+/// was settled by *looking*, not by argument. And the symptom was unreadable until `draw(in:)`
+/// started encoding an empty pass: `clearColor` is not a property the view paints — it is the
+/// `.clear` load action inside `currentRenderPassDescriptor` — so an unpresented layer has no
+/// contents at all and composites transparent. White meant nothing reached the screen; dark means
+/// attached-and-idle. Without that distinction a screenshot could not tell the two apart, which is
+/// what made three confident explanations survive as long as they did.
 ///
-/// What is not: **why**. A faithful standalone reproduction — same shader, the real 314,483
-/// placements, the same model/representable/sheet structure — logs the `MTKView` attached, sized, in
-/// `SheetPresentationWindow`, and presenting 600 frames at a clean 60 fps. So "the view never gets a
-/// delegate" is *not* what happens, and neither is "the sheet realizes it twice"; `updateNSView`
-/// fires twice and attaches. Whether the sheet then fails to composite the layer is unverified,
-/// because nothing in that reproduction could photograph the screen. Nineteen candidate mechanisms
-/// were reviewed adversarially and every one was refuted.
-///
-/// So: this ordering fix is defensible on its own terms — a renderer that arrives after the last
-/// update could never be attached, and now cannot arrive late at all — but the macOS surface is
-/// additionally moved out of the sheet into its own `Window` scene, which is the cheapest way to
-/// find out whether the sheet was ever the problem. The companion change in `draw(in:)` — encoding
-/// an empty pass when there is nothing to draw — is what makes the next observation mean something,
-/// because dark now means attached-and-presenting and only white means neither.
+/// Building the renderer in `init` is kept and is independently sound — a renderer that arrives after
+/// the last `update*View` could never be attached — but it was **not** the macOS cause.
 ///
 /// Extracting a plain class is what made the load testable: a test can hold one, drive `prepare()`,
 /// and read the renderer back. (The two volume lookups are **closures rather than an `AppState`** for
@@ -83,6 +78,15 @@ final class SemanticMapModel {
     var stats = SemanticMapRenderer.Stats()
     /// Documents placed, for the overlay.
     private(set) var placedCount = 0
+    /// The regions the artifact names, for the label layer.
+    private(set) var clusters: [SemanticMapArtifacts.Cluster] = []
+
+    /// Where the camera is looking, mirrored out of the renderer.
+    ///
+    /// The renderer is not `@Observable` — it is driven by a display link and must not publish per
+    /// frame — so gestures go through `pan`/`zoom` here, which move the camera and republish it. That
+    /// is what makes the labels follow the map instead of sitting where they were when it loaded.
+    private(set) var camera = SemanticMapCamera()
 
     /// The vector index, for the volume row ranges every lens but `cluster` fills.
     private var index: SemanticVectorIndex?
@@ -148,9 +152,27 @@ final class SemanticMapModel {
         }
         renderer.setPoints(points)
         renderer.frameAll(extent: Float(map.gridExtent))
+        camera = renderer.camera
+        clusters = BundledSemanticMap.index?.clusters ?? []
         placedCount = points.count
         isLoaded = true
         apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded)
+    }
+
+    /// Pans the camera by a gesture translation in points.
+    /// - Parameter translation: The delta since the last change.
+    func pan(by translation: CGSize) {
+        guard let renderer else { return }
+        renderer.pan(by: translation)
+        camera = renderer.camera
+    }
+
+    /// Zooms about the centre.
+    /// - Parameter factor: >1 magnifies.
+    func zoom(by factor: Float) {
+        guard let renderer else { return }
+        renderer.zoom(by: factor)
+        camera = renderer.camera
     }
 
     /// Recolours the map for a lens.
@@ -222,12 +244,13 @@ struct SemanticMapSpikeView: View {
             // owns it — but because a transient or premature unavailable state would otherwise tear
             // down the drawable and rebuild it, which is exactly the churn the old shape produced.
             SemanticMapSurface(model: model)
+                .overlay { labelOverlay }
                 .overlay(alignment: .topLeading) { statsOverlay }
                 .overlay { unavailableOverlay }
                 .gesture(
                     DragGesture()
                         .onChanged { value in
-                            model.renderer?.pan(by: CGSize(
+                            model.pan(by: CGSize(
                                 width: value.translation.width - pan.width,
                                 height: value.translation.height - pan.height))
                             pan = value.translation
@@ -236,7 +259,7 @@ struct SemanticMapSpikeView: View {
                 .gesture(
                     MagnifyGesture()
                         .onChanged { value in
-                            model.renderer?.zoom(by: Float(value.magnification / zoom))
+                            model.zoom(by: Float(value.magnification / zoom))
                             zoom = value.magnification
                         }
                         .onEnded { _ in zoom = 1.0 })
@@ -323,6 +346,30 @@ struct SemanticMapSpikeView: View {
         guard value > 0 else { return "—" }
         let rate = (1000 / value).formatted(.number.precision(.fractionLength(0)))
         return "\(rate) fps equivalent"
+    }
+
+    /// The names of the regions, drawn over the points.
+    ///
+    /// SwiftUI text rather than glyphs in the Metal pass: two dozen labels are nothing to lay out,
+    /// they inherit Dynamic Type and the theme for free, and a text renderer in the shader would be
+    /// a second typography stack to keep honest. If the label count ever grows past what SwiftUI can
+    /// place in a frame, that is the moment to reconsider — not before.
+    @ViewBuilder
+    private var labelOverlay: some View {
+        GeometryReader { proxy in
+            let labels = SemanticMapLabelLayout.labels(
+                for: model.clusters, camera: model.camera, size: proxy.size)
+            ForEach(labels) { label in
+                Text(label.text)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.9), radius: 2)
+                    .shadow(color: .black.opacity(0.6), radius: 5)
+                    .position(label.position)
+                    .allowsHitTesting(false)
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     /// The message shown when there is nothing to draw.

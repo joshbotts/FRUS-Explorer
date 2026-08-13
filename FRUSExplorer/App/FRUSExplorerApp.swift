@@ -749,14 +749,13 @@ struct FRUSExplorerApp: App {
         #if DEBUG
         // MARK: - Semantic Map Window (V-4 diagnostics)
         //
-        // A window rather than the sheet the other Data & Recovery sub-screens use, and the reason
-        // is a measurement rather than taste. The map is a Metal surface, and in a SwiftUI `.sheet`
-        // it renders nothing a reader can see: a faithful standalone reproduction shows the MTKView
-        // attached, sized, in `SheetPresentationWindow`, and presenting 600 frames at a clean 60 fps
-        // while the sheet shows its own background. The same content hosted in an ordinary window
-        // renders. Whether SwiftUI's sheet compositing is genuinely at fault is NOT established —
-        // nothing in that reproduction could photograph the screen — so this is the cheapest way to
-        // find out, and it is a fix if it is.
+        // A window rather than the sheet the other Data & Recovery sub-screens use, and this is the
+        // fix for the blank macOS map rather than a preference. **An `MTKView` in a SwiftUI `.sheet`
+        // on macOS draws and presents but never reaches the screen**: a faithful reproduction logged
+        // it attached, sized, in `SheetPresentationWindow`, presenting 600 frames at a clean 60 fps
+        // against a sheet showing its own background. Moving the same view into this scene, with
+        // nothing else changed, made the map appear. Anything Metal-backed added to Data & Recovery
+        // later needs a window too.
         Window("Semantic Map", id: "frus.semanticMap") {
             SemanticMapSpikeView(appState: appState)
                 .environment(appState)
