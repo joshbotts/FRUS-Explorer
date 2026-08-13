@@ -6489,7 +6489,7 @@ state-during-update warnings. The previous entry ended "verified by rendering th
 through the headless Metal tool rather than trusting the build" — that was true, the bytes were fine,
 and the screen was blank anyway.
 
-## Session 2026-08-13 — the map was still blank on macOS, and I do not know why
+## Session 2026-08-13 — the map was still blank on macOS: it was the SwiftUI sheet
 
 PR #874 fixed the map on iOS. The owner reported it **still blank on macOS**, with the stats overlay
 confidently reading "314483 documents · 4.09 ms mean · 245 fps equivalent". This entry records a
@@ -6547,5 +6547,59 @@ which the sheet case rendered. Treat "the sheet is at fault" as an untested hypo
   one hypothesis still standing: if it draws there, the sheet was the problem; if it is still white in
   an ordinary window, the hypothesis is dead and the `[SemanticMapRenderer]` probe lines say what is.
 
-**The honest status: unresolved, instrumented, and testable in one look.** No macOS test host exists
-and screen access was declined, so the observation itself has to be the owner's.
+**CONFIRMED THE SAME DAY.** The owner opened the rebuilt app and the map appeared. Moving the screen
+out of the sheet and into its own `Window` scene, with nothing else changed, is what fixed it — so
+the last hypothesis standing was right, and the rule to carry is blunt: **do not put an `MTKView` in
+a SwiftUI sheet on macOS.** It draws, it presents, and none of it reaches the screen.
+
+Two process notes, since the failure was in the diagnosing rather than the code. The empty-pass
+change is what would have made this a one-round bug: until white and dark meant different things, no
+screenshot could distinguish "never attached" from "attached and idle", and three confident
+explanations survived that ambiguity. And of nineteen candidate mechanisms reviewed adversarially,
+the one that was right survived only as the last one standing — it was settled by looking, not by
+argument, which is the whole reason the surface had to be made observable first.
+
+## Session 2026-08-13 — the map names its regions
+
+With the macOS blank fixed, the map was still a coloured cloud with nothing to read. The Tier-0
+artifact has carried the names since it was packed — 179 clusters, each with four c-TF-IDF terms and
+a centre — and nothing drew them. Now the largest regions are named in place: *nanking shanghai*
+(38,652 documents), *israel israeli* (15,520), *vietnam viet* (13,587), *shah iran*, *rok korea*.
+Seeing them land on the right clusters is incidental confirmation that the c-TF-IDF fix two sessions
+ago was the right one.
+
+**Rank by size, not by proximity.** 179 regions, room for about 22 names. Picking the nearest would
+re-pick a different set every frame; picking the largest keeps a region's name attached to it while
+the reader pans, and a small region simply loses to a big one it collides with. Ties break on id so
+two equal regions cannot swap between runs.
+
+**One projection rule, and it is now a type.** The label layer has to land text on the pixels a point
+lands on, so `SemanticMapCamera` owns `(grid - centre) / scale` and the renderer's `scale` *is* that
+function. A second copy of that arithmetic would be a second thing that drifts — this file has
+already shipped a distortion bug from exactly that. `aspect` is deliberately NOT stored on the camera:
+the renderer takes it from the drawable and the label layer from the SwiftUI geometry, the same
+rectangle in pixels and in points, so the ratio agrees by construction and there is nothing to sync.
+
+**The camera is mirrored onto the model rather than read from the renderer**, because the renderer is
+display-link-driven and must not publish per frame. Gestures now go through `SemanticMapModel.pan`
+and `.zoom`, which move the camera and republish it; that is what makes the labels follow the map.
+
+**Looking at it caught what the tests did not.** The first build clipped names at the viewport edges
+— `srael israeli` on the left, a truncated `seward dayton` on the right — because the visibility
+margin let a region's *centre* sit near the edge while its *text* ran off. Labels are now clamped
+inside an inset, and the clamp runs BEFORE the spacing test so two names pulled to the same edge
+still cannot collide. That ordering is itself tested, since it is the failure the fix could
+introduce.
+
+**And the fix broke a test in an instructive way.** The cap test spread its clusters to the grid
+edges, so after clamping three of them landed on the same x, collided, and were dropped — the
+assertion "the largest five" saw `[0, 1, 5, 6, 7]`. The temptation is to relax the expectation to a
+count; that would have stayed green while testing nothing. The fixture moved inboard instead, with a
+comment saying why, because the test's job is to prove the *cap* picks the largest N and it cannot do
+that while the *clamp* is what is limiting it.
+
+Layout is a pure function of (clusters, camera, size) — projection, y-flip, aspect, pan, zoom,
+crowding, culling, the cap and the clamp all tested without a GPU, which is the thing this surface
+has repeatedly needed and not had. Map suite 17 green; verified on the iPhone 17 simulator.
+
+Still to come: tap-to-open, lasso into a `WorkingCorpus`, and the design's semantic-axis slices.

@@ -115,18 +115,19 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// or it cannot be tested at all.
     private(set) var uploadCount = 0
 
-    /// Camera state, driven by the view's gestures.
-    var centre = SIMD2<Float>(0, 0)
     /// Sprite size in pixels.
     var pointSize: Float = 2.0
 
-    /// Half-height of the visible grid window. Zoom multiplies this; aspect is applied separately, so
-    /// a resize can never disturb the camera and a zoom can never distort the map.
-    private(set) var halfExtent: Float = 32_768
+    /// Where the camera is looking. The label layer projects through the same value, which is the
+    /// point of the type: one definition of where a grid coordinate lands.
+    private(set) var camera = SemanticMapCamera()
     /// Viewport width divided by height, from the drawable rather than assumed.
     private(set) var aspect: Float = 1
     /// The viewport in points, for converting a gesture's translation into grid units.
     private(set) var viewportPoints = CGSize(width: 600, height: 600)
+
+    /// Grid coordinate at the centre of the view.
+    var centre: SIMD2<Float> { camera.centre }
 
     /// Grid units per half-viewport, in each axis.
     ///
@@ -134,11 +135,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// where both axes span [-1,1] whatever shape the viewport is, so a single scale value stretches
     /// the map non-uniformly. It shipped that way — `frameAll` was called with a hardcoded `aspect: 1`
     /// and `drawableSizeWillChange` was empty — and the corpus was drawn distorted on every device.
-    var scale: SIMD2<Float> {
-        aspect >= 1
-            ? SIMD2<Float>(halfExtent * aspect, halfExtent)
-            : SIMD2<Float>(halfExtent, halfExtent / aspect)
-    }
+    var scale: SIMD2<Float> { camera.scale(aspect: aspect) }
 
     #if DEBUG
     /// Draw calls received, for the blank-surface probe.
@@ -246,15 +243,14 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     ///
     /// - Parameter extent: The grid half-extent to fit.
     func frameAll(extent: Float) {
-        centre = SIMD2<Float>(0, 0)
-        halfExtent = extent
+        camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: extent)
     }
 
     /// Multiplies the zoom about the centre.
     /// - Parameter factor: >1 magnifies.
     func zoom(by factor: Float) {
         guard factor.isFinite, factor > 0 else { return }
-        halfExtent /= factor
+        camera.halfExtent /= factor
     }
 
     /// Pans by a gesture translation in points.
@@ -266,8 +262,8 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     func pan(by translation: CGSize) {
         let halfWidth = Float(max(1, viewportPoints.width / 2))
         let halfHeight = Float(max(1, viewportPoints.height / 2))
-        centre.x -= Float(translation.width) / halfWidth * scale.x
-        centre.y += Float(translation.height) / halfHeight * scale.y
+        camera.centre.x -= Float(translation.width) / halfWidth * scale.x
+        camera.centre.y += Float(translation.height) / halfHeight * scale.y
     }
 
     /// Records the viewport so framing and panning use the real shape.
