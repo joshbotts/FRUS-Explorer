@@ -6975,3 +6975,86 @@ turn one red.
 and the ghosts are laid out with the rest, which is defensible — the slice's x is a property of the
 document, not of the scope — but it has not been thought about properly and no surface claims
 otherwise.
+
+## Session 2026-08-14 — where the documents came from, on the map
+
+The design has named this lens since §6.3 and called it the prize: *"A map coloured by provenance
+category alone — watch the central files give way to presidential libraries across the space — is a
+historian-grade artifact no other FRUS tool has."* It is now built, and it looks like the sentence.
+
+**It is a per-VOLUME reading on a per-DOCUMENT map, and that is stated on screen.** Each volume takes
+the archival category most of its source notes name, from the bundled aggregate's schema-2
+`byVolume` table, so every point in a volume takes one colour and a volume that drew half its
+documents from a presidential library shows only its larger half. A caption under the map says so.
+The per-document alternative exists only for downloaded volumes — the FTS5 source notes — and a lens
+that meant one thing for an indexed volume and another for the rest is exactly what `yearForVolume`
+refused for the slice's y-axis.
+
+**Absence keeps its own slot.** Slot 0 is "No source notes" — **30 of the 552** volumes the map
+places are outside the aggregate (522 covered), and **21 of those 30 have a pre-1900 leading year**,
+the remaining nine between 1903 and 1919 (eight of them 1903–1906, one 1919): source notes are a later editorial practice, and
+the grey region the map shows over the nineteenth-century clusters is that fact. Without a reserved
+slot they would have fallen into the first category, `centralDecimalFile`, which is also the largest,
+and been absorbed without a trace. The mutation that makes them fall there is one of the two this
+session's tests are pinned against.
+
+**An evidence floor, added after the review.** The first version took the arg-max with no floor at
+all, so a volume resting on ONE parsed note painted every one of its documents — `frus1898` carries
+1,194 documents on the map and one note. Fifteen volumes are in that state (10,339 documents, 3.3% of
+the plane) and all fifteen resolve to `unrecognized`. The visible consequence was a boundary a reader
+could see and could not explain: `frus1898` took the "Other / Unclassified" colour while its
+neighbour `frus1899` (810 documents, no notes) took the absence colour — two adjacent volumes of
+identical editorial character separated by whether one note happened to parse, and the new legend had
+just given those two greys two different names. The floor is **ten notes**: 24 volumes sit at ten or
+fewer and 29 at twenty or fewer, so the curve is flat there and the exact cut is not load-bearing.
+Below it a volume joins the absence slot, which is renamed "Too few source notes" to cover both
+states honestly.
+
+**`unrecognized` is now the dimmest of the ten**, not the brightest. It was hue 0, saturation 0,
+brightness 0.95 — white, the loudest thing on the plane — for the category whose own doc comment says
+it is "a citation form the parser could not classify". It wins 55 volumes, 9% of the map, so the
+first draft put the map's loudest claim on its weakest evidence.
+
+**Two properties of the real distribution are worth stating, because the picture does not show
+them.** Measured over the 522 covered volumes: the winner is `centralDecimalFile` for 311,
+`presidentialLibrary` for 100, and **`unrecognized` for 55** — so a tenth of the coloured map is a
+confident hue meaning *the parser could not classify these notes*, which is why the legend keeps that
+category's own honest name ("Other / Unclassified") rather than inventing one. And **23 of the 522
+have a winner holding under 40% of their notes**, so a bare plurality does paint a whole volume; the
+caption says the volume shows "only its larger half", and for those 23 the larger half is a minority.
+
+**Ties break on `allCases` order, not on dictionary iteration.** A Swift dictionary has no stable
+iteration order, so a volume that drew equally from two files would have recoloured itself between
+launches.
+
+**The lens is withheld, not drawn empty, when the artifact predates schema 2** — the
+`supportsVolumeScope` posture. An older aggregate carries only `byDecade`, and painting all 552
+volumes "no source notes" would say something false about the corpus rather than about the build.
+
+**The legend finally exists.** `SemanticMapLens.legend` has been declared since the V-4 lens work
+and drawn by NOTHING for every session since — survivable while the lenses were regions (named on the map itself), a
+two-state download flag and an ordered era ramp; not survivable for ten archival vocabularies, where
+an unlabelled colour is decoration. Its swatches come from the same `SemanticMapColouring.palette`
+the GPU gets.
+
+**The first version of that test asserted the wrong thing**, and the review caught it: it required
+`legend.count <= paletteSize`, which is satisfied by naming ONE of sixteen colours — precisely what
+`cluster` does. Coverage is now checked against the slots the colouring actually produces over the
+shipped artifact, and a lens that cannot name them all must declare it (`namesEveryColour`) and
+carry a caption saying why. `cluster` is the only one, because its colour means adjacency and its
+regions are named on the map itself.
+
+**Four lenses do not fit a segmented control**, so the picker is a menu. "Provenance" is the longest
+name and the first that cannot be shortened without lying about what it shows, and the design lists
+more lenses to come.
+
+Verified on the iPhone 17 simulator: the corpus is overwhelmingly the blue of the Central Decimal
+File, with lot files and presidential libraries massed on the left of the plane and a grey
+"no source notes" region near `borough lincoln` — which is the nineteenth century, and is the
+picture the design predicted.
+
+**Not built, and the reason:** subseries and administration lenses. Both are the same per-volume
+shape and would take an afternoon, but there are 107 subseries and 32 administrations against 16
+palette slots, so both would have to cycle hues — and a cycled categorical colour with no legend is
+the decoration this session just finished removing. They need a different treatment (an explicit
+highlight-one-and-dim-the-rest, which is what the scope control already does) rather than a lens.
