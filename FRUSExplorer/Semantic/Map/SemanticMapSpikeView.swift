@@ -87,6 +87,23 @@ final class SemanticMapModel {
     /// The axis the corpus is currently laid out along, when it is not on the map's own plane.
     private(set) var slice: SemanticAxis?
 
+    /// The year range a slice's vertical axis spans, and how many documents fell outside it.
+    ///
+    /// **This is what makes the slice a labelled chart** (UI review X-5 / MR-13): the ticks, the
+    /// gutter note and the caveat all read these rather than re-deriving them, so the scale on
+    /// screen is the scale the layout used — the same one-source rule the scope mask follows.
+    struct SliceScale: Equatable {
+        /// The earliest coverage-midpoint year among dated volumes.
+        let minYear: Int
+        /// The latest.
+        let maxYear: Int
+        /// Documents whose volume has no parseable coverage year, laid out in the gutter.
+        let undatedCount: Int
+    }
+
+    /// The active slice's scale, or `nil` on the map's own plane.
+    private(set) var sliceScale: SliceScale?
+
     /// The scope the reader asked for, whether or not it could be applied yet.
     ///
     /// Distinct from `scope`, which is the *resolved* mask: the two differ exactly while the artifact
@@ -466,6 +483,7 @@ final class SemanticMapModel {
         defer { reapplyLens?() }
         guard let renderer, let map = BundledSemanticMap.vectors else { return }
         guard let axis else {
+            sliceScale = nil
             // Back to the artifact's own coordinates.
             var points = Self.mapPoints(from: map)
             positions = points.map(\.position)
@@ -513,20 +531,53 @@ final class SemanticMapModel {
 
         var points = [SemanticMapRenderer.MapPoint]()
         points.reserveCapacity(map.documentCount)
+        // Dated years occupy the upper band; undated volumes go to a GUTTER below it, separated by
+        // a gap no dated year can occupy. The first version plotted them at the exact vertical
+        // centre — an unknown date drawn *as* a mid-century date, on the surface whose header
+        // exists to say what is and is not a measurement (UI review X-5, filed independently on
+        // all three platforms).
+        var undated = 0
         for row in 0..<map.documentCount {
             let x = ((projections[row] - lowest) / spread) * 2 - 1
             let year = Int(yearByRow[row])
-            let normalisedYear = year == 0 ? Float(0) : (Float(year - minYear) / yearSpan) * 2 - 1
+            let normalisedYear: Float
+            if year == 0 {
+                undated += 1
+                normalisedYear = Self.sliceGutterY
+            } else {
+                // Dated band: [-0.82, 1], leaving [-1, -0.9] to the gutter.
+                let t = Float(year - minYear) / yearSpan
+                normalisedYear = -0.82 + t * 1.82
+            }
             points.append(SemanticMapRenderer.MapPoint(
                 position: SIMD2<Int16>(Int16(clamping: Int(x * extent)),
                                        Int16(clamping: Int(normalisedYear * extent))),
                 colourIndex: 0, flags: 0))
         }
+        sliceScale = SliceScale(minYear: minYear == Int.max ? 0 : minYear,
+                                maxYear: maxYear == Int.min ? 0 : maxYear,
+                                undatedCount: undated)
         positions = points.map(\.position)
         renderer.setPoints(points)
         renderer.setScopeFlags(scope?.flags ?? [])
         renderer.frameAll(extent: extent)
         camera = renderer.camera
+    }
+
+    /// The gutter's normalised y for undated volumes: below every dated year, with a visible gap.
+    nonisolated static let sliceGutterY: Float = -0.96
+
+    /// Where a dated year lands on the slice's normalised vertical axis.
+    ///
+    /// One function shared by the layout, the tick overlay and the tests, so the ticks cannot
+    /// drift from the points they label.
+    /// - Parameters:
+    ///   - year: The coverage-midpoint year.
+    ///   - scale: The slice's recorded scale.
+    /// - Returns: Normalised y in the dated band [-0.82, 1].
+    nonisolated static func sliceY(forYear year: Int, scale: SliceScale) -> Float {
+        let span = Float(max(1, scale.maxYear - scale.minYear))
+        return -0.82 + (Float(year - scale.minYear) / span) * 1.82
     }
 
     /// Reads the artifact's own placements into renderer points.
@@ -563,6 +614,19 @@ final class SemanticMapModel {
     func zoom(by factor: Float) {
         guard let renderer else { return }
         renderer.zoom(by: factor)
+        camera = renderer.camera
+    }
+
+    /// Frames the whole layout — ⌘0's action, and the way back from any lost zoom.
+    ///
+    /// The extent depends on which layout is on screen: the map's own grid, or a slice's synthetic
+    /// plane. Framing the wrong one leaves the reader staring at a corner of nothing.
+    func frameAll() {
+        guard let renderer else { return }
+        let extent = slice == nil
+            ? Float(BundledSemanticMap.vectors?.gridExtent ?? SemanticAxis.sliceExtent)
+            : Float(SemanticAxis.sliceExtent)
+        renderer.frameAll(extent: extent)
         camera = renderer.camera
     }
 
@@ -669,6 +733,7 @@ struct SemanticMapSpikeView: View {
             ZStack(alignment: .bottomLeading) {
                 SemanticMapSurface(model: model)
                     .overlay { labelOverlay }
+                    .overlay { sliceScaleOverlay }
                     .overlay { lassoOverlay }
                     .overlay { selectionMarker }
                     #if DEBUG
@@ -751,6 +816,34 @@ struct SemanticMapSpikeView: View {
         // toggle was drawn but could not be tapped — the drag kept panning. A mode switch has to be
         // reachable whatever transient chrome the app is showing.
         .toolbar {
+            #if os(macOS)
+            // ⌘+/⌘−/⌘0 with clickable buttons (MR-12): the keyboard equivalents a Mac window is
+            // expected to carry, and — being buttons — a zoom a mouse can reach without any
+            // gesture. They drive the same camera as pinch and scroll.
+            ToolbarItemGroup {
+                Button {
+                    model.zoom(by: 1.4)
+                } label: {
+                    Label(String(localized: "semanticMap.zoomIn", defaultValue: "Zoom In"),
+                          systemImage: "plus.magnifyingglass")
+                }
+                .keyboardShortcut("+", modifiers: .command)
+                Button {
+                    model.zoom(by: 1 / 1.4)
+                } label: {
+                    Label(String(localized: "semanticMap.zoomOut", defaultValue: "Zoom Out"),
+                          systemImage: "minus.magnifyingglass")
+                }
+                .keyboardShortcut("-", modifiers: .command)
+                Button {
+                    model.frameAll()
+                } label: {
+                    Label(String(localized: "semanticMap.zoomFit", defaultValue: "Fit the Map"),
+                          systemImage: "arrow.down.left.and.arrow.up.right")
+                }
+                .keyboardShortcut("0", modifiers: .command)
+            }
+            #endif
             ToolbarItem {
                 Toggle(isOn: $isLassoing) {
                     Label(String(localized: "semanticMap.lasso", defaultValue: "Lasso"),
@@ -1024,8 +1117,82 @@ struct SemanticMapSpikeView: View {
     /// they inherit Dynamic Type and the theme for free, and a text renderer in the shader would be
     /// a second typography stack to keep honest. If the label count ever grows past what SwiftUI can
     /// place in a frame, that is the moment to reconsider — not before.
+    /// The slice's scale: year ticks, pole names at the plane's edges, and the undated gutter.
+    ///
+    /// **This is what turns the slice from an unlabelled chart into a labelled one** (X-5/MR-13).
+    /// Everything here projects through the same camera as the points and reads
+    /// `SemanticMapModel.sliceY(forYear:scale:)` — the same function the layout used — so a tick
+    /// sits exactly on the row of documents from that year, at every zoom.
+    @ViewBuilder
+    private var sliceScaleOverlay: some View {
+        if let slice = model.slice, let scale = model.sliceScale {
+            GeometryReader { proxy in
+                let extent = Float(SemanticAxis.sliceExtent)
+                // Nice decade ticks between the observed years — at most five, so the edge stays
+                // a scale rather than a list.
+                let years = Self.tickYears(min: scale.minYear, max: scale.maxYear)
+                ForEach(years, id: \.self) { year in
+                    let y = SemanticMapModel.sliceY(forYear: year, scale: scale) * extent
+                    let at = SemanticMapLabelLayout.project(
+                        SIMD2<Float>(-extent, y), camera: model.camera, size: proxy.size)
+                    if at.y > 8, at.y < proxy.size.height - 8 {
+                        Text(verbatim: String(year))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.7))
+                            .shadow(color: .black.opacity(0.9), radius: 2)
+                            .position(x: 24, y: at.y)
+                    }
+                }
+                // The poles, at the ends of the axis they define. Which end is which is exactly
+                // the thing the unlabelled chart made the reader guess.
+                Text(verbatim: "← \(slice.negativeLabel)")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .shadow(color: .black.opacity(0.9), radius: 2)
+                    .position(x: 16 + 40, y: proxy.size.height - 14)
+                Text(verbatim: "\(slice.positiveLabel) →")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .shadow(color: .black.opacity(0.9), radius: 2)
+                    .position(x: proxy.size.width - 16 - 40, y: proxy.size.height - 14)
+                // The gutter's own label, only when something is in it.
+                if scale.undatedCount > 0 {
+                    let gutterAt = SemanticMapLabelLayout.project(
+                        SIMD2<Float>(-extent, SemanticMapModel.sliceGutterY * extent),
+                        camera: model.camera, size: proxy.size)
+                    if gutterAt.y > 8, gutterAt.y < proxy.size.height - 8 {
+                        Text(String(format: String(
+                            localized: "semanticMap.slice.gutter %lld",
+                            defaultValue: "undated (%lld)"), Int64(scale.undatedCount)))
+                            .font(.caption2)
+                            .foregroundStyle(.orange.opacity(0.9))
+                            .shadow(color: .black.opacity(0.9), radius: 2)
+                            .position(x: 44, y: gutterAt.y)
+                    }
+                }
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// At most five round tick years spanning the observed range.
+    /// - Parameters:
+    ///   - min: Earliest dated year.
+    ///   - max: Latest.
+    /// - Returns: Rounded tick years within the range, ascending.
+    nonisolated static func tickYears(min: Int, max: Int) -> [Int] {
+        guard max > min else { return [min] }
+        let span = max - min
+        // A step that yields <= 5 ticks, rounded to decades where the span allows.
+        let rough = Swift.max(1, span / 4)
+        let step = rough <= 5 ? 5 : rough <= 10 ? 10 : rough <= 20 ? 20 : rough <= 25 ? 25 : 50
+        let first = ((min + step - 1) / step) * step
+        return Array(stride(from: first, through: max, by: step))
+    }
+
     @ViewBuilder
     private var labelOverlay: some View {
+
         GeometryReader { proxy in
             // A cluster's centre is a coordinate in the MAP's plane. In a slice the same documents
             // sit somewhere else entirely, so a label drawn at that centre names a region that is no
@@ -1132,8 +1299,13 @@ struct SemanticMapSpikeView: View {
         if let selection = model.selection {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(verbatim: "\(selection.volumeID) · \(selection.documentID)")
+                    // The volume's TITLE, not its id (X-4/MR-14): the artifact carries no
+                    // per-document titles, so "volume title · Doc id" is the honest ceiling — but
+                    // `frus1969v12 · d45` was developer-speak the scope bar on the same screen
+                    // already knew better than. Raw ids drop to the caption below.
+                    Text(verbatim: selectionHeadline(for: selection))
                         .font(.subheadline.weight(.semibold))
+                        .lineLimit(2)
                     Spacer(minLength: 12)
                     Button {
                         model.clearSelection()
@@ -1145,6 +1317,9 @@ struct SemanticMapSpikeView: View {
                     .accessibilityLabel(String(localized: "semanticMap.selection.dismiss",
                                                defaultValue: "Dismiss"))
                 }
+                Text(verbatim: "\(selection.volumeID) · \(selection.documentID)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
                 if let region = selection.regionName {
                     Text(verbatim: region)
                         .font(.caption)
@@ -1193,6 +1368,17 @@ struct SemanticMapSpikeView: View {
         }
     }
 
+    /// The card's headline: the volume's manifest title with the document id, ids as fallback.
+    /// - Parameter selection: The selected document.
+    /// - Returns: E.g. "Vietnam, January–August 1968 · Doc d45".
+    private func selectionHeadline(for selection: SemanticMapPicking.Selection) -> String {
+        let title = appState.manifestStore.entry(forVolumeId: selection.volumeID)?.title
+        guard let title, !title.isEmpty else {
+            return "\(selection.volumeID) · \(selection.documentID)"
+        }
+        return "\(title) · \(selection.documentID)"
+    }
+
     /// The action that opens the selected document, per platform.
     ///
     /// - Parameter selection: The selected document.
@@ -1214,7 +1400,7 @@ struct SemanticMapSpikeView: View {
                     documentId: selection.documentID,
                     volumeId: selection.volumeID,
                     documentNumber: nil,
-                    header: "\(selection.volumeID) — \(selection.documentID)",
+                    header: selectionHeadline(for: selection),
                     dateline: nil,
                     sourceNote: nil),
                 from: .tool(.semanticAnalytics),
@@ -1235,7 +1421,7 @@ struct SemanticMapSpikeView: View {
                 documentId: selection.documentID,
                 volumeId: selection.volumeID,
                 documentNumber: nil,
-                header: "\(selection.volumeID) — \(selection.documentID)",
+                header: selectionHeadline(for: selection),
                 dateline: nil,
                 sourceNote: nil)
         }
@@ -1747,6 +1933,37 @@ struct SemanticMapSpikeView: View {
 /// `update*View` still calls `attach(to:)`, now purely as a belt-and-braces re-assert. Those two
 /// one-line forwarders are the only part of this file a test cannot drive — `Context` is not
 /// constructible — which is precisely why the fix does not rely on them.
+#if os(macOS)
+/// The map's `MTKView`, with the pointer inputs a Mac expects (MR-12).
+///
+/// **Pinch was the only zoom input**, which a Magic Mouse or third-party mouse cannot make — the
+/// app's only fully gesture-dependent window, on the platform credited for its command system. The
+/// overrides forward to the same `SemanticMapModel.zoom(by:)` the pinch uses, so every input moves
+/// the one camera.
+final class SemanticMapMTKView: MTKView {
+    /// Zoom callback; >1 magnifies.
+    var onZoom: ((Float) -> Void)?
+
+    override func scrollWheel(with event: NSEvent) {
+        // Trackpad scrolls report precise deltas; wheel clicks are coarse. The exponent keeps both
+        // smooth and direction-natural (scroll up = zoom in, matching every mapping app).
+        let delta = event.hasPreciseScrollingDeltas
+            ? Float(event.scrollingDeltaY) * 0.01
+            : Float(event.scrollingDeltaY) * 0.05
+        guard delta != 0 else { return super.scrollWheel(with: event) }
+        onZoom?(exp(delta))
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 2 {
+            onZoom?(1.6)
+            return
+        }
+        super.mouseDown(with: event)
+    }
+}
+#endif
+
 struct SemanticMapSurface {
 
     /// The model holding the renderer.
@@ -1764,7 +1981,12 @@ struct SemanticMapSurface {
         // measured false on macOS 26.6.1 — MTKView's own method list carries `initWithFrame:`, so
         // `MTKView()` lands in MTKView's implementation and its common setup does run. Handing the
         // device in up front is simply possible now that the renderer exists before any view does.
+        #if os(macOS)
+        let view = SemanticMapMTKView(frame: .zero, device: model.renderer?.device)
+        view.onZoom = { [weak model] factor in model?.zoom(by: factor) }
+        #else
         let view = MTKView(frame: .zero, device: model.renderer?.device)
+        #endif
         // **On demand, not on a clock.** `isPaused` stops the display link and
         // `enableSetNeedsDisplay` makes a dirty mark the thing that produces a frame; the renderer
         // marks itself dirty from every mutator (`SemanticMapRenderer.register(_:)` and its `didSet`

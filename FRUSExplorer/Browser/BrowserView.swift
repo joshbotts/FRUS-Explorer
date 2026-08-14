@@ -755,7 +755,7 @@ private struct SubseriesListView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(
-                "Subseries \(group.subseries), \(group.totalVolumes) volumes"
+                "Subseries \(group.subseries), ^[\(group.totalVolumes) volume](inflect: true)"
             )
         }
         .listStyle(.insetGrouped)
@@ -771,7 +771,10 @@ private struct SubseriesRowView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(group.subseries)
                 .font(.headline)
-            Text("\(group.totalVolumes) volumes")
+            // Inflected: the browse screenshot in the UI review shows "1989–92 · 1 volumes"
+            // (F-23). The automatic-grammar form fixes singular and plural in every locale that
+            // supports it rather than hand-branching English.
+            Text("^[\(group.totalVolumes) volume](inflect: true)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

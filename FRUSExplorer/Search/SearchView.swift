@@ -1824,12 +1824,16 @@ private struct SearchResultRow: View {
         VStack(alignment: .leading, spacing: 4) {
             // Header + document number
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                if let num = result.documentNumber {
+                // The chip is withheld when the indexed header already opens with its own number —
+                // otherwise the row reads "251. 251. Memorandum…" and a 390-pt row's first line is a
+                // repeated number (X-2 / P-5).
+                if let num = result.documentNumber,
+                   !DocumentHeaderDisplay.headerRepeatsNumber(result.header, number: num) {
                     Text("\(num).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text(result.header)
+                Text(DocumentHeaderDisplay.trimmedHeader(result.header))
                     // .headline (17pt semibold) is correct for iOS list rows; on macOS
                     // in the inspector panel .body is more appropriate for the density.
                     #if os(macOS)
