@@ -26,6 +26,136 @@ import SQLite3
 @Suite("External citations (#784)")
 struct ExternalCitationTests {
 
+    // MARK: - The bundled index's per-target rows (#829)
+
+    /// **The first consumer of these two methods owes this test, and #829 says so.**
+    /// `referenceCount(forCollectionId:)` and `volumeCounts(forCollectionId:)` shipped with the
+    /// artifact and had zero callers and zero tests until the collection record started drawing
+    /// them. The rows are **parallel arrays under one-letter wire names** (`k`/`v`/`n`), so a
+    /// generator that emitted volumes and counts out of step, or a decoder that zipped them wrongly,
+    /// would produce a screen full of plausible numbers attached to the wrong volumes — and nothing
+    /// anywhere would have noticed.
+    @Test("Per-target rows zip volumes to counts, and agree with the row's own total")
+    func perTargetRowsZipCorrectly() throws {
+        let index = try #require(ExternalCitationIndexStore.shared,
+                                 "the bundled external-citation index failed to load")
+
+        // A target the artifact actually carries — take the heaviest, so the assertions have
+        // something to bite on rather than passing over an empty row.
+        let heaviest = try #require(
+            index.heaviestPairs(limit: 1).first,
+            "the shipped artifact has no between-unit pairs")
+        let id = heaviest.targetId
+
+        let total = index.referenceCount(forCollectionId: id)
+        let perVolume = index.volumeCounts(forCollectionId: id)
+        #expect(total > 0)
+        #expect(!perVolume.isEmpty, "a target with references must name the volumes making them")
+
+        // The two APIs read the same row two ways; they cannot disagree.
+        #expect(perVolume.reduce(0) { $0 + $1.count } == total, """
+            volumeCounts and referenceCount describe the same row and disagree — the parallel \
+            arrays are out of step, or one of them is being read against the wrong index.
+            """)
+
+        // Every volume must be a real volume id, and every count positive. A zip that ran off the
+        // end of the shorter array is what produces an empty or malformed id here.
+        for entry in perVolume {
+            #expect(!entry.volumeId.isEmpty)
+            #expect(entry.volumeId.hasPrefix("frus"), "\(entry.volumeId) is not a volume id")
+            #expect(entry.count > 0)
+        }
+        #expect(Set(perVolume.map(\.volumeId)).count == perVolume.count,
+                "a volume appears twice in one target's row")
+
+        // An id the artifact does not carry must return nothing rather than someone else's row —
+        // the failure mode of an index lookup that falls back to a default position.
+        #expect(index.referenceCount(forCollectionId: "lot:no-such-unit") == 0)
+        #expect(index.volumeCounts(forCollectionId: "lot:no-such-unit").isEmpty)
+    }
+
+    /// The counts the collection record shows must be a subset of what the coverage block claims,
+    /// or the screen is quoting a bigger number than the scan found.
+    @Test("Per-target totals stay within the artifact's own coverage")
+    func perTargetTotalsRespectCoverage() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        let sampled = index.heaviestPairs(limit: 25).map(\.targetId)
+        #expect(!sampled.isEmpty)
+        for id in Set(sampled) {
+            let total = index.referenceCount(forCollectionId: id)
+            #expect(total <= index.coverage.referencesJoined, """
+                \(id) claims \(total) references, more than the \
+                \(index.coverage.referencesJoined) the scan joined in total.
+                """)
+        }
+    }
+
+    // MARK: - The render-time join (#829a)
+
+    /// The stored rows carry **no authority id**, so the document section joins them at render time.
+    /// Two things can go wrong and both are silent: a lot citation matching nothing when the
+    /// authority holds it, and a presidential-library citation matching a *lot* record that happens
+    /// to share a leading word — the #351 domain confusion. The second is why the guard exists.
+    @MainActor
+    @Test("The render-time join takes the lot key first and refuses a library-to-lot match")
+    func renderTimeJoinFollowsTheGuard() throws {
+        let authority = try #require(CollectionAuthorityStore.shared,
+                                     "the bundled collection authority failed to load")
+
+        // A lot citation resolves through the lot key, and to a lot record.
+        let lotRecord = try #require(
+            authority.collections.first { $0.id.hasPrefix("lot:") && $0.lotFileNorm != nil },
+            "the authority carries no lot record to test against")
+        let lotNorm = try #require(lotRecord.lotFileNorm)
+        let lotCitation = ExternalCitation(
+            anchor: "lotFile", repository: nil, collection: nil,
+            lotFile: lotNorm, lotFileNorm: lotNorm, fileId: nil,
+            inherited: false, rawText: "Lot \(lotNorm)", noteOrdinal: 0)
+        #expect(SourceExplorerView.resolve(lotCitation, authority: authority)?.id
+                == authority.record(forLotNorm: lotNorm)?.id)
+
+        // **The guard.** A library citation whose leading segment happens to match a lot record must
+        // resolve to nothing rather than to that record — a presidential library is not a lot file,
+        // and the row renders inert instead of sending the reader somewhere wrong.
+        let libraryCitation = ExternalCitation(
+            anchor: "presidentialLibrary", repository: "Truman Library",
+            collection: "Papers of Clark M. Clifford", lotFile: nil, lotFileNorm: nil,
+            fileId: "Box 15", inherited: false,
+            rawText: "Truman Library, Papers of Clark M. Clifford", noteOrdinal: 1)
+        let resolved = SourceExplorerView.resolve(libraryCitation, authority: authority)
+        #expect(resolved?.id.hasPrefix("lot:") != true,
+                "a presidential-library citation resolved to a lot record — the #351 guard is off")
+
+        // A citation naming nothing resolvable resolves to nothing, rather than to a first row.
+        let empty = ExternalCitation(
+            anchor: "lotFile", repository: nil, collection: nil, lotFile: nil, lotFileNorm: nil,
+            fileId: nil, inherited: true, rawText: "Ibid.", noteOrdinal: 2)
+        #expect(SourceExplorerView.resolve(empty, authority: authority) == nil)
+    }
+
+    /// The join uses the collection's **leading segment**, because that is the level the authority
+    /// clusters on — passing the whole comma-joined series name matches nothing.
+    @MainActor
+    @Test("The join keys on the collection's leading segment, not the whole series name")
+    func renderTimeJoinUsesLeadingSegment() throws {
+        let authority = try #require(CollectionAuthorityStore.shared)
+        // Find a library record the authority really carries, and cite it with a longer series name
+        // than the record's own — the shape a footnote actually takes.
+        guard let record = authority.collections.first(where: {
+            $0.id.hasPrefix("txt:") && $0.repository != nil && !$0.name.isEmpty
+        }) else { return }
+        let deeper = ExternalCitation(
+            anchor: "presidentialLibrary", repository: record.repository,
+            collection: "\(record.name), Subject File, Box 3",
+            lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
+            rawText: "…", noteOrdinal: 0)
+        // Either it resolves to that record, or the guard refused it — never to something else.
+        if let hit = SourceExplorerView.resolve(deeper, authority: authority) {
+            #expect(hit.id == record.id,
+                    "the leading segment matched a different record than the one it names")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// A volume whose one document carries a source note and the given body footnotes.

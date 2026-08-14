@@ -126,6 +126,9 @@ struct SourceExplorerView: View {
     /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
     /// or `nil` when the note's keys land in no tracked collection.
     @State private var authorityRecord: AuthorityCollectionRecord? = nil
+    /// This document's footnote pointers at material FRUS did not print, in reading order,
+    /// each paired with the authority record it resolves to when it resolves to one.
+    @State private var unprintedPointers: [UnprintedPointer] = []
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -164,6 +167,10 @@ struct SourceExplorerView: View {
                 }
 
                 archivalCollectionSection
+
+                if !unprintedPointers.isEmpty {
+                    unprintedPointersSection
+                }
             }
             .navigationTitle(String(localized: "source.explorer.title",
                                     defaultValue: "Source Explorer"))
@@ -247,6 +254,117 @@ struct SourceExplorerView: View {
                             defaultValue: "Matched against the bundled cross-volume collection authority."))
             }
         }
+    }
+
+    // MARK: - Unprinted Material (#829a)
+
+    /// One footnote pointer, with whatever the render-time join could make of it.
+    struct UnprintedPointer: Identifiable, Equatable {
+        /// The stored citation.
+        let citation: ExternalCitation
+        /// The authority record it resolved to, when it did.
+        let record: AuthorityCollectionRecord?
+        var id: String { "\(citation.noteOrdinal)|\(citation.id)" }
+    }
+
+    /// Where this document's own footnotes sent the reader, outside the printed record.
+    ///
+    /// **The most targeted "beyond FRUS" pointer the app can make**, and the third distinct body of
+    /// archival evidence: the source note above says where this document was *drawn from*; this says
+    /// what its footnotes *pointed at* and FRUS did not print. The two are never combined — that
+    /// addition is the defect #783 removed.
+    ///
+    /// Rows are in **reading order** (`note_ordinal`, then citation index), so the list runs down the
+    /// document the way the footnotes do rather than being re-sorted into a ranking.
+    @ViewBuilder
+    private var unprintedPointersSection: some View {
+        Section {
+            ForEach(unprintedPointers) { pointer in
+                if let record = pointer.record {
+                    NavigationLink {
+                        CollectionDetailView(record: record)
+                            .environment(appState)
+                    } label: {
+                        unprintedRow(pointer)
+                    }
+                } else {
+                    // **Inert, with no chevron.** The corpus generator joined 96.0% of references at
+                    // aggregate grain, so misses are guaranteed here at per-document grain. A row
+                    // that offered navigation and then failed, or silently guessed a neighbouring
+                    // collection, would be worse than one that simply states what the footnote said.
+                    unprintedRow(pointer)
+                }
+            }
+        } header: {
+            Text(String(localized: "source.explorer.unprinted.header",
+                        defaultValue: "Unprinted Material"))
+        } footer: {
+            Text(String(localized: "source.explorer.unprinted.footer",
+                        defaultValue: "Archival units this document's footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from."))
+        }
+    }
+
+    /// One pointer's row.
+    /// - Parameter pointer: The citation and its resolution.
+    /// - Returns: The row.
+    @ViewBuilder
+    private func unprintedRow(_ pointer: UnprintedPointer) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: pointer.citation.displayLabel)
+                .font(.callout)
+            HStack(spacing: 6) {
+                if let fileId = pointer.citation.fileId, !fileId.isEmpty {
+                    Text(verbatim: fileId)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if pointer.citation.inherited {
+                    // The unit came from an `Ibid.`, not from a phrase of its own. Marked because a
+                    // reader checking the printed page will not find these words in this footnote.
+                    Label(String(localized: "source.explorer.unprinted.inherited",
+                                 defaultValue: "Carried from the previous note"),
+                          systemImage: "arrow.turn.up.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .labelStyle(.titleAndIcon)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Resolves one stored citation to an authority record.
+    ///
+    /// **The rows carry no authority id**, so this is the render-time join #829 specifies: the lot
+    /// key first, else the repository plus the collection's leading segment — composed exactly as
+    /// `ArchivalLibraryProfile.resolve` does, **including the #351 library→lot domain guard**, which
+    /// stops a presidential-library citation from matching a lot-file record that happens to share a
+    /// leading word.
+    ///
+    /// - Parameters:
+    ///   - citation: The stored row.
+    ///   - authority: The bundled authority.
+    /// - Returns: The record, or `nil` when nothing matches under the guard.
+    /// `nonisolated` because the caller runs it inside a detached task: `SourceExplorerView` is a
+    /// `View` and therefore implicitly `@MainActor`, so a plain `static func` here is main-actor
+    /// isolated and calling it off the main actor is a strict-concurrency warning. The body touches
+    /// only value types and the `Sendable` authority index, which is what makes the annotation
+    /// honest rather than a silencer.
+    nonisolated static func resolve(_ citation: ExternalCitation,
+                                    authority: CollectionAuthorityIndex) -> AuthorityCollectionRecord? {
+        if let lot = citation.lotFileNorm, !lot.isEmpty {
+            return authority.record(forLotNorm: lot)
+        }
+        guard let collection = citation.collection else { return nil }
+        let head = collection.split(separator: ",", maxSplits: 1).first.map(String.init) ?? collection
+        let segment = head.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !segment.isEmpty else { return nil }
+        let match = authority.record(repository: citation.repository, leadingSegment: segment)
+        if match?.id.hasPrefix("lot:") == true, let repository = citation.repository,
+           CollectionKeying.isLibraryRepositoryName(repository) {
+            return nil
+        }
+        return match
     }
 
     // MARK: - Raw Note Section
@@ -1843,6 +1961,31 @@ struct SourceExplorerView: View {
                                            rawSourceNote: rawSourceNote, documentYear: documentYear)
     }
 
+    /// Reads this document's footnote pointers and joins each to the authority.
+    ///
+    /// Runs regardless of whether the document has a source note: a document FRUS printed without
+    /// stating a provenance can still have footnotes pointing at unprinted files.
+    private func loadUnprintedPointers() async {
+        guard let pipeline = indexingPipeline,
+              let volumeId = documentVolumeId, let docId = documentId else {
+            unprintedPointers = []
+            return
+        }
+        let rows = (try? await pipeline.externalCitations(volumeId: volumeId,
+                                                          documentId: docId)) ?? []
+        guard !rows.isEmpty else { unprintedPointers = []; return }
+        // The authority is a ~2 MB decode; join off the main thread, as the source note's own
+        // resolution above does.
+        unprintedPointers = await Task.detached(priority: .userInitiated) {
+            guard let authority = CollectionAuthorityStore.shared else {
+                return rows.map { UnprintedPointer(citation: $0, record: nil) }
+            }
+            return rows.map {
+                UnprintedPointer(citation: $0, record: Self.resolve($0, authority: authority))
+            }
+        }.value
+    }
+
     private func load() async {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
@@ -1855,6 +1998,8 @@ struct SourceExplorerView: View {
                 CollectionAuthorityStore.shared?.record(forParsed: note, note: raw)
             }.value
         }
+
+        await loadUnprintedPointers()
 
         // Pre-1906 country-series resolution (no source note; no API key). Runs first so
         // the resolved roll links appear even without a NARA Catalog key.
