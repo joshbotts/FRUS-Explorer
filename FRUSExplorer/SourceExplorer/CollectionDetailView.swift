@@ -100,6 +100,8 @@ struct CollectionDetailView: View {
     @State private var timelineExportBox = SeriesExportBox()
     /// Whether the citing-volume list is expanded past ``CollectionRelations/previewRowCap``.
     @State private var showsAllVolumes = false
+    /// Whether the pointed-at volume list is expanded past its preview cap.
+    @State private var showsAllPointerVolumes = false
     #if os(iOS)
     /// When set, the Archival Neighbors sheet presents for the collection (or one of
     /// its class-keyed sub-series). Anchored once, on this view's `List`. iOS only —
@@ -145,6 +147,9 @@ struct CollectionDetailView: View {
             }
             if let claimants = dividedLotClaimants {
                 dividedAtNARASection(claimants)
+            }
+            if unprintedPointers.total > 0 {
+                unprintedPointersSection
             }
             citingVolumesSection
             if !record.children.isEmpty {
@@ -622,6 +627,87 @@ struct CollectionDetailView: View {
         if let rg = claimant.recordGroup { parts.append("RG \(rg)") }
         if let dates = claimant.dateRange { parts.append(dates) }
         return parts.joined(separator: " · ")
+    }
+
+    // MARK: - Pointed at, not drawn from (#829b)
+
+    /// What the editors' footnotes point at here, and from where.
+    ///
+    /// **A different body of evidence from every other count on this screen, and the copy has to
+    /// keep saying so.** Everywhere else — In Your Library, Cited Across the Series, the timeline —
+    /// counts documents FRUS *printed from* this collection. This counts footnotes that pointed a
+    /// reader at material here that FRUS did **not** print. The two must never be added: that
+    /// addition is the defect #783 removed, and `externalCitationStats` exists as a separate method
+    /// to keep it out.
+    ///
+    /// Bundled and corpus-wide, so it renders with **zero volumes indexed** — which is most of its
+    /// value, since the In Your Library section directly above it is empty until the reader has
+    /// downloaded a citing volume.
+    private var unprintedPointers: (total: Int, volumes: [(volumeId: String, count: Int)]) {
+        guard let index = ExternalCitationIndexStore.shared else { return (0, []) }
+        return (index.referenceCount(forCollectionId: record.id),
+                index.volumeCounts(forCollectionId: record.id))
+    }
+
+    @ViewBuilder
+    private var unprintedPointersSection: some View {
+        let pointers = unprintedPointers
+        Section {
+            Text(String(format: String(
+                localized: "collection.detail.unprinted.counts %lld %lld",
+                defaultValue: "FRUS editors point at unprinted material here %lld times, across %lld volumes."),
+                Int64(pointers.total), Int64(pointers.volumes.count)))
+                .font(.callout)
+            ForEach(showsAllPointerVolumes
+                    ? pointers.volumes
+                    : Array(pointers.volumes.prefix(CollectionRelations.previewRowCap)),
+                    id: \.volumeId) { entry in
+                Button {
+                    openVolume(entry.volumeId)
+                } label: {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title
+                                 ?? entry.volumeId)
+                                .font(.callout)
+                            Text(entry.volumeId)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 12)
+                        Text(verbatim: entry.count.formatted(.number))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                    // The greedy frame must come before the shape, or only the text is tappable.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(String(localized: "collection.detail.unprinted.row.hint",
+                                          defaultValue: "Opens this volume in the browser"))
+            }
+            if pointers.volumes.count > CollectionRelations.previewRowCap {
+                Button {
+                    showsAllPointerVolumes.toggle()
+                } label: {
+                    Text(showsAllPointerVolumes
+                         ? String(localized: "collection.detail.unprinted.showFewer",
+                                  defaultValue: "Show fewer")
+                         : String(format: String(
+                            localized: "collection.detail.unprinted.showAll %lld",
+                            defaultValue: "Show all %lld volumes"),
+                            Int64(pointers.volumes.count)))
+                }
+            }
+        } header: {
+            Text(String(localized: "collection.detail.unprinted.header",
+                        defaultValue: "Pointed At, Not Printed"))
+        } footer: {
+            Text(String(localized: "collection.detail.unprinted.footer",
+                        defaultValue: "Counted from editors' footnotes naming material FRUS did not print. A separate body of evidence from the counts above, which record where printed documents were drawn from — the two are never added together."))
+        }
     }
 
     // MARK: - Citing volumes (corpus-wide, from the artifact)
