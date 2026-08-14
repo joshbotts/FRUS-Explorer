@@ -7213,3 +7213,51 @@ nobody scopes it again.
 Remaining from Wave 1 after this session, deliberately: P-1 (the Corpus Analytics compact
 clipping — needs its own layout investigation), F-12 (the facet inspector at regular width), and
 the find-in-document/commands lift that CW-6 owns.
+
+## Session 2026-08-14 — Wave 1's residue: P-1 does not reproduce, and the facet inspector
+
+Two items were left from the previous session. One of them turned out not to exist.
+
+**P-1 does not reproduce, and its evidence is stale.** The review's finding is that Corpus
+Analytics clips its controls at compact width, and the evidence is a screenshot of **Build 26**.
+The app is at build 40, and that chrome was rebuilt in between: the steppers the screenshot shows
+are now chips, a legend was added, and a landscape hint sits under the chart. Driven on the
+simulator at compact width, nothing in the finding's description is on screen to clip. X-8 of the
+review says the committed shots are stale; this is the first Wave-1 item where that mattered
+enough to change the answer. **Nothing was "fixed" here, because nothing was broken** — recorded
+so the finding is not re-scoped from the screenshot a third time.
+
+What IS wrong at that width is smaller and was found by looking rather than by reading: the
+filter chip row scrolls horizontally and the last chip ("By Year") is cut by the trailing edge
+with no cue that the row continues. It now carries a trailing fade, **measured rather than
+assumed** — `.onGeometryChange` on both the content and the viewport, and the mask is applied only
+when the content actually exceeds the visible width, so a row that fits is not dimmed at its edge
+for no reason.
+
+**F-12 — iPad gets the facet panel as a trailing inspector.** Faceting is an iterative loop: tap a
+year, watch the list narrow, tap a person, back out one. A sheet forces open → tap → dismiss for
+each step and hides the very results it is narrowing. `FacetPanelView` was already written to be
+shared ("only the container differs") and the macOS window has shipped it in an inspector since
+R-1c, so iPad now gets the same container while iPhone keeps the sheet with its detents.
+`facetPanel(dismissesOnApply:)` is the one seam: **true** in the sheet, which must close to reveal
+the results behind it, **false** in the inspector, where staying open beside them is the entire
+point.
+
+The `isPhone` guard is load-bearing in a way worth stating: both modifiers read the same
+`showFacetSheet`, so without it an iPhone would present the sheet AND the inspector (which SwiftUI
+renders as a sheet at compact width) from one tap. Gating on idiom rather than size class means
+exactly one of the two bindings can ever be true on a given device.
+
+Verified on iPad Pro 13-inch: 120 matches for "blockade", panel opens beside the results, Years →
+1861 → Apply narrows to 10, the "Narrowed by 1861" chip appears, **and the panel is still open**.
+
+**Found while verifying, not fixed here: Skip in onboarding is a dead end.** `ContentView` routes
+to onboarding unless the flag is set AND at least one volume is on disk or queued — deliberately,
+so a user who deleted everything is re-onboarded rather than dropped into an empty app. But the
+wizard offers **Skip** on the download step, and Skip enqueues nothing. Tapping Skip then Finish
+therefore writes `hasCompletedOnboarding = true`, creates the default project, and returns the
+reader to the Welcome page, with no way past it. Measured on the simulator: the flag and
+`activeProjectId` are both written, so the button fires and the routing sends them back. This is a
+first-run trap on every platform, not an iPad bug — it is filed rather than patched here, because
+the fix is a product decision (let Skip through to an empty-state app, or stop offering it) and
+does not belong in a UI-review PR.

@@ -1475,6 +1475,30 @@ struct AnalyticsView: View {
     /// actual width allows (macOS window, `.page`-sized iPad sheet), and falls back to a term row
     /// plus a horizontally scrolling chip cluster only when genuinely narrow (iPhone). Replaces the
     /// four stacked filter bars so the chart lands above the fold on the iPad sheet.
+    /// Width of the compact chip cluster's content, measured (P-1 residue).
+    @State private var chipRowContentWidth: CGFloat = 0
+    /// Width the chip cluster actually gets to show.
+    @State private var chipRowVisibleWidth: CGFloat = 0
+
+    /// Whether the chips do not all fit, and so a "there is more" cue is owed.
+    ///
+    /// The 1-point slack keeps a row that fits exactly from flickering a fade on a rounding
+    /// difference between the two measurements.
+    private var chipRowOverflows: Bool {
+        chipRowVisibleWidth > 0 && chipRowContentWidth > chipRowVisibleWidth + 1
+    }
+
+    /// Opaque except for a short fade at the trailing edge — the standard overflow cue.
+    private var chipFadeMask: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .black, location: 0),
+                .init(color: .black, location: 0.9),
+                .init(color: .black.opacity(0), location: 1)
+            ],
+            startPoint: .leading, endPoint: .trailing)
+    }
+
     private var filterRow: some View {
         // Decide one-row vs. two-row by ACTUAL available width, not size class — an iPad sheet reports
         // compact width yet is wide enough for one row (that mismatch put the chips below the field).
@@ -1497,6 +1521,12 @@ struct AnalyticsView: View {
                     searchButton
                 }
                 if !committedTerm.isEmpty {
+                    // **A trailing fade when — and only when — the chips overflow.**
+                    // The row already scrolled, with `showsIndicators: false`, so a chip cut at the
+                    // right edge read as a layout fault rather than as "there is more": the state
+                    // the UI review's P-1 photographed. iOS auto-hides horizontal indicators, so the
+                    // cue has to be drawn. Both widths are measured rather than assumed, because a
+                    // permanent fade would dim a row that fits — which is most of them, on iPad.
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             scopeChip
@@ -1505,7 +1535,14 @@ struct AnalyticsView: View {
                             adminPresetChip
                         }
                         .padding(.vertical, 1)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: {
+                            chipRowContentWidth = $0
+                        }
                     }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: {
+                        chipRowVisibleWidth = $0
+                    }
+                    .mask(chipRowOverflows ? AnyView(chipFadeMask) : AnyView(Rectangle()))
                 }
             }
         }
