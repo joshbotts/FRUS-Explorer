@@ -181,6 +181,9 @@ FRUS Explorer is an independent research tool. It is not an official product of 
 
 - `onboarding.ready.title` — **You're all set**
 - `onboarding.ready.body` — Volumes download and index automatically — search unlocks in minutes. Your project “My Research” is ready.
+- `onboarding.ready.body.empty` — Nothing is downloading yet — browse the corpus and add volumes whenever you like. Your project “My Research” is ready.
+  Shown instead of the line above when the reader reaches Finish with nothing downloading (Skip,
+  or a scope that enqueued no volumes), where that line's two promises would both be false.
 
 **Shared** — `onboarding.action.back` (Back), `onboarding.action.skip` (Skip),
 `onboarding.offline.banner` (You are offline. Showing bundled catalog only.).

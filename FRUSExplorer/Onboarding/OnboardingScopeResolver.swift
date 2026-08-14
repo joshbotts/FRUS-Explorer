@@ -173,6 +173,20 @@ enum OnboardingCompletion {
     /// The name given to the project created for a user who has never made one.
     static let defaultProjectName = "My Research"
 
+    /// Whether a finishing reader has nothing on disk and nothing on the way.
+    ///
+    /// The third onboarding side-effect, added with the Skip dead-end fix and extracted here for
+    /// the same reason as the other two: it is a guarantee, and a guarantee that only exists
+    /// inside a view body cannot be tested. Its result is stored as
+    /// `AppState.hasFinishedOnboardingWithoutVolumes`, which is what lets `AppRootRouter` tell a
+    /// reader who *chose* an empty library apart from one whose volumes have gone missing.
+    ///
+    /// Trivial by design — the value of naming it is that the condition is stated in one place
+    /// and pinned by a test, not that the expression is complicated.
+    static func finishedEmpty(hasVolumes: Bool, hasQueuedDownloads: Bool) -> Bool {
+        !hasVolumes && !hasQueuedDownloads
+    }
+
     /// Creates the default research project, but only if the user has none.
     ///
     /// - Returns: the new project's id, or `nil` if a project already existed or the insert

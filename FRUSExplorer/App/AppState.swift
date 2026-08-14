@@ -221,6 +221,41 @@ final class AppState {
         }
     }
 
+    /// `true` when the user finished onboarding **with nothing to download** — and is therefore
+    /// entitled to use the app in that state instead of being sent back to the wizard.
+    ///
+    /// ## The trap this exists to close
+    /// `ContentView` leaves onboarding only when the flag above is set AND a volume is on disk
+    /// or queued. That AND is deliberate and still right for the case it was written for: a user
+    /// who deleted every volume should be re-onboarded rather than dropped into an empty app.
+    /// But the wizard also offers **Skip** on the download step, and Skip enqueues nothing — so
+    /// Skip → Finish wrote `hasCompletedOnboarding`, created the default project, and returned
+    /// the reader to the Welcome page **with no way past it, ever**. Measured on an iPad
+    /// simulator: both values are written, so the button works and the routing sends them back.
+    ///
+    /// ## Why this is keyed on the outcome, not on the Skip button
+    /// Skip is the obvious way to reach that state but not the only one. Choosing a scope and
+    /// tapping Continue while the enqueue yields nothing — offline, or a scope that resolves to
+    /// no volumes — lands in exactly the same place. So this is set whenever onboarding
+    /// completes and there is nothing on disk and nothing queued, which is the condition that
+    /// actually traps someone rather than the gesture that usually causes it.
+    ///
+    /// ## Why the app is worth entering empty
+    /// A great deal of FRUS Explorer needs no downloads at all: the bundled volume manifest the
+    /// Browse tab lists (and downloads from), the word-cloud vectors, the semantic map's 314,483
+    /// placements, and every archival-analytics index. Declining the 3.3 GB is a reasonable
+    /// first-run choice, and it should not cost the reader the app.
+    ///
+    /// Cleared wherever onboarding is re-triggered (Settings reset, data recovery), so a reset
+    /// user's next pass through the wizard is judged on its own outcome.
+    var hasFinishedOnboardingWithoutVolumes: Bool =
+        UserDefaults.standard.bool(forKey: Keys.hasFinishedOnboardingWithoutVolumes) {
+        didSet {
+            UserDefaults.standard.set(hasFinishedOnboardingWithoutVolumes,
+                                      forKey: Keys.hasFinishedOnboardingWithoutVolumes)
+        }
+    }
+
     // MARK: - Browser Filter
 
     /// When `true`, the Browser volume list shows only volumes that have been downloaded.
@@ -1924,6 +1959,7 @@ final class AppState {
     private enum Keys {
         static let activeProjectId = "activeProjectId"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
+        static let hasFinishedOnboardingWithoutVolumes = "frus.onboarding.finishedWithoutVolumes"
         static let activeTab = "frus.activeTab"
         static let lastActivityTabVisit = "frus.lastActivityTabVisit"
         static let filterDownloadedOnly = "frus.filterDownloadedOnly"

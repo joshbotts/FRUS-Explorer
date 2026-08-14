@@ -357,6 +357,7 @@ struct DataRecoveryView: View {
         // about to be empty. Set here rather than at launch so the flag is durable if the user
         // quits from Settings.
         appState.hasCompletedOnboarding = false
+        appState.hasFinishedOnboardingWithoutVolumes = false
         isResetting = false
         showRelaunchNotice = true
     }

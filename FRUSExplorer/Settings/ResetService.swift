@@ -178,5 +178,8 @@ struct ResetService {
         }
 
         appState.hasCompletedOnboarding = false
+        // The empty-library licence is per pass through the wizard: clearing it here means the
+        // next finish is judged on its own outcome rather than inheriting an old Skip.
+        appState.hasFinishedOnboardingWithoutVolumes = false
     }
 }

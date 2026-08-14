@@ -7327,3 +7327,52 @@ also partly wrong — `.help` sets the accessibility hint on iOS, the rail tiles
 Share already uses the repo's own `controlHelp` fan-out, and a TipKit tip in the iPad reader is the
 one thing this codebase has already been burned by (a watchdog kill, `DocumentView` 1084-1094).
 F-10's visible chevron and F-8's drag-and-drop pass follow.
+
+## Session 2026-08-14 — Onboarding's Skip was a dead end, and the routing rule had no seam
+
+Found while setting up the CW-6a verification, and worse than the thing being verified: **the
+first-run wizard offered a Skip the reader could never come back from.**
+
+`ContentView` left onboarding only when `hasCompletedOnboarding` was set AND a volume was on disk
+or queued. That AND is deliberate and still right for the case it was written for — someone who
+deleted every volume should be re-onboarded rather than dropped into an empty app. But Skip
+enqueues nothing, so Skip → Finish wrote the flag, created the default project, and returned the
+reader to the Welcome page permanently. Measured on an iPad simulator before touching anything:
+both `hasCompletedOnboarding` and `activeProjectId` are written, so the button worked and the
+routing sent them back.
+
+**Decision: let Skip through**, rather than removing it. A great deal of this app needs no
+downloads — the bundled manifest the Browse tab lists and downloads from, the word-cloud vectors,
+the semantic map's 314,483 placements, every archival-analytics index. Declining 3.3 GB on first
+run is a reasonable choice and should not cost the reader the app. Removing Skip would also have
+left the same trap reachable another way (below).
+
+**The flag is keyed on the outcome, not on the button.** `hasFinishedOnboardingWithoutVolumes` is
+set whenever onboarding completes with nothing on disk and nothing queued. Skip is the usual road
+there, but a scope that enqueues nothing — offline, or one resolving to no volumes — traps a
+reader who tapped Continue in exactly the same way, and a fix that keyed on the Skip button would
+have left that standing.
+
+**The routing rule moved into `AppRootRouter`, a pure function, and that is most of the change.**
+The trap shipped past a green suite because every existing test covers `OnboardingCompletion`'s
+side effects — all of which *succeed* on the trapped path. What was untested was the decision made
+afterwards, and a decision inside a view body has no seam a test can reach. Six tests now pin every
+branch, including the deleted-everything case the AND still protects.
+
+**Two #753 tests broke, and converting them was the right repair rather than a chore.**
+`BootStateHonestyTests` pinned the M-20 ordering by SCANNING `ContentView.swift` for literals —
+its own header says why: "absence of a lie has no runtime signature without a UI harness driving a
+half-booted app." The extraction deletes the strings it matched, so two assertions went red while
+the behaviour was unchanged. They now drive `AppRootRouter` directly, which is what that header
+wanted: the old versions passed on the *presence of a line of text* and would have kept passing if
+the branches were reordered into the wrong answer.
+
+An adversarial review over the diff (four lenses, every finding then challenged) raised the same
+test breakage from three independent directions and recommended the same repair. Its other
+findings did not survive: the Search tab's empty-corpus copy branches on `indexedVolumeIds` and was
+already reachable; the manual offers three routes to add volumes; and the flag surviving volume
+deletion is the state the fix deliberately ships, with both supported reset paths clearing it.
+
+Also fixed, because Finish now leads somewhere: the Ready step promised "Volumes download and index
+automatically — search unlocks in minutes" on a path where nothing downloads and search never
+unlocks. An empty finish gets copy that is true instead.
