@@ -1,5 +1,11 @@
 # Navigation & State-Management Audit — iOS + macOS
 
+**Status (2026-08-14): substantially discharged — 10 of the 12 filed issues closed; #751 and #752 remain open, each with an owner status ledger.** PR #768 (#751 — reading journeys stay in their origin tab; `DocumentJump` `.push`/`.replace` so page-turns replace) and PRs #769 + #803 (#752 — per-window `ContinuationHost`, the word-cloud hand-off consumed with `orAnyWindow`, the missing `\.sceneID` injections) landed the remedies; #746–#750 and #753–#757 closed 2026-08-08/09.
+
+The four #752 tail entries carry their own **RESOLVED / CLOSED** blocks in place (M-25, L-40, L-43 — and L-48, which **does not reproduce** and was closed with a documentation correction rather than code). Everything else stands as filed.
+
+**Still live, and this document is still the evidence of record for it:** M-16's Research / History / Project-leads restructure, deferred pending a **second owner decision** because the Research stack's path is a typed projection of `selectedItem` (the #238/#272 `.sidebarAdaptable` workaround) — `Planning/iOS-Reading-Journey-Design.md` §6, tracked as **O-3** in `Planning/Resolve-Open-Issues-Plan-2026-08.md`; and **M-17b**, the 56 pt edge-tap zone vs. back-swipe overlap, which needs a device measurement, not a code change. Both sit on **#751**. **#752** stays open on the one structural gap it names — nothing calls `requestSceneSessionActivation`, pinned by `FRUSExplorerTests/WindowTargetingTests.swift:219` (`noSceneActivationYet`).
+
 **Date:** 2026-08-07. **Method:** seven parallel code auditors over disjoint dimensions
 (iOS navigation/back, macOS windows/focus, hand-off machinery, document-open inventory,
 persistence/restoration, staleness/invalidation, presentation state), every high/medium finding

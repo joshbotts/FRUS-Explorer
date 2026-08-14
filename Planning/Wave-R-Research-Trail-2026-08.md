@@ -1,8 +1,8 @@
 # Wave R — the research trail, and build-35 tester feedback
 
-**Status:** R-0 answered 2026-07-26; **R-1, R-4, R-7, R-9, R-3 and R-2a shipped 2026-07-26**.
-**R-2b (retiring the session types from the schema) is a separate, later release — see R-2.**
-Runs **after S-6** (Settings docs closeout).
+**Status: complete but for R-2b.** R-0 answered 2026-07-26; **R-1, R-2a, R-3, R-4, R-5, R-6, R-7, R-8 and R-9 all shipped 2026-07-26** (PRs #510, #511, #514–#521; the R-2a migration was woken by #518's Production deploy — `CloudKitSchemaInventory.deployedThroughBuild = "40"`, `identifiersAwaitingDeploy` empty).
+**R-2b is the one live item and this document (§R-2b) is its only specification.** Both types are still enrolled — `ModelContainer+FRUS.swift:100-101` — and `ResearchSession.swift` / `ResearchTrailMigration.swift` still exist. Its time gate **opened 2026-08-04** (#671: R-2a shipped in build 37 and has had its field exposure); it still carries its own Production schema deploy through the R-7 checklist, 19 record types → 17. Scheduling is tracked in `Planning/Consolidated-Development-Plan-2026-08.md` (the [2026-08-04] note).
+**Two smaller items are also recorded nowhere else:** the contract's second correction — `GlobalContextView`'s per-project reading analytics is still unreachable dead code (`DiscoveryTips.forbiddenAnchors` names it by path) — and R-8's reported-not-fixed macOS gap, `MacCorpusBrowserWindow`'s three sidebar toolbar buttons, still the pinned exception in `ToolbarAccessibilityAuditTests.swift:62`. Build-35 tester feedback (below) was never collected; the app is now at build 40.
 **Inputs:** `Planning/Settings-Parity-Audit-2026-07-25.md` (§B2, B3, and the deliberate-list
 entry on search logging); build-35 tester feedback (not yet collected); carried work from the
 2026-07-26 bug session (#486 / #488 / #498) — see *Folded in* below.

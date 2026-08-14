@@ -1,8 +1,10 @@
 # Resolve Open Issues — Plan of Record, August 2026
 
-**Date:** 2026-08-09 · **Status:** plan of record for the open-issue backlog · **Verified against:**
-`v2` @ `9b62f33`, all 37 issues open on 2026-08-09, every body and comment read, every "landed?"
-claim below checked in the tree (not inferred from PR prose).
+**Date:** 2026-08-09 · **Status (2026-08-14): substantially discharged, still the plan of record — the whole owner lane is untouched.**
+Tier 0 shipped as PR #799 (2026-08-09) and **all eleven Tier-2 F-items** as PRs #802/#803/#804/#806/#807/#810/#812/#813/#814/#815/#816 (2026-08-10); B-2's browse half shipped alongside them (#800/#801), with I-3's first generator (#817) and I-1's builder (#818) the same day. Nothing in this plan has moved since — the program turned to Archival Analytics and the semantic map.
+**Still live:** B-1 (#657, owner device backtrace) · B-2's follow-up (#777 stays open: manuals, no on-screen side-loaded label in Browse, the "553 of 552" denominator) · I-1's owner VoiceOver pass and the four unadopted chart families (#268 — `axChartDescriptor` is adopted only at `SeriesChartCard.swift:134` and `CollectionDetailView.swift:464`) · I-2 (#312, unstarted) · I-3's remaining four (#270 — Manifest, Taxonomy, CentralFilesIndex, SourceProvenanceIndex still declare no `GeneratorKit` dependency in `Package.swift`) · and **every Tier-4 owner item, O-1…O-7**, including O-6, whose #261 ask still carries no comment and is still unsent.
+Two F-items shipped without closing their issue: #752 (PR #803 fixed its last four findings) and #733, whose affordance half is split out as #808. §2's pointers (#353, #372, #235, #234, #308/#261, #751, #106) all remain open.
+**Verified against:** `v2` @ `d44176b2`, `gh issue list --state all` and the merged-PR log, 2026-08-14.
 
 **Version history:**
 - 1.0 — Session 2026-08-09: initial plan, from the full open-issue verification sweep.

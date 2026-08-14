@@ -1,12 +1,17 @@
 # What should survive a relaunch? (#754)
 
-**Status:** decided, and partly shipped. **PR #771** (2026-08-08) delivered **L-45** — all three
-Search UI flags are now `@State` — and **mechanism A**, `ResumeReadingRow`, offered rather than
-forced. **B and C remain deferred** until A has been lived with; M-21 is additionally blocked on
-#756, since `SearchParameters` is still not `Codable`. The costing below is kept as the record of
-that decision: read §§1–2 in the past tense.
+**Status:** decided and shipped as scoped — **#754 closed 2026-08-09**. **PR #771** (2026-08-08)
+delivered **L-45** (the two Search flags are now `@State`, `SearchSheet.swift:145-147`, leaving
+`frus.selectedTab` at `MainTabView.swift:104` as the app's *only* `@SceneStorage`) and **mechanism
+A**, `ResumeReadingRow` (`ResumeReadingRow.swift:39`, offered at `CorpusView.swift:36` and
+`MainWindowView.swift:483`; `ResumeReadingTests` forbids `.onAppear` navigation).
+**Still live: B and C (M-21) remain deferred and are tracked in no issue — this document is their
+only record.** Their stated blocker is **gone**: `SearchParameters` became `Codable` in **PR #773**
+(#756), `SearchModels.swift:102`, so the "not `Codable` today" notes in §3B and §4 are stale.
+Re-scope B/C in a fresh issue if living with A shows a specific gap.
 **Source:** 2026-08 navigation & state audit, findings **H-6, M-21, L-45**.
-**Written:** Session 2026-08-08, against `v2` @ `44c8f9ce`. **Status updated 2026-08-09 (#651).**
+**Written:** Session 2026-08-08, against `v2` @ `44c8f9ce`. **Status updated 2026-08-14.** Read
+§§1–2 in the past tense.
 
 ---
 

@@ -1,7 +1,9 @@
 # Feature & Priorities Review — what to target after the current slate
 
-**Date:** 2026-08-03 · **Version:** 1.0 · **Status:** recommendations for owner review — no
-code changes ride this document.
+**Date:** 2026-08-03 · **Version:** 1.1 · **Status:** partly discharged — reviewed 2026-08-14; no code changes ever rode this document.
+**P2 was overtaken by the semantic V-program**, which ran past this document's own gate sketch: V-0…V-4 all shipped (PR #866 packer → PR #883 map; the experimental `semanticSimilarity` axis and its hosted Tier-2 shard repo in PR #868, which also answers P4's hosting-channel question with a "yes"), and the blind panel §2.2/2.4 prescribed was deliberately retired for an in-app feedback log (PR #869). P3 is largely done — #262 (PR #788), #265 (PR #816), #263 (PR #815); P1's anchor #665 closed 2026-08-08 (items 1–2 in PR #734, item 3 deferred); and P5.1's two-phase fetch had in fact already landed as R-3a/PR #588 on 2026-07-30, four days *before* this review recommended it.
+**Still live, and §5 is the only record of most of it:** the unplanned capabilities of §5 (5a.1 declassification-gap explorer, 5a.3 previously-published resolver, 5a.4 concordance, 5b.5 telegram threads, 5c/5d — all still absent from the tree; only 5a.2 graduated, to `Research-Trip-Packet-Scope.md` / #830). Also open: P1's remainder (#626 + the summary-sync defects, the integrity sweep, the multi-device verification protocol, R-2b), the P4 1.0-readiness wave (#106, #268, localization posture), #308/#261, and #234's early-era program (`People-Early-Era-Program.md`).
+Open-issue sequencing has since moved to `Planning/Resolve-Open-Issues-Plan-2026-08.md` (2026-08-09); §1's refuted-routes list stays authoritative and is cited by `Archival-Analytics-Feasibility.md`.
 
 **Inputs:** the shipped tree at build 39 (v0.2), `Planning/Consolidated-Development-Plan-2026-08.md`
 (revised 2026-08-02), `Planning/Wave-R-Research-Trail-2026-08.md`, `Planning/Eight-Issue-Plan-2026-08.md`,
