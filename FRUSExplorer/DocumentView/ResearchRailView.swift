@@ -208,6 +208,22 @@ struct ResearchRailView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(.tertiary)
             Spacer()
+            // UI review F-9. The six tile captions are `.caption2`, and the sentence explaining
+            // each one reached only a Mac pointer: `.help` renders a tooltip on macOS alone. It is
+            // not inert on iOS — the SDK documents it as setting the accessibility hint, so
+            // VoiceOver has always spoken these — but a *sighted* iPad reader had no way to get
+            // them. This button is that way, and it costs no new copy: the rows are the same
+            // `RailTileCopy` values the tiles are built from.
+            //
+            // A `FeatureInfoButton`, deliberately, NOT a TipKit tip. `DocumentView`'s note on
+            // `.popoverTip(isPhone ? ResearchRailTip() : nil)` records what a tip in the iPad
+            // reader did: presented during the same main-thread pass that reflows the inspector
+            // and inserts the WKWebView, it drove a view-graph update loop — 90s of CPU in 101s
+            // and a `scene-update` watchdog kill at 10s. This popover is user-initiated, so it
+            // cannot present during that reflow.
+            FeatureInfoButton(heading: Self.toolsInfoHeading, items: RailTileCopy.infoItems)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
             #if os(iOS)
             // D8: the rail header is the iPad "Open in New Window" home (Stage Manager). Hidden on
             // iPhone (single window) — `supportsMultipleWindows` is false there.
@@ -238,39 +254,17 @@ struct ResearchRailView: View {
     private var tileGrid: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
             #if os(macOS)
-            railTile("quote.closing",
-                     String(localized: "researchRail.tile.cite", defaultValue: "Cite"),
-                     help: String(localized: "researchRail.tile.cite.help",
-                                  defaultValue: "Cite this document — copy a formatted citation or export BibTeX/RIS")) {
+            railTile("quote.closing", RailTileCopy.cite) {
                 showCitePopover = true
             }
             .popover(isPresented: $showCitePopover, arrowEdge: .bottom) {
                 CitationPopoverView(entry: entry)
             }
-            railTile(WordCloudGlyph.symbol,
-                     String(localized: "researchRail.tile.wordCloud", defaultValue: "Word Cloud"),
-                     help: String(localized: "researchRail.tile.wordCloud.help",
-                                  defaultValue: "Show a word cloud of this document's most frequent terms"),
-                     action: openWordCloud)
-            railTile("archivebox",
-                     String(localized: "researchRail.tile.sources", defaultValue: "Sources"),
-                     help: String(localized: "researchRail.tile.sources.help",
-                                  defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"),
-                     action: openSources)
-            railTile("point.3.connected.trianglepath.dotted",
-                     String(localized: "researchRail.tile.graph", defaultValue: "Graph"),
-                     help: String(localized: "researchRail.tile.graph.help",
-                                  defaultValue: "Show this document's cross-reference graph"),
-                     action: openGraph)
-            railTile("doc.on.doc",
-                     String(localized: "researchRail.tile.related", defaultValue: "Related"),
-                     help: String(localized: "researchRail.tile.related.help",
-                                  defaultValue: "Find related documents by archival provenance, cross-references, date, and shared people"),
-                     action: openRelated)
-            railTile("square.and.arrow.up",
-                     String(localized: "researchRail.tile.share", defaultValue: "Share"),
-                     help: String(localized: "researchRail.tile.share.help",
-                                  defaultValue: "Share or export this document")) {
+            railTile(WordCloudGlyph.symbol, RailTileCopy.wordCloud, action: openWordCloud)
+            railTile("archivebox", RailTileCopy.sources, action: openSources)
+            railTile("point.3.connected.trianglepath.dotted", RailTileCopy.graph, action: openGraph)
+            railTile("doc.on.doc", RailTileCopy.related, action: openRelated)
+            railTile("square.and.arrow.up", RailTileCopy.share) {
                 showSharePopover = true
             }
             .popover(isPresented: $showSharePopover, arrowEdge: .bottom) {
@@ -281,44 +275,23 @@ struct ResearchRailView: View {
             // iOS has no `openWindow` for the reading-scoped tools, so the tiles route through the
             // host (`onOpenTool` → `DocumentView`'s existing sheet/window presentations). Share is the
             // exception — it's a `Menu`, so it stays self-owned here (mirroring the macOS Share tile).
-            railTile("quote.closing",
-                     String(localized: "researchRail.tile.cite", defaultValue: "Cite"),
-                     help: String(localized: "researchRail.tile.cite.help",
-                                  defaultValue: "Cite this document — copy a formatted citation or export BibTeX/RIS")) {
-                onOpenTool(.cite)
-            }
-            railTile(WordCloudGlyph.symbol,
-                     String(localized: "researchRail.tile.wordCloud", defaultValue: "Word Cloud"),
-                     help: String(localized: "researchRail.tile.wordCloud.help",
-                                  defaultValue: "Show a word cloud of this document's most frequent terms")) {
-                onOpenTool(.wordCloud)
-            }
-            railTile("archivebox",
-                     String(localized: "researchRail.tile.sources", defaultValue: "Sources"),
-                     help: String(localized: "researchRail.tile.sources.help",
-                                  defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records")) {
-                onOpenTool(.sources)
-            }
-            railTile("point.3.connected.trianglepath.dotted",
-                     String(localized: "researchRail.tile.graph", defaultValue: "Graph"),
-                     help: String(localized: "researchRail.tile.graph.help",
-                                  defaultValue: "Show this document's cross-reference graph")) {
-                onOpenTool(.graph)
-            }
-            railTile("doc.on.doc",
-                     String(localized: "researchRail.tile.related", defaultValue: "Related"),
-                     help: String(localized: "researchRail.tile.related.help",
-                                  defaultValue: "Find related documents by archival provenance, cross-references, date, and shared people")) {
-                onOpenTool(.related)
-            }
+            railTile("quote.closing", RailTileCopy.cite) { onOpenTool(.cite) }
+            railTile(WordCloudGlyph.symbol, RailTileCopy.wordCloud) { onOpenTool(.wordCloud) }
+            railTile("archivebox", RailTileCopy.sources) { onOpenTool(.sources) }
+            railTile("point.3.connected.trianglepath.dotted", RailTileCopy.graph) { onOpenTool(.graph) }
+            railTile("doc.on.doc", RailTileCopy.related) { onOpenTool(.related) }
             DocumentShareMenu(vm: vm) {
-                tileLabel("square.and.arrow.up",
-                          String(localized: "researchRail.tile.share", defaultValue: "Share"))
+                tileLabel("square.and.arrow.up", RailTileCopy.share.title)
             }
             #endif
         }
         .padding(.horizontal, hInset)
         .padding(.vertical, 8)
+    }
+
+    /// Heading for the tools info popover (UI review F-9).
+    static var toolsInfoHeading: String {
+        String(localized: "researchRail.tools.info.heading", defaultValue: "Document tools")
     }
 
     /// The visual of one square grid tile — a centred glyph over a caption on a subtle rounded fill.
@@ -340,15 +313,25 @@ struct ResearchRailView: View {
     }
 
     /// A single square grid tile: centred glyph over a caption label, on a subtle rounded fill.
-    /// `help` restores the per-tile tooltip the retired strip carried (C1b review F5) — the
-    /// caption is small, so hover text explains what each glyph does.
-    private func railTile(_ glyph: String, _ label: String, help: String,
+    ///
+    /// The explanation restores the per-tile tooltip the retired strip carried (C1b review F5) —
+    /// the caption is `.caption2`, so a sentence says what the glyph does. It goes through
+    /// `.controlHelp` rather than `.help` as of CW-6b (UI review F-9): `.help` renders a tooltip
+    /// on macOS only, so the whole fan-out — VoiceOver hint, Large Content Viewer entry — reached
+    /// nobody on iPad. `controlHelp` is this repo's own answer to that, built in Session 162 and
+    /// simply never adopted here. The visible-to-a-sighted-iPad-reader half is the header's
+    /// `FeatureInfoButton`; this half is everything else.
+    ///
+    /// The `accessibilityLabel` `controlHelp` sets is the same string the tile already displays,
+    /// so the VoiceOver name is unchanged — worth stating because a blind conversion elsewhere in
+    /// the app could overwrite a better-chosen label with a tooltip's subject.
+    private func railTile(_ glyph: String, _ copy: RailTileCopy.Entry,
                           action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            tileLabel(glyph, label)
+            tileLabel(glyph, copy.title)
         }
         .buttonStyle(.plain)
-        .help(help)
+        .controlHelp(copy.title, detail: copy.detail, systemImage: glyph)
     }
 
     // MARK: - Accordions
@@ -737,4 +720,83 @@ struct ResearchRailView: View {
         openWindow(value: request)
     }
     #endif
+}
+
+// MARK: - RailTileCopy
+
+/// The six document tools' names and explanations, defined once.
+///
+/// **This exists because the strings had two copies and F-9 needed a third.** Each
+/// `railTile` call spelled its caption and sentence inline, and the macOS and
+/// iOS tile blocks each carry a full set — so `researchRail.tile.cite.help` appeared twice before
+/// the header's info popover wanted it a third time. Three literals per string is three places for
+/// one to drift, and a drifted `help` is invisible: nothing renders the two side by side.
+///
+/// The `String(localized:)` calls stay literal here so string extraction still finds them; what
+/// moved is where they are written, not how.
+///
+/// Version history:
+///   1.0 — CW-6b (UI review F-9): extracted from the tile call sites
+enum RailTileCopy {
+
+    /// One tool's caption and its one-sentence explanation.
+    struct Entry {
+        /// The tile's visible caption, also its VoiceOver name.
+        let title: String
+        /// The sentence explaining what the tool does — the macOS tooltip, the iOS VoiceOver
+        /// hint and Large Content Viewer detail, and a row in the header's info popover.
+        let detail: String
+    }
+
+    /// Cite — the citation popover / sheet.
+    static var cite: Entry {
+        Entry(title: String(localized: "researchRail.tile.cite", defaultValue: "Cite"),
+              detail: String(localized: "researchRail.tile.cite.help",
+                             defaultValue: "Cite this document — copy a formatted citation or export BibTeX/RIS"))
+    }
+
+    /// Word Cloud — this document's most frequent terms.
+    static var wordCloud: Entry {
+        Entry(title: String(localized: "researchRail.tile.wordCloud", defaultValue: "Word Cloud"),
+              detail: String(localized: "researchRail.tile.wordCloud.help",
+                             defaultValue: "Show a word cloud of this document's most frequent terms"))
+    }
+
+    /// Sources — the archival source note, resolved.
+    static var sources: Entry {
+        Entry(title: String(localized: "researchRail.tile.sources", defaultValue: "Sources"),
+              detail: String(localized: "researchRail.tile.sources.help",
+                             defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"))
+    }
+
+    /// Graph — the cross-reference graph.
+    static var graph: Entry {
+        Entry(title: String(localized: "researchRail.tile.graph", defaultValue: "Graph"),
+              detail: String(localized: "researchRail.tile.graph.help",
+                             defaultValue: "Show this document's cross-reference graph"))
+    }
+
+    /// Related — ranked related documents.
+    static var related: Entry {
+        Entry(title: String(localized: "researchRail.tile.related", defaultValue: "Related"),
+              detail: String(localized: "researchRail.tile.related.help",
+                             defaultValue: "Find related documents by archival provenance, cross-references, date, and shared people"))
+    }
+
+    /// Share — the share/export menu.
+    static var share: Entry {
+        Entry(title: String(localized: "researchRail.tile.share", defaultValue: "Share"),
+              detail: String(localized: "researchRail.tile.share.help",
+                             defaultValue: "Share or export this document"))
+    }
+
+    /// Every tool, in tile order — the rows of the header's info popover.
+    ///
+    /// Share is included even though it is the one tile that never needed this fix (it is a
+    /// `Menu`, not a `railTile`, and already carries `.controlHelp` from `DocumentShareMenu`):
+    /// a popover that explained five of the six tiles on screen would read as an omission.
+    static var infoItems: [FeatureInfoItem] {
+        [cite, wordCloud, sources, graph, related, share]
+            .map { FeatureInfoItem(title: $0.title, detail: $0.detail) }
+    }
 }
