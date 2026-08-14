@@ -124,6 +124,35 @@ struct ArchivalAnalyticsExportTests {
             """)
     }
 
+    /// A pointers export must not carry the drawn-from methods statement.
+    ///
+    /// `baseCaveat` says the figures come from the source note on each published document and record
+    /// where the editors drew documents from — a description of work a pointers export did not do.
+    /// The precedent for branching rather than appending is `flows(...)` in the same file: two
+    /// contradictory methods statements in one file is worse than one wrong one, because the reader
+    /// trusts the first.
+    @Test("A pointers export swaps the base caveat rather than appending a correction")
+    func pointerExportSwapsItsBaseCaveat() {
+        let pointers = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[0], lens: .namedCollections, weight: .unprintedPointers,
+            hiddenUmbrella: nil, unitsReached: 12, bandVolumeCount: 40, indexedVolumeCount: 0)
+        #expect(pointers.extraCaveats.contains(ArchivalAnalyticsExport.pointerBaseCaveat))
+        #expect(!pointers.extraCaveats.contains(ArchivalAnalyticsExport.baseCaveat), """
+            The pointers export carries the drawn-from methods statement, which describes work it \
+            did not do.
+            """)
+
+        // And the printed weights keep theirs.
+        for weight in [ArchivalWeight.documents, .volumes] {
+            let printed = ArchivalAnalyticsExport.ranking(
+                band: ArchivalEraBand.all[0], lens: .namedCollections, weight: weight,
+                hiddenUmbrella: nil, unitsReached: 12, bandVolumeCount: 40, indexedVolumeCount: 0)
+            #expect(printed.extraCaveats.contains(ArchivalAnalyticsExport.baseCaveat))
+            #expect(!printed.extraCaveats.contains(ArchivalAnalyticsExport.pointerBaseCaveat),
+                    "\(weight.title) carries the pointers methods statement")
+        }
+    }
+
     @Test("Every ranking export carries the weights-count-different-populations caveat")
     func weightCaveatIsAlwaysPresent() {
         for weight in ArchivalWeight.allCases {

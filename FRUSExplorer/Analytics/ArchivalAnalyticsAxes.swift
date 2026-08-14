@@ -433,6 +433,14 @@ enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
     case documents
     /// Distinct volumes citing the unit.
     case volumes
+    /// Footnote references pointing at unprinted material in the unit — needs
+    /// `external-citation-index.json`.
+    ///
+    /// **A different body of evidence from the other two, not a third way of counting the same
+    /// one.** Documents and Volumes both measure where FRUS *drew documents from*; this measures
+    /// what its footnotes *pointed at* and FRUS did not print. Selecting it is a swap, never a sum:
+    /// the caption says so, and nothing may add a pointer total to a usage count (#783).
+    case unprintedPointers
 
     var id: String { rawValue }
 
@@ -443,6 +451,28 @@ enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
             return String(localized: "archival.weight.documents", defaultValue: "Documents")
         case .volumes:
             return String(localized: "archival.weight.volumes", defaultValue: "Volumes")
+        case .unprintedPointers:
+            return String(localized: "archival.weight.unprintedPointers",
+                          defaultValue: "Unprinted pointers")
         }
     }
+
+    /// What one unit of this weight is, for a caption or an export's counting-unit stamp.
+    var countingUnit: String {
+        switch self {
+        case .documents:
+            return String(localized: "archival.weight.unit.documents", defaultValue: "documents")
+        case .volumes:
+            return String(localized: "archival.weight.unit.volumes", defaultValue: "volumes")
+        case .unprintedPointers:
+            return String(localized: "archival.weight.unit.unprintedPointers",
+                          defaultValue: "footnote references")
+        }
+    }
+
+    /// Whether this weight measures material FRUS **printed**.
+    ///
+    /// The switch every drawn-from sentence must branch on: a ranking caption that says volumes
+    /// "draw on" N collections is false above a pointers chart, which ranks what they pointed *at*.
+    var measuresPrintedMaterial: Bool { self != .unprintedPointers }
 }

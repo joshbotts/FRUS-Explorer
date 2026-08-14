@@ -155,6 +155,11 @@ struct ArchivalRanking: Sendable, Equatable {
     /// Only meaningful under the documents weight: a share needs a numerator and denominator
     /// counting the same thing, and the volumes weight counts volumes against a note total.
     /// `nil` rather than a wrong number is the whole point of the field.
+    /// **Documents only, and that now excludes two weights rather than one.** The denominator is
+    /// the band's source-note count, which is the population documents are drawn from; a volume
+    /// count is not a share of it, and neither is a footnote-pointer count — pointers are read from
+    /// editorial footnotes, not from source notes at all, so the ratio would divide two unrelated
+    /// populations and print a plausible percentage. Leave this gated on `.documents`.
     func shownShare(weight: ArchivalWeight) -> Double? {
         guard weight == .documents, bandNoteCount > 0, shownValue > 0 else { return nil }
         return Double(shownValue) / Double(bandNoteCount)
@@ -260,6 +265,18 @@ struct ArchivalCollectionsData: Sendable {
     /// in which case the Documents weight must be disabled rather than shown as zeroes.
     let supportsDocumentWeight: Bool
 
+    /// Footnote references pointing at each collection, per band.
+    ///
+    /// **A different body of evidence from the two beside it**, and the reason the weight is a swap
+    /// rather than a third column: `collectionDocuments` and `collectionVolumes` both count where
+    /// FRUS *drew documents from*; this counts what its footnotes *pointed at* and FRUS did not
+    /// print. The two are never added — that addition is the defect #783 removed.
+    let collectionPointers: [[String: Int]]
+
+    /// Whether the pointer weight can be drawn — `false` when the external-citation index is
+    /// missing, in which case the weight is disabled rather than ranking an empty table.
+    let supportsPointerWeight: Bool
+
     /// Volumes the derivation could place in a band (i.e. whose coverage parsed).
     let volumesPlaced: Int
 
@@ -275,6 +292,7 @@ struct ArchivalCollectionsData: Sendable {
     static func make(authority: [AuthorityCollectionRecord],
                      usage: CollectionUsageIndex?,
                      coverage: [String: ArchivalVolumeCoverage],
+                     external: ExternalCitationIndex? = ExternalCitationIndexStore.shared,
                      labels: DecimalClassLabelTable? = DecimalClassLabelStore.shared)
         -> ArchivalCollectionsData {
         let bandCount = ArchivalEraBand.all.count
@@ -326,6 +344,16 @@ struct ArchivalCollectionsData: Sendable {
             }
         }
 
+        // The pointer weight, banded by the CITING volume's coverage — the same rule the other two
+        // use, so the bands still partition the corpus and a multi-band ranking can add them.
+        var collectionPointers = [[String: Int]](repeating: [:], count: bandCount)
+        if let external {
+            external.forEachReference { targetId, volumeId, count in
+                guard let band = bandByVolume[volumeId] else { return }
+                collectionPointers[band][targetId, default: 0] += count
+            }
+        }
+
         return ArchivalCollectionsData(
             collectionDocuments: collectionDocuments,
             collectionVolumes: collectionVolumes,
@@ -338,6 +366,8 @@ struct ArchivalCollectionsData: Sendable {
             bandNoteCounts: bandNoteCounts,
             records: records,
             supportsDocumentWeight: usage != nil,
+            collectionPointers: collectionPointers,
+            supportsPointerWeight: external != nil,
             volumesPlaced: bandByVolume.count)
     }
 
@@ -499,8 +529,15 @@ struct ArchivalCollectionsData: Sendable {
             switch (lens, weight) {
             case (.namedCollections, .documents): source = collectionDocuments[index]
             case (.namedCollections, .volumes): source = collectionVolumes[index]
+            case (.namedCollections, .unprintedPointers): source = collectionPointers[index]
             case (.centralFileClasses, .documents): source = classDocuments[index]
             case (.centralFileClasses, .volumes): source = classVolumes[index]
+            // **The class lens has no pointer vocabulary at all.** #784's harvest covers lot files
+            // and presidential libraries; it never reads a decimal class, so there is nothing to
+            // rank. The weight is disabled on this lens in the UI (`supports(_:for:)`), and this
+            // case exists so the combination degrades to an empty ranking rather than to whichever
+            // table an inexhaustive switch would have fallen through to.
+            case (.centralFileClasses, .unprintedPointers): source = [:]
             }
             if table.isEmpty {
                 table = source

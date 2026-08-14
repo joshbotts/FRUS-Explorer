@@ -3722,11 +3722,11 @@ Method: these figures come from the source note on each published FRUS document.
 
 ---
 
-#### Why the two weights disagree
+#### Why the three weights disagree
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 290–291 | key: archival.export.caveat.weight -->
 
-The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Switching the weight changes which collections appear in the ranking, not just their order.
+The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 
 <!-- END SOURCE: archival.export.caveat.weight -->
 

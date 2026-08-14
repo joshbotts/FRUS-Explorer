@@ -203,8 +203,31 @@ struct ArchivalAnalyticsView: View {
     /// block says which fallback happened.
     private var weight: ArchivalWeight {
         let stored = ArchivalWeight(rawValue: weightRaw) ?? .documents
-        guard stored == .documents else { return stored }
-        return (collectionsData?.supportsDocumentWeight ?? true) ? .documents : .volumes
+        return supports(stored) ? stored : .volumes
+    }
+
+    /// Whether a weight can be drawn right now, under the current lens and this build's artifacts.
+    ///
+    /// **Volumes is the floor**: it is derived from the authority alone, so it is always available
+    /// and is what every fallback lands on. The other two each need their own bundled artifact, and
+    /// `unprintedPointers` additionally needs the named-collections lens — #784's harvest reads lot
+    /// files and presidential libraries and never a decimal class, so the class lens has no pointer
+    /// vocabulary to rank. Without this gate a stored pointer preference would open the class lens
+    /// onto an empty chart, with the era looking like the reason.
+    ///
+    /// - Parameters:
+    ///   - candidate: The weight to test.
+    ///   - lens: The lens it would be drawn under; defaults to the active one.
+    /// - Returns: `true` when the weight has data.
+    private func supports(_ candidate: ArchivalWeight,
+                          for lens: ArchivalUnitLens? = nil) -> Bool {
+        let lens = lens ?? unitLens
+        switch candidate {
+        case .volumes: return true
+        case .documents: return collectionsData?.supportsDocumentWeight ?? true
+        case .unprintedPointers:
+            return lens == .namedCollections && (collectionsData?.supportsPointerWeight ?? false)
+        }
     }
 
     /// Re-runs the library query when the mode changes **or** the search infrastructure finishes
@@ -631,14 +654,15 @@ struct ArchivalAnalyticsView: View {
         Menu {
             Picker(String(localized: "archival.filter.weight", defaultValue: "Count by"),
                    selection: $weightRaw) {
+                // **Per option, not whole.** With two weights they failed together and dimming the
+                // control was right; with three they do not — `unprintedPointers` is unavailable on
+                // the class lens while Documents is fine, so dimming the whole picker there would
+                // withhold a weight that works. An unavailable option is shown and disabled, so the
+                // reader can see that it exists and is not offered here.
                 ForEach(ArchivalWeight.allCases) { w in
-                    Text(w.title).tag(w.rawValue)
+                    Text(w.title).tag(w.rawValue).disabled(!supports(w))
                 }
             }
-            // Documents needs the usage index. The picker dims whole rather than per-option,
-            // because a stored Documents preference has already been overridden by `weight` —
-            // an enabled control whose selection the view ignores is worse than a disabled one.
-            .disabled(!data.supportsDocumentWeight)
         } label: {
             chipLabel(systemImage: "doc.on.doc",
                       caption: String(localized: "archival.filter.weight", defaultValue: "Count by"),
@@ -1050,6 +1074,15 @@ struct ArchivalAnalyticsView: View {
             ? String(localized: "archival.ranking.caption.units.collections",
                      defaultValue: "collections")
             : String(localized: "archival.ranking.caption.units.classes", defaultValue: "classes")
+        // **"Draw on" is false above a pointers chart.** The other two weights rank where documents
+        // came from; this one ranks what footnotes pointed at and FRUS did not print, so the
+        // sentence branches rather than being reused with a different number in it.
+        guard weight.measuresPrintedMaterial else {
+            return String(format: String(
+                localized: "archival.ranking.caption.pointers %@ %lld %lld %@",
+                defaultValue: "Footnotes in the volumes covering %1$@ — %2$lld of them — point at unprinted material in %3$lld %4$@. Bars are colored by who holds the records."),
+                band.title, Int64(ranking.bandVolumeCount), Int64(ranking.unitsReached), units)
+        }
         return String(format: String(
             localized: "archival.ranking.caption %@ %lld %@ %lld",
             defaultValue: "Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colored by who holds the records."),
@@ -1138,6 +1171,19 @@ struct ArchivalAnalyticsView: View {
             if !data.supportsDocumentWeight {
                 Text(String(localized: "archival.caveats.noUsageIndex",
                             defaultValue: "Document counts are unavailable in this build — the bundled usage index did not load — so only the volume weight is offered."))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if unitLens == .centralFileClasses {
+                Text(String(localized: "archival.caveats.noClassPointers",
+                            defaultValue: "Unprinted pointers are not offered for filing-system classes: the footnote harvest reads lot files and presidential libraries, and never a decimal class."))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if !data.supportsPointerWeight {
+                Text(String(localized: "archival.caveats.noExternalIndex",
+                            defaultValue: "Unprinted pointers are unavailable in this build — the bundled external-citation index did not load."))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

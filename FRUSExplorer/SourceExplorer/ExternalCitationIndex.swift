@@ -166,7 +166,36 @@ struct ExternalCitationIndex: Decodable, Sendable {
     func volumeCounts(forCollectionId id: String) -> [(volumeId: String, count: Int)] {
         guard let index = targetIds.firstIndex(of: id),
               let row = targets.first(where: { $0.key == index }) else { return [] }
-        return zip(row.volumes, row.counts).compactMap { volumeIndex, count in
+        return pairs(in: row)
+    }
+
+    /// Walks every (target, volume, count) the index carries, once.
+    ///
+    /// **For a caller that needs all of them**, which `volumeCounts(forCollectionId:)` cannot serve
+    /// without a linear row scan per target — 995 targets against 995 rows. The era-banded pointer
+    /// weight (#829c) needs exactly one pass, and this is it.
+    ///
+    /// - Parameter body: Called per reference group with the target id, the citing volume, and the
+    ///   count.
+    func forEachReference(_ body: (_ targetId: String, _ volumeId: String, _ count: Int) -> Void) {
+        for row in targets {
+            guard targetIds.indices.contains(row.key) else { continue }
+            let id = targetIds[row.key]
+            for pair in pairs(in: row) { body(id, pair.volumeId, pair.count) }
+        }
+    }
+
+    /// One row's volumes zipped to its counts.
+    ///
+    /// **The single place the parallel arrays are zipped.** They arrive under one-letter wire names
+    /// (`v`/`n`) and nothing in the format enforces that they are the same length, so a second
+    /// implementation of this join is a second thing that can silently drift from the first —
+    /// producing plausible counts against the wrong volumes. `ExternalCitationTests` pins it.
+    ///
+    /// - Parameter row: The stored row.
+    /// - Returns: The volume ids and their counts, dropping any index the volume table lacks.
+    private func pairs(in row: UnitRow) -> [(volumeId: String, count: Int)] {
+        zip(row.volumes, row.counts).compactMap { volumeIndex, count in
             guard volumes.indices.contains(volumeIndex) else { return nil }
             return (volumes[volumeIndex], count)
         }

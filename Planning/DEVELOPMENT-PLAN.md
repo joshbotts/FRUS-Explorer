@@ -7109,3 +7109,49 @@ Sequencing now: **(1)** the Studio pilot, one variable, plausibly 2–4×; **(2)
 §4.2 already calls the largest remaining lever and the harness still does not exploit; **(3)** M2a,
 which is the critical path — two arms disagree by 2.8× on mentions per document and nothing
 available says which is right.
+
+## Session 2026-08-14 — #829c: the ranking gets a third body of evidence
+
+The Collections ranking's Count by control gains **Unprinted pointers**, ranking each collection by
+the editorial footnotes pointing at material there that FRUS did not print. With (a) and (b) shipped
+in #886, all three of #829's parts are now built.
+
+**A weight SWAP, never a sum**, and the derivation is where that is enforced rather than the copy:
+`ArchivalCollectionsData` gains its own `collectionPointers` table, banded by the **citing** volume's
+coverage — the same rule the other two use, which is what keeps the bands a partition and lets a
+multi-band ranking add them. Nothing adds a pointer total to a usage count; that addition is the
+defect #783 removed.
+
+**The evidence for "swap" is visible, and a test asserts it.** Measured on the shipped artifacts for
+1948–1960: under Documents the Whitman File leads at 1,643; under pointers it is third at 472, behind
+S/S–NSC (Miscellaneous) Files: Lot 66 D 95 at 859. `pointerWeightReplacesTheRowSet` requires the two
+row sets to differ in both directions — a pointer-only collection must exist, or the pointer table is
+being filled from the usage index.
+
+**Four places assumed two weights and each was a different kind of wrong:**
+
+- The **picker** dimmed as a whole when Documents was unavailable, which was right when the two
+  weights failed together. They no longer do — pointers are unavailable on the class lens while
+  Documents is fine — so the gate is now per option, via `supports(_:for:)`.
+- The **class lens** has no pointer vocabulary at all: #784's harvest reads lot files and
+  presidential libraries and never a decimal class. `ranking()`'s switch handles the combination
+  explicitly (empty), the UI disables it, and the caveat block says why. Verified on the simulator:
+  switching to classes under pointers falls back to Volumes rather than drawing an empty chart.
+- The **ranking caption** said volumes "draw on" N collections regardless of weight, which is false
+  above a pointed-at chart. It branches on `ArchivalWeight.measuresPrintedMaterial`.
+- The **export's base caveat** describes parsing source notes to find where documents were drawn
+  from — work a pointers export did not do. It is SWAPPED for `pointerBaseCaveat`, following
+  `flows(...)`'s precedent in the same file, rather than appended to. Two contradictory methods
+  statements in one CSV is worse than one wrong one, because a reader trusts the first.
+
+**`shownShare` was already right and now says why.** It is gated to `.documents`; the denominator is
+the band's source-note count, and a footnote-pointer count is not a share of it. The gate happened to
+be correct for the new weight too, so the doc comment now records that it must stay that way — the
+"percentage" it would otherwise print divides two unrelated populations.
+
+Three shipped strings asserting a two-weight world were rewritten with new keys, the label-uniqueness
+sweep goes 40 → 60 combinations, and the export suite's `weightCaveat` loop over `allCases` now
+covers three.
+
+Every figure on screen was predicted from the raw artifact before it was looked at: 859 / 508 / 472,
+and 474 collections in the band. 3,478 unit tests (+4); clean macOS build.
