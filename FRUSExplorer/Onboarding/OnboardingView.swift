@@ -361,6 +361,18 @@ struct OnboardingView: View {
 
     // MARK: - 4c Ready
 
+    /// Whether Finish from here will leave the reader with nothing to read.
+    ///
+    /// Read at render time on the Ready step, by which point Continue's enqueue has already run
+    /// (`enqueueAndAdvance` awaits it before advancing) and Skip's has not — so this is the same
+    /// condition `completeOnboarding` stores, evaluated one step earlier to choose honest copy.
+    private var willFinishEmpty: Bool {
+        OnboardingCompletion.finishedEmpty(
+            hasVolumes: OnboardingViewModel.hasDownloadedVolumes(
+                in: appState.downloadManager?.volumesDirectory),
+            hasQueuedDownloads: !appState.downloadQueue.isEmpty)
+    }
+
     private var readyDock: some View {
         dockLayout(
             content: {
@@ -371,7 +383,7 @@ struct OnboardingView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         pageDots
                         Text(Self.readyTitle).font(.system(titleStyle, weight: .semibold))
-                        Text(Self.readyBody)
+                        Text(willFinishEmpty ? Self.readyBodyEmpty : Self.readyBody)
                             .font(.system(bodyStyle))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -479,6 +491,15 @@ struct OnboardingView: View {
         defaultValue: "You're all set")
     static let readyBody = String(localized: "onboarding.ready.body",
         defaultValue: "Volumes download and index automatically — search unlocks in minutes. Your project \u{201C}My Research\u{201D} is ready.")
+
+    /// The Ready step's copy when nothing is being downloaded.
+    ///
+    /// The line above promises volumes are downloading and that search unlocks in minutes. On a
+    /// Skip — or any finish that enqueued nothing — both halves are false, and the reader would
+    /// wait for a search that never arrives. What IS true is that the corpus is browsable and
+    /// downloadable from inside the app, which is where Finish now lands them.
+    static let readyBodyEmpty = String(localized: "onboarding.ready.body.empty",
+        defaultValue: "Nothing is downloading yet — browse the corpus and add volumes whenever you like. Your project \u{201C}My Research\u{201D} is ready.")
 
     static let offlineBannerText = String(localized: "onboarding.offline.banner",
         defaultValue: "You are offline. Showing bundled catalog only.")
@@ -604,6 +625,16 @@ struct OnboardingView: View {
         if let newProjectId = OnboardingCompletion.ensureDefaultProjectExists(in: modelContext) {
             appState.activeProjectId = newProjectId
         }
+        // Record a finish that leaves the reader with nothing to read, so `ContentView` lets them
+        // into the app instead of returning them to the Welcome page for ever. Evaluated from the
+        // OUTCOME rather than from which button was tapped: Skip is the usual way here, but a
+        // scope that enqueues nothing — offline, or one resolving to no volumes — traps a reader
+        // who tapped Continue in exactly the same way. See
+        // `AppState.hasFinishedOnboardingWithoutVolumes`.
+        appState.hasFinishedOnboardingWithoutVolumes = OnboardingCompletion.finishedEmpty(
+            hasVolumes: OnboardingViewModel.hasDownloadedVolumes(
+                in: appState.downloadManager?.volumesDirectory),
+            hasQueuedDownloads: !appState.downloadQueue.isEmpty)
         appState.hasCompletedOnboarding = true
     }
 

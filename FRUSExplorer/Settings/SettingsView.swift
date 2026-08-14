@@ -1394,6 +1394,7 @@ struct EraseEverythingView: View {
                 await MainActor.run {
                     appState.activeProjectId = nil
                     appState.hasCompletedOnboarding = false
+                    appState.hasFinishedOnboardingWithoutVolumes = false
                 }
 
                 #if DEBUG

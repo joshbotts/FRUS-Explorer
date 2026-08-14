@@ -39,10 +39,13 @@ import Foundation
 /// make "never lie during boot" pass while making the app worse.
 ///
 /// Source-reading, because this is about which branch a view takes when a service is nil — absence
-/// of a lie has no runtime signature without a UI harness driving a half-booted app.
+/// of a lie has no runtime signature without a UI harness driving a half-booted app. **The two
+/// M-20 tests are the exception as of 2.0**: `ContentView`'s decision has been extracted to the
+/// pure `AppRootRouter`, so they now drive the real function instead of reading the file.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #753 (audit M-20, M-22, M-23)
+///   2.0 — the M-20 pair converted from source-reading to driving `AppRootRouter`
 @Suite("Boot-state honesty")
 struct BootStateHonestyTests {
 
@@ -115,43 +118,44 @@ struct BootStateHonestyTests {
 
     // MARK: - M-20: an onboarded user never sees Welcome again mid-boot
 
-    @Test("ContentView shows the placeholder, not Onboarding, while an onboarded user boots")
-    func onboardedUserNeverFlashesWelcome() throws {
-        let source = try Self.source("App/ContentView.swift")
-        let lines = Self.codeLines(source)
+    // These two were source-reading, for the reason the suite header gives: the decision lived
+    // inside `ContentView.body`, where it had no runtime signature to assert against. It has since
+    // been extracted to `AppRootRouter` (a pure function) so the Skip dead-end could be tested at
+    // all, and that extraction hands these tests the signature they wanted. They now assert the
+    // OUTCOME rather than the shape of the source — which is stronger: the old versions passed on
+    // the presence of a line of text and would have gone on passing if the branches were reordered
+    // into the wrong answer, and failed (as they did) on a refactor that changed nothing.
 
-        let bootBranch = try #require(
-            Self.firstIndex(in: lines) { $0.contains("!appState.isBootComplete") },
-            "ContentView must branch on boot state (#753 / M-20)")
-        let placeholder = try #require(
-            Self.firstIndex(in: lines) { $0.contains("BootPlaceholderView()") },
-            "…and render the placeholder in that branch")
-        #expect(placeholder > bootBranch && placeholder - bootBranch <= 2, """
-            The BootPlaceholderView must be the body of the !isBootComplete branch. A researcher \
-            with hundreds of volumes was shown the first-run Welcome screen because \
-            hasDownloadedVolumes(in: nil) is false and a booting app is indistinguishable from an \
-            empty library (#753 / M-20).
-            """)
+    @Test("An onboarded user gets the placeholder, not Onboarding, while booting")
+    func onboardedUserNeverFlashesWelcome() {
+        // The M-20 defect exactly: a researcher with hundreds of volumes looks identical to one
+        // with none until boot finishes, because `hasDownloadedVolumes(in: nil)` is false. Neither
+        // of these may resolve to the first-run screen.
+        #expect(AppRootRouter.destination(
+            hasCompletedOnboarding: true, isBootComplete: false, hasVolumes: false,
+            hasActiveDownloads: false, hasFinishedOnboardingWithoutVolumes: false,
+            isUITestMode: false) == .bootPlaceholder)
+        #expect(AppRootRouter.destination(
+            hasCompletedOnboarding: true, isBootComplete: false, hasVolumes: true,
+            hasActiveDownloads: false, hasFinishedOnboardingWithoutVolumes: false,
+            isUITestMode: false) == .bootPlaceholder)
 
-        // The new-user path must be decided BEFORE the boot branch, or a first-run user waits on a
-        // spinner for a decision that needs nothing from boot.
-        let newUser = try #require(
-            Self.firstIndex(in: lines) { $0.contains("!appState.hasCompletedOnboarding") })
-        #expect(newUser < bootBranch,
-                "a genuinely new user must reach Onboarding without waiting for boot")
+        // And the new-user answer must not wait for boot: it needs nothing boot provides, so a
+        // first-run reader must never sit on a spinner before the wizard appears.
+        #expect(AppRootRouter.destination(
+            hasCompletedOnboarding: false, isBootComplete: false, hasVolumes: false,
+            hasActiveDownloads: false, hasFinishedOnboardingWithoutVolumes: false,
+            isUITestMode: false) == .onboarding)
     }
 
     @Test("Re-onboarding still happens when the library is genuinely empty")
-    func emptyLibraryStillReOnboards() throws {
-        // The fix must not become "never show Onboarding again". A user who removed every volume
-        // should still be re-onboarded — once that is true rather than merely unknown.
-        let source = try Self.source("App/ContentView.swift")
-        let onboardingBranches = Self.codeLines(source).filter { $0.text.contains("OnboardingView()") }
-        #expect(onboardingBranches.count == 2, """
-            ContentView should reach OnboardingView from exactly two places: the new user, and the \
-            onboarded user whose library is empty AFTER boot completed. Found \
-            \(onboardingBranches.count) (#753 / M-20).
-            """)
+    func emptyLibraryStillReOnboards() {
+        // The fix must not become "never show Onboarding again". A reader who removed every volume
+        // is still re-onboarded — once that is TRUE rather than merely unknown, i.e. after boot.
+        #expect(AppRootRouter.destination(
+            hasCompletedOnboarding: true, isBootComplete: true, hasVolumes: false,
+            hasActiveDownloads: false, hasFinishedOnboardingWithoutVolumes: false,
+            isUITestMode: false) == .onboarding)
     }
 
     // MARK: - M-23: the Search tab
