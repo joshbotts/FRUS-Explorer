@@ -240,7 +240,8 @@ final class SemanticMapModel {
     func prepare(
         lens: SemanticMapLens = .cluster,
         eraForVolume: (String) -> CoverageEra?,
-        isDownloaded: (String) -> Bool
+        isDownloaded: (String) -> Bool,
+        provenanceForVolume: (String) -> SourceProvenanceCategory? = { _ in nil }
     ) async {
         guard !isLoaded, let renderer else { return }
 
@@ -289,7 +290,8 @@ final class SemanticMapModel {
         clusters = BundledSemanticMap.index?.clusters ?? []
         placedCount = points.count
         isLoaded = true
-        apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded)
+        apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
+              provenanceForVolume: provenanceForVolume)
     }
 
     /// Selects the document nearest a tap, or clears the selection when the tap found nothing.
@@ -570,15 +572,18 @@ final class SemanticMapModel {
     ///   - lens: The lens to colour by.
     ///   - eraForVolume: A volume's coverage era.
     ///   - isDownloaded: Whether a volume is indexed on this device.
+    ///   - provenanceForVolume: The archival category most of a volume's source notes name.
     func apply(
         lens: SemanticMapLens,
         eraForVolume: (String) -> CoverageEra?,
-        isDownloaded: (String) -> Bool
+        isDownloaded: (String) -> Bool,
+        provenanceForVolume: (String) -> SourceProvenanceCategory? = { _ in nil }
     ) {
         guard let renderer, let map = BundledSemanticMap.vectors, let index else { return }
         let colours = SemanticMapColouring.indices(
             for: lens, map: map, index: index,
-            eraForVolume: eraForVolume, isDownloaded: isDownloaded)
+            eraForVolume: eraForVolume, isDownloaded: isDownloaded,
+            provenanceForVolume: provenanceForVolume)
         renderer.setPalette(SemanticMapColouring.palette(for: lens))
         renderer.setColourIndices(colours)
     }
@@ -771,11 +776,13 @@ struct SemanticMapSpikeView: View {
         #endif
         .task {
             await model.prepare(lens: lens, eraForVolume: eraForVolume,
-                                isDownloaded: isDownloaded)
+                                isDownloaded: isDownloaded,
+                                provenanceForVolume: provenanceForVolume)
             // Re-apply after the await. `model.apply` refuses until the index has loaded, so a lens
             // the reader picks *during* the load is otherwise dropped and then overwritten by
             // whatever `prepare` was started with.
-            model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded)
+            model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
+                        provenanceForVolume: provenanceForVolume)
         }
     }
 
@@ -833,7 +840,8 @@ struct SemanticMapSpikeView: View {
     /// corpus in slot 0 — which is the dim "between regions" colour, so the slice came out grey. The
     /// layout changes; what a colour means does not.
     private func applyLens() {
-        model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded)
+        model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
+                    provenanceForVolume: provenanceForVolume)
     }
 
     /// A volume's coverage midpoint year, for the slice's vertical axis.
@@ -854,6 +862,43 @@ struct SemanticMapSpikeView: View {
             .filter { $0 > 1700 && $0 < 2200 }
         guard !years.isEmpty else { return nil }
         return years.reduce(0, +) / years.count
+    }
+
+    /// The archival category most of a volume's source notes name.
+    ///
+    /// **Dominant, not exclusive**, and the caption under the map says so. Ties break on the
+    /// category order in `SourceProvenanceCategory.allCases` rather than arbitrarily, so the map
+    /// does not repaint itself between launches over a volume that drew equally from two files.
+    ///
+    /// Built once per lens application and cached, because the aggregate is a flat array of 522
+    /// volumes and a linear scan per volume would be 552 × 522 comparisons for one recolour.
+    ///
+    /// - Parameter volumeID: The volume.
+    /// - Returns: Its dominant category, or `nil` when the aggregate does not cover it.
+    private func provenanceForVolume(_ volumeID: String) -> SourceProvenanceCategory? {
+        dominantProvenance[volumeID]
+    }
+
+    /// Dominant category per volume, derived once from the bundled aggregate.
+    private var dominantProvenance: [String: SourceProvenanceCategory] {
+        guard let byVolume = appState.sourceProvenanceStore.index?.byVolume else { return [:] }
+        var result: [String: SourceProvenanceCategory] = [:]
+        result.reserveCapacity(byVolume.count)
+        for volume in byVolume {
+            var best: SourceProvenanceCategory?
+            var bestCount = 0
+            // `allCases` order, not the dictionary's: a Swift dictionary has no stable iteration
+            // order, so a tie broken by iteration would recolour the map between launches.
+            for category in SourceProvenanceCategory.allCases {
+                let count = volume.count(for: category)
+                if count > bestCount {
+                    bestCount = count
+                    best = category
+                }
+            }
+            if let best { result[volume.volumeId] = best }
+        }
+        return result
     }
 
     /// Whether a volume is indexed on this device — the `availability` lens's question.
@@ -1530,23 +1575,100 @@ struct SemanticMapSpikeView: View {
     /// on an iPhone 17 is that all four are on screen with the map above them — the stack has no
     /// fixed height and the map takes the remainder, so the honest claim is the observation rather
     /// than a number nobody has re-taken.
+    /// The lenses this build can actually draw.
+    private var availableLenses: [SemanticMapLens] {
+        let byVolume = appState.sourceProvenanceStore.index?.byVolume
+        return SemanticMapLens.allCases.filter { $0.isAvailable(volumeProvenance: byVolume) }
+    }
+
+    /// What the colours mean.
+    ///
+    /// **The enum has declared a `legend` since V-4 and nothing has ever drawn it.** That was
+    /// survivable while the lenses were regions (named on the map itself), a two-state download flag
+    /// and an ordered era ramp; it is not survivable for a categorical lens over ten archival
+    /// vocabularies, where an unlabelled colour is decoration. Drawn from the same
+    /// `SemanticMapColouring.palette` the GPU gets, so a swatch cannot drift from its points.
+    @ViewBuilder
+    private var legend: some View {
+        let entries = Array(lens.legend.enumerated())
+        if !entries.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(entries, id: \.offset) { index, name in
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(Self.swatch(lens: lens, slot: index))
+                                    .frame(width: 8, height: 8)
+                                Text(verbatim: name)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+                if let caption = lens.caption {
+                    Text(verbatim: caption)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The colour a legend swatch shows, taken from the renderer's own palette.
+    ///
+    /// - Parameters:
+    ///   - lens: The active lens.
+    ///   - slot: The palette index.
+    /// - Returns: The colour, opaque — a swatch is read against the surrounding bar rather than the
+    ///   map's dark ground, so the palette's own alpha (which exists to let points overlap) would
+    ///   make every dot look washed out and the two central-file blues indistinguishable.
+    static func swatch(lens: SemanticMapLens, slot: Int) -> Color {
+        let palette = SemanticMapColouring.palette(for: lens)
+        guard slot >= 0, slot < palette.count else { return .secondary }
+        let rgba = palette[slot]
+        return Color(.sRGB, red: Double(rgba.x), green: Double(rgba.y), blue: Double(rgba.z),
+                     opacity: 1.0)
+    }
+
     private var controls: some View {
         VStack(spacing: 10) {
             scopeControls
-            Picker(String(localized: "semanticMap.lens", defaultValue: "Colour by"),
-                   selection: $lens) {
-                ForEach(SemanticMapLens.allCases) { option in
-                    Text(option.displayName).tag(option)
+            // **A menu, not a segmented control, from the fourth lens onward.** Four segments fit an
+            // iPhone only by truncating their own names — "Provenance" is the longest and the first
+            // that cannot be shortened without lying about what it shows — and the design lists
+            // several more lenses to come. A menu costs one tap and holds any number.
+            HStack(spacing: 8) {
+                Text(String(localized: "semanticMap.lens", defaultValue: "Colour by"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker(String(localized: "semanticMap.lens", defaultValue: "Colour by"),
+                       selection: $lens) {
+                    ForEach(availableLenses) { option in
+                        Text(option.displayName).tag(option)
+                    }
                 }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                Spacer(minLength: 0)
             }
-            .pickerStyle(.segmented)
-            // Hidden visually, kept for VoiceOver: the segments name themselves, and a leading
-            // "Colour by" label would push the segmented control into an unusable width.
-            .labelsHidden()
             .onChange(of: lens) { _, value in
                 model.apply(lens: value, eraForVolume: eraForVolume,
-                            isDownloaded: isDownloaded)
+                            isDownloaded: isDownloaded,
+                            provenanceForVolume: provenanceForVolume)
             }
+            // A lens whose data this build does not carry is withheld, and if the reader is already
+            // ON it — impossible today, but a stored selection would make it reachable — the picker
+            // falls back rather than showing a blank name.
+            .onChange(of: availableLenses) { _, options in
+                if !options.contains(lens) { lens = .cluster; applyLens() }
+            }
+            legend
             // The availability lens reads a set that is filled by a detached query at boot. Open the
             // map before that returns — likeliest when a restored window appears with no user action
             // — and every point is painted not-on-this-device and stays that way for the life of the

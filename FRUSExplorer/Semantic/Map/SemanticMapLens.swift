@@ -34,8 +34,28 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// Whether this device can open the document. Turns the map into a picture of the reader's own
     /// library against the whole corpus.
     case availability
+    /// Where the volume's documents were found — the archival category most of its source notes
+    /// name. The design singles this one out: *"watch the central files give way to presidential
+    /// libraries across the space"*.
+    case provenance
 
     var id: String { rawValue }
+
+    /// Whether this lens can be drawn from what this build carries.
+    ///
+    /// **A lens that cannot be computed is withheld, not shown empty.** `provenance` reads the
+    /// bundled aggregate's schema-2 `byVolume` table; an older artifact carries only `byDecade`, and
+    /// colouring every volume "unknown" would say something false about the corpus rather than about
+    /// the build. Same posture as `SourceProvenanceData.supportsVolumeScope`.
+    ///
+    /// - Parameter volumeProvenance: The per-volume provenance table, when the artifact has one.
+    /// - Returns: `true` when the lens has data to draw.
+    func isAvailable(volumeProvenance: [VolumeProvenance]?) -> Bool {
+        switch self {
+        case .cluster, .era, .availability: return true
+        case .provenance: return !(volumeProvenance ?? []).isEmpty
+        }
+    }
 
     /// The user-facing name.
     var displayName: String {
@@ -47,6 +67,26 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
         case .availability:
             return String(localized: "semanticMap.lens.availability",
                           defaultValue: "Downloaded")
+        case .provenance:
+            return String(localized: "semanticMap.lens.provenance",
+                          defaultValue: "Provenance")
+        }
+    }
+
+    /// What the lens measures, in one sentence, for the caption under the map.
+    ///
+    /// `provenance` is the one that needs it: it is a **per-volume** reading — the category most of
+    /// a volume's source notes name — sitting on a map whose points are documents. Every point in a
+    /// volume therefore takes one colour, and a volume that drew half its documents from a
+    /// presidential library and half from the central files shows only the larger half. Saying that
+    /// once, under the map, is cheaper than a reader inferring it wrongly from a solid block.
+    var caption: String? {
+        switch self {
+        case .cluster, .era, .availability:
+            return nil
+        case .provenance:
+            return String(localized: "semanticMap.lens.provenance.caption",
+                          defaultValue: "Each volume takes the archival category most of its source notes name, so a mixed volume shows only its larger half.")
         }
     }
 
@@ -64,6 +104,12 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
                            defaultValue: "Not downloaded"),
                     String(localized: "semanticMap.legend.downloaded",
                            defaultValue: "Downloaded")]
+        case .provenance:
+            // Slot 0 is the volumes the aggregate has no source notes for — 30 of the 552 the map
+            // places, which is a real gap and gets a name rather than a colour nobody can read.
+            return [String(localized: "semanticMap.legend.noProvenance",
+                           defaultValue: "No source notes")]
+                + SourceProvenanceCategory.allCases.map(\.displayName)
         }
     }
 }
@@ -95,7 +141,8 @@ enum SemanticMapColouring {
         map: SemanticMapVectors,
         index: SemanticVectorIndex,
         eraForVolume: (String) -> CoverageEra?,
-        isDownloaded: (String) -> Bool
+        isDownloaded: (String) -> Bool,
+        provenanceForVolume: (String) -> SourceProvenanceCategory? = { _ in nil }
     ) -> [UInt8] {
         var colours = [UInt8](repeating: 0, count: map.documentCount)
         switch lens {
@@ -124,6 +171,21 @@ enum SemanticMapColouring {
             for volume in index.volumes {
                 guard let range = index.rows(forVolume: volume.volumeID) else { continue }
                 let slot: UInt8 = isDownloaded(volume.volumeID) ? 1 : 0
+                for row in range where row < colours.count { colours[row] = slot }
+            }
+        case .provenance:
+            // Slot 0 is "no source notes", so a volume the aggregate does not cover is visibly a gap
+            // rather than silently the first category — which is `centralDecimalFile`, the largest,
+            // and would have absorbed every missing volume without a trace.
+            for volume in index.volumes {
+                guard let range = index.rows(forVolume: volume.volumeID) else { continue }
+                let slot: UInt8
+                if let category = provenanceForVolume(volume.volumeID),
+                   let position = SourceProvenanceCategory.allCases.firstIndex(of: category) {
+                    slot = UInt8(1 + position)
+                } else {
+                    slot = 0
+                }
                 for row in range where row < colours.count { colours[row] = slot }
             }
         }
@@ -225,6 +287,20 @@ enum SemanticMapColouring {
         case .availability:
             return [SIMD4(0.34, 0.36, 0.40, 0.28), SIMD4(0.35, 0.78, 0.52, 0.80)]
                 + Array(repeating: SIMD4(0.35, 0.78, 0.52, 0.80), count: paletteSize - 2)
+        case .provenance:
+            // Categorical, and deliberately NOT the cluster lens's even hue sweep: these ten are a
+            // named vocabulary a reader will look up in the legend, so the two central-file
+            // categories are neighbouring blues (they are one filing system, renumbered in 1960),
+            // presidential libraries and lot files take warm hues, and "no source notes" keeps the
+            // dim achromatic slot every lens reserves for absence.
+            let hues: [Float] = [0.58, 0.52, 0.08, 0.12, 0.95, 0.75, 0.32, 0.44, 0.68, 0.00]
+            let saturations: [Float] = [0.70, 0.55, 0.75, 0.85, 0.60, 0.65, 0.60, 0.55, 0.45, 0.00]
+            let categorical = zip(hues, saturations).map { hue, saturation in
+                hsb(hue: hue, saturation: saturation, brightness: 0.95, alpha: 0.75)
+            }
+            return ([SIMD4<Float>(0.35, 0.37, 0.42, 0.30)] + categorical
+                + Array(repeating: SIMD4<Float>(0.35, 0.37, 0.42, 0.30), count: paletteSize))
+                .prefix(paletteSize).map { $0 }
         }
     }
 

@@ -622,6 +622,90 @@ struct SemanticMapSurfaceTests {
         #expect(SemanticMapPicking.hit(at: empty, positions: positions, camera: camera, size: size) == nil)
     }
 
+    /// The provenance lens is per-VOLUME data on a per-DOCUMENT map, so the two things that can go
+    /// wrong are a volume taking the wrong category and a volume with no data taking someone else's.
+    /// Slot 0 is reserved for absence precisely because the first category is the largest — a missing
+    /// volume defaulting to slot 0-as-a-category would have been absorbed by `centralDecimalFile`
+    /// without a trace.
+    @MainActor
+    @Test("The provenance lens colours by category, and absence keeps its own slot")
+    func provenanceLensColoursByCategory() async throws {
+        await BundledSemanticMap.prepare()
+        let map = try #require(BundledSemanticMap.vectors)
+        let index = try #require(BundledSemanticVectors.index)
+
+        // Two volumes with known, different categories, and one with none.
+        let volumes = Array(index.volumes.prefix(2).map(\.volumeID))
+        let lookup: [String: SourceProvenanceCategory] = [
+            volumes[0]: .presidentialLibrary,
+            volumes[1]: .lotFile,
+        ]
+        let colours = SemanticMapColouring.indices(
+            for: .provenance, map: map, index: index,
+            eraForVolume: { _ in nil }, isDownloaded: { _ in false },
+            provenanceForVolume: { lookup[$0] })
+
+        let categories = SourceProvenanceCategory.allCases
+        let libraryslot = UInt8(1 + (try #require(categories.firstIndex(of: .presidentialLibrary))))
+        let lotSlot = UInt8(1 + (try #require(categories.firstIndex(of: .lotFile))))
+        #expect(libraryslot != lotSlot, "two categories must not share a slot")
+
+        let first = try #require(index.rows(forVolume: volumes[0]))
+        #expect(first.allSatisfy { colours[$0] == libraryslot })
+        let second = try #require(index.rows(forVolume: volumes[1]))
+        #expect(second.allSatisfy { colours[$0] == lotSlot })
+
+        // Every other volume has no category and must take slot 0 — not the first category's slot.
+        let uncovered = try #require(index.volumes.last?.volumeID)
+        if !volumes.contains(uncovered) {
+            let rows = try #require(index.rows(forVolume: uncovered))
+            #expect(rows.allSatisfy { colours[$0] == 0 })
+        }
+        #expect(UInt8(1 + (try #require(categories.firstIndex(of: .centralDecimalFile)))) != 0)
+
+        // The palette must actually distinguish what the slots separate, and the legend must name
+        // every slot the colouring can produce — a swatch with no name is decoration.
+        let palette = SemanticMapColouring.palette(for: .provenance)
+        #expect(palette.count == SemanticMapColouring.paletteSize)
+        #expect(palette[Int(libraryslot)] != palette[Int(lotSlot)])
+        #expect(SemanticMapLens.provenance.legend.count == categories.count + 1)
+        #expect(colours.allSatisfy { Int($0) < SemanticMapLens.provenance.legend.count })
+    }
+
+    /// A lens whose data the build does not carry is withheld rather than drawn empty — the
+    /// `supportsVolumeScope` posture. Nothing else in the app would notice a provenance lens that
+    /// painted all 552 volumes "no source notes".
+    @Test("The provenance lens is withheld when the artifact has no per-volume table")
+    func provenanceLensNeedsItsTable() {
+        #expect(SemanticMapLens.provenance.isAvailable(volumeProvenance: nil) == false)
+        #expect(SemanticMapLens.provenance.isAvailable(volumeProvenance: []) == false)
+        let table = [VolumeProvenance(volumeId: "frus1952-54v01", decade: 1950,
+                                      totalNotes: 3, counts: ["lotFile": 3])]
+        #expect(SemanticMapLens.provenance.isAvailable(volumeProvenance: table))
+        // The three that read data every build carries are never withheld.
+        for lens in [SemanticMapLens.cluster, .era, .availability] {
+            #expect(lens.isAvailable(volumeProvenance: nil))
+        }
+    }
+
+    /// Every lens's legend has to name every slot its colouring can hand out, or a colour on screen
+    /// has no key. This is the assertion that would have caught the legend being declared in V-4 and
+    /// drawn by nothing for three sessions.
+    @Test("Every lens's legend names the slots it uses, and its swatches are distinct")
+    func legendsCoverTheirPalettes() {
+        for lens in SemanticMapLens.allCases {
+            let legend = lens.legend
+            #expect(!legend.isEmpty, "\(lens.displayName) has no legend at all")
+            #expect(legend.count <= SemanticMapColouring.paletteSize,
+                    "\(lens.displayName) names more entries than the palette has slots")
+            #expect(legend.allSatisfy { !$0.isEmpty })
+            // Swatches come from the same palette the GPU is given.
+            let swatches = (0..<legend.count).map { SemanticMapSpikeView.swatch(lens: lens, slot: $0) }
+            #expect(Set(swatches.map { "\($0)" }).count == swatches.count,
+                    "\(lens.displayName) draws two legend entries in the same colour")
+        }
+    }
+
     // MARK: - Scope
 
     /// The mask is the whole feature: it decides what is drawn brightly, what a tap can reach, what a
