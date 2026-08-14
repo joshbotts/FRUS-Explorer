@@ -43,6 +43,13 @@ private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
 ///         real ordering hole even though it was not the macOS cause.
 ///   1.4 — V-4: adds the region-label layout tests. Pure functions of (clusters, camera, size), so
 ///         they run without a GPU — the thing this surface has repeatedly needed and not had.
+///   1.5 — V-4: the on-demand rendering pass. The first draft of these cases asserted a counter
+///         incremented at the *top* of `setNeedsRedraw`, which a body that had stopped marking
+///         anything would still satisfy, and asserted pipeline identity through the cache's front
+///         door, which holds whether or not `init?` uses it. They now read `markedViewCount` (bumped
+///         per view, after the platform call) and `pipelineCompileCount` while building real
+///         renderers. All three are mutation-tested: removing `camera`'s `didSet`, bypassing the
+///         cache, and making the view list strong each turn one of them red.
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
@@ -291,10 +298,11 @@ struct SemanticMapSurfaceTests {
 
     /// On-demand drawing has one failure mode and it is total: a mutator that does not mark the
     /// surface dirty leaves the map frozen at whatever it last drew. `UIView` exposes no readable
-    /// `needsDisplay`, so the renderer counts requests and this drives each mutator in turn — a
-    /// deleted `didSet` fails here rather than reaching a reader as a map that will not pan.
+    /// `needsDisplay`, so the renderer counts the views it marks — per view, immediately after the
+    /// platform call — and this drives each mutator in turn. A deleted `didSet` fails here rather
+    /// than reaching a reader as a map that will not pan.
     @MainActor
-    @Test("Every mutator asks for a frame, and the view is on the redraw list",
+    @Test("Every mutator marks the view dirty, and the view is on the redraw list",
           .enabled(if: semanticMapHasMetal))
     func mutatorsRequestARedraw() throws {
         let model = SemanticMapModel()
@@ -302,11 +310,16 @@ struct SemanticMapSurfaceTests {
         let view = SemanticMapSurface(model: model).makeMap()
         #expect(renderer.attachedViewCount == 1, "an unregistered view is never marked dirty")
 
-        var seen = renderer.redrawRequestCount
+        var seen = renderer.markedViewCount
         func expectRequest(_ what: String, _ change: () -> Void) {
             change()
-            #expect(renderer.redrawRequestCount > seen, "\(what) drew nothing new")
-            seen = renderer.redrawRequestCount
+            #expect(renderer.markedViewCount > seen, "\(what) marked no view dirty")
+            #if os(macOS)
+            // Where the flag is readable, read it rather than trusting the counter.
+            #expect(view.needsDisplay, "\(what) left the view clean")
+            view.needsDisplay = false
+            #endif
+            seen = renderer.markedViewCount
         }
 
         expectRequest("panning") { renderer.pan(by: CGSize(width: 10, height: 10)) }
@@ -323,9 +336,12 @@ struct SemanticMapSurfaceTests {
         expectRequest("repalettising") { renderer.setPalette(SemanticMapRenderer.defaultPalette) }
     }
 
-    /// SwiftUI may realize a representable more than once, which is how this surface went blank
-    /// twice. A single view reference would hold whichever instance attached last — possibly the
-    /// discarded one — so both are kept and both are marked.
+    /// A surface can produce several views, and the renderer keeps all of them rather than the last.
+    ///
+    /// **Not because multiplicity was measured** — entry 1.3 above records the opposite, that the
+    /// representable is realized once and that the macOS blank was the sheet — but because the two
+    /// failures are not symmetrical: a redundant view costs one dirty mark on something `draw(in:)`
+    /// skips, while a single slot holding the wrong instance costs a map that never redraws.
     @MainActor
     @Test("A second realization joins the redraw list rather than replacing the first",
           .enabled(if: semanticMapHasMetal))
@@ -342,19 +358,62 @@ struct SemanticMapSurfaceTests {
         #expect(renderer.attachedViewCount == 2)
         #expect(first.delegate === renderer)
         #expect(second.delegate === renderer)
+
+        // Both are marked, not just the last one registered — the property the list exists for.
+        let before = renderer.markedViewCount
+        renderer.pointSize = 3
+        #expect(renderer.markedViewCount == before + 2, "a redraw request must reach every live view")
+    }
+
+    /// The list holds views weakly, and the doc comment says a strong reference "would close a cycle
+    /// around every window the map opens". That claim had no test: a `WeakView` holding its view
+    /// strongly leaks a `MTKView` — and its drawable — per window, and nothing would have noticed.
+    @MainActor
+    @Test("A released view leaves the redraw list", .enabled(if: semanticMapHasMetal))
+    func releasedViewsLeaveTheRedrawList() throws {
+        let model = SemanticMapModel()
+        let renderer = try #require(model.renderer)
+        let surface = SemanticMapSurface(model: model)
+        let kept = surface.makeMap()
+
+        weak var released: MTKView?
+        do {
+            let temporary = surface.makeMap()
+            released = temporary
+            #expect(renderer.attachedViewCount == 2)
+        }
+        #expect(released == nil, "the list is holding the view strongly — one leak per window")
+        #expect(renderer.attachedViewCount == 1)
+        #expect(kept.delegate === renderer)
     }
 
     /// The renderer is constructed more often than it is used — a `@State` initial-value expression
     /// runs on every initialisation of the view struct, and SwiftUI throws the duplicates away after
-    /// the shader has already been compiled. This asserts the *identity* of the returned pipeline
-    /// rather than that two constructions succeed, which they would either way.
-    @Test("Compiling the pipeline twice for one device returns the same object",
+    /// the shader has already been compiled.
+    ///
+    /// **This drives the renderer's own initialiser, not the cache's front door**, because the
+    /// regression it exists for is `init?` going back to compiling inline: two calls to
+    /// `pipeline(for:)` would return the same object either way. `pipelineCompileCount` is the only
+    /// observation that separates them — two renderers both succeed whether or not a shader was built
+    /// twice.
+    @MainActor
+    @Test("Building several renderers compiles the shader once",
           .enabled(if: semanticMapHasMetal))
     func pipelineIsCompiledOncePerDevice() throws {
         let device = try #require(MTLCreateSystemDefaultDevice())
-        let first = try #require(SemanticMapRenderer.pipeline(for: device))
-        let second = try #require(SemanticMapRenderer.pipeline(for: device))
-        #expect(first === second, "a second compile means every discarded view struct pays for one")
+        // Warm the cache first: the count is process-wide and other cases in this suite build
+        // renderers, so only the DELTA over renderers built here is a claim about anything.
+        _ = SemanticMapRenderer(device: device)
+        let before = SemanticMapRenderer.pipelineCompileCount
+
+        let first = try #require(SemanticMapRenderer(device: device))
+        let second = try #require(SemanticMapRenderer(device: device))
+        #expect(first !== second, "the test must be building two renderers for the count to mean anything")
+        #expect(SemanticMapRenderer.pipelineCompileCount == before, """
+            Building two renderers compiled the shader \
+            \(SemanticMapRenderer.pipelineCompileCount - before) more time(s). Every discarded \
+            view-struct initialisation pays that cost.
+            """)
     }
 
     /// The model decodes placements by hand from the raw block for speed; `SemanticMapVectors`

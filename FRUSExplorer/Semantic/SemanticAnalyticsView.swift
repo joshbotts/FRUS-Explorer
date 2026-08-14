@@ -37,6 +37,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — V-4: promoted out of Settings ▸ Data & Recovery into its own analytics surface
+///   1.1 — V-4: the header collapses to its experimental warning rather than disappearing. The
+///         dismiss was a one-way door — `@AppStorage` remembers it and nothing restored it — so one
+///         tap on first open retired the caveat permanently on that device.
 struct SemanticAnalyticsView: View {
 
     /// The app state the map's lenses and open actions need.
@@ -54,17 +57,52 @@ struct SemanticAnalyticsView: View {
         // puts its Lasso toggle in a `.toolbar` and registers a `navigationDestination(item:)` to
         // push an opened document; both need a stack to render into. Presented from an iOS sheet
         // without one, the toggle has nowhere to go and the destination has no stack — the lasso
-        // becomes unreachable and Open Document silently does nothing. That is the third time this
-        // surface has had a control that draws correctly and does nothing, so it is stated here.
+        // becomes unreachable and Open Document silently does nothing. This surface has now shipped
+        // several controls that drew correctly and did nothing — the Open button twice, the lasso
+        // toggle twice, and an axis slice with no way out — so the mechanism is stated rather than
+        // left to be rediscovered.
         NavigationStack {
             VStack(spacing: 0) {
-                if showsAbout { about }
+                if showsAbout { about } else { collapsedAbout }
                 SemanticMapSpikeView(appState: appState)
             }
         }
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)
         #endif
+    }
+
+    /// The one line that survives dismissal, and the way back to the rest.
+    ///
+    /// **The dismiss used to be a one-way door.** `@AppStorage` remembers it forever and nothing
+    /// restored it, so a reader who tapped the ✕ once — plausibly on first open, to see the map —
+    /// never saw the experimental caveat again on that device, on either platform. The caveat is the
+    /// part that cannot be optional: this surface is a model's reading of the language, unmeasured
+    /// before 1900, sitting beside four analytics windows that report facts the corpus states. So the
+    /// header collapses to its warning rather than disappearing, and the warning is the button that
+    /// brings the rest back.
+    private var collapsedAbout: some View {
+        Button {
+            showsAbout = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                Text(String(localized: "semanticAnalytics.about.collapsed",
+                            defaultValue: "Experimental — a model's reading of the language"))
+                Spacer(minLength: 8)
+                Image(systemName: "info.circle")
+            }
+            .font(.caption)
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(.bar)
+        .accessibilityLabel(String(localized: "semanticAnalytics.about.restore",
+                                   defaultValue: "Experimental. Show what this window measures"))
     }
 
     /// What this window measures, and what that is worth.

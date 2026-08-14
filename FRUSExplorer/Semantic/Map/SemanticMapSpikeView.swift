@@ -136,10 +136,23 @@ final class SemanticMapModel {
                                  defaultValue: "This device has no Metal renderer.")
             return
         }
-        made.onStats = { [weak self] measured in
-            Task { @MainActor in self?.stats = measured }
-        }
+        // No `Task` hop here: `onStats` is already `@MainActor`, and `StatsSink` does the hop.
+        made.onStats = { [weak self] measured in self?.accept(measured) }
         renderer = made
+    }
+
+    /// Takes a statistics window, keeping the frame counter monotonic.
+    ///
+    /// **Frames arrive out of order.** `StatsSink` hops each window to the main actor with its own
+    /// unstructured `Task`, and independent tasks have no ordering guarantee — so a later frame can
+    /// be delivered before an earlier one, and the count that exists to prove the surface is alive
+    /// could tick backwards in front of a reader. Dropping a stale window is the whole fix; the
+    /// timings it carries are a rolling mean either way.
+    ///
+    /// - Parameter measured: The window as reported.
+    private func accept(_ measured: SemanticMapRenderer.Stats) {
+        guard measured.presentedFrames >= stats.presentedFrames else { return }
+        stats = measured
     }
 
     /// Loads the bundled map into the renderer. Idempotent.
@@ -593,16 +606,34 @@ struct SemanticMapSpikeView: View {
                             .onEnded { _ in zoom = 1.0 })
                 // Siblings, not overlays, for the reason the Open button taught: an overlay of the
                 // gestured surface has its buttons swallowed by that surface's gestures.
-                selectionCard
-                lassoCard
+                //
+                // **Stacked rather than layered.** All three are bottom-leading in this ZStack, so as
+                // bare siblings a lasso result drew exactly on top of a selection card — hiding Open
+                // Document and the pole buttons behind a card that looked like the only thing there.
+                VStack(alignment: .leading, spacing: 0) {
+                    sliceCard
+                    selectionCard
+                    lassoCard
+                }
             }
             provenanceCaveat
             controls
         }
         // Matches the window, the menu item and the toolbar row. It used to say "Semantic Map",
         // which titled the macOS window differently from every door that opens it.
+        //
+        // macOS only, as all three sibling analytics views do (#219): there the title IS the window
+        // title, while in the iOS sheet a large title spends a band of vertical space that the map
+        // wants — and the sheet already carries the surface's name in its about header. VoiceOver
+        // gets the name either way.
+        #if os(macOS)
         .navigationTitle(String(localized: "semanticAnalytics.title",
                                 defaultValue: "Semantic Analytics"))
+        #else
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "semanticAnalytics.title",
+                                   defaultValue: "Semantic Analytics"))
+        #endif
         // In the toolbar rather than beside the point-size slider, and that is a fix: the controls
         // row sits at the bottom of the screen where the iCloud status banner overlays it, so the
         // toggle was drawn but could not be tapped — the drag kept panning. A mode switch has to be
@@ -845,6 +876,61 @@ struct SemanticMapSpikeView: View {
                     .allowsHitTesting(false)
             }
             .allowsHitTesting(false)
+        }
+    }
+
+    /// The axis the corpus is laid out along, and the way back to the map.
+    ///
+    /// **This is the only exit from a slice, and for one release there was none.** `clearSlice` was
+    /// written when the slice was, and nothing ever called it: picking two poles re-laid the corpus,
+    /// hid the region labels, and left closing the window as the only way back — on a surface that
+    /// had already shipped four controls which drew correctly and did nothing. The card also makes
+    /// the *half-set* state visible, which nothing else did: after "Axis: from here" the reader is
+    /// one pole in with no indication of it anywhere on screen.
+    @ViewBuilder
+    private var sliceCard: some View {
+        if model.slice != nil || model.poles.negative != nil {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label(String(localized: "semanticMap.axis.title", defaultValue: "Axis"),
+                          systemImage: "arrow.left.and.right")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 12)
+                    Button {
+                        model.clearSlice(yearForVolume: yearForVolume, reapplyLens: applyLens)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "semanticMap.axis.clear",
+                                               defaultValue: "Clear axis and return to the map"))
+                }
+                if let slice = model.slice {
+                    Text(verbatim: "\(slice.negativeLabel) → \(slice.positiveLabel)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button(String(localized: "semanticMap.axis.back",
+                                  defaultValue: "Back to the map")) {
+                        model.clearSlice(yearForVolume: yearForVolume, reapplyLens: applyLens)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                } else if let negative = model.poles.negative {
+                    // One pole in. Say so, and say what the second one costs.
+                    Text(verbatim: negative)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(String(localized: "semanticMap.axis.needsSecondPole",
+                                defaultValue: "Tap another document and choose \u{201C}…to here\u{201D}."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: 340)
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
         }
     }
 

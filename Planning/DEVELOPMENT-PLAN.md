@@ -6876,6 +6876,37 @@ the fix is not obvious: `StatsSink` published only when a window of 30 samples c
 had plainly drawn read `0 frames presented · 0.00 ms mean` — the exact false reading the frame counter
 was added to prevent. It now publishes every frame and keeps the timings from the last closed window.
 
+*An axis slice had no way back.* `clearSlice` was written in #880 alongside the slice and **never
+called by anything** — grep found one hit, its own declaration. Picking two poles re-laid the corpus,
+hid the region labels (the label layer returns none while a slice is active), and left closing the
+window as the only exit; re-picking a pole only re-sliced. The previous session's entry states as
+verified that the surface "returns to the map when the poles are cleared", which was true of the
+method and of nothing a reader could reach. There is now an **Axis card**: it names the poles, offers
+*Back to the map*, and — the state nothing else showed — says when the reader is one pole in, having
+pressed "Axis: from here" with no indication anywhere on screen that anything happened. That is the
+fifth control on this surface found drawing correctly and doing nothing, which is why the review
+lens for it is now standing.
+
+The three cards also stacked wrongly: `selectionCard` and `lassoCard` are both bottom-leading
+siblings of one `ZStack`, so a lasso result drew *exactly on top of* a selection card, hiding Open
+Document and the pole buttons behind a card that looked like the only thing there. They are a `VStack`
+now.
+
+*The renderer is main-actor-isolated.* Marking an `MTKView` dirty is a main-actor call — `MTKView` is
+`NS_SWIFT_UI_ACTOR` — and the class was nonisolated, so a **clean** macOS build emitted *main
+actor-isolated property 'needsDisplay' can not be mutated from a nonisolated context* against this
+repo's zero-source-warnings rule. Incremental builds do not recompile the file and reported nothing,
+which is the second time that has hidden a warning here. The fix is isolation rather than a hop:
+every caller — the `@MainActor` model, the representable — already was on the main actor, and the
+class is not `Sendable`, so a renderer built anywhere else could never legally reach the model that
+owns it. A comment claiming the opposite ("a renderer is a perfectly reasonable thing to build off
+the main actor") is gone; the locked pipeline cache it justified is now a plain dictionary, because
+the isolation *is* the synchronisation.
+
+*The frame counter could tick backwards.* `StatsSink` hops each window to the main actor with its own
+unstructured `Task`, and independent tasks have no ordering guarantee, so the number that exists to
+prove the surface is alive could go down. The model drops a window older than the one it holds.
+
 *The pipeline is compiled once per process.* `SemanticMapModel` builds its renderer in `init`, and a
 `@State` initial-value expression is evaluated on **every** initialisation of the view struct, not
 only the first; SwiftUI discards the duplicates after the shader has already been compiled. A static

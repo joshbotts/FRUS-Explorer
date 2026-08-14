@@ -82,9 +82,18 @@ struct SemanticAnalyticsEntryPointTests {
         // The tooltip enumerates the tools by name, so a new window that is not in it is #795's
         // shape one layer down. This lagged a release behind its iOS twin.
         #expect(mainWindow.contains("Archival, and Semantic analytics"), """
-            The macOS Analytics toolbar help string omits Semantic Analytics. Bump the key \
-            (menu.help.vN) when the text changes rather than editing it in place.
+            The macOS Analytics toolbar help string omits Semantic Analytics.
             """)
+        // The text and the KEY are separate assertions on purpose: editing the string under the old
+        // key is precisely the failure the versioned-key convention exists to prevent, and a test
+        // that pinned only the text would pass through it.
+        #expect(mainWindow.contains("mainwindow.tools.analytics.menu.help.v3"), """
+            The tooltip text changed but the localization key did not. A new meaning needs a new \
+            key (menu.help.vN), or every existing translation silently keeps the old wording.
+            """)
+        let browser = try Self.source("Browser/BrowserView.swift")
+        #expect(browser.contains("browse.analysisTools.help.v3"),
+                "same rule on iOS: the text changed, so the key must have too")
     }
 
     @Test("The iOS Analysis Tools menu offers it, presents it, and names it in its help")

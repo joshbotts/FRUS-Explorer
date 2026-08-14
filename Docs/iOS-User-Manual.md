@@ -944,13 +944,13 @@ Every document in the series — all 314,483 of them — is placed on a single m
 
 **What you can do with it.**
 
-- **Colour by** region, coverage era, volume, subseries, or what is downloaded on this device.
+- **Colour by** one of three lenses: **Regions**, **Era**, or **Downloaded** (what is on this device).
 - **Tap a point** to see which document it is; if its volume is on this device, open it.
-- **Draw a lasso** (the toggle in the navigation bar) around an area and keep everything inside it as a **working corpus**, which then scopes search and the other analytics surfaces the same way any saved scope does.
-- **Pick two poles** — two documents you tap — to lay the whole series along the axis between them. A slice replaces the vertical axis with each volume's coverage year, so you read *left to right* for the axis you chose and *up and down* for time.
+- **Draw a lasso** (the toggle in the navigation bar) around an area and keep everything inside it as a **working corpus**. Working corpora scope **Search** — pick one in the search filters; they are not an analytics scope. The card tells you at capture how much of the selection this device can actually search, because the map draws all 552 volumes and your index holds fewer.
+- **Pick two poles** — tap a document and choose *Axis: from here*, then tap another and choose *…to here*. The axis runs between the two documents' **volumes**, so two documents from the same volume give no axis. A slice replaces the vertical axis with each volume's coverage year, so you read *left to right* for the axis you chose and *up and down* for time. The **Axis** card names the poles and takes you back to the map.
 - **Point size** adjusts the sprite size, which is worth raising when you are looking at a sparse corner and lowering when you are looking at the whole plane.
 
-**Read these two cautions before you draw a conclusion.** The map's plane preserves *local* similarity: two neighbouring points are meaningfully alike, but the distance between two far-apart regions means nothing at all, and neither does the direction between them. And the model behind the placements is experimental — it is a machine reading of the language, not an editorial judgement, and it was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown rather than a checked result. The window states both, in the header and beneath the map.
+**Read these two cautions before you draw a conclusion.** The map's plane preserves *local* similarity: two neighbouring points are meaningfully alike, but the distance between two far-apart regions means nothing at all, and neither does the direction between them. And the model behind the placements is experimental — it is a machine reading of the language, not an editorial judgement, and it was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown rather than a checked result. The window says so: the layout caution sits beneath the map at all times, and the experimental caution is in the header — which collapses to a one-line warning when you dismiss it, and taps to open again.
 
 `[SCREENSHOT: Semantic Analytics on iPhone, the corpus map coloured by region with region labels, the Lasso toggle in the navigation bar, and the caveat line beneath the map]`
 

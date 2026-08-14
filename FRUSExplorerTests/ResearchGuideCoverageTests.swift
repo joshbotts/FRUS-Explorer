@@ -52,7 +52,10 @@ struct ResearchGuideCoverageTests {
         "excerpt verification": ["quotation", "verif"],
         // #835: the tool appeared NOWHERE in the guide until this row's section was written —
         // exactly the absence-is-the-bug case this suite exists for.
-        "archival analytics": ["archival analytics"]
+        "archival analytics": ["archival analytics"],
+        // V-4: the semantic map shipped as an analytics window. Same shape as the row above — the
+        // app's own Analysis Tools tooltip listed it while the guide did not.
+        "semantic analytics": ["semantic analytics"]
     ]
 
     private static func source(_ path: String) throws -> String {

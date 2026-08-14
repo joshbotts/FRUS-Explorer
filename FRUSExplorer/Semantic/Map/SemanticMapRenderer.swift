@@ -50,11 +50,22 @@ import simd
 /// renderer's: they are pure functions over the same camera in `SemanticMapLabels` and
 /// `SemanticMapPicking`, which is what lets them be tested without a GPU.
 ///
+/// **Main-actor-isolated, and that is load-bearing rather than tidiness.** `MTKView` is
+/// `NS_SWIFT_UI_ACTOR`, so marking a view dirty is a main-actor call; the two `MTKViewDelegate`
+/// witnesses are main-actor for the same reason, and every caller — `SemanticMapModel` and the
+/// representable — already was. An earlier version of this file left the class nonisolated and
+/// claimed in a comment that "a renderer is a perfectly reasonable thing to build off the main
+/// actor". It is not: the class is not `Sendable`, so a renderer built elsewhere could not legally
+/// reach the `@MainActor` model that must own it, and the compiler said so — a clean build of the
+/// macOS scheme emitted *main actor-isolated property 'needsDisplay' can not be mutated from a
+/// nonisolated context*, against a repo rule of zero source warnings.
+///
 /// Version history:
 ///   1.0 — V-4a: initial spike
 ///   1.1 — V-4: promoted with the map into Semantic Analytics. On-demand drawing replaces the
 ///         free-running 60 fps loop, and the pipeline is compiled once per process rather than once
-///         per view-struct initialisation.
+///         per view-struct initialisation. Main-actor-isolated, which the redraw path requires.
+@MainActor
 final class SemanticMapRenderer: NSObject, MTKViewDelegate {
 
     /// One document as the GPU sees it. Layout must match `MapPoint` in the shader exactly.
@@ -148,23 +159,28 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
 
     /// The views to mark dirty, weakly.
     ///
-    /// **A list rather than one reference, and that is the lesson of two blank surfaces.** SwiftUI
-    /// may realize a representable more than once — a sheet is where it actually does — so a single
-    /// slot can end up holding the instance that was discarded, and every redraw request would then
-    /// go to a view nobody can see while the visible one waits forever. Marking all of them cannot
-    /// lose that race; `draw(in:)` already ignores the windowless ones, so the extra work is a
-    /// no-op rather than a phantom frame.
+    /// **A list rather than one reference.** Whether SwiftUI realizes *this* representable more than
+    /// once is a question this file has answered wrongly before — the suite's version history records
+    /// "NOT, as this entry first claimed, SwiftUI realizing the representable more than once; it is
+    /// realized once" — so the list is not justified by a measured multiplicity. It is justified by
+    /// the cost asymmetry: a second live view costs one redundant dirty mark on a view `draw(in:)`
+    /// already skips for having no window, while a single slot holding the wrong instance costs a map
+    /// that never redraws at all. The suite does construct several views from one surface, and every
+    /// one of them is marked.
     ///
     /// Weak, and it must stay weak: `MTKView.delegate` is itself weak and the model owns the
     /// renderer, so a strong reference here would close a cycle around every window the map opens.
     private var attachedViews: [WeakView] = []
 
-    /// How many redraws have been requested.
+    /// How many views have been marked dirty, in total, across every redraw request.
     ///
-    /// Exists so a test can tell "the mutator marks the surface dirty" from "the mutator ran".
+    /// **Counts the mark, not the call**, and the distinction is the whole value of the counter.
     /// `UIView` exposes no readable `needsDisplay`, so on the platform the suite runs on there is
-    /// otherwise nothing to assert and a deleted `didSet` would pass.
-    private(set) var redrawRequestCount = 0
+    /// nothing else to assert; a counter incremented at the top of `setNeedsRedraw` would stay green
+    /// against a body that had stopped marking anything — which is a map frozen at its first frame,
+    /// the most complete failure this surface has. So it is incremented immediately after the
+    /// platform call, per view, where the two cannot be separated by a one-line edit.
+    private(set) var markedViewCount = 0
 
     /// Marks every attached surface dirty so it asks for one frame.
     ///
@@ -175,7 +191,6 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// beside their work. Every mutator above marks the surface instead, which is why they are
     /// `didSet` rather than plain stored properties.
     private func setNeedsRedraw() {
-        redrawRequestCount += 1
         attachedViews.removeAll { $0.view == nil }
         for box in attachedViews {
             guard let view = box.view else { continue }
@@ -184,6 +199,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             #else
             view.setNeedsDisplay()
             #endif
+            markedViewCount += 1
         }
     }
 
@@ -219,57 +235,42 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     private var drawCallCount = 0
     #endif
 
-    /// Accumulates GPU frame times off the main actor and publishes a value type when the window
-    /// rolls over. GPU-reported timestamps are the honest measure; CPU wall time around `commit` is
-    /// not, because the command buffer has barely started when `commit` returns.
+    /// Accumulates GPU frame times off the main actor and publishes a value type per frame.
+    /// GPU-reported timestamps are the honest measure; CPU wall time around `commit` is not, because
+    /// the command buffer has barely started when `commit` returns.
     private let statsSink = StatsSink()
 
     /// Compiled pipelines, keyed by device.
-    ///
-    /// Locked rather than main-actor-isolated because `init?` is not isolated and a renderer is a
-    /// perfectly reasonable thing to build off the main actor; the lock is held across a compile,
-    /// which happens once per process and is not worth a double-checked shape.
-    private final class PipelineCache: @unchecked Sendable {
-        private let lock = NSLock()
-        private var states: [ObjectIdentifier: MTLRenderPipelineState] = [:]
-
-        /// Returns the cached pipeline for a device, building it on first use.
-        ///
-        /// - Parameters:
-        ///   - device: The device to key on.
-        ///   - build: Called only on a miss.
-        /// - Returns: The pipeline, or `nil` when `build` returned `nil`. A failure is *not* cached —
-        ///   nothing here would make a second attempt succeed, but neither does a stored `nil` earn
-        ///   its complexity.
-        func state(
-            for device: MTLDevice,
-            build: (MTLDevice) -> MTLRenderPipelineState?
-        ) -> MTLRenderPipelineState? {
-            lock.lock()
-            defer { lock.unlock() }
-            let key = ObjectIdentifier(device)
-            if let cached = states[key] { return cached }
-            guard let built = build(device) else { return nil }
-            states[key] = built
-            return built
-        }
-    }
-
-    /// The process-wide pipeline cache.
     ///
     /// **Because the renderer is built more often than it looks.** `SemanticMapModel` constructs one
     /// in `init` — deliberately, so no view can exist before the renderer does — and a `@State`
     /// property's initial value expression is evaluated on *every* initialisation of the view struct,
     /// not only the first. SwiftUI discards the duplicates, but the shader compilation had already
-    /// happened. Caching makes a discarded construction cost a dictionary lookup.
-    private static let pipelineCache = PipelineCache()
+    /// happened. Caching makes the pipeline half of a discarded construction cost a dictionary
+    /// lookup — a command queue and a 256-byte palette buffer are still made and thrown away, which
+    /// is the cheap part and not worth a second cache.
+    ///
+    /// A bare dictionary rather than a locked box: the whole type is main-actor-isolated, so the
+    /// isolation *is* the synchronisation. A failure is not cached — nothing here would make a second
+    /// attempt succeed, but neither does a stored `nil` earn its complexity.
+    private static var pipelineCache: [ObjectIdentifier: MTLRenderPipelineState] = [:]
+
+    /// How many times the shader has actually been compiled.
+    ///
+    /// The point of the cache is that this does *not* grow with the number of renderers, and there is
+    /// no other way to observe that: two constructions both succeed either way.
+    private(set) static var pipelineCompileCount = 0
 
     /// The render pipeline for a device, compiling it once per process.
     ///
     /// - Parameter device: The device to build for.
     /// - Returns: The pipeline, or `nil` when the shader will not compile or link.
     static func pipeline(for device: MTLDevice) -> MTLRenderPipelineState? {
-        pipelineCache.state(for: device, build: buildPipeline(for:))
+        let key = ObjectIdentifier(device)
+        if let cached = pipelineCache[key] { return cached }
+        guard let built = buildPipeline(for: device) else { return nil }
+        pipelineCache[key] = built
+        return built
     }
 
     /// Compiles and links the point-sprite pipeline.
@@ -277,6 +278,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// - Parameter device: The device to build for.
     /// - Returns: The pipeline, or `nil` when the shader will not compile or link.
     private static func buildPipeline(for device: MTLDevice) -> MTLRenderPipelineState? {
+        pipelineCompileCount += 1
         guard let library = try? device.makeLibrary(source: shaderSource, options: nil),
               let vertexFunction = library.makeFunction(name: "semanticMapVertex"),
               let fragmentFunction = library.makeFunction(name: "semanticMapFragment")
@@ -500,7 +502,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         private var presentedFrames = 0
         /// The last closed window's timings, republished until the next one closes.
         private var window: Stats?
-        /// Published when a window closes; assigned on the main actor before rendering starts.
+        /// Called after every presented frame; assigned on the main actor before rendering starts.
         var onStats: (@Sendable @MainActor (Stats) -> Void)?
 
         /// Records the document count for the next published window.
