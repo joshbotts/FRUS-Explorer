@@ -293,6 +293,28 @@ struct DocumentView: View {
     @State private var lastValidSelectionRange: (Int, Int)? = nil
     /// Offsets of a tapped highlight pending the user's delete confirmation.
     @State private var highlightToDelete: (Int, Int)? = nil
+
+    // MARK: Keyboard + find state (CW-6)
+
+    /// Raises this document's system find bar (UI review F-7). One per reader, like the macOS
+    /// `DocumentFindController`, so a document opened in a sheet over another one searches its
+    /// own text. Handed the live `WKWebView` by the representable.
+    @State private var findPresenter = DocumentFindPresenter()
+
+    /// Whether this reader is the one the keyboard commands should act on (UI review F-6).
+    ///
+    /// **iOS focus is not macOS focus, and this flag is the whole difference.** On macOS every
+    /// `MacDocumentView` owns a window, so "the key window's document" is unambiguous and
+    /// `.focusedSceneValue` needs no help. iOS puts every reader in ONE scene: the Browse tab's
+    /// stack and the Search tab's stack can each hold a live `DocumentView`, and seven more
+    /// sites present one in a sheet over the first. All of them would publish, and the one that
+    /// won would not reliably be the one on screen — a ⌘⌥↓ that turned the page of a document
+    /// in a hidden tab is worse than no shortcut at all.
+    ///
+    /// So the value is published only while this reader is on screen, and `nil` otherwise:
+    /// `onAppear` claims the menu, `onDisappear` relinquishes it. A sheet-hosted reader appears
+    /// after its host and so takes over; dismissing it hands the menu back.
+    @State private var ownsKeyboardCommands = false
     /// Research rail visibility (persisted; shared with macOS via AppStorage). On iPad it drives the
     /// trailing `.inspector`; on iPhone it shadows the `.researchRail` sheet's presence and gates the
     /// Read-mode edge-tap zones. The per-accordion expansion keys are owned by ``ResearchRailView``.
@@ -444,6 +466,91 @@ struct DocumentView: View {
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
             activity.isEligibleForHandoff = true
         }
+        // UI review F-6 / P-12: this reader's keyboard commands, published for the iOS
+        // Document and Find menus. `nil` while the reader is off screen — see
+        // `ownsKeyboardCommands` for why iOS cannot simply publish unconditionally the way
+        // `MacDocumentView` does.
+        .focusedSceneValue(\.documentCommands, ownsKeyboardCommands ? documentCommands : nil)
+        .onAppear {
+            ownsKeyboardCommands = true
+            #if DEBUG
+            print("[DocumentView] keyboard commands claimed by \(entry.volumeId)/\(entry.documentId)")
+            #endif
+        }
+        .onDisappear {
+            ownsKeyboardCommands = false
+            #if DEBUG
+            print("[DocumentView] keyboard commands released by \(entry.volumeId)/\(entry.documentId)")
+            #endif
+        }
+    }
+
+    // MARK: - Keyboard Commands (UI review F-6 / P-12)
+
+    /// This reader's actions for the iOS **Document** and **Find** menus.
+    ///
+    /// Deliberately a SUBSET of what `MacDocumentView` publishes, and the omissions are
+    /// properties of the platform rather than unfinished work:
+    ///
+    /// - `printDocument` — the Mac runs `WKWebView.printOperation(with:)` against an
+    ///   `NSPrintInfo` and an `NSWindow`. iOS has no equivalent here (the app has no
+    ///   `UIPrintInteractionController` anywhere), so the closure is a no-op and the iOS Find
+    ///   menu offers no Print item. A menu entry wired to nothing is worse than no entry.
+    /// - `openInNewWindow` — `openWindow(value:)` silently does nothing on iPhone and on any
+    ///   iPad without Stage Manager, which is why the rail's own "Open in New Window" is gated
+    ///   on `supportsMultipleWindows`. The menu applies the same gate.
+    /// - `findNext` / `findPrevious` — `UIFindInteraction` owns next/previous itself, inside
+    ///   the find bar it presents. Declaring ⌘G against it would be a second owner of a key
+    ///   the system already binds.
+    ///
+    /// Two fields differ from the Mac's in a way that matters:
+    ///
+    /// - `isResearchPanelVisible` reads `railToggleActive`, NOT the raw `panelVisible`. On
+    ///   iPhone the rail is a sheet and `panelVisible` merely shadows it, so binding the menu
+    ///   toggle to the stored key would render the wrong checkmark on every iPhone.
+    /// - `goPrevious`/`goNext` route through `navigateToAdjacentDocument`, which REPLACES the
+    ///   top of the host's stack. macOS appends. The difference is deliberate: appending cost
+    ///   one Back tap per document turned (audit M-17a), and a keyboard page-turn must behave
+    ///   exactly like the edge tap beside it.
+    ///
+    /// **Not gated on `edgeTapNavigationEnabled`, and that is not an oversight.** That setting
+    /// exists because a *touch* zone at the screen edge misfires — a reader brushing the margin
+    /// while scrolling loses their place (Session 154). ⌥⌘↑ cannot be pressed by accident, so
+    /// gating the keyboard on the touch escape hatch would take page-turning away from the
+    /// keyboard user who turned the zones off precisely because they have a keyboard.
+    /// Read/Research mode is likewise not a gate here: the menu acts on the document, and the
+    /// rail being open does not make the next document unreachable.
+    private var documentCommands: DocumentCommandActions? {
+        guard let vm, vm.renderModel != nil else { return nil }
+        let previous = vm.previousEntry
+        let next = vm.nextEntry
+        return DocumentCommandActions(
+            documentKey: "\(entry.volumeId)/\(entry.documentId)",
+            canGoPrevious: previous != nil,
+            canGoNext: next != nil,
+            // Mirrors the floating selection bar's own enablement, including the
+            // blur-surviving fallback — otherwise ⌘⇧H would be dead exactly when the
+            // menu bar took focus away from the web view.
+            canHighlight: webKitSelectionRange != nil || lastValidSelectionRange != nil,
+            isResearchPanelVisible: railToggleActive,
+            goPrevious: { if let previous { navigateToAdjacentDocument(previous) } },
+            goNext: { if let next { navigateToAdjacentDocument(next) } },
+            addNote: { activeSheet = .noteEditor },
+            highlightSelection: { color in createHighlight(color: color) },
+            toggleResearchPanel: { toggleRail() },
+            openInNewWindow: {
+                guard supportsMultipleWindows else { return }
+                var id = DocumentWindowID(entry: entry)
+                id.header = vm.documentTitle ?? entry.header
+                openWindow(value: id)
+            },
+            canFindInDocument: findPresenter.canFind,
+            startFindInDocument: { findPresenter.present() },
+            // Owned by `UIFindInteraction`'s own bar on iOS — see the note above.
+            findNext: {},
+            findPrevious: {},
+            printDocument: {}
+        )
     }
 
     // MARK: - Bootstrap
@@ -1062,6 +1169,28 @@ struct DocumentView: View {
     /// the toolbar, so nothing is stranded by the collapse.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
+        // Find in Document (UI review F-7). The web view has carried
+        // `isFindInteractionEnabled` since #363 #5, so a hardware ⌘F and the selection edit
+        // menu already raise the system find bar — but a reader with no keyboard and no
+        // selection had no way in. This is the door, and it is the ONLY new toolbar item:
+        // Phase D moved every former action onto the rail, and find is not a former action
+        // but a reading verb with no other home. The R-8 note below is what makes a second
+        // item safe (both carry a named `Label`, so neither is renamed on overflow).
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                findPresenter.present()
+            } label: {
+                Label(Self.findInDocumentName, systemImage: "magnifyingglass")
+            }
+            .controlHelp(
+                Self.findInDocumentName,
+                detail: String(localized: "document.toolbar.find.hint",
+                               defaultValue: "Searches the text of this document only"),
+                systemImage: "magnifyingglass"
+            )
+            .accessibilityIdentifier("documentFindButton")
+            .disabled(!findPresenter.canFind)
+        }
         ToolbarItem(placement: .primaryAction) {
             Button {
                 toggleRail()
@@ -1100,6 +1229,12 @@ struct DocumentView: View {
     /// announce) as well as from `.controlHelp`. One definition, so the two cannot drift.
     static var researchRailName: String {
         String(localized: "document.toolbar.researchRail.a11y", defaultValue: "Research panel")
+    }
+
+    /// The find button's name, shared by its `Label`, its `.controlHelp` and the Find menu's
+    /// item, so the toolbar and the menu bar cannot drift apart.
+    static var findInDocumentName: String {
+        String(localized: "document.toolbar.find", defaultValue: "Find in Document")
     }
 
     /// Whether the rail is currently visible — accent-tints the toggle. iPad reads `panelVisible`
@@ -1340,6 +1475,9 @@ struct DocumentView: View {
                 }
             )
             .highlights(highlights)
+            // UI review F-7: hand this document's web view to the find presenter, so the
+            // toolbar's Find button and ⌘F reach the find bar the web view already carries.
+            .findPresenter(findPresenter)
             .onSelectionChanged { selection in
                 if selection.hasOffsets {
                     // In-document selection with valid offsets — enables highlights + lookup.

@@ -7261,3 +7261,69 @@ reader to the Welcome page, with no way past it. Measured on the simulator: the 
 first-run trap on every platform, not an iPad bug — it is filed rather than patched here, because
 the fix is a product decision (let Skip through to an empty-state app, or stop offering it) and
 does not belong in a UI-review PR.
+
+## Session 2026-08-14 — CW-6a: the keyboard iPad, and a finding that was already false
+
+Wave 2 opens with the review's only CRITICAL finding, F-6: the entire `.commands` block sits
+inside `#if os(macOS)`, so a Magic Keyboard researcher on iPad gets nothing — no menu bar
+contribution, nothing in the ⌘-hold HUD. That much reproduces exactly. **Its proposed remedy does
+not**, and neither does the finding stacked on top of it.
+
+**The lift is not a gate removal, and could not have been.** Un-gating the existing block does not
+compile on iOS: it reads `@Environment(\.openSettings)`, which is `@available(iOS, unavailable)`;
+it calls `openWindow.fronting(id:)`, an extension declared inside `MainWindowView`'s own
+`#if os(macOS)`; and it embeds `HistoryMenuContent`, a macOS-only type. Past compiling, the
+Analytics, Research and Collection menus front `Window` scenes iOS does not have. So iOS gets a
+second, smaller `.commands` block. What IS shared is the half that was already shareable:
+`DocumentMenuContent` moved out of the fence unchanged, and the whole `DocumentCommandActions` /
+`FocusedValues` value layer was already outside every `#if` — a 2026-07-04 comment says it was
+left ungated so the iOS simulator's unit tests would exercise the equality contract, which turns
+out to have done half of this work two waves early.
+
+**The publisher is where iOS genuinely differs, and the difference was measured rather than
+reasoned about.** On macOS every reader owns a window, so "the key window's document" is
+unambiguous. iOS puts every reader in ONE scene: the Browse and Search tabs can each hold a live
+`DocumentView`, and seven more sites present one in a sheet over the first. If they all published,
+the winner would not reliably be the one on screen — a ⌥⌘↓ that turned the page of a hidden tab's
+document is worse than no shortcut. So `DocumentView` publishes only while on screen
+(`ownsKeyboardCommands`), and the claim/release was then **driven on an iPad simulator with the
+transitions logged**: opening a document in the Search tab claims; switching to Browse releases;
+returning re-claims. Exactly one claimant at every point, and a returning tab does re-claim —
+which is the half that would have left the menu permanently dead if `onAppear` had not fired again.
+
+Five of the eleven published closures are deliberately inert on iOS, and each omission is a
+property of the platform: no `printDocument` (iOS has no print path here at all), no
+`findNext`/`findPrevious` (`UIFindInteraction` owns those inside its own bar, and a second owner of
+a system key is the defect #363 #2 removed on macOS), and `openInNewWindow` gated on
+`supportsMultipleWindows` like every other door to it. `isResearchPanelVisible` reads
+`railToggleActive`, not the raw `panelVisible` — on iPhone the rail is a sheet and the stored key
+merely shadows it, so the menu toggle would have shown the wrong checkmark on every iPhone.
+
+**F-7 is false as written, and was false before the review shipped.** It claims
+`isFindInteractionEnabled` "appears once in the codebase, in MacDocumentView.swift:1299" and that
+the iOS web view "never enables UIFindInteraction". The live assignment is
+`FRUSDocumentWebView.swift:588`, on the iOS path, added by #363 #5 on 2026-07-22 — three weeks
+before the review was written. The line the finding cites is a doc comment that says the opposite
+of what it was cited for: "macOS `WKWebView` has no native find bar (unlike iOS, where
+`isFindInteractionEnabled` provides one)". So a hardware ⌘F and the selection edit menu have raised
+the find bar on iPad for a month.
+
+The real residue is narrower and still worth fixing: nothing ever called
+`presentFindNavigator`, so a reader with no keyboard and no selection had no way in.
+`DocumentFindPresenter` is that way in — deliberately not the iOS half of
+`DocumentFindController`, because that type exists to hand-build a find UI macOS lacks, whereas
+iOS ships the whole thing and needed only an opener. Verified on iPad: the new toolbar button
+raises the system find bar, and typing *Havana* highlights the match and reports "1 of 1".
+
+Also delivered, without new code: **F-10's keyboard half**. ⌥⌘↑/⌥⌘↓ now turn the page, routed
+through `navigateToAdjacentDocument`, so the keyboard replaces the top of the stack exactly as the
+edge tap does rather than appending the way macOS does (audit M-17a). It is deliberately NOT gated
+on `edgeTapNavigationEnabled`: that setting exists because a touch zone at the margin misfires, and
+⌥⌘↑ cannot be pressed by accident — gating it would take page-turning away from the keyboard user
+who switched the zones off precisely because they have a keyboard.
+
+Deferred to CW-6b with reasons rather than silently: F-9 (the `.help` sites), where the finding is
+also partly wrong — `.help` sets the accessibility hint on iOS, the rail tiles do render captions,
+Share already uses the repo's own `controlHelp` fan-out, and a TipKit tip in the iPad reader is the
+one thing this codebase has already been burned by (a watchdog kill, `DocumentView` 1084-1094).
+F-10's visible chevron and F-8's drag-and-drop pass follow.
