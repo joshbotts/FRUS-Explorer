@@ -74,7 +74,8 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         var position: SIMD2<Int16>
         /// Index into the active palette.
         var colourIndex: UInt8
-        /// Reserved — downloaded-vs-not, selection, and the anchor's own row will live here.
+        /// Per-document bits. Bit 0 is **out of scope**, which the shader ghosts; the rest are
+        /// still free (selection and the anchor's own row are the obvious next tenants).
         var flags: UInt8
     }
 
@@ -84,6 +85,12 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         var scale: SIMD2<Float>
         var pointSize: Float
         var alpha: Float
+        /// 1 while a scope is active, 0 otherwise.
+        ///
+        /// The shader needs to know, because "in scope" has to look different from every colour the
+        /// unscoped map already uses — and the one it collided with was the cluster lens's own dim
+        /// achromatic ground for the unclustered 28%.
+        var scopeActive: Float
     }
 
     /// Rolling frame statistics — the spike's original output, now the DEBUG overlay's.
@@ -132,6 +139,39 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// built; stubbing `setPoints` to do nothing left every assertion green over a blank screen. This
     /// reads through `pointBuffer`, so it also catches a `makeBuffer` that returned nil.
     var uploadedPointCount: Int { pointBuffer == nil ? 0 : pointCount }
+
+    /// Reads a row's uploaded scope flag back out of the vertex buffer.
+    ///
+    /// **The byte-offset arithmetic in `setScopeFlags` is the one part of the scope path a test could
+    /// not see.** It writes into a struct whose stride (8) is larger than its size (6), at an offset
+    /// computed from two `MemoryLayout` terms; get it wrong by one and the flag lands on the colour
+    /// index, which recolours the corpus instead of dimming it — a wrong picture that still draws.
+    /// Reading through the same buffer the GPU reads is the only observation that closes it.
+    ///
+    /// - Parameter row: The document row.
+    /// - Returns: The stored flags byte, or `nil` when the row is outside the buffer.
+    func uploadedFlags(at row: Int) -> UInt8? {
+        guard let pointBuffer, row >= 0, row < pointCount else { return nil }
+        let offset = row * MemoryLayout<MapPoint>.stride
+            + MemoryLayout<SIMD2<Int16>>.size + MemoryLayout<UInt8>.size
+        return pointBuffer.contents().advanced(by: offset).load(as: UInt8.self)
+    }
+
+    /// Reads a row's uploaded palette index back out of the vertex buffer, for the same reason.
+    ///
+    /// - Parameter row: The document row.
+    /// - Returns: The stored colour index, or `nil` when the row is outside the buffer.
+    func uploadedColourIndex(at row: Int) -> UInt8? {
+        guard let pointBuffer, row >= 0, row < pointCount else { return nil }
+        let offset = row * MemoryLayout<MapPoint>.stride + MemoryLayout<SIMD2<Int16>>.size
+        return pointBuffer.contents().advanced(by: offset).load(as: UInt8.self)
+    }
+
+    /// Whether the vertex buffer currently carries a scope.
+    ///
+    /// Read by `draw(in:)` into the uniforms, and by the suite, which otherwise has no way to tell a
+    /// cleared scope from one that was never set.
+    private(set) var isScoped = false
 
     /// How many times points have been uploaded.
     ///
@@ -345,6 +385,9 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         pointCount = points.count
         uploadCount += 1
         statsSink.setPointCount(points.count)
+        // A fresh buffer carries `flags: 0` for every row, so the scope is gone until the caller
+        // re-asserts it. Saying so here is what keeps `isScoped` from describing the previous upload.
+        isScoped = false
         defer { setNeedsRedraw() }
         guard !points.isEmpty else { pointBuffer = nil; return }
         pointBuffer = points.withUnsafeBytes { raw in
@@ -366,6 +409,39 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         for row in 0..<colours.count {
             base.advanced(by: row * stride + MemoryLayout<SIMD2<Int16>>.size)
                 .storeBytes(of: colours[row], as: UInt8.self)
+        }
+        setNeedsRedraw()
+    }
+
+    /// Replaces only the per-document scope flags, leaving positions and colours untouched.
+    ///
+    /// **Why a flag rather than a palette slot.** A scope has to compose with whichever lens is
+    /// active — the reader scopes to a subseries *in order to* see where its era or its regions sit —
+    /// so spending a palette index on "out of scope" would mean every lens losing a colour and the
+    /// dimmed points losing the lens's meaning entirely. The `flags` byte was reserved for exactly
+    /// this, costs nothing (`MapPoint` already strides 8), and lets the shader ghost a point while
+    /// keeping its colour.
+    ///
+    /// - Parameter flags: One byte per document, in artifact row order; bit 0 set means out of
+    ///   scope. Pass an empty array to clear the scope.
+    func setScopeFlags(_ flags: [UInt8]) {
+        guard let pointBuffer, pointCount > 0 else { return }
+        // Recorded BEFORE the length check rejects a mismatched array, so a stale mask cannot leave
+        // the shader in scoped mode over unscoped flags.
+        isScoped = !flags.isEmpty && flags.count == pointCount
+        let stride = MemoryLayout<MapPoint>.stride
+        let offset = MemoryLayout<SIMD2<Int16>>.size + MemoryLayout<UInt8>.size
+        let base = pointBuffer.contents()
+        if flags.isEmpty {
+            for row in 0..<pointCount {
+                base.advanced(by: row * stride + offset).storeBytes(of: 0, as: UInt8.self)
+            }
+        } else {
+            guard flags.count == pointCount else { return }
+            for row in 0..<pointCount {
+                base.advanced(by: row * stride + offset)
+                    .storeBytes(of: flags[row], as: UInt8.self)
+            }
         }
         setNeedsRedraw()
     }
@@ -461,7 +537,8 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         else { return }
 
         var uniforms = Uniforms(
-            centre: centre, scale: scale, pointSize: pointSize, alpha: 1.0)
+            centre: centre, scale: scale, pointSize: pointSize, alpha: 1.0,
+            scopeActive: isScoped ? 1 : 0)
 
         if let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) {
             if let pointBuffer, pointCount > 0 {
@@ -560,6 +637,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         float2 scale;
         float pointSize;
         float alpha;
+        float scopeActive;
     };
 
     struct MapPoint {
@@ -587,6 +665,27 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         out.position = float4(view, 0.0, 1.0);
         out.pointSize = uniforms.pointSize;
         float4 colour = palette[p.colourIndex];
+        // Bit 0 of `flags` is "out of scope". Such a point stays on screen — the whole plane is the
+        // context a scope is read against — but is pushed toward the background so it reads as
+        // ground rather than as a dimmer value of the lens. Fading alone was not enough: a low-alpha
+        // red still looks red, and a reader comparing a subseries against the corpus would see two
+        // shades of one hue and take both for data.
+        //
+        // **Two numbers here are corrections, and both were wrong in a way that looked fine.**
+        // (1) The ghost alpha is FIXED rather than a multiple of the palette's, because a multiplier
+        // erases the lens's own dim values entirely — the cluster lens's unclustered slot sits at
+        // 0.30, and 22% of that is 0.066, invisible over a 0.06 background. Every ghost now carries
+        // the same weight whatever lens is showing.
+        // (2) The in-scope points get a FLOOR while a scope is active, because the ghost grey and the
+        // cluster lens's own achromatic ground for the unclustered 28% composited to within 6% of
+        // each other — so ~88,000 in-scope documents were indistinguishable from excluded ones on
+        // the map's default lens.
+        if ((p.flags & 1u) != 0u) {
+            float grey = dot(colour.rgb, float3(0.2126, 0.7152, 0.0722)) * 0.55;
+            colour = float4(grey, grey, grey, 0.16);
+        } else if (uniforms.scopeActive > 0.5) {
+            colour.a = max(colour.a, 0.45);
+        }
         out.colour = half4(half3(colour.rgb), half(colour.a * uniforms.alpha));
         return out;
     }

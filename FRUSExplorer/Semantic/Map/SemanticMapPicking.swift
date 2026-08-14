@@ -132,17 +132,23 @@ enum SemanticMapPicking {
     ///   - camera: Where the camera is looking.
     ///   - size: The view's size in points.
     ///   - limit: Keep at most this many rows.
-    /// - Returns: The kept rows, ascending, and `total` — **every** document inside the path, not
-    ///   just the kept ones. The scan deliberately runs to completion rather than stopping at the
-    ///   limit, because `WorkingCorpus` records `totalMatchCountAtCapture` beside its membership so a
-    ///   truncated capture can say what it is a fraction *of*. A denominator that stopped counting
-    ///   when the numerator filled up would be worse than no denominator.
+    /// - Returns: The kept rows, ascending, and `total` — every **in-scope** document inside the
+    ///   path, not just the kept ones. The scan deliberately runs to completion rather than stopping
+    ///   at the limit, because `WorkingCorpus` records `totalMatchCountAtCapture` beside its
+    ///   membership so a truncated capture can say what it is a fraction *of*. A denominator that
+    ///   stopped counting when the numerator filled up would be worse than no denominator.
+    ///
+    ///   `scopeMask` gates the total as well as the kept rows, and it has to: the two numbers meet in
+    ///   `isTruncated`, so counting ghosts in one and not the other would report a cap that never
+    ///   applied. With no mask — or one whose length does not match `positions`, which is a stale
+    ///   mask and is ignored — the total is every document inside the path, as before.
     static func rows(
         inside path: [CGPoint],
         positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
         size: CGSize,
-        limit: Int
+        limit: Int,
+        scopeMask: [UInt8]? = nil
     ) -> (rows: [Int], total: Int) {
         guard path.count >= 3, size.width > 0, size.height > 0, limit > 0 else {
             return ([], 0)
@@ -162,7 +168,17 @@ enum SemanticMapPicking {
 
         var found: [Int] = []
         var total = 0
+        // **The mask gates the TOTAL as well as the kept rows.** A scoped lasso that counted ghosts
+        // would tell the reader it caught 4,000 documents and hand them a corpus of 300, and the
+        // truncation note — which compares the two — would call the difference a cap.
+        //
+        // Unwrapped to a plain array and a `Bool` before the loop rather than tested as an optional
+        // inside it: this scan runs over all 314,483 rows and has a measured budget, and an
+        // `if let` per row spends an optional check on the unscoped path that pays for nothing.
+        let mask = (scopeMask?.count == positions.count) ? (scopeMask ?? []) : []
+        let isScoped = !mask.isEmpty
         for row in 0..<positions.count {
+            if isScoped && mask[row] != 0 { continue }
             let x = Float(positions[row].x)
             if x < minX || x > maxX { continue }
             let y = Float(positions[row].y)
@@ -211,7 +227,8 @@ enum SemanticMapPicking {
         positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
         size: CGSize,
-        radius: CGFloat = tapRadius
+        radius: CGFloat = tapRadius,
+        scopeMask: [UInt8]? = nil
     ) -> Hit? {
         guard size.width > 0, size.height > 0 else { return nil }
         let target = SemanticMapLabelLayout.unproject(point, camera: camera, size: size)
@@ -230,7 +247,14 @@ enum SemanticMapPicking {
         var bestDistance = Float.greatestFiniteMagnitude
         var bestPosition = SIMD2<Float>(0, 0)
 
+        // An out-of-scope point is drawn as ground, so it must not be pickable: a tap that opened a
+        // document the reader had just excluded — and whose region name the scoped map no longer even
+        // labels — would be the map disagreeing with its own scope chip. Hoisted out of the loop for
+        // the reason `rows(inside:)` gives.
+        let mask = (scopeMask?.count == positions.count) ? (scopeMask ?? []) : []
+        let isScoped = !mask.isEmpty
         for row in 0..<positions.count {
+            if isScoped && mask[row] != 0 { continue }
             let x = Float(positions[row].x)
             let dx = x - target.x
             // Cheap rejection on one axis before touching the second. Most of the corpus is
