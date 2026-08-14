@@ -2,8 +2,17 @@
 
 **Date**: 2026-08-01
 **Issues**: #559, #597, #561, #553, #586, #562, #560, #626
-**Status**: revised again 2026-08-01 — items 1–8 shipped (#559, #597, #553, #561, #562, #560 A+B);
-#586 and #626 held by the owner. Every ready item in the plan is done.
+**Status**: superseded 2026-08-14 — seven of the eight issues are closed and only #626 is still held.
+#559/#561/#562/#560 A+B and #553 Step 1 shipped as #629–#632; all of #597 shipped and closed
+2026-08-09, including the §0b recall item — `DiscoveryTipRegistry.resetAll()` at
+`FRUSExplorer/App/DiscoveryTips.swift:334` behind "Show Tips Again" at `SettingsView.swift:1681`.
+**The #586 hold ended both ways**: the reachability half closed 2026-08-07 (DEVELOPMENT-PLAN
+§"Session 2026-08-07 — #586"), and the multi-select/exclude expansion §0b re-estimated shipped as
+#775 (session 2026-08-10). Read the §1 table as history — it still lists items 7–9 as unstarted.
+**Live**: #626 only. Its stop question (§0b) and implementation findings (§2 item 10) are recorded
+nowhere else — the issue body carries none of them — and are tracked as O-2 in
+`Planning/Resolve-Open-Issues-Plan-2026-08.md`. #553's deferred Step 2 (the peek sheet) stays open
+at #553 / O-3.
 
 Every effort estimate below was checked against code, and three claims were re-verified by hand
 before this was written. Four issues turned out to be a different size than their titles suggest,

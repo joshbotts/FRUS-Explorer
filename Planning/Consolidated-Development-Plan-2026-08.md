@@ -15,17 +15,22 @@ research-rail program is complete and `ResearchStripView` no longer exists — t
 doc-comment mentions were swept in S-0. Those completions moot parts of #368; see the
 issue-disposition table at the end.
 
-**Status, 2026-07-28.** **Three of four workstreams are complete.** **S** shipped as
-PRs #485–#505. **Wave R** (`Planning/Wave-R-Research-Trail-2026-08.md`) is complete but
-for **R-2b** (retiring `ResearchSession`/`SessionEvent` from `frusModelTypes`, 19 record
-types → 17), which deliberately waits for the R-2a build to have been in the field, since
-the migration must still be able to read the rows it converts. **O** shipped as PRs
-#525–#535 (+ #537/#540 fixes), and an unplanned **P** tail followed it — see *Delivered
-since 2026-07-26*.
+**Status, 2026-08-14. All four workstreams are discharged; five named remainders survive, and the
+*What is left* interleave below is spent apart from them.** **S** shipped as PRs #485–#505 and **O**
+as #525–#535 (+ #537/#540). **Q** shipped end to end — Q-1/Q-2/Q-3 (#565–#569), R-1/R-2/R-3
+(#571–#590), keyness and collocation (#591–#595), M-1/M-2/M-3 (#598–#623) — leaving only Milestone 5,
+re-scoped to the single session **D-1a** in `Planning/Query-And-Corpus-Analysis-Session-Plan.md`
+(D-1b/c optional, D-2 deferred behind a triage model). **N** closed #354 (#721–#724), #375, #355
+(#697–#710), #663 (#730/#731/#812) and #405 (#810); N-5's repoint and fold shipped as #692/#693/#694.
 
-**The lanes still open are Q and N.** Both are re-verified against the tree as of
-2026-07-28; corrections are marked **[2026-07-28]** inline. The slot table below is kept
-as the plan of record; the live remainder is in *What is left*.
+**Still live, and this document is the only plan for the first of them:** **N-6 / #235** Simplify NARA
+Lookup, unstarted — `NARALookupContext`/`SelectionResolutionAnalyzer` exist nowhere in the tree, and
+`Planning/Resolve-Open-Issues-Plan-2026-08.md` §2 points *here* for it. **N-1's tail is parked by owner
+call** and tracked on #353. **R-2b is still owed** — `ResearchSession`/`SessionEvent` remain enrolled at
+`Models/ModelContainer+FRUS.swift:100-101`; its time gate opened 2026-08-04 and its spec is in
+`Planning/Wave-R-Research-Trail-2026-08.md`. **#372 stays open** on the record-group-guard rider (O-7 in
+`Resolve-Open-Issues-Plan-2026-08.md`), despite N-5 being complete in this document's own terms. **#681**
+(73.2% of live catalog routes untested) and **#106** (screenshot checklist) remain open and unscheduled.
 
 Four workstreams, deliberately independent lanes: **S** (Settings North Star — complete),
 **Q** (Query & Corpus Analysis), **N** (NARA Catalog), **O** (Onboarding overhaul). Any
