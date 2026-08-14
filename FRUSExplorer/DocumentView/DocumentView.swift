@@ -301,6 +301,14 @@ struct DocumentView: View {
     /// own text. Handed the live `WKWebView` by the representable.
     @State private var findPresenter = DocumentFindPresenter()
 
+    /// Which page-turn chevron the pointer is over, keyed by its SF Symbol name (UI review F-10).
+    ///
+    /// Keyed by symbol rather than by a Bool per side because the two zones share one builder;
+    /// the symbol is already threaded in and is distinct between them ("chevron.left" /
+    /// "chevron.right"). Inert on touch — a finger never hovers — so the chevrons simply stay at
+    /// their resting opacity there.
+    @State private var hoveredEdge: String? = nil
+
     /// Whether this reader is the one the keyboard commands should act on (UI review F-6).
     ///
     /// **iOS focus is not macOS focus, and this flag is the whole difference.** On macOS every
@@ -1694,15 +1702,43 @@ struct DocumentView: View {
                 .accessibilityLabel(label)
                 .accessibilityHint(hint)
                 .accessibilityAddTraits(.isButton)
+                // UI review F-10: on iPad the zone shows its chevron. The gesture is an
+                // iPhone-reader idiom — a thumb sweeping the edge of a held device — and it was
+                // invisible on every platform, discoverable only through `EdgeTapNavigationTip`.
+                //
+                // **The review's premise that "macOS has chevrons" is only half true**, which is
+                // why this does not copy them: `MacDocumentView.edgeNavChevron` renders at
+                // `.opacity(0)` until the pointer enters, so a Mac user who is not currently
+                // pointing at that edge sees nothing either. A touch iPad never hovers, so an
+                // opacity-0 chevron there IS the finding rather than a fix for it. This one rests
+                // visible but quiet, and the pointer still brightens it for a trackpad user.
+                //
+                // iPhone keeps the invisible zone: the tip teaches it, the screen is narrow enough
+                // that a resting chevron sits close to the text, and Wave 1's 70ch measure — which
+                // moved the iPad column well clear of these strips — does not bind at that width.
+                .overlay {
+                    if !isPhone {
+                        Image(systemName: systemImage)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 34, height: 34)
+                            .background(Circle().fill(.quaternary))
+                            .opacity(hoveredEdge == systemImage ? 1 : 0.35)
+                            .animation(.easeOut(duration: 0.15), value: hoveredEdge)
+                            // Decorative: the zone itself is already the accessibility element
+                            // with the label, hint and button trait.
+                            .accessibilityHidden(true)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .onHover { inside in hoveredEdge = inside ? systemImage : nil }
                 #if DEBUG
-                // Visualise the otherwise-invisible tap zones during development.
-                // FRUS_DEBUG_EDGE_TAP_ZONES is unset by default — set it in the
-                // scheme's environment variables to enable the overlay tint.
+                // Visualise the full 56pt hit area during development — wider than the chevron
+                // above, which is why this survives it. FRUS_DEBUG_EDGE_TAP_ZONES is unset by
+                // default; set it in the scheme's environment variables to tint the strip.
                 .overlay {
                     if ProcessInfo.processInfo.environment["FRUS_DEBUG_EDGE_TAP_ZONES"] != nil {
-                        Image(systemName: systemImage)
-                            .foregroundStyle(.secondary)
-                            .background(Color.accentColor.opacity(0.08))
+                        Color.accentColor.opacity(0.08)
                     }
                 }
                 #endif

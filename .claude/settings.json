@@ -1,0 +1,41 @@
+{
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured — personal GitHub account `joshbotts` (this project's only remote)",
+      "**Cloud provider(s)**: None configured — no cloud infrastructure in this project; Apple CloudKit container `iCloud.bottsywattsy.FRUS-Explorer` is used for user-data sync",
+      "**Repository visibility**: PUBLIC — `github.com/joshbotts/FRUS-Explorer` is public per the authenticated gh API, so any push there is publishing",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured — generator tools read secrets from the environment at invocation time (`CATALOG_API_KEY`, `GITHUB_TOKEN`); never commit or echo those values",
+      "**Default / protected branches**: default branch `v2`; no rulesets and no classic protected branches listed by the gh API",
+      "**CI/CD deploy targets**: None configured — release path is local: `Scripts/notarize.sh` (macOS notarize + DMG, needs `TEAM_ID`), Xcode/App Store Connect uploads, and CloudKit Dashboard schema deploys to Production (an owner-only, outside-the-repo step)",
+      "**Network posture**: None configured — development is local on macOS; outbound access is limited to public sources (GitHub raw TEI, NARA Catalog API, NARA public S3 bulk export)",
+      "**Source control**: The trusted repo and its remote(s) only (no additional orgs configured) — `github.com/joshbotts/FRUS-Explorer`, as scoped by the Trusted repo and Repository visibility entries above",
+      "**Trusted internal domains**: None configured — the project's read sources are public: `history.state.gov`, `github.com/HistoryAtState/*`, `catalog.archives.gov`",
+      "**Trusted cloud buckets**: None configured — the NARA public S3 export (`nara-national-archives-catalog`, us-east-2) is an unauthenticated READ source only, never an upload destination",
+      "**Key internal services**: None configured — NARA Catalog API (`catalog.archives.gov`, keyed v2 route plus the keyless public proxy) and Apple CloudKit are read/sync dependencies, not internal infrastructure",
+      "**Internal package registry**: None configured — dependencies come from Swift Package Manager and Homebrew",
+      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar. Concretely here: `CATALOG_API_KEY`, `GITHUB_TOKEN`, `TEAM_ID` and Apple signing/notarization credentials must never reach the repo, a log, or a transcript. The corpus itself is public-domain government documents.",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited — e.g. matches `prod-db`, not `producer`). Here the practical instance is the CloudKit Production environment for container `iCloud.bottsywattsy.FRUS-Explorer`.",
+      "**Protected deployment namespaces / environments**: CloudKit Production for `iCloud.bottsywattsy.FRUS-Explorer` — schema promotion is an owner-only manual step per the Wave R-7 gate; also App Store / DirectDistribution release configs. Otherwise None configured — fall back to the Sensitive remote targets heuristic.",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment — no IaC exists in this repo",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development — Swift 6 / SwiftUI native app work (FRUS Explorer) plus offline corpus-index generator tools run via `swift run`",
+      "**Trusted repo**: `github.com/joshbotts/FRUS-Explorer` (this working directory, currently a worktree under `.claude/worktrees/`) and its `origin` remote. It is PUBLIC: only this repo's own work may be committed or pushed there; content ported, repointed, or first read from outside this session's repo is not its own work, whoever directed the port. Visibility scopes confidential material only: secrets and sensitive data are never cleared into any repo by its visibility.",
+      "**Org-specific CLIs**: None configured — routine tooling is standard: `swift`, `xcodebuild`, `xcodegen`, `xcrun simctl`, `git`, `gh`, `python3` (stdlib-only scripts under `tools/`)",
+      "**Routine local corpus paths**: read-only local corpora and caches outside the repo are routine inputs to the generators — `/Users/jbotts/Development/frus/volumes`, `~/frus-semantic-raw`, `~/frus-ner-raw`, `/Users/jbotts/Development/nara-record-group-catalog`, and `.cache/` scratch inside the repo"
+    ],
+    "allow": [
+      "$defaults",
+      "Bash(xcodegen generate:*) in the FRUS-Explorer repo — the documented project-regeneration step (project.yml is the source of truth); the scheme restore via `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/` is part of the same routine",
+      "Bash(xcrun simctl list:*) — read-only simulator enumeration used to pick a test destination",
+      "Bash(xcodebuild test:*) for the FRUSExplorer / FRUSExplorerMac schemes in this repo — the documented local test command"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(swift run:*) for PresidentialLibraryCatalogGenerator, RecordGroupCatalogGenerator, or CentralFilesIndexGenerator when CATALOG_API_KEY is passed — keyed NARA Catalog harvests spend a metered quota and can run for hours or tens of GB; confirm the invocation first",
+      "Bash(./Scripts/notarize.sh:*) without --dry-run — an Apple notarization submission is an external, credentialed publication step"
+    ]
+  }
+}

@@ -7376,3 +7376,46 @@ deletion is the state the fix deliberately ships, with both supported reset path
 Also fixed, because Finish now leads somewhere: the Ready step promised "Volumes download and index
 automatically — search unlocks in minutes" on a path where nothing downloads and search never
 unlocks. An empty finish gets copy that is true instead.
+
+## Session 2026-08-14 — CW-6b: the pointer iPad, and a stranding bug found by review
+
+The rest of CW-6. Two findings and one defect that the CW-6a review turned up on its way past.
+
+**F-9 — the explanations reached a Mac pointer and nobody else.** The finding says `.help` "which
+iPadOS does not render", and that is half right in a way that changes the fix: the iOS 26 SDK
+documents `View.help(_:)` as setting **the accessibility hint** as well as the macOS tooltip, so
+VoiceOver has always spoken these sentences on iPad. The gap is a *sighted* reader. Two more of
+its clauses are simply wrong — the tiles are not "cryptic glyph tiles" (`tileLabel` draws a
+caption under every glyph), and Share is not a `railTile` on iOS at all (it is a `Menu` that
+already carries `controlHelp`). So the true finding is **non-adoption**: this repo built
+`controlHelp` in Session 162 for exactly this problem and reached 30 sites against ~79 iOS-compiled
+raw `.help` calls, five rail tiles among the misses.
+
+Both halves are now fixed. The tiles route through `controlHelp`, which adds the VoiceOver hint
+and the Large Content Viewer entry they lacked; and the rail header gains a `FeatureInfoButton`
+whose six rows are the same sentences, so a sighted iPad reader can read them at last. **Not a
+TipKit tip** — `DocumentView`'s own note records that a tip presented in the iPad reader drove a
+view-graph update loop, 90s of CPU in 101s and a `scene-update` watchdog kill at 10s. A popover the
+reader opens cannot present during that reflow.
+
+It cost no new copy, because the six captions and sentences moved into `RailTileCopy` first. They
+had been written inline at every call site, and the macOS and iOS tile blocks each carried a full
+set — so each string existed twice before the popover wanted it a third time. Now once.
+
+**F-10 — the page-turn zones show their chevrons on iPad.** The review says "macOS has chevrons",
+and macOS does not, quite: `edgeNavChevron` renders at `.opacity(0)` until the pointer enters, so a
+Mac user not currently pointing at that edge sees nothing either. Copying it would have shipped the
+finding rather than a fix, since a touch iPad never hovers. The iPad chevron rests visible but
+quiet at 0.35 and brightens under a pointer. iPhone keeps the invisible zone: the tip teaches it,
+and Wave 1's 70ch measure — which put ~150–250 pt of clear margin either side of the iPad column —
+does not bind at phone width.
+
+**The stranding bug.** `SemanticMapSpikeView` was the one of nine iOS `DocumentView` hosts passing
+no `onNavigateToDocument`, so a page turn inside the map's sheet fell back to
+`appState.openTab(.browse)` and threw the reader out to the Browse tab — losing the map, the lens
+and any lasso behind it. That is the #750 defect the handler exists to prevent. Found by the
+adversarial review of CW-6a, in code this program shipped three sessions earlier.
+
+Verified on iPad: the info popover lists all six tools; the chevrons render in the margins clear of
+the reading column and turn the page (No. 186 → No. 181) with the reader staying put. 3,491 tests
+pass; both schemes clean-build with no warnings.

@@ -876,7 +876,18 @@ struct SemanticMapSpikeView: View {
         // destination declared outside any stack is inert, which is why that wrapper is load-bearing
         // rather than cosmetic. macOS opens a real document window instead and needs none of this.
         .navigationDestination(item: $openedDocument) { entry in
-            DocumentView(entry: entry)
+            // The page turn has to stay in THIS stack (#750). Without a handler `DocumentView`
+            // falls back to `appState.openTab(.browse)` + `openBrowseDocument`, so an edge tap or
+            // ⌥⌘↓ inside the map's sheet threw the reader out to the Browse tab — losing the map,
+            // the lens, and any lasso behind it. Found by an adversarial review of CW-6a, which
+            // noticed this was the one of nine iOS `DocumentView` hosts passing no handler.
+            //
+            // Both jump kinds resolve to a replacement here because the destination is
+            // `item:`-driven, not path-driven: there is one slot, so re-assigning it swaps the
+            // document in place. That is exactly `.replace`, and it is also right for `.push` —
+            // a cross-reference followed from inside the map has nowhere else to go, and Back
+            // still returns to the map itself.
+            DocumentView(entry: entry, onNavigateToDocument: { next, _ in openedDocument = next })
         }
         #endif
         .task {
