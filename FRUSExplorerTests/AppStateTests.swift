@@ -8,6 +8,9 @@
 
 import Testing
 import Foundation
+#if os(iOS)
+import WebKit
+#endif
 @testable import FRUSExplorer
 
 /// Tests for `AppState` initialisation and persistence behaviour.
@@ -613,4 +616,45 @@ struct CommandFocusedValueTests {
         b.newCollection()
         #expect(fired)
     }
+
+    #if os(iOS)
+    /// The iOS find presenter refuses to claim it can find before the representable has
+    /// handed it a web view (CW-6 / UI review F-7).
+    ///
+    /// This is what gates the reader's Find toolbar button and the Find menu's item, so a
+    /// presenter that reported `true` while idle would offer a verb that silently does
+    /// nothing — the failure mode the review's own F-6 calls "worse than an absent one".
+    /// Driving `present()` in the same state is the other half: it must be a no-op, not a
+    /// crash, because the button exists from the first frame while the web view is still
+    /// being created.
+    @Test("DocumentFindPresenter: cannot find, and does nothing, until a web view arrives")
+    func findPresenterIsInertUntilAttached() {
+        let presenter = DocumentFindPresenter()
+        #expect(presenter.webView == nil)
+        #expect(presenter.canFind == false)
+        presenter.present()   // must not trap
+        #expect(presenter.canFind == false)
+    }
+
+    /// Attaching a web view flips `canFind`, so the button and menu item enable on the
+    /// same fact the representable establishes (CW-6).
+    ///
+    /// **The `weak` on `webView` is deliberately NOT tested here, and the reason is worth
+    /// recording rather than leaving as a gap.** The obvious test — attach inside an
+    /// `autoreleasepool`, assert the property nils out — was written, and it FAILS against
+    /// a real `WKWebView`: WebKit keeps its own references to a live web view, so the
+    /// object outlives the local scope no matter how the presenter holds it. That test
+    /// would therefore have measured WebKit's lifetime, not this code's, and its passing
+    /// or failing would say nothing about whether the property is `weak`. The declaration
+    /// is the evidence, and the macOS twin's comment states the same requirement.
+    @Test("DocumentFindPresenter: attaching a web view enables find")
+    func findPresenterEnablesOnAttach() {
+        let presenter = DocumentFindPresenter()
+        #expect(presenter.canFind == false)
+        let webView = WKWebView(frame: .zero)
+        webView.isFindInteractionEnabled = true
+        presenter.webView = webView
+        #expect(presenter.canFind, "a web view with the find interaction enabled must satisfy canFind")
+    }
+    #endif
 }

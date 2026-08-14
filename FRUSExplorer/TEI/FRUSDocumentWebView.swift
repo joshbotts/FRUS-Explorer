@@ -192,6 +192,12 @@ public struct FRUSDocumentWebView: View {
     /// where find-in-document isn't wired (macOS has no native find bar; iOS uses
     /// `isFindInteractionEnabled` instead, so this is macOS-only).
     var findController: DocumentFindController? = nil
+    #else
+    /// Find-in-document presenter (UI review F-7). The iOS representable hands it the live
+    /// `WKWebView` so a menu item or toolbar button can raise the system find bar the web
+    /// view already carries. The macOS twin drives a whole custom find UI; this one only
+    /// opens UIKit's, because `isFindInteractionEnabled` supplies the rest.
+    var findPresenter: DocumentFindPresenter? = nil
     #endif
 
     // MARK: Environment
@@ -224,6 +230,7 @@ public struct FRUSDocumentWebView: View {
             colorScheme:        colorScheme,
             textSize:           textSize,
             highlights:         highlights,
+            findPresenter:      findPresenter,
             onPersonTap:        onPersonTap,
             onGlossTap:         onGlossTap,
             onCrossRefTap:      onCrossRefTap,
@@ -252,6 +259,13 @@ extension FRUSDocumentWebView {
     /// web view's native `isFindInteractionEnabled`.
     func findController(_ controller: DocumentFindController) -> FRUSDocumentWebView {
         var copy = self; copy.findController = controller; return copy
+    }
+    #else
+    /// Attaches the find-in-document presenter (UI review F-7) so a toolbar button or a
+    /// keyboard command can raise this document's system find bar. iOS-only — macOS has
+    /// no native find bar and drives `.findController(_:)` instead.
+    func findPresenter(_ presenter: DocumentFindPresenter) -> FRUSDocumentWebView {
+        var copy = self; copy.findPresenter = presenter; return copy
     }
     #endif
 
@@ -556,6 +570,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     let highlights:     [DocumentHighlight]
+    var findPresenter:  DocumentFindPresenter?
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
@@ -586,6 +601,14 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         // menu) presents iOS/iPadOS's built-in find bar over the document. macOS has no
         // equivalent, so it uses the custom `DocumentFindBar` instead.
         webView.isFindInteractionEnabled = true
+        // UI review F-7: hand the live web view to the presenter so a toolbar button or menu
+        // command can raise that same find bar without a hardware keyboard. MUST come after
+        // the line above — `findInteraction` is nil until the flag is set. Deferred off the
+        // view-update pass so the presenter's @Observable state isn't mutated mid-render,
+        // exactly as the macOS twin does at `makeNSView`.
+        if let findPresenter {
+            Task { @MainActor in findPresenter.webView = webView }
+        }
         return webView
     }
 
@@ -625,6 +648,56 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     }
 
     func makeCoordinator() -> _FRUSWebViewCoordinator { _FRUSWebViewCoordinator() }
+}
+
+// MARK: - DocumentFindPresenter (UI review F-7)
+
+/// Raises the system find bar over one iOS document web view.
+///
+/// **This is deliberately not the iOS half of `DocumentFindController`.** That type exists
+/// because macOS `WKWebView` has no find bar at all, so it has to own a query string, a
+/// found/not-found state, a focus token and a generation counter to drive a hand-built
+/// ``DocumentFindBar``. iOS ships the whole find UI: `isFindInteractionEnabled` is already
+/// set on the web view (`makeUIView`), and `UIFindInteraction` owns the query, the match
+/// count, next/previous and the dismissal. The only thing missing was a way to *open* it
+/// without a hardware keyboard — so that is the only thing this type does.
+///
+/// The review's F-7 claims iOS "never enables `UIFindInteraction`" and prices the fix at
+/// "one property + one toolbar item". The property has been set since #363 #5 (2026-07-22,
+/// three weeks before the review was written); what was actually missing is this presenter,
+/// because the representable exposed no way to reach the live `WKWebView` from SwiftUI.
+///
+/// Ownership mirrors the macOS controller: one presenter per document surface, held as
+/// `@State` by ``DocumentView``, handed the live web view by the representable, and holding
+/// it **weakly** so a popped reader is not kept alive through the presenter.
+///
+/// Version history:
+///   1.0 — CW-6: initial implementation (touch-reachable Find in Document)
+@MainActor
+@Observable
+final class DocumentFindPresenter {
+
+    /// The document's web view, handed over by the representable when it is created.
+    /// Weak so popping the reader doesn't keep the view alive through the presenter.
+    weak var webView: WKWebView?
+
+    /// Whether find can be raised — false until the representable has handed over a web
+    /// view whose find interaction exists. Drives the toolbar item's and menu item's
+    /// enablement, so neither offers a verb that would do nothing.
+    var canFind: Bool { webView?.findInteraction != nil }
+
+    /// Creates an idle presenter (no web view attached yet).
+    init() {}
+
+    /// Presents the system find navigator over this document.
+    ///
+    /// A no-op when no web view has been handed over yet, or when the interaction is
+    /// absent — the same silent-guard shape the macOS controller's `find(forward:)` uses,
+    /// because a reader who taps Find during the first render should get nothing rather
+    /// than a crash.
+    func present() {
+        webView?.findInteraction?.presentFindNavigator(showingReplace: false)
+    }
 }
 
 #endif

@@ -1393,6 +1393,30 @@ struct FRUSExplorerApp: App {
                     .task { await bootSearchInfrastructureOnce() }
             }
         }
+        #else
+        // iPadOS renders `Commands` in the menu bar and the ⌘-hold shortcut HUD; before CW-6 this
+        // app contributed nothing to either, so a Magic Keyboard researcher could not page,
+        // annotate or find from the keyboard (UI review F-6, and P-12 on iPhone).
+        //
+        // **This is a second, smaller block rather than the macOS one un-gated, and that is
+        // forced rather than chosen.** Un-gating the block above does not compile on iOS: it
+        // reads `@Environment(\.openSettings)`, which is `@available(iOS, unavailable)`; it calls
+        // `openWindow.fronting(id:)`, an extension declared inside `MainWindowView`'s own
+        // `#if os(macOS)`; and it embeds `HistoryMenuContent`, a macOS-only type. Beyond
+        // compiling, the Analytics, Research and Collection menus front `Window` scenes that iOS
+        // does not have — their iOS equivalents are tabs and sheets, i.e. different verbs, not the
+        // same verb behind a gate.
+        //
+        // What IS shared is the part that can be: `DocumentMenuContent` and the whole
+        // `\.documentCommands` value layer, which were already outside every platform gate.
+        .commands {
+            CommandMenu(String(localized: "menu.document", defaultValue: "Document")) {
+                DocumentMenuContent()
+            }
+            CommandMenu(String(localized: "menu.find", defaultValue: "Find")) {
+                IOSFindMenuContent(appState: appState)
+            }
+        }
         #endif
     }
 
@@ -2724,6 +2748,8 @@ struct OpenDocumentInNewWindowMenuItem: View {
     }
 }
 
+#endif // os(macOS) — DocumentMenuContent is shared; see below
+
 // MARK: - Document Menu Content
 
 /// Body of the "Document" CommandMenu (UI audit gap 6).
@@ -2739,6 +2765,14 @@ struct OpenDocumentInNewWindowMenuItem: View {
 ///   - ⌘⇧H highlight selection (on the Yellow item — the picker's first color;
 ///     the submenu carries all four): free app-wide.
 ///   - ⌘⇧R research panel: free (Research *window* is ⌥⌘R).
+///
+/// **Shared with iPadOS as of CW-6, and shared rather than copied on purpose.** Every item
+/// here reads its state and its verb from `\.documentCommands`, so the platform difference
+/// lives entirely in who publishes that value — `MacDocumentView` on the Mac, `DocumentView`
+/// on iOS. Duplicating the menu would have created two places for a shortcut to change.
+/// The macOS-only items (Print, Open in New Window, Find Next/Previous) were never in this
+/// menu; they sit in `PrintDocumentMenuItem`, `OpenDocumentInNewWindowMenuItem` and
+/// `FindMenuContent`, which stay behind the fence above because they call macOS-only API.
 struct DocumentMenuContent: View {
 
     /// The key document window's published actions; nil disables every item.
@@ -2798,6 +2832,8 @@ struct DocumentMenuContent: View {
         .disabled(commands == nil)
     }
 }
+
+#if os(macOS)
 
 // MARK: - Find Menu Content (#363 #5)
 
@@ -3211,6 +3247,48 @@ struct ProjectSwitcherMenuContent: View {
 #endif // os(macOS)
 
 #if os(iOS)
+
+// MARK: - iOS Find Menu Content (UI review F-6 / F-7)
+
+/// Content of the iPadOS menu-bar **Find** menu.
+///
+/// A separate type from the macOS ``FindMenuContent``, and separate for a reason rather than
+/// out of convenience: that one opens the Search and Citation Lookup **windows** through
+/// `openWindow.fronting(id:)`, an extension that is itself macOS-only, against `Window` scenes
+/// that do not exist on iOS. The iOS equivalents are tabs, so the verbs genuinely differ; only
+/// the find-in-document item is common, and it reaches the same `\.documentCommands` value.
+///
+/// **Find Next / Previous are deliberately absent.** `UIFindInteraction` presents its own bar
+/// with its own next/previous controls and its own key equivalents, so the menu would be a
+/// second owner of keys the system already binds — the duplicate-key-equivalent defect #363 #2
+/// removed on macOS.
+struct IOSFindMenuContent: View {
+
+    /// The on-screen reader's published actions; nil ⇒ find-in-document is disabled.
+    @FocusedValue(\.documentCommands) private var document
+
+    /// Shared app state — used to raise the Search tab.
+    let appState: AppState
+
+    var body: some View {
+        Button(DocumentView.findInDocumentName) {
+            document?.startFindInDocument()
+        }
+        .keyboardShortcut("f", modifiers: .command)
+        .disabled(document?.canFindInDocument != true)
+
+        Divider()
+
+        // ⌥⌘F, matching the Mac's Search shortcut since M-14 moved it off ⌘S. Addressed to
+        // `.anyWindow` because a `.commands` block has no `\.sceneID` to read: on iPhone there
+        // is one window and that is exact; on an iPad with two, this is the first-wins
+        // behaviour `AppState.openTab(_:from:)` already documents for a nil scene.
+        Button(String(localized: "menu.find.search", defaultValue: "Search")) {
+            appState.openTab(.search, from: nil)
+        }
+        .keyboardShortcut("f", modifiers: [.command, .option])
+    }
+}
 
 // MARK: - ContinuationHost
 
