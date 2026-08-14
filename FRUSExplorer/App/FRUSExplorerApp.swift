@@ -1299,10 +1299,14 @@ struct FRUSExplorerApp: App {
                 OpenDocumentInNewWindowMenuItem()
             }
 
-            // #377 Phase 1: the app implements no document printing, and ⌘P is used for
-            // Research ▸ Project Home. Remove the system Print menu items so nothing else
-            // claims ⌘P (an empty replacement drops the group).
-            CommandGroup(replacing: .printItem) { }
+            // File ▸ Print (⌘P), restored (UI review M-14). #377 Phase 1 deleted printing
+            // outright and spent ⌘P on Project Home — in a document-reading app for a paper
+            // discipline, on the platform's most reserved shortcut. Project Home moved to ⌘⇧P.
+            // The item routes through the same focused-scene value as the Document menu, so it
+            // prints the KEY window's document and is disabled when no document surface is key.
+            CommandGroup(replacing: .printItem) {
+                PrintDocumentMenuItem()
+            }
 
             // Append a "FRUS Research Guide" item to the Help menu (after the
             // system search field) so the standalone primer is reachable
@@ -1324,7 +1328,7 @@ struct FRUSExplorerApp: App {
             // only via the right-click Font submenu (ui-audit #2).
             TextFormattingCommands()
 
-            // Search (⌘S), Citation Lookup (⌘⇧F), and Find in Document (⌘F) are all owned by the
+            // Search (⌥⌘F), Citation Lookup (⌘⇧F), and Find in Document (⌘F) are all owned by the
             // "Find" command menu below (#363 #5). The scene-level shortcuts on frus.search /
             // frus.citationLookup were removed so the Find menu is the single owner (do NOT re-add
             // a scene `.keyboardShortcut` — ⌘F now belongs to Find in Document, not Search).
@@ -1343,8 +1347,9 @@ struct FRUSExplorerApp: App {
             }
 
             // "Find" menu (#363 #5) — the three finding flows: Find in Document (⌘F, in-page find
-            // on the key document's web view), Search (⌘S, full-text corpus), Citation Lookup (⌘⇧F).
-            // ⌘F was remapped off Search (which moves to ⌘S) so the document's own find bar owns it.
+            // on the key document's web view), Search (⌥⌘F, full-text corpus), Citation Lookup
+            // (⌘⇧F). ⌘F belongs to the document's own find bar; Search left ⌘S for ⌥⌘F when M-14
+            // returned the reserved shortcuts to the platform (⌘S was Save's).
             CommandMenu(String(localized: "menu.find", defaultValue: "Find")) {
                 FindMenuContent(openWindow: openWindow, appState: appState)
             }
@@ -2539,6 +2544,12 @@ struct DocumentCommandActions: Equatable {
     /// Moves to the previous match in this document — the Find menu's "Find Previous" (⌘⇧G).
     let findPrevious: @MainActor () -> Void
 
+    /// Prints this document — File ▸ Print (⌘P), restored by the UI review's M-14.
+    ///
+    /// Runs the web view's own `printOperation`, so the paper carries the reader's typography.
+    /// Not part of the equality contract: available whenever a document surface is key, like find.
+    let printDocument: @MainActor () -> Void
+
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.documentKey == rhs.documentKey
             && lhs.canGoPrevious == rhs.canGoPrevious
@@ -2684,6 +2695,22 @@ extension FocusedValues {
 
 /// File ▸ "Open Document in New Window". Enabled only when a document surface is key with a loaded
 /// document; opens that document in its own standalone `DocumentWindowID` window via
+/// File ▸ Print: prints the key window's document through its own web view (M-14).
+///
+/// A separate wrapper for the same reason as its sibling below: `@FocusedValue` must be read
+/// inside a `View`. Disabled when no document surface is key, exactly like the Document menu.
+struct PrintDocumentMenuItem: View {
+    @FocusedValue(\.documentCommands) private var commands
+
+    var body: some View {
+        Button(String(localized: "menu.file.print", defaultValue: "Print…")) {
+            commands?.printDocument()
+        }
+        .keyboardShortcut("p", modifiers: .command)
+        .disabled(commands == nil)
+    }
+}
+
 /// `\.documentCommands`. `@FocusedValue` must be read inside a `View`, hence this tiny wrapper
 /// (mirrors `DocumentMenuContent`). Replaces the retired research strip's New Window verb.
 struct OpenDocumentInNewWindowMenuItem: View {
@@ -2816,11 +2843,14 @@ struct FindMenuContent: View {
         Divider()
 
         Button(String(localized: "menu.find.search", defaultValue: "Search…")) {
-            // The user pressed ⌘S to type a query, so put the caret where they expect it (#749).
+            // The user invoked Search to type a query, so put the caret where they expect it (#749).
             appState.searchQueryFocusToken &+= 1
             openWindow.fronting(id: "frus.search")
         }
-        .keyboardShortcut("s", modifiers: .command)
+        // ⌥⌘F, not ⌘S (UI review M-14): ⌘S is Save everywhere on the platform, and repurposing it
+        // fought every muscle memory the target user has. ⌥⌘F is the global-search convention
+        // (Xcode, Mail) and sits beside its siblings: ⌘F find-in-document, ⌘⇧F Citation Lookup.
+        .keyboardShortcut("f", modifiers: [.command, .option])
 
         // Corpus Browser sits with Search and Citation Lookup because all three answer "find me
         // something in the corpus" — by term, by citation, by where it sits in the series.
@@ -3053,15 +3083,16 @@ struct ResearchMenuContent: View {
     let openSettings: OpenSettingsAction
 
     var body: some View {
-        // #377 Phase 1: Project Home for the ACTIVE project (⌘P — printing isn't implemented, so it's
-        // free). Disabled in Global Context (no active project). Value-based, so a distinct project
-        // opens its own window and the same project focuses the one already open.
+        // Project Home for the ACTIVE project. ⌘⇧P, not ⌘P: #377 took ⌘P while printing was
+        // unimplemented, and the UI review's M-14 restored printing to the platform shortcut it is
+        // reserved for. Disabled in Global Context (no active project). Value-based, so a distinct
+        // project opens its own window and the same project focuses the one already open.
         Button(String(localized: "menu.research.projectHome", defaultValue: "Project Home")) {
             if let pid = appState.activeProjectId {
                 openWindow(value: ProjectHomeRequest(projectId: pid))
             }
         }
-        .keyboardShortcut("p", modifiers: .command)
+        .keyboardShortcut("p", modifiers: [.command, .shift])
         .disabled(appState.activeProjectId == nil)
 
         // #377 Phase 5: create a project from the menu bar (works from any window). Opens the small

@@ -7179,3 +7179,37 @@ is what keeps overlays from swallowing the surface's gestures.
 `eraCounts` consumer; O-2/O-4 = anchor-document mode + the semantic scorer gap; O-6 = subseries
 poles (poles, NOT the rejected subseries lens); CW-11 = #106; CW-12 = the Dynamic Type worklist;
 CW-9 overlaps #824; the VoiceOver items join #268/I-1; F-25 rides the R-7 iPad-windows program.
+
+## Session 2026-08-14 — Wave 1 finishes: the compact map, the summary dedup, Print restored
+
+The rest of the UI review's Wave 1, on top of #889.
+
+**CW-5 — one card at a time on the phone (P-13), and the chrome folds (P-14).** At compact width
+the axis/selection/lasso stack gives way to pills naming what has content plus the newest card
+alone — the reader's explicit pill choice wins while it still has content. The point-size slider
+folds behind a "Display options" disclosure at compact only. Verified on the simulator: with an
+axis and a selection live, the map keeps most of the sheet, and tapping the Axis pill swaps the
+card in place.
+
+**F-15 — the reader stops showing the same summary twice.** On iPad with the rail open (the
+default), the strip above the document and the rail's Summary accordion rendered the identical
+text simultaneously, filling the first screenful twice. The strip now yields while the rail is
+visible; iPhone (transient sheet) and Read mode keep it.
+
+**M-14 — Print is back on ⌘P, and the reserved shortcuts go home.** `File ▸ Print` routes through
+the same focused-scene value as the Document menu and runs the key window's web view's own
+`printOperation` (the zero-frame print-view gotcha is handled and documented). Project Home moves
+⌘P → ⌘⇧P; Search moves ⌘S → ⌥⌘F, the global-search convention, beside ⌘F find-in-document and
+⌘⇧F Citation Lookup.
+
+**M-11 — Sync Error is a button.** The status bar's failure state opens a popover with the message
+in selectable text and a link into `SyncDiagnosticsView` — the diagnostics surface the label never
+connected to.
+
+**P-9 was already fixed** before the review shipped: the year-range chip's popover has typed,
+clamped year fields (`yearEntryField`). The review read the pre-chip chrome. No work; recorded so
+nobody scopes it again.
+
+Remaining from Wave 1 after this session, deliberately: P-1 (the Corpus Analytics compact
+clipping — needs its own layout investigation), F-12 (the facet inspector at regular width), and
+the find-in-document/commands lift that CW-6 owns.

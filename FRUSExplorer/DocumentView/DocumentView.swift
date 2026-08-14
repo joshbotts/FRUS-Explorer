@@ -1282,8 +1282,14 @@ struct DocumentView: View {
     ) -> some View {
         @Bindable var vm = vm
         VStack(spacing: 0) {
-            // Non-scrollable header
-            if let summary = vm.activeSummary {
+            // Non-scrollable header.
+            //
+            // **The strip yields to the rail when both would show the same summary** (UI review
+            // F-15): on iPad with the rail open — the default — the identical text rendered here AND
+            // in the rail's Summary accordion filled the first screenful twice and pushed the
+            // document below the fold. One surface owns the summary at a time: the rail while it is
+            // open, this strip on iPhone (where the rail is a transient sheet) and in Read mode.
+            if let summary = vm.activeSummary, isPhone || !panelVisible {
                 SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
                     .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.top, 12)

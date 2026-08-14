@@ -277,6 +277,8 @@ struct StatusBarView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
     @State private var showQueuePopover = false
+    /// Whether the sync-failure popover is showing (M-11).
+    @State private var showsSyncErrorDetail = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -571,13 +573,47 @@ struct StatusBarView: View {
                              defaultValue: "iCloud sync completed successfully"))
 
             case .failed(let message):
-                Label(
-                    String(localized: "statusBar.sync.error", defaultValue: "Sync Error"),
-                    systemImage: "exclamationmark.icloud"
-                )
-                .font(.system(size: 11))
-                .foregroundStyle(.orange)
+                // A BUTTON, not a passive label (UI review M-11): the failure state's only detail
+                // was a hover tooltip, on the one place a sync failure is announced — while the app
+                // ships a whole diagnostics surface the label never connected to. The popover shows
+                // the message in selectable text and links the pipeline that explains it.
+                Button {
+                    showsSyncErrorDetail = true
+                } label: {
+                    Label(
+                        String(localized: "statusBar.sync.error", defaultValue: "Sync Error"),
+                        systemImage: "exclamationmark.icloud"
+                    )
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
                 .help(message)
+                .popover(isPresented: $showsSyncErrorDetail, arrowEdge: .bottom) {
+                    NavigationStack {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label(String(localized: "statusBar.sync.error.title",
+                                     defaultValue: "iCloud Sync Failed"),
+                              systemImage: "exclamationmark.icloud")
+                            .font(.headline)
+                        Text(verbatim: message)
+                            .font(.callout)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                        NavigationLink {
+                            SyncDiagnosticsView()
+                                .environment(appState)
+                        } label: {
+                            Label(String(localized: "statusBar.sync.error.diagnostics",
+                                         defaultValue: "Open Sync Diagnostics"),
+                                  systemImage: "stethoscope")
+                        }
+                    }
+                    .padding()
+                    }
+                    .frame(minWidth: 280, maxWidth: 360, minHeight: 160)
+                    .presentationCompactAdaptation(.popover)
+                }
             }
 
             // Zone-missing warning — overlaid when zone verification has completed

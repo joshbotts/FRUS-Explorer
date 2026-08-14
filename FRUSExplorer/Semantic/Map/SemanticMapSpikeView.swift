@@ -702,6 +702,22 @@ struct SemanticMapSpikeView: View {
     @State private var surfaceSize = CGSize.zero
     /// Whether a drag draws a lasso instead of panning.
     @State private var isLassoing = false
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+    /// Which action card compact width shows, when more than one has content.
+    ///
+    /// **One at a time on a phone** (UI review P-13): the axis, selection and lasso cards stack at
+    /// ~85% of a 390-pt screen, and in the exact state of active use — an axis set, a document
+    /// selected, a lasso drawn — the three together covered effectively the whole canvas, including
+    /// the lassoed area itself. The newest interaction claims the slot; the pills name the others.
+    @State private var activeCompactCard: CompactCard? = nil
+
+    /// The action cards a compact layout can single out.
+    enum CompactCard: String, CaseIterable, Identifiable {
+        case axis, selection, lasso
+        var id: String { rawValue }
+    }
     /// What was saved, so the card can say so instead of leaving the reader guessing.
     @State private var savedCorpusName: String?
     /// The volumes the map is scoped to, or `nil` for the whole series.
@@ -787,11 +803,7 @@ struct SemanticMapSpikeView: View {
                 // **Stacked rather than layered.** All three are bottom-leading in this ZStack, so as
                 // bare siblings a lasso result drew exactly on top of a selection card — hiding Open
                 // Document and the pole buttons behind a card that looked like the only thing there.
-                VStack(alignment: .leading, spacing: 0) {
-                    sliceCard
-                    selectionCard
-                    lassoCard
-                }
+                cardStack
             }
             provenanceCaveat
             controls
@@ -1231,6 +1243,90 @@ struct SemanticMapSpikeView: View {
                     .allowsHitTesting(false)
             }
             .allowsHitTesting(false)
+        }
+    }
+
+    /// Whether this layout is a compact phone width.
+    private var isCompactWidth: Bool {
+        #if os(iOS)
+        return horizontalSizeClass == .compact
+        #else
+        return false
+        #endif
+    }
+
+    /// The cards that currently have content, in the stack's own order.
+    private var populatedCards: [CompactCard] {
+        var cards: [CompactCard] = []
+        if model.slice != nil || model.poles.negative != nil { cards.append(.axis) }
+        if model.selection != nil { cards.append(.selection) }
+        if model.lassoResult != nil { cards.append(.lasso) }
+        return cards
+    }
+
+    /// The action cards: all of them at regular width, one at a time at compact (P-13).
+    @ViewBuilder
+    private var cardStack: some View {
+        let populated = populatedCards
+        if isCompactWidth, populated.count > 1 {
+            VStack(alignment: .leading, spacing: 4) {
+                // The pills name what is condensed, so nothing silently disappears — the failure
+                // mode the stacking originally existed to prevent, one level up.
+                HStack(spacing: 6) {
+                    ForEach(populated) { card in
+                        Button {
+                            activeCompactCard = card
+                        } label: {
+                            Label(compactCardName(card), systemImage: compactCardIcon(card))
+                                .font(.caption2)
+                                .labelStyle(.titleAndIcon)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.mini)
+                        .tint(resolvedCompactCard == card ? .accentColor : .secondary)
+                    }
+                }
+                .padding(.horizontal, 12)
+                switch resolvedCompactCard {
+                case .axis: sliceCard
+                case .selection: selectionCard
+                case .lasso: lassoCard
+                case nil: EmptyView()
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                sliceCard
+                selectionCard
+                lassoCard
+            }
+        }
+    }
+
+    /// The card compact width shows: the reader's explicit pick if it still has content, else the
+    /// newest interaction (last in stack order).
+    private var resolvedCompactCard: CompactCard? {
+        let populated = populatedCards
+        if let chosen = activeCompactCard, populated.contains(chosen) { return chosen }
+        return populated.last
+    }
+
+    /// A pill's name.
+    private func compactCardName(_ card: CompactCard) -> String {
+        switch card {
+        case .axis: return String(localized: "semanticMap.card.axis", defaultValue: "Axis")
+        case .selection: return String(localized: "semanticMap.card.selection",
+                                       defaultValue: "Selection")
+        case .lasso: return String(localized: "semanticMap.card.lasso", defaultValue: "Lasso")
+        }
+    }
+
+    /// A pill's glyph.
+    private func compactCardIcon(_ card: CompactCard) -> String {
+        switch card {
+        case .axis: return "arrow.left.and.right"
+        case .selection: return "hand.point.up.left"
+        case .lasso: return "lasso"
         }
     }
 
@@ -1903,12 +1999,34 @@ struct SemanticMapSpikeView: View {
             // library, so being wrong is worse here than on any other lens.
             .onChange(of: appState.indexedVolumeIds) { _, _ in applyLens() }
 
-            HStack(spacing: 12) {
-                Text(String(localized: "semanticMap.pointSize", defaultValue: "Point size"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Slider(value: $pointSize, in: 1...8, step: 0.5)
-                    .onChange(of: pointSize) { _, size in model.renderer?.pointSize = Float(size) }
+            // Folded behind a disclosure at compact width (P-14): a rarely-used control was
+            // permanently resident at the platform's scarcest edge, and with the header, scope row,
+            // lens row, legend and caveat the canvas got roughly half the sheet. Regular widths
+            // keep it inline.
+            if isCompactWidth {
+                DisclosureGroup(String(localized: "semanticMap.options",
+                                       defaultValue: "Display options")) {
+                    HStack(spacing: 12) {
+                        Text(String(localized: "semanticMap.pointSize", defaultValue: "Point size"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Slider(value: $pointSize, in: 1...8, step: 0.5)
+                            .onChange(of: pointSize) { _, size in
+                                model.renderer?.pointSize = Float(size)
+                            }
+                    }
+                }
+                .font(.caption)
+            } else {
+                HStack(spacing: 12) {
+                    Text(String(localized: "semanticMap.pointSize", defaultValue: "Point size"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Slider(value: $pointSize, in: 1...8, step: 0.5)
+                        .onChange(of: pointSize) { _, size in
+                            model.renderer?.pointSize = Float(size)
+                        }
+                }
             }
         }
         .padding(.horizontal, 16)
