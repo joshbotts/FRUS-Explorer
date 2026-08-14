@@ -134,6 +134,8 @@ enum ToolWindowID: Hashable {
     case personAnalytics
     case crossRefAnalytics
     case archivalAnalytics
+    /// The Semantic Analytics window (`frus.semanticAnalytics`) — the map, its lenses and slices.
+    case semanticAnalytics
     case wordCloud
     case chronology
     case research

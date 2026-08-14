@@ -90,6 +90,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | (`RelatedDocumentsRequest`)     | WindowGroup   | Related Documents — value-based work list (#308 Phase 2b)|
 /// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
+/// | `"frus.semanticAnalytics"`      | Window        | The corpus as a map of its own vocabulary        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
 /// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, co-citation network, reference flows, your library |
@@ -746,23 +747,24 @@ struct FRUSExplorerApp: App {
         // and corpus graphs were readable.
         .defaultSize(width: 900, height: 640)
 
-        #if DEBUG
-        // MARK: - Semantic Map Window (V-4 diagnostics)
+        // MARK: - Semantic Analytics Window
         //
-        // A window rather than the sheet the other Data & Recovery sub-screens use, and this is the
-        // fix for the blank macOS map rather than a preference. **An `MTKView` in a SwiftUI `.sheet`
-        // on macOS draws and presents but never reaches the screen**: a faithful reproduction logged
-        // it attached, sized, in `SheetPresentationWindow`, presenting 600 frames at a clean 60 fps
-        // against a sheet showing its own background. Moving the same view into this scene, with
-        // nothing else changed, made the map appear. Anything Metal-backed added to Data & Recovery
-        // later needs a window too.
-        Window("Semantic Map", id: "frus.semanticMap") {
-            SemanticMapSpikeView(appState: appState)
+        // A sibling of frus.analytics / frus.personAnalytics / frus.crossRefAnalytics /
+        // frus.archivalAnalytics, and reached the same way — the Analytics menu.
+        //
+        // **A window and never a sheet, and that is a fix rather than a preference.** An `MTKView` in
+        // a SwiftUI `.sheet` on macOS draws and presents but never reaches the screen: a faithful
+        // reproduction logged it attached, sized, in `SheetPresentationWindow`, presenting 600 frames
+        // at a clean 60 fps against a sheet showing its own background. Moving the same view into a
+        // window scene, with nothing else changed, made the map appear. Anything Metal-backed added
+        // to this app needs a window on macOS.
+        Window("Semantic Analytics", id: "frus.semanticAnalytics") {
+            SemanticAnalyticsView(appState: appState)
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 900, height: 700)
-        #endif
 
         // MARK: - Source Explorer Window
         Window("Source Explorer", id: "frus.sourceExplorer") {
@@ -2958,8 +2960,8 @@ struct CollectionMenuContent: View {
 
 /// Content of the menu-bar **Analytics** menu (#363 #4).
 ///
-/// Surfaces the five analytics windows — Corpus / Person / Cross-Reference
-/// analytics, Chronology, and Word Cloud — in a proper top-level menu, so they are
+/// Surfaces the seven analytics windows — Corpus / Person / Cross-Reference /
+/// Archival / Semantic analytics, Chronology, and Word Cloud — in a proper top-level menu, so they are
 /// reachable and discoverable from the menu bar rather than only via the main
 /// window's toolbar dropdown (which vanishes when the toolbar is hidden) and the
 /// cluttered auto Window menu. Mirrors the toolbar Analytics dropdown's actions.
@@ -2975,6 +2977,10 @@ struct CollectionMenuContent: View {
 ///
 /// Version history:
 ///   1.0 — #363 #4: initial implementation
+///   1.1 — #795: Archival Analytics added (the sentence above went unupdated at the time)
+///   1.2 — V-4: Semantic Analytics added. `MainWindowView` names this type as the authority its
+///         toolbar dropdown mirrors, so a membership list here that is two windows out of date is
+///         exactly the drift #795 was.
 struct AnalyticsMenuContent: View {
 
     /// Shared app state — clears tool provenance and seeds the Word Cloud's corpus scope.
@@ -2998,6 +3004,10 @@ struct AnalyticsMenuContent: View {
         Button(String(localized: "menu.analytics.archival", defaultValue: "Archival Analytics")) {
             appState.bindTool(.archivalAnalytics, to: nil)
             openWindow.fronting(id: "frus.archivalAnalytics")
+        }
+        Button(String(localized: "menu.analytics.semantic", defaultValue: "Semantic Analytics")) {
+            appState.bindTool(.semanticAnalytics, to: nil)
+            openWindow.fronting(id: "frus.semanticAnalytics")
         }
 
         Divider()

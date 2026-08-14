@@ -17,13 +17,15 @@ import Metal
 import MetalKit
 import simd
 
-/// The V-4a spike: can one draw call put the whole corpus on screen?
+/// Draws the whole corpus in one call.
 ///
 /// The design (`Vector-Embeddings-Semantic-Design.md` §6.3) budgets the discovery map's rendering as
 /// "the one place this workstream buys new rendering machinery — budget it honestly (it is a session,
 /// not an afternoon)", and specifies **Metal with level-of-detail** on the grounds that SwiftUI
-/// `Canvas` degrades past ~20–50k points and the corpus is 6–15× that. This exists to test the first
-/// half of that claim before any of the interaction design is built on top of it.
+/// `Canvas` degrades past ~20–50k points and the corpus is 6–15× that. This began as the spike that
+/// tested the first half of that claim. **The measurement came back: one draw call over 314,483
+/// points costs ~0.05 ms**, so level-of-detail is an optimisation this surface has never needed, and
+/// none of §6.3's LOD machinery was built.
 ///
 /// ## What it does
 ///
@@ -37,14 +39,33 @@ import simd
 /// bytes per document, 2.5 MB for the corpus rather than the 1.26 MB an earlier version of this
 /// comment claimed. The Metal struct has the same layout, which is what makes the indexing agree.
 ///
-/// ## What it deliberately does not do yet
+/// **Frames are produced on demand.** The view is paused and every mutator here marks it dirty, so a
+/// map nobody is touching costs nothing; see `setNeedsRedraw()`. That is the one thing to know before
+/// adding state that affects the picture — a new stored property without a `didSet` will simply not
+/// appear until something else moves.
 ///
-/// No density layer, no clustering, no labels, no picking. The spike's question is whether the naive
-/// path is fast enough to make level-of-detail an optimisation rather than a prerequisite — and the
-/// answer determines how much of §6.3's machinery V-4 actually needs. Measure first.
+/// ## What it deliberately does not do
+///
+/// No density layer and no level-of-detail. Region labels and picking exist but are not the
+/// renderer's: they are pure functions over the same camera in `SemanticMapLabels` and
+/// `SemanticMapPicking`, which is what lets them be tested without a GPU.
+///
+/// **Main-actor-isolated, and that is load-bearing rather than tidiness.** `MTKView` is
+/// `NS_SWIFT_UI_ACTOR`, so marking a view dirty is a main-actor call; the two `MTKViewDelegate`
+/// witnesses are main-actor for the same reason, and every caller — `SemanticMapModel` and the
+/// representable — already was. An earlier version of this file left the class nonisolated and
+/// claimed in a comment that "a renderer is a perfectly reasonable thing to build off the main
+/// actor". It is not: the class is not `Sendable`, so a renderer built elsewhere could not legally
+/// reach the `@MainActor` model that must own it, and the compiler said so — a clean build of the
+/// macOS scheme emitted *main actor-isolated property 'needsDisplay' can not be mutated from a
+/// nonisolated context*, against a repo rule of zero source warnings.
 ///
 /// Version history:
 ///   1.0 — V-4a: initial spike
+///   1.1 — V-4: promoted with the map into Semantic Analytics. On-demand drawing replaces the
+///         free-running 60 fps loop, and the pipeline is compiled once per process rather than once
+///         per view-struct initialisation. Main-actor-isolated, which the redraw path requires.
+@MainActor
 final class SemanticMapRenderer: NSObject, MTKViewDelegate {
 
     /// One document as the GPU sees it. Layout must match `MapPoint` in the shader exactly.
@@ -65,7 +86,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         var alpha: Float
     }
 
-    /// Rolling frame statistics — the spike's actual output.
+    /// Rolling frame statistics — the spike's original output, now the DEBUG overlay's.
     struct Stats: Sendable, Equatable {
         /// Documents in the vertex buffer.
         var pointCount: Int = 0
@@ -79,10 +100,14 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         /// published every 30 samples and the model then keeps that value, so the blank macOS
         /// surface showed a confident "4.09 ms mean" that proved only that some frames had happened
         /// at some point. A running total makes a frozen surface visible.
+        ///
+        /// Read it differently now that the map draws on demand: a count that stops climbing while
+        /// the reader is not touching the map is correct rather than alarming. It is also the reason
+        /// `record` publishes on every frame — see there.
         var presentedFrames: Int = 0
     }
 
-    /// Called on the main actor whenever the statistics window rolls over.
+    /// Called on the main actor after every presented frame.
     var onStats: (@Sendable @MainActor (Stats) -> Void)? {
         get { statsSink.onStats }
         set { statsSink.onStats = newValue }
@@ -116,15 +141,83 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     private(set) var uploadCount = 0
 
     /// Sprite size in pixels.
-    var pointSize: Float = 2.0
+    var pointSize: Float = 2.0 { didSet { setNeedsRedraw() } }
 
     /// Where the camera is looking. The label layer projects through the same value, which is the
     /// point of the type: one definition of where a grid coordinate lands.
-    private(set) var camera = SemanticMapCamera()
+    private(set) var camera = SemanticMapCamera() { didSet { setNeedsRedraw() } }
     /// Viewport width divided by height, from the drawable rather than assumed.
-    private(set) var aspect: Float = 1
+    private(set) var aspect: Float = 1 { didSet { setNeedsRedraw() } }
     /// The viewport in points, for converting a gesture's translation into grid units.
     private(set) var viewportPoints = CGSize(width: 600, height: 600)
+
+    /// A view held without keeping it alive.
+    private final class WeakView {
+        weak var view: MTKView?
+        init(_ view: MTKView) { self.view = view }
+    }
+
+    /// The views to mark dirty, weakly.
+    ///
+    /// **A list rather than one reference.** Whether SwiftUI realizes *this* representable more than
+    /// once is a question this file has answered wrongly before — the suite's version history records
+    /// "NOT, as this entry first claimed, SwiftUI realizing the representable more than once; it is
+    /// realized once" — so the list is not justified by a measured multiplicity. It is justified by
+    /// the cost asymmetry: a second live view costs one redundant dirty mark on a view `draw(in:)`
+    /// already skips for having no window, while a single slot holding the wrong instance costs a map
+    /// that never redraws at all. The suite does construct several views from one surface, and every
+    /// one of them is marked.
+    ///
+    /// Weak, and it must stay weak: `MTKView.delegate` is itself weak and the model owns the
+    /// renderer, so a strong reference here would close a cycle around every window the map opens.
+    private var attachedViews: [WeakView] = []
+
+    /// How many views have been marked dirty, in total, across every redraw request.
+    ///
+    /// **Counts the mark, not the call**, and the distinction is the whole value of the counter.
+    /// `UIView` exposes no readable `needsDisplay`, so on the platform the suite runs on there is
+    /// nothing else to assert; a counter incremented at the top of `setNeedsRedraw` would stay green
+    /// against a body that had stopped marking anything — which is a map frozen at its first frame,
+    /// the most complete failure this surface has. So it is incremented immediately after the
+    /// platform call, per view, where the two cannot be separated by a one-line edit.
+    private(set) var markedViewCount = 0
+
+    /// Marks every attached surface dirty so it asks for one frame.
+    ///
+    /// **The map draws on demand, not on a clock.** It is a static image unless the camera moves,
+    /// the lens changes or the corpus is re-uploaded, so a free-running display link re-issued the
+    /// same 314,483-point draw call sixty times a second for as long as a window stayed open —
+    /// affordable while this was a spike being measured, not for a window a reader leaves open
+    /// beside their work. Every mutator above marks the surface instead, which is why they are
+    /// `didSet` rather than plain stored properties.
+    private func setNeedsRedraw() {
+        attachedViews.removeAll { $0.view == nil }
+        for box in attachedViews {
+            guard let view = box.view else { continue }
+            #if os(macOS)
+            view.needsDisplay = true
+            #else
+            view.setNeedsDisplay()
+            #endif
+            markedViewCount += 1
+        }
+    }
+
+    /// Registers a view to receive redraw requests, and asks it for a first frame.
+    ///
+    /// Idempotent: registering a view already known replaces its entry rather than adding a second.
+    ///
+    /// - Parameter view: The view this renderer is the delegate of.
+    func register(_ view: MTKView) {
+        attachedViews.removeAll { $0.view == nil || $0.view === view }
+        attachedViews.append(WeakView(view))
+        setNeedsRedraw()
+    }
+
+    /// How many live views are registered, for tests.
+    var attachedViewCount: Int {
+        attachedViews.reduce(0) { $0 + ($1.view == nil ? 0 : 1) }
+    }
 
     /// Grid coordinate at the centre of the view.
     var centre: SIMD2<Float> { camera.centre }
@@ -142,28 +235,51 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     private var drawCallCount = 0
     #endif
 
-    /// Accumulates GPU frame times off the main actor and publishes a value type when the window
-    /// rolls over. GPU-reported timestamps are the honest measure; CPU wall time around `commit` is
-    /// not, because the command buffer has barely started when `commit` returns.
+    /// Accumulates GPU frame times off the main actor and publishes a value type per frame.
+    /// GPU-reported timestamps are the honest measure; CPU wall time around `commit` is not, because
+    /// the command buffer has barely started when `commit` returns.
     private let statsSink = StatsSink()
 
-    /// Creates the renderer, compiling the pipeline from the app bundle's default library.
+    /// Compiled pipelines, keyed by device.
     ///
-    /// - Parameter device: The Metal device to render with.
-    /// - Returns: `nil` when the device has no command queue or the shaders are missing — the caller
-    ///   shows an unavailable state rather than crashing, because a simulator or a stripped build
-    ///   are both real conditions.
-    init?(device: MTLDevice) {
-        // Compiled from source at runtime rather than from a `.metal` file in the target.
-        //
-        // A build-time shader needs the Metal toolchain component installed, which this spike does
-        // not justify: its whole purpose is to produce one measurement, and a several-gigabyte
-        // developer download is a strange prerequisite for finding out whether a draw call is fast.
-        // Runtime compilation costs a few milliseconds once at startup and keeps the shader beside
-        // the code that binds its buffers. If the map ships, this moves to a `.metal` file and the
-        // toolchain becomes a deliberate decision rather than a precondition for measuring.
-        guard let queue = device.makeCommandQueue(),
-              let library = try? device.makeLibrary(source: Self.shaderSource, options: nil),
+    /// **Because the renderer is built more often than it looks.** `SemanticMapModel` constructs one
+    /// in `init` — deliberately, so no view can exist before the renderer does — and a `@State`
+    /// property's initial value expression is evaluated on *every* initialisation of the view struct,
+    /// not only the first. SwiftUI discards the duplicates, but the shader compilation had already
+    /// happened. Caching makes the pipeline half of a discarded construction cost a dictionary
+    /// lookup — a command queue and a 256-byte palette buffer are still made and thrown away, which
+    /// is the cheap part and not worth a second cache.
+    ///
+    /// A bare dictionary rather than a locked box: the whole type is main-actor-isolated, so the
+    /// isolation *is* the synchronisation. A failure is not cached — nothing here would make a second
+    /// attempt succeed, but neither does a stored `nil` earn its complexity.
+    private static var pipelineCache: [ObjectIdentifier: MTLRenderPipelineState] = [:]
+
+    /// How many times the shader has actually been compiled.
+    ///
+    /// The point of the cache is that this does *not* grow with the number of renderers, and there is
+    /// no other way to observe that: two constructions both succeed either way.
+    private(set) static var pipelineCompileCount = 0
+
+    /// The render pipeline for a device, compiling it once per process.
+    ///
+    /// - Parameter device: The device to build for.
+    /// - Returns: The pipeline, or `nil` when the shader will not compile or link.
+    static func pipeline(for device: MTLDevice) -> MTLRenderPipelineState? {
+        let key = ObjectIdentifier(device)
+        if let cached = pipelineCache[key] { return cached }
+        guard let built = buildPipeline(for: device) else { return nil }
+        pipelineCache[key] = built
+        return built
+    }
+
+    /// Compiles and links the point-sprite pipeline.
+    ///
+    /// - Parameter device: The device to build for.
+    /// - Returns: The pipeline, or `nil` when the shader will not compile or link.
+    private static func buildPipeline(for device: MTLDevice) -> MTLRenderPipelineState? {
+        pipelineCompileCount += 1
+        guard let library = try? device.makeLibrary(source: shaderSource, options: nil),
               let vertexFunction = library.makeFunction(name: "semanticMapVertex"),
               let fragmentFunction = library.makeFunction(name: "semanticMapFragment")
         else { return nil }
@@ -171,7 +287,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction = vertexFunction
         descriptor.fragmentFunction = fragmentFunction
-        descriptor.colorAttachments[0].pixelFormat = Self.pixelFormat
+        descriptor.colorAttachments[0].pixelFormat = pixelFormat
         // Ordinary source-over compositing. `.add` here is the *combine operation*, and with
         // `.sourceAlpha` / `.oneMinusSourceAlpha` factors that is plain alpha blending — overlapping
         // documents saturate toward the source colour rather than accumulating. An earlier version of
@@ -185,8 +301,32 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         descriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
         descriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
 
-        guard let pipeline = try? device.makeRenderPipelineState(descriptor: descriptor),
-              let palette = device.makeBuffer(
+        return try? device.makeRenderPipelineState(descriptor: descriptor)
+    }
+
+    /// Creates the renderer, taking the shared pipeline for this device.
+    ///
+    /// - Parameter device: The Metal device to render with.
+    /// - Returns: `nil` when the device has no command queue or the shaders are missing — the caller
+    ///   shows an unavailable state rather than crashing, because a simulator or a stripped build
+    ///   are both real conditions.
+    init?(device: MTLDevice) {
+        // Compiled from source at runtime rather than from a `.metal` file in the target.
+        //
+        // **The map has now shipped, so the original justification has expired and is replaced
+        // rather than left standing.** It read: a build-time shader needs the Metal toolchain
+        // component installed, which a spike does not justify. What keeps runtime compilation now is
+        // narrower and worth stating plainly — the shader and the code that binds its buffers are
+        // the two halves of one contract with no compiler checking between them, and keeping them
+        // in one file is what makes a layout mismatch visible. The cost is one compilation per
+        // process, because `pipeline(for:)` above caches it; the risk is that a compilation failure
+        // becomes a runtime `nil` instead of a build error, which is why `init?` exists and why the
+        // caller draws an unavailable state rather than crashing.
+        guard let queue = device.makeCommandQueue(),
+              let pipeline = Self.pipeline(for: device)
+        else { return nil }
+
+        guard let palette = device.makeBuffer(
                 length: MemoryLayout<SIMD4<Float>>.stride * 16, options: .storageModeShared)
         else { return nil }
 
@@ -205,6 +345,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         pointCount = points.count
         uploadCount += 1
         statsSink.setPointCount(points.count)
+        defer { setNeedsRedraw() }
         guard !points.isEmpty else { pointBuffer = nil; return }
         pointBuffer = points.withUnsafeBytes { raw in
             device.makeBuffer(bytes: raw.baseAddress!, length: raw.count, options: .storageModeShared)
@@ -226,6 +367,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             base.advanced(by: row * stride + MemoryLayout<SIMD2<Int16>>.size)
                 .storeBytes(of: colours[row], as: UInt8.self)
         }
+        setNeedsRedraw()
     }
 
     /// Replaces the colour palette.
@@ -237,6 +379,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         for index in 0..<16 {
             contents[index] = index < colours.count ? colours[index] : SIMD4<Float>(1, 1, 1, 1)
         }
+        setNeedsRedraw()
     }
 
     /// Frames the whole dataset, whatever shape the viewport currently is.
@@ -286,8 +429,10 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         #if DEBUG
         // The blank-macOS-surface probe, kept rather than deleted. Six candidate mechanisms were
         // reviewed and all six were refuted, so if the surface is ever blank again the next report
-        // should be conclusive instead of another round of theories. One line every ~2 seconds per
-        // view, on a DEBUG-only screen.
+        // should be conclusive instead of another round of theories. It used to print one line every
+        // ~2 seconds because frames came from a display link; now that the map draws on demand, 120
+        // draws is however long it takes a reader to move the camera 120 times, and a probe that
+        // never prints is itself the news.
         drawCallCount += 1
         if drawCallCount % 120 == 1 {
             print("[SemanticMapRenderer] draw view=\(ObjectIdentifier(view)) "
@@ -355,7 +500,9 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         private var samples: [Double] = []
         private var pointCount = 0
         private var presentedFrames = 0
-        /// Published when a window closes; assigned on the main actor before rendering starts.
+        /// The last closed window's timings, republished until the next one closes.
+        private var window: Stats?
+        /// Called after every presented frame; assigned on the main actor before rendering starts.
         var onStats: (@Sendable @MainActor (Stats) -> Void)?
 
         /// Records the document count for the next published window.
@@ -364,19 +511,35 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             lock.lock(); pointCount = count; lock.unlock()
         }
 
-        /// Folds one frame in, publishing when the window rolls over.
+        /// Folds one frame in and publishes.
+        ///
+        /// **Published on every frame, not every thirtieth**, since the map went on-demand. The old
+        /// shape waited for a window of 30 samples to close, which was invisible under a 60 fps
+        /// display link and is not now: a map the reader has looked at but not touched draws a
+        /// handful of frames and then stops, so the overlay sat at "0 frames presented · 0.00 ms
+        /// mean" over a surface that had plainly drawn — the exact reading the counter was added to
+        /// prevent. The mean and worst are still over the last closed window of 30, so the figures
+        /// stay as steady as they were; only the publish cadence changed.
+        ///
         /// - Parameter milliseconds: The frame's GPU duration.
         func record(_ milliseconds: Double) {
             lock.lock()
             samples.append(milliseconds)
             presentedFrames += 1
-            guard samples.count >= 30 else { lock.unlock(); return }
-            let stats = Stats(
-                pointCount: pointCount,
-                frameMilliseconds: samples.reduce(0, +) / Double(samples.count),
-                worstMilliseconds: samples.max() ?? 0,
-                presentedFrames: presentedFrames)
-            samples.removeAll(keepingCapacity: true)
+            if samples.count >= 30 {
+                window = Stats(
+                    pointCount: pointCount,
+                    frameMilliseconds: samples.reduce(0, +) / Double(samples.count),
+                    worstMilliseconds: samples.max() ?? 0,
+                    presentedFrames: presentedFrames)
+                samples.removeAll(keepingCapacity: true)
+            }
+            // Before the first window closes there are no averages to report, so the frame times
+            // read zero — and the frame count, which is the part that says "this surface is alive",
+            // is current from frame one.
+            var stats = window ?? Stats()
+            stats.pointCount = pointCount
+            stats.presentedFrames = presentedFrames
             let sink = onStats
             lock.unlock()
             guard let sink else { return }

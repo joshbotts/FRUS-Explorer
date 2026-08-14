@@ -653,6 +653,18 @@ These figures show where the editors drew their documents, which is an editorial
 
 Find it from the Browse tab's Analysis Tools menu (iOS) or the Archival Analytics window (Mac), and from the "Open Archival Analytics" link on the Archival Sourcing page of this guide.
 
+<!-- section-id: semantic-analytics -->
+
+**Semantic Analytics**
+
+Every other analytics surface measures something the corpus states — who is named, what cites what, where a document came from. Semantic Analytics measures how the language sits. Every document in the series is placed on one map by the shape of its wording, so documents that read alike land near each other whether or not they share a volume, a date, or a citation. Regions are named by the vocabulary that distinguishes them from the rest of the corpus.
+
+You can colour the map three ways — by region, by coverage era, or by what is downloaded on this device. Tap a point to see which document it is and open it. Draw a lasso around an area to keep everything inside it as a working corpus, which you can then use to scope a search. Or tap two documents as poles and lay the whole series along the axis between them: the axis runs between the two documents' volumes, so two documents from the same volume give no axis, and a slice replaces the vertical axis with each volume's coverage year.
+
+This is a model's reading of the language, not an editorial fact, and it is experimental. Two cautions in particular. The map's plane preserves local similarity: neighbours are meaningfully near each other, but the distance between two far-apart regions means nothing. And the model was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown rather than a checked result.
+
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Semantic Analytics window (Mac).
+
 <!-- section-id: source-explorer -->
 
 **Source Explorer & NARA Catalog**

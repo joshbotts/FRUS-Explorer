@@ -222,7 +222,7 @@ struct ArchivalAnalyticsEntryPointTests {
         // bare Image would ship an unnamed item.
         #expect(source.contains("browse.archivalAnalytics.a11y"),
                 "the menu row needs a named Label, not a bare icon")
-        #expect(source.contains("browse.analysisTools.help.v2"),
+        #expect(source.contains("browse.analysisTools.help.v3"),
                 "the Analysis Tools help string enumerates the tools by name and must list this one")
     }
 

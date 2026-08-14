@@ -100,6 +100,12 @@ final class SemanticMapModel {
     /// every interaction has to agree with what is drawn rather than with the artifact.
     private(set) var positions: [SIMD2<Int16>] = []
 
+    /// Whether `unavailable` describes a load still in flight rather than a refusal.
+    ///
+    /// The two were one string, so a screen that would show the map in a moment announced "Map
+    /// unavailable" — a failure headline for a transient state.
+    private(set) var isLoadingArtifact = false
+
     /// The lasso being drawn, in view points. Empty when not drawing.
     private(set) var lassoPath: [CGPoint] = []
     /// What the last completed lasso enclosed.
@@ -107,9 +113,9 @@ final class SemanticMapModel {
 
     /// Where the camera is looking, mirrored out of the renderer.
     ///
-    /// The renderer is not `@Observable` — it is driven by a display link and must not publish per
-    /// frame — so gestures go through `pan`/`zoom` here, which move the camera and republish it. That
-    /// is what makes the labels follow the map instead of sitting where they were when it loaded.
+    /// The renderer is not `@Observable` — it is a drawing object, not a source of truth for SwiftUI
+    /// — so gestures go through `pan`/`zoom` here, which move the camera and republish it. That is
+    /// what makes the labels follow the map instead of sitting where they were when it loaded.
     private(set) var camera = SemanticMapCamera()
 
     /// The vector index, for the volume row ranges every lens but `cluster` fills.
@@ -130,10 +136,23 @@ final class SemanticMapModel {
                                  defaultValue: "This device has no Metal renderer.")
             return
         }
-        made.onStats = { [weak self] measured in
-            Task { @MainActor in self?.stats = measured }
-        }
+        // No `Task` hop here: `onStats` is already `@MainActor`, and `StatsSink` does the hop.
+        made.onStats = { [weak self] measured in self?.accept(measured) }
         renderer = made
+    }
+
+    /// Takes a statistics window, keeping the frame counter monotonic.
+    ///
+    /// **Frames arrive out of order.** `StatsSink` hops each window to the main actor with its own
+    /// unstructured `Task`, and independent tasks have no ordering guarantee — so a later frame can
+    /// be delivered before an earlier one, and the count that exists to prove the surface is alive
+    /// could tick backwards in front of a reader. Dropping a stale window is the whole fix; the
+    /// timings it carries are a rolling mean either way.
+    ///
+    /// - Parameter measured: The window as reported.
+    private func accept(_ measured: SemanticMapRenderer.Stats) {
+        guard measured.presentedFrames >= stats.presentedFrames else { return }
+        stats = measured
     }
 
     /// Loads the bundled map into the renderer. Idempotent.
@@ -152,11 +171,14 @@ final class SemanticMapModel {
         await BundledSemanticMap.prepare()
         guard let map = BundledSemanticMap.vectors,
               let vectorIndex = BundledSemanticVectors.index else {
-            unavailable = Self.describe(BundledSemanticMap.unavailableReason ?? .pending)
+            let reason = BundledSemanticMap.unavailableReason ?? .pending
+            isLoadingArtifact = reason == .pending
+            unavailable = Self.describe(reason)
             return
         }
         index = vectorIndex
         unavailable = nil
+        isLoadingArtifact = false
 
         // Positions come straight out of the mapped artifact; only the colour byte is computed,
         // which is why switching lens later rewrites 314 KB and never touches a coordinate.
@@ -487,7 +509,11 @@ final class SemanticMapModel {
 /// The corpus as a map of its own vocabulary.
 ///
 /// Draws the bundled Tier-0 artifact — 314,483 documents placed by the layout stage, coloured by a
-/// lens the reader picks. `#if DEBUG` until the surface earns its place in the app proper.
+/// lens the reader picks, with tap-to-open, lasso capture and axis slices over it.
+///
+/// It is the body of `SemanticAnalyticsView`, which is where it ended up after starting as a
+/// `#if DEBUG` row in Settings ▸ Data & Recovery. The name still says "spike" because that is what
+/// it was; the type is what it grew into.
 ///
 /// Version history:
 ///   1.0 — V-4a: initial spike
@@ -533,7 +559,15 @@ struct SemanticMapSpikeView: View {
                     .overlay { labelOverlay }
                     .overlay { lassoOverlay }
                     .overlay { selectionMarker }
+                    #if DEBUG
+                    // Developer instrumentation, and now DEBUG-gated because this surface ships.
+                    // "314483 documents · 0.05 ms mean · 18,849 fps equivalent" is the language of a
+                    // rendering spike, not of an analytics window, and it was only ever acceptable
+                    // because no user could reach the screen. The numbers are still worth having —
+                    // the frame counter is what distinguishes a live surface from a dead one — so
+                    // they stay for developers rather than being deleted.
                     .overlay(alignment: .topLeading) { statsOverlay }
+                    #endif
                     .overlay { unavailableOverlay }
                     // Before the drag gesture, so a tap is a tap and a drag is still a pan.
                     .gesture(
@@ -572,13 +606,34 @@ struct SemanticMapSpikeView: View {
                             .onEnded { _ in zoom = 1.0 })
                 // Siblings, not overlays, for the reason the Open button taught: an overlay of the
                 // gestured surface has its buttons swallowed by that surface's gestures.
-                selectionCard
-                lassoCard
+                //
+                // **Stacked rather than layered.** All three are bottom-leading in this ZStack, so as
+                // bare siblings a lasso result drew exactly on top of a selection card — hiding Open
+                // Document and the pole buttons behind a card that looked like the only thing there.
+                VStack(alignment: .leading, spacing: 0) {
+                    sliceCard
+                    selectionCard
+                    lassoCard
+                }
             }
             provenanceCaveat
             controls
         }
-        .navigationTitle(String(localized: "semanticMap.title", defaultValue: "Semantic Map"))
+        // Matches the window, the menu item and the toolbar row. It used to say "Semantic Map",
+        // which titled the macOS window differently from every door that opens it.
+        //
+        // macOS only, as all three sibling analytics views do (#219): there the title IS the window
+        // title, while in the iOS sheet a large title spends a band of vertical space that the map
+        // wants — and the sheet already carries the surface's name in its about header. VoiceOver
+        // gets the name either way.
+        #if os(macOS)
+        .navigationTitle(String(localized: "semanticAnalytics.title",
+                                defaultValue: "Semantic Analytics"))
+        #else
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "semanticAnalytics.title",
+                                   defaultValue: "Semantic Analytics"))
+        #endif
         // In the toolbar rather than beside the point-size slider, and that is a fix: the controls
         // row sits at the bottom of the screen where the iCloud status banner overlays it, so the
         // toggle was drawn but could not be tapped — the drag kept panning. A mode switch has to be
@@ -599,8 +654,10 @@ struct SemanticMapSpikeView: View {
             }
         }
         #if os(iOS)
-        // The map is pushed inside the Settings stack, which carries no document destination of its
-        // own. macOS opens a real document window instead and needs none.
+        // The map's own document destination. Its host — now `SemanticAnalyticsView`'s
+        // `NavigationStack`, previously the Settings stack it was pushed inside — carries none, and a
+        // destination declared outside any stack is inert, which is why that wrapper is load-bearing
+        // rather than cosmetic. macOS opens a real document window instead and needs none of this.
         .navigationDestination(item: $openedDocument) { entry in
             DocumentView(entry: entry)
         }
@@ -822,6 +879,61 @@ struct SemanticMapSpikeView: View {
         }
     }
 
+    /// The axis the corpus is laid out along, and the way back to the map.
+    ///
+    /// **This is the only exit from a slice, and for one release there was none.** `clearSlice` was
+    /// written when the slice was, and nothing ever called it: picking two poles re-laid the corpus,
+    /// hid the region labels, and left closing the window as the only way back — on a surface that
+    /// had already shipped four controls which drew correctly and did nothing. The card also makes
+    /// the *half-set* state visible, which nothing else did: after "Axis: from here" the reader is
+    /// one pole in with no indication of it anywhere on screen.
+    @ViewBuilder
+    private var sliceCard: some View {
+        if model.slice != nil || model.poles.negative != nil {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label(String(localized: "semanticMap.axis.title", defaultValue: "Axis"),
+                          systemImage: "arrow.left.and.right")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 12)
+                    Button {
+                        model.clearSlice(yearForVolume: yearForVolume, reapplyLens: applyLens)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "semanticMap.axis.clear",
+                                               defaultValue: "Clear axis and return to the map"))
+                }
+                if let slice = model.slice {
+                    Text(verbatim: "\(slice.negativeLabel) → \(slice.positiveLabel)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button(String(localized: "semanticMap.axis.back",
+                                  defaultValue: "Back to the map")) {
+                        model.clearSlice(yearForVolume: yearForVolume, reapplyLens: applyLens)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                } else if let negative = model.poles.negative {
+                    // One pole in. Say so, and say what the second one costs.
+                    Text(verbatim: negative)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(String(localized: "semanticMap.axis.needsSecondPole",
+                                defaultValue: "Tap another document and choose \u{201C}…to here\u{201D}."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: 340)
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+        }
+    }
+
     /// What the reader tapped, and what they can do about it.
     ///
     /// An **overlay, never a sheet**: a SwiftUI sheet on macOS does not composite the Metal layer
@@ -900,22 +1012,36 @@ struct SemanticMapSpikeView: View {
     @ViewBuilder
     private func openButton(for selection: SemanticMapPicking.Selection) -> some View {
         #if os(macOS)
-        // A real document window, matching Citation Lookup: the map stays put while the document
-        // opens beside it, which is the whole point of picking things off a map.
+        // Routed through provenance, like Cross-Reference Analytics and the corpus browser, NOT
+        // minted directly the way Citation Lookup does. This started as a direct
+        // `openWindow(value: DocumentWindowID(...))` "matching Citation Lookup", which left
+        // `ToolWindowID.semanticAnalytics` written by both launchers and read by nobody — a binding
+        // that documented a route it did not take. Routing keeps the property that comment was
+        // reaching for (the map is its own window, so it stays put either way) and additionally puts
+        // the document where the reader launched the map from; with no live host, `openDocument`
+        // mints the standalone window itself.
         Button(String(localized: "semanticMap.selection.open", defaultValue: "Open Document")) {
-            openWindow(value: DocumentWindowID(
-                volumeId: selection.volumeID,
-                documentId: selection.documentID,
-                header: "\(selection.volumeID) — \(selection.documentID)"))
+            appState.openDocument(
+                DocumentBrowserEntry(
+                    documentId: selection.documentID,
+                    volumeId: selection.volumeID,
+                    documentNumber: nil,
+                    header: "\(selection.volumeID) — \(selection.documentID)",
+                    dateline: nil,
+                    sourceNote: nil),
+                from: .tool(.semanticAnalytics),
+                using: openWindow)
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.small)
         #else
         // `navigationDestination(item:)` driven from state, NOT a value-based `NavigationLink`.
-        // Measured: with the link, the destination is registered by a view that is *itself* a pushed
-        // destination of the Settings stack, and the push did not stick — the document was built
-        // (the log shows its WebKit content loading) and the reader stayed on the map. Binding the
-        // push to state removes the registration race.
+        // Measured when the map was still a pushed destination of the Settings stack: with the link,
+        // the destination was registered by a view that was itself a pushed destination, and the push
+        // did not stick — the document was built (the log shows its WebKit content loading) and the
+        // reader stayed on the map. The map now has a stack of its own, so that particular
+        // registration race is gone, but the state-driven form is kept: it is the shape that was
+        // actually verified to push, and re-testing a link to save one binding buys nothing.
         Button(String(localized: "semanticMap.selection.open", defaultValue: "Open Document")) {
             openedDocument = DocumentBrowserEntry(
                 documentId: selection.documentID,
@@ -1083,11 +1209,21 @@ struct SemanticMapSpikeView: View {
     @ViewBuilder
     private var unavailableOverlay: some View {
         if let message = model.unavailable {
-            ContentUnavailableView(
-                String(localized: "semanticMap.unavailable", defaultValue: "Map unavailable"),
-                systemImage: "map",
-                description: Text(message))
-            .background(.regularMaterial)
+            // "Map unavailable" was also the headline while the artifact was still loading, which
+            // reads as a failure for a state that resolves on its own a moment later. The pending
+            // case gets a progress view instead; only a real refusal gets the headline.
+            if model.isLoadingArtifact {
+                ProgressView { Text(verbatim: message) }
+                    .controlSize(.large)
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            } else {
+                ContentUnavailableView(
+                    String(localized: "semanticMap.unavailable", defaultValue: "Map unavailable"),
+                    systemImage: "map",
+                    description: Text(message))
+                .background(.regularMaterial)
+            }
         }
     }
 
@@ -1114,6 +1250,12 @@ struct SemanticMapSpikeView: View {
                 model.apply(lens: value, eraForVolume: eraForVolume,
                             isDownloaded: isDownloaded)
             }
+            // The availability lens reads a set that is filled by a detached query at boot. Open the
+            // map before that returns — likeliest when a restored window appears with no user action
+            // — and every point is painted not-on-this-device and stays that way for the life of the
+            // window, because nothing else re-applies. It states a fact about the reader's own
+            // library, so being wrong is worse here than on any other lens.
+            .onChange(of: appState.indexedVolumeIds) { _, _ in applyLens() }
 
             HStack(spacing: 12) {
                 Text(String(localized: "semanticMap.pointSize", defaultValue: "Point size"))
@@ -1163,8 +1305,15 @@ struct SemanticMapSurface {
         // `MTKView()` lands in MTKView's implementation and its common setup does run. Handing the
         // device in up front is simply possible now that the renderer exists before any view does.
         let view = MTKView(frame: .zero, device: model.renderer?.device)
-        view.enableSetNeedsDisplay = false
-        view.isPaused = false
+        // **On demand, not on a clock.** `isPaused` stops the display link and
+        // `enableSetNeedsDisplay` makes a dirty mark the thing that produces a frame; the renderer
+        // marks itself dirty from every mutator (`SemanticMapRenderer.register(_:)` and its `didSet`
+        // hooks). The map is a still image unless the camera moves, so the free-running loop this
+        // replaces spent 60 identical 314,483-point draw calls a second for as long as a window
+        // stayed open — which was a fair trade for a spike being measured and is not one for a
+        // window a reader leaves open beside their work.
+        view.enableSetNeedsDisplay = true
+        view.isPaused = true
         view.preferredFramesPerSecond = 60
         // Must equal the format the pipeline was built for. Nothing in the compiler links the two,
         // so both sides read one constant and a test asserts they agree.
@@ -1179,7 +1328,13 @@ struct SemanticMapSurface {
     /// - Parameter view: The view to attach to.
     @MainActor
     func attach(to view: MTKView) {
-        guard let renderer = model.renderer, view.delegate !== renderer else { return }
+        guard let renderer = model.renderer else { return }
+        // Registered before the delegate check rather than after it, so a re-assert that finds the
+        // delegate already set still puts the view on the redraw list. Both calls are idempotent —
+        // this is belt-and-braces, not a fix for an observed failure — but an on-demand surface that
+        // is not on the list draws nothing at all, and that failure is total rather than degraded.
+        renderer.register(view)
+        guard view.delegate !== renderer else { return }
         view.device = renderer.device
         view.delegate = renderer
     }

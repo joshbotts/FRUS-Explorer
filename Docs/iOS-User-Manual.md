@@ -23,7 +23,8 @@
 13. [Corpus Analytics](#13-corpus-analytics)
     - [13.6 Person Analytics](#136-person-analytics)
     - [13.7 Archival Analytics](#137-archival-analytics)
-    - [13.8 Exporting a Chart for Publication](#138-exporting-a-chart-for-publication)
+    - [13.8 Semantic Analytics](#138-semantic-analytics)
+    - [13.9 Exporting a Chart for Publication](#139-exporting-a-chart-for-publication)
 14. [Chronology](#14-chronology)
 15. [Research Projects](#15-research-projects)
 16. [Settings](#16-settings)
@@ -125,7 +126,7 @@ FRUS Explorer on iPhone and iPad is organized around a **tab bar** with five tab
 
 | Tab | Icon | Purpose |
 |-----|------|---------|
-| **Browse** | books.vertical | Navigate the corpus by subseries, volume, and document; switch your active research project; open the **Analysis Tools** menu (Chronology, Corpus Analytics, Word Cloud, Person Analytics, Cross-Reference Analytics, Archival Analytics) |
+| **Browse** | books.vertical | Navigate the corpus by subseries, volume, and document; switch your active research project; open the **Analysis Tools** menu (Chronology, Corpus Analytics, Word Cloud, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics) |
 | **Search** | magnifyingglass | Full-text search across your downloaded volumes; look up a document directly by citation |
 | **Research** | note.text | Your personal research workspace — all notes, highlights, and tagged documents in one place, organized by collection, tag, or highlight color |
 | **Collections** | tray.2 | Build, edit, and export curated sets of documents |
@@ -238,10 +239,11 @@ An **Analysis Tools** menu (a chart icon) in the Browse toolbar gathers the corp
 - **Person Analytics** — opens the **Person Analytics** surface (see Section 13.6) to study how individual people are mentioned over time and how they connect.
 - **Cross-Reference Analytics** — opens the **Cross-Reference Analytics** surface (see Section 8.1) for a corpus-wide view of the citation network.
 - **Archival Analytics** — opens the **Archival Analytics** surface (see Section 13.7) to see which archival collections and central-file classes each era's volumes were drawn from, and to profile your own indexed volumes the same way.
+- **Semantic Analytics** — opens the **Semantic Analytics** surface (see Section 13.8), a map of the whole corpus placed by the shape of each document's language. Experimental.
 
 Grouping these destinations under one always-reachable menu replaces the separate toolbar buttons used previously (which on iPad could collapse into an unreliable "•••" overflow). (The four offline **About the Series** dashboards — publication timeliness, geographic emphasis, archival sourcing, and administration profiles — live in the FRUS Research Guide instead; see Section 19.1.)
 
-`[SCREENSHOT: Browse toolbar showing the Analysis Tools menu (SF Symbol: chart.bar.xaxis) open with Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, and Word Cloud entries]`
+`[SCREENSHOT: Browse toolbar showing the Analysis Tools menu (SF Symbol: chart.bar.xaxis) open with Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and Word Cloud entries]`
 
 ### 4.5 The People Browser
 
@@ -851,7 +853,7 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 - **Two views.** A packed **spiral cloud** sizes each term by frequency (and rotates some terms to pack more in); a **List** view ranks the same terms with a weight bar and exact counts. The List view is also what VoiceOver reads, so the cloud is fully accessible.
 - **Frequency or Distinctive.** A **Size words by** control under the lens chips chooses what the sizes mean. **Frequency** sizes each word by how often it appears here — which, for most FRUS material, surfaces the vocabulary every volume shares. **Distinctive** compares this scope against a bundled reference of the whole corpus and sizes each word by how much *more* it is used here than across the series, using log-likelihood **keyness**, the corpus-linguistics standard. A line under the control states what the ranking could see: how many of this scope's words were eligible, and the corpus frequency below which a word is *unpriced* — a rare word scores as though the corpus never used it, so a high score on one deserves care. Distinctive shows both a log-likelihood score and an effect size, and they answer different questions — see the ⓘ popover. Distinctive lists only words used **more** here than corpus-wide; a word this scope conspicuously avoids is a real finding it does not show. Words occurring fewer than three times in the scope are never ranked. Distinctive is unavailable for the People / Places / Organizations lenses (names are not counted corpus-wide, so there is no baseline), and it steps aside with an explanation if your settings count words differently from the reference — turning off **Hide common diplomatic words** is the usual cause, and the message names it.
 - **Lenses.** A bar of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). If a scope doesn't contain enough of a given kind of term, the cloud says so instead of showing a near-empty result.
-- **Act on a term.** Tap any word to chart how often it appears across the whole corpus in **Corpus Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word — from **just this cloud** (a temporary hide: the word returns the next time the cloud is generated), **in all word clouds**, or only **in this lens** (the two persistent lists are managed afterwards in Settings → Research → Word Cloud; a **Show N hidden words** control on the cloud restores all of them at once) — switch lenses, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG image, a PDF, or a CSV of terms, counts, and shares — see Section 13.8, which also explains what the export records about how the cloud was built. A **Distinctive** export carries keyness columns (the score, the effect size, and both raw counts) rather than occurrences, and its provenance names the measure, so a file cannot be mistaken for a frequency ranking once it leaves the app.
+- **Act on a term.** Tap any word to chart how often it appears across the whole corpus in **Corpus Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word — from **just this cloud** (a temporary hide: the word returns the next time the cloud is generated), **in all word clouds**, or only **in this lens** (the two persistent lists are managed afterwards in Settings → Research → Word Cloud; a **Show N hidden words** control on the cloud restores all of them at once) — switch lenses, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG image, a PDF, or a CSV of terms, counts, and shares — see Section 13.9, which also explains what the export records about how the cloud was built. A **Distinctive** export carries keyness columns (the score, the effect size, and both raw counts) rather than occurrences, and its provenance names the measure, so a file cannot be mistaken for a frequency ranking once it leaves the app.
 - **Collocates (Search).** A **Collocates** panel answers the inverse question — not *does X appear near Y* but **what appears near X**. It collects the words within a chosen window (±5 to ±50) of every match across your whole result set, not just the page, and ranks them against the same bundled corpus reference the word cloud's Distinctive mode uses. Each row shows how much more often the word appears near your term than across the corpus, both raw counts, and whether the corpus reference is deep enough to price it. **Rank by** switches between *Evidence* (log-likelihood) and *Concentration* (the multiple) — they genuinely disagree, and which one you want depends on the question. A line above the list states how many matches in how many documents the scan read, and says so plainly when a budget stopped it short.
 - **Tuning.** Settings → Research → **Word Cloud** lets you set minimum word length and occurrence count, toggle plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintain your own **hidden-word lists** (global, or per lens) — useful for trimming a recurring false positive without affecting other lenses.
 - **Appearance.** An **Appearance** section in Settings → Research → **Word Cloud** controls how the cloud is drawn. A **font** picker chooses the typeface — **Rounded** (the default, original look), **Default**, **Serif**, or **Monospaced** — and a **density** picker — **Compact**, **Balanced** (default), or **Airy** — sets how tightly words pack (Compact fits more terms; Airy spaces them out for legibility). These are **device-local** preferences (they are not synced via iCloud) and apply everywhere a cloud is drawn: the interactive cloud, the side-by-side comparison columns, and PNG / PDF / collection-image exports.
@@ -934,7 +936,25 @@ Every card in **Collections** and **Your Library** offers **View as table**, whi
 
 `[SCREENSHOT: Archival Analytics on iPad in Collections mode, showing the 1969–1976 ranking with Nixon's NSC Files leading and the Central Files umbrella chip visible]`
 
-### 13.8 Exporting a Chart for Publication
+### 13.8 Semantic Analytics
+
+Corpus Analytics tracks terms, Person Analytics tracks people, Cross-Reference Analytics tracks citations, Archival Analytics tracks provenance. **Semantic Analytics** tracks none of those: it measures how the *language* sits. Open it from the Browse tab's **Analysis Tools** menu.
+
+Every document in the series — all 314,483 of them — is placed on a single map by the shape of its wording, so documents that read alike land near each other whether or not they share a volume, a date, or a citation. The map's regions are named by the vocabulary that distinguishes each one from the rest of the corpus, so you can read the map before you touch it.
+
+**What you can do with it.**
+
+- **Colour by** one of three lenses: **Regions**, **Era**, or **Downloaded** (what is on this device).
+- **Tap a point** to see which document it is; if its volume is on this device, open it.
+- **Draw a lasso** (the toggle in the navigation bar) around an area and keep everything inside it as a **working corpus**. Working corpora scope **Search** — pick one in the search filters; they are not an analytics scope. The card tells you at capture how much of the selection this device can actually search, because the map draws all 552 volumes and your index holds fewer.
+- **Pick two poles** — tap a document and choose *Axis: from here*, then tap another and choose *…to here*. The axis runs between the two documents' **volumes**, so two documents from the same volume give no axis. A slice replaces the vertical axis with each volume's coverage year, so you read *left to right* for the axis you chose and *up and down* for time. The **Axis** card names the poles and takes you back to the map.
+- **Point size** adjusts the sprite size, which is worth raising when you are looking at a sparse corner and lowering when you are looking at the whole plane.
+
+**Read these two cautions before you draw a conclusion.** The map's plane preserves *local* similarity: two neighbouring points are meaningfully alike, but the distance between two far-apart regions means nothing at all, and neither does the direction between them. And the model behind the placements is experimental — it is a machine reading of the language, not an editorial judgement, and it was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown rather than a checked result. The window says so: the layout caution sits beneath the map at all times, and the experimental caution is in the header — which collapses to a one-line warning when you dismiss it, and taps to open again.
+
+`[SCREENSHOT: Semantic Analytics on iPhone, the corpus map coloured by region with region labels, the Lasso toggle in the navigation bar, and the caveat line beneath the map]`
+
+### 13.9 Exporting a Chart for Publication
 
 Every analytics chart can leave the app as a **figure** (PNG or PDF) or as the **data behind it** (CSV) — and both carry a short methods statement, so a figure you publish two years from now still says what it counted.
 
