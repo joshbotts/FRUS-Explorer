@@ -7058,3 +7058,54 @@ shape and would take an afternoon, but there are 107 subseries and 32 administra
 palette slots, so both would have to cycle hues — and a cycled categorical colour with no legend is
 the decoration this session just finished removing. They need a different treatment (an explicit
 highlight-one-and-dim-the-rest, which is what the scope control already does) rather than a lens.
+
+## Session 2026-08-12 — #234 R-1: the no-think re-run, and the measure that needed no ground truth
+
+The fix landed cleanly: `truncated` 231 → **0**, completion **733 → 64 tokens per chunk**, wall clock
+**127.68 → 19.27 s/chunk**, scope **501 → ~76 days**. At ~8 returned names per chunk, 64 tokens is
+roughly correct JSON — **there is no waste left in the generation half**, so no prompt change
+recovers more.
+
+### One reading corrected, in this session's own analysis
+
+The re-run's `unlocated` went 0.8% → 3.6% and was first read here as a quality regression. It is not.
+`returned` went **1,634 → 6,667** and *located* **1,621 → 6,423**: it lost 238 strings to gain 4,802.
+A rate whose denominator quadrupled is not comparable to the rate before it. Recorded in §4.7 as a
+warning rather than quietly fixed, because the misreading was one sentence away from being a
+shortlist decision.
+
+### The measure that needs no M2a
+
+Every arm already records `overlapping_marked` and `marked_in_scanned_docs`, and the editors' markup
+is a real if partial ground truth sitting on disk. The Python harvester and the Swift control
+compute the ratio **identically** (one count per detection overlapping any mark) — checked in the
+source, because a cross-source metric assembled from two implementations is exactly the join this
+repo keeps getting wrong.
+
+| arm | mentions | landing on markup | editor spans | ratio | mentions/doc |
+|---|---|---|---|---|---|
+| `NLTagger` control | 71,358 | 3,760 | 13,055 | **28.8%** | 7.2 |
+| Qwen3 14 B, thinking | 2,264 | 404 | 680 | 59.4% | 4.7 |
+| Qwen3 14 B, no-think | 9,533 | 682 | 680 | **100.3%** | 19.9 |
+
+**It is not recall** — two detections on one span count twice, which is how a row exceeds 100%. But
+double counting only pushes a figure up, so each is an **upper bound**, and the control's is the
+load-bearing one: **`NLTagger` misses at least 71% of the mentions the editors themselves marked.**
+Equally: the metric rewards over-detection, the no-think arm returns 19.9 mentions per document
+against the editors' ~1.4, and its precision is unknown. That is what §6 is for.
+
+### The cost, decomposed, and a call this session got wrong
+
+Two runs over the same chunks with the same prompts solve to **decode ~6.2 tok/s, prefill ~75 tok/s**
+(8.9 s/chunk), decode still 54% of the clock, and a **~35-day prefill-only floor** for the scope.
+§4.2 assumed 350–600 tok/s prefill for an 8 B; the table was wrong about the dominant term.
+
+Before the re-run this session argued the fix would flip the machine advantage to the Air, since
+prefill is compute-bound and the M5 is newer. The measured 75 tok/s says compute is the bottleneck
+and the Air is bad at it — the ride-along's own table has the M1 Max at ~10.4/21 TFLOPS against the
+Air's 2.5–8 sustained. The correction is recorded in §4.8 rather than deleted.
+
+Sequencing now: **(1)** the Studio pilot, one variable, plausibly 2–4×; **(2)** concurrency, which
+§4.2 already calls the largest remaining lever and the harness still does not exploit; **(3)** M2a,
+which is the critical path — two arms disagree by 2.8× on mentions per document and nothing
+available says which is right.

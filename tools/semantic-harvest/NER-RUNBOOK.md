@@ -298,6 +298,10 @@ the same 824 chunks and that the comparison is one.
 | `NLTagger` control | 9,935 | 71,358 | 95% | n/a | — | **0.4 min** | **~8 min** |
 | Qwen3 1.7 B | 480 | 2,031 | 85% | **7.3%** | 244 (30%) | 421 min | **~120 days** |
 | Qwen3 14 B | 480 | 2,264 | 82% | **0.8%** | 231 (28%) | 1,754 min | **~501 days** |
+| Qwen3 14 B, **no-think** | 480 | 9,533 | 93% | 3.6% | **0** | 265 min | **~76 days** |
+
+The last row is §4.8's re-run, folded in here so the four are read together. Everything below about
+the misconfiguration is what it corrects; everything about verbatim discipline is what it does not.
 
 **Two findings, and only one of them is about the models.**
 
@@ -322,6 +326,12 @@ Qwen3 1.7 B failed to copy **112 of 1,538** returned strings verbatim (7.3%) aga
 contributes no mention, so that is one mention in fourteen deleted silently. With the 1.7 B alone,
 7.3% could have been the model or the prompt; the 14 B on the same chunks says it is the model.
 
+> **Read an `unlocated` RATE against its own denominator.** The no-think re-run reports 3.6%, which
+> looks like a 4.5× regression against the 14 B's 0.8% and is not one: `returned` went **1,634 →
+> 6,667** and *located* **1,621 → 6,423**. It lost 238 strings to gain 4,802. A rate whose
+> denominator quadrupled is not comparable to the rate before it, and this one was misread once
+> already — in the first summary of the re-run, in this file's own author's hands.
+
 > **Shortlist sign-off (ride-along §6.4).** **Qwen3 1.7 B is out** — disqualified on verbatim-copy
 > discipline, and no speed fix reaches that. **Qwen3 14 B stands**, with its cost unmeasured until
 > the re-run in §4.8. `unparsable` was 0 for both, so schema adherence is not the issue for either.
@@ -331,7 +341,73 @@ and whether its extra half are people or ships and legations is exactly what §6
 control's `unlocated` is **n/a, not 0.0%** — that counter is written only by the LLM path, and a
 summariser that defaults it to zero will show the control as flawless at a thing it never does.
 
-### 4.8 The no-think re-run
+### 4.8 The no-think re-run, measured — and what the editors already know
+
+Run 2026-08-12, same Air, `OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink`, `SEED`/`SAMPLE_DOCS`
+held. The fix landed: **`truncated` 231 → 0**, `completion_tokens` **733 → 64 per chunk**, wall
+clock **127.68 → 19.27 s/chunk**. 64 tokens for the ~8 strings it now returns is roughly correct
+JSON, so **there is no waste left in the generation half** — no prompt tweak recovers more.
+
+#### The measure that does not need M2a
+
+Every arm records `overlapping_marked` (detections landing on an editor `<persName>`) and
+`marked_in_scanned_docs` (editor spans present). The editors' markup is a real, if partial, ground
+truth, and it is on disk today. The Python harvester and the Swift control compute the ratio
+**identically** — one count per detection that overlaps any mark, `break` in one and
+`contains(where:)` in the other — so the three are comparable. Verified in the source, not assumed.
+
+| arm | mentions | landing on markup | editor spans | ratio | mentions/doc |
+|---|---|---|---|---|---|
+| `NLTagger` control | 71,358 | 3,760 | 13,055 | **28.8%** | 7.2 |
+| Qwen3 14 B, thinking | 2,264 | 404 | 680 | 59.4% | 4.7 |
+| Qwen3 14 B, no-think | 9,533 | 682 | 680 | **100.3%** | 19.9 |
+
+**This ratio is NOT recall, and the last row proves it** — two detections landing on one editor span
+count twice, which is how a ratio exceeds 100%. What makes it usable is the asymmetry: double
+counting can only push a number **up**, so each figure is an **upper bound**. The control's is
+therefore the load-bearing one: **`NLTagger` misses at least 71% of the mentions the editors
+themselves marked.** That is the sharpest thing this program knows about the control, it cost
+nothing to learn, and it was available from the first run.
+
+**The counter-caveat, at equal strength: the metric rewards over-detection.** A detector flagging
+every capitalised token scores ~100% and is worthless. The no-think arm returns **19.9 mentions per
+document** against the control's 7.2 and the editors' own ~1.4. Its precision is unknown, and
+nothing available today can bound it — which is precisely and only what §6 decides.
+
+#### The cost, decomposed
+
+Two runs over the same 824 chunks with the same 665-token prompts are two equations in two unknowns:
+
+| | |
+|---|---|
+| decode | **~6.2 tok/s** |
+| prefill | **~75 tok/s** (8.9 s/chunk) |
+| decode's share of the clock, after the fix | **54%** |
+| **prefill-only floor for the scope** | **~35 days at zero generation** |
+
+§4.2 assumed 350–600 tok/s prefill for an 8 B. Measured: **75 tok/s for a 14 B**. That is the deeper
+falsification — the table was wrong about the *dominant* term, not merely the generation term, and
+the ~76-day figure cannot be argued below ~35 days by any change to the prompt.
+
+#### Sequencing, and a call this file got wrong
+
+The pilot's own author argued before the re-run that the fix would flip the machine advantage to the
+**Air**, on the grounds that prefill is compute-bound and the M5 is newer silicon. The measured 75
+tok/s says compute is the bottleneck and the Air is bad at it; the ride-along's table puts the M1
+Max at ~10.4 TFLOPS fp32 / ~21 fp16 against the Air's **2.5–8 sustained, throttle included**.
+Recorded because a wrong lean stated confidently is worth more as a correction than as a deletion.
+
+1. **The Studio pilot.** Same `SEED`, `SAMPLE_DOCS`, no-think, one variable. Plausibly 2–4× on a
+   compute-bound prefill workload; at 3× that is 76 → ~25 days. `machine` is already in the
+   manifest, so the two stores are self-distinguishing.
+2. **Concurrency.** §4.2 calls it "likely the largest remaining throughput factor" and the harness
+   still sends one chunk at a time. On a prefill-bound workload it is now the biggest untested
+   lever, and it is a harness change rather than a hardware one.
+3. **§6, M2a — the critical path.** Two arms disagree by 2.8× on mentions per document and nothing
+   available says which is right. Every further throughput number is refinement; this is the one
+   that decides whether any of it may ship.
+
+### 4.8.1 Running the no-think re-run
 
 The harness sends a fixed body (`detect_chunk`) with no hook for `chat_template_kwargs`, so
 thinking is turned off **on the LM Studio side**, and that is a provenance gap worth stating: the
@@ -351,17 +427,23 @@ print('completion_tokens', completion, '| status', status, '| names', names)
 "
 ```
 
-**~25 means thinking is off. ~700 means it is still on** — fix the setting, do not start the sweep.
+**Double digits means thinking is off; ~700 means it is still on** — fix the setting, do not start
+the sweep. Measured on the Air the whole run averaged **64 completion tokens per chunk against ~8
+returned names**, so roughly 8 tokens per name is the shape of a healthy answer; a single probe
+chunk with two names should land near 25. What you are ruling out is the ~700 that means a reasoning
+trace, not a precise target.
 
-Then re-run the 14 B only (the 1.7 B is out on (b), and re-timing a disqualified model buys
-nothing), into a store whose name says what changed:
+Then run the 14 B only — the 1.7 B is out on (b), and re-timing a disqualified model buys nothing —
+into a store whose name says what changed, since the toggle itself is not in the manifest:
 
 ```
-OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink
+OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink        # the Air, done 2026-08-12
+OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink-studio # the machine arm, §4.8 sequencing item 1
 ```
 
 everything else — `VOLUMES`, `SAMPLE_DOCS=40`, `SEED=234` — held identical, or it is not the same
-480 documents and the before/after is not a comparison.
+480 documents and the before/after is not a comparison. This is the procedure for **every** further
+arm, the Studio included: one variable, same sample, a store named for what moved.
 
 ---
 
