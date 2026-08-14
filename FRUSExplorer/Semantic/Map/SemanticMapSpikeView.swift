@@ -775,6 +775,7 @@ struct SemanticMapSpikeView: View {
         }
         #endif
         .task {
+            primeProvenanceIfNeeded()
             await model.prepare(lens: lens, eraForVolume: eraForVolume,
                                 isDownloaded: isDownloaded,
                                 provenanceForVolume: provenanceForVolume)
@@ -840,6 +841,7 @@ struct SemanticMapSpikeView: View {
     /// corpus in slot 0 — which is the dim "between regions" colour, so the slice came out grey. The
     /// layout changes; what a colour means does not.
     private func applyLens() {
+        primeProvenanceIfNeeded()
         model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
                     provenanceForVolume: provenanceForVolume)
     }
@@ -864,31 +866,37 @@ struct SemanticMapSpikeView: View {
         return years.reduce(0, +) / years.count
     }
 
-    /// The archival category most of a volume's source notes name.
+    /// The fewest source notes a volume needs before the lens will colour it.
     ///
-    /// **Dominant, not exclusive**, and the caption under the map says so. Ties break on the
-    /// category order in `SourceProvenanceCategory.allCases` rather than arbitrarily, so the map
-    /// does not repaint itself between launches over a volume that drew equally from two files.
+    /// **Ten, and the number is a judgement backed by a measurement.** Fifteen of the 522 covered
+    /// volumes rest on a single parsed note — `frus1898` carries 1,194 documents on the map and one
+    /// note — and the argmax over one note is not a finding about an archive. Twenty-four volumes sit
+    /// at ten or fewer and twenty-nine at twenty or fewer, so the curve is flat here and the exact
+    /// cut is not load-bearing; what matters is that a volume's colour rests on more than a handful.
     ///
-    /// Built once per lens application and cached, because the aggregate is a flat array of 522
-    /// volumes and a linear scan per volume would be 552 × 522 comparisons for one recolour.
-    ///
-    /// - Parameter volumeID: The volume.
-    /// - Returns: Its dominant category, or `nil` when the aggregate does not cover it.
-    private func provenanceForVolume(_ volumeID: String) -> SourceProvenanceCategory? {
-        dominantProvenance[volumeID]
-    }
+    /// Without it the map drew a boundary a reader could see and could not explain: `frus1898`
+    /// (1,194 documents, one note) took the "Other / Unclassified" colour while `frus1899` (810
+    /// documents, no notes) took the absence colour, two adjacent volumes of identical editorial
+    /// character separated by whether one note happened to parse.
+    static let minimumProvenanceNotes = 10
 
-    /// Dominant category per volume, derived once from the bundled aggregate.
-    private var dominantProvenance: [String: SourceProvenanceCategory] {
-        guard let byVolume = appState.sourceProvenanceStore.index?.byVolume else { return [:] }
+    /// The category a volume's source notes name most often, when there are enough of them.
+    ///
+    /// **A plurality, not a majority** — it holds under half the notes for 73 of the 522 covered
+    /// volumes — and the caption under the map says so. Ties break on the category order in
+    /// `SourceProvenanceCategory.allCases` rather than arbitrarily, because a Swift dictionary has no
+    /// stable iteration order and a tie broken by iteration would recolour the map between launches.
+    ///
+    /// - Parameter byVolume: The aggregate's per-volume table.
+    /// - Returns: The dominant category per volume, omitting volumes below the evidence floor.
+    static func dominantProvenance(
+        byVolume: [VolumeProvenance]
+    ) -> [String: SourceProvenanceCategory] {
         var result: [String: SourceProvenanceCategory] = [:]
         result.reserveCapacity(byVolume.count)
-        for volume in byVolume {
+        for volume in byVolume where volume.totalNotes >= minimumProvenanceNotes {
             var best: SourceProvenanceCategory?
             var bestCount = 0
-            // `allCases` order, not the dictionary's: a Swift dictionary has no stable iteration
-            // order, so a tie broken by iteration would recolour the map between launches.
             for category in SourceProvenanceCategory.allCases {
                 let count = volume.count(for: category)
                 if count > bestCount {
@@ -899,6 +907,34 @@ struct SemanticMapSpikeView: View {
             if let best { result[volume.volumeId] = best }
         }
         return result
+    }
+
+    /// The dominant-category table, built once and kept.
+    ///
+    /// **A `@State` cache, not a computed property, and the difference was about a second of frozen
+    /// UI.** The first version computed the whole 522-volume table inside `provenanceForVolume`, which
+    /// the colouring calls once per volume — so one recolour rebuilt it 552 times, 552 × 522 × 10
+    /// comparisons on the main actor, while a doc comment two lines above claimed it was "built once
+    /// per lens application and cached". It was neither.
+    @State private var dominantProvenance: [String: SourceProvenanceCategory] = [:]
+
+    /// Fills the dominant-category cache if it is empty.
+    ///
+    /// Lazy rather than eager because three of the four lenses never look at it, and the aggregate is
+    /// itself lazily decoded — building this at view init would pull a 134 KB JSON decode into the
+    /// first frame of a surface whose whole history is about what happens during its first frame.
+    private func primeProvenanceIfNeeded() {
+        guard dominantProvenance.isEmpty,
+              let byVolume = appState.sourceProvenanceStore.index?.byVolume else { return }
+        dominantProvenance = Self.dominantProvenance(byVolume: byVolume)
+    }
+
+    /// The category a volume's source notes name most often.
+    /// - Parameter volumeID: The volume.
+    /// - Returns: Its dominant category, or `nil` when the aggregate does not cover it or the volume
+    ///   is below the evidence floor.
+    private func provenanceForVolume(_ volumeID: String) -> SourceProvenanceCategory? {
+        dominantProvenance[volumeID]
     }
 
     /// Whether a volume is indexed on this device — the `availability` lens's question.
@@ -1563,18 +1599,6 @@ struct SemanticMapSpikeView: View {
             documents.formatted(.number), Int64(volumes), Int64(ofVolumes))
     }
 
-    /// The lens picker and point size.
-    ///
-    /// A plain stack rather than a `Form`. A grouped `Form` capped at `maxHeight: 130` is a scroll
-    /// view whose section insets consume most of that budget, and on an iPhone it rendered as an
-    /// **empty card with both controls below the fold** — the map drew correctly and there was no way
-    /// to change the lens.
-    ///
-    /// The ~100-point measurement that used to be quoted here covered the lens picker and the slider
-    /// only; the scope row and its summary line came later and were not re-measured. What is verified
-    /// on an iPhone 17 is that all four are on screen with the map above them — the stack has no
-    /// fixed height and the map takes the remainder, so the honest claim is the observation rather
-    /// than a number nobody has re-taken.
     /// The lenses this build can actually draw.
     private var availableLenses: [SemanticMapLens] {
         let byVolume = appState.sourceProvenanceStore.index?.byVolume
@@ -1593,8 +1617,14 @@ struct SemanticMapSpikeView: View {
         let entries = Array(lens.legend.enumerated())
         if !entries.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
+                // **Wrapping, not a horizontal scroll.** The first version put eleven entries in a
+                // `ScrollView(.horizontal, showsIndicators: false)`, which showed three of them on an
+                // iPhone with nothing on screen to say the other eight existed — a key that hides
+                // most of the key. An adaptive grid wraps them, and the vertical scroll it sits in
+                // shows an indicator when there is more, capped so it can never take the map's space.
+                ScrollView(.vertical) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 132), alignment: .leading)],
+                              alignment: .leading, spacing: 4) {
                         ForEach(entries, id: \.offset) { index, name in
                             HStack(spacing: 4) {
                                 Circle()
@@ -1609,6 +1639,9 @@ struct SemanticMapSpikeView: View {
                     }
                     .padding(.horizontal, 1)
                 }
+                // Two whole rows. A height that cuts a row in half reads as a rendering fault rather than
+                // as "there is more" — measured at 54, which clipped the second row's text mid-glyph.
+                .frame(maxHeight: entries.count > 2 ? 48 : 22)
                 if let caption = lens.caption {
                     Text(verbatim: caption)
                         .font(.caption2)
@@ -1636,6 +1669,18 @@ struct SemanticMapSpikeView: View {
                      opacity: 1.0)
     }
 
+    /// The scope chips, the lens picker, the key, and point size.
+    ///
+    /// A plain stack rather than a `Form`. A grouped `Form` capped at `maxHeight: 130` is a scroll
+    /// view whose section insets consume most of that budget, and on an iPhone it rendered as an
+    /// **empty card with both controls below the fold** — the map drew correctly and there was no way
+    /// to change the lens.
+    ///
+    /// The ~100-point measurement that used to be quoted here covered the lens picker and the slider
+    /// only; the scope row and its summary line came later and were not re-measured. What is verified
+    /// on an iPhone 17 is that all four are on screen with the map above them — the stack has no
+    /// fixed height and the map takes the remainder, so the honest claim is the observation rather
+    /// than a number nobody has re-taken.
     private var controls: some View {
         VStack(spacing: 10) {
             scopeControls
@@ -1657,11 +1702,7 @@ struct SemanticMapSpikeView: View {
                 .labelsHidden()
                 Spacer(minLength: 0)
             }
-            .onChange(of: lens) { _, value in
-                model.apply(lens: value, eraForVolume: eraForVolume,
-                            isDownloaded: isDownloaded,
-                            provenanceForVolume: provenanceForVolume)
-            }
+            .onChange(of: lens) { _, _ in applyLens() }
             // A lens whose data this build does not carry is withheld, and if the reader is already
             // ON it — impossible today, but a stored selection would make it reachable — the picker
             // falls back rather than showing a blank name.

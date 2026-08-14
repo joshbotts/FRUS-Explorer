@@ -18,10 +18,12 @@ import simd
 /// What the map's colour means.
 ///
 /// Every lens here is computable from data the app already carries — the map's own cluster ids, the
-/// manifest's coverage dates, and which volumes are indexed — so switching lens rewrites one byte per
-/// document (314 KB) and never touches a coordinate. The design's remaining lenses (provenance
-/// category, subject tags, administration) are the same shape: a per-volume or per-document lookup
-/// filling the same palette index.
+/// manifest's coverage dates, which volumes are indexed, and the bundled provenance aggregate — so
+/// switching lens rewrites one byte per document (314 KB) and never touches a coordinate. The
+/// design's remaining lenses (subject tags, administration) are the same shape: a per-volume lookup
+/// filling the same palette index. Both are held back for a reason worth stating — 107 subseries and
+/// 32 administrations against 16 slots means cycling hues, and a cycled categorical colour that no
+/// key can name is decoration.
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
@@ -75,18 +77,40 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
 
     /// What the lens measures, in one sentence, for the caption under the map.
     ///
-    /// `provenance` is the one that needs it: it is a **per-volume** reading — the category most of
-    /// a volume's source notes name — sitting on a map whose points are documents. Every point in a
-    /// volume therefore takes one colour, and a volume that drew half its documents from a
-    /// presidential library and half from the central files shows only the larger half. Saying that
-    /// once, under the map, is cheaper than a reader inferring it wrongly from a solid block.
+    /// `provenance` is the one that needs it, and the first draft of this caption was itself wrong.
+    /// It is a **per-volume** reading — the category a volume's source notes name most often — on a
+    /// map whose points are documents, so every point in a volume takes one colour. The draft called
+    /// that colour the volume's "larger half", which is false for **73 of the 522** covered volumes,
+    /// where the winner holds under half the notes; it is a plurality. The caption now says so, and
+    /// names the evidence floor, because a solid block of colour otherwise reads as a stronger claim
+    /// than the data makes.
+    ///
+    /// `cluster` gets one too, for a different reason: its key can name only one of the sixteen
+    /// colours it uses (`namesEveryColour`), so the caption is what stops the other fifteen from
+    /// looking like an unlabelled code.
     var caption: String? {
         switch self {
-        case .cluster, .era, .availability:
+        case .cluster:
+            return String(localized: "semanticMap.lens.cluster.caption",
+                          defaultValue: "Colour separates neighbouring regions rather than naming them; the names are on the map.")
+        case .era, .availability:
             return nil
         case .provenance:
-            return String(localized: "semanticMap.lens.provenance.caption",
-                          defaultValue: "Each volume takes the archival category most of its source notes name, so a mixed volume shows only its larger half.")
+            return String(localized: "semanticMap.lens.provenance.caption.v2",
+                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncoloured.")
+        }
+    }
+
+    /// Whether the key under the map can name every colour the lens produces.
+    ///
+    /// **`cluster` cannot, and says so rather than pretending.** It cycles 179 regions through 15
+    /// slots — adjacency, not identity, is what its colour conveys, and the region *names* are drawn
+    /// on the map itself. Every other lens names each colour exactly once, and
+    /// `SemanticMapSurfaceTests` holds them to it against the slots the colouring actually hands out.
+    var namesEveryColour: Bool {
+        switch self {
+        case .cluster: return false
+        case .era, .availability, .provenance: return true
         }
     }
 
@@ -95,6 +119,8 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     var legend: [String] {
         switch self {
         case .cluster:
+            // One entry, and `namesEveryColour` is false: the other fifteen slots cycle through 179
+            // regions, which the map labels by name where they sit.
             return [String(localized: "semanticMap.legend.unclustered",
                            defaultValue: "Between regions")]
         case .era:
@@ -105,10 +131,13 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
                     String(localized: "semanticMap.legend.downloaded",
                            defaultValue: "Downloaded")]
         case .provenance:
-            // Slot 0 is the volumes the aggregate has no source notes for — 30 of the 552 the map
-            // places, which is a real gap and gets a name rather than a colour nobody can read.
-            return [String(localized: "semanticMap.legend.noProvenance",
-                           defaultValue: "No source notes")]
+            // Slot 0 is every volume the lens will not speak for: the 30 the aggregate does not cover
+            // at all, plus the 24 whose whole volume rests on ten notes or fewer. One slot rather
+            // than two because both mean the same thing to a reader — there is not enough here to
+            // colour — and a key that named two kinds of absence would invite them to read a
+            // distinction that is an artifact of whether one note happened to parse.
+            return [String(localized: "semanticMap.legend.noProvenance.v2",
+                           defaultValue: "Too few source notes")]
                 + SourceProvenanceCategory.allCases.map(\.displayName)
         }
     }
@@ -293,10 +322,16 @@ enum SemanticMapColouring {
             // categories are neighbouring blues (they are one filing system, renumbered in 1960),
             // presidential libraries and lot files take warm hues, and "no source notes" keeps the
             // dim achromatic slot every lens reserves for absence.
-            let hues: [Float] = [0.58, 0.52, 0.08, 0.12, 0.95, 0.75, 0.32, 0.44, 0.68, 0.00]
-            let saturations: [Float] = [0.70, 0.55, 0.75, 0.85, 0.60, 0.65, 0.60, 0.55, 0.45, 0.00]
-            let categorical = zip(hues, saturations).map { hue, saturation in
-                hsb(hue: hue, saturation: saturation, brightness: 0.95, alpha: 0.75)
+            let hues: [Float] = [0.58, 0.52, 0.08, 0.12, 0.95, 0.75, 0.32, 0.44, 0.68, 0.10]
+            let saturations: [Float] = [0.70, 0.55, 0.75, 0.85, 0.60, 0.65, 0.60, 0.55, 0.45, 0.12]
+            // `unrecognized` is last, and it is deliberately the DIMMEST of the ten rather than a
+            // full-brightness hue. It wins 55 volumes — 9% of the plane — and it means *the parser
+            // could not classify these notes*, so drawing it as confidently as "Presidential
+            // Libraries" would put the map's loudest claim on its weakest evidence. The first draft
+            // gave it saturation 0 at brightness 0.95, i.e. white: the brightest thing on screen.
+            let brightnesses: [Float] = [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.62]
+            let categorical = zip(zip(hues, saturations), brightnesses).map { pair, brightness in
+                hsb(hue: pair.0, saturation: pair.1, brightness: brightness, alpha: 0.75)
             }
             return ([SIMD4<Float>(0.35, 0.37, 0.42, 0.30)] + categorical
                 + Array(repeating: SIMD4<Float>(0.35, 0.37, 0.42, 0.30), count: paletteSize))

@@ -6992,11 +6992,28 @@ refused for the slice's y-axis.
 
 **Absence keeps its own slot.** Slot 0 is "No source notes" — **30 of the 552** volumes the map
 places are outside the aggregate (522 covered), and **21 of those 30 have a pre-1900 leading year**,
-the remaining nine falling between 1903 and 1919: source notes are a later editorial practice, and
+the remaining nine between 1903 and 1919 (eight of them 1903–1906, one 1919): source notes are a later editorial practice, and
 the grey region the map shows over the nineteenth-century clusters is that fact. Without a reserved
 slot they would have fallen into the first category, `centralDecimalFile`, which is also the largest,
 and been absorbed without a trace. The mutation that makes them fall there is one of the two this
 session's tests are pinned against.
+
+**An evidence floor, added after the review.** The first version took the arg-max with no floor at
+all, so a volume resting on ONE parsed note painted every one of its documents — `frus1898` carries
+1,194 documents on the map and one note. Fifteen volumes are in that state (10,339 documents, 3.3% of
+the plane) and all fifteen resolve to `unrecognized`. The visible consequence was a boundary a reader
+could see and could not explain: `frus1898` took the "Other / Unclassified" colour while its
+neighbour `frus1899` (810 documents, no notes) took the absence colour — two adjacent volumes of
+identical editorial character separated by whether one note happened to parse, and the new legend had
+just given those two greys two different names. The floor is **ten notes**: 24 volumes sit at ten or
+fewer and 29 at twenty or fewer, so the curve is flat there and the exact cut is not load-bearing.
+Below it a volume joins the absence slot, which is renamed "Too few source notes" to cover both
+states honestly.
+
+**`unrecognized` is now the dimmest of the ten**, not the brightest. It was hue 0, saturation 0,
+brightness 0.95 — white, the loudest thing on the plane — for the category whose own doc comment says
+it is "a citation form the parser could not classify". It wins 55 volumes, 9% of the map, so the
+first draft put the map's loudest claim on its weakest evidence.
 
 **Two properties of the real distribution are worth stating, because the picture does not show
 them.** Measured over the 522 covered volumes: the winner is `centralDecimalFile` for 311,
@@ -7014,13 +7031,18 @@ launches.
 `supportsVolumeScope` posture. An older aggregate carries only `byDecade`, and painting all 552
 volumes "no source notes" would say something false about the corpus rather than about the build.
 
-**The legend finally exists.** `SemanticMapLens.legend` has been declared since V-4 and drawn by
-NOTHING for three sessions — survivable while the lenses were regions (named on the map itself), a
+**The legend finally exists.** `SemanticMapLens.legend` has been declared since the V-4 lens work
+and drawn by NOTHING for every session since — survivable while the lenses were regions (named on the map itself), a
 two-state download flag and an ordered era ramp; not survivable for ten archival vocabularies, where
 an unlabelled colour is decoration. Its swatches come from the same `SemanticMapColouring.palette`
-the GPU gets, and a new test requires every lens's legend to name every slot its colouring can hand
-out and to draw each in a distinct colour — the assertion that would have caught the three-session
-gap.
+the GPU gets.
+
+**The first version of that test asserted the wrong thing**, and the review caught it: it required
+`legend.count <= paletteSize`, which is satisfied by naming ONE of sixteen colours — precisely what
+`cluster` does. Coverage is now checked against the slots the colouring actually produces over the
+shipped artifact, and a lens that cannot name them all must declare it (`namesEveryColour`) and
+carry a caption saying why. `cluster` is the only one, because its colour means adjacency and its
+regions are named on the map itself.
 
 **Four lenses do not fit a segmented control**, so the picker is a menu. "Provenance" is the longest
 name and the first that cannot be shortened without lying about what it shows, and the design lists
@@ -7032,7 +7054,7 @@ File, with lot files and presidential libraries massed on the left of the plane 
 picture the design predicted.
 
 **Not built, and the reason:** subseries and administration lenses. Both are the same per-volume
-shape and would take an afternoon, but there are 107 subseries and 45 administrations against 16
+shape and would take an afternoon, but there are 107 subseries and 32 administrations against 16
 palette slots, so both would have to cycle hues — and a cycled categorical colour with no legend is
 the decoration this session just finished removing. They need a different treatment (an explicit
 highlight-one-and-dim-the-rest, which is what the scope control already does) rather than a lens.
