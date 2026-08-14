@@ -87,6 +87,34 @@ final class SemanticMapModel {
     /// The axis the corpus is currently laid out along, when it is not on the map's own plane.
     private(set) var slice: SemanticAxis?
 
+    /// What the reader has scoped the map to, when they have.
+    ///
+    /// **A scope narrows the map without shrinking it.** Out-of-scope documents stay on screen as
+    /// grey ground, because the question a scope answers here — *where does this subseries, this
+    /// administration, this detected topic actually sit in the corpus's language?* — is unanswerable
+    /// without the rest of the corpus to sit against. That is the difference between this and the
+    /// scope on every other analytics surface, where out-of-scope data is simply excluded from a
+    /// sum: here it is the reference frame.
+    private(set) var scope: SemanticMapColouring.ScopeMask?
+
+    /// The regions to label, re-counted against the scope.
+    ///
+    /// Two things happen here and both are necessary. A region with nothing in scope is **dropped**,
+    /// because the artifact's cluster centres are whole-corpus and scoping to one subseries otherwise
+    /// left all 179 names on screen, most of them naming a place that now held nothing but ghosts.
+    /// And a surviving region's `documentCount` is **replaced by its in-scope count**, because the
+    /// label layer ranks by size and keeps a dozen: rank by the series and a narrow scope gives its
+    /// labels to the corpus's biggest regions rather than to the ones it fills.
+    var labelledClusters: [SemanticMapArtifacts.Cluster] {
+        guard let scope else { return clusters }
+        return clusters.compactMap { cluster in
+            guard let count = scope.regionCounts[UInt16(clamping: cluster.id)] else { return nil }
+            return SemanticMapArtifacts.Cluster(
+                id: cluster.id, terms: cluster.terms, documentCount: count,
+                centreX: cluster.centreX, centreY: cluster.centreY, eraCounts: cluster.eraCounts)
+        }
+    }
+
     /// The volumes chosen as the axis's poles, low end first.
     ///
     /// Poles are picked by **tapping a document**, not from a list. 552 volumes and 107 subseries do
@@ -155,6 +183,21 @@ final class SemanticMapModel {
         stats = measured
     }
 
+    /// Narrows the map to a set of volumes, or restores the whole series.
+    ///
+    /// - Parameter volumeIDs: The volumes in scope, or `nil` for the whole series.
+    func setScope(volumeIDs: Set<String>?) {
+        guard let map = BundledSemanticMap.vectors, let index else { return }
+        scope = SemanticMapColouring.scopeMask(volumeIDs: volumeIDs, map: map, index: index)
+        // A selection or a lasso made before the scope may name documents the scope excludes. Both
+        // are dropped rather than filtered: a card that survived a scope change would be showing a
+        // document the map has stopped drawing, and a lasso whose count no longer matches what a
+        // re-draw would catch is worse than no lasso at all.
+        selection = nil
+        lassoResult = nil
+        renderer?.setScopeFlags(scope?.flags ?? [])
+    }
+
     /// Loads the bundled map into the renderer. Idempotent.
     ///
     /// - Parameters:
@@ -198,6 +241,10 @@ final class SemanticMapModel {
         }
         positions = points.map(\.position)
         renderer.setPoints(points)
+        // `setPoints` rewrites every byte of the vertex buffer, flags included, so the scope has to
+        // be re-asserted after each one. This is the same trap the lens hit: a re-layout silently
+        // dropped the reader's colouring and painted the corpus in slot 0.
+        renderer.setScopeFlags(scope?.flags ?? [])
         renderer.frameAll(extent: Float(map.gridExtent))
         camera = renderer.camera
         clusters = BundledSemanticMap.index?.clusters ?? []
@@ -219,7 +266,8 @@ final class SemanticMapModel {
     func select(at point: CGPoint, size: CGSize, isReadable: (String) -> Bool) {
         guard let map = BundledSemanticMap.vectors, let index else { return }
         guard let hit = SemanticMapPicking.hit(
-            at: point, positions: positions, camera: camera, size: size) else {
+            at: point, positions: positions, camera: camera, size: size,
+            scopeMask: scope?.flags) else {
             selection = nil
             return
         }
@@ -273,7 +321,8 @@ final class SemanticMapModel {
         }
         let found = SemanticMapPicking.rows(
             inside: lassoPath, positions: positions, camera: camera, size: size,
-            limit: SemanticMapPicking.corpusCaptureLimit)
+            limit: SemanticMapPicking.corpusCaptureLimit,
+            scopeMask: scope?.flags)
         guard !found.rows.isEmpty else { lassoResult = nil; return }
 
         // Resolve identity only for the rows that will be kept. `document(at:)` mints a String and
@@ -370,6 +419,7 @@ final class SemanticMapModel {
             var points = Self.mapPoints(from: map)
             positions = points.map(\.position)
             renderer.setPoints(points)
+            renderer.setScopeFlags(scope?.flags ?? [])
             renderer.frameAll(extent: Float(map.gridExtent))
             camera = renderer.camera
             points.removeAll()
@@ -423,6 +473,7 @@ final class SemanticMapModel {
         }
         positions = points.map(\.position)
         renderer.setPoints(points)
+        renderer.setScopeFlags(scope?.flags ?? [])
         renderer.frameAll(extent: extent)
         camera = renderer.camera
     }
@@ -535,6 +586,13 @@ struct SemanticMapSpikeView: View {
     @State private var isLassoing = false
     /// What was saved, so the card can say so instead of leaving the reader guessing.
     @State private var savedCorpusName: String?
+    /// The volumes the map is scoped to, or `nil` for the whole series.
+    ///
+    /// An array rather than a set because that is `AnalyticsScopeBar`'s binding type, and the whole
+    /// point of this control is that it is the same one Archival Analytics and the word cloud use.
+    @State private var scopeVolumeIds: [String]?
+    /// What to call the active scope, in the reader's terms.
+    @State private var scopeLabel: String?
     @Environment(\.modelContext) private var modelContext
     #if os(iOS)
     /// The document to push, when the reader opens one.
@@ -846,7 +904,7 @@ struct SemanticMapSpikeView: View {
             // space is a different claim needing its own justification.
             let labels = model.slice == nil
                 ? SemanticMapLabelLayout.labels(
-                    for: model.clusters, camera: model.camera, size: proxy.size)
+                    for: model.labelledClusters, camera: model.camera, size: proxy.size)
                 : []
             ForEach(labels) { label in
                 Text(label.text)
@@ -1227,6 +1285,135 @@ struct SemanticMapSpikeView: View {
         }
     }
 
+    /// The volumes the map is drawing brightly, and the doors that choose them.
+    ///
+    /// **The same `AnalyticsScopeBar` the rest of the analytics family uses**, with the same
+    /// administration menu Archival Analytics puts beside it — so a reader who has scoped a word
+    /// cloud to the Nixon volumes or to a detected topic already knows this control, and can put the
+    /// *same* segment on the map to see where its language actually sits. That comparison is the
+    /// feature: a subseries is an editorial fact, a detected topic is a subject fact, an
+    /// administration is a political fact, and the map is the only surface that can show all three
+    /// against a layout none of them produced.
+    ///
+    /// The population is the **series**, not the reader's library — `SemanticVectorIndex.volumes`,
+    /// the 552 the artifact covers — for the reason Archival Analytics gives: this derivation is
+    /// bundled and is honest with nothing downloaded. The `availability` lens is where the library
+    /// enters, and it stays a lens rather than becoming a scope.
+    @ViewBuilder
+    private var scopeControls: some View {
+        let scopable = scopableVolumeIds
+        if !scopable.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { scopeBar(scopable); administrationMenu(scopable); Spacer(minLength: 0) }
+                VStack(alignment: .leading, spacing: 8) { scopeBar(scopable); administrationMenu(scopable) }
+            }
+            if let scope = model.scope {
+                // The denominator, always. A reader looking at a scoped map is looking at a subset
+                // whose size they cannot see — most of the screen is still the corpus — and "12
+                // volumes" alone would let a scope that resolved to almost nothing look the same as
+                // one that resolved to a subseries.
+                Text(verbatim: Self.scopeSummary(documents: scope.documentCount,
+                                                 volumes: scope.volumeCount,
+                                                 ofVolumes: scopable.count))
+                    .font(.caption2)
+                    .foregroundStyle(scope.documentCount == 0 ? Color.orange : Color.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    /// The volumes a scope may name — those the artifact actually places.
+    private var scopableVolumeIds: Set<String> {
+        Set(BundledSemanticVectors.index?.volumes.map(\.volumeID) ?? [])
+    }
+
+    /// The shared analytics scope selector.
+    /// - Parameter scopable: The volumes in the artifact.
+    /// - Returns: The bar.
+    private func scopeBar(_ scopable: Set<String>) -> some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: scopable,
+            volumeTitle: { appState.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
+            // Both halves go through `applyScope`, so a selection cannot change the label without
+            // re-masking the map — the shape Archival Analytics arrived at after a scope change left
+            // its chart untouched.
+            scopeVolumeIds: Binding(get: { scopeVolumeIds },
+                                    set: { applyScope($0, label: scopeLabel) }),
+            scopeLabel: Binding(get: { scopeLabel },
+                                set: { applyScope(scopeVolumeIds, label: $0) }),
+            onChange: {},
+            presentation: .chip)
+    }
+
+    /// Scope to one presidential administration's volumes.
+    ///
+    /// A second menu rather than a row inside the bar, matching Archival Analytics: an administration
+    /// here is a volume SET taken from the bundled profile index, not a year range, so it composes
+    /// with a map that has no time axis at all until a slice gives it one.
+    ///
+    /// - Parameter scopable: The volumes in the artifact.
+    /// - Returns: The menu, or nothing when the profiles are unavailable.
+    @ViewBuilder
+    private func administrationMenu(_ scopable: Set<String>) -> some View {
+        let profiles = appState.administrationProfilesStore.index?.administrations ?? []
+        if !profiles.isEmpty {
+            Menu {
+                ForEach(profiles, id: \.id) { profile in
+                    Button(profile.president) {
+                        let ids = profile.volumes.map(\.volumeId).filter { scopable.contains($0) }
+                        guard !ids.isEmpty else { return }
+                        applyScope(ids.sorted(), label: profile.president)
+                    }
+                }
+            } label: {
+                Label(String(localized: "semanticMap.scope.administration",
+                             defaultValue: "Administration"),
+                      systemImage: "person.crop.square")
+                    .font(.caption)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    /// Applies a scope to the map and remembers what to call it.
+    ///
+    /// - Parameters:
+    ///   - ids: The volumes in scope, or `nil` for the whole series.
+    ///   - label: The scope's name.
+    private func applyScope(_ ids: [String]?, label: String?) {
+        scopeVolumeIds = ids
+        scopeLabel = label
+        model.setScope(volumeIDs: ids.map(Set.init))
+        savedCorpusName = nil
+    }
+
+    /// How much of the corpus a scope holds, and at what grain.
+    ///
+    /// **It says "every document in", and that phrase is the honest part.** Every scope this control
+    /// offers is a set of VOLUMES — a subseries, an administration's volumes, a detected topic's
+    /// volumes — so scoping to *Nuclear Nonproliferation* lights all 7,702 documents in the 26
+    /// volumes carrying that tag, not the documents about nonproliferation. On a chart that
+    /// distinction hides inside a bar; on a map the reader watches those documents land in regions
+    /// named `salmon constantinople`, and without this sentence the obvious reading is that the
+    /// model placed them badly.
+    ///
+    /// - Parameters:
+    ///   - documents: Documents in scope.
+    ///   - volumes: Volumes in scope.
+    ///   - ofVolumes: Volumes the artifact places.
+    /// - Returns: The sentence.
+    static func scopeSummary(documents: Int, volumes: Int, ofVolumes: Int) -> String {
+        guard documents > 0 else {
+            return String(localized: "semanticMap.scope.empty",
+                          defaultValue: "No mapped documents in this scope.")
+        }
+        return String(format: String(
+            localized: "semanticMap.scope.summary.v2 %@ %lld %lld",
+            defaultValue: "In scope: %@ documents — every document in %lld of %lld volumes."),
+            documents.formatted(.number), Int64(volumes), Int64(ofVolumes))
+    }
+
     /// The lens picker and point size.
     ///
     /// A plain stack rather than a `Form`. A grouped `Form` capped at `maxHeight: 130` is a scroll
@@ -1236,6 +1423,7 @@ struct SemanticMapSpikeView: View {
     /// are on screen.
     private var controls: some View {
         VStack(spacing: 10) {
+            scopeControls
             Picker(String(localized: "semanticMap.lens", defaultValue: "Colour by"),
                    selection: $lens) {
                 ForEach(SemanticMapLens.allCases) { option in

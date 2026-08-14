@@ -6913,3 +6913,65 @@ only the first; SwiftUI discards the duplicates after the shader has already bee
 device-keyed cache behind an `NSLock` makes a discarded construction a dictionary lookup. The
 ordering fix that put the renderer in `init` — no view may exist before the renderer does — is
 unchanged; only its cost is.
+
+## Session 2026-08-13 — the same scope, a different projection
+
+The owner's question: *can the semantic map use the same scope pickers as other analytics features, to
+give users a chance to compare semantic slices with other ways to segment the corpus?* Yes, and it is
+the cheapest interesting thing this surface can do — the map is the only place in the app where an
+editorial, a subject and a political segmentation can be laid against a layout that knows about none
+of them.
+
+**It is literally the same control.** `AnalyticsScopeBar(presentation: .chip)` plus the administration
+menu, the pair Archival Analytics uses, so the doors are the ones a reader has already opened
+elsewhere: by subseries, by volume, my volume scopes, by detected topic, by president. The population
+is the **series** — `SemanticVectorIndex.volumes`, the 552 the artifact places — not the reader's
+library, for the reason Archival gives: this derivation is bundled and honest with nothing
+downloaded. `availability` stays a lens rather than becoming a scope.
+
+**A scope narrows the map without shrinking it**, and that is the whole design. Everywhere else a
+scope excludes data from a sum; here the excluded data is the reference frame — *where does the Nixon
+administration sit in the corpus's language?* is unanswerable with only the Nixon administration on
+screen. Out-of-scope documents stay, desaturated to their own luminance at 22% alpha. Fading alone
+was tried and rejected in the same pass: a low-alpha red still reads as red, and a reader comparing a
+subseries against the corpus would see two shades of one hue and take both for data.
+
+The mechanism is the `flags` byte `MapPoint` has carried unused since V-4a. A palette slot would have
+cost every lens a colour and, worse, would have made an out-of-scope point stop meaning what the lens
+says — the reader scopes to a subseries *in order to* see its eras.
+
+**Four things follow the scope, and all four read one array.** The GPU flags, tap picking, lasso
+capture, and the count under the chip come from a single `ScopeMask`, because a mask computed twice is
+a mask that can disagree with itself. Two of the four are corrections rather than additions: an
+out-of-scope point is drawn as ground, so a tap that opened one would contradict the chip, and a lasso
+that captured ghosts would build a working corpus out of documents the reader had excluded. The
+lasso's TOTAL is gated too, not just the kept rows — an ungated total would make the truncation note
+describe a cap that never applied.
+
+**Region labels re-rank rather than merely filtering.** Dropping regions with nothing in scope is the
+obvious half; the half that matters is replacing each surviving region's `documentCount` with its
+in-scope count, because the label layer ranks by size and keeps a dozen. Rank by the series and a
+narrow scope hands its labels to the corpus's biggest regions — which under that scope may hold three
+documents each — while the region it actually fills goes unnamed. Measured on the simulator: scoping
+to the detected topic *Nuclear Nonproliferation* re-labels the map to `shevardnadze soviet`,
+`brazilian goulart`, `salmon constantinople`.
+
+**The grain is stated on screen, and it has to be.** Every scope this control offers is a set of whole
+VOLUMES. Scoping to *Nuclear Nonproliferation* lights all 7,702 documents in the 26 volumes carrying
+that tag, not the documents about nonproliferation. On a bar chart that distinction hides inside the
+bar; on a map the reader watches those documents land in a region called `salmon constantinople` and
+the obvious reading is that the model placed them badly. So the summary line says "every document in
+26 of 552 volumes" rather than a bare count.
+
+`setPoints` rewrites every byte of the vertex buffer, so the scope is re-asserted after each
+re-layout — the same trap that once dropped the lens on a slice and painted the corpus in slot 0.
+
+Verified on the iPhone 17 simulator: Theodore Roosevelt (18,349 documents in 22 of 552 volumes) and
+the Nuclear Nonproliferation topic (7,702 in 26). The three new tests are mutation-tested — an
+unfiltered label list, a picking scan that ignores the mask, and a mask that admits everything each
+turn one red.
+
+**Not done, and deliberately:** a scoped *slice*. The axis projection is computed over every document
+and the ghosts are laid out with the rest, which is defensible — the slice's x is a property of the
+document, not of the scope — but it has not been thought about properly and no surface claims
+otherwise.

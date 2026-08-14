@@ -130,6 +130,74 @@ enum SemanticMapColouring {
         return colours
     }
 
+    /// What a scope does to the map.
+    ///
+    /// Everything the reader can do to a scoped map needs the same three answers — which rows to
+    /// draw brightly, how much is in scope, and which regions still have anything in them — and they
+    /// all come from one pass over the volume ranges. Computing them separately is how the count
+    /// under the map and the points on it start disagreeing.
+    struct ScopeMask: Equatable, Sendable {
+        /// One byte per document: `0` in scope, `1` out. **The same array the GPU gets and picking
+        /// reads**, which is the point — a mask stored twice is a mask that can differ from itself.
+        let flags: [UInt8]
+        /// Documents in scope.
+        let documentCount: Int
+        /// Volumes in scope that the artifact actually covers.
+        let volumeCount: Int
+        /// Documents in scope per cluster id, for the clusters that have any.
+        ///
+        /// **Counts rather than a membership set, and the difference is visible on screen.** The
+        /// artifact's clusters are whole-corpus, and the label layer ranks by size and keeps the top
+        /// dozen — so ranking a scoped map by whole-corpus size gives the labels to the biggest
+        /// regions in the *series*, which under a narrow scope may hold three documents each, while
+        /// the region the scope actually fills goes unnamed. A region with nothing in scope is absent
+        /// entirely rather than present with zero.
+        let regionCounts: [UInt16: Int]
+    }
+
+    /// Builds the scope mask for a set of volumes.
+    ///
+    /// - Parameters:
+    ///   - volumeIDs: The volumes in scope, or `nil` for the whole series.
+    ///   - map: The mapped placements, for cluster membership.
+    ///   - index: The vector index, for volume row ranges.
+    /// - Returns: The mask, or `nil` for an unscoped map — `nil` rather than an all-zero mask so
+    ///   every caller can tell "no scope" from "a scope that happens to include everything", and so
+    ///   the unscoped path allocates nothing.
+    static func scopeMask(
+        volumeIDs: Set<String>?,
+        map: SemanticMapVectors,
+        index: SemanticVectorIndex
+    ) -> ScopeMask? {
+        guard let volumeIDs else { return nil }
+        // Out by default: a row whose volume is not named is not in scope, and a volume the artifact
+        // does not cover contributes nothing rather than silently widening the scope.
+        var flags = [UInt8](repeating: 1, count: map.documentCount)
+        var documents = 0
+        var volumes = 0
+        for volume in index.volumes where volumeIDs.contains(volume.volumeID) {
+            guard let range = index.rows(forVolume: volume.volumeID) else { continue }
+            volumes += 1
+            for row in range where row < flags.count {
+                flags[row] = 0
+                documents += 1
+            }
+        }
+        var regionCounts: [UInt16: Int] = [:]
+        map.withPlacements { base, count in
+            for row in 0..<min(count, flags.count) where flags[row] == 0 {
+                let cluster = base.loadUnaligned(
+                    fromByteOffset: row * SemanticMapArtifacts.bytesPerDocument + 4,
+                    as: UInt16.self).littleEndian
+                if cluster != SemanticMapArtifacts.unclustered {
+                    regionCounts[cluster, default: 0] += 1
+                }
+            }
+        }
+        return ScopeMask(flags: flags, documentCount: documents,
+                         volumeCount: volumes, regionCounts: regionCounts)
+    }
+
     /// The palette a lens draws with.
     ///
     /// Deliberately not one scheme for everything: `era` is ordered and gets a sequential ramp,

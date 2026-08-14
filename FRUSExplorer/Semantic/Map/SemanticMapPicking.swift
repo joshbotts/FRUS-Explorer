@@ -142,7 +142,8 @@ enum SemanticMapPicking {
         positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
         size: CGSize,
-        limit: Int
+        limit: Int,
+        scopeMask: [UInt8]? = nil
     ) -> (rows: [Int], total: Int) {
         guard path.count >= 3, size.width > 0, size.height > 0, limit > 0 else {
             return ([], 0)
@@ -162,7 +163,12 @@ enum SemanticMapPicking {
 
         var found: [Int] = []
         var total = 0
+        // **The mask gates the TOTAL as well as the kept rows.** A scoped lasso that counted ghosts
+        // would tell the reader it caught 4,000 documents and hand them a corpus of 300, and the
+        // truncation note — which compares the two — would call the difference a cap.
+        let scopeMask = (scopeMask?.count == positions.count) ? scopeMask : nil
         for row in 0..<positions.count {
+            if let scopeMask, scopeMask[row] != 0 { continue }
             let x = Float(positions[row].x)
             if x < minX || x > maxX { continue }
             let y = Float(positions[row].y)
@@ -211,7 +217,8 @@ enum SemanticMapPicking {
         positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
         size: CGSize,
-        radius: CGFloat = tapRadius
+        radius: CGFloat = tapRadius,
+        scopeMask: [UInt8]? = nil
     ) -> Hit? {
         guard size.width > 0, size.height > 0 else { return nil }
         let target = SemanticMapLabelLayout.unproject(point, camera: camera, size: size)
@@ -230,7 +237,12 @@ enum SemanticMapPicking {
         var bestDistance = Float.greatestFiniteMagnitude
         var bestPosition = SIMD2<Float>(0, 0)
 
+        // An out-of-scope point is drawn as ground, so it must not be pickable: a tap that opened a
+        // document the reader had just excluded — and whose region name the scoped map no longer even
+        // labels — would be the map disagreeing with its own scope chip.
+        let scopeMask = (scopeMask?.count == positions.count) ? scopeMask : nil
         for row in 0..<positions.count {
+            if let scopeMask, scopeMask[row] != 0 { continue }
             let x = Float(positions[row].x)
             let dx = x - target.x
             // Cheap rejection on one axis before touching the second. Most of the corpus is

@@ -74,7 +74,8 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         var position: SIMD2<Int16>
         /// Index into the active palette.
         var colourIndex: UInt8
-        /// Reserved — downloaded-vs-not, selection, and the anchor's own row will live here.
+        /// Per-document bits. Bit 0 is **out of scope**, which the shader ghosts; the rest are
+        /// still free (selection and the anchor's own row are the obvious next tenants).
         var flags: UInt8
     }
 
@@ -370,6 +371,36 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         setNeedsRedraw()
     }
 
+    /// Replaces only the per-document scope flags, leaving positions and colours untouched.
+    ///
+    /// **Why a flag rather than a palette slot.** A scope has to compose with whichever lens is
+    /// active — the reader scopes to a subseries *in order to* see where its era or its regions sit —
+    /// so spending a palette index on "out of scope" would mean every lens losing a colour and the
+    /// dimmed points losing the lens's meaning entirely. The `flags` byte was reserved for exactly
+    /// this, costs nothing (`MapPoint` already strides 8), and lets the shader ghost a point while
+    /// keeping its colour.
+    ///
+    /// - Parameter flags: One byte per document, in artifact row order; bit 0 set means out of
+    ///   scope. Pass an empty array to clear the scope.
+    func setScopeFlags(_ flags: [UInt8]) {
+        guard let pointBuffer, pointCount > 0 else { return }
+        let stride = MemoryLayout<MapPoint>.stride
+        let offset = MemoryLayout<SIMD2<Int16>>.size + MemoryLayout<UInt8>.size
+        let base = pointBuffer.contents()
+        if flags.isEmpty {
+            for row in 0..<pointCount {
+                base.advanced(by: row * stride + offset).storeBytes(of: 0, as: UInt8.self)
+            }
+        } else {
+            guard flags.count == pointCount else { return }
+            for row in 0..<pointCount {
+                base.advanced(by: row * stride + offset)
+                    .storeBytes(of: flags[row], as: UInt8.self)
+            }
+        }
+        setNeedsRedraw()
+    }
+
     /// Replaces the colour palette.
     ///
     /// - Parameter colours: Up to 16 RGBA colours; a point's `colourIndex` selects one.
@@ -587,6 +618,15 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         out.position = float4(view, 0.0, 1.0);
         out.pointSize = uniforms.pointSize;
         float4 colour = palette[p.colourIndex];
+        // Bit 0 of `flags` is "out of scope". Such a point stays on screen — the whole plane is the
+        // context a scope is read against — but is desaturated to its own luminance and faded, so it
+        // reads as ground rather than as a dimmer value of the lens. Fading alone was not enough:
+        // a low-alpha red still looks red, and a reader comparing a subseries against the corpus
+        // would see two shades of the same hue and take both for data.
+        if ((p.flags & 1u) != 0u) {
+            float grey = dot(colour.rgb, float3(0.2126, 0.7152, 0.0722));
+            colour = float4(grey, grey, grey, colour.a * 0.22);
+        }
         out.colour = half4(half3(colour.rgb), half(colour.a * uniforms.alpha));
         return out;
     }
