@@ -766,6 +766,44 @@ struct SemanticMapSurfaceTests {
         #expect(SemanticMapSpikeView.dominantProvenance(byVolume: [tied])["frus1969-76v01"] == expected)
     }
 
+    // MARK: - The slice scale (UI review X-5 / MR-13)
+
+    /// The gutter is what stops an unknown date being drawn AS a date: undated volumes used to plot
+    /// at the exact vertical centre, indistinguishable from a mid-century midpoint. The gutter must
+    /// sit strictly below every dated year, with a gap.
+    @Test("Undated volumes sit in a gutter below every dated year")
+    func sliceGutterIsBelowTheDatedBand() {
+        let scale = SemanticMapModel.SliceScale(minYear: 1861, maxYear: 1988, undatedCount: 3)
+        let earliest = SemanticMapModel.sliceY(forYear: scale.minYear, scale: scale)
+        let latest = SemanticMapModel.sliceY(forYear: scale.maxYear, scale: scale)
+        #expect(earliest < latest, "the axis must run early → late upward")
+        #expect(SemanticMapModel.sliceGutterY < earliest - 0.1,
+                "the gutter must be visibly below the earliest dated year, not adjacent to it")
+        // The dated band spans most of the plane; the map's own frame shows all of it.
+        #expect(latest <= 1.0 + 1e-5)
+        #expect(SemanticMapModel.sliceGutterY >= -1.0)
+    }
+
+    /// Ticks come from the same function as the points, so they cannot drift; and the tick chooser
+    /// must produce a readable handful inside the observed range, never outside it.
+    @Test("Tick years are round, within range, and at most a handful")
+    func sliceTicksAreSane() {
+        for (lo, hi) in [(1861, 1988), (1945, 1952), (1900, 1901), (1969, 1976)] {
+            let ticks = SemanticMapSpikeView.tickYears(min: lo, max: hi)
+            #expect(!ticks.isEmpty, "\(lo)-\(hi)")
+            #expect(ticks.count <= 6, "\(lo)-\(hi) produced \(ticks.count) ticks")
+            #expect(ticks.allSatisfy { $0 >= lo && $0 <= hi }, "\(lo)-\(hi): \(ticks)")
+            #expect(ticks == ticks.sorted())
+            let scale = SemanticMapModel.SliceScale(minYear: lo, maxYear: hi, undatedCount: 0)
+            for year in ticks {
+                let y = SemanticMapModel.sliceY(forYear: year, scale: scale)
+                #expect(y >= -0.82 - 1e-5 && y <= 1.0 + 1e-5,
+                        "tick \(year) projects outside the dated band")
+            }
+        }
+        #expect(SemanticMapSpikeView.tickYears(min: 1950, max: 1950) == [1950])
+    }
+
     // MARK: - Scope
 
     /// The mask is the whole feature: it decides what is drawn brightly, what a tap can reach, what a

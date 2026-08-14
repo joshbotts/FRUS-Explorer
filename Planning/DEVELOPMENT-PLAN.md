@@ -7155,3 +7155,27 @@ covers three.
 
 Every figure on screen was predicted from the raw artifact before it was looked at: 859 / 508 / 472,
 and 474 collections in the band. 3,478 unit tests (+4); clean macOS build.
+
+## Session 2026-08-14 — the UI adversarial review becomes the plan of record for UI work
+
+The owner commissioned three per-platform adversarial UI reviews (2026-08-13) plus Semantic
+Analytics addenda (2026-08-14) and a consolidated handover; the package is now committed at
+`Planning/Cross-Platform-UI-Adversarial-Review/` and is **the next priority**: 69 findings
+(Critical ×2, High ×19, Medium ×30, Low ×18) consolidated into twelve work items CW-1…CW-12 in
+three waves, with reuse opportunities O-1…O-6.
+
+**Assessed against the decision record before adoption.** Five load-bearing claims were spot-checked
+against `v2` and all held (undated slice volumes plot at `Float(0)` — dead centre; `MagnifyGesture`
+is the map's only zoom input; the selection card headline is raw ids; the iOS sheet has no
+`presentationSizing`; `eraCounts` has no reader). Nothing in the 69 findings resurrects a rejected
+decision — the review keeps free-text poles deferred and works around the recorded rejections. Three
+gates recorded at adoption: the **figure half** of the export ask (X-6) waits on a texture-readback
+proof, per §13.9's own hand-rendered-surfaces doctrine; MR-13's slice scale must keep the
+volume-midpoint y-axis (#880's decision), adding ticks and a gutter rather than per-document dates;
+and F-29's tappable labels must use the sibling-in-ZStack treatment, since `.allowsHitTesting(false)`
+is what keeps overlays from swallowing the surface's gestures.
+
+**Overlaps folded into existing plans rather than duplicated:** M-21/F-29/O-3 = the backlog's
+`eraCounts` consumer; O-2/O-4 = anchor-document mode + the semantic scorer gap; O-6 = subseries
+poles (poles, NOT the rejected subseries lens); CW-11 = #106; CW-12 = the Dynamic Type worklist;
+CW-9 overlaps #824; the VoiceOver items join #268/I-1; F-25 rides the R-7 iPad-windows program.

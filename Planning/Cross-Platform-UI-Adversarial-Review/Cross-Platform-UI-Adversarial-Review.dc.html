@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>FRUS Explorer — Cross-Platform UI Adversarial Review</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #ffffff; }
+  body { -webkit-font-smoothing: antialiased; }
+  a { color: #1d4ed8; text-decoration: none; }
+  a:hover { color: #1e40af; text-decoration: underline; }
+</style>
+</helmet>
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1c1917; font-size: 15px; line-height: 1.62;">
+<div style="max-width: 880px; margin: 0 auto; padding: 56px 32px 96px 32px;">
+
+  <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: #a8a29e; text-transform: uppercase;">FRUS Explorer · joshbotts/FRUS-Explorer @ v2 · consolidated handover</div>
+  <h1 style="font-size: 34px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin: 10px 0 0 0;">Cross-Platform UI — Adversarial Review</h1>
+  <div style="font-size: 17px; color: #57534e; margin-top: 8px;">macOS · iPadOS · iOS, consolidated into one handover package</div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; font-size: 13px; color: #57534e; border-top: 1px solid #e7e5e4; border-bottom: 1px solid #e7e5e4; padding: 10px 0;">
+    <span style="white-space:nowrap;"><strong style="color:#1c1917;">Date</strong> 2026-08-14</span>
+    <span style="white-space:nowrap;"><strong style="color:#1c1917;">Version</strong> 1.0</span>
+    <span style="white-space:nowrap;"><strong style="color:#1c1917;">Status</strong> consolidated handover + master worklist</span>
+    <span style="white-space:nowrap;"><strong style="color:#1c1917;">Twin</strong> <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px;">Cross-Platform-UI-Adversarial-Review.md</span></span>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;">
+    <span style="display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:#fee2e2; color:#b91c1c;">2 critical</span>
+    <span style="display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:#ffedd5; color:#c2410c;">19 high</span>
+    <span style="display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:#fef3c7; color:#a16207;">30 medium</span>
+    <span style="display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:#e7e5e4; color:#57534e;">18 low</span>
+    <span style="display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:#f5f5f4; color:#78716c;">69 findings across 3 platforms · 12 consolidated work items</span>
+  </div>
+
+  <p style="margin: 26px 0 0 0;"><strong>What this package is.</strong> One handover consolidating the three platform reviews of 2026-08-13 and their Semantic Analytics addenda of 2026-08-14. Shared defects are filed <strong>once</strong> here (§2), platform-defining findings are digested per platform (§3), the new Semantic Analytics surface gets a consolidated verdict (§4), reuse opportunities appear once (§5), and the master worklist (§6) sequences everything across platforms. The per-platform handoffs remain the citation-grade source — every finding there cites file:line — and stay authoritative for detail:</p>
+  <ul style="margin: 10px 0 0 0; padding-left: 24px; font-size: 14px;">
+    <li style="margin-bottom: 4px;"><a href="Mac-UI/Mac-UI-Adversarial-Review.html">macOS review</a> — 22 findings (M-1…M-22), recommendations MR-1…MR-16</li>
+    <li style="margin-bottom: 4px;"><a href="iPad-UI/iPad-UI-Adversarial-Review.html">iPad review</a> — 30 findings (F-1…F-30), recommendations R-1…R-16</li>
+    <li><a href="iPhone-UI/iPhone-UI-Adversarial-Review.html">iPhone review</a> — 17 findings (P-1…P-17) + the phone fit table, recommendations PR-1…PR-13</li>
+  </ul>
+
+  <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 44px 0 0 0; padding-top: 20px; border-top: 2px solid #1c1917;">§1 · The three verdicts, side by side</h2>
+  <ul style="margin: 14px 0 0 0; padding-left: 24px;">
+    <li style="margin-bottom: 10px;"><strong>macOS is the serious platform and mostly earns it</strong> — exemplary menus, honest counting, native inspectors — but carries professional-app debts under sustained use: a 23-scene window model whose singletons cross-wire, hand-rolled fixed-point chrome in the most-used window, a reader with no measure, and deleted printing on reserved shortcuts.</li>
+    <li style="margin-bottom: 10px;"><strong>The iPad app is an iPhone app given the whole screen.</strong> Width is spent, not used; the keyboard/trackpad iPad named in the code does not exist in the code (zero commands, no find-in-document, no drag and drop); analysis is modal on the platform's biggest canvas.</li>
+    <li style="margin-bottom: 10px;"><strong>The iPhone's core loop is genuinely good</strong> — reading, triage, capture — and its honest identity is a companion with one good chart. The failures concentrate where desktop-grade analysis was ported to 390 pt without asking whether it survives: a flagship analytics sheet that clips its own chrome, and three surfaces whose own code admits they do not fit.</li>
+    <li><strong>What is working everywhere:</strong> the multi-window plumbing (scene-addressed hand-offs, per-window state), boot honesty, count honesty, the Dynamic Type program on iOS-primary surfaces, and — in the new Semantic Analytics surface — the app's most disciplined caveat posture yet.</li>
+  </ul>
+
+  <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 44px 0 0 0; padding-top: 20px; border-top: 2px solid #1c1917;">§2 · Shared defects — file once, fix everywhere</h2>
+  <p style="margin: 12px 0 0 0; color:#57534e; font-size: 13.5px;">Eight defect families reproduce on two or three platforms. Each is one tracker issue; the per-platform IDs are the evidence trail.</p>
+
+  <div id="x1" style="margin-top: 18px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-1</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#fee2e2; color:#b91c1c;">CRITICAL</span>
+      <span style="font-weight: 650;">The reader has no maximum measure</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">Mac M-7 · iPad F-1</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">One shared CSS rule caps nothing: ~190-character lines on a 13&#8243; iPad in landscape, ~150 at the Mac's default window and ~300 maximized, against a 45–75-character norm. The iPhone is correct by accident of width — the app's only good reading typography. <strong>The fix is one line</strong> (max-width ~70ch + centered margins in <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; background:#f5f5f4; padding:1px 5px; border-radius:4px;">HTMLTemplate.documentCSS</span>) and serves both platforms. The single highest-value/lowest-cost change in all three reviews. (CW-1.)</p>
+  </div>
+
+  <div id="x2" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-2</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#ffedd5; color:#c2410c;">HIGH</span>
+      <span style="font-weight: 650;">Result headers double-number themselves and leak archival source notes into titles</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">Mac M-6 · iPad F-21 · iPhone P-5</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">Rows read “251. 251. Memorandum From…” because the indexed header already begins with its number, and titles run on into “…Source: Johnson Library, National Security File…” — the same header-extraction defect on all three platforms, worst on a 390-pt row where the repeated number spends half the title cap (Fig 4). One indexing fix + a per-row prefix-suppression guard per platform; it also pollutes citations and document titles, so it earns its own issue. Rider: the uninflected “1 volumes” count string appears on two surfaces (iPad F-23, iPhone P-11; Fig 7 ③). (CW-2.)</p>
+  </div>
+
+  <div id="x3" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-3</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#ffedd5; color:#c2410c;">HIGH (iOS)</span>
+      <span style="font-weight: 650;">Keyboard commands exist only behind #if os(macOS)</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">iPad F-6 (critical) · iPhone P-12</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">The entire .commands block — Document, Find, Collection, Analytics, Research menus, every reading shortcut — is macOS-gated. A Magic Keyboard iPad researcher cannot search, page, highlight, annotate, or find-in-page from the keyboard; the FocusedValue routing is already platform-neutral, so the gate is the only thing in the way. One lift serves both iOS platforms. (CW-5.)</p>
+  </div>
+
+  <div id="x4" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-4</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#fef3c7; color:#a16207;">MEDIUM</span>
+      <span style="font-weight: 650;">Raw internal IDs on reader-facing surfaces</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">Mac M-8/M-19 · iPad F-27 · iPhone P-16</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">The Mac reading window's principal toolbar item is <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; background:#f5f5f4; padding:1px 5px; border-radius:4px;">frus1946v06/d475</span> (Fig 2 ②), and the new semantic selection card leads with <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; background:#f5f5f4; padding:1px 5px; border-radius:4px;">frus1969v12 · d45</span> on all three platforms — then mints that string as the opened document's header. The volume's title is one manifest lookup away; the honest ceiling is “volume title · Doc id”, and no surface reaches it. (CW-3.)</p>
+  </div>
+
+  <div id="x5" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-5</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#fef3c7; color:#a16207;">MEDIUM</span>
+      <span style="font-weight: 650;">The semantic slice is an unlabelled chart, and undated volumes plot silently at mid-axis</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">Mac M-18 · iPad F-26 · iPhone P-15</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">The axis slice draws x = projection, y = volume coverage year with no ticks, no pole names at the plane's edges, no statement of which end is early — the semantics ride in a two-line caption. And any volume without a parseable coverage year is plotted at the exact vertical centre, an unknown date drawn <em>as</em> a mid-century date, on the one surface built to say what is and is not a measurement. (CW-3.)</p>
+  </div>
+
+  <div id="x6" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-6</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#fef3c7; color:#a16207;">MEDIUM</span>
+      <span style="font-weight: 650;">The semantic map has no exit: no figure, no CSV, no Handoff</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">Mac M-20 · iPad F-28 · iPhone P-17</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">Manual §13.9 promises every analytics chart a figure (PNG/PDF) or its data (CSV); the newest analytics surface offers neither, on any platform, and publishes no userActivity — an analysis started on the phone or iPad cannot continue on the Mac. The lasso → working corpus is the only door and it feeds Search, not paper. (CW-7.)</p>
+  </div>
+
+  <div id="x7" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-7</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#fef3c7; color:#a16207;">MEDIUM</span>
+      <span style="font-weight: 650;">Analysis is modal where it should be resident</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">iPad F-11/F-12/F-25 · (contrast: Mac windows)</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">All six analytics surfaces open as sheets over Browse on iPad — the newest one adopted the pattern the review had already indicted, and pushes the full document reader <em>inside</em> its own sheet. macOS gives every one of these a window; the Mac manual sells exactly the workflow iPad cannot have (“leave the map beside a document”). The iOS aux-scene table still has no analytics WindowGroup; Semantic Analytics is the strongest pilot for the first one. (CW-8.)</p>
+  </div>
+
+  <div id="x8" style="margin-top: 12px; padding: 16px 18px; border: 1px solid #e7e5e4; border-radius: 10px;">
+    <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-weight: 700;">X-8</span>
+      <span style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; background:#e7e5e4; color:#57534e;">LOW–MEDIUM</span>
+      <span style="font-weight: 650;">The documentation shows retired or missing chrome</span>
+      <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#f5f5f4; color:#57534e;">Mac M-12/M-13 · iPad F-24 · manuals §13.8</span>
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color:#292524;">The committed iPad screenshots advertise a split-view Browse that no longer ships; the Mac manual is illustrated with strip-era chrome its own ledger half-flags; and the new Semantic Analytics section ships [SCREENSHOT:] placeholders on both platforms — no capture of the app's newest window exists anywhere. One re-capture sweep, plus a ledger rule: chrome retired ⇒ shot is stale. (CW-10.)</p>
+  </div>
+
+  <sc-if value="{{ showFigures }}" hint-placeholder-val="{{ true }}">
+  <div style="display: flex; gap: 16px; margin-top: 26px; align-items: flex-start;">
+    <figure style="margin: 0; flex: 1.28 1 0;">
+      <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+        <img src="assets/ipad-document.png" alt="iPad landscape reading view" style="width: 100%; display: block;">
+        <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0;">
+          <div style="position:absolute; left:42%; top:58%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+          <div style="position:absolute; left:41%; top:15%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+          <div style="position:absolute; left:93.5%; top:42%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+        </div>
+        </sc-if>
+      </div>
+      <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 1 — iPad landscape reader</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">ipad/document.png</span>). ① <a href="#x1">X-1</a> ~190-character lines, no maximum measure. ② iPad F-15: the identical AI summary rendered twice at once — strip and rail — pushing the document below the fold.</figcaption>
+    </figure>
+    <figure style="margin: 0; flex: 1 1 0;">
+      <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+        <img src="assets/mac-document.png" alt="macOS reading window" style="width: 100%; display: block;">
+        <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0;">
+          <div style="position:absolute; left:45%; top:55%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+          <div style="position:absolute; left:50%; top:6%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+          <div style="position:absolute; left:93.5%; top:91.5%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">3</div>
+        </div>
+        </sc-if>
+      </div>
+      <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 2 — macOS reading window</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">macos/document.png</span>). ① <a href="#x1">X-1</a> ~200-character lines at this width. ② <a href="#x4">X-4</a> raw <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">frus1946v06/d475</span> as the principal toolbar item. ③ Mac M-11: “Sync Error,” a passive label whose only detail is a tooltip.</figcaption>
+    </figure>
+  </div>
+
+  <div style="display: flex; gap: 16px; margin-top: 22px; align-items: flex-start;">
+    <figure style="margin: 0; flex: 1.05 1 0;">
+      <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+        <img src="assets/ipad-search-results.png" alt="iPad portrait search results" style="width: 100%; display: block;">
+        <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0;">
+          <div style="position:absolute; left:8%; top:19.5%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+          <div style="position:absolute; left:62%; top:21.6%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+          <div style="position:absolute; left:50%; top:27.5%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">3</div>
+        </div>
+        </sc-if>
+      </div>
+      <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 3 — iPad search results</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">ipad/search-results.png</span>). ① <a href="#x2">X-2</a> “251. 251.” double numbering. ② <a href="#x2">X-2</a> the archival source note fused into the title. ③ iPad F-2: a phone list stretched across the full width.</figcaption>
+    </figure>
+    <figure style="margin: 0; flex: 0.62 1 0;">
+      <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+        <img src="assets/ios-search-results.png" alt="iPhone search results" style="width: 100%; display: block;">
+        <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0;">
+          <div style="position:absolute; left:9%; top:25.5%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+          <div style="position:absolute; left:62%; top:87%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+        </div>
+        </sc-if>
+      </div>
+      <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 4 — the same defect at 390 pt</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">ios/search-results.png</span>). ① <a href="#x2">X-2</a> “134. 134.” spends the first title line. ② <a href="#x2">X-2</a> “…Source: Carter Library, National S…” inside the truncation budget.</figcaption>
+    </figure>
+  </div>
+  </sc-if>
+
+  <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 44px 0 0 0; padding-top: 20px; border-top: 2px solid #1c1917;">§3 · Platform-defining findings</h2>
+  <p style="margin: 12px 0 0 0; color:#57534e; font-size: 13.5px;">What is unique to each platform, digested. IDs link the detailed handoffs.</p>
+
+  <h3 style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #78716c; margin: 30px 0 0 0;">macOS — professional-app debts under sustained use</h3>
+  <ul style="margin: 12px 0 0 0; padding-left: 24px; font-size: 14px;">
+    <li style="margin-bottom: 8px;"><strong>The window model taxes the researcher</strong> (M-1…M-3, M-22): 24 scenes; the per-document tools (Source Explorer, graph, word cloud) are singletons that cross-wire with two documents open; one Search window means result sets cannot be compared side by side; 11 of 56 open-window sites failed to front until the 2026-08 audit.</li>
+    <li style="margin-bottom: 8px;"><strong>The most-used window has the least-native chrome</strong> (M-4, M-5, M-10): no toolbar, ten hover-explained 9–13 pt icon toggles, a scope chip wired to nothing, and 262 deferred fixed-point text sites that ignore macOS text scaling (Fig 5).</li>
+    <li style="margin-bottom: 8px;"><strong>Paper is unreachable</strong> (M-14): Print is deleted outright, ⌘P is Project Home and ⌘S is Search — reserved shortcuts repurposed in a documents app for a paper discipline.</li>
+    <li style="margin-bottom: 8px;"><strong>The new map is gesture-only</strong> (M-17): pinch is the sole zoom input — a mouse user cannot zoom 314,483 points, and the exemplary menu system contributes nothing but the item that opens the window.</li>
+    <li><strong>Quiet failures</strong> (M-9, M-11): Read mode has no visible page-turn; “Sync Error” is orange text whose only detail is a hover.</li>
+  </ul>
+
+  <sc-if value="{{ showFigures }}" hint-placeholder-val="{{ true }}">
+  <figure style="margin: 22px 0 0 0;">
+    <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+      <img src="assets/mac-search.png" alt="macOS Search window" style="width: 100%; display: block;">
+      <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute; inset:0;">
+        <div style="position:absolute; left:67%; top:24.8%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+        <div style="position:absolute; left:10%; top:28%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+        <div style="position:absolute; left:57.5%; top:15%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">3</div>
+        <div style="position:absolute; left:88%; top:24.8%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">4</div>
+      </div>
+      </sc-if>
+    </div>
+    <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 5 — the macOS Search window</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">macos/search.png</span>). ① M-4 the icon-only readings/actions cluster, hover-explained. ② <a href="#x2">X-2</a> “Doc 92” chip over a header that starts “92.” ③ M-10 the “Collections” scope chip — wired to nothing per its own tooltip. ④ M-4 hand-rolled sort chips in place of a native picker.</figcaption>
+  </figure>
+  </sc-if>
+
+  <h3 style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #78716c; margin: 34px 0 0 0;">iPadOS — the research machine that is not in the code</h3>
+  <ul style="margin: 12px 0 0 0; padding-left: 24px; font-size: 14px;">
+    <li style="margin-bottom: 8px;"><strong>Width is spent, not used</strong> (F-2, F-3, F-5): every tab root is a phone list stretched to full width (Fig 3 ③); the tab sidebar is five rows over ~900 pt of dead column; the two-pane layouts the codebase already knows how to build (Collections editor, Research rail) were never applied to Browse, Search, or Research.</li>
+    <li style="margin-bottom: 8px;"><strong>The input grammar is missing</strong> (F-7…F-10): no find-in-document by any input, zero drag and drop app-wide, no pointer affordances, tooltip-only explanations on a platform that never shows them. With X-3, the “keyboard/trackpad iPad” the code names does not exist.</li>
+    <li style="margin-bottom: 8px;"><strong>Modality</strong> (<a href="#x7">X-7</a>; F-12…F-14): facets are a transient sheet over the results they filter; the Search→Analytics hand-off teleports across tabs; the Research Guide is five levels deep in Settings.</li>
+    <li style="margin-bottom: 8px;"><strong>Context losses</strong> (F-17…F-19): the breadcrumb is suppressed at regular width over a five-level hierarchy; “Open in New Window” can silently no-op; a restored window can dead-end in a permanent spinner.</li>
+    <li><strong>The reader dup</strong> (F-15, F-16, F-22): the same AI summary twice before the document (Fig 1 ②), a stuttered title, and a reading surface exempt from Dynamic Type.</li>
+  </ul>
+
+  <h3 style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #78716c; margin: 34px 0 0 0;">iOS — honest about what fits in a pocket</h3>
+  <ul style="margin: 12px 0 0 0; padding-left: 24px; font-size: 14px;">
+    <li style="margin-bottom: 8px;"><strong>The flagship analytics sheet clips its own chrome</strong> (P-1): query field, title, link, axis labels, and footer all cut at the edges — in the committed screenshot the manual ships (Fig 6).</li>
+    <li style="margin-bottom: 8px;"><strong>Three surfaces do not survive 390 pt by their own code's admission</strong> (P-2, P-3, P-8): the opacity-only heat matrix (tooltips never render on iOS), a concordance whose context columns hold two words, dashboards that delete their own nav title to fit.</li>
+    <li style="margin-bottom: 8px;"><strong>The chronology chart says nothing a phone reader can use</strong> (P-4): hairline strokes under a legend of six identically-truncated titles (Fig 7).</li>
+    <li style="margin-bottom: 8px;"><strong>The semantic map's compact debts</strong> (P-13, P-14): three action cards stack until they bury the canvas; header + controls squeeze the map to roughly half the sheet.</li>
+    <li><strong>The fit split stands</strong> (§4 of the iPhone review): the phone owns reading, triage, and capture; it carries facets, timelines, single charts, and now the semantic map's overview + lasso; it should stop pretending to carry the matrix, the concordance, the graph canvases, and the multi-chart dashboards — reduced compact forms + visible redirects.</li>
+  </ul>
+
+  <sc-if value="{{ showFigures }}" hint-placeholder-val="{{ true }}">
+  <div style="display: flex; gap: 16px; margin-top: 22px; align-items: flex-start;">
+    <figure style="margin: 0; flex: 1 1 0;">
+      <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+        <img src="assets/ios-analytics.png" alt="Corpus Analytics on iPhone" style="width: 100%; display: block;">
+        <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0;">
+          <div style="position:absolute; left:4%; top:19%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+          <div style="position:absolute; left:95.5%; top:29.6%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+          <div style="position:absolute; left:96%; top:39%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">3</div>
+          <div style="position:absolute; left:5%; top:34.3%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">4</div>
+        </div>
+        </sc-if>
+      </div>
+      <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 6 — Corpus Analytics on iPhone</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">ios/analytics.png</span>, the manual's illustration). P-1: ① query field clipped to the sheet edge, ② “View in Searc[h]” cut mid-word, ③ y-axis labels cut, ④ matched-count footer clipped.</figcaption>
+    </figure>
+    <figure style="margin: 0; flex: 1 1 0;">
+      <div style="position: relative; border: 1px solid #e7e5e4; border-radius: 10px; overflow: hidden;">
+        <img src="assets/ios-chronology.png" alt="Chronology on iPhone" style="width: 100%; display: block;">
+        <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0;">
+          <div style="position:absolute; left:28%; top:29.3%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">1</div>
+          <div style="position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">2</div>
+          <div style="position:absolute; left:19%; top:65.6%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:#dc2626; color:#fff; font-size:13px; font-weight:700; line-height:24px; text-align:center; border:2px solid #ffffff; box-shadow:0 1px 5px rgba(0,0,0,0.4);">3</div>
+        </div>
+        </sc-if>
+      </div>
+      <figcaption style="font-size: 12.5px; color: #57534e; margin-top: 8px; line-height: 1.55;"><strong style="color:#1c1917;">Fig 7 — Chronology on iPhone</strong> (repo's <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">ios/chronology.png</span>). P-4: ① a year of documents as 1–2 px hairline strokes, ② six legend entries all reading “Foreign Relations of the…”. ③ <a href="#x2">X-2</a> rider: “1 volumes · 1 subseries.”</figcaption>
+    </figure>
+  </div>
+  <p style="margin: 12px 0 0 0; font-size: 12.5px; color: #78716c;">No committed capture of Semantic Analytics exists on any platform — the manuals ship [SCREENSHOT:] placeholders for §13.8 (<a href="#x8">X-8</a> rider). Figures above are the repo's committed screenshots, annotated.</p>
+  </sc-if>
+
+  <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 44px 0 0 0; padding-top: 20px; border-top: 2px solid #1c1917;">§4 · Semantic Analytics — the consolidated verdict on the new surface</h2>
+  <p style="margin: 14px 0 0 0;"><strong>Credit first: it ships the app's most disciplined honesty posture yet.</strong> The experimental header collapses to its warning instead of disappearing; the layout caveat (“distances between far regions are not meaningful”) is permanent; scope lines carry denominators (“whole volumes, 12 of 552”); lasso capture states device coverage via the same resolver Search uses and truncates honestly; the provenance lens ships an evidence floor, a plurality caption, and a deliberately dimmed weakest category; an unsupported lens is withheld, not drawn empty; the six controls that once drew-and-did-nothing are documented in-file with their guards. The macOS window-not-sheet Metal lesson is measured and recorded; the compact lessons (wrapping legend, menu lens picker, reachable toolbar toggle) were applied on day one.</p>
+  <p style="margin: 12px 0 0 0;"><strong>Where it falls short, consolidated:</strong> the slice has no scale and plots undated volumes mid-axis (<a href="#x5">X-5</a>); the selection card leads with raw IDs (<a href="#x4">X-4</a>); nothing can leave the surface (<a href="#x6">X-6</a>); region names are inert while the artifact's own per-region era data goes unread (M-21/F-29); Mac zoom is pinch-only (M-17); on iPad it is the sixth modal sheet and buries the reader inside itself (<a href="#x7">X-7</a>/F-25); on iPhone the action cards stack over the canvas and the chrome squeezes the map to half the sheet (P-13/P-14); VoiceOver gets a named rectangle on every platform (M-22/F-30).</p>
+
+  <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 44px 0 0 0; padding-top: 20px; border-top: 2px solid #1c1917;">§5 · Foundations worth reusing — the semantic substrate × the visualization family</h2>
+  <p style="margin: 12px 0 0 0; font-size: 13.5px; color:#57534e;">Six opportunities, each grounded in shipped code; the design doc's own ranking is Vector-Embeddings-Semantic-Design.md §7. Identical across the three handoffs; filed once here.</p>
+  <ul style="margin: 14px 0 0 0; padding-left: 24px;">
+    <li style="margin-bottom: 10px;"><strong>O-1 · Result sets and corpora on the map.</strong> The scope mask is one byte per row but is only built from volume sets today; a document-key mask is the same array. “Show on semantic map” from Search/corpora is the missing half of a loop the lasso already walks the other way — <em>where does my result set sit in the corpus's language?</em></li>
+    <li style="margin-bottom: 10px;"><strong>O-2 · A two-way bridge with Related Documents.</strong> The similarity axis ships on this substrate (weight 0, experimental); the retrieval kernel's corpus scan is 1.43 ms. Selection card → “Similar documents” (works with zero volumes downloaded); Related rows → “Show on map.” SemanticSharedTerms already computes the evidence chips.</li>
+    <li style="margin-bottom: 10px;"><strong>O-3 · Region-share-over-time in Corpus Analytics.</strong> The bundled artifact carries per-region eraCounts that nothing draws; region × era stacked areas is the design doc's own §7.3 and Swift Charts is already in the family. Highest value-per-effort: the data ships today.</li>
+    <li style="margin-bottom: 10px;"><strong>O-4 · Pre-1900 rescue for Related Documents and the graph.</strong> 46,234 documents have an empty Related list, 98.2% pre-1900 — where citations and archival keys do not reach. Semantic neighbours as an explicitly-labelled experimental section lights the corpus's darkest region; the feedback loop already weights 19th-century verdicts highest.</li>
+    <li style="margin-bottom: 10px;"><strong>O-5 · The Metal point renderer as a house substrate for large-N figures.</strong> On-demand drawing, per-row flags, a pure-function camera, measured picking — what the force-directed graph canvases lack, and the iPhone's hairline chronology (Fig 7) is a density scatter it draws for free.</li>
+    <li><strong>O-6 · Subseries poles.</strong> 659 exact centroids ship (volumes <em>and</em> subseries); only tapped-document volume poles are offered. A subseries pole picker is data-ready; free-text poles stay correctly deferred.</li>
+  </ul>
+
+  <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 44px 0 0 0; padding-top: 20px; border-top: 2px solid #1c1917;">§6 · Master worklist and sequencing</h2>
+  <p style="margin: 12px 0 0 0; font-size: 13.5px; color: #57534e;">Twelve consolidated items. Effort tags follow the repo convention (S/M/L); per-platform worklist rows (Mac W-*, iPad W-*, iPhone W-*) map into these. Wave 1 is deliberately all-S: one polish session per platform.</p>
+  <sc-raw-table style="width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px;">
+    <sc-raw-thead>
+      <sc-raw-tr>
+        <sc-raw-th style="text-align:left; padding: 8px 10px; border-bottom: 2px solid #1c1917; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color:#57534e;">#</sc-raw-th>
+        <sc-raw-th style="text-align:left; padding: 8px 10px; border-bottom: 2px solid #1c1917; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color:#57534e;">Carries</sc-raw-th>
+        <sc-raw-th style="text-align:left; padding: 8px 10px; border-bottom: 2px solid #1c1917; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color:#57534e;">Platforms</sc-raw-th>
+        <sc-raw-th style="text-align:left; padding: 8px 10px; border-bottom: 2px solid #1c1917; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color:#57534e;">Maps to</sc-raw-th>
+        <sc-raw-th style="text-align:left; padding: 8px 10px; border-bottom: 2px solid #1c1917; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color:#57534e;">Effort</sc-raw-th>
+        <sc-raw-th style="text-align:left; padding: 8px 10px; border-bottom: 2px solid #1c1917; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color:#57534e;">Wave</sc-raw-th>
+      </sc-raw-tr>
+    </sc-raw-thead>
+    <sc-raw-tbody>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-1</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Reader measure — one CSS line (<a href="#x1">X-1</a>)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac · iPad</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-1 · iPad W-1</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">1</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-2</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Header extraction fix + row prefix guards + count inflection (<a href="#x2">X-2</a>)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">all</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-3 · iPad W-5 · iPhone W-2</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">1</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-3</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Semantic slice scale + undated gutter; humane selection card + open header (<a href="#x5">X-5</a>, <a href="#x4">X-4</a>)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">all</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-14/W-15 · iPad W-13/W-14 · iPhone W-12</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">1</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-4</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Per-platform paper cuts: Print/⌘P+⌘S restore (M-14), Mac zoom inputs (M-17), Sync Error click-through (M-11); facet inspector (F-12), find-in-document (F-7), reader summary dedup (F-15); analytics clipping fix (P-1), tap-to-type years (P-9)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">all</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-2/W-4/W-13 · iPad W-2/W-3/W-4 · iPhone W-1/W-3</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S each</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">1</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-5</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Semantic compact pass: one card at a time + chrome fold (P-13/P-14)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iPhone</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iPhone W-11</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">1</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-6</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iOS keyboard commands lift (<a href="#x3">X-3</a>) + first drag-and-drop pass (F-8) + pointer/help riders (F-9, F-10)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iPad · iPhone</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iPad W-6/W-7 · iPhone W-10</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">M</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">2</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-7</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Semantic exits: figure/CSV export, userActivity, region tap + eraCounts breakdown, VoiceOver region list, §13.8 captures (<a href="#x6">X-6</a>)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">all</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-16/W-17 · iPad W-15 · iPhone W-13</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S–M</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">2</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-8</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Compact reduced forms + phone identity: heat-matrix pair list, stacked concordance, chronology months, redirects + analytics Handoff (P-2/P-3/P-4/P-7/P-8)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iPhone</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">iPhone W-4…W-8/W-14</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S–M</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">2</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-9</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">The window model: de-singleton Mac per-document tools + multi-Search (M-2/M-3); iPad analytics windows, Semantic Analytics first (<a href="#x7">X-7</a>)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac · iPad</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-6/W-7 · iPad W-9/W-12</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">M–L</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">3</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-10</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Chrome + width: Mac Search re-chrome incl. dead chip (M-4/M-10); iPad width discipline, two-pane roots, TabSections, breadcrumb (F-2/F-3/F-5/F-17); Read-mode paging (M-9)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac · iPad</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-8/W-9 · iPad W-8</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">M</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">3</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-11</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Documentation sweep: re-capture all platforms, correct captions, ledger rule, sidebar truncation, Settings search, guide doors (<a href="#x8">X-8</a>; M-13/M-15/M-16, F-14/F-24)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">all</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-5/W-10 · iPad W-10 · iPhone W-9</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">S</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">3</sc-raw-td></sc-raw-tr>
+      <sc-raw-tr><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; white-space:nowrap;">CW-12</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Programs and gates: macOS text-scaling program (262 sites, M-5); window-fronting audit per release (M-1); iPad probes — multi-window honesty, restored-window spinner, per-scene nudge (F-18/F-19/F-20)</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac · iPad</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">Mac W-11/W-12 · iPad W-11</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">M–L</sc-raw-td><sc-raw-td style="padding: 7px 10px; border-bottom: 1px solid #e7e5e4;">scheduled</sc-raw-td></sc-raw-tr>
+    </sc-raw-tbody>
+  </sc-raw-table>
+  <p style="margin: 14px 0 0 0;"><strong>Sequencing.</strong> Wave 1 (CW-1…CW-5) is one all-S polish session per platform — CW-1 alone transforms the core surface on two platforms. Wave 2 (CW-6…CW-8) is the input session and the honest-compact session. Wave 3 (CW-9…CW-11) is the structural work: windows, chrome, width, docs. CW-12 runs as scheduled programs and recurring gates. Opportunities O-1…O-3 slot after wave 1: two are mask/chart work over data that already ships.</p>
+
+  <p style="margin: 40px 0 0 0; padding-top: 16px; border-top: 1px solid #e7e5e4; font-size: 12.5px; color: #78716c;">Markdown twin for tracker/Claude Code: <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">Cross-Platform-UI-Adversarial-Review.md</span> · Sources: the three per-platform handoffs (2026-08-13, addenda 2026-08-14), each citing file:line at branch <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">v2</span> · Figures: <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace;">assets/*.png</span>, the repo's committed screenshots, annotated.</p>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showFigures&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Figures&quot;}, &quot;showAnnotations&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Figures&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showFigures: this.props.showFigures ?? true,
+      showAnnotations: this.props.showAnnotations ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

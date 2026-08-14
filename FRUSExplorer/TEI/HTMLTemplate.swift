@@ -111,9 +111,16 @@ enum HTMLTemplate {
     }
 
     /* ─── Document wrapper ──────────────────────────────────────────────────── */
-    /* No max-width: the WKWebView fills the window and the user can resize freely.
-       Horizontal padding provides the breathing room that max-width provided before. */
+    /* A maximum measure, reversing the earlier "no max-width, the user can resize freely"
+       decision. The 2026-08-14 UI review (X-1, the package's one CRITICAL, filed on Mac and
+       iPad independently) measured the consequence of that freedom: ~150-300 characters per
+       line on a resized Mac window, ~190 on a 13-inch iPad — two to four times the ~66-char
+       typographic measure, on the surface the whole app exists to serve. 70ch tracks the
+       reader's own font size, and margin:auto keeps the column centered, so a wide window
+       adds margin rather than line length. iPhone is narrower than 70ch and unaffected. */
     .frus-document {
+      max-width: 70ch;
+      margin: 0 auto;
       padding: 24px 48px 48px;
     }
 

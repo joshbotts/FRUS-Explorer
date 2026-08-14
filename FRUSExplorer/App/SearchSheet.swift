@@ -1959,7 +1959,12 @@ private struct SearchResultRow: View {
         VStack(alignment: .leading, spacing: 4) {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(result.volumeId) · Doc \(result.documentNumber ?? result.documentId)")
+                // "Doc N" is withheld when the header below already opens with N (X-2 / M-6);
+                // the volume id half stays, since nothing else on the row carries it.
+                Text(DocumentHeaderDisplay.headerRepeatsNumber(
+                        result.header, number: result.documentNumber)
+                     ? result.volumeId
+                     : "\(result.volumeId) · Doc \(result.documentNumber ?? result.documentId)")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.accentColor)
 
@@ -1998,7 +2003,7 @@ private struct SearchResultRow: View {
                 }
             }
 
-            Text(result.header)
+            Text(DocumentHeaderDisplay.trimmedHeader(result.header))
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(2)
 
