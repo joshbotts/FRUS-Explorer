@@ -516,7 +516,8 @@ struct CommandFocusedValueTests {
             highlightSelection: { _ in }, toggleResearchPanel: {},
             openInNewWindow: {},
             canFindInDocument: canFindInDocument,
-            startFindInDocument: {}, findNext: {}, findPrevious: {}
+            startFindInDocument: {}, findNext: {}, findPrevious: {},
+            printDocument: {}
         )
     }
 
@@ -556,7 +557,8 @@ struct CommandFocusedValueTests {
             openInNewWindow: { sideEffect += 1 },
             canFindInDocument: true,
             startFindInDocument: { sideEffect += 1 },
-            findNext: { sideEffect += 1 }, findPrevious: { sideEffect += 1 }
+            findNext: { sideEffect += 1 }, findPrevious: { sideEffect += 1 },
+            printDocument: { sideEffect += 1 }
         )
         #expect(a == b)
         #expect(sideEffect == 0)

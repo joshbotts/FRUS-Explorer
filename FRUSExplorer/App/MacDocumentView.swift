@@ -720,8 +720,30 @@ struct MacDocumentView: View {
             canFindInDocument: true,   // #363 #5: available whenever a document is loaded
             startFindInDocument: { findController.show() },
             findNext: { findController.find(forward: true) },
-            findPrevious: { findController.find(forward: false) }
+            findPrevious: { findController.find(forward: false) },
+            printDocument: { printCurrentDocument() }
         )
+    }
+
+    /// Prints the document through its own web view — File ▸ Print (⌘P), M-14.
+    ///
+    /// The web view is reached the same way find is: `DocumentFindController` was handed the live
+    /// `WKWebView` when the representable created it, so this reuses that reference rather than
+    /// adding a second channel that could go stale independently.
+    ///
+    /// **The frame assignment is load-bearing.** `WKWebView.printOperation(with:)` returns an
+    /// operation whose print view has a zero frame; run it bare and the sheet prints blank pages.
+    /// Sizing it to the print info's imageable area is the documented workaround.
+    private func printCurrentDocument() {
+        guard let webView = findController.webView, let window = webView.window else { return }
+        let info = NSPrintInfo.shared.copy() as? NSPrintInfo ?? NSPrintInfo()
+        info.horizontalPagination = .fit
+        info.verticalPagination = .automatic
+        let operation = webView.printOperation(with: info)
+        operation.showsPrintPanel = true
+        operation.showsProgressPanel = true
+        operation.view?.frame = NSRect(origin: .zero, size: info.imageablePageBounds.size)
+        operation.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
     }
 
     /// Hands this document (and optionally an existing note) to the research-note
