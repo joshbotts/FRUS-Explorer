@@ -243,8 +243,62 @@ struct SearchView: View {
     /// The facet panel's state (R-1).
     @State private var facetController = FacetPanelController()
 
-    /// Whether the facet sheet is showing.
+    /// Whether the facet panel is showing — as a sheet on iPhone, as a trailing inspector on iPad.
     @State private var showFacetSheet = false
+
+    /// `true` on iPhone. Uses `userInterfaceIdiom`, not `sizeClass`, for the reason
+    /// `DocumentView.isPhone` documents: an iPhone Plus/Max in landscape reports `.regular` yet
+    /// must still use the sheet.
+    private var isPhone: Bool {
+        #if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .phone
+        #else
+        // This file is compiled into the Mac target as well, where `UIDevice` does not exist and
+        // the sheet branch is unreachable anyway — the Mac window is `SearchSheet`, which has had
+        // the facet inspector since R-1c.
+        false
+        #endif
+    }
+
+    /// The facet panel, built once for both containers.
+    ///
+    /// - Parameter dismissesOnApply: `true` in the sheet, where a commit should close the modal;
+    ///   `false` in the inspector, which stays open beside the results it is narrowing.
+    /// - Returns: The panel.
+    @ViewBuilder
+    private func facetPanel(dismissesOnApply: Bool) -> some View {
+        FacetPanelView(
+            controller: facetController,
+            matchCount: vm.hasSearched ? vm.totalMatchCountForFacets : nil,
+            displayedCount: vm.displayedResults.count,
+            isPartialEvidence: resultSetScope.isPartialEvidence,
+            isChecklistHiding: vm.checklistMode
+                && vm.displayedResults.count < vm.results.count,
+            onNarrow: { narrowing in
+                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
+                vm.applyFacetNarrowing(narrowing)
+                if dismissesOnApply { showFacetSheet = false }
+                Task { await runSearch() }
+            },
+            onApplySelection: { section, keys in
+                // #775: one search for the whole selection, and the sheet closes on the commit
+                // rather than on the first tap — staging is what makes a second row reachable.
+                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
+                vm.applyFacetSelection(section, keys: keys)
+                if dismissesOnApply { showFacetSheet = false }
+                Task { await runSearch() }
+            },
+            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
+            onDiscloseSection: { section in
+                Task {
+                    await facetController.load(
+                        section,
+                        parameters: vm.searchParameters,
+                        service: appState.searchService,
+                        pipeline: appState.indexingPipeline)
+                }
+            })
+    }
 
     /// Whether the inspector card's detail rows are showing. `@SceneStorage` so the choice
     /// survives per scene, matching the macOS strip.
@@ -400,40 +454,20 @@ struct SearchView: View {
                 .sheet(isPresented: $showSaveCorpusSheet) { saveCorpusSheet }
                 // The facet sheet (R-1c). Medium and large detents per the design, so it can
                 // be skimmed beside the results or opened fully to work through a long list.
-                .sheet(isPresented: $showFacetSheet) {
+                // **iPhone keeps the sheet; iPad gets a trailing inspector** (UI review F-12).
+                // Faceting is an iterative loop — tap a year, watch the list narrow, tap a person,
+                // back out one — and a sheet forces open→tap→dismiss per step while hiding the very
+                // results it is narrowing. `FacetPanelView` was already written to be shared ("only
+                // the container differs"), and the macOS window has shipped it in an inspector since
+                // R-1c; this gives iPad the same container. The `!isPhone` guard matters: on compact
+                // width SwiftUI presents an inspector AS a sheet, which would collide with this
+                // view's other sheets — the same trap `DocumentView`'s rail documents.
+                .sheet(isPresented: Binding(
+                    get: { isPhone && showFacetSheet },
+                    set: { if isPhone { showFacetSheet = $0 } }
+                )) {
                     NavigationStack {
-                        FacetPanelView(
-                            controller: facetController,
-                            matchCount: vm.hasSearched ? vm.totalMatchCountForFacets : nil,
-                            displayedCount: vm.displayedResults.count,
-                            isPartialEvidence: resultSetScope.isPartialEvidence,
-                            isChecklistHiding: vm.checklistMode
-                                && vm.displayedResults.count < vm.results.count,
-                            onNarrow: { narrowing in
-                                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
-                                vm.applyFacetNarrowing(narrowing)
-                                showFacetSheet = false
-                                Task { await runSearch() }
-                            },
-                            onApplySelection: { section, keys in
-                                // #775: one search for the whole selection, and the sheet closes
-                                // on the commit rather than on the first tap — staging is what
-                                // makes a second row reachable at all.
-                                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
-                                vm.applyFacetSelection(section, keys: keys)
-                                showFacetSheet = false
-                                Task { await runSearch() }
-                            },
-                            onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
-                            onDiscloseSection: { section in
-                                Task {
-                                    await facetController.load(
-                                        section,
-                                        parameters: vm.searchParameters,
-                                        service: appState.searchService,
-                                        pipeline: appState.indexingPipeline)
-                                }
-                            })
+                        facetPanel(dismissesOnApply: true)
                             .navigationTitle(String(localized: "search.facets.title",
                                                     defaultValue: "This result set"))
                             .toolbar {
@@ -445,6 +479,15 @@ struct SearchView: View {
                             }
                     }
                     .presentationDetents([.medium, .large])
+                }
+                .inspector(isPresented: Binding(
+                    get: { !isPhone && showFacetSheet },
+                    set: { if !isPhone { showFacetSheet = $0 } }
+                )) {
+                    // No dismissal on apply: staying open beside the narrowing results is the
+                    // entire point of the inspector container.
+                    facetPanel(dismissesOnApply: false)
+                        .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
                 }
                 // Keyed on the live field so the expression updates as the researcher
                 // types — the design's "a researcher learns NEAR by watching the
