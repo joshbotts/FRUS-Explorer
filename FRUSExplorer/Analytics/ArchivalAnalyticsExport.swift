@@ -84,7 +84,8 @@ enum ArchivalAnalyticsExport {
                         indexedVolumeCount: Int, noteCount: Int = 0,
                         shownValue: Int = 0, rowCapApplied: Bool = true,
                         scopeLabel: String? = nil) -> AnalyticsProvenance {
-        var caveats = [baseCaveat, weightCaveat, coverageCaveat]
+        var caveats = [weight.measuresPrintedMaterial ? baseCaveat : pointerBaseCaveat,
+                       weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
             caveats.append(String(format: String(
                 localized: "archival.export.caveat.umbrella %lld %@",
@@ -311,8 +312,20 @@ enum ArchivalAnalyticsExport {
     /// really appends. A test quoting a fragment instead keeps passing once the wording changes,
     /// which is a guard that has quietly stopped guarding.
     static var weightCaveat: String {
-        String(localized: "archival.export.caveat.weight",
-               defaultValue: "The two weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Switching the weight changes which collections appear in the ranking, not just their order.")
+        String(localized: "archival.export.caveat.weight.v2",
+               defaultValue: "The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.")
+    }
+
+    /// The methods statement a **pointers** export needs instead of `baseCaveat`.
+    ///
+    /// **A separate base, not an appended sentence**, following `flows(...)`'s precedent in this
+    /// file. `baseCaveat` says the figures come from the source note on each published document and
+    /// record where the editors drew documents from — a description of work a pointers export did
+    /// not do. Leaving it in place and adding a correction underneath would put two contradictory
+    /// methods statements in one file, and the first one is the one a reader trusts.
+    static var pointerBaseCaveat: String {
+        String(localized: "archival.export.caveat.base.pointers",
+               defaultValue: "These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive's catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.")
     }
 
     /// The era asymmetry, which decides whether a reader should have switched lenses.

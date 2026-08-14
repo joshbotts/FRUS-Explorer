@@ -1089,6 +1089,77 @@ struct ArchivalCollectionsDataTests {
         #expect(shownShare > share * 2)
     }
 
+    /// The pointer weight is a **swap**, not a third column, and this is the assertion that says so:
+    /// it must rank a materially different set of collections, not the same ones reordered. The
+    /// issue measured 1,014 usage collections dropping out and 181 pointer-only units appearing;
+    /// the exact figures move with the artifacts, so this pins the direction rather than a number.
+    @Test("The pointer weight replaces the row set rather than reordering it")
+    func pointerWeightReplacesTheRowSet() throws {
+        let data = try #require(Self.shipped)
+        #expect(data.supportsPointerWeight, "the bundled external-citation index did not load")
+
+        var documentIds: Set<String> = []
+        var pointerIds: Set<String> = []
+        for band in ArchivalEraBand.all {
+            documentIds.formUnion(data.ranking(band: band, lens: .namedCollections,
+                                               weight: .documents, hidingUmbrella: false,
+                                               limit: .max).rows.map(\.id))
+            pointerIds.formUnion(data.ranking(band: band, lens: .namedCollections,
+                                              weight: .unprintedPointers, hidingUmbrella: false,
+                                              limit: .max).rows.map(\.id))
+        }
+        #expect(!pointerIds.isEmpty, "no collection is pointed at — the pointer table is empty")
+        #expect(!pointerIds.subtracting(documentIds).isEmpty, """
+            Every pointed-at collection also supplied a printed document. The whole point of this \
+            weight is that some collections are only ever pointed AT, so this suggests the pointer \
+            table is being filled from the usage index rather than the citation index.
+            """)
+        #expect(!documentIds.subtracting(pointerIds).isEmpty)
+    }
+
+    /// The class lens has no pointer vocabulary at all — #784's harvest reads lot files and
+    /// presidential libraries, never a decimal class — so the combination must yield nothing rather
+    /// than falling through to whichever table an inexhaustive switch would have reached.
+    @Test("The class lens ranks nothing under the pointer weight")
+    func classLensHasNoPointers() throws {
+        let data = try #require(Self.shipped)
+        for band in ArchivalEraBand.all {
+            let ranking = data.ranking(band: band, lens: .centralFileClasses,
+                                       weight: .unprintedPointers, hidingUmbrella: false)
+            #expect(ranking.rows.isEmpty, "\(band.title) ranked classes by a weight they cannot have")
+            #expect(ranking.unitsReached == 0)
+        }
+        // …while the same lens under a weight it DOES have is not empty, or the assertion above
+        // would pass on a broken derivation.
+        let sanity = data.ranking(band: ArchivalEraBand.all[0], lens: .centralFileClasses,
+                                  weight: .volumes, hidingUmbrella: false)
+        #expect(!sanity.rows.isEmpty)
+    }
+
+    /// The bands partition the corpus by citing volume, so a multi-band pointer ranking must be the
+    /// exact sum of its parts — the same property the other two weights rely on, and the one that
+    /// would break if references were banded by the *target's* coverage instead of the citer's.
+    @Test("Pointer rankings sum exactly across bands")
+    func pointerRankingsSumAcrossBands() throws {
+        let data = try #require(Self.shipped)
+        var perBand: [String: Int] = [:]
+        for band in ArchivalEraBand.all {
+            for row in data.ranking(band: band, lens: .namedCollections, weight: .unprintedPointers,
+                                    hidingUmbrella: false, limit: .max).rows {
+                perBand[row.id, default: 0] += row.value
+            }
+        }
+        let merged = data.ranking(bands: ArchivalEraBand.all, lens: .namedCollections,
+                                  weight: .unprintedPointers, hidingUmbrella: false, limit: .max)
+        #expect(!merged.rows.isEmpty)
+        for row in merged.rows {
+            #expect(perBand[row.id] == row.value, """
+                \(row.label): the merged ranking says \(row.value) but the bands sum to \
+                \(perBand[row.id] ?? 0).
+                """)
+        }
+    }
+
     @Test("Every ranking the UI can ask for has unique labels")
     func shippedLabelsAreAlwaysUnique() throws {
         let data = try #require(Self.shipped)
@@ -1108,7 +1179,10 @@ struct ArchivalCollectionsDataTests {
                 }
             }
         }
-        #expect(checked == 40, "the sweep covered \(checked) combinations, not 40")
+        // 5 bands x 2 lenses x 3 weights x 2 umbrella states. The count is asserted so that a
+        // weight or lens added without extending this sweep fails here rather than shipping
+        // unswept — which is what it did for the pointer weight (#829c).
+        #expect(checked == 60, "the sweep covered \(checked) combinations, not 60")
     }
 
     @Test("The class lens carries the early series and the collection lens carries the late one")
