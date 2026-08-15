@@ -9,7 +9,7 @@ independent readers per surface, the second prompted to break the first's plan; 
 the first pass was materially wrong in at least one load-bearing way**, which is the argument for
 writing this down rather than starting from the review's one-line recommendation.
 
-**Status: §2's shape is REFUTED (§6a). §7 is the replacement, and it is unbuilt.** Read §6a and §7
+**Status: §7.1 SHIPPED in #914.** §2's shape was refuted on push (§6a) and the platform's own split was refuted in the sidebar representation (§7.7); §7.1 is what is built. Read §6a and §7
 before touching this — §2–§5 are kept because their surgery list, gate and test analysis all still
 apply, but their *shape* does not.
 

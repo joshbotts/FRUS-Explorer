@@ -29,18 +29,26 @@ struct CorpusView: View {
 
     let vm: BrowserViewModel
 
+    /// Whether this instance carries the "Working on:" research-question navigation subtitle
+    /// (UI review F-2).
+    ///
+    /// Both this view and every pushed level apply `.workingOnSubtitle()`, and until F-2 only one
+    /// of the two was ever on screen. In the two-pane layout both are, so the question would
+    /// render twice; the list pane keeps it because it is the pane that is always present.
+    var showsWorkingOnSubtitle: Bool = true
+
     var body: some View {
         List {
             // #754: the one thing a relaunch gives back. Offered, never forced — see
             // `ResumeReadingRow`. Renders nothing when there is no resumable read.
             ResumeReadingRow { entry in
-                vm.navigationPath.append(.document(entry))
+                vm.select(.document(entry))
             }
 
             // Cross-volume indices
             Section {
                 Button {
-                    vm.navigationPath.append(.people)
+                    vm.select(.people)
                 } label: {
                     Label(
                         String(localized: "browser.corpus.people", defaultValue: "People"),
@@ -77,7 +85,7 @@ struct CorpusView: View {
                                         defaultValue: "Subseries"))) {
                 ForEach(vm.allSubseriesGroups) { group in
                     Button {
-                        vm.navigationPath.append(.subseries(group))
+                        vm.select(.subseries(group))
                         #if DEBUG
                         print("[BrowserView] Navigate → subseries \(group.subseries)")
                         #endif
@@ -113,7 +121,7 @@ struct CorpusView: View {
         #endif
         // #377 Phase 5: on regular-width iPad the top-inset "Working on:" banner is suppressed (it
         // collides with the floating tab bar, #238); surface the research question here instead.
-        .workingOnSubtitle()
+        .workingOnSubtitle(isActive: showsWorkingOnSubtitle)
     }
 }
 
