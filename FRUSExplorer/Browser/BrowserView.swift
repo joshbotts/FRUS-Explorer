@@ -102,6 +102,13 @@ struct BrowserView: View {
     /// The shared container, re-injected into the three analytics sheets (#258 P3 review).
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: BrowserViewModel?
+    /// This container's measured width, driving the F-2 two-pane gate.
+    ///
+    /// `onGeometryChange` rather than a wrapping `GeometryReader`: a GeometryReader around the
+    /// whole body would change this view's layout semantics (it fills and aligns topLeading),
+    /// which is a large side effect for a number. This reads the width the container was actually
+    /// given — which, unlike the horizontal size class, already excludes the tab sidebar.
+    @State private var containerWidth: CGFloat = 0
     // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
     // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
     // declared on `BrowserView()` from BrowserTabView (outside the nav container) they were silently
@@ -154,10 +161,33 @@ struct BrowserView: View {
                 // `splitLayout` / `SubseriesListView` are retained (currently unreferenced) so
                 // this change can be reverted by restoring the `sizeClass == .regular` branch.
                 // See Planning/Completed/Issues-233-243-Plan.md Session 1 and Planning/Completed/BigPicture-iPadMacParity.md.
-                stackLayout(vm: vm)
+                //
+                // **F-2**: where there is genuinely room, that stack becomes the DETAIL half of a
+                // two-pane layout with the subseries list beside it. The shape is
+                // `twoPaneLayout`; the safe-area question #238 makes unavoidable was measured
+                // before this was written (see `F-2-two-pane-design.md` §6). A plain `if/else` in
+                // a ViewBuilder, never `AnyView` — `levelView`'s doc comment explains that
+                // erasing structural identity here restarts `DocumentView`'s document load on
+                // every navigation.
+                if isTwoPane {
+                    twoPaneLayout(vm: vm)
+                } else {
+                    stackLayout(vm: vm)
+                }
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        // Measured in a `.background`, NOT with `.onGeometryChange` on the `Group` above: a
+        // `Group` applies its modifiers to EACH CHILD rather than to a container, so the reading
+        // was per-branch and never the content width the gate needs. A background overlay does
+        // not participate in layout, so this measures without changing anything.
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { containerWidth = proxy.size.width }
+                    .onChange(of: proxy.size.width) { _, width in containerWidth = width }
             }
         }
         .onChange(of: appState.pendingBrowseDocument) { _, _ in
@@ -527,6 +557,126 @@ struct BrowserView: View {
         }
     }
 
+    // MARK: - Two-pane (F-2)
+
+    /// Narrowest content area that earns a second pane.
+    ///
+    /// **Measured width, not size class**, and the difference is not pedantry: in the
+    /// `.sidebarAdaptable` *sidebar* representation the tab sidebar consumes a column without
+    /// changing the horizontal size class, so a `sizeClass == .regular` gate puts a list pane and
+    /// a detail pane into whatever is left. The design measured that at roughly **194 pt of
+    /// detail** on an 11-inch iPad in portrait — a second pane that makes the first one useless.
+    ///
+    /// 820 leaves at least 480 pt of detail beside a 340 pt list. A 13-inch iPad in portrait gets
+    /// two panes in the floating-tab-bar representation (~1032 pt) and one in the sidebar
+    /// representation (~712 pt), which is the right answer both times.
+    private static let twoPaneMinimumWidth: CGFloat = 820
+
+    /// Width of the persistent list pane.
+    private static let listPaneWidth: CGFloat = 340
+
+    /// Whether this container is wide enough for two panes.
+    private var isTwoPane: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && containerWidth >= Self.twoPaneMinimumWidth
+    }
+
+    /// The subseries list beside the level it opens (UI review F-2).
+    ///
+    /// ## The shape, and why it is this one
+    /// **One outer `NavigationStack` carrying the chrome, one nested stack in the detail pane.**
+    /// That is `CollectionEditorView.iPadCollectionLayout`'s shape — which contains no navigation
+    /// container of its own and hangs its title and toolbar on the `HStack`'s parent — and it is
+    /// the only two-pane arrangement that has ever shipped in this app under `.sidebarAdaptable`.
+    /// Two sibling stacks, each spanning the tab's top edge, have not.
+    ///
+    /// The detail pane needs its own stack because every level sets a `navigationTitle` and
+    /// several set a `.toolbar`, and because Back has to go somewhere. The list pane needs none:
+    /// **Browse has no `NavigationLink`s at all** — every row is a `Button` mutating
+    /// `vm.navigationPath` — so its rows work perfectly well outside a navigation container. A
+    /// `NavigationLink` there would have been inert, which is what makes Research a different and
+    /// harder problem.
+    ///
+    /// ## #238, answered by measurement rather than avoided
+    /// A nested navigation container inside a `.sidebarAdaptable` tab is exactly the composition
+    /// #238 reverted a `NavigationSplitView` for. Before writing this, the arrangement was stood
+    /// up behind a launch argument and measured on a booted iPad in **both** representations: the
+    /// detail pane's content begins at y=138 in each, flush with the bar in the floating
+    /// representation and below it in the sidebar one, never above it. `F-2-two-pane-design.md`
+    /// §6 records the numbers.
+    ///
+    /// ## What lives where
+    /// The three persistent toolbar items are **root-only today** — push a level and the Analysis
+    /// Tools menu is gone — so in a two-pane, where the detail is almost always occupied, they
+    /// have to hang on the outer container or they become unreachable in practice.
+    /// `navigationDestination` is the detail's, and is the only one: a second copy on the outer
+    /// stack would let a level render across both panes.
+    private func twoPaneLayout(vm: BrowserViewModel) -> some View {
+        NavigationStack {
+            HStack(spacing: 0) {
+                CorpusView(vm: vm, showsWorkingOnSubtitle: true)
+                    .frame(width: Self.listPaneWidth)
+                    // #486: the banner belongs to content inside a navigation container, never to
+                    // the container. It renders nothing at pad + regular width, so it costs this
+                    // layout nothing — but moving it to the `HStack` would re-open #486 for the
+                    // compact-width iPad that falls through to `stackLayout`.
+                    .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
+
+                Divider()
+
+                NavigationStack(path: Binding(
+                    get: { vm.navigationPath },
+                    set: { vm.navigationPath = $0 }
+                )) {
+                    detailPlaceholder
+                        .navigationDestination(for: BrowserViewModel.BrowserLevel.self) { level in
+                            // `showsWorkingOnSubtitle: false` — the research question is already
+                            // on the outer bar via the list pane. Both panes carry
+                            // `.workingOnSubtitle()` today and only one is ever on screen; in a
+                            // two-pane both are, and the reader would see it twice.
+                            levelView(for: level, vm: vm, showsWorkingOnSubtitle: false)
+                        }
+                }
+            }
+            .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    ProjectPickerMenu {
+                        appState.openTab(.research, from: sceneID)
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        appState.filterDownloadedOnly.toggle()
+                    } label: {
+                        Label(downloadFilterName, systemImage: downloadFilterSymbol)
+                    }
+                    .accessibilityLabel(downloadFilterName)
+                    .help(downloadFilterHelp)
+                }
+                analyticsToolbarItems
+                #if DEBUG
+                uiTestOverflowFillerItems
+                #endif
+            }
+        }
+    }
+
+    /// What the detail pane shows before anything is chosen.
+    ///
+    /// A real empty state rather than blank space: the two-pane's first frame has an empty path,
+    /// and a bare `Color.clear` beside a populated list reads as a rendering failure.
+    private var detailPlaceholder: some View {
+        ContentUnavailableView(
+            String(localized: "browser.detail.empty.title", defaultValue: "Choose a Subseries"),
+            systemImage: "books.vertical",
+            description: Text(String(
+                localized: "browser.detail.empty.detail",
+                defaultValue: "Pick a subseries from the list to browse its volumes, compilations, and documents."))
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     @ViewBuilder
     private func stackLayout(vm: BrowserViewModel) -> some View {
         NavigationStack(path: Binding(
@@ -609,7 +759,9 @@ struct BrowserView: View {
     /// button, the title, and the trailing toolbar items on iPhone. Unlike the breadcrumb it is
     /// suppressed at no depth; the reasoning (and the measurement behind it) is at the inset itself.
     @ViewBuilder
-    private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
+    private func levelView(for level: BrowserViewModel.BrowserLevel,
+                           vm: BrowserViewModel,
+                           showsWorkingOnSubtitle: Bool = true) -> some View {
         Group {
             switch level {
             case .corpus:            CorpusView(vm: vm)
@@ -624,7 +776,7 @@ struct BrowserView: View {
         // pushed Browse depth on regular-width iPad (each level sets its own navigationTitle; this
         // pairs the subtitle to it). The corpus root is rendered directly in `stackLayout`, so it
         // carries its own `.workingOnSubtitle()`; no level view sets a subtitle of its own to clobber.
-        .workingOnSubtitle()
+        .workingOnSubtitle(isActive: showsWorkingOnSubtitle)
         .safeAreaInset(edge: .top, spacing: 0) {
             // #486: banner ABOVE the breadcrumb, in ONE inset rather than a competing second one.
             // Both children reserve zero height when inactive, so a level with neither (no active

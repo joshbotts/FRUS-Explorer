@@ -233,7 +233,16 @@ private struct WorkingOnSubtitleModifier: ViewModifier {
 extension View {
     /// On regular-width iPad, show the active project's research question as a navigation subtitle in
     /// place of the (suppressed) top-inset "Working on:" banner. See `WorkingOnSubtitleModifier`.
-    func workingOnSubtitle() -> some View { modifier(WorkingOnSubtitleModifier()) }
+    ///
+    /// - Parameter isActive: `false` suppresses the subtitle for this instance. Added for UI
+    ///   review F-2: the two-pane Browse layout has the corpus list and a pushed level on screen
+    ///   at once, and both apply this modifier, so without a switch the research question renders
+    ///   twice. Defaults to `true`, so every existing call site is unchanged.
+    func workingOnSubtitle(isActive: Bool = true) -> some View {
+        Group {
+            if isActive { modifier(WorkingOnSubtitleModifier()) } else { self }
+        }
+    }
 }
 
 // MARK: - SecondProjectNudge (pure decisions)
