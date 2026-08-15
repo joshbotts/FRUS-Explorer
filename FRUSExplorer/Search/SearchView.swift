@@ -1535,14 +1535,24 @@ struct SearchView: View {
             startYear = cal.component(.year, from: vm.dateRangeStart)
             endYear   = cal.component(.year, from: vm.dateRangeEnd)
         }
-        appState.openAnalytics(
-            AnalyticsParameters(
-                term: term,
-                yearRangeStart: startYear,
-                yearRangeEnd: endYear
-            ),
-            from: sceneID
+        let params = AnalyticsParameters(
+            term: term,
+            yearRangeStart: startYear,
+            yearRangeEnd: endYear
         )
+
+        // UI review F-13, fixed by CW-9b's `corpusAnalyticsScene`. Where a window is available the
+        // chart opens as its own scene and **the reader stays in Search** — no hand-off, and
+        // therefore no tab hop. The teleport below was never a routing bug; it was the only way to
+        // reach a sheet another tab owned, which is exactly what F-13 said.
+        #if os(iOS)
+        if supportsMultipleWindows {
+            appState.openAuxWindow(params, from: sceneID, using: openWindow)
+            return
+        }
+        #endif
+
+        appState.openAnalytics(params, from: sceneID)
         // #369 BUG-11: the analytics sheet is owned by BrowserView (Browse tab), so bring that tab
         // forward — otherwise, handed off from the Search tab, the sheet presents on a backgrounded
         // tab and nothing appears to happen. Mirrors WordCloudView's analyze/chronology hand-offs.

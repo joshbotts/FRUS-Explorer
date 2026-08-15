@@ -319,15 +319,13 @@ struct BrowserView: View {
         ToolbarItem(placement: .primaryAction) {
             Menu {
                 Button {
-                    chronologyParameters = nil
-                    showChronology = true
+                    presentChronology(nil)
                 } label: {
                     Label(String(localized: "browse.chronology.a11y", defaultValue: "Chronology"),
                           systemImage: "calendar.day.timeline.left")
                 }
                 Button {
-                    analyticsParameters = nil
-                    showAnalytics = true
+                    presentAnalytics(nil)
                 } label: {
                     Label(String(localized: "browse.analytics.a11y", defaultValue: "Corpus Analytics"),
                           systemImage: "chart.bar.xaxis")
@@ -707,8 +705,7 @@ struct BrowserView: View {
     private func consumePendingAnalytics() {
         guard let sceneID,
               let params = appState.consumeHandoff(\.pendingAnalytics, for: sceneID) else { return }
-        analyticsParameters = params
-        showAnalytics = true
+        presentAnalytics(params)
     }
 
     /// Semantic-map twin of ``consumePendingAnalytics`` — same both-ways contract (#750).
@@ -737,6 +734,29 @@ struct BrowserView: View {
     /// `DocumentView.openCrossReferenceGraph` uses. `supportsMultipleWindows` is plist-derived
     /// and the repo already records doubt about whether it reflects Stage Manager on iPad
     /// (F-18, still unprobed) — so the fallback is a real path, not a formality.
+    /// Opens Corpus Analytics in a window where one is available, and in the sheet where it is
+    /// not (UI review F-11 / CW-9b) — the twin of ``presentSemanticMap``.
+    private func presentAnalytics(_ params: AnalyticsParameters?) {
+        if supportsMultipleWindows {
+            appState.openAuxWindow(params ?? AnalyticsParameters(term: ""),
+                                   from: sceneID, using: openWindow)
+            return
+        }
+        analyticsParameters = params
+        showAnalytics = true
+    }
+
+    /// Chronology twin of ``presentAnalytics``.
+    private func presentChronology(_ params: ChronologyParameters?) {
+        if supportsMultipleWindows {
+            appState.openAuxWindow(params ?? ChronologyParameters(),
+                                   from: sceneID, using: openWindow)
+            return
+        }
+        chronologyParameters = params
+        showChronology = true
+    }
+
     private func presentSemanticMap(_ request: SemanticMapRequest?) {
         if supportsMultipleWindows {
             // A nil request is the whole-corpus map, which is this menu item's normal meaning.
@@ -751,8 +771,7 @@ struct BrowserView: View {
     private func consumePendingChronology() {
         guard let sceneID,
               let params = appState.consumeHandoff(\.pendingChronology, for: sceneID) else { return }
-        chronologyParameters = params
-        showChronology = true
+        presentChronology(params)
     }
 
     /// Volume-grain sibling of `consumePendingBrowseDocument` — same adopt-then-clear contract.

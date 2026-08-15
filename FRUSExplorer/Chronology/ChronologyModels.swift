@@ -217,7 +217,9 @@ public struct ChronologyMagnifierBar: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
-public struct ChronologyParameters: Sendable, Equatable {
+/// `Codable & Hashable` since CW-9b, so the same value can key the iOS `chronologyScene` window.
+/// Both fields are `Date?`, so both conformances are synthesised.
+public struct ChronologyParameters: Sendable, Equatable, Codable, Hashable {
     /// Lower bound of the range to display. `nil` keeps the view's default.
     public var rangeStart: Date?
     /// Upper bound of the range to display. `nil` keeps the view's default.

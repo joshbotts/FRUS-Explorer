@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #904. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #905. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -86,6 +86,7 @@ that is a discipline in the commit, not a script.
 | CW-10a | [#902](https://github.com/joshbotts/FRUS-Explorer/pull/902) | Onboarding dock cap (F-5); compilation parent line (F-17) |
 | CW-10b | [#903](https://github.com/joshbotts/FRUS-Explorer/pull/903) | Dead search-scope chip removed (M-10); Mac toolbar centre names its location (M-8) |
 | CW-9a | [#904](https://github.com/joshbotts/FRUS-Explorer/pull/904) | The semantic map gets an iPad window (F-25) — the first analytics window scene on iOS |
+| CW-9b | [#905](https://github.com/joshbotts/FRUS-Explorer/pull/905) | Corpus Analytics + Chronology windows; F-13's tab teleport removed |
 
 ---
 
@@ -97,10 +98,12 @@ Wave 2 is complete. What remains, in the review's own order:
 "analytics `WindowGroup`s on iPad, Semantic first" half of the item and proves the pattern on the
 sharpest surface. What remains:
 
-- **F-11's other five analytics surfaces.** The pattern is now demonstrated, but each needs a
-  `Codable & Hashable` request type and only some have a value-shaped entry point today
-  (`AnalyticsView` and `ChronologyView` take `initialParameters`; the others do not). Mechanical
-  but not free, and worth doing after #904 has been used for a while.
+- **F-11's remaining three analytics surfaces.** Corpus Analytics and Chronology shipped in #905 —
+  they were the two whose hand-off payloads were already value-shaped, so the windows cost only a
+  synthesised `Codable & Hashable`. What is left is **Person Analytics, Cross-Reference Analytics
+  and Archival Analytics**, none of which has a request type today; each needs one designed before
+  it can key a window. Archival Analytics is the odd one: #833 already routes it through a hand-off
+  rather than a `BrowserView` sheet, so its producer is in a different place from the other two.
 - **M-2, rescoped by measurement.** The word cloud is **out** (app-level, not per-document). The
   real work is Source Explorer + graph, whose request types already exist from #317's iPad port —
   so the cost is not the values but `fronting(id:)`, which is id-only across ~20 sites and guarded
