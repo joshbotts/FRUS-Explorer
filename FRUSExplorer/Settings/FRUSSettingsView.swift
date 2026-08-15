@@ -81,6 +81,14 @@ struct FRUSSettingsView: View {
 
     @State private var selection: SettingsPane = .volumesStorage
 
+    /// Settings-search text (UI review M-16).
+    ///
+    /// Thirteen panes across four groups is where type-to-find starts paying, and iOS has had it
+    /// since S-1 — through `SettingsPane.matches(_:)`, the *shared* model both roots read, which
+    /// the Mac sidebar simply never called. So this is an adoption, not a feature: the same
+    /// keywords, the same matcher, the same panes.
+    @State private var paneQuery = ""
+
     var body: some View {
         SettingsPane.assertCoverage()
         return NavigationSplitView {
@@ -88,18 +96,33 @@ struct FRUSSettingsView: View {
                 // Sections come from the shared `SettingsPane` model (S-1), so the sidebar cannot
                 // disagree with the iOS root about a pane's name, icon, or group.
                 ForEach(SettingsPane.groupedPanes(on: .macOS), id: \.group) { entry in
-                    Section(entry.group.label) {
-                        ForEach(entry.panes) { pane in
-                            // No row is tinted destructive any more: S-4b moved Erase Everything
-                            // behind Data & Recovery, so the sidebar has no destructive entry.
-                            Label(pane.label, systemImage: pane.icon)
-                                .tag(pane)
+                    // Empty groups vanish rather than showing a bare header, matching the iOS
+                    // root's `if !visible.isEmpty` exactly.
+                    let visible = entry.panes.filter { $0.matches(paneQuery) }
+                    if !visible.isEmpty {
+                        Section(entry.group.label) {
+                            ForEach(visible) { pane in
+                                // No row is tinted destructive any more: S-4b moved Erase
+                                // Everything behind Data & Recovery, so the sidebar has no
+                                // destructive entry.
+                                Label(pane.label, systemImage: pane.icon)
+                                    .tag(pane)
+                            }
                         }
                     }
                 }
             }
             .listStyle(.sidebar)
             .frame(minWidth: 186)
+            // `.searchable` on the sidebar column, which is where AppKit puts a list filter and
+            // where the iOS root puts its own. The selection is deliberately NOT cleared when a
+            // query hides the selected pane: the detail keeps showing what the reader was reading,
+            // and clearing the field brings its row back. Blanking the detail on a keystroke would
+            // be the worse behaviour.
+            .searchable(text: $paneQuery,
+                        placement: .sidebar,
+                        prompt: Text(String(localized: "settings.search.prompt",
+                                            defaultValue: "Search Settings")))
         } detail: {
             Group {
                 switch selection {
