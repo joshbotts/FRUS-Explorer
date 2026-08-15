@@ -149,6 +149,48 @@ Two by-products, both of which the test work in §4 needs:
    practice, in the very first measurement taken, and it is why §4 says the existing oracles pass
    while measuring the wrong thing rather than failing.
 
+### 6a. The probe was necessary and NOT sufficient — corrected 2026-08-15
+
+**§6 concluded the shape was viable. Building it showed that conclusion was too strong, and the
+fault was in the probe's design rather than in its numbers.**
+
+The probe measured the composition **at rest** — two panes, nothing pushed. It never opened a
+level. Built out and driven, the layout is correct at rest (the detail placeholder renders beside
+a 340pt list pane; the corpus People row measures 308pt wide at x=16) and then **fails on push**:
+
+| state | evidence |
+|---|---|
+| at rest | `placeholderPresent=true`, list-pane row at `(16, 138, 308, 52)` — two panes, correct |
+| after opening a subseries | cells at `(20, 175, **992**, 93.5)`, `navBars=1` — **full container width** |
+
+The nested `NavigationStack`'s pushed destination expands to the whole content area instead of
+staying inside the detail pane, so the list pane is replaced exactly as the single-column layout
+would replace it. The two-pane exists only until the reader uses it.
+
+**The lesson for the next attempt is about the probe, not the layout.** A composition probe has to
+exercise the composition's *purpose*. This one asked "does a nested stack sit correctly beside a
+list?" when the question that decides the design is "does a nested stack **push** correctly beside
+a list?" The safe-area numbers in §6 remain true and remain insufficient.
+
+Two candidate causes, in the order worth testing:
+
+1. ~~**The detail stack has no width constraint of its own.**~~ **Tried, and it is not this.**
+   Adding `.frame(maxWidth: .infinity, maxHeight: .infinity)` and `.clipped()` to the detail stack
+   left the pushed cells at 992pt. The code carries a do-not-re-try comment at the site.
+2. **A `NavigationStack` inside an `HStack` does not constrain its pushed destination** — now the
+   leading explanation, and if it holds, **§2's shape is wrong** and the detail pane needs a
+   different container. That is precisely the outcome §5 predicted would change the whole design.
+
+So the shape is **refuted for pushes, pending one more test**: does the same `HStack` +
+nested-stack composition mis-push in a *minimal* view outside this app's chrome? If it does, the
+answer is a SwiftUI constraint and the design needs a detail pane that renders
+`vm.navigationPath.last` directly — no nested stack, with Back supplied by the pane itself. That
+is a different design from §2, not an adjustment to it, and it should be written before it is
+built.
+
+The work sits on `claude/f2-two-pane`, unmerged, with the diagnostic that produced these numbers
+(`testDiagnoseBrowseContainerWidth`) kept on the branch so the next attempt does not rebuild it.
+
 The detail pane's constant 138.0 across both representations is consistent with the *content* bar
 being at 138 in both while `firstMatch` picks up the sidebar's own bar at 86 in the second — i.e.
 finding (2) is the likeliest explanation of the 52.0, not a real gap. **Confirming that is the

@@ -1458,6 +1458,50 @@ final class UIObstructionTests: XCTestCase {
         )
     }
 
+    /// Reads the width `BrowserView`'s two-pane gate is actually seeing.
+    ///
+    /// Diagnostic, not an oracle: two attempts at that measurement were guessed and both were
+    /// wrong, so this reads the number out of the running app instead. Dumping **every** matching
+    /// probe is deliberate — `body`'s root is a `Group`, which applies modifiers per child, so
+    /// more than one probe appearing (or one reporting a width that is not the content area's)
+    /// is itself the diagnosis.
+    func testDiagnoseBrowseContainerWidth() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad-only diagnostic")
+        #endif
+        selectBrowseSection()
+
+        let probes = app.descendants(matching: .any).matching(identifier: "BrowserView.widthProbe")
+        _ = probes.firstMatch.waitForExistence(timeout: 10)
+        print("[F-2 DIAG] window=\(app.windows.firstMatch.frame) probeCount=\(probes.count)")
+        for index in 0..<probes.count {
+            let probe = probes.element(boundBy: index)
+            print("[F-2 DIAG] probe[\(index)] label=\"\(probe.label)\" frame=\(probe.frame)")
+        }
+
+        // Is the two-pane actually on screen? The detail placeholder exists only in that layout.
+        let placeholder = app.staticTexts["Choose a Subseries"]
+        print("[F-2 DIAG] placeholderPresent=\(placeholder.waitForExistence(timeout: 5))")
+
+        let people = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
+        print("[F-2 DIAG] beforeTap cells=\(app.cells.count) peopleExists=\(people.exists) "
+              + "peopleFrame=\(people.exists ? "\(people.frame)" : "-")")
+
+        let last = app.cells.element(boundBy: max(0, app.cells.count - 1))
+        print("[F-2 DIAG] tapping last cell label=\"\(last.label)\" frame=\(last.frame)")
+        last.tap()
+        Thread.sleep(forTimeInterval: 2)
+
+        print("[F-2 DIAG] afterTap cells=\(app.cells.count) peopleExists=\(people.exists) "
+              + "placeholderStillThere=\(placeholder.exists)")
+        print("[F-2 DIAG] afterTap navBars=\(app.navigationBars.count)")
+        for index in 0..<min(app.cells.count, 4) {
+            print("[F-2 DIAG] afterTap cell[\(index)] frame=\(app.cells.element(boundBy: index).frame)")
+        }
+        print("[F-2 DIAG] afterTap placeholderExists=\(app.staticTexts["Choose a Subseries"].exists)")
+    }
+
     // MARK: - Scenario 13 · Browse is two panes on a wide iPad (F-2)
 
     /// The subseries list must stay on screen while a level is open beside it.
@@ -1494,23 +1538,40 @@ final class UIObstructionTests: XCTestCase {
                           "This canvas (\(window.width)pt) is narrower than the two-pane gate "
                               + "plus the tab sidebar, so Browse is correctly a single column here")
 
-        // The corpus root's cross-volume People row — present only in the list pane.
-        let peopleRow = app.cells.containing(
-            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
-        XCTAssertTrue(peopleRow.waitForExistence(timeout: 10),
-                      "The corpus list never appeared")
+        // The detail pane's empty state exists only in the two-pane layout.
+        XCTAssertTrue(app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
+                      "Browse is a single column at \(window.width)pt — the two-pane layout is "
+                          + "not in effect, so nothing below this measures what it claims to.")
 
-        // Drill in. In a single column this covers the list; in two panes it fills the detail.
-        let subseriesRow = app.cells.element(boundBy: max(0, app.cells.count - 1))
+        // Open a subseries. A row near the TOP, deliberately: the first version of this scenario
+        // took `cells.count - 1`, which on a 13-inch iPad is a row at y=1358 with an empty label,
+        // and XCUITest scrolled the list pane to reach it. That scrolled the row this test then
+        // looked for out of the accessibility tree, and the failure read exactly like a collapsed
+        // layout. The bug was in the assertion, not the app.
+        let subseriesRow = app.cells.element(boundBy: min(3, max(0, app.cells.count - 1)))
         guard subseriesRow.exists else {
             throw XCTSkip("No subseries rows on this device — nothing to open beside the list")
         }
         subseriesRow.tap()
+        Thread.sleep(forTimeInterval: 1.5)
 
-        XCTAssertTrue(
-            peopleRow.waitForExistence(timeout: 8),
-            "The corpus list disappeared when a subseries was opened — Browse is still a single "
-                + "column at \(window.width)pt, so F-2's two-pane layout is not in effect."
-        )
+        // The property that distinguishes two panes from a stack: cells on BOTH sides of the
+        // divider at once. A single column can satisfy neither half, and no amount of scrolling
+        // can fake it — unlike any assertion about one particular row still being present.
+        let divider = CGFloat(340)
+        var listSide = 0
+        var detailSide = 0
+        for index in 0..<app.cells.count {
+            let frame = app.cells.element(boundBy: index).frame
+            if frame.maxX <= divider + 8 { listSide += 1 }
+            if frame.minX >= divider { detailSide += 1 }
+        }
+
+        XCTAssertGreaterThan(listSide, 0,
+                             "No cells remain in the list pane after opening a subseries — the "
+                                 + "corpus list was replaced rather than kept beside the detail.")
+        XCTAssertGreaterThan(detailSide, 0,
+                             "No cells appeared in the detail pane — the chosen subseries did not "
+                                 + "open beside the list.")
     }
 }

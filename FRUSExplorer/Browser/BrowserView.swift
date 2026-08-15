@@ -185,7 +185,14 @@ struct BrowserView: View {
         // not participate in layout, so this measures without changing anything.
         .background {
             GeometryReader { proxy in
-                Color.clear
+                // The probe both MEASURES and REPORTS: its label is the width the gate will use,
+                // so a test reads the number rather than inferring it from whether the layout
+                // changed. Two guesses at this measurement have already cost more than reading it
+                // once would have.
+                Text(verbatim: "\(Int(proxy.size.width))")
+                    .font(.system(size: 1))
+                    .foregroundStyle(.clear)
+                    .accessibilityIdentifier("BrowserView.widthProbe")
                     .onAppear { containerWidth = proxy.size.width }
                     .onChange(of: proxy.size.width) { _, width in containerWidth = width }
             }
@@ -636,6 +643,14 @@ struct BrowserView: View {
                             levelView(for: level, vm: vm, showsWorkingOnSubtitle: false)
                         }
                 }
+                // **TRIED AND INSUFFICIENT — do not re-try this.** The pushed destination
+                // expands to the whole content area (measured: cells 992pt wide at x=20 in a
+                // 1032pt window, one navigation bar) and replaces the list pane. Constraining the
+                // stack explicitly and clipping it changes nothing, so the cause is not a missing
+                // bound on this view; a `NavigationStack` in an `HStack` appears not to constrain
+                // its pushed destination at all. See `F-2-two-pane-design.md` §6a.
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
             }
             .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
             .navigationBarTitleDisplayMode(.inline)
