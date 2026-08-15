@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #910. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #911. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -92,6 +92,7 @@ that is a discipline in the commit, not a script.
 | P-8 | [#908](https://github.com/joshbotts/FRUS-Explorer/pull/908) | Archival Analytics' mode control folds to a menu on iPhone |
 | F-3 | [#909](https://github.com/joshbotts/FRUS-Explorer/pull/909) | Saved searches + projects fill the iPad sidebar's empty column |
 | F-2 (design) | [#910](https://github.com/joshbotts/FRUS-Explorer/pull/910) | The two-pane design, mapped and adversarially attacked — **not built**, see `F-2-two-pane-design.md` §5 |
+| F-2 (probe) | [#911](https://github.com/joshbotts/FRUS-Explorer/pull/911) | Safe-area probe RUN: the nested-stack shape is viable; §6 has the numbers |
 
 ---
 
