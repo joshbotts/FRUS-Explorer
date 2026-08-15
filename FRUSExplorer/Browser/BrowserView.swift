@@ -630,27 +630,18 @@ struct BrowserView: View {
 
                 Divider()
 
-                NavigationStack(path: Binding(
-                    get: { vm.navigationPath },
-                    set: { vm.navigationPath = $0 }
-                )) {
-                    detailPlaceholder
-                        .navigationDestination(for: BrowserViewModel.BrowserLevel.self) { level in
-                            // `showsWorkingOnSubtitle: false` — the research question is already
-                            // on the outer bar via the list pane. Both panes carry
-                            // `.workingOnSubtitle()` today and only one is ever on screen; in a
-                            // two-pane both are, and the reader would see it twice.
-                            levelView(for: level, vm: vm, showsWorkingOnSubtitle: false)
-                        }
-                }
-                // **TRIED AND INSUFFICIENT — do not re-try this.** The pushed destination
-                // expands to the whole content area (measured: cells 992pt wide at x=20 in a
-                // 1032pt window, one navigation bar) and replaces the list pane. Constraining the
-                // stack explicitly and clipping it changes nothing, so the cause is not a missing
-                // bound on this view; a `NavigationStack` in an `HStack` appears not to constrain
-                // its pushed destination at all. See `F-2-two-pane-design.md` §6a.
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+                // **The detail pane RENDERS the path; it does not push it.** No second navigation
+                // container — that shape was built and refuted (design §6a): a nested stack's
+                // pushed destination expands to the whole content area and replaces the list pane,
+                // and constraining it explicitly does not help. The platform's own two-pane was
+                // then tried too (§7.7) and empties itself in the sidebar representation.
+                //
+                // Rendering directly is not a workaround, it is what Browse already is: there is
+                // **no `NavigationLink` anywhere in `FRUSExplorer/Browser/`** — every row is a
+                // `Button` mutating `vm.navigationPath`. Selection was always array mutation, and
+                // a `NavigationStack` exists to present one thing over its container, which is the
+                // opposite of what a detail pane is for.
+                detailPane(vm: vm)
             }
             .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
             .navigationBarTitleDisplayMode(.inline)
@@ -675,6 +666,53 @@ struct BrowserView: View {
                 #endif
             }
         }
+    }
+
+    /// The detail pane: the deepest level on the path, or the empty state.
+    ///
+    /// ## Back, since there is no stack to supply it
+    /// `vm.navigationPath.removeLast()`, shown only when there is a parent level to return to.
+    /// At depth 1 there is none — the parent is the **corpus list, which is on screen in the pane
+    /// beside this one** — so a Back there would offer to return the reader somewhere they can
+    /// already see. That is the one respect in which this is better than the stack's Back rather
+    /// than merely equal to it.
+    ///
+    /// ## Titles and toolbars resolve to the OUTER bar, deliberately
+    /// Each level sets its own `navigationTitle` (`SubseriesView:82`, `VolumeView:98`,
+    /// `CompilationView:177`) and several add `.toolbar` items. With no container of their own
+    /// these land on the single outer bar, so the bar names the level the reader is in — which is
+    /// how a split view is supposed to behave. The design flags the open question honestly: it is
+    /// whether the combined toolbar (three persistent Browse items plus the level's) overflows at
+    /// 1032pt, and that is a screenshot rather than an argument.
+    @ViewBuilder
+    private func detailPane(vm: BrowserViewModel) -> some View {
+        VStack(spacing: 0) {
+            if vm.navigationPath.count > 1 {
+                HStack {
+                    Button {
+                        vm.navigationPath.removeLast()
+                    } label: {
+                        Label(String(localized: "browser.detail.back", defaultValue: "Back"),
+                              systemImage: "chevron.backward")
+                            .font(.subheadline)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                Divider()
+            }
+
+            if let level = vm.navigationPath.last {
+                // `showsWorkingOnSubtitle: false` — the research question is already on the bar via
+                // the list pane. Both carry `.workingOnSubtitle()` and only one was ever on screen
+                // before this layout; in a two-pane both are, and the reader would see it twice.
+                levelView(for: level, vm: vm, showsWorkingOnSubtitle: false)
+            } else {
+                detailPlaceholder
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// What the detail pane shows before anything is chosen.

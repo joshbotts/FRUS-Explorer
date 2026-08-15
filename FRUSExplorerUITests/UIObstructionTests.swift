@@ -1543,11 +1543,49 @@ final class UIObstructionTests: XCTestCase {
                       "Browse is a single column at \(window.width)pt — the two-pane layout is "
                           + "not in effect, so nothing below this measures what it claims to.")
 
-        // Open a subseries. A row near the TOP, deliberately: the first version of this scenario
-        // took `cells.count - 1`, which on a 13-inch iPad is a row at y=1358 with an empty label,
-        // and XCUITest scrolled the list pane to reach it. That scrolled the row this test then
-        // looked for out of the accessibility tree, and the failure read exactly like a collapsed
-        // layout. The bug was in the assertion, not the app.
+        // Drill THREE levels, checking after each. One level is not enough: the previous shape
+        // rendered two panes correctly at rest and collapsed on the first push, and the split
+        // probe reported a depth it never reached. Depth is where this layout family fails.
+        //
+        // Targets are chosen BY LABEL, never by "first cell past the divider" — that positional
+        // rule is what let the split probe tap a cell that did nothing three times and report
+        // byte-identical numbers as if they were stability (design §7.7).
+        let divider = CGFloat(340)
+        func panes(_ step: String) -> (list: Int, detail: Int, widest: CGFloat) {
+            var list = 0, detail = 0, widest = CGFloat(0)
+            for index in 0..<app.cells.count {
+                let frame = app.cells.element(boundBy: index).frame
+                if frame.maxX <= divider + 12 { list += 1 }
+                if frame.minX >= divider - 12 { detail += 1 }
+                widest = max(widest, frame.width)
+            }
+            print("[F-2] \(step): list=\(list) detail=\(detail) widest=\(widest)")
+            return (list, detail, widest)
+        }
+
+        /// Taps a row in the DETAIL pane, targeting its text rather than the cell.
+        ///
+        /// The cells in these levels carry empty accessibility labels — the readable string is on
+        /// a child `Text`. Targeting the cell by label therefore finds nothing, which is exactly
+        /// how the split probe (§7.7) tapped nothing three times and reported byte-identical
+        /// numbers as if the layout had held.
+        func openInDetail(_ step: String) -> Bool {
+            // Tapped by COORDINATE inside the cell, not by its label: these rows carry empty
+            // accessibility labels, and targeting their child text hits a count badge rather than
+            // the row. A normalized offset lands in the row body regardless.
+            for index in 0..<app.cells.count {
+                let cell = app.cells.element(boundBy: index)
+                let frame = cell.frame
+                guard frame.minX >= divider, frame.height > 30, cell.isHittable else { continue }
+                print("[F-2] \(step) opening detail row at \(frame)")
+                cell.coordinate(withNormalizedOffset: CGVector(dx: 0.35, dy: 0.5)).tap()
+                Thread.sleep(forTimeInterval: 2.5)
+                return true
+            }
+            print("[F-2] \(step): nothing tappable in the detail pane")
+            return false
+        }
+
         let subseriesRow = app.cells.element(boundBy: min(3, max(0, app.cells.count - 1)))
         guard subseriesRow.exists else {
             throw XCTSkip("No subseries rows on this device — nothing to open beside the list")
@@ -1555,23 +1593,20 @@ final class UIObstructionTests: XCTestCase {
         subseriesRow.tap()
         Thread.sleep(forTimeInterval: 1.5)
 
-        // The property that distinguishes two panes from a stack: cells on BOTH sides of the
-        // divider at once. A single column can satisfy neither half, and no amount of scrolling
-        // can fake it — unlike any assertion about one particular row still being present.
-        let divider = CGFloat(340)
-        var listSide = 0
-        var detailSide = 0
-        for index in 0..<app.cells.count {
-            let frame = app.cells.element(boundBy: index).frame
-            if frame.maxX <= divider + 8 { listSide += 1 }
-            if frame.minX >= divider { detailSide += 1 }
+        for step in 1...3 {
+            let measured = panes("depth \(step)")
+            XCTAssertLessThan(
+                measured.widest, window.width - 100,
+                "depth \(step): a cell is \(measured.widest)pt wide in a \(window.width)pt "
+                    + "window — the layout collapsed to one column, which is how both earlier "
+                    + "shapes failed."
+            )
+            XCTAssertGreaterThan(measured.list, 0,
+                                 "depth \(step): the corpus list was replaced rather than kept "
+                                     + "beside the detail.")
+            XCTAssertGreaterThan(measured.detail, 0,
+                                 "depth \(step): the detail pane holds no cells.")
+            if step < 3, !openInDetail("depth \(step)") { break }
         }
-
-        XCTAssertGreaterThan(listSide, 0,
-                             "No cells remain in the list pane after opening a subseries — the "
-                                 + "corpus list was replaced rather than kept beside the detail.")
-        XCTAssertGreaterThan(detailSide, 0,
-                             "No cells appeared in the detail pane — the chosen subseries did not "
-                                 + "open beside the list.")
     }
 }
