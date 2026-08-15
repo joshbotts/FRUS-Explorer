@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #912. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #913. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -94,6 +94,7 @@ that is a discipline in the commit, not a script.
 | F-2 (design) | [#910](https://github.com/joshbotts/FRUS-Explorer/pull/910) | The two-pane design, mapped and adversarially attacked — **not built**, see `F-2-two-pane-design.md` §5 |
 | F-2 (probe) | [#911](https://github.com/joshbotts/FRUS-Explorer/pull/911) | Safe-area probe RUN: the nested-stack shape is viable; §6 has the numbers |
 | F-2 (redesign) | [#912](https://github.com/joshbotts/FRUS-Explorer/pull/912) | §2's shape REFUTED on push; §7 is the replacement, and §7.6 names a cheaper thing to try first |
+| F-2 (split probe) | [#913](https://github.com/joshbotts/FRUS-Explorer/pull/913) | §7.6 answered NO — the nested split empties itself in the sidebar representation; §7.1 is the design to build |
 
 ---
 
