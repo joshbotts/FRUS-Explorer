@@ -230,13 +230,19 @@ struct HandoffVisibilityTests {
                 "the analytics consumer must be extractable so .onAppear can run it too (#750)")
         #expect(source.contains("private func consumePendingChronology()"),
                 "same for chronology (#750)")
+        #expect(source.contains("private func consumePendingSemanticMap()"),
+                "same for the semantic map handed off from another device (UI review F-28)")
 
         // The drain block must call all four. The two browse channels were already drained; the two
         // sheet channels were the only iOS hand-offs without an appear-time drain, and they are the
         // ones whose producers instantiate Browse as part of the same action.
-        let onAppear = try Self.functionBody(".onAppear {", in: source, limit: 1_400)
+        // The window is generous on purpose: it is a scan budget, not an assertion about how long
+        // the drain may be, and a correct new consumer must not fail this test by pushing an
+        // existing one past the edge — which is exactly what CW-7c's semantic-map channel did.
+        let onAppear = try Self.functionBody(".onAppear {", in: source, limit: 2_400)
         for consumer in ["consumePendingBrowseDocument()", "consumePendingBrowseVolume()",
-                         "consumePendingAnalytics()", "consumePendingChronology()"] {
+                         "consumePendingAnalytics()", "consumePendingChronology()",
+                         "consumePendingSemanticMap()"] {
             #expect(onAppear.contains(consumer), """
                 BrowserView's .onAppear drain must call \(consumer). `.onChange` never fires for a \
                 value set before the view attached, and the producers write the slot and THEN call \

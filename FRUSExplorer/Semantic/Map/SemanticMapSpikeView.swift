@@ -740,6 +740,12 @@ struct SemanticMapSpikeView: View {
     /// The app state, for the volume metadata every lens except `cluster` is computed from.
     let appState: AppState
 
+    /// A continued map's scope and lens (UI review F-28), applied once when the artifact is ready.
+    ///
+    /// Nil for a map the reader opened here. **Scope and lens only** — see
+    /// `AppActivityTypes.semanticMap` for why the slice poles are not carried.
+    var continued: SemanticMapRequest?
+
     @State private var model = SemanticMapModel()
     @State private var lens: SemanticMapLens = .cluster
     @State private var zoom: Double = 1.0
@@ -777,6 +783,8 @@ struct SemanticMapSpikeView: View {
     /// Series dashboard uses, so the map's CSV is delivered exactly as theirs are — `NSSavePanel`
     /// on macOS, a temp file plus `ShareLink` on iOS — without this view knowing which.
     @State private var exportBox = SeriesExportBox()
+    /// Whether a Handoff continuation has already been applied to this map (UI review F-28).
+    @State private var hasAppliedContinuation = false
     /// What to call the active scope, in the reader's terms.
     @State private var scopeLabel: String?
     @Environment(\.modelContext) private var modelContext
@@ -944,6 +952,22 @@ struct SemanticMapSpikeView: View {
             }
         }
         .seriesExportPresentation(exportBox)
+        // UI review F-28. The map advertises itself to the reader's other devices: an analysis
+        // built on the iPad — a scope, and the lens it is read through — continues on the Mac.
+        // Documents have published an activity since the app shipped; no analytics surface ever
+        // has, which is what the finding is about.
+        //
+        // Keyed on the scope and lens so the activity is refreshed when either changes, rather
+        // than advertising the state the map happened to open in.
+        .userActivity(AppActivityTypes.semanticMap,
+                      element: SemanticMapRequest(volumeIDs: scopeVolumeIds,
+                                                  scopeLabel: scopeLabel,
+                                                  lensRawValue: lens.rawValue)) { request, activity in
+            activity.title = request.scopeLabel
+                ?? String(localized: "semanticAnalytics.title", defaultValue: "Semantic Analytics")
+            activity.userInfo = request.userInfo
+            activity.isEligibleForHandoff = true
+        }
         #if os(iOS)
         // The map's own document destination. Its host — now `SemanticAnalyticsView`'s
         // `NavigationStack`, previously the Settings stack it was pushed inside — carries none, and a
@@ -974,7 +998,29 @@ struct SemanticMapSpikeView: View {
             // whatever `prepare` was started with.
             model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
                         provenanceForVolume: provenanceForVolume)
+            applyContinuedRequestIfNeeded()
         }
+    }
+
+    /// Applies a Handoff continuation's scope and lens, once (UI review F-28).
+    ///
+    /// **After `prepare()` has returned, deliberately.** `setScope` would in fact tolerate arriving
+    /// early — it stores `requestedScope` and `prepare()` re-applies it — but applying here keeps
+    /// the continuation to one ordering instead of two, and it is the ordering that also works for
+    /// the lens, which has no such deferral.
+    ///
+    /// Guarded by `hasAppliedContinuation` rather than by clearing `continued`, because `continued`
+    /// is a `let`-shaped input from the host: the view is re-created on any host re-render, and a
+    /// continuation that re-applied on every rebuild would fight the reader's own scope changes.
+    private func applyContinuedRequestIfNeeded() {
+        guard let continued, !hasAppliedContinuation else { return }
+        hasAppliedContinuation = true
+        // An unknown lens string is ignored rather than rejected — an older build receiving a lens
+        // it does not have should still open the scoped map.
+        if let restored = SemanticMapLens(rawValue: continued.lensRawValue) {
+            lens = restored
+        }
+        applyScope(continued.volumeIDs, label: continued.scopeLabel)
     }
 
     /// What the reader is looking at, and what it does and does not mean.

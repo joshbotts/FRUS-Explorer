@@ -832,6 +832,14 @@ final class AppState {
     /// and the target scene is what makes a hand-off land in the window the reader was in.
     var pendingArchivalScope: Handoff<ArchivalScopeRequest>? = nil
 
+    /// One-shot hand-off for a continued semantic map (UI review F-28) — the scope and lens a
+    /// Handoff activity arrived with.
+    ///
+    /// The same `Handoff` shape as `pendingArchivalScope`, for the same reason: the destination is
+    /// a **window** on macOS and a sheet on iOS, and the target scene is what makes it land where
+    /// the reader is.
+    var pendingSemanticMap: Handoff<SemanticMapRequest>? = nil
+
     /// One-shot hand-off for the second-project nudge (#377 Phase 5): the id of a project the
     /// researcher just created that brought their project count to ≥ 2. Set by
     /// `ProjectEditorView.saveProject`; the nudge host (iOS `MainTabView` / macOS Settings) presents
@@ -2018,6 +2026,9 @@ struct SceneID: Hashable, Sendable {
     /// Fixed identity of the macOS singleton **Search** window (`frus.search`, #338 step 5). macOS
     /// search hand-offs address this; iPad producers address their own scene.
     static let macSearch = SceneID("frus.search")
+
+    /// The macOS Semantic Analytics window (UI review F-28), so a continued map lands in it.
+    static let macSemanticAnalytics = SceneID("frus.semanticAnalytics")
 }
 
 /// A volume set to open Archival Analytics on, with the words to describe it (#833).
@@ -2160,6 +2171,25 @@ extension AppState {
     /// - Parameters:
     ///   - request: The volume set and the words for it.
     ///   - sceneID: The producing scene, on iOS.
+    /// Routes a continued semantic map to the surface that shows it (UI review F-28).
+    ///
+    /// Written from `openArchivalScope`, which is the established shape for a destination that is
+    /// a window on one platform and a sheet on the other.
+    ///
+    /// - Parameters:
+    ///   - request: The scope and lens to restore.
+    ///   - sceneID: The producing scene on iOS; ignored on macOS, where the window is the target.
+    func openSemanticMap(_ request: SemanticMapRequest, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingSemanticMap = Handoff(target: .macSemanticAnalytics, payload: request)
+        #else
+        // A Handoff continuation has no producing scene — it arrives from another device — so
+        // `.anyWindow` is correct here rather than a fallback: the first main window to observe it
+        // presents the map, which is what the reader expects when they tap the badge.
+        pendingSemanticMap = Handoff(target: sceneID ?? .anyWindow, payload: request)
+        #endif
+    }
+
     func openArchivalScope(_ request: ArchivalScopeRequest, from sceneID: SceneID?) {
         #if os(macOS)
         pendingArchivalScope = Handoff(target: .macArchivalAnalytics, payload: request)

@@ -112,6 +112,9 @@ struct BrowserView: View {
     @State private var showCrossRefAnalytics = false
     /// Semantic Analytics (the map, its lenses and slices).
     @State private var showSemanticAnalytics = false
+    /// The scope and lens a continued map should open with (UI review F-28), or `nil` for a map
+    /// the reader opened here.
+    @State private var continuedSemanticMap: SemanticMapRequest?
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
     // #498: every one of these sheets presents a view that opens its OWN NavigationStack, which
@@ -205,7 +208,7 @@ struct BrowserView: View {
             // behaviour; UIKit presents a sheet as a view controller and the map renders. Verified
             // on the simulator rather than assumed, because the macOS failure looked exactly like
             // this and cost two sessions.
-            SemanticAnalyticsView(appState: appState)
+            SemanticAnalyticsView(appState: appState, continued: continuedSemanticMap)
                 .environment(appState)
                 .modelContainer(modelContext.container)
                 .environment(\.sceneID, sceneID)
@@ -240,6 +243,7 @@ struct BrowserView: View {
         // every open iPad window. `consumeHandoff` re-reads, target-checks, and clears in one step.
         .onChange(of: appState.pendingAnalytics) { _, _ in consumePendingAnalytics() }
         .onChange(of: appState.pendingChronology) { _, _ in consumePendingChronology() }
+        .onChange(of: appState.pendingSemanticMap) { _, _ in consumePendingSemanticMap() }
         .onAppear {
             bootstrapViewModel()
             // Cumulative-review fix: `.onChange` only observes changes made while this view is
@@ -258,6 +262,7 @@ struct BrowserView: View {
             // parked until a later one overwrote it. Repeating the action "worked", which is what
             // made it look intermittent rather than broken.
             consumePendingAnalytics()
+            consumePendingSemanticMap()
             consumePendingChronology()
         }
         // #324: under FRUS_UI_TEST_MODE the browse stack can render before AppState
@@ -700,6 +705,19 @@ struct BrowserView: View {
               let params = appState.consumeHandoff(\.pendingAnalytics, for: sceneID) else { return }
         analyticsParameters = params
         showAnalytics = true
+    }
+
+    /// Semantic-map twin of ``consumePendingAnalytics`` — same both-ways contract (#750).
+    ///
+    /// The map handed off from another device (UI review F-28). Both entry points matter here for
+    /// the reason the doc above gives, and more so: a Handoff arrives at a cold launch as often as
+    /// not, so `.onChange` alone would drop the continuation that started the app.
+    private func consumePendingSemanticMap() {
+        guard let sceneID,
+              let request = appState.consumeHandoff(\.pendingSemanticMap, for: sceneID,
+                                                    orAnyWindow: true) else { return }
+        continuedSemanticMap = request
+        showSemanticAnalytics = true
     }
 
     /// Chronology twin of ``consumePendingAnalytics`` — same both-ways contract (#750).
