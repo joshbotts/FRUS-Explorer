@@ -653,6 +653,12 @@ struct FRUSExplorerApp: App {
         // also removes F-13's tab teleport — see its doc comment.
         corpusAnalyticsScene
         chronologyScene
+
+        // MARK: - Archival Analytics Window (UI review F-11, CW-9c)
+        //
+        // The third surface whose request type already existed (#833's `ArchivalScopeRequest`).
+        // Its gate lives in `MainTabView`, not `BrowserView` — see the scene's doc comment.
+        archivalAnalyticsScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -1270,6 +1276,30 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 860, height: 760)
+    }
+
+    /// Value-based `WindowGroup(for:)` for Archival Analytics on iOS (UI review F-11, CW-9c).
+    ///
+    /// The third and last analytics surface whose request type already existed:
+    /// `ArchivalScopeRequest` was introduced by #833 to give iOS exactly one presenter of this
+    /// surface, and needed only synthesised `Codable & Hashable` to key a window. Its init sorts
+    /// `volumeIds`, so two requests for the same volume set compare equal and focus one window
+    /// rather than opening a second identical chart — the property `openWindow(value:)` keys on.
+    ///
+    /// **Its producer is not `BrowserView`, unlike every other analytics surface.** #833 routed
+    /// this one through `pendingArchivalScope` and `MainTabView.archivalSheet` precisely so the
+    /// topic doors and the menu button would reach one presenter, which is why the gate for this
+    /// surface lives in `MainTabView` while the other three live in `BrowserView`. The review's
+    /// F-11 lists it beside the others as "a `BrowserView` sheet declaration"; that was already
+    /// untrue when the review was written.
+    private var archivalAnalyticsScene: some Scene {
+        WindowGroup(for: ArchivalScopeRequest.self) { $request in
+            ArchivalAnalyticsView(initialScope: request ?? .unscoped)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 900, height: 760)
     }
 
     /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.
