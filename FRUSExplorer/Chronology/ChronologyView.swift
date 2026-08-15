@@ -998,17 +998,13 @@ struct ChronologyView: View {
             .accessibilityHidden(true)
     }
 
+    /// The per-day summary line under a date header.
+    ///
+    /// Delegates to `ChronologyAggregateText` so the inflection is testable — see that type.
     private func aggregateLine(_ group: ChronologyDateGroup) -> String {
-        var parts: [String] = []
-        parts.append(String(format: String(localized: "chronology.agg.volumes %lld",
-                                            defaultValue: "%lld volumes"), Int64(group.volumeCount)))
-        parts.append(String(format: String(localized: "chronology.agg.subseries %lld",
-                                            defaultValue: "%lld subseries"), Int64(group.subseriesCount)))
-        if group.editorialNoteCount > 0 {
-            parts.append(String(format: String(localized: "chronology.agg.editorial %lld",
-                                               defaultValue: "%lld editorial notes"), Int64(group.editorialNoteCount)))
-        }
-        return parts.joined(separator: " · ")
+        ChronologyAggregateText.line(volumes: group.volumeCount,
+                                     subseries: group.subseriesCount,
+                                     editorialNotes: group.editorialNoteCount)
     }
 
     // MARK: - Toolbar
@@ -1259,5 +1255,43 @@ private struct ChronologyRowView: View {
             .padding(.vertical, 1)
             .background(Color.secondary.opacity(0.15), in: Capsule())
             .foregroundStyle(.secondary)
+    }
+}
+
+// MARK: - ChronologyAggregateText
+
+/// The per-day summary line under a chronology date header (UI review P-4).
+///
+/// A separate type because the defect it fixes is invisible to every test that does not call it:
+/// the line read **"1 volumes · 1 subseries"** on any day drawing on a single volume, which in a
+/// day-grouped chronology is the common case rather than an edge one.
+///
+/// The inflection form is the app's own — `count == 1 ? "" : "s"`, as used in the onboarding scope
+/// sheet, the collection preview and the sync banner — rather than a stringsdict, because every
+/// other inflected count in this app is written that way and one file should not invent a second
+/// convention. "subseries" is invariant in English and takes no branch.
+///
+/// Version history:
+///   1.0 — CW-8a: extracted from `ChronologyView.aggregateLine`
+enum ChronologyAggregateText {
+
+    /// Builds the line.
+    ///
+    /// - Parameters:
+    ///   - volumes: Volumes represented on the day.
+    ///   - subseries: Subseries represented on the day.
+    ///   - editorialNotes: Editorial notes on the day; omitted entirely when zero.
+    /// - Returns: The summary, parts joined with a middle dot.
+    static func line(volumes: Int, subseries: Int, editorialNotes: Int) -> String {
+        var parts: [String] = []
+        parts.append(String(localized: "chronology.agg.volumes.v2",
+                            defaultValue: "\(volumes) volume\(volumes == 1 ? "" : "s")"))
+        parts.append(String(format: String(localized: "chronology.agg.subseries %lld",
+                                           defaultValue: "%lld subseries"), Int64(subseries)))
+        if editorialNotes > 0 {
+            parts.append(String(localized: "chronology.agg.editorial.v2",
+                                defaultValue: "\(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")"))
+        }
+        return parts.joined(separator: " · ")
     }
 }

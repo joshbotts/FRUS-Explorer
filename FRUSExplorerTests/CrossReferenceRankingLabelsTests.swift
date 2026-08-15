@@ -216,3 +216,84 @@ struct MatrixColumnCodeTests {
         #expect(matrixColumnCodes([]).isEmpty)
     }
 }
+
+// MARK: - Matrix table (UI review P-2)
+
+/// Pins the table that is now both the CSV and the on-screen inspector.
+///
+/// It was built inline inside `exportMatrixCSV`, so nothing could read it but a file. Now one
+/// value feeds both, and these are the properties a reader relies on when the numbers they see
+/// are the ones they cite.
+@Suite("Cross-reference matrix table")
+@MainActor
+struct CrossReferenceMatrixTableTests {
+
+    private func rows() -> [(sourceId: String, sourceTitle: String,
+                             targetId: String, targetTitle: String, count: Int)] {
+        [(sourceId: "frusA", sourceTitle: "Volume A", targetId: "frusB",
+          targetTitle: "Volume B", count: 9),
+         (sourceId: "frusB", sourceTitle: "Volume B", targetId: "frusC",
+          targetTitle: "Volume C", count: 4),
+         (sourceId: "frusC", sourceTitle: "Volume C", targetId: "frusA",
+          targetTitle: "Volume A", count: 0)]
+    }
+
+    @Test("Pairs with no references are dropped, not printed as zeroes")
+    func zeroPairsAreDropped() {
+        let table = AnalyticsChartTables.crossRefMatrixTable(title: "T", rows: rows())
+        // A 15×15 grid is 210 cells and most are empty; a table that printed them would bury the
+        // ~dozen real edges the reader came for.
+        #expect(table.rows.count == 2)
+        #expect(!table.rows.contains { $0.cells.contains("0") })
+    }
+
+    @Test("The store's ranking is preserved, not re-sorted")
+    func rankingIsPreserved() throws {
+        let table = AnalyticsChartTables.crossRefMatrixTable(title: "T", rows: rows())
+        let counts = table.rows.map { $0.cells.last }
+        #expect(counts == ["9", "4"])
+    }
+
+    @Test("Both volumes are named and identified, so a row can be cited")
+    func rowsCarryTitlesAndIds() throws {
+        let table = AnalyticsChartTables.crossRefMatrixTable(title: "T", rows: rows())
+        let first = try #require(table.rows.first)
+        #expect(first.cells.contains("Volume A"))
+        #expect(first.cells.contains("frusA"))
+        #expect(first.cells.contains("Volume B"))
+        #expect(first.cells.contains("frusB"))
+    }
+}
+
+// MARK: - Chronology inflection (UI review P-4)
+
+@Suite("Chronology aggregate line")
+@MainActor
+struct ChronologyAggregateLineTests {
+
+    /// A day drawing on one volume is the common case in a day-grouped chronology, not an edge
+    /// one, so "1 volumes" was on screen most of the time.
+    @Test("A single volume reads as one volume")
+    func singularInflects() {
+        #expect(ChronologyAggregateText.line(volumes: 1, subseries: 1, editorialNotes: 0)
+                == "1 volume · 1 subseries")
+    }
+
+    @Test("Plurals still pluralise")
+    func pluralsInflect() {
+        #expect(ChronologyAggregateText.line(volumes: 3, subseries: 2, editorialNotes: 4)
+                == "3 volumes · 2 subseries · 4 editorial notes")
+    }
+
+    @Test("A single editorial note is not '1 editorial notes'")
+    func singleEditorialNoteInflects() {
+        #expect(ChronologyAggregateText.line(volumes: 2, subseries: 1, editorialNotes: 1)
+                == "2 volumes · 1 subseries · 1 editorial note")
+    }
+
+    @Test("Editorial notes are omitted when there are none")
+    func zeroEditorialNotesAreOmitted() {
+        #expect(ChronologyAggregateText.line(volumes: 2, subseries: 1, editorialNotes: 0)
+                == "2 volumes · 1 subseries")
+    }
+}

@@ -216,6 +216,9 @@ struct CrossReferenceAnalyticsView: View {
         .sheet(item: $exportShareItem) { item in
             AnalyticsExportShareSheet(item: item)
         }
+        // UI review P-2: the matrix's numbers, readable without leaving the app. Same modifier
+        // placement and the same Group gotcha as the share sheet above.
+        .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
         .alert(String(localized: "analytics.export.error.title", defaultValue: "Export Failed"),
                isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
             Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { exportError = nil }
@@ -360,6 +363,26 @@ struct CrossReferenceAnalyticsView: View {
                     controls: {
                         HStack {
                             Spacer()
+                            // UI review P-2. On screen a cell carries its count as fill opacity
+                            // and nothing else — the export's own doc comment has said so since it
+                            // was written — so on a phone the grid is a texture, 707pt wide on a
+                            // ~393pt screen, and the ONLY route to a number was to write a CSV and
+                            // leave the app. This is that route, in the app, on every width.
+                            // `ChartDataInspectorView` already renders a table as a plain list at
+                            // compact width; it had simply never been handed this table.
+                            Button {
+                                inspectorData = matrixTable
+                            } label: {
+                                Label(Self.matrixTableName, systemImage: "tablecells")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .disabled(matrixCells.isEmpty)
+                            .controlHelp(
+                                Self.matrixTableName,
+                                detail: String(localized: "crossRefAnalytics.matrix.table.help",
+                                               defaultValue: "Lists every citing–cited volume pair with its reference count, ranked"),
+                                systemImage: "tablecells")
                             AnalyticsSectionExportControl(isEnabled: !matrixCells.isEmpty,
                                                           exportCSV: exportMatrixCSV,
                                                           exportFigure: exportMatrixFigure)
@@ -407,6 +430,8 @@ struct CrossReferenceAnalyticsView: View {
     // MARK: - Research-grade export (D3)
 
     /// The written export awaiting an iOS share sheet; always `nil` on macOS.
+    /// The table the reader asked to see (UI review P-2), or `nil`.
+    @State private var inspectorData: ChartInspectorData?
     @State private var exportShareItem: AnalyticsExportFile?
     /// A human-readable export failure, surfaced in an alert.
     @State private var exportError: String?
@@ -541,16 +566,35 @@ struct CrossReferenceAnalyticsView: View {
                               defaultValue: "Grouped by references received")))
     }
 
-    /// Exports the volume heat matrix as an edge list — on screen a cell's value is encoded only as
-    /// opacity plus a tooltip, so these counts are otherwise unreadable.
-    private func exportMatrixCSV() {
-        let title = String(localized: "crossRefAnalytics.matrix.heading", defaultValue: "Volume Citation Heat Matrix")
+    /// The inspector button's name, shared by its `Label` and its `controlHelp`.
+    static var matrixTableName: String {
+        String(localized: "crossRefAnalytics.matrix.table", defaultValue: "View as table")
+    }
+
+    /// The matrix as a ranked source→target edge list.
+    ///
+    /// **Extracted so the screen and the CSV cannot diverge** (UI review P-2). It was inline in
+    /// `exportMatrixCSV`, which meant the only way to read a cell's number was to write a file and
+    /// leave the app; the same table now also backs the on-screen inspector. `matrixCells` arrives
+    /// already ordered — `CrossReferenceStore.volumeLevelConnections` ends `ORDER BY ref_count
+    /// DESC` and only emits pairs that exist — so the ranking is the store's, not a second sort
+    /// that could disagree with it.
+    private var matrixTable: ChartInspectorData {
+        let title = String(localized: "crossRefAnalytics.matrix.heading",
+                           defaultValue: "Volume Citation Heat Matrix")
         let rows = matrixCells.map { cell in
             (sourceId: cell.sourceVolumeId, sourceTitle: volumeTitle(cell.sourceVolumeId),
              targetId: cell.targetVolumeId, targetTitle: volumeTitle(cell.targetVolumeId),
              count: cell.count)
         }
-        let table = AnalyticsChartTables.crossRefMatrixTable(title: title, rows: rows)
+        return AnalyticsChartTables.crossRefMatrixTable(title: title, rows: rows)
+    }
+
+    /// Exports the volume heat matrix as an edge list — on screen a cell's value is encoded only as
+    /// opacity, so these counts are otherwise unreadable without the inspector.
+    private func exportMatrixCSV() {
+        let title = String(localized: "crossRefAnalytics.matrix.heading", defaultValue: "Volume Citation Heat Matrix")
+        let table = matrixTable
         deliver(table, crossRefProvenance(
             figureTitle: title,
             axisLabel: String(localized: "crossRefAnalytics.export.axis.matrix",
