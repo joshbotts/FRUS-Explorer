@@ -388,34 +388,95 @@ final class UIObstructionTests: XCTestCase {
                       "Expected corpus subseries rows to appear within 10 s")
         subseriesRow.tap()
 
-        // Sound oracle for the push, so the assertions below cannot be satisfied by the root list:
-        // the corpus root has no back button and owns the "FRUS Corpus" navigation bar.
-        XCTAssertTrue(
-            app.buttons["BackButton"].waitForExistence(timeout: 10),
-            "Tapping a corpus subseries row did not push a browser level — without the push this "
-                + "test cannot see the breadcrumb bar at all (#312)"
-        )
-        XCTAssertFalse(
-            app.navigationBars["FRUS Corpus"].exists,
-            "Still at the corpus root after tapping a subseries row — no push happened"
-        )
+        // **Sound oracle for "the level opened", in BOTH layouts.** This used to require a
+        // `BackButton` and the absence of the "FRUS Corpus" bar — correct while opening a
+        // subseries always *pushed*, and wrong under F-2's two-pane, where the level fills the
+        // detail pane and the corpus list deliberately stays put. Asserting on the push made this
+        // scenario fail the moment the layout changed; asserting that the level OPENED is the
+        // thing the test actually needs, and it is true either way.
+        //
+        // This is the §4 rework the design called for: the oracle is re-established against the
+        // new layout rather than relaxed until it passes.
+        let opened: Bool
+        if isTwoPaneBrowse {
+            opened = detailPaneCellCount() > 0
+            XCTAssertTrue(opened,
+                          "Opening a subseries put nothing in the detail pane — the level did not "
+                              + "open, so nothing below this measures what it claims to.")
+            XCTAssertGreaterThan(listPaneCellCount(), 0,
+                                 "The corpus list vanished when a subseries opened — in a two-pane "
+                                     + "it must stay beside the detail (F-2).")
+        } else {
+            opened = app.buttons["BackButton"].waitForExistence(timeout: 10)
+            XCTAssertTrue(
+                opened,
+                "Tapping a corpus subseries row did not push a browser level — without the push "
+                    + "this test cannot see the breadcrumb bar at all (#312)"
+            )
+            XCTAssertFalse(
+                app.navigationBars["FRUS Corpus"].exists,
+                "Still at the corpus root after tapping a subseries row — no push happened"
+            )
+        }
 
         // After navigating in, the breadcrumb bar appears and a new set of rows loads.
-        // Wait briefly for the pushed view's cells to settle.
         let pushedFirstCell = app.cells.firstMatch
-        let pushedAppeared = pushedFirstCell.waitForExistence(timeout: 5)
-        XCTAssertTrue(pushedAppeared, "Expected cells in pushed browser level within 5 s")
+        XCTAssertTrue(pushedFirstCell.waitForExistence(timeout: 5),
+                      "Expected cells in the opened browser level within 5 s")
 
-        // Scroll back to the top in case the navigation defaulted to a non-zero offset.
-        app.swipeDown(velocity: .fast)
+        // Scroll back to the top in case navigation defaulted to a non-zero offset. Addressed to
+        // the scroll view rather than `app`, whose horizontal centre is the DETAIL pane in a
+        // two-pane — the same correction the last-row scenario needed.
+        let scroller = app.collectionViews.firstMatch.exists
+            ? app.collectionViews.firstMatch : app.tables.firstMatch
+        if scroller.exists { scroller.swipeDown(velocity: .fast) } else { app.swipeDown(velocity: .fast) }
 
-        // The first cell must be hittable — not hidden under the breadcrumb bar. `app.cells` is
-        // safe here (unlike at the root) because the push is proven above, so these are the
-        // SubseriesView's own volume rows.
+        // The first row of the OPENED level must be hittable — not hidden under the breadcrumb
+        // bar. In a two-pane that row is in the detail pane, so it is selected by position rather
+        // than by `firstMatch`, which would resolve the list pane's first row instead and quietly
+        // assert about the wrong column.
+        let subject = isTwoPaneBrowse ? firstDetailPaneCell() : app.cells.firstMatch
         XCTAssertTrue(
-            app.cells.firstMatch.isHittable,
-            "First row in pushed browser level is not hittable — it may be obscured by the breadcrumb bar"
+            subject?.isHittable ?? false,
+            "First row in the opened browser level is not hittable — it may be obscured by the "
+                + "breadcrumb bar"
         )
+    }
+
+    // MARK: - Two-pane helpers (F-2)
+
+    /// The list pane's nominal trailing edge, matching `BrowserView.listPaneWidth`.
+    private var twoPaneDivider: CGFloat { 340 }
+
+    /// Whether Browse is currently showing F-2's two-pane layout.
+    ///
+    /// Detected from the layout rather than from the device, because the gate is a measured
+    /// container width: the same iPad is two-pane in the floating-tab-bar representation and a
+    /// single column in the sidebar one, where the tab sidebar takes a column of its own.
+    private var isTwoPaneBrowse: Bool {
+        app.staticTexts["Choose a Subseries"].exists || detailPaneCellCount() > 0
+    }
+
+    /// Cells whose frames sit entirely left of the divider.
+    private func listPaneCellCount() -> Int {
+        (0..<app.cells.count).filter {
+            app.cells.element(boundBy: $0).frame.maxX <= twoPaneDivider + 12
+        }.count
+    }
+
+    /// Cells whose frames sit right of the divider.
+    private func detailPaneCellCount() -> Int {
+        (0..<app.cells.count).filter {
+            app.cells.element(boundBy: $0).frame.minX >= twoPaneDivider - 12
+        }.count
+    }
+
+    /// The topmost cell in the detail pane, or `nil`.
+    private func firstDetailPaneCell() -> XCUIElement? {
+        (0..<app.cells.count)
+            .map { app.cells.element(boundBy: $0) }
+            .filter { $0.frame.minX >= twoPaneDivider - 12 }
+            .min { $0.frame.minY < $1.frame.minY }
     }
 
     // MARK: - 3. Software keyboard does not cover the citation lookup field
@@ -635,18 +696,37 @@ final class UIObstructionTests: XCTestCase {
     private func assertBrowseDetailPushesUnobstructed(_ context: String) {
         corpusSubseriesRow.tap()
 
-        let back = app.buttons["BackButton"]
-        guard back.waitForExistence(timeout: 10) else {
-            XCTFail("Tapping a corpus subseries row did not push the subseries level (\(context)) — "
-                    + "if this is failing again, check the row's tap target before concluding "
-                    + "anything about XCUITest; that mistake cost three investigations (#312)")
-            return
+        // **The opening oracle is layout-aware; the #238 assertions below are not, and must not
+        // be.** This required a `BackButton` plus the loss of the "FRUS Corpus" bar — a correct
+        // oracle while opening a subseries always PUSHED, and wrong under F-2's two-pane, where
+        // the level fills the detail pane and the corpus list deliberately stays. What the
+        // scenario is actually for — that a level's top chrome and top control are reachable and
+        // not overlaid by the floating tab bar — is unchanged, so only the "did it open" question
+        // is rewritten (design §4).
+        let twoPane = isTwoPaneBrowse
+        if twoPane {
+            guard detailPaneCellCount() > 0 else {
+                XCTFail("Opening a corpus subseries put nothing in the detail pane (\(context)) — "
+                        + "check the row's tap target before concluding anything about XCUITest; "
+                        + "that mistake cost three investigations (#312)")
+                return
+            }
+            XCTAssertGreaterThan(listPaneCellCount(), 0,
+                                 "The corpus list vanished when a subseries opened (\(context)) — "
+                                     + "in a two-pane it must stay beside the detail (F-2)")
+        } else {
+            guard app.buttons["BackButton"].waitForExistence(timeout: 10) else {
+                XCTFail("Tapping a corpus subseries row did not push the subseries level (\(context)) — "
+                        + "if this is failing again, check the row's tap target before concluding "
+                        + "anything about XCUITest; that mistake cost three investigations (#312)")
+                return
+            }
+            XCTAssertFalse(
+                app.navigationBars["FRUS Corpus"].exists,
+                "A back button appeared but the navigation bar is still 'FRUS Corpus' (\(context)) — "
+                    + "no push happened and the oracle is being satisfied by other chrome"
+            )
         }
-        XCTAssertFalse(
-            app.navigationBars["FRUS Corpus"].exists,
-            "A back button appeared but the navigation bar is still 'FRUS Corpus' (\(context)) — "
-                + "no push happened and the oracle is being satisfied by other chrome"
-        )
 
         // The pushed level's own top chrome must be reachable — the #238 assertion one level
         // deeper than the root-only version could reach.
@@ -673,7 +753,12 @@ final class UIObstructionTests: XCTestCase {
                 + "chrome may be overlaying content one level below the corpus root (#238)"
         )
 
-        back.tap()
+        // Reset for the caller. In a two-pane there is nothing to pop: the corpus list is on
+        // screen throughout, which is the whole point of the layout, so the caller already
+        // resumes at the root.
+        if !twoPane {
+            app.buttons["BackButton"].tap()
+        }
         Thread.sleep(forTimeInterval: 0.5)
     }
 
