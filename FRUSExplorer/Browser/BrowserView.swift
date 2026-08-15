@@ -185,16 +185,17 @@ struct BrowserView: View {
         // not participate in layout, so this measures without changing anything.
         .background {
             GeometryReader { proxy in
-                // The probe both MEASURES and REPORTS: its label is the width the gate will use,
-                // so a test reads the number rather than inferring it from whether the layout
-                // changed. Two guesses at this measurement have already cost more than reading it
-                // once would have.
-                Text(verbatim: "\(Int(proxy.size.width))")
-                    .font(.system(size: 1))
-                    .foregroundStyle(.clear)
-                    .accessibilityIdentifier("BrowserView.widthProbe")
-                    .onAppear { containerWidth = proxy.size.width }
-                    .onChange(of: proxy.size.width) { _, width in containerWidth = width }
+                // `onChange(initial: true)` rather than `.onAppear` plus `.onChange`: one modifier
+                // instead of two, and — less obviously — it keeps this measurement from being an
+                // `.onAppear` at all. `HandoffVisibilityTests` scans BrowserView for the
+                // appear-time hand-off drain, and an extra `.onAppear` here captured that scan and
+                // failed the suite on a change that had nothing to do with hand-offs. (The scan is
+                // now bounded properly too, so this is belt and braces — but one modifier is
+                // better than two regardless.)
+                Color.clear
+                    .onChange(of: proxy.size.width, initial: true) { _, width in
+                        containerWidth = width
+                    }
             }
         }
         .onChange(of: appState.pendingBrowseDocument) { _, _ in

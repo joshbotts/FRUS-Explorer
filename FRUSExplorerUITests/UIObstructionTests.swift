@@ -1543,50 +1543,6 @@ final class UIObstructionTests: XCTestCase {
         )
     }
 
-    /// Reads the width `BrowserView`'s two-pane gate is actually seeing.
-    ///
-    /// Diagnostic, not an oracle: two attempts at that measurement were guessed and both were
-    /// wrong, so this reads the number out of the running app instead. Dumping **every** matching
-    /// probe is deliberate — `body`'s root is a `Group`, which applies modifiers per child, so
-    /// more than one probe appearing (or one reporting a width that is not the content area's)
-    /// is itself the diagnosis.
-    func testDiagnoseBrowseContainerWidth() throws {
-        #if canImport(UIKit)
-        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad-only diagnostic")
-        #endif
-        selectBrowseSection()
-
-        let probes = app.descendants(matching: .any).matching(identifier: "BrowserView.widthProbe")
-        _ = probes.firstMatch.waitForExistence(timeout: 10)
-        print("[F-2 DIAG] window=\(app.windows.firstMatch.frame) probeCount=\(probes.count)")
-        for index in 0..<probes.count {
-            let probe = probes.element(boundBy: index)
-            print("[F-2 DIAG] probe[\(index)] label=\"\(probe.label)\" frame=\(probe.frame)")
-        }
-
-        // Is the two-pane actually on screen? The detail placeholder exists only in that layout.
-        let placeholder = app.staticTexts["Choose a Subseries"]
-        print("[F-2 DIAG] placeholderPresent=\(placeholder.waitForExistence(timeout: 5))")
-
-        let people = app.cells.containing(
-            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
-        print("[F-2 DIAG] beforeTap cells=\(app.cells.count) peopleExists=\(people.exists) "
-              + "peopleFrame=\(people.exists ? "\(people.frame)" : "-")")
-
-        let last = app.cells.element(boundBy: max(0, app.cells.count - 1))
-        print("[F-2 DIAG] tapping last cell label=\"\(last.label)\" frame=\(last.frame)")
-        last.tap()
-        Thread.sleep(forTimeInterval: 2)
-
-        print("[F-2 DIAG] afterTap cells=\(app.cells.count) peopleExists=\(people.exists) "
-              + "placeholderStillThere=\(placeholder.exists)")
-        print("[F-2 DIAG] afterTap navBars=\(app.navigationBars.count)")
-        for index in 0..<min(app.cells.count, 4) {
-            print("[F-2 DIAG] afterTap cell[\(index)] frame=\(app.cells.element(boundBy: index).frame)")
-        }
-        print("[F-2 DIAG] afterTap placeholderExists=\(app.staticTexts["Choose a Subseries"].exists)")
-    }
-
     // MARK: - Scenario 13 · Browse is two panes on a wide iPad (F-2)
 
     /// The subseries list must stay on screen while a level is open beside it.

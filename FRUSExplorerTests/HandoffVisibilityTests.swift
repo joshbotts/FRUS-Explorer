@@ -239,7 +239,48 @@ struct HandoffVisibilityTests {
         // The window is generous on purpose: it is a scan budget, not an assertion about how long
         // the drain may be, and a correct new consumer must not fail this test by pushing an
         // existing one past the edge — which is exactly what CW-7c's semantic-map channel did.
-        let onAppear = try Self.functionBody(".onAppear {", in: source, limit: 2_400)
+        // **The drain block is identified by its CONTENT, not by being the first `.onAppear`.**
+        // It used to be the latter, which quietly assumed no other `.onAppear` could ever precede
+        // it in the file — and F-2's two-pane added exactly that: a
+        // `.onAppear { containerWidth = proxy.size.width }` inside the layout's geometry reader,
+        // which sits earlier in `body` and captured the scan. The test then failed on a change
+        // that had nothing to do with hand-offs, reporting a missing consumer that was present
+        // twenty lines further down.
+        //
+        // Searching for the block that actually contains a consumer is strictly stronger: it
+        // cannot be fooled by an unrelated `.onAppear` on either side of it, and it still fails if
+        // the drain loses a consumer or disappears entirely.
+        // Found by walking BACKWARD from the anchor to the nearest preceding `.onAppear {`. A
+        // forward scan is not enough: a 2,400-character window opened at an unrelated earlier
+        // `.onAppear` still *reaches* the drain, so "the window contains the anchor" is satisfied
+        // by the wrong block. The nearest preceding opener is the block the anchor is actually in.
+        // Each `.onAppear` block is bounded by the NEXT one (or the 2,400-character budget,
+        // whichever comes first), and the drain is the block that contains a consumer. Both
+        // bounds matter: without the next-opener bound an unrelated earlier `.onAppear` reaches
+        // the drain and captures the scan; without the anchor the first block wins by position
+        // alone. Searching backward from the anchor does not work either — its first occurrence
+        // in the file is the consumer's own `private func` declaration.
+        let anchor = "consumePendingBrowseDocument()"
+        var openers: [Range<String.Index>] = []
+        var cursor = source.startIndex
+        while let hit = source.range(of: ".onAppear {", range: cursor..<source.endIndex) {
+            openers.append(hit)
+            cursor = hit.upperBound
+        }
+        let blocks: [String] = openers.enumerated().map { index, opener in
+            let hardLimit = source.index(opener.lowerBound, offsetBy: 2_400,
+                                         limitedBy: source.endIndex) ?? source.endIndex
+            let end = index + 1 < openers.count
+                ? min(openers[index + 1].lowerBound, hardLimit)
+                : hardLimit
+            return String(source[opener.lowerBound..<end])
+        }
+        let onAppear = try #require(blocks.first { $0.contains(anchor) }, """
+            No `.onAppear` block in BrowserView calls \(anchor). The appear-time drain is the #750 \
+            fix — without it a cold-launch hand-off is parked until a later one overwrites it — \
+            and `.onChange` cannot substitute, because it never fires for a value set before the \
+            view attached (H-8, H-11).
+            """)
         for consumer in ["consumePendingBrowseDocument()", "consumePendingBrowseVolume()",
                          "consumePendingAnalytics()", "consumePendingChronology()",
                          "consumePendingSemanticMap()"] {
