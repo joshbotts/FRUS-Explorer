@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #909. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #910. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -91,6 +91,7 @@ that is a discipline in the commit, not a script.
 | CW-9d | [#907](https://github.com/joshbotts/FRUS-Explorer/pull/907) | Person Analytics window, keyed by Trends/Network (owner decision: #906 option 2) |
 | P-8 | [#908](https://github.com/joshbotts/FRUS-Explorer/pull/908) | Archival Analytics' mode control folds to a menu on iPhone |
 | F-3 | [#909](https://github.com/joshbotts/FRUS-Explorer/pull/909) | Saved searches + projects fill the iPad sidebar's empty column |
+| F-2 (design) | [#910](https://github.com/joshbotts/FRUS-Explorer/pull/910) | The two-pane design, mapped and adversarially attacked — **not built**, see `F-2-two-pane-design.md` §5 |
 
 ---
 
@@ -181,7 +182,7 @@ of them overrule the recommendation I gave.
 
 | Question | Decision | What it means |
 |---|---|---|
-| **F-2** — iPad width discipline, given that capping a root `List` breaks its native style | **Two-pane at regular width** | Browse and Research gain a list + detail layout following `CollectionEditorView.iPadCollectionLayout` (`:734`, reached via `if sizeClass == .regular` at `:518`). Must honour the #238 rule: a plain `HStack` of two panes, **never** a nested `NavigationSplitView`. This is the largest of the four options and was chosen over my recommendation of capping row content — so the row-content cap is NOT a fallback to drift into; if the two-pane shape proves wrong, that is a new decision. |
+| **F-2** — iPad width discipline, given that capping a root `List` breaks its native style | **Two-pane at regular width** — designed in #910, not yet built | Browse and Research gain a list + detail layout following `CollectionEditorView.iPadCollectionLayout` (`:734`, reached via `if sizeClass == .regular` at `:518`). Must honour the #238 rule: a plain `HStack` of two panes, **never** a nested `NavigationSplitView`. This is the largest of the four options and was chosen over my recommendation of capping row content — so the row-content cap is NOT a fallback to drift into; if the two-pane shape proves wrong, that is a new decision. |
 | **F-3** — what populates the iPad tab sidebar | **Saved searches + projects** | Shipped in #909, **as a sidebar footer rather than the `TabSection`s the review names**. `TabSection`'s children must be `Tab`s carrying the selection binding's type, and that binding is `@SceneStorage("frus.selectedTab") var selectedTab: AppTab` — persisted across launches and threaded through `openTab` / `consumePendingTab` / `seedActiveTab` and ~20 hand-off sites. So `TabSection` costs a change to how the app remembers where you were, in exchange for a shortcut list. There is also a semantic objection that decided it: a saved search is not a peer of Browse and Search, it is a shortcut that *runs* in the Search tab. If true `TabSection`s are ever wanted, the identity widening is the prerequisite. |
 | **P-8's real defect** — Archival Analytics' mode picker truncating to `Col… Net… Flo… You…` | **Menu at compact width** | Shipped in #908. Half the stated cost was recovered for free: a `.menu`-style `Picker` still shows its current selection as its label, so the reader keeps the sense of *which* view they are in — only the sense that four exist is traded for the extra tap. |
 | **What comes next** | **CW-9, the window model** | Ahead of implementing F-2, the Mac chrome items (M-4/M-9), and F-3. |
