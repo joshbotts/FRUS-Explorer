@@ -97,6 +97,9 @@ struct CompilationView: View {
     /// a Full Screen Apps-mode iPad may still report true, giving a full-screen window
     /// (#241 review finding; runtime probe still owed).
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Half the gate on the principal title's parent line (F-17) — see `parentVolumeLabel` for
+    /// why the pad idiom is the other half and why size class alone is not enough.
+    @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
 
     /// When set, presents the Archival Neighbors sheet for a document row (iOS only —
@@ -120,6 +123,29 @@ struct CompilationView: View {
             .flatMap(\.volumes)
             .first { $0.volumeId == volumeId }
     }
+
+    #if os(iOS)
+    /// The volume's short name, shown under the compilation title where the breadcrumb is
+    /// suppressed (UI review F-17), or `nil` everywhere the breadcrumb still renders.
+    ///
+    /// **The gate is copied from `BrowserView.breadcrumbBarIfAppropriate` deliberately** — pad
+    /// idiom AND regular width, not size class alone. Its comment gives the two cases that make
+    /// the difference: a Plus/Max iPhone reports regular width in landscape but keeps its bottom
+    /// tab bar, and a compact-width iPad (Slide Over, narrow Split View) also shows the bottom
+    /// bar. Both still draw the breadcrumb, so both would get the volume named twice.
+    ///
+    /// Uses `ChronologyViewModel.distilledVolumeLabel`, the app's existing short-volume form
+    /// (Chronology and Cross-Reference Analytics already render it), rather than the full TEI
+    /// title — which begins with the same "Foreign Relations of the United States, …"
+    /// boilerplate that #237 built this two-line title to see past in the first place.
+    private var parentVolumeLabel: String? {
+        guard UIDevice.current.userInterfaceIdiom == .pad, sizeClass == .regular,
+              let volume else { return nil }
+        return ChronologyViewModel.distilledVolumeLabel(volumeId: volume.volumeId,
+                                                        subseries: volume.subseries,
+                                                        title: volume.title)
+    }
+    #endif
 
     var body: some View {
         List {
@@ -157,7 +183,7 @@ struct CompilationView: View {
         // distinctive tail past the boilerplate prefix; the full title heads the list. (#237)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                TwoLineNavTitleView(title: section.title)
+                TwoLineNavTitleView(title: section.title, parent: parentVolumeLabel)
             }
         }
         #endif

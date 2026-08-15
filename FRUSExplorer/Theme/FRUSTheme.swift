@@ -576,6 +576,19 @@ enum FRUSTheme {
     /// Gap between the transient sheet and the dock it floats above.
     static let onboardingSheetGap: CGFloat = 10
 
+    /// Widest the onboarding dock stack may grow (UI review F-5).
+    ///
+    /// macOS never needs this — its whole window is pinned at 560×540 — but on iOS the dock had
+    /// no cap at any level, so on a 13-inch iPad it ran the full screen. Measured on that
+    /// simulator before the cap: the scope picker filled **1294 of 1294 pt**. Two of the three
+    /// symptoms the review named were already handled and are worth recording so they are not
+    /// "fixed" again — the welcome body carries its own 340pt cap, and the primary button is
+    /// 128pt and merely centred.
+    ///
+    /// 640 rather than macOS's 560: the widest thing in the stack is the scope picker, whose
+    /// segments need the room, and the review's own recommendation is a 560–640 band.
+    static let onboardingDockMaxWidth: CGFloat = 640
+
     /// Maximum height of the subseries / volume sheet. The subseries list is 107 rows, so
     /// this is always a scroll view, never a list that happens to fit.
     #if os(macOS)

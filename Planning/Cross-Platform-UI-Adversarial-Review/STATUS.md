@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #900. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-12).
+Last updated after PR #901. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, plus #901's by-catch).
 
 ---
 
@@ -72,7 +72,7 @@ that is a discipline in the commit, not a script.
 | CW-7c | [#897](https://github.com/joshbotts/FRUS-Explorer/pull/897) | Map Handoff (scope + lens), both platforms; activity-type registration test |
 | CW-8a | [#898](https://github.com/joshbotts/FRUS-Explorer/pull/898) | Heat-matrix table route; chronology inflection |
 | CW-11a | [#899](https://github.com/joshbotts/FRUS-Explorer/pull/899) | Research Guide door; Mac Settings search; the X-8 ledger rule |
-| CW-12 (by-catch) | [#900](https://github.com/joshbotts/FRUS-Explorer/pull/900) | Three missing sheet exits; Chronology range bar at accessibility sizes |
+| by-catch | [#901](https://github.com/joshbotts/FRUS-Explorer/pull/901) | Three missing sheet exits; Chronology range bar at accessibility sizes |
 
 ---
 
@@ -102,10 +102,15 @@ standing convention, plus the manual caption corrections that depend on them.
 - **Semantic map slice poles in Handoff** — needs a `requestedPoles` deferral inside
   `SemanticMapModel` first; see `AppActivityTypes.semanticMap` for why carrying them without it
   ships a permanently half-drawn axis card.
-- ~~Two by-catch items found while driving~~ — **shipped in #900**, and the count was wrong: it was
+- ~~Two by-catch items found while driving~~ — **shipped in #901**, and the count was wrong: it was
   *three* missing Done buttons, not two. See §5.
 
-## 4. By-catch: what driving the app found that the review did not (CW-12, #900)
+## 4. By-catch: what driving the app found that the review did not (#901)
+
+> **Naming correction.** PR #901 called itself "CW-12". The review's own master worklist already
+> uses CW-12 for *"Programs and gates: macOS text scaling, window-fronting audit, iPad probes"*,
+> which is unrelated and unstarted. Nothing in #901 belongs to that item. By-catch is filed by PR
+> number here rather than given a CW number it would have to share.
 
 Neither of these is in the review package. Both were found by using the app, which is the argument
 for driving it rather than reading it.
@@ -134,12 +139,23 @@ worth carrying forward:
    32pt wide and 174pt tall. The From field ran off the leading edge at the same time, which is why
    the test checks both ends.
 
-**A tooling note that cost most of this session.** Three simulators share the name "iPhone 17", so a
-name-based `-destination` picks a different device between runs — and a run that lands on a wedged
-one fails with `Busy ("Application failed preflight checks")`, which reads exactly like a test
-failure. One mutation result was misread that way before the destination was pinned. **Pin
-`-destination "id=<UDID>"` for any A/B**, and cure the wedge with `simctl erase` (a shutdown/boot
-does not clear it).
+**A tooling note that cost most of this session** — sharpened after #901, because the first version
+of this paragraph understated it. Three simulators share the name "iPhone 17" and three share
+"iPad Pro 13-inch (M5)", and they are **one per installed runtime** (iOS 26.3 / 26.4 / 26.5) rather
+than stray clones. So a name-based `-destination` is nondeterministic in **both identity and iOS
+version**: successive runs land on different UDIDs, and a run that lands on a wedged one fails with
+`Busy ("Application failed preflight checks")`, which reads exactly like a test failure. One
+mutation result was misread that way before the destination was pinned.
+
+**Pin `-destination "id=<UDID>"` for any A/B or any result you will report**, and list the UDIDs with
+their runtimes beside them:
+
+```bash
+xcrun simctl list devices available | awk '/^-- iOS/{rt=$0} /iPhone 17 \(/{print rt" | "$0}'
+```
+
+Cure a wedged device with `simctl erase <UDID>` — a shutdown/boot pair does **not** clear it, which
+was verified here by running a pre-existing scenario as a control and watching it fail identically.
 
 ## 5. Verification constraints
 
