@@ -7419,3 +7419,65 @@ adversarial review of CW-6a, in code this program shipped three sessions earlier
 Verified on iPad: the info popover lists all six tools; the chevrons render in the margins clear of
 the reading column and turn the page (No. 186 → No. 181) with the reader staying put. 3,491 tests
 pass; both schemes clean-build with no warnings.
+
+## Session 2026-08-14 — CW-7a: the map gets an exit, and a way in
+
+Wave 2's third item. All four CW-7 strands were verified against the build first; all four
+reproduce, and — unlike CW-6 — the review's descriptions are largely accurate. What the
+verification changed was the *shape* of the fix, twice.
+
+**The map can be exported, and the export is CSV only.** Manual §13.9 promises every analytics
+chart a figure or its data; the map had neither and is not among §13.9's named exceptions. The
+data half is now a 30-line adoption of machinery the app already owns — `SeriesExportBox`,
+`AnalyticsSectionExportControl`, `ChartInspectorData`, `AnalyticsProvenance` — which the map was
+simply never wired into.
+
+**The figure half is refused in writing rather than deferred**, because it is not an adoption.
+`AnalyticsFigureExporter` drives `ImageRenderer` over a SwiftUI view; the map is a Metal
+point-sprite pass inside an `MTKView`, and `ImageRenderer` captures the SwiftUI layer tree, not a
+`CAMetalLayer` drawable — it would render a blank plate. The two real routes are an offscreen
+Metal pass into a private texture, or a drawable readback the view cannot do (`framebufferOnly`
+defaults to true and nothing in the repo clears it, and it would capture the viewport at screen
+resolution rather than a publication plate). `AnalyticsSectionExportControl` supports a CSV-only
+surface by construction: omit `exportFigure` and the PNG/PDF items do not exist. Verified on the
+iPad — the menu offers one item.
+
+**What the table contains was the real design question.** "The data behind the map" read literally
+is 314,483 coordinate rows, which nobody can check against anything. The regions table is the grain
+a reader can audit: 179 rows, every one a label they can see, ranked by the map's own comparator so
+the top of the file is the set of names on screen. It gives `eraCounts` its first reader — the
+artifact has shipped a per-region era histogram "so a cluster tooltip can say *when* as well as
+*what*", and nothing in the app had ever read it.
+
+**One caveat was a trap.** `AnalyticsProvenance`'s default corpus sentence says counts "cover only
+the N volume(s) indexed on this device". True for every other analytics surface; false here, where
+the artifact is bundled and draws all 314,483 documents with nothing downloaded. Shipping the
+default would have put a false methods statement in a file written to outlive the screen. The
+export supplies its own, and a test pins it.
+
+Verified by prediction: the expected row count, top row and era histogram were computed from
+`semantic-map-index.json` before the app was opened, and the exported file matches — 179 rows, top
+row `nanking shanghai hankow chinese` at 38,652, and the era columns summing to 226,276, which is
+both the Documents column's total and the artifact's own clustered count.
+
+**F-30 needed correcting before it could be fixed.** The finding reads the
+`.accessibilityElement(children: .contain)` at the body root as the map's accessibility provision.
+It is not: that is the shared #219 idiom every sibling analytics view uses to supply a screen name
+where iOS drops the navigation title, and `.contain` exists to *keep* children navigable. The
+cards, the slice scale and the drawn region labels are all announced already. What a VoiceOver
+reader cannot do is **create** a selection — selection and lasso each have exactly one producer, a
+spatial gesture on an `MTKView`, which is not an accessibility element and never can be.
+
+So the fix is a route in, not a caption: `.accessibilityRepresentation` over a region list, the
+app's own idiom for a drawn surface (`CrossReferenceGraphView`, `WordCloudView`), where each row
+selects that region and lands on the existing selection card. It lists every region rather than
+the ~22 the canvas fits, and its header states what it cannot cover — 88,207 of 314,483 documents
+sit between regions. Placement is load-bearing: above `unavailableOverlay`, because
+`.accessibilityRepresentation` replaces its subtree and attaching it lower would have swallowed
+the "Map unavailable" message, leaving a VoiceOver reader with an empty list and no explanation.
+Filed iPad-only; fixed ungated, since the same view is the Mac window.
+
+Deferred with reasons: Handoff (F-28's second half) and a *visible* region tap. The tap needs
+care the CSV did not — `select(at:)` hit-tests within a radius converted through the camera scale,
+so a region's centroid can fall outside a zoomed view and the affordance would read as dead; the
+accessibility route sidesteps it by framing first, but a touch affordance cannot.

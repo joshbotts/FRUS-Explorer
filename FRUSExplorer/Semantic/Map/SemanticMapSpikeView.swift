@@ -725,6 +725,11 @@ struct SemanticMapSpikeView: View {
     /// An array rather than a set because that is `AnalyticsScopeBar`'s binding type, and the whole
     /// point of this control is that it is the same one Archival Analytics and the word cloud use.
     @State private var scopeVolumeIds: [String]?
+
+    /// Holds the pending export file and any failure (UI review M-20 / F-28). The same box every
+    /// Series dashboard uses, so the map's CSV is delivered exactly as theirs are — `NSSavePanel`
+    /// on macOS, a temp file plus `ShareLink` on iOS — without this view knowing which.
+    @State private var exportBox = SeriesExportBox()
     /// What to call the active scope, in the reader's terms.
     @State private var scopeLabel: String?
     @Environment(\.modelContext) private var modelContext
@@ -752,6 +757,16 @@ struct SemanticMapSpikeView: View {
                     .overlay { sliceScaleOverlay }
                     .overlay { lassoOverlay }
                     .overlay { selectionMarker }
+                    // UI review F-30. Placed HERE — over the drawn layers, but *before*
+                    // `unavailableOverlay` below — and the order is load-bearing:
+                    // `.accessibilityRepresentation` replaces the subtree it wraps, so attaching
+                    // it further down would swallow the "Map unavailable" message and leave a
+                    // VoiceOver reader with an empty region list and no announcement of the
+                    // failure, while a sighted reader saw the explanation. Ungated, so the fix
+                    // lands on macOS too — the review filed this iPad-only, but the same view is
+                    // the Mac window and iOS is if anything the worse platform, having no
+                    // non-gesture camera control at all.
+                    .accessibilityRepresentation { mapAccessibilityList }
                     #if DEBUG
                     // Developer instrumentation, and now DEBUG-gated because this surface ships.
                     // "314483 documents · 0.05 ms mean · 18,849 fps equivalent" is the language of a
@@ -869,7 +884,19 @@ struct SemanticMapSpikeView: View {
                     savedCorpusName = nil
                 }
             }
+            // UI review M-20 / F-28: the map's exit. CSV only, and the control renders exactly
+            // that — `AnalyticsSectionExportControl` shows PNG/PDF only when handed an
+            // `exportFigure`, so a data-only surface passes nothing and the figure items do not
+            // exist. See `SemanticMapExport` for why a figure is refused rather than deferred.
+            ToolbarItem {
+                AnalyticsSectionExportControl(
+                    isEnabled: BundledSemanticMap.index != nil && !model.clusters.isEmpty,
+                    exportCSV: exportRegionsCSV)
+                    .accessibilityLabel(String(localized: "semanticMap.export.a11y",
+                                               defaultValue: "Export map data"))
+            }
         }
+        .seriesExportPresentation(exportBox)
         #if os(iOS)
         // The map's own document destination. Its host — now `SemanticAnalyticsView`'s
         // `NavigationStack`, previously the Settings stack it was pushed inside — carries none, and a
@@ -1845,6 +1872,121 @@ struct SemanticMapSpikeView: View {
 
     /// Applies a scope to the map and remembers what to call it.
     ///
+    // MARK: - Export (UI review M-20 / F-28)
+
+    /// Writes the regions table with its methods statement and hands it to the shared delivery.
+    ///
+    /// Uses `labelledClusters` — the scope-aware list, whose counts are re-tallied against the
+    /// current scope — so the numbers in the file are the numbers on the screen. Under no scope
+    /// that property returns the whole set, so the unscoped export is the full 179 regions.
+    private func exportRegionsCSV() {
+        guard let index = BundledSemanticMap.index else { return }
+        let clusters = model.labelledClusters
+        let table = SemanticMapExport.regionsTable(clusters: clusters)
+        let provenance = SemanticMapExport.provenance(
+            index: index,
+            scopeLabel: scopeLabel,
+            scopedDocumentCount: model.scope?.documentCount,
+            lensLabel: lens.displayName,
+            indexedVolumeCount: appState.indexedVolumeIds.count)
+        exportBox.deliver(table, provenance)
+    }
+
+    // MARK: - Accessibility (UI review F-30)
+
+    /// The map's content as a list, for VoiceOver.
+    ///
+    /// **What was actually wrong is narrower than F-30 says, and worth stating.** The finding
+    /// reads the `.accessibilityElement(children: .contain)` at the body's root as the map's
+    /// accessibility provision; it is not — that is the shared #219 idiom every sibling analytics
+    /// view uses to supply a screen name where iOS drops the navigation title, and `.contain`
+    /// exists to *keep* children navigable. The cards, the slice scale and the drawn region labels
+    /// are all announced already. What a VoiceOver reader cannot do is **create** a selection:
+    /// selection and lasso each have exactly one producer, a spatial gesture on an `MTKView`,
+    /// which is not an accessibility element and never can be.
+    ///
+    /// So this is a route in, not a caption. It follows the app's own idiom for a drawn surface —
+    /// `.accessibilityRepresentation` over a parallel list, as `CrossReferenceGraphView` and
+    /// `WordCloudView` do — and each row selects that region, landing the reader on the existing
+    /// selection card with its Open Document button.
+    ///
+    /// Two rules inherited from those precedents: list what the **data** has rather than what the
+    /// drawing had room for (the canvas keeps ~22 labels; this lists every region), and state what
+    /// the list cannot cover — 88,207 of 314,483 documents sit between regions, and a region list
+    /// is structurally incapable of reaching them.
+    @ViewBuilder
+    private var mapAccessibilityList: some View {
+        let clusters = model.labelledClusters.sorted {
+            $0.documentCount == $1.documentCount ? $0.id < $1.id
+                                                 : $0.documentCount > $1.documentCount
+        }
+        VStack(alignment: .leading) {
+            Text(accessibilitySummary)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(clusters, id: \.id) { cluster in
+                Button {
+                    selectRegion(cluster)
+                } label: {
+                    Text(verbatim: cluster.terms.prefix(3).joined(separator: " "))
+                }
+                .accessibilityLabel(regionAccessibilityLabel(cluster))
+                .accessibilityValue(regionAccessibilityValue(cluster))
+                .accessibilityHint(String(
+                    localized: "semanticMap.a11y.region.hint",
+                    defaultValue: "Selects this region and shows its card"))
+            }
+        }
+    }
+
+    /// What the region list is, and what it leaves out.
+    private var accessibilitySummary: String {
+        guard let index = BundledSemanticMap.index else {
+            return String(localized: "semanticMap.a11y.unavailable",
+                          defaultValue: "The semantic map is unavailable.")
+        }
+        return String(format: String(
+            localized: "semanticMap.a11y.summary %lld %lld %lld",
+            defaultValue: "Semantic map: %1$lld regions covering %2$lld documents. %3$lld more sit between regions and are not listed. Position shows similarity, not time — distances between far-apart regions are not meaningful."),
+            Int64(model.labelledClusters.count),
+            Int64(index.documentCount - index.layout.unclusteredCount),
+            Int64(index.layout.unclusteredCount))
+    }
+
+    /// A region's spoken name, following the accessibility decision's "[name], [element type]" form.
+    private func regionAccessibilityLabel(_ cluster: SemanticMapArtifacts.Cluster) -> String {
+        String(format: String(localized: "semanticMap.a11y.region.label %@",
+                              defaultValue: "%1$@, region"),
+               cluster.terms.prefix(3).joined(separator: " "))
+    }
+
+    /// A region's count and the era most of it falls in — the artifact's `eraCounts` reaching a
+    /// reader for the first time. It was shipped "so a cluster tooltip can say *when* as well as
+    /// *what*" and, until this, nothing in the app read it.
+    private func regionAccessibilityValue(_ cluster: SemanticMapArtifacts.Cluster) -> String {
+        let count = String(format: String(localized: "semanticMap.a11y.region.count %lld",
+                                          defaultValue: "%1$lld documents"),
+                           Int64(cluster.documentCount))
+        guard let top = cluster.eraCounts.max(by: { $0.value < $1.value }),
+              let era = CoverageEra(rawValue: Int(top.key) ?? -1) else { return count }
+        return count + ", " + String(format: String(
+            localized: "semanticMap.a11y.region.era %@",
+            defaultValue: "mostly %1$@"), era.label)
+    }
+
+    /// Selects a region from the accessibility list.
+    ///
+    /// Frames the map first, deliberately. `select(at:)` hit-tests within a radius that is
+    /// converted into grid units through the current camera scale, so a zoomed-in camera can put a
+    /// region's centre outside the view entirely and the row would read as a dead button. Framing
+    /// makes the projection well defined for every region before the hit test runs.
+    private func selectRegion(_ cluster: SemanticMapArtifacts.Cluster) {
+        guard surfaceSize != .zero else { return }
+        model.frameAll()
+        let centre = SIMD2<Float>(Float(cluster.centreX), Float(cluster.centreY))
+        let point = SemanticMapLabelLayout.project(centre, camera: model.camera, size: surfaceSize)
+        model.select(at: point, size: surfaceSize, isReadable: isReadable)
+    }
+
     /// - Parameters:
     ///   - ids: The volumes in scope, or `nil` for the whole series.
     ///   - label: The scope's name.
