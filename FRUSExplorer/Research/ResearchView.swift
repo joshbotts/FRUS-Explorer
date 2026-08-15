@@ -137,6 +137,8 @@ struct ResearchView: View {
     /// the `frus.projectHome` window (Research ▸ Project Home / ⌘P), so this is iOS-only. Presenting
     /// via a sheet keeps it decoupled from the typed `researchNavigationPath` (#272/#238).
     @State private var showProjectHome = false
+    /// Whether the Research Guide sheet is up (UI review F-14).
+    @State private var showResearchGuide = false
     #endif
 
     /// The active project, if one is selected (Global Context = nil).
@@ -204,7 +206,20 @@ struct ResearchView: View {
                     .environment(\.sceneID, sceneID)
                 }
             }
+            // UI review F-14. `ResearchGuideView` already provides its own chrome — the same
+            // presentation Settings ▸ About uses — so this is the identical sheet, one tap from the
+            // Research tab instead of five levels down inside another one.
+            .sheet(isPresented: $showResearchGuide) {
+                ResearchGuideView()
+                    .environment(appState)
+                    .environment(\.sceneID, sceneID)
+            }
             #endif
+    }
+
+    /// The guide's name, shared by the row and anything that announces it.
+    static var researchGuideName: String {
+        String(localized: "research.sidebar.guide", defaultValue: "FRUS Research Guide")
     }
 
     /// The navigation container. macOS keeps the two-column `NavigationSplitView`; iOS flattens to a
@@ -304,6 +319,36 @@ struct ResearchView: View {
                         } icon: {
                             Image(systemName: "square.grid.2x2")
                         }
+                    }
+                }
+            }
+            // UI review F-14: the guide's door on the platform where it was five levels deep.
+            //
+            // The Research Guide — the app's educational core, and the host of the four Series
+            // Analytics dashboards — was reachable on iPad only through Settings ▸ About ▸ FRUS
+            // Research Guide: a sheet presented from a pushed pane inside another tab. The
+            // archival review had already indicted that path ("five levels deep in a reference
+            // modal") when it blocked relocating analytics there, and the Research tab — the
+            // guide's obvious home — never mentioned it.
+            //
+            // A door, not a move: Settings ▸ About keeps its entry, because a reader who learned
+            // the guide lives there should not find it gone.
+            Section {
+                Button {
+                    showResearchGuide = true
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(Self.researchGuideName)
+                                .foregroundStyle(.primary)
+                            Text(String(localized: "research.sidebar.guide.caption",
+                                        defaultValue: "How the corpus is organised, and how to read it"))
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    } icon: {
+                        Image(systemName: "book")
                     }
                 }
             }

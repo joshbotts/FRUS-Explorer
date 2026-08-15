@@ -7611,3 +7611,35 @@ crowded surface in the family, its "worst-crowding view" comment falsified by #2
 after it was written — while the surface that genuinely truncates, Archival Analytics' mode picker,
 is not the one it names. That last one deserves its own change and the owner's call on whether
 folding four visible segments into a menu is the trade they want.
+
+## Session 2026-08-14 — CW-11a: the guide gets a door, Settings gets a search, and X-8 gets its rule
+
+Wave 3's documentation item, minus the screenshots. Three of its four parts are adoptions of
+machinery the app already owns; the fourth is the rule the whole program has been supplying
+evidence for.
+
+**F-14 — the Research Guide had no door on the tab named after it.** The app's educational core,
+and the host of the four Series Analytics dashboards, was reachable on iPad only through
+Settings ▸ About ▸ FRUS Research Guide: a sheet presented from a pushed pane inside a different
+tab. The archival review had already indicted that path ("five levels deep in a reference modal")
+when it blocked relocating analytics there. It now sits at the top of the Research tab, one tap,
+using the same `ResearchGuideView` — a door, not a move, so a reader who learned it lives in
+Settings still finds it there. Verified on iPad.
+
+**M-16 — the Mac Settings sidebar never called the matcher it shares with iOS.**
+`SettingsPane.matches(_:)` has existed since S-1 and iOS filters thirteen panes with it; the macOS
+sidebar rendered the same shared model with no filter at all. One `.searchable` on the sidebar
+column and the same `if !visible.isEmpty` guard iOS uses. The selection is deliberately not cleared
+when a query hides the selected pane — the detail keeps showing what the reader was reading, and
+clearing the field brings its row back; blanking the detail on a keystroke would be worse.
+
+**X-8's ledger rule is now written down** (`STATUS.md` §1a), and this program supplied its evidence
+three times over: P-1's Build-26 screenshot, P-4's legend figure captured before a 2026-06-18 fix,
+and the four iPad shots predating #238. The rule is three sentences — a screenshot is evidence
+about a *build*; the commit that retires chrome is the commit that marks its shots stale; a finding
+whose only evidence is a screenshot is unverified until re-driven. The re-captures stay the
+owner's; what is written here is the discipline that says which ones are owed.
+
+`STATUS.md` also gains the four findings this wave corrected — P-2's `.help` clause, P-4's legend
+and tap claims, P-7's list-panel claim, and P-8's stale "worst-crowding" comment — bringing the
+corrected-by-measurement table to eleven entries.
