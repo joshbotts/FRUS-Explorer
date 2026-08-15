@@ -7565,3 +7565,49 @@ survives for an older build to ignore, and both plists carry the type. The hop b
 needs two signed-in devices and is the owner's.
 
 CW-7 is now complete apart from §13.8's screenshots, which are the owner's by standing convention.
+
+## Session 2026-08-14 — CW-8a: the matrix's numbers, and a count that said "1 volumes"
+
+Wave 2's last item, verified first as usual — and the verification is most of the story. Of the
+five findings CW-8 carries, **two are substantially false**, one is an architectural opinion whose
+named exhibits are both healthy, and two are real.
+
+**P-2 is real, and the fix was already written.** The 15×15 volume heat matrix encodes a cell's
+count as fill opacity and nothing else — the export's own doc comment has said so since it was
+written ("these counts are otherwise unreadable"). At ~707 pt of content on a ~393 pt screen it is
+also wider than the phone, nested in a second scroll view. The only route to a number was to write
+a CSV and leave the app.
+
+The finding's own phrasing repeats this review's recurring error — "tooltips are `.help(...)` —
+which iOS never renders" — and it is half wrong in the way already recorded in STATUS.md: `.help`
+sets the accessibility hint on iOS, and more to the point the cell already carries an explicit
+`.accessibilityLabel` naming both volumes and the count. **A VoiceOver reader has had these numbers
+all along; a sighted touch reader had none.** That is a narrower and more useful statement of the
+defect.
+
+The fix is an adoption, not a build. `ChartDataInspectorView` already renders a `ChartInspectorData`
+as a plain list at compact width and a `Table` at regular; `AnalyticsChartTables.crossRefMatrixTable`
+already builds exactly the right ranked edge list, zero pairs dropped; `ArchivalAnalyticsView` already
+shows the button-plus-sheet pattern. None had ever been pointed at this matrix. The table was also
+extracted out of `exportMatrixCSV`, so the screen and the CSV are now one value and cannot diverge.
+
+**P-4 is mostly false.** Its headline — a legend whose six entries all read "Foreign Relations of
+the…" — was fixed on 2026-06-18 by `distilledVolumeLabel`, two months before the review shipped;
+emulated over the shipped manifest, all 552 labels are distinct. Its "untappable" clause is also
+false: a `.chartOverlay` resolves a tap by nearest bucket, so the 1 pt bar width is irrelevant to
+the hit test. The review's figure was captured from a pre-June build — the third finding in this
+program whose evidence is a stale screenshot, which is X-8 doing exactly what X-8 says.
+
+What survives is the pluralization: `aggregateLine` read **"1 volumes · 1 subseries"**, and on a
+day-grouped chronology a single-volume day is the common case, not an edge one. Fixed with the
+app's own `count == 1 ? "" : "s"` form rather than a stringsdict, because six other sites are
+written that way. Extracted to `ChronologyAggregateText` so the inflection is testable at all.
+
+Deferred, with reasons: **P-3** (the concordance's columns) is real but needs a designed compact
+form rather than a wiring change; **P-7**'s key claim is false for the cross-reference graph, whose
+list panel is already a peer of the canvas rather than buried in it; **P-8** is an architectural
+opinion whose two named exhibits are both healthy — Cross-Reference Analytics is the *least*
+crowded surface in the family, its "worst-crowding view" comment falsified by #209 thirty minutes
+after it was written — while the surface that genuinely truncates, Archival Analytics' mode picker,
+is not the one it names. That last one deserves its own change and the owner's call on whether
+folding four visible segments into a menu is the trade they want.
