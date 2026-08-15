@@ -1440,3 +1440,52 @@ struct SemanticMapExportTests {
         #expect(provenance.scopeDescription == "Truman")
     }
 }
+
+// MARK: - Region tap (UI review F-29 / M-21)
+
+/// Pins the region card's two arithmetic rules, both of which fail silently if broken.
+@Suite("Semantic map — region card")
+@MainActor
+struct SemanticMapRegionCardTests {
+
+    /// The era rows must keep every key, including ones this app has no case for.
+    ///
+    /// The generator emits `"unknown"` for a volume with no parseable coverage year, and `"3"`
+    /// (1991–present) becomes reachable the moment such a volume enters the manifest. A card that
+    /// only rendered `CoverageEra` cases would drop those documents, and the rows would stop
+    /// summing to the headline count with nothing on screen to say why.
+    @Test("Era rows account for every document in the region")
+    func eraRowsSumToTheHeadline() {
+        let cluster = SemanticMapArtifacts.Cluster(
+            id: 1, terms: ["a"], documentCount: 100, centreX: 0, centreY: 0,
+            eraCounts: ["0": 10, "1": 20, "2": 30, "unknown": 40])
+        let rows = SemanticMapRegionRows.eraRows(cluster)
+        let summed = rows.compactMap { Int($0.count) }.reduce(0, +)
+        #expect(summed == cluster.documentCount,
+                "the rows must account for every document the headline claims")
+        #expect(rows.count == 4, "an unrecognised era key must be shown, not dropped")
+    }
+
+    /// Only the eras actually present are drawn.
+    @Test("An era with no documents is not given a row")
+    func absentErasAreNotDrawn() {
+        let cluster = SemanticMapArtifacts.Cluster(
+            id: 2, terms: ["b"], documentCount: 50, centreX: 0, centreY: 0,
+            eraCounts: ["2": 50])
+        let rows = SemanticMapRegionRows.eraRows(cluster)
+        // Iterating CoverageEra.allCases would print a permanently empty "1991–present" on every
+        // card in the shipped artifact — a zero is a claim about the corpus, not a missing value.
+        #expect(rows.count == 1)
+        #expect(rows[0].count == "50")
+    }
+
+    /// Eras are drawn oldest-first regardless of dictionary order.
+    @Test("Era rows are in era order, not dictionary order")
+    func eraRowsAreOrdered() {
+        let cluster = SemanticMapArtifacts.Cluster(
+            id: 3, terms: ["c"], documentCount: 6, centreX: 0, centreY: 0,
+            eraCounts: ["2": 3, "0": 1, "1": 2])
+        let counts = SemanticMapRegionRows.eraRows(cluster).map(\.count)
+        #expect(counts == ["1", "2", "3"])
+    }
+}

@@ -7481,3 +7481,44 @@ Deferred with reasons: Handoff (F-28's second half) and a *visible* region tap. 
 care the CSV did not — `select(at:)` hit-tests within a radius converted through the camera scale,
 so a region's centroid can fall outside a zoomed view and the affordance would read as dead; the
 accessibility route sidesteps it by framing first, but a touch affordance cannot.
+
+## Session 2026-08-14 — CW-7b: the regions become tappable, and eraCounts finds its reader
+
+CW-7's third strand, F-29 / M-21: region names drew with `.allowsHitTesting(false)` while the
+bundled artifact carried a per-region era histogram — shipped, in the artifact's own words, "so a
+cluster tooltip can say *when* as well as *what*" — that nothing in the app had ever read.
+
+**The tap is resolved inside `select(at:)`, not by making labels hit-testable, and that is the
+whole design.** `labelOverlay` is an `.overlay` of the Metal surface and the tap/drag/magnify
+gestures are applied *after* it, so they wrap it: turning those `Text`s into `Button`s reproduces
+the failure this file already documents twice, where the control highlights and nothing happens.
+Resolving the tap inside the existing gesture introduces no new hit-testable view at all, so
+`.allowsHitTesting(false)` stays exactly as it was.
+
+Two arithmetic rules carry the card, and both fail silently if broken — which is why they were
+extracted to `SemanticMapRegionRows` and pinned rather than left inside a `private var`:
+
+- **Identity comes from `clusters`, not `labelledClusters`.** The latter substitutes the in-scope
+  count into `documentCount` while leaving `eraCounts` whole-corpus, so a card built from it would
+  print era rows that do not sum to its own headline — on the surface whose stated job is being
+  honest about what it can say. The in-scope figure is read separately from `scope.regionCounts`
+  and shown beside the total.
+- **Only the eras present are drawn, and an unrecognised key is kept.** Iterating
+  `CoverageEra.allCases` would print a permanently empty "1991–present" on every card in the
+  shipped artifact, and a zero row is a claim about the corpus rather than a missing value. The
+  generator emits `"unknown"` for a volume with no parseable coverage year, and `"3"` becomes
+  reachable the moment a post-1991 volume enters the manifest; both are pooled into one row rather
+  than dropped, so the rows still account for the headline.
+
+The hit test measures against the **laid-out label position**, not the projected centroid:
+`SemanticMapLabelLayout` nudges a name into an inset so it stays readable near an edge, which can
+move it well off its region's centre. The reader aims at the word they can see.
+
+Verified on iPad against the artifact: tapping `nanking shanghai hankow` gives 38,652 documents
+with 2,275 / 27,049 / 9,328 across the three eras present and no fourth row — the same numbers
+`semantic-map-index.json` carries, and they sum to the headline.
+
+Remaining in CW-7: Handoff (F-28's second half). It is not a view change — the macOS window is a
+valueless singleton with no initializer that can be handed a state, so it needs either a new
+scene-level request type plus the `SceneID`/`Handoff` plumbing the other aux windows use, or a
+conversion to a value-based `WindowGroup`. Its own PR.

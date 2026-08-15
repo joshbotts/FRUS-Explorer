@@ -187,3 +187,51 @@ enum SemanticMapExport {
             rowCells: rows)
     }
 }
+
+// MARK: - SemanticMapRegionRows
+
+/// The region card's era rows (UI review F-29 / M-21).
+///
+/// A separate type from the view for one reason: a rule that only exists inside a `private var`
+/// cannot be tested, and both of these rules fail *silently* — a dropped era key makes the rows
+/// stop summing to the headline, and an iterated `allCases` prints a zero row that reads as a
+/// claim about the corpus. This repo's standard is that a test drives the real emitter, so the
+/// emitter has to be reachable.
+///
+/// Version history:
+///   1.0 — CW-7b: extracted from `SemanticMapSpikeView.regionEraRows`
+enum SemanticMapRegionRows {
+
+    /// One era's label and count, as the card prints them.
+    struct Row {
+        /// The era's name, or the fallback for a key this app has no case for.
+        let label: String
+        /// The document count, already a string for display.
+        let count: String
+    }
+
+    /// The rows for a region, oldest era first, keeping every key.
+    ///
+    /// - Parameter cluster: The region, straight from the artifact.
+    /// - Returns: Rows that account for every document in `cluster.documentCount`.
+    static func eraRows(_ cluster: SemanticMapArtifacts.Cluster) -> [Row] {
+        let known = cluster.eraCounts
+            .compactMap { key, value -> (Int, String, Int)? in
+                guard let raw = Int(key), let era = CoverageEra(rawValue: raw) else { return nil }
+                return (raw, era.label, value)
+            }
+            .sorted { $0.0 < $1.0 }
+            .map { Row(label: $0.1, count: String($0.2)) }
+        // Anything that is not a CoverageEra raw value — "unknown" today, which the generator
+        // emits for a volume with no parseable coverage year — is pooled into one row rather than
+        // dropped, so the rows still account for the headline count.
+        let unrecognised = cluster.eraCounts
+            .filter { Int($0.key).flatMap(CoverageEra.init(rawValue:)) == nil }
+            .map(\.value)
+            .reduce(0, +)
+        guard unrecognised > 0 else { return known }
+        return known + [Row(label: String(localized: "semanticMap.region.era.unknown",
+                                          defaultValue: "Undated volumes"),
+                            count: String(unrecognised))]
+    }
+}
