@@ -210,34 +210,61 @@ struct ChronologyView: View {
 
     // MARK: - Range Bar
 
+    /// The range's start field. Extracted so the wide and stacked arrangements share one
+    /// definition — a duplicated pair would let the two drift in their bounds or their label.
+    private var rangeStartPicker: some View {
+        DatePicker(
+            String(localized: "chronology.range.from", defaultValue: "From"),
+            selection: $vm.rangeStart,
+            in: ...vm.rangeEnd,
+            displayedComponents: .date
+        )
+        .datePickerStyle(.compact)
+    }
+
+    /// The range's end field.
+    private var rangeEndPicker: some View {
+        DatePicker(
+            String(localized: "chronology.range.to", defaultValue: "To"),
+            selection: $vm.rangeEnd,
+            in: vm.rangeStart...,
+            displayedComponents: .date
+        )
+        .datePickerStyle(.compact)
+    }
+
+    /// Applies the range.
+    private var showButton: some View {
+        Button {
+            reload()
+        } label: {
+            Text(String(localized: "chronology.show", defaultValue: "Show"))
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(vm.isLoading)
+    }
+
     private var rangeBar: some View {
         VStack(spacing: 8) {
-            HStack {
-                DatePicker(
-                    String(localized: "chronology.range.from", defaultValue: "From"),
-                    selection: $vm.rangeStart,
-                    in: ...vm.rangeEnd,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                Text(verbatim: "–").foregroundStyle(.tertiary)
-                DatePicker(
-                    String(localized: "chronology.range.to", defaultValue: "To"),
-                    selection: $vm.rangeEnd,
-                    in: vm.rangeStart...,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                Spacer()
-                Button {
-                    reload()
-                } label: {
-                    Text(String(localized: "chronology.show", defaultValue: "Show"))
+            // Found while driving the UI review: at `accessibility-large` the two compact date
+            // pickers grow past the row and it overflowed BOTH screen edges — the From field's
+            // left edge and the Show button both sat off-screen, so the range could not be set at
+            // all. `ViewThatFits` is this repo's idiom for the same problem (ArchivalAnalyticsView's
+            // `filterRow`, and seven other sites); the stacked fallback UNHIDES the labels, because
+            // two bare date fields on separate lines are no longer told apart by their order.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    rangeStartPicker.labelsHidden()
+                    Text(verbatim: "–").foregroundStyle(.tertiary)
+                    rangeEndPicker.labelsHidden()
+                    Spacer(minLength: 0)
+                    showButton
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(vm.isLoading)
+                VStack(alignment: .leading, spacing: 8) {
+                    rangeStartPicker
+                    rangeEndPicker
+                    showButton
+                }
             }
             if vm.hasLoaded && !vm.groups.isEmpty {
                 HStack(spacing: 12) {

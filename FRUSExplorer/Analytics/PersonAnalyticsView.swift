@@ -291,6 +291,9 @@ struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    /// Dismisses the iOS sheet from the toolbar's Done button. Unused on macOS, where this view
+    /// is a window and the close button is the exit.
+    @Environment(\.dismiss) private var dismiss
     /// This view's owning scene, so person-mention deep-links target the originating window (#338).
     @Environment(\.sceneID) private var sceneID
     #if os(macOS)
@@ -1354,6 +1357,17 @@ struct PersonAnalyticsView: View {
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.personAnalytics
         }
+        // Done button — iOS sheet only; macOS windows use the close button. Matching Corpus
+        // Analytics, Archival Analytics, Chronology and the word cloud, all of which have had one
+        // since they shipped. Without it this sheet's only exit is the swipe-down, which is
+        // undiscoverable and unavailable to a switch-control or VoiceOver reader.
+        #if os(iOS)
+        ToolbarItem(placement: .confirmationAction) {
+            Button(String(localized: "personAnalytics.done", defaultValue: "Done")) {
+                dismiss()
+            }
+        }
+        #endif
     }
 
     // MARK: - Placeholder
