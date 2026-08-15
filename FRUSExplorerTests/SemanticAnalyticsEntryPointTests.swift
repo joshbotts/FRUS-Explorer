@@ -104,7 +104,9 @@ struct SemanticAnalyticsEntryPointTests {
         // #363's unreachable-pane shape: a row that sets state nothing presents.
         #expect(source.contains(".sheet(isPresented: $showSemanticAnalytics)"),
                 "the row sets state nothing presents — the #363 unreachable-pane shape")
-        #expect(source.contains("SemanticAnalyticsView(appState: appState)"))
+        // Prefix, not the whole call: CW-7c added a `continued:` argument for the Handoff
+        // continuation, and this assertion is about the sheet presenting the view at all.
+        #expect(source.contains("SemanticAnalyticsView(appState: appState"))
         // R-8: the iPadOS toolbar-overflow row re-derives its name from the label closure, so a
         // bare Image would ship an unnamed item.
         #expect(source.contains("browse.semanticAnalytics.a11y"),

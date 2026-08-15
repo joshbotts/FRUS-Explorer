@@ -42,6 +42,7 @@
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>com.joshbotts.frus-explorer.document</string>
+		<string>com.joshbotts.frus-explorer.semanticMap</string>
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>

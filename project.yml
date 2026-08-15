@@ -186,6 +186,7 @@ targets:
         # Required for Handoff to route NSUserActivity instances to this app.
         NSUserActivityTypes:
           - com.joshbotts.frus-explorer.document
+          - com.joshbotts.frus-explorer.semanticMap
         # Required to call Activity.request() and start Live Activities.
         NSSupportsLiveActivities: YES
         # Native shareable collection file (.fruscollection) — Phase 4 / D9. Declares the
@@ -308,6 +309,7 @@ targets:
         LSApplicationCategoryType: "public.app-category.reference"
         NSUserActivityTypes:
           - com.joshbotts.frus-explorer.document
+          - com.joshbotts.frus-explorer.semanticMap
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: bottsywattsy.FRUS-Explorer.fruscollection
             UTTypeDescription: FRUS Collection

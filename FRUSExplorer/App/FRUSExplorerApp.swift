@@ -759,7 +759,12 @@ struct FRUSExplorerApp: App {
         // window scene, with nothing else changed, made the map appear. Anything Metal-backed added
         // to this app needs a window on macOS.
         Window("Semantic Analytics", id: "frus.semanticAnalytics") {
-            SemanticAnalyticsView(appState: appState)
+            // UI review F-28: a map handed off from the iPad arrives here. The window is a
+            // valueless singleton, so the request rides the `pendingSemanticMap` hand-off slot the
+            // other aux windows use rather than a scene value — consumed BOTH ways, because a
+            // continuation that arrives before this window exists would never fire `.onChange`,
+            // and one that arrives while it is open would never fire `.task`.
+            SemanticAnalyticsWindowContent(appState: appState)
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
@@ -1246,6 +1251,9 @@ struct FRUSExplorerApp: App {
                     onSpotlight: { activity, sceneID in
                         continueSpotlightActivity(activity, from: sceneID)
                     },
+                    onSemanticMapActivity: { activity, sceneID in
+                        continueSemanticMapActivity(activity, from: sceneID)
+                    },
                     onOpenURL: { url, sceneID in
                         importOpenedCollection(url, from: sceneID)
                     }))
@@ -1257,6 +1265,10 @@ struct FRUSExplorerApp: App {
                 // Spotlight: user tapped a search result for a FRUS document
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
                     continueSpotlightActivity(activity, from: nil)
+                }
+                // UI review F-28: a map handed off from the iPad lands in the Mac's own window.
+                .onContinueUserActivity(AppActivityTypes.semanticMap) { activity in
+                    continueSemanticMapActivity(activity, from: nil)
                 }
                 // A shared native collection opened from Files / Finder / AirDrop (Phase 4 / D9).
                 .onOpenURL { url in
@@ -2197,6 +2209,20 @@ struct FRUSExplorerApp: App {
         guard appState.claimContinuation("handoff|\(volumeId)/\(documentId)") else { return }
         navigateToDocument(volumeId: volumeId, documentId: documentId,
                            title: activity.title, from: sceneID)
+    }
+
+    /// A semantic map continued from another device (UI review F-28).
+    ///
+    /// Deduped through `claimContinuation` like its siblings, keyed on the scope and lens rather
+    /// than a document id: iOS delivers the activity to every eligible scene, and without the
+    /// claim two windows would each present the map.
+    @MainActor
+    private func continueSemanticMapActivity(_ activity: NSUserActivity, from sceneID: SceneID?) {
+        guard let request = SemanticMapRequest.from(userInfo: activity.userInfo) else { return }
+        let key = "semanticMap|\(request.lensRawValue)|"
+            + (request.volumeIDs?.sorted().joined(separator: ",") ?? "all")
+        guard appState.claimContinuation(key) else { return }
+        appState.openSemanticMap(request, from: sceneID)
     }
 
     /// A Spotlight result tapped: the identifier is `"<volumeId>/<documentId>"`, minted by
@@ -3244,6 +3270,35 @@ struct ProjectSwitcherMenuContent: View {
     }
 }
 
+/// The macOS Semantic Analytics window's content, holding the continued-map hand-off.
+///
+/// A wrapper rather than logic in the scene body for the reason `SourceExplorerWindowContent`
+/// exists: a `Scene` body cannot hold `@State`, and the both-ways consumption contract needs one.
+///
+/// Version history:
+///   1.0 — CW-7c (UI review F-28): Handoff continuation
+private struct SemanticAnalyticsWindowContent: View {
+
+    /// Shared app state.
+    let appState: AppState
+
+    /// The request a continuation arrived with, or `nil`.
+    @State private var continued: SemanticMapRequest?
+
+    var body: some View {
+        SemanticAnalyticsView(appState: appState, continued: continued)
+            .task { consume() }
+            .onChange(of: appState.pendingSemanticMap) { _, _ in consume() }
+    }
+
+    /// Drains the hand-off addressed to this window.
+    private func consume() {
+        guard let request = appState.consumeHandoff(\.pendingSemanticMap,
+                                                    for: .macSemanticAnalytics) else { return }
+        continued = request
+    }
+}
+
 #endif // os(macOS)
 
 #if os(iOS)
@@ -3332,6 +3387,8 @@ private struct ContinuationHost: ViewModifier {
     let onDocumentActivity: (NSUserActivity, SceneID) -> Void
     /// Spotlight result tapped.
     let onSpotlight: (NSUserActivity, SceneID) -> Void
+    /// Handoff from another device: the semantic map (UI review F-28).
+    let onSemanticMapActivity: (NSUserActivity, SceneID) -> Void
     /// A `.fruscollection` opened from Files / AirDrop. There is no custom URL scheme in this app;
     /// the `frusexplorer://` links in rendered documents are intercepted inside the web view and
     /// never reach the OS.
@@ -3343,6 +3400,9 @@ private struct ContinuationHost: ViewModifier {
             .environment(\.sceneID, sceneID)
             .onContinueUserActivity(AppActivityTypes.document) { onDocumentActivity($0, sceneID) }
             .onContinueUserActivity(CSSearchableItemActionType) { onSpotlight($0, sceneID) }
+            .onContinueUserActivity(AppActivityTypes.semanticMap) {
+                onSemanticMapActivity($0, sceneID)
+            }
             .onOpenURL { onOpenURL($0, sceneID) }
     }
 }

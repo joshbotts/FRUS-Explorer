@@ -45,6 +45,10 @@ struct SemanticAnalyticsView: View {
     /// The app state the map's lenses and open actions need.
     let appState: AppState
 
+    /// The scope and lens a Handoff continuation arrived with (UI review F-28), or `nil` for a map
+    /// the reader opened here. Passed straight through to the map, which applies it once.
+    var continued: SemanticMapRequest?
+
     /// Whether the explanatory header is showing.
     ///
     /// Defaults to **shown**, and is remembered: the first thing a reader needs is what this surface
@@ -64,7 +68,7 @@ struct SemanticAnalyticsView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if showsAbout { about } else { collapsedAbout }
-                SemanticMapSpikeView(appState: appState)
+                SemanticMapSpikeView(appState: appState, continued: continued)
             }
         }
         #if os(macOS)

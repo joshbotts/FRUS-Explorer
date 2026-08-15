@@ -14,4 +14,99 @@ enum AppActivityTypes {
     /// A user is viewing a FRUS document. Carries `volumeId` and `documentId`
     /// in `userInfo` so the receiving device can navigate directly to it.
     static let document = "com.joshbotts.frus-explorer.document"
+
+    /// A user is looking at the semantic map (UI review F-28). Carries the scope and the colour
+    /// lens in `userInfo`, so the map the reader built on one device opens the same way on
+    /// another.
+    ///
+    /// **The slice poles are deliberately not carried, and the reason is a real trap rather than
+    /// laziness.** `SemanticMapModel.setScope` tolerates arriving before the artifact has loaded —
+    /// it stores `requestedScope` and `prepare()` re-applies it — but `setPole` does not: it
+    /// records the pole and then hard-returns when `centroid(forVolume:)` finds no index, leaving
+    /// `poles` populated and `slice` nil. Since the axis card renders on `poles.negative != nil`,
+    /// a continuation that set poles before the map loaded would leave a half-drawn axis card
+    /// naming a pole with no slice, permanently and with no retry — the same "renders and does
+    /// nothing" failure this surface has already shipped once. Carrying poles needs a
+    /// `requestedPoles` deferral inside the model; until that exists, a continued map opens
+    /// unsliced and the reader picks their poles again.
+    static let semanticMap = "com.joshbotts.frus-explorer.semanticMap"
+}
+
+// MARK: - SemanticMapRequest
+
+/// A semantic map, in the terms a Handoff payload can carry (UI review F-28).
+///
+/// The map's own state is mostly not portable — the camera is a live projection, the lasso path is
+/// view points at the sender's surface size, and `SemanticAxis` carries a 256-float direction that
+/// is rebuilt from two volume centroids anyway. What survives a trip between devices is the part
+/// the reader chose: **which volumes are in scope, what to call that scope, and the colour lens.**
+///
+/// `Codable` so it can round-trip through `NSUserActivity.userInfo`, which the app's other
+/// analytics request types are not — none of `AnalyticsParameters`, `ChronologyParameters`,
+/// `WordCloudScope` or `ArchivalScopeRequest` is, because none of them has ever needed to leave the
+/// device.
+///
+/// Version history:
+///   1.0 — CW-7c: initial implementation (scope + lens; see `AppActivityTypes.semanticMap` for
+///         why the slice poles are excluded)
+struct SemanticMapRequest: Codable, Equatable, Sendable {
+
+    /// The volumes the map is scoped to, or `nil` for the whole series.
+    var volumeIDs: [String]?
+
+    /// What to call the scope on screen, or `nil` when unscoped.
+    var scopeLabel: String?
+
+    /// The colour lens's raw value. Stored as the raw string rather than the enum so an older
+    /// build receiving a lens it does not have falls back rather than failing to decode.
+    var lensRawValue: String
+
+    /// Creates a request.
+    /// - Parameters:
+    ///   - volumeIDs: Scope, or `nil` for the whole series.
+    ///   - scopeLabel: The scope's name.
+    ///   - lensRawValue: The colour lens's raw value.
+    init(volumeIDs: [String]?, scopeLabel: String?, lensRawValue: String) {
+        self.volumeIDs = volumeIDs
+        self.scopeLabel = scopeLabel
+        self.lensRawValue = lensRawValue
+    }
+
+    // MARK: - userInfo
+
+    /// Keys used in the activity's `userInfo`.
+    private enum Key {
+        static let volumeIDs = "volumeIds"
+        static let scopeLabel = "scopeLabel"
+        static let lens = "lens"
+    }
+
+    /// The payload to hand to `NSUserActivity.userInfo`.
+    ///
+    /// Plist-safe types only — `[String]` and `String`. A `nil` scope is expressed by omitting the
+    /// key rather than by encoding `NSNull`, because the receiver reads with `as?` and an absent
+    /// key and a null both have to mean "whole series" anyway.
+    var userInfo: [String: Any] {
+        var info: [String: Any] = [Key.lens: lensRawValue]
+        if let volumeIDs { info[Key.volumeIDs] = volumeIDs }
+        if let scopeLabel { info[Key.scopeLabel] = scopeLabel }
+        return info
+    }
+
+    /// Rebuilds a request from an activity's `userInfo`.
+    ///
+    /// Returns `nil` only when the lens is missing, which is the one field with no sensible
+    /// default: everything else legitimately absent means "whole series". An unknown lens string
+    /// is kept rather than rejected — resolving it is the receiver's job, and a build that does
+    /// not know the lens should still open the scoped map.
+    ///
+    /// - Parameter userInfo: The activity's payload.
+    /// - Returns: The request, or `nil` if it carries no lens.
+    static func from(userInfo: [AnyHashable: Any]?) -> SemanticMapRequest? {
+        guard let lens = userInfo?[Key.lens] as? String else { return nil }
+        return SemanticMapRequest(
+            volumeIDs: userInfo?[Key.volumeIDs] as? [String],
+            scopeLabel: userInfo?[Key.scopeLabel] as? String,
+            lensRawValue: lens)
+    }
 }
