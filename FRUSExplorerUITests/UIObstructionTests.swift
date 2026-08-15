@@ -1093,4 +1093,77 @@ final class UIObstructionTests: XCTestCase {
                 + "stack (#486)"
         )
     }
+
+    // MARK: - Scenario 8 · Chronology's range bar at an accessibility text size (CW-12)
+
+    /// The Chronology range bar must keep both date fields and its Show button on screen when the
+    /// reader has chosen an accessibility text size.
+    ///
+    /// ## What this caught
+    /// The range bar was a plain `HStack` of two `.compact` date pickers, a dash, a `Spacer` and the
+    /// Show button. At `accessibility-large` the two pickers grow past the row's width and an
+    /// `HStack` does not wrap: the row overflowed **both** screen edges at once, putting the From
+    /// field's left edge and the Show button off-screen, so the range could not be set at all. The
+    /// fix is `ViewThatFits`, which is this repo's idiom for the same problem in seven other places.
+    ///
+    /// ## Why it is a UI test and not a unit test
+    /// `ViewThatFits` picks its child from the size actually proposed at layout time. Nothing about
+    /// that is visible to a unit test, and the failure it prevents is purely geometric — the exact
+    /// case this suite exists for. It is also the first Dynamic Type check in the suite; the size is
+    /// set through `-UIPreferredContentSizeCategoryName`, which UIKit reads at launch, so it needs
+    /// its own launch rather than a toggle mid-test.
+    func testChronologyRangeBarFitsAtAccessibilityTextSize() throws {
+        #if canImport(UIKit)
+        // Relaunch at an accessibility content size. The category is applied at launch, so the
+        // suite's shared `setUpWithError` app cannot be reused.
+        app.terminate()
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchArguments = [
+            "-hasCompletedOnboarding", "1",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL",
+        ]
+        app.launch()
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        selectBrowseSection()
+
+        let analysisMenu = app.buttons["Analysis Tools"]
+        XCTAssertTrue(analysisMenu.waitForExistence(timeout: 10),
+                      "The Browse 'Analysis Tools' menu was not found — this scenario cannot reach "
+                          + "Chronology without it")
+        analysisMenu.tap()
+
+        let chronologyItem = app.buttons["Chronology"].firstMatch
+        XCTAssertTrue(chronologyItem.waitForExistence(timeout: 5),
+                      "The 'Chronology' item was not in the Analysis Tools menu")
+        chronologyItem.tap()
+
+        // The Show button is the control the overflow pushed off the trailing edge.
+        let showButton = app.buttons["Show"].firstMatch
+        XCTAssertTrue(showButton.waitForExistence(timeout: 10),
+                      "Chronology's 'Show' button never appeared")
+
+        let window = app.windows.firstMatch.frame
+        let showFrame = showButton.frame
+        XCTAssertTrue(
+            window.contains(showFrame),
+            "Chronology's 'Show' button (\(showFrame)) is not fully inside the window "
+                + "(\(window)) at accessibility-large — the range row is overflowing instead of "
+                + "wrapping, so the range cannot be applied (CW-12)"
+        )
+
+        // And the leading end: the From field is what ran off the left edge.
+        let fromField = app.datePickers.firstMatch
+        if fromField.waitForExistence(timeout: 3) {
+            XCTAssertTrue(
+                window.contains(fromField.frame),
+                "Chronology's first date field (\(fromField.frame)) is not fully inside the window "
+                    + "(\(window)) at accessibility-large — the row overflowed the LEADING edge, "
+                    + "which is the half a trailing-only check would miss (CW-12)"
+            )
+        }
+    }
 }
