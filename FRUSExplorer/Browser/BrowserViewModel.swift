@@ -95,6 +95,30 @@ public final class BrowserViewModel {
     /// Current navigation stack. The last element is the displayed level.
     public var navigationPath: [BrowserLevel] = []
 
+    /// Selects a level from the **corpus root**, replacing the path rather than extending it
+    /// (UI review F-2).
+    ///
+    /// ## Why this is an assignment and not an append
+    /// `CorpusView` is the stack root on iPhone, where the path is always empty when its rows are
+    /// tapped — so `= [level]` and `.append(level)` are the same operation there, and this change
+    /// is provably a no-op on that platform. Three facts make that provable rather than likely:
+    /// nothing anywhere appends `.corpus`, the breadcrumb only ever *truncates*
+    /// (`prefix(index + 1)`), and `levelView`'s `case .corpus` is unreachable.
+    ///
+    /// At regular width on iPad, `CorpusView` is a **persistent list pane** beside a detail pane.
+    /// There the difference is the whole behaviour: appending would stack a newly chosen subseries
+    /// on top of whatever document is open in the detail, so Back would walk through an unrelated
+    /// reading history. Replacing is what makes a list pane a list pane.
+    ///
+    /// The dead `SubseriesListView` — written for the split layout #238 reverted — already used
+    /// the assignment form. It was right about this and is the reason the semantics were not
+    /// guessed at.
+    ///
+    /// - Parameter level: The level the reader chose from the root list.
+    public func select(_ level: BrowserLevel) {
+        navigationPath = [level]
+    }
+
     // MARK: - Download Filter
 
     /// When `true`, `allSubseriesGroups` and `filteredVolumes` exclude volumes (and

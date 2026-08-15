@@ -321,6 +321,16 @@ final class UIObstructionTests: XCTestCase {
         // Scroll toward the bottom of the list, settling briefly after each swipe,
         // until the last cell becomes hittable. XCTest's `isHittable` returns false
         // when a view is clipped or covered.
+        // **Scroll the LIST, not the app.** `app.swipeUp()` targets the app element's horizontal
+        // centre, which was the corpus list while Browse was a single full-width column. Since
+        // F-2's two-pane it is the *detail* pane on a wide iPad — so the gesture scrolled a
+        // different view and the last row never moved, which is how this scenario failed the
+        // moment the layout changed. Addressing the scroll view that owns the cells is correct in
+        // both layouts and on both platforms, and it is what the design's §4 means by making the
+        // oracles pane-aware rather than making them green.
+        let listPane = app.collectionViews.firstMatch.exists
+            ? app.collectionViews.firstMatch
+            : app.tables.firstMatch
         var becameHittable = false
         for _ in 1...15 {
             let lastCell = app.cells.element(boundBy: app.cells.count - 1)
@@ -328,7 +338,11 @@ final class UIObstructionTests: XCTestCase {
                 becameHittable = true
                 break
             }
-            app.swipeUp(velocity: .fast)
+            if listPane.exists {
+                listPane.swipeUp(velocity: .fast)
+            } else {
+                app.swipeUp(velocity: .fast)
+            }
             Thread.sleep(forTimeInterval: 0.5)
         }
 
@@ -1441,6 +1455,62 @@ final class UIObstructionTests: XCTestCase {
             projectsHeader.waitForExistence(timeout: 10),
             "The iPad sidebar shows no Projects group — the sidebar footer is missing, so the "
                 + "column below the five tabs is still empty (F-3)."
+        )
+    }
+
+    // MARK: - Scenario 13 · Browse is two panes on a wide iPad (F-2)
+
+    /// The subseries list must stay on screen while a level is open beside it.
+    ///
+    /// ## What this asserts, and what it deliberately does not
+    /// It asserts the **behaviour that distinguishes a two-pane from a stack**: after choosing a
+    /// subseries, the corpus list is *still there*. In the single-column layout the list is
+    /// covered by the pushed level, so this is exactly the difference and nothing else.
+    ///
+    /// It does **not** assert pane widths. The design's gate is a measured container width, so
+    /// the widths are a function of the device and the `.sidebarAdaptable` representation; pinning
+    /// them here would make this a change-detector for two numbers rather than a check that the
+    /// layout works.
+    ///
+    /// ## Why the list is identified by a row that only it contains
+    /// `app.cells.firstMatch` resolves whichever pane sorts first, which is the silent-wrong-pane
+    /// hazard the design's §4 names — an assertion written that way passes in both layouts and
+    /// means nothing. The corpus root's People row exists only in the list pane, so its continued
+    /// presence *after* a drill-in is a fact about the list pane specifically.
+    func testBrowseIsTwoPaneOnWideiPad() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: the two-pane gate requires a pad idiom and 820pt of content width"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        selectBrowseSection()
+
+        let window = app.windows.firstMatch.frame
+        try XCTSkipUnless(window.width >= 900,
+                          "This canvas (\(window.width)pt) is narrower than the two-pane gate "
+                              + "plus the tab sidebar, so Browse is correctly a single column here")
+
+        // The corpus root's cross-volume People row — present only in the list pane.
+        let peopleRow = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
+        XCTAssertTrue(peopleRow.waitForExistence(timeout: 10),
+                      "The corpus list never appeared")
+
+        // Drill in. In a single column this covers the list; in two panes it fills the detail.
+        let subseriesRow = app.cells.element(boundBy: max(0, app.cells.count - 1))
+        guard subseriesRow.exists else {
+            throw XCTSkip("No subseries rows on this device — nothing to open beside the list")
+        }
+        subseriesRow.tap()
+
+        XCTAssertTrue(
+            peopleRow.waitForExistence(timeout: 8),
+            "The corpus list disappeared when a subseries was opened — Browse is still a single "
+                + "column at \(window.width)pt, so F-2's two-pane layout is not in effect."
         )
     }
 }
