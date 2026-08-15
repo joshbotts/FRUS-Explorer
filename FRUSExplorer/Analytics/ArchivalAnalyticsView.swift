@@ -78,6 +78,9 @@ struct ArchivalAnalyticsView: View {
     /// Optional so a missing environment yields an empty state rather than a trap.
     @Environment(AppState.self) private var appState: AppState?
     @Environment(\.dismiss) private var dismiss
+    /// Folds the four-segment mode control into a menu on iPhone (UI review P-8). This was the
+    /// only analytics dashboard that read no size class at all.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     /// The hosting scene, so hand-offs target this window (#338).
     @Environment(\.sceneID) private var sceneID
     @Environment(\.openWindow) private var openWindow
@@ -363,18 +366,40 @@ struct ArchivalAnalyticsView: View {
 
     // MARK: - Toolbar
 
+    /// The mode control's content, defined once so the compact and regular arrangements cannot
+    /// drift in their options, tags, or help text.
+    private var modePicker: some View {
+        Picker(String(localized: "archival.mode.picker", defaultValue: "Mode"),
+               selection: $mode) {
+            ForEach(ArchivalAnalyticsMode.allCases) { m in
+                Text(m.title).tag(m)
+            }
+        }
+        .help(String(localized: "archival.mode.help.v2",
+                     defaultValue: "Switch between the era rankings, the co-citation network, the reference hand-off diagram, and the archival profile of your own indexed volumes."))
+    }
+
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Picker(String(localized: "archival.mode.picker", defaultValue: "Mode"),
-                   selection: $mode) {
-                ForEach(ArchivalAnalyticsMode.allCases) { m in
-                    Text(m.title).tag(m)
-                }
+        // UI review P-8's actual defect. Four segments — Collections / Network / Flows / Your
+        // Library — in one toolbar with no size-class awareness truncated to `Col… Net… Flo… You…`
+        // at compact width, and this was the only analytics dashboard with no compact branch at
+        // all. Owner decision 2026-08-15: fold to a menu on iPhone, accepting the extra tap.
+        //
+        // **`.menu` rather than a generic "Options" button**, because the stated cost of folding
+        // was losing the at-a-glance sense of which of the four views you are in — and a menu-style
+        // Picker still shows its current selection as its label, so that half of the cost is
+        // recovered for free. The `pickerStyle` cannot be chosen with a ternary (it takes a
+        // concrete type), which is why this is a branch over two `ToolbarItem`s rather than one
+        // modifier, and why `modePicker` is extracted so the two cannot drift.
+        if horizontalSizeClass == .compact {
+            ToolbarItem(placement: .primaryAction) {
+                modePicker.pickerStyle(.menu)
             }
-            .pickerStyle(.segmented)
-            .help(String(localized: "archival.mode.help.v2",
-                         defaultValue: "Switch between the era rankings, the co-citation network, the reference hand-off diagram, and the archival profile of your own indexed volumes."))
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                modePicker.pickerStyle(.segmented)
+            }
         }
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.archivalAnalytics
