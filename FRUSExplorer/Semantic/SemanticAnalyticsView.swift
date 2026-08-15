@@ -45,6 +45,10 @@ struct SemanticAnalyticsView: View {
     /// The app state the map's lenses and open actions need.
     let appState: AppState
 
+    /// Dismisses the iOS sheet from the toolbar's Done button. Unused on macOS, where this view
+    /// is a window scene.
+    @Environment(\.dismiss) private var dismiss
+
     /// The scope and lens a Handoff continuation arrived with (UI review F-28), or `nil` for a map
     /// the reader opened here. Passed straight through to the map, which applies it once.
     var continued: SemanticMapRequest?
@@ -70,6 +74,22 @@ struct SemanticAnalyticsView: View {
                 if showsAbout { about } else { collapsedAbout }
                 SemanticMapSpikeView(appState: appState, continued: continued)
             }
+            // Done button — iOS sheet only; on macOS this view is a Window scene and the close
+            // button is the exit. **This sheet was the worst of the three that shipped without
+            // one**, and for a reason particular to it: the interactive swipe-down needs a drag the
+            // sheet can claim, and `SemanticMapSpikeView` puts a `DragGesture(minimumDistance: 1)`
+            // on the canvas for panning. The canvas is most of the sheet, so a drag begun there
+            // pans the map instead of dismissing it, leaving only the thin about-strip and the
+            // toolbar as places the gesture works at all.
+            #if os(iOS)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "semanticAnalytics.done", defaultValue: "Done")) {
+                        dismiss()
+                    }
+                }
+            }
+            #endif
         }
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)

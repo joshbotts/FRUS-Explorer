@@ -209,6 +209,17 @@ struct CrossReferenceAnalyticsView: View {
                 ToolbarItem(placement: .primaryAction) {
                     FeatureInfoButton.crossReferenceAnalytics
                 }
+                // Done button — iOS sheet only; macOS windows use the close button. Matching Corpus
+                // Analytics, Archival Analytics, Chronology and the word cloud, all of which have
+                // had one since they shipped. Without it this sheet's only exit is the swipe-down,
+                // which is undiscoverable and unavailable to a switch-control or VoiceOver reader.
+                #if os(iOS)
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "crossRefAnalytics.done", defaultValue: "Done")) {
+                        dismiss()
+                    }
+                }
+                #endif
             }
         }
         // D3: anchored on the outermost view (not the inner `Group`, which would apply the
