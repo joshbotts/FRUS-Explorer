@@ -330,11 +330,34 @@ struct BrowserView: View {
                     Label(String(localized: "browse.analytics.a11y", defaultValue: "Corpus Analytics"),
                           systemImage: "chart.bar.xaxis")
                 }
-                Button {
-                    showPersonAnalytics = true
-                } label: {
-                    Label(String(localized: "browse.personAnalytics.a11y", defaultValue: "Person Analytics"),
-                          systemImage: "person.2")
+                // Person Analytics offers its two halves as a submenu where windows are
+                // available, and a single item where they are not (CW-9d). Without the submenu
+                // the mode-carrying request would be theoretical: the menu could only ever open
+                // Trends, and a reader who wanted the network beside it would have no way to ask
+                // for a second window. Where the surface is a sheet, one item is right — a sheet
+                // has no side-by-side to offer, and the picker inside it already switches modes.
+                if supportsMultipleWindows {
+                    Menu {
+                        ForEach(PersonAnalyticsMode.allCases, id: \.self) { mode in
+                            Button {
+                                presentPersonAnalytics(PersonAnalyticsRequest(mode: mode))
+                            } label: {
+                                Text(mode.pickerLabel)
+                            }
+                        }
+                    } label: {
+                        Label(String(localized: "browse.personAnalytics.a11y",
+                                     defaultValue: "Person Analytics"),
+                              systemImage: "person.2")
+                    }
+                } else {
+                    Button {
+                        presentPersonAnalytics(nil)
+                    } label: {
+                        Label(String(localized: "browse.personAnalytics.a11y",
+                                     defaultValue: "Person Analytics"),
+                              systemImage: "person.2")
+                    }
                 }
                 Button {
                     showCrossRefAnalytics = true
@@ -744,6 +767,20 @@ struct BrowserView: View {
         }
         analyticsParameters = params
         showAnalytics = true
+    }
+
+    /// Opens Person Analytics in a window where one is available, and in the sheet where it is not
+    /// (UI review F-11 / CW-9d).
+    ///
+    /// The request's `mode` is window identity, so Trends and Network open as two windows while
+    /// asking twice for the same one focuses it — see `PersonAnalyticsRequest`.
+    private func presentPersonAnalytics(_ request: PersonAnalyticsRequest?) {
+        if supportsMultipleWindows {
+            appState.openAuxWindow(request ?? PersonAnalyticsRequest(),
+                                   from: sceneID, using: openWindow)
+            return
+        }
+        showPersonAnalytics = true
     }
 
     /// Chronology twin of ``presentAnalytics``.
