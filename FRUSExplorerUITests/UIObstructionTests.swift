@@ -827,19 +827,49 @@ final class UIObstructionTests: XCTestCase {
     /// top-anchored content for the mis-computed safe area to hide. Closing that gap needs seeded
     /// research data (tracked separately) — do not claim content-level coverage until it exists.
     private func assertResearchDetailPushesUnobstructed(_ context: String) {
+        // The two-pane placeholder, present only before a category is chosen — and only in the
+        // two-pane layout, which makes it both the layout probe and the "did it open" oracle.
+        let placeholder = app.staticTexts["Select a category"]
+        let twoPane = placeholder.exists
+
         researchContentCell.tap()
-        let detailBar = app.navigationBars["All Research Documents"]
-        guard detailBar.waitForExistence(timeout: 10) else {
-            XCTFail("Tapping 'All Research Documents' did not push the document list (\(context))")
-            return
+
+        // **The opening oracle is layout-aware; the #272 assertion below is not.** This required
+        // a pushed "All Research Documents" navigation bar — correct while choosing a category
+        // always PUSHED, and wrong under F-2's two-pane, where the category fills the detail pane
+        // and the single outer bar keeps the tab's own title. What the scenario is for — the
+        // detail's top chrome not being overlaid by the floating top tab bar — is unchanged.
+        let detailBar: XCUIElement
+        if twoPane {
+            // The placeholder is replaced by the chosen category's content. Asserting its
+            // DISAPPEARANCE avoids depending on the empty document list's copy, which this
+            // helper's own scope note explains is legitimately empty on a fresh install.
+            let opened = !placeholder.waitForExistence(timeout: 3) || !placeholder.exists
+            guard opened else {
+                XCTFail("Choosing 'All Research Documents' left the detail pane on its placeholder "
+                        + "(\(context)) — the category did not open")
+                return
+            }
+            detailBar = app.navigationBars.firstMatch
+        } else {
+            let pushed = app.navigationBars["All Research Documents"]
+            guard pushed.waitForExistence(timeout: 10) else {
+                XCTFail("Tapping 'All Research Documents' did not push the document list (\(context))")
+                return
+            }
+            detailBar = pushed
         }
+
         XCTAssertTrue(
             detailBar.isHittable,
-            "The pushed document list's navigation bar is not hittable (\(context)) — the "
+            "The opened document list's navigation bar is not hittable (\(context)) — the "
                 + "floating top tab bar may be overlaying the detail column's top safe area (#272)"
         )
+
+        // Reset. In a two-pane there is nothing to pop — the category list is on screen
+        // throughout — so the selection is cleared by choosing nothing rather than by going back.
         let back = app.buttons["BackButton"]
-        if back.waitForExistence(timeout: 3) {
+        if !twoPane, back.waitForExistence(timeout: 3) {
             back.tap()
             Thread.sleep(forTimeInterval: 0.5)
         }
