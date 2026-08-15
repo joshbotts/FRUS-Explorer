@@ -1112,8 +1112,22 @@ final class UIObstructionTests: XCTestCase {
     /// case this suite exists for. It is also the first Dynamic Type check in the suite; the size is
     /// set through `-UIPreferredContentSizeCategoryName`, which UIKit reads at launch, so it needs
     /// its own launch rather than a toggle mid-test.
+    ///
+    /// ## iPhone-only, and that is measured rather than assumed
+    /// The skip is not caution. Running the pre-fix layout on an iPad Pro 13-inch **passes**: the
+    /// wide row fits at accessibility-large on a 1032pt canvas, so `ViewThatFits` picks the same
+    /// child either way and the assertions hold whether or not the bug is present. A green iPad run
+    /// would therefore mean nothing while looking like verification. On an iPhone 17 the same
+    /// mutation fails with the Show button at **x = 409.7 in a 402pt window** — off the trailing
+    /// edge entirely, and squeezed to 32pt wide by 174pt tall.
     func testChronologyRangeBarFitsAtAccessibilityTextSize() throws {
         #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .phone,
+            "iPhone-only: at iPad width the row fits at accessibility-large either way, so this "
+                + "scenario passes with the bug present and is not evidence there"
+        )
+
         // Relaunch at an accessibility content size. The category is applied at launch, so the
         // suite's shared `setUpWithError` app cannot be reused.
         app.terminate()

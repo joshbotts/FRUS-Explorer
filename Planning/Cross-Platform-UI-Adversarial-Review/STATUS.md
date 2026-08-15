@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #898. Shipped: Wave 1 (CW-1…CW-5) and Wave 2 (CW-6…CW-8a).
+Last updated after PR #900. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-12).
 
 ---
 
@@ -71,6 +71,8 @@ that is a discipline in the commit, not a script.
 | CW-7b | [#896](https://github.com/joshbotts/FRUS-Explorer/pull/896) | Region tap + region card; `eraCounts` gets its first reader |
 | CW-7c | [#897](https://github.com/joshbotts/FRUS-Explorer/pull/897) | Map Handoff (scope + lens), both platforms; activity-type registration test |
 | CW-8a | [#898](https://github.com/joshbotts/FRUS-Explorer/pull/898) | Heat-matrix table route; chronology inflection |
+| CW-11a | [#899](https://github.com/joshbotts/FRUS-Explorer/pull/899) | Research Guide door; Mac Settings search; the X-8 ledger rule |
+| CW-12 (by-catch) | [#900](https://github.com/joshbotts/FRUS-Explorer/pull/900) | Three missing sheet exits; Chronology range bar at accessibility sizes |
 
 ---
 
@@ -100,11 +102,46 @@ standing convention, plus the manual caption corrections that depend on them.
 - **Semantic map slice poles in Handoff** — needs a `requestedPoles` deferral inside
   `SemanticMapModel` first; see `AppActivityTypes.semanticMap` for why carrying them without it
   ships a permanently half-drawn axis card.
-- **Two by-catch items found while driving**: `PersonAnalyticsView` and `CrossReferenceAnalyticsView`
-  ship no Done button on iOS (both are sheet-presented, so swipe-down is the only exit), and
-  `ChronologyView`'s date pickers run off both screen edges at `accessibility-large`.
+- ~~Two by-catch items found while driving~~ — **shipped in #900**, and the count was wrong: it was
+  *three* missing Done buttons, not two. See §5.
 
-## 4. Verification constraints
+## 4. By-catch: what driving the app found that the review did not (CW-12, #900)
+
+Neither of these is in the review package. Both were found by using the app, which is the argument
+for driving it rather than reading it.
+
+**Three analytics sheets had no exit, not two.** `PersonAnalyticsView`, `CrossReferenceAnalyticsView`
+*and* `SemanticAnalyticsView` shipped with no Done button, against four siblings that have had one
+since they shipped. The semantic map was the sharpest case and for a reason particular to it: the
+interactive swipe-down needs a drag the sheet can claim, and the map puts a
+`DragGesture(minimumDistance: 1)` on its canvas for panning — so a drag begun anywhere on the
+canvas, which is most of the sheet, pans the map instead of dismissing it.
+
+The regression test reads `BrowserView`'s own `.sheet` presentations rather than naming the views,
+so the seventh sheet added without an exit fails on the commit that adds it. All three fixes were
+mutation-tested.
+
+**The Chronology range bar overflowed at accessibility text sizes, and now there is a test for it.**
+`UIObstructionTests` scenario 8 is the suite's first Dynamic Type check. Two things about it are
+worth carrying forward:
+
+1. **It is iPhone-only, and that is measured.** Running the pre-fix layout on an iPad Pro 13-inch
+   *passes* — the row fits at accessibility-large on a 1032pt canvas, so the assertions hold whether
+   or not the bug is present. A green iPad run would have looked like verification and meant
+   nothing. The skip says so.
+2. **The defect, quantified by the mutation run**: on an iPhone 17 at accessibility-large the Show
+   button lands at **x = 409.7 in a 402pt window** — past the trailing edge entirely, squeezed to
+   32pt wide and 174pt tall. The From field ran off the leading edge at the same time, which is why
+   the test checks both ends.
+
+**A tooling note that cost most of this session.** Three simulators share the name "iPhone 17", so a
+name-based `-destination` picks a different device between runs — and a run that lands on a wedged
+one fails with `Busy ("Application failed preflight checks")`, which reads exactly like a test
+failure. One mutation result was misread that way before the destination was pinned. **Pin
+`-destination "id=<UDID>"` for any A/B**, and cure the wedge with `simctl erase` (a shutdown/boot
+does not clear it).
+
+## 5. Verification constraints
 
 Carry these into any session that claims something is verified.
 
