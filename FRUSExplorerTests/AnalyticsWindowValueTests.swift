@@ -111,6 +111,35 @@ struct AnalyticsWindowValueTests {
         #expect(SemanticMapRequest.wholeCorpus == SemanticMapRequest.wholeCorpus)
     }
 
+    // MARK: - Archival Analytics (CW-9c)
+
+    @Test("an archival scope survives scene restoration intact")
+    func archivalRoundTrips() throws {
+        let request = ArchivalScopeRequest(volumeIds: ["frus1969-76v20", "frus1961-63v14"],
+                                           label: "Two volumes")
+        #expect(try roundTrip(request) == request)
+    }
+
+    @Test("the same volume set in any order is ONE window")
+    func archivalOrderDoesNotSplitWindows() {
+        // `ArchivalScopeRequest.init` sorts `volumeIds`, and that sort is what makes this work:
+        // two topic doors producing the same set in different orders must focus one window, not
+        // open two charts of identical data. This is the property `openWindow(value:)` keys on,
+        // and it is why the sort is in the initialiser rather than at a call site.
+        let a = ArchivalScopeRequest(volumeIds: ["b", "a", "c"], label: "Set")
+        let b = ArchivalScopeRequest(volumeIds: ["c", "b", "a"], label: "Set")
+        #expect(a == b)
+        #expect(a.hashValue == b.hashValue)
+    }
+
+    @Test("different scopes are different windows, and unscoped is stable")
+    func archivalScopesDiffer() {
+        let scoped = ArchivalScopeRequest(volumeIds: ["frus1969-76v20"], label: "One")
+        #expect(scoped != ArchivalScopeRequest.unscoped)
+        // The menu button's value, which must be identical on every invocation.
+        #expect(ArchivalScopeRequest.unscoped == ArchivalScopeRequest.unscoped)
+    }
+
     // MARK: - The semantic map's value (CW-9a)
 
     @Test("a map request survives scene restoration and keys by scope")

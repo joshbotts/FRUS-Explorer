@@ -2036,7 +2036,11 @@ struct SceneID: Hashable, Sendable {
 /// The label is carried rather than re-derived because only the sender knows what the set *means*
 /// — "Vietnam War", "Search: dien bien phu", "the 1969–1976 subseries" — and the receiving chart
 /// has to say it. A scope with no name would show narrowed figures over an unexplained population.
-struct ArchivalScopeRequest: Equatable, Sendable {
+/// `Codable & Hashable` since CW-9c, so the same value can key the iOS `archivalAnalyticsScene`
+/// window. Both fields are `[String]` and `String`, so both conformances are synthesised — and the
+/// init already sorts `volumeIds`, which is what makes two requests for the same set compare
+/// equal and therefore focus one window rather than opening a second identical chart.
+struct ArchivalScopeRequest: Equatable, Sendable, Codable, Hashable {
     /// The volumes to scope to. Empty is treated as no scope by the receiver rather than as an
     /// empty chart, because a topic that matches nothing is a fact about the topic, not a filter.
     let volumeIds: [String]
