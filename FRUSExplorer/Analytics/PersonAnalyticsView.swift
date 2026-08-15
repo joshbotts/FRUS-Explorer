@@ -175,7 +175,44 @@ enum PersonAnalyticsMath {
 ///
 /// Version history:
 ///   1.0 — CA-8 (analytics CA-track): initial implementation
-enum PersonAnalyticsMode: String, CaseIterable {
+// MARK: - PersonAnalyticsRequest
+
+/// What keys a Person Analytics window (UI review F-11, CW-9d).
+///
+/// ## Why this type carries a mode when it could have been empty
+/// Person Analytics takes no parameters — no deep-link hand-off, nothing a caller pre-sets — so
+/// #906 offered two shapes: an empty marker (every value equal, therefore exactly one window), or
+/// this one. The owner chose this one, and the reason is the comparison it makes possible: the
+/// rankings dashboard and the co-mention ego network are two readings of the same evidence, and
+/// on an iPad they can now sit side by side instead of taking turns behind a segmented control.
+///
+/// The mode is therefore **window identity**, not view state: `openWindow(value:)` focuses the
+/// existing window for an equal request, so Trends and Network open as two windows while asking
+/// for Trends twice focuses the one already showing it.
+///
+/// It is not a *freeze*, though — the picker inside a window still switches modes in place. A
+/// reader who opens Trends and flips it to Network has one window showing Network; opening
+/// Network from the menu then focuses the *other* window. That is the ordinary consequence of
+/// keying a scene by a value the surface can also change, and it is preferable to disabling the
+/// picker in windows, which would make the two hosts behave differently.
+///
+/// Version history:
+///   1.0 — CW-9d: created for the mode-carrying window (owner decision, #906 option 2)
+struct PersonAnalyticsRequest: Codable, Hashable, Sendable {
+
+    /// Which half of the dashboard the window opens in.
+    var mode: PersonAnalyticsMode
+
+    /// Creates a request.
+    /// - Parameter mode: The half to open. Defaults to the dashboard's own default.
+    init(mode: PersonAnalyticsMode = .trends) {
+        self.mode = mode
+    }
+}
+
+// MARK: - PersonAnalyticsMode
+
+enum PersonAnalyticsMode: String, CaseIterable, Codable, Hashable {
     /// Rankings, trajectories, and the two-person relationship-dynamics chart.
     case trends
     /// The person co-mention ego network (`PersonCoMentionGraphView`).
@@ -321,7 +358,24 @@ struct PersonAnalyticsView: View {
     @State private var isLoadingRanking = false
 
     /// Trends vs Network top-level mode (CA-8). The network takes the full frame.
-    @State private var mode: PersonAnalyticsMode = .trends
+    ///
+    /// Seeded from `initialMode` so a window can open straight into either one (CW-9d). The
+    /// picker still switches it in place afterwards: the mode keys which *window* the menu opens,
+    /// it does not freeze the surface.
+    @State private var mode: PersonAnalyticsMode
+
+    /// The mode this view was opened with — `.trends` from the sheet and from the menu's default,
+    /// or whichever the reader chose when opening a window.
+    private let initialMode: PersonAnalyticsMode
+
+    /// Creates the dashboard.
+    ///
+    /// - Parameter initialMode: Which half to open in. Defaults to `.trends`, so every existing
+    ///   call site is unchanged.
+    init(initialMode: PersonAnalyticsMode = .trends) {
+        self.initialMode = initialMode
+        _mode = State(initialValue: initialMode)
+    }
 
     /// The focus person driving Network mode (CA-8). Defaults to the top-ranked person, or
     /// a person the user has tapped/selected.

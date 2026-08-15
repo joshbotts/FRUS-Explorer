@@ -659,6 +659,12 @@ struct FRUSExplorerApp: App {
         // The third surface whose request type already existed (#833's `ArchivalScopeRequest`).
         // Its gate lives in `MainTabView`, not `BrowserView` — see the scene's doc comment.
         archivalAnalyticsScene
+
+        // MARK: - Person Analytics Window (UI review F-11, CW-9d)
+        //
+        // The first analytics window whose request type had to be created rather than
+        // adopted. Keyed by Trends/Network so the two readings open side by side.
+        personAnalyticsScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -1295,6 +1301,27 @@ struct FRUSExplorerApp: App {
     private var archivalAnalyticsScene: some Scene {
         WindowGroup(for: ArchivalScopeRequest.self) { $request in
             ArchivalAnalyticsView(initialScope: request ?? .unscoped)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 900, height: 760)
+    }
+
+    /// Value-based `WindowGroup(for:)` for Person Analytics on iOS (UI review F-11, CW-9d).
+    ///
+    /// The fifth analytics surface to get a window, and the first whose request type had to be
+    /// **created** rather than adopted — the previous four all had value-shaped payloads already.
+    /// `PersonAnalyticsRequest` carries the Trends/Network mode by owner decision (#906 option 2),
+    /// so the rankings dashboard and the co-mention network can sit side by side rather than take
+    /// turns behind a segmented control. See that type for why the mode is window identity and not
+    /// merely seed state.
+    ///
+    /// iOS-only, like its four siblings: macOS already has `frus.personAnalytics` as a singleton
+    /// `Window`, and converting that is M-2's scope.
+    private var personAnalyticsScene: some Scene {
+        WindowGroup(for: PersonAnalyticsRequest.self) { $request in
+            PersonAnalyticsView(initialMode: (request ?? PersonAnalyticsRequest()).mode)
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }

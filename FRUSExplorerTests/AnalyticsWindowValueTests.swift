@@ -140,6 +140,48 @@ struct AnalyticsWindowValueTests {
         #expect(ArchivalScopeRequest.unscoped == ArchivalScopeRequest.unscoped)
     }
 
+    // MARK: - Person Analytics (CW-9d, owner decision: mode-carrying)
+
+    @Test("Trends and Network are two windows")
+    func personModesAreDistinctWindows() {
+        // The whole point of the owner's choice: the rankings dashboard and the co-mention
+        // network are two readings of the same evidence and should sit side by side. If these
+        // compared equal, asking for Network would focus the Trends window and silently replace
+        // what the reader was looking at — which is precisely what the empty-marker alternative
+        // would have done, deliberately.
+        #expect(PersonAnalyticsRequest(mode: .trends) != PersonAnalyticsRequest(mode: .network))
+    }
+
+    @Test("asking twice for the same half focuses one window")
+    func personSameModeIsOneWindow() {
+        #expect(PersonAnalyticsRequest(mode: .network) == PersonAnalyticsRequest(mode: .network))
+        #expect(PersonAnalyticsRequest(mode: .network).hashValue
+                == PersonAnalyticsRequest(mode: .network).hashValue)
+    }
+
+    @Test("the default request is Trends, and is stable")
+    func personDefaultIsStable() {
+        #expect(PersonAnalyticsRequest().mode == .trends)
+        #expect(PersonAnalyticsRequest() == PersonAnalyticsRequest())
+    }
+
+    @Test("a person request survives scene restoration")
+    func personRoundTrips() throws {
+        let request = PersonAnalyticsRequest(mode: .network)
+        #expect(try roundTrip(request) == request)
+    }
+
+    @Test("every mode can key a window, so the submenu cannot offer an unopenable one")
+    func everyModeIsRequestable() throws {
+        // The Browse submenu iterates `allCases`. A mode that failed to round-trip would render
+        // in the menu and then restore as a different window after relaunch.
+        for mode in PersonAnalyticsMode.allCases {
+            let request = PersonAnalyticsRequest(mode: mode)
+            #expect(try roundTrip(request) == request)
+        }
+        #expect(PersonAnalyticsMode.allCases.count == 2)
+    }
+
     // MARK: - The semantic map's value (CW-9a)
 
     @Test("a map request survives scene restoration and keys by scope")

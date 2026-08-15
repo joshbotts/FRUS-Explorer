@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #906. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #907. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -88,6 +88,7 @@ that is a discipline in the commit, not a script.
 | CW-9a | [#904](https://github.com/joshbotts/FRUS-Explorer/pull/904) | The semantic map gets an iPad window (F-25) — the first analytics window scene on iOS |
 | CW-9b | [#905](https://github.com/joshbotts/FRUS-Explorer/pull/905) | Corpus Analytics + Chronology windows; F-13's tab teleport removed |
 | CW-9c | [#906](https://github.com/joshbotts/FRUS-Explorer/pull/906) | Archival Analytics window — the last surface whose request type already existed |
+| CW-9d | [#907](https://github.com/joshbotts/FRUS-Explorer/pull/907) | Person Analytics window, keyed by Trends/Network (owner decision: #906 option 2) |
 
 ---
 
@@ -113,8 +114,12 @@ sharpest surface. What remains:
      comparative use on an iPad, but it is a **new feature**, it changes the views' initialisers
      and their state seeding, and nobody asked for it.
 
-  Option 2 invents a comparative axis, so it is not mine to choose. Until then both stay sheets,
-  which is the status quo rather than a regression.
+  **Owner decision 2026-08-15: option 2, for Person Analytics.** Shipped in #907 —
+  `PersonAnalyticsRequest` carries the mode, so Trends and Network open as two windows, and the
+  Browse menu becomes a submenu of the two halves where windows are available (without it the
+  mode-carrying request would be theoretical: the menu could only ever have opened Trends).
+  **Cross-Reference Analytics was not covered by that decision and remains a sheet** — it has no
+  mode enum of its own, so option 2 has nothing to key on there and only option 1 applies.
 - **M-2, rescoped by measurement.** The word cloud is **out** (app-level, not per-document). The
   real work is Source Explorer + graph, whose request types already exist from #317's iPad port —
   so the cost is not the values but `fronting(id:)`, which is id-only across ~20 sites and guarded
@@ -122,11 +127,13 @@ sharpest surface. What remains:
 - **M-3 needs an owner decision before code**: what keys a Search window that opens empty and is
   typed into? Value-based windows reuse by request equality, and an empty request is the same
   empty request.
-- **A consequence of #904 worth watching**: the map window is a real scene, so iPadOS restores it,
-  and the app can relaunch showing the map with no tab bar. The two sibling value-based scenes have
-  always behaved this way, so it is the pattern's behaviour rather than new — but the map is the
-  first one reachable from a top-level menu, which makes it far more likely to be the restored
-  scene. Scenario 10 handles both entry states rather than assuming a cold start.
+- **A consequence of #904, now measured twice.** The map window is a real scene, so iPadOS restores
+  it and the app can relaunch showing the map with no tab bar. Scenario 10 handles both entry
+  states rather than assuming a cold start — and in #907 the same behaviour showed its second face:
+  the scenario **leaked its window into the next test**, which launched inside the restored map,
+  found no Browse tab, and failed. It passed in isolation, which is the signature of leaked state
+  rather than a defect in either test. Scenario 10 now closes the window before it returns. **Any
+  future test that opens a window owes the same courtesy** — sheets never needed it, scenes do.
 
 **CW-10 — chrome and width.** Verified in full (§1); **F-5 and F-17 shipped in #902**. What remains,
 with the constraint that makes each one bigger than it looks:
