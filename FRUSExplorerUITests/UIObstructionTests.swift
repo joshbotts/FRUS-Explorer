@@ -1325,5 +1325,13 @@ final class UIObstructionTests: XCTestCase {
                 + "options' is emitted only inside `if isCompactWidth`. A form sheet reports "
                 + "compact width, which is the F-25 defect; a window is regular width (CW-9a)."
         )
+
+        // **Close the map before leaving, or this scenario poisons its siblings.** The window is a
+        // real scene, so iPadOS restores it — and the very next scenario to launch (alphabetically
+        // `testTabBarNotObstructing…`) came up inside the restored map with no tab bar and failed
+        // looking for Browse. It passed in isolation, which is the signature of leaked state
+        // rather than a defect in either test. Sheets never needed this; scenes do.
+        let done = app.buttons["Done"].firstMatch
+        if done.waitForExistence(timeout: 3) { done.tap() }
     }
 }
