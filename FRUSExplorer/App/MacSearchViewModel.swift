@@ -121,7 +121,11 @@ final class MacSearchViewModel {
         }
     }
 
-    var scopeCollections: Bool = false // deferred to future session
+    // `scopeCollections` was removed with its chip (UI review M-10). It was a stored property
+    // nothing ever read: no `didSet`, no projection into `parameters`, no reader but the chip's
+    // own binding. Re-adding it means adding `includeCollections` to `SearchParameters` and a
+    // `didSet` matching the three above — in that order, so the control cannot ship ahead of the
+    // behaviour a second time.
 
     // MARK: - Initialisation
 
