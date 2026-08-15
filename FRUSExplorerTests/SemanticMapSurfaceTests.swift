@@ -1339,3 +1339,104 @@ struct SemanticMapSurfaceTests {
         #expect(!source.contains("spikeCoordsPath"))
     }
 }
+
+// MARK: - Export (UI review M-20 / F-28)
+
+/// Pins the map's CSV: its ranking, its era columns, and the one sentence that would be a lie.
+@Suite("Semantic map — export")
+@MainActor
+struct SemanticMapExportTests {
+
+    /// A three-region index whose counts and eras are all distinct, so a mis-mapped column or a
+    /// mis-ordered row cannot coincidentally look right.
+    private func index() -> SemanticMapArtifacts.MapIndex {
+        SemanticMapArtifacts.MapIndex(
+            schema: 1,
+            generated: "2026-08-12",
+            provenanceDigest: "deadbeef",
+            documentCount: 1_000,
+            gridExtent: 30_000,
+            layout: SemanticMapArtifacts.MapIndex.Layout(
+                method: "PCA-50 -> UMAP-2 (cosine)", sourceDims: 256, neighbors: 15,
+                minDist: 0.1, seed: 18_610_810,
+                clustering: "HDBSCAN(min_cluster_size=250)", unclusteredCount: 400,
+                labelSampling: "c-TF-IDF over 300 per cluster"),
+            clusters: [
+                // Deliberately NOT in rank order, and the two 200s tie so the id tiebreak is live.
+                SemanticMapArtifacts.Cluster(id: 7, terms: ["beta", "second"], documentCount: 200,
+                                             centreX: 10, centreY: -20,
+                                             eraCounts: ["1": 150, "2": 50]),
+                SemanticMapArtifacts.Cluster(id: 3, terms: ["alpha", "first"], documentCount: 400,
+                                             centreX: -5, centreY: 5,
+                                             eraCounts: ["0": 400]),
+                SemanticMapArtifacts.Cluster(id: 4, terms: ["gamma", "third"], documentCount: 200,
+                                             centreX: 0, centreY: 0,
+                                             eraCounts: ["3": 200]),
+            ])
+    }
+
+    @Test("Rows are the map's own ranking: count descending, id breaking ties")
+    func rowsFollowTheMapsRanking() {
+        let table = SemanticMapExport.regionsTable(clusters: index().clusters)
+        let ids = table.rows.map { $0.cells[0] }
+        // 400 first; then the two 200s in id order (4 before 7) — NOT artifact order, which would
+        // give 7, 3, 4. The map draws its labels by this comparator, so the top of this table is
+        // the set of names a reader can actually see on screen.
+        #expect(ids == ["3", "4", "7"])
+    }
+
+    @Test("Era counts land in the column their key names")
+    func eraCountsMapToTheRightColumns() throws {
+        let table = SemanticMapExport.regionsTable(clusters: index().clusters)
+        let eraStart = 5   // Region, Terms, Documents, Centre X, Centre Y
+        #expect(table.columns.count == eraStart + CoverageEra.allCases.count)
+        // The artifact keys eraCounts by CoverageEra's RAW VALUE as a string. A reader that
+        // treated the dictionary's own ordering as the column order would scramble every row.
+        let alpha = try #require(table.rows.first { $0.cells[0] == "3" })
+        #expect(Array(alpha.cells[eraStart...]) == ["400", "0", "0", "0"])
+        let gamma = try #require(table.rows.first { $0.cells[0] == "4" })
+        #expect(Array(gamma.cells[eraStart...]) == ["0", "0", "0", "200"])
+        let beta = try #require(table.rows.first { $0.cells[0] == "7" })
+        #expect(Array(beta.cells[eraStart...]) == ["0", "150", "50", "0"])
+    }
+
+    /// The trap this whole factory exists to avoid.
+    ///
+    /// `AnalyticsProvenance`'s default corpus caveat says counts "cover only the N volume(s)
+    /// indexed on this device, not the entire FRUS series". For every other analytics surface that
+    /// is true. For the map it is false: the artifact is bundled and draws all 314,483 documents
+    /// with nothing downloaded. Shipping the default would put a false methods statement in a file
+    /// written to outlive the screen — worse than exporting nothing.
+    @Test("The corpus sentence says the map is bundled, not device-limited")
+    func corpusStatementDescribesTheBundledArtifact() {
+        let provenance = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lensLabel: "Regions", indexedVolumeCount: 3)
+        let caveat = provenance.corpusCaveat
+        #expect(caveat.contains("1000"), "the whole-series document count must be stated")
+        #expect(!caveat.hasPrefix("Corpus: counts cover only"),
+                "the default device-limited caveat is false for a bundled artifact")
+        #expect(caveat.contains("3"), "the openable-volume count is still owed to the reader")
+    }
+
+    @Test("The unclustered documents are disclosed, not silently dropped")
+    func coverageCaveatNamesTheUnclustered() {
+        let provenance = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lensLabel: "Regions", indexedVolumeCount: 0)
+        // 400 of 1,000 are in no region, so no row below can describe them. A regions table that
+        // did not say so would read as a description of the whole corpus.
+        let joined = provenance.extraCaveats.joined(separator: " ")
+        #expect(joined.contains("600"))
+        #expect(joined.contains("400"))
+    }
+
+    @Test("A scoped export says the rows are counted inside that scope")
+    func scopedExportStatesItsScope() {
+        let provenance = SemanticMapExport.provenance(
+            index: index(), scopeLabel: "Truman", scopedDocumentCount: 120,
+            lensLabel: "Era", indexedVolumeCount: 5)
+        #expect(provenance.corpusCaveat.contains("120"))
+        #expect(provenance.scopeDescription == "Truman")
+    }
+}
