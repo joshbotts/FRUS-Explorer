@@ -445,6 +445,7 @@
 		65DE67CA03ED616524E6CCEB /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
 		65F83A8A9044AEA11E99E727 /* CrossReferenceStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B4784CBA38B92BB264B822 /* CrossReferenceStats.swift */; };
 		65F9F8B6F643821DEB578597 /* ExportHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A479E87E9FB696001E9EBDFF /* ExportHistoryEntry.swift */; };
+		664B8BFCE95C146A4416D33A /* MacDocumentTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D92920B232B028351BDEED /* MacDocumentTitle.swift */; };
 		66E17FDEFA92BB6B5559F7FD /* digitized-ranges-index.json in Resources */ = {isa = PBXBuildFile; fileRef = F301841228E95CD6C8E11AA0 /* digitized-ranges-index.json */; };
 		66E67CC84B101DA495601896 /* collection-authority.json in Resources */ = {isa = PBXBuildFile; fileRef = 738BAEE751AC5D8B7B786885 /* collection-authority.json */; };
 		671F5676A4C498379034AE8C /* CuratedLotResolutions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA57B80829FAF927F0B8DF2 /* CuratedLotResolutions.swift */; };
@@ -463,6 +464,7 @@
 		69BDBDC18136770734179CBE /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E4F0A106DA9F8FD94920CAAA /* LaunchScreen.storyboard */; };
 		69C1DD7E04511ED92674BB11 /* FRUSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C1CE86F4937BA9A1EAF837 /* FRUSSettingsView.swift */; };
 		6A7E6A6339CF3B3445189802 /* SeriesAnalyticsExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4118DA4B4369AF378AF3C6CA /* SeriesAnalyticsExport.swift */; };
+		6A9271B1CC95B142D4280BF1 /* MacChromeHonestyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2994A41AD4E9FF052598275F /* MacChromeHonestyTests.swift */; };
 		6A985C58E55942716597C195 /* DuplicateRecordCleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078660F095019CC757BF43C4 /* DuplicateRecordCleanup.swift */; };
 		6AA06DB34AFE168781188531 /* DecimalFileSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E461B1FE16124B538FDE8A89 /* DecimalFileSegment.swift */; };
 		6AA229A8C8CCD840C6E4B108 /* DataRecoverySummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B81CD4626F3CD18829856A /* DataRecoverySummary.swift */; };
@@ -517,6 +519,7 @@
 		7586E54C4745AA92646BEFFE /* ProjectFocusSubjectsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85918CBC65CFE5DAFB117542 /* ProjectFocusSubjectsEditor.swift */; };
 		75B602DED1316B6C9D3554BA /* ArchivalAnalyticsExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7962C8CAF289418B1484A3D8 /* ArchivalAnalyticsExport.swift */; };
 		76256CBC3247EF289F96263C /* central-files-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 59B54DD2D462AC96F50C4030 /* central-files-index.json */; };
+		77117DE4267259E7D2B23B0A /* MacDocumentTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D92920B232B028351BDEED /* MacDocumentTitle.swift */; };
 		7730899DD70B1936816129FA /* ArchivalLibraryQueryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 402CF2F487CD89CB8A3CB600 /* ArchivalLibraryQueryTests.swift */; };
 		7743954065C0E4CC0F39FAD3 /* SeriesAxisRangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F077149B3B7BF3606EA860D /* SeriesAxisRangeTests.swift */; };
 		7744A7098B61AB4DA5ED3945 /* CloudKitErrorInspectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66DF50A2864E16436FAB665 /* CloudKitErrorInspectorTests.swift */; };
@@ -1347,6 +1350,7 @@
 		28EC7CC622F80C7F7FDA1E92 /* ResearchTrailMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchTrailMigration.swift; sourceTree = "<group>"; };
 		29459906A446E922051D111D /* ManifestModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestModels.swift; sourceTree = "<group>"; };
 		295A22B0FA32FBE92C074667 /* PresidentialLibraryOutcomeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresidentialLibraryOutcomeTests.swift; sourceTree = "<group>"; };
+		2994A41AD4E9FF052598275F /* MacChromeHonestyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacChromeHonestyTests.swift; sourceTree = "<group>"; };
 		2A0AAFED24EDBB210AFEE0B5 /* RefreshReadOnlyStoresTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshReadOnlyStoresTests.swift; sourceTree = "<group>"; };
 		2A3BDEFC55708A3A18DC1400 /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModelTests.swift; sourceTree = "<group>"; };
 		2B59D9DE9BD8CF2987E9CD37 /* HistoryPaneSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryPaneSnapshotTests.swift; sourceTree = "<group>"; };
@@ -1473,6 +1477,7 @@
 		575AE87338FE62F1C04F2C21 /* SummarizationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationModels.swift; sourceTree = "<group>"; };
 		576352E669AF282FCF87317D /* PageSpanResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSpanResolverTests.swift; sourceTree = "<group>"; };
 		577CB7289F3041BE4B61ABC2 /* ManuscriptRepositoryBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManuscriptRepositoryBridgeTests.swift; sourceTree = "<group>"; };
+		57D92920B232B028351BDEED /* MacDocumentTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDocumentTitle.swift; sourceTree = "<group>"; };
 		58E7A25731DCFB6324657030 /* TEIRenderingConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TEIRenderingConfig.swift; sourceTree = "<group>"; };
 		59484E56E7947AD23F36D8E8 /* OnboardingScopeResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingScopeResolver.swift; sourceTree = "<group>"; };
 		59B54DD2D462AC96F50C4030 /* central-files-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "central-files-index.json"; sourceTree = "<group>"; };
@@ -2274,6 +2279,7 @@
 				551104A534CC0A4670AD011D /* IndexingQueueBannerView.swift */,
 				E62D6B16BC80A92DB71B8F3D /* IndexingSummaryCard.swift */,
 				ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */,
+				57D92920B232B028351BDEED /* MacDocumentTitle.swift */,
 				5CC526B60C0D44514FDFC572 /* MacDocumentView.swift */,
 				4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */,
 				4F7C1F384F2AAF05C44D3D70 /* MainTabView.swift */,
@@ -2479,6 +2485,7 @@
 				20DD3B6C7FDDACE58C4A7D6E /* LocalVolumeCatalogTests.swift */,
 				730B0C9CA6A6D741A1AC0987 /* LotClaimantsIndexTests.swift */,
 				DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */,
+				2994A41AD4E9FF052598275F /* MacChromeHonestyTests.swift */,
 				EE7C8E93B510701DB6DDE278 /* MacDocumentOpenRoutingTests.swift */,
 				7F55CBFB1680DD882C3B9C21 /* MacSettingsViewTests.swift */,
 				43675704D75D181CD23AC74B /* MacWindowFrontingTests.swift */,
@@ -3525,6 +3532,7 @@
 				3B4B51808E83DD5A39F450B5 /* LotResolutionAcceptance.swift in Sources */,
 				BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */,
 				0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */,
+				664B8BFCE95C146A4416D33A /* MacDocumentTitle.swift in Sources */,
 				3A0E32C338CA487E86C9D86B /* MacDocumentView.swift in Sources */,
 				97064198F213D857786F7DE5 /* MacSearchViewModel.swift in Sources */,
 				368F4C3BA10A1324CF19BB0E /* MacSourceExplorerView.swift in Sources */,
@@ -3959,6 +3967,7 @@
 				8CF602D696D83050CDBBEFE0 /* LotResolutionAcceptance.swift in Sources */,
 				19A2E99993AE1FB57687B79B /* MacCollectionManagerView.swift in Sources */,
 				4E3992CD09A928945B2AC08C /* MacCorpusBrowserWindow.swift in Sources */,
+				77117DE4267259E7D2B23B0A /* MacDocumentTitle.swift in Sources */,
 				3F3F38656DA23D95673B117D /* MacDocumentView.swift in Sources */,
 				1F9934683E4ACA22BE6F146E /* MacSearchViewModel.swift in Sources */,
 				B5F3041184E73E4AB21A22EE /* MacSourceExplorerView.swift in Sources */,
@@ -4315,6 +4324,7 @@
 				AA12A7C93B1A209E5ABD6892 /* LocalVolumeCatalogTests.swift in Sources */,
 				5FF3F82ADCD18F761735C14E /* LotClaimantsIndexTests.swift in Sources */,
 				A0C7E626BF78F426D7A4C5FE /* LotResolutionAcceptanceTests.swift in Sources */,
+				6A9271B1CC95B142D4280BF1 /* MacChromeHonestyTests.swift in Sources */,
 				C1E35EA063C5D08951AF8BEB /* MacDocumentOpenRoutingTests.swift in Sources */,
 				14533B37DD02A330F098DE0A /* MacSettingsViewTests.swift in Sources */,
 				EDF9F2C6DDE4C2E7EA17E4A2 /* MacWindowFrontingTests.swift in Sources */,

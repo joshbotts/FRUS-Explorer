@@ -724,11 +724,20 @@ struct MacSearchWindowView: View {
                     localized: "search.scope.summaries.help",
                     defaultValue: "Search the text of generated AI summaries"
                 ))
-            ScopeChip(label: "Collections", isOn: $searchVM.scopeCollections)
-                .help(String(
-                    localized: "search.scope.collections.help",
-                    defaultValue: "Search collection names and notes (deferred — not yet wired)"
-                ))
+            // A "Collections" chip stood here and was removed (UI review M-10). It was a live,
+            // toggleable control bound to `MacSearchViewModel.scopeCollections`, which had
+            // **exactly one reader in the codebase: this binding**. Every sibling scope projects
+            // through a `didSet` into `parameters` and `filterVM`; that one did not, so toggling
+            // it returned identical results. Its only disclosure was `.help` hover text reading
+            // "(deferred — not yet wired)" — on the platform where hover is the one interaction a
+            // user need never perform.
+            //
+            // The repo's no-silent-no-ops standard leaves three outcomes: it works, it is
+            // disabled with a visible reason, or it does not ship. Removal is the smallest honest
+            // one while collection search is unimplemented — a disabled chip with visible
+            // "not available" text would spend width in a row this review separately calls dense
+            // (M-4) to advertise a feature that does not exist. Restoring it is a one-line change
+            // on the day `includeCollections` reaches `SearchParameters`.
         }
     }
 

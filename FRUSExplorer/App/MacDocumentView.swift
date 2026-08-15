@@ -1214,6 +1214,21 @@ struct MacDocumentWindowView: View {
         navigationPath.last ?? rootEntry
     }
 
+    /// The current document's volume in the app's short form, or `nil` when the manifest has no
+    /// entry for it (UI review M-8).
+    ///
+    /// `nil` is a real state, not a defensive guard: a window restored from a previous session
+    /// can name a volume that has since been removed from the manifest, which is the same case
+    /// `MacDocumentView`'s restored-window empty state exists for.
+    private var currentVolumeLabel: String? {
+        guard let entry = appState.manifestStore.entry(forVolumeId: currentEntry.volumeId) else {
+            return nil
+        }
+        return ChronologyViewModel.distilledVolumeLabel(volumeId: entry.volumeId,
+                                                        subseries: entry.subseries,
+                                                        title: entry.title)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             NavigationStack(path: $navigationPath) {
@@ -1240,11 +1255,23 @@ struct MacDocumentWindowView: View {
         // floating selection bar (Phase B2) and the rail's Sources tile, so the strip's `onNARALookup`
         // hand-off is no longer needed here. (The main window's fuller 5-tool titlebar landed in C2a.)
         .toolbar {
+            // UI review M-8. This carried `Text(currentEntry.documentId)` in monospace — a raw
+            // `frus1946v06/d475` repeating identity the window title above already gives in human
+            // form, with a `.help` repeating the title a third time. It now says what the title
+            // does not: which volume, and where in it. See `MacDocumentTitle` for why the
+            // finding's own remedy ("show the title") was the wrong one.
             ToolbarItem(placement: .principal) {
-                Text(currentEntry.documentId)
-                    .font(.system(.body, design: .monospaced))
+                let volumeLabel = currentVolumeLabel
+                Text(MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,
+                                                     documentNumber: currentEntry.documentNumber,
+                                                     documentId: currentEntry.documentId))
+                    .font(MacDocumentTitle.isFallback(volumeLabel: volumeLabel)
+                          ? .system(.body, design: .monospaced)
+                          : .body)
                     .truncationMode(.middle)
-                    .help(currentEntry.header.isEmpty ? currentEntry.documentId : currentEntry.header)
+                    // The id is still one hover away for anyone who wants to cite or file a bug
+                    // against it — it moved out of the strip, it did not become unavailable.
+                    .help(currentEntry.documentId)
             }
             ToolbarItem {
                 Button {
