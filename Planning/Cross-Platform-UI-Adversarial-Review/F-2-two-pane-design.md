@@ -115,3 +115,42 @@ not starting, because the tests would go green and say nothing.
 a throwaway branch and confirm on a booted iPad that the detail pane's top safe area resolves
 correctly in *both* `.sidebarAdaptable` representations. If it does not, §2's shape is wrong and
 the whole design changes — and that is a twenty-minute answer, not a day's.
+
+---
+
+## 6. The probe has been run. The shape is viable.
+
+Run 2026-08-15 on a freshly erased iPad Pro 13-inch (iOS 26.3, window 1032×1376), against a
+minimal instrument: one outer `NavigationStack` carrying the chrome, an `HStack` of
+`CorpusView` + a nested detail `NavigationStack`, with a 1pt marker at the detail pane's top. The
+instrument was removed afterwards rather than left behind a flag — this file already has to
+explain two *previous* unreferenced layouts (`splitLayout`, `SubseriesListView`) kept "for easy
+revert", and a third would be the same debt again.
+
+| representation | navigation bar bottom | detail pane top | clearance |
+|---|---|---|---|
+| floating top tab bar | 138.0 | 138.0 | **0.0** |
+| sidebar | 86.0 | 138.0 | **52.0** |
+
+**The answer: the nested stack does not reproduce #238's defect.** In both representations the
+detail pane's content begins at y=138 — flush with the bar in the floating case, below it in the
+sidebar case, and *never above it*. #238's split put content where it could not be scrolled to;
+this composition does not. **§2's single-outer-stack shape stands, and the design is buildable as
+written.**
+
+Two by-products, both of which the test work in §4 needs:
+
+1. **`app.tabBars` resolves nothing in either representation.** The `.sidebarAdaptable` chrome is
+   not an `XCUIElement` of type `tabBar`, so a pane-aware oracle cannot measure against it the
+   obvious way. Any assertion about "clears the floating tab bar" has to be written against
+   something else.
+2. **`app.navigationBars.firstMatch` resolves a *different bar* in each representation** — 138.0
+   in one, 86.0 in the other, for the same layout. That is §4's predicted hazard appearing in
+   practice, in the very first measurement taken, and it is why §4 says the existing oracles pass
+   while measuring the wrong thing rather than failing.
+
+The detail pane's constant 138.0 across both representations is consistent with the *content* bar
+being at 138 in both while `firstMatch` picks up the sidebar's own bar at 86 in the second — i.e.
+finding (2) is the likeliest explanation of the 52.0, not a real gap. **Confirming that is the
+next session's first ten minutes**, because if it *is* a real 52pt gap at the top of the detail
+pane, it is a cosmetic defect the design should fix rather than inherit.
