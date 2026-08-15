@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #900. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-12).
+Last updated after PR #902. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, plus #901's by-catch).
 
 ---
 
@@ -26,10 +26,16 @@ app, not against the review's prose.
 | **P-4** (iPhone) | a legend of six identical "Foreign Relations of the…" entries; the chart is "untappable" | **Both false.** `distilledVolumeLabel` fixed the legend on 2026-06-18 — all 552 labels distinct over the shipped manifest. The chart resolves taps by *nearest bucket*, so bar width is irrelevant. Only the "1 volumes" inflection survived; fixed in #898. |
 | **P-7** (iPhone) | "the 1-hop `ReferenceListPanel` list … the canvas should be the secondary door" | **Key claim false for the cross-reference graph** — the list panel is already a peer of the canvas, not buried inside it. |
 | **P-8** (iPhone) | Cross-Reference Analytics is "the worst-crowding view" | **Its own evidence is stale.** That code comment was falsified by #209 thirty minutes after it was committed; the surface is now the *least* crowded in the family, one glyph in an empty bar. The surface that genuinely truncates (`Col… Net… Flo… You…`) is Archival Analytics' mode picker, which P-8 does not name. |
+| **F-2** (HIGH, iPad) | "Every tab root is a phone list stretched to full width… no tab offers a second pane at regular width" | **Cap claim true, second-pane claim now false.** All five roots are genuinely uncapped and **there is no width-cap helper anywhere in the app** — zero hits for `readableContentGuide`, `maxContentWidth`, or any equivalent; Wave 1's "70ch measure" is a CSS rule in `HTMLTemplate.documentCSS` scoped to `.frus-document` and cannot reach a SwiftUI `List`. But Search shipped a regular-width facet inspector in #891 — this review's own F-12. **The naive remedy is wrong**: no `List` in the app is capped with `.frame(maxWidth:)`, and framing a NavigationStack-root list turns `.insetGrouped` into a floating card and costs `.plain` its edge-to-edge separators and swipe extents. Needs a design decision, not a wiring change. |
+| **F-3** (HIGH, iPad) | "five rows above ~900 pt of empty column" | **Holds structurally, two details wrong.** `TabSection` has never existed in the app target on any branch (`git log --all -S` → zero commits) and `.sidebarAdaptable` is live and ungated. But Collections is already the fourth sidebar row, and the void is ~510 pt — "~900 pt" exceeds the entire column in the figure the finding cites. Implementation gate: `TabSection` lives in a `@TabContentBuilder`, so the extraction must conform to **`TabContent`, not `View`** — no such type exists in the repo yet. |
+| **F-5** (LOW, iPad) | dock stretches edge to edge; welcome copy, scope picker and buttons all affected | **Premise exact — unusually, both line citations are still accurate — but only one of the three symptoms was real.** Measured on the iPad simulator: the scope picker filled **1294 of 1294 pt**, while the welcome body was already capped at 340 pt and the primary button is 128 pt and centred. Fixed in #902. |
+| **F-17** (HIGH, iPad) | "conveys exactly one level"; iPad gets less context than iPhone across five levels | **Suppression real and unfixed; damage overstated.** iPhone has no breadcrumb at the document level either (Session 121) and none at the corpus root, so the delta is three levels, not five — and of those, the volume screen's own title already names its series and period. The level that genuinely loses its ancestor is the **compilation**. Fixed there in #902. |
 | **X-8** | Committed screenshots are stale | **Confirmed and load-bearing** — it is what made P-1 look real. Treat any screenshot-based finding as unverified until re-driven. |
 
 **Standing rule from this program:** verify a finding against the current build before implementing
-it. Six of the items above would have produced wrong or wasted work if taken at face value.
+it. **Ten of the items above** would have produced wrong or wasted work if taken at face value — and
+F-2 is the sharpest case yet, because there the finding is *true* and the obvious remedy is what
+breaks.
 
 ### 1a. The screenshot ledger rule (X-8, CW-11)
 
@@ -72,7 +78,8 @@ that is a discipline in the commit, not a script.
 | CW-7c | [#897](https://github.com/joshbotts/FRUS-Explorer/pull/897) | Map Handoff (scope + lens), both platforms; activity-type registration test |
 | CW-8a | [#898](https://github.com/joshbotts/FRUS-Explorer/pull/898) | Heat-matrix table route; chronology inflection |
 | CW-11a | [#899](https://github.com/joshbotts/FRUS-Explorer/pull/899) | Research Guide door; Mac Settings search; the X-8 ledger rule |
-| CW-12 (by-catch) | [#900](https://github.com/joshbotts/FRUS-Explorer/pull/900) | Three missing sheet exits; Chronology range bar at accessibility sizes |
+| by-catch | [#901](https://github.com/joshbotts/FRUS-Explorer/pull/901) | Three missing sheet exits; Chronology range bar at accessibility sizes |
+| CW-10a | [#902](https://github.com/joshbotts/FRUS-Explorer/pull/902) | Onboarding dock cap (F-5); compilation parent line (F-17) |
 
 ---
 
@@ -84,8 +91,22 @@ Wave 2 is complete. What remains, in the review's own order:
 `WindowGroup`s on iPad with Semantic first. The largest remaining item and mostly macOS, which
 these sessions cannot drive; it wants the owner's hand on verification.
 
-**CW-10 — chrome and width.** Mac Search re-chrome; iPad width discipline, `TabSection`s and the
-breadcrumb; Read-mode paging. The iPad half is drivable here.
+**CW-10 — chrome and width.** Verified in full (§1); **F-5 and F-17 shipped in #902**. What remains,
+with the constraint that makes each one bigger than it looks:
+
+- **F-2 (the width cap) needs an owner decision, not an implementation.** The finding is true — no
+  root is capped and no helper exists — but the obvious fix is measurably wrong: framing a
+  NavigationStack-root `List` turns `.insetGrouped` into a floating card and costs `.plain` its
+  edge-to-edge separators and swipe-action extents, and no `List` in this app is capped that way
+  today. The real options are (a) cap the *row content* rather than the list, (b) adopt a
+  two-pane shape at regular width per `CollectionEditorView.iPadCollectionLayout`, or (c) decide
+  full-width lists are correct on iPad, as Apple's own Settings and Mail are. That is a design
+  call.
+- **F-3 (`TabSection`s) needs a tab-identity model first.** `TabSection` sits in a
+  `@TabContentBuilder`, so the extraction must conform to **`TabContent`**, and no such type
+  exists in the repo — this is new ground rather than an adoption.
+- **Mac W-8/W-9.** M-4 (Search-window chrome) and M-9 (Read-mode paging) want macOS verification
+  and are the owner's. **M-10 and M-8 do not** — both are verified and headless-fixable, see §6.
 
 **CW-11 — the rest of the documentation sweep.** The ledger rule is now written (§1a) and the
 guide doors are shipped. What remains is the **re-captures themselves**, which are the owner's by
@@ -102,10 +123,15 @@ standing convention, plus the manual caption corrections that depend on them.
 - **Semantic map slice poles in Handoff** — needs a `requestedPoles` deferral inside
   `SemanticMapModel` first; see `AppActivityTypes.semanticMap` for why carrying them without it
   ships a permanently half-drawn axis card.
-- ~~Two by-catch items found while driving~~ — **shipped in #900**, and the count was wrong: it was
+- ~~Two by-catch items found while driving~~ — **shipped in #901**, and the count was wrong: it was
   *three* missing Done buttons, not two. See §5.
 
-## 4. By-catch: what driving the app found that the review did not (CW-12, #900)
+## 4. By-catch: what driving the app found that the review did not (#901)
+
+> **Naming correction.** PR #901 called itself "CW-12". The review's own master worklist already
+> uses CW-12 for *"Programs and gates: macOS text scaling, window-fronting audit, iPad probes"*,
+> which is unrelated and unstarted. Nothing in #901 belongs to that item. By-catch is filed by PR
+> number here rather than given a CW number it would have to share.
 
 Neither of these is in the review package. Both were found by using the app, which is the argument
 for driving it rather than reading it.
@@ -134,14 +160,49 @@ worth carrying forward:
    32pt wide and 174pt tall. The From field ran off the leading edge at the same time, which is why
    the test checks both ends.
 
-**A tooling note that cost most of this session.** Three simulators share the name "iPhone 17", so a
-name-based `-destination` picks a different device between runs — and a run that lands on a wedged
-one fails with `Busy ("Application failed preflight checks")`, which reads exactly like a test
-failure. One mutation result was misread that way before the destination was pinned. **Pin
-`-destination "id=<UDID>"` for any A/B**, and cure the wedge with `simctl erase` (a shutdown/boot
-does not clear it).
+**A tooling note that cost most of this session** — sharpened after #901, because the first version
+of this paragraph understated it. Three simulators share the name "iPhone 17" and three share
+"iPad Pro 13-inch (M5)", and they are **one per installed runtime** (iOS 26.3 / 26.4 / 26.5) rather
+than stray clones. So a name-based `-destination` is nondeterministic in **both identity and iOS
+version**: successive runs land on different UDIDs, and a run that lands on a wedged one fails with
+`Busy ("Application failed preflight checks")`, which reads exactly like a test failure. One
+mutation result was misread that way before the destination was pinned.
 
-## 5. Verification constraints
+**Pin `-destination "id=<UDID>"` for any A/B or any result you will report**, and list the UDIDs with
+their runtimes beside them:
+
+```bash
+xcrun simctl list devices available | awk '/^-- iOS/{rt=$0} /iPhone 17 \(/{print rt" | "$0}'
+```
+
+Cure a wedged device with `simctl erase <UDID>` — a shutdown/boot pair does **not** clear it, which
+was verified here by running a pre-existing scenario as a control and watching it fail identically.
+
+## 5. Verified and ready: two Mac findings that need no Mac
+
+Both were checked against the current build during CW-10 and neither needs the macOS UI to fix or
+to test. They are queued rather than shipped only because #902 kept to one theme.
+
+**M-10 — the search-scope chip wired to nothing. CONFIRMED, and more cleanly than stated.**
+`MacSearchViewModel.scopeCollections` (:124) is a bare stored property carrying the comment
+`// deferred to future session`, and it has **exactly one reader in the whole codebase: the chip's
+own binding** at `SearchSheet.swift:727`. Every sibling scope has a `didSet` projecting into
+`parameters` and `filterVM`. Toggling Collections therefore changes nothing, and the only
+disclosure is `.help` hover text — on the one platform where a user need never hover. The repo's
+no-silent-no-ops standard gives three outcomes: it works, it is disabled with a visible reason, or
+it does not ship. Removing the chip and the dead property is the smallest honest one, and it also
+relieves the row density M-4 complains about.
+
+**M-8 — the raw ID in the title bar. WRONG AS WRITTEN, and the correction improves the fix.** The
+finding says the document's title "is relegated to `.help` hover". It is not:
+`MacDocumentView.swift:1237` already sets `.navigationTitle` to the header, under a comment that
+says so. The real defect is narrower — the toolbar's centre repeats identity the window title
+already gives in human form, and its tooltip repeats it a third time. So the remedy is not "show
+the title", it is **make the centre say what the title does not**: which volume, and where in it.
+`ChronologyViewModel.distilledVolumeLabel` is the existing short form, already rendered by
+Chronology and Cross-Reference Analytics — and now by the compilation parent line (#902).
+
+## 6. Verification constraints
 
 Carry these into any session that claims something is verified.
 

@@ -1180,4 +1180,78 @@ final class UIObstructionTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - Scenario 9 · the onboarding dock is capped on iPad (CW-10 / F-5)
+
+    /// The onboarding dock must not stretch across a 13-inch iPad.
+    ///
+    /// ## What this caught
+    /// Nothing bounded the dock stack on iOS at any level, while macOS pinned its whole window at
+    /// 560×540. Measured on this simulator before the cap, the step-2 scope picker filled **1294
+    /// of 1294 pt**. Two symptoms the review also named were already handled and are deliberately
+    /// NOT asserted here, so a later reader does not "fix" them again: the welcome body carries
+    /// its own 340pt cap, and the primary button is 128pt and merely centred.
+    ///
+    /// ## Why the assertion is on the scope picker and not the glass slab
+    /// The slab is a background, and a background has no accessibility element to query. The
+    /// segmented picker is the widest *control* in the stack, is queryable, and is the thing that
+    /// actually stretched — so it is both the honest target and the one XCTest can see.
+    ///
+    /// ## iPad-only, for the same reason scenario 8 is iPhone-only
+    /// The cap is 640pt and every iPhone is narrower, so on a phone the rule is a no-op by
+    /// construction and the assertion would pass whether or not the cap existed.
+    func testOnboardingDockIsCappedOniPad() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: the cap is 640pt and every iPhone is narrower, so this passes with the "
+                + "bug present and is not evidence there"
+        )
+
+        // Onboarding is the surface under test, so this launch must NOT carry
+        // `-hasCompletedOnboarding 1` the way the rest of the suite does.
+        app.terminate()
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchArguments = ["-hasCompletedOnboarding", "0"]
+        app.launch()
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        let getStarted = app.buttons["Get Started"].firstMatch
+        XCTAssertTrue(getStarted.waitForExistence(timeout: 20),
+                      "Onboarding's welcome step did not appear — this scenario cannot reach the "
+                          + "scope step without it")
+
+        let window = app.windows.firstMatch.frame
+        XCTAssertGreaterThan(window.width, 700,
+                             "Expected a regular-width iPad canvas; got \(window.width)pt. On a "
+                                 + "narrow canvas this scenario proves nothing.")
+
+        getStarted.tap()
+
+        // Step 2's segmented scope control is the widest thing the dock holds.
+        let scopePicker = app.segmentedControls.firstMatch
+        XCTAssertTrue(scopePicker.waitForExistence(timeout: 10),
+                      "The onboarding scope picker never appeared after Get Started")
+
+        let cap: CGFloat = 640
+        XCTAssertLessThanOrEqual(
+            scopePicker.frame.width, cap,
+            "The onboarding scope picker is \(scopePicker.frame.width)pt wide inside a "
+                + "\(window.width)pt window — the dock stack is not capped, which is the F-5 "
+                + "defect (measured at 1294 of 1294 pt before the fix)"
+        )
+
+        // And it must be CENTRED rather than pinned to the leading edge — the failure mode of
+        // copying ProjectHomeView's cap-then-re-expand-leading idiom into this stack.
+        let leadingGap = scopePicker.frame.minX - window.minX
+        let trailingGap = window.maxX - scopePicker.frame.maxX
+        XCTAssertEqual(
+            leadingGap, trailingGap, accuracy: 2,
+            "The onboarding dock is capped but not centred (leading \(leadingGap)pt, trailing "
+                + "\(trailingGap)pt) — a leading-aligned cap leaves the slab hugging one edge"
+        )
+    }
 }

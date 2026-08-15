@@ -140,6 +140,21 @@ struct OnboardingView: View {
                     dock
                 }
                 .padding(.horizontal, FRUSTheme.onboardingDockMargin)
+                // UI review F-5: cap the stack on iOS, where nothing bounded it and a 13-inch
+                // iPad stretched the scope picker across the whole screen (measured: 1294 of
+                // 1294 pt). macOS is already pinned by the window frame at :154.
+                //
+                // **The cap belongs on this CONTAINER, not on `dock`.** All three children are
+                // full-width by construction — `offlineBanner` carries its own
+                // `.frame(maxWidth: .infinity)` and its own background, and `transientSheet` is
+                // the volume/subseries picker — so capping the dock alone would narrow the glass
+                // slab while the picker above it stayed edge to edge. Capping here also avoids a
+                // trap that costs a debugging cycle if the cap is pushed down into `dock`: its
+                // `.frame(maxWidth: .infinity)` is followed immediately by
+                // `.cloudSurfaceBackground`, so a cap applied before the background repaints the
+                // slab at full width and measures as no change at all. Proposing 640 from the
+                // parent leaves `dock` untouched and the background lands on the capped width.
+                .frame(maxWidth: OnboardingDockMetrics.dockWidth(forContainerWidth: proxy.size.width))
                 .padding(.bottom, dockBottomInset)
                 .background {
                     GeometryReader { dockProxy in
@@ -171,11 +186,21 @@ struct OnboardingView: View {
     ///
     /// Uses the measured height once it is known, falling back to a first-frame estimate
     /// for the single pass before the preference resolves.
+    ///
+    /// The **width** follows the same rule as the dock itself (F-5). Before the cap the dock was
+    /// the full screen and so was this rect; leaving it full-width afterwards would push words
+    /// out of a band the dock no longer occupies — on a 13-inch iPad, roughly half the screen of
+    /// empty space that the word cloud would refuse to use. That is the estimate-versus-measure
+    /// mistake this function's own history records, in the other direction.
     private func dockExclusionZone(in size: CGSize) -> CGRect {
         let height = measuredDockHeight > 0
             ? measuredDockHeight + dockBottomInset
             : (step == .addVolumes ? 170 : 130) + dockBottomInset
-        return CGRect(x: 0, y: max(0, size.height - height), width: size.width, height: height)
+        let width = OnboardingDockMetrics.dockWidth(forContainerWidth: size.width)
+        return CGRect(x: (size.width - width) / 2,
+                      y: max(0, size.height - height),
+                      width: width,
+                      height: height)
     }
 
     // MARK: - Dock
