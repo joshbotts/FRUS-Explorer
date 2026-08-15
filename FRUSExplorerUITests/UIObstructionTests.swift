@@ -1334,4 +1334,58 @@ final class UIObstructionTests: XCTestCase {
         let done = app.buttons["Done"].firstMatch
         if done.waitForExistence(timeout: 3) { done.tap() }
     }
+
+    // MARK: - Scenario 11 · Archival Analytics' mode control folds on iPhone (P-8)
+
+    /// The four-way mode control must not be four segments on a phone.
+    ///
+    /// ## What this caught
+    /// `Collections / Network / Flows / Your Library` in one `.segmented` `Picker`, in a toolbar,
+    /// with **no size-class branch anywhere in the view** — it was the only analytics dashboard
+    /// that read no size class at all. On an iPhone the four labels truncated to
+    /// `Col… Net… Flo… You…`, which names none of the four views.
+    ///
+    /// ## The probe
+    /// A `.segmented` picker exposes its options as buttons *inside* an `XCUIElement` of type
+    /// `segmentedControl`; a `.menu` picker is a single button labelled with the current
+    /// selection. So "no segment named Your Library" is exactly the difference between the two
+    /// forms, and does not depend on measuring truncated text — which is unreadable to XCTest
+    /// anyway, since the accessibility label carries the full string whatever is drawn.
+    ///
+    /// iPhone-only: at regular width the segments fit and are the better control, which is why
+    /// the fix is a branch rather than a replacement.
+    func testArchivalModeControlFoldsOnPhone() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .phone,
+            "iPhone-only: at regular width the four segments fit and are kept deliberately"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        selectBrowseSection()
+
+        let analysisMenu = app.buttons["Analysis Tools"]
+        XCTAssertTrue(analysisMenu.waitForExistence(timeout: 10),
+                      "The Browse 'Analysis Tools' menu was not found")
+        analysisMenu.tap()
+
+        let archival = app.buttons["Archival Analytics"].firstMatch
+        XCTAssertTrue(archival.waitForExistence(timeout: 5),
+                      "'Archival Analytics' was not in the Analysis Tools menu")
+        archival.tap()
+
+        // The surface's landmark: its mode control names whichever view is showing.
+        let currentMode = app.buttons["Collections"].firstMatch
+        XCTAssertTrue(currentMode.waitForExistence(timeout: 20),
+                      "Archival Analytics never appeared, or its mode control does not name the "
+                          + "current view")
+
+        XCTAssertFalse(
+            app.segmentedControls.buttons["Your Library"].exists,
+            "Archival Analytics is still showing a four-segment mode control on an iPhone — the "
+                + "labels truncate to 'Col… Net… Flo… You…', naming none of the four views (P-8)."
+        )
+    }
 }

@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #907. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #908. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -89,6 +89,7 @@ that is a discipline in the commit, not a script.
 | CW-9b | [#905](https://github.com/joshbotts/FRUS-Explorer/pull/905) | Corpus Analytics + Chronology windows; F-13's tab teleport removed |
 | CW-9c | [#906](https://github.com/joshbotts/FRUS-Explorer/pull/906) | Archival Analytics window — the last surface whose request type already existed |
 | CW-9d | [#907](https://github.com/joshbotts/FRUS-Explorer/pull/907) | Person Analytics window, keyed by Trends/Network (owner decision: #906 option 2) |
+| P-8 | [#908](https://github.com/joshbotts/FRUS-Explorer/pull/908) | Archival Analytics' mode control folds to a menu on iPhone |
 
 ---
 
@@ -161,7 +162,7 @@ standing convention, plus the manual caption corrections that depend on them.
 **Carried over, each with its reason:**
 
 - **P-3** (concordance columns at compact width) — real; needs a designed compact form rather than
-  a wiring change.
+  a wiring change. It is now the last unaddressed compact-width finding, P-8's having shipped.
 - **P-8's actual defect** — Archival Analytics' mode picker truncates to `Col… Net… Flo… You…` and
   is the only analytics dashboard with no size-class awareness at all. Folding four visible
   segments into a menu costs a tap and the at-a-glance sense that four views exist: **the owner's
@@ -181,7 +182,7 @@ of them overrule the recommendation I gave.
 |---|---|---|
 | **F-2** — iPad width discipline, given that capping a root `List` breaks its native style | **Two-pane at regular width** | Browse and Research gain a list + detail layout following `CollectionEditorView.iPadCollectionLayout` (`:734`, reached via `if sizeClass == .regular` at `:518`). Must honour the #238 rule: a plain `HStack` of two panes, **never** a nested `NavigationSplitView`. This is the largest of the four options and was chosen over my recommendation of capping row content — so the row-content cap is NOT a fallback to drift into; if the two-pane shape proves wrong, that is a new decision. |
 | **F-3** — what populates the iPad tab sidebar | **Saved searches + projects** | `SavedSearch` (`Models/SavedSearch.swift`) and `Project` (`Models/Project.swift`). Collections is deliberately excluded: it is already the fourth sidebar row, and listing it inside the sidebar would duplicate a tab. Recent volumes are excluded too. The extraction must conform to **`TabContent`**, not `View`. |
-| **P-8's real defect** — Archival Analytics' mode picker truncating to `Col… Net… Flo… You…` | **Menu at compact width** | Matches the other dashboards' compact behaviour. Accepts the stated cost: one extra tap, and the loss of the at-a-glance sense that four views exist. |
+| **P-8's real defect** — Archival Analytics' mode picker truncating to `Col… Net… Flo… You…` | **Menu at compact width** | Shipped in #908. Half the stated cost was recovered for free: a `.menu`-style `Picker` still shows its current selection as its label, so the reader keeps the sense of *which* view they are in — only the sense that four exist is traded for the extra tap. |
 | **What comes next** | **CW-9, the window model** | Ahead of implementing F-2, the Mac chrome items (M-4/M-9), and F-3. |
 
 ## 4. By-catch: what driving the app found that the review did not (#901)
