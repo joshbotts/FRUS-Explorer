@@ -645,6 +645,14 @@ struct FRUSExplorerApp: App {
         // `semanticMapScene` for why the repair is regular width rather than modality, and
         // why this surface came first (its request type already existed for Handoff).
         semanticMapScene
+
+        // MARK: - Corpus Analytics & Chronology Windows (UI review F-11 / F-13, CW-9b)
+        //
+        // The two analytics surfaces whose hand-off payloads were already value-shaped, so
+        // the window cost only a synthesised `Codable & Hashable`. `corpusAnalyticsScene`
+        // also removes F-13's tab teleport — see its doc comment.
+        corpusAnalyticsScene
+        chronologyScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -1217,6 +1225,51 @@ struct FRUSExplorerApp: App {
         // Wider and taller than the two sibling scenes on purpose: this one draws a 314,483-point
         // projection, where they show a list.
         .defaultSize(width: 900, height: 720)
+    }
+
+    /// Value-based `WindowGroup(for:)` for Corpus Analytics on iOS (UI review F-11, and the fix
+    /// for F-13).
+    ///
+    /// The second analytics surface to get a window, after the map (#904), and chosen next for the
+    /// same reason: `AnalyticsParameters` already existed as the hand-off payload and needed only
+    /// synthesised `Codable & Hashable` to key a window.
+    ///
+    /// ## This is also what removes F-13's tab teleport
+    /// "Visualize in Corpus Analytics" used to write `pendingAnalytics` **and then switch the user
+    /// to the Browse tab**, because the sheet was owned by `BrowserView` — so a reader who tapped a
+    /// link in Search landed in Browse with a modal, and dismissing it stranded them there with
+    /// their query a tab away. `SearchView.openSearchInAnalytics` states that reason in a comment
+    /// (#369 BUG-11). With a window, Search opens the chart where it stands and the tab hop is
+    /// simply not needed — the teleport was a symptom of the modality, exactly as F-13 argued.
+    ///
+    /// iOS-only: macOS already has `frus.analytics` as a singleton `Window`, and converting that is
+    /// M-2's scope with its `fronting(id:)` and Window-menu costs.
+    private var corpusAnalyticsScene: some Scene {
+        WindowGroup(for: AnalyticsParameters.self) { $params in
+            // A nil value is the empty dashboard, which is what the Browse menu opens — the same
+            // reasoning as `semanticMapScene`, and unlike the two document-anchored scenes where
+            // nil really is an error state worth naming.
+            AnalyticsView(initialParameters: params)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 900, height: 760)
+    }
+
+    /// Value-based `WindowGroup(for:)` for Chronology on iOS (UI review F-11).
+    ///
+    /// `ChronologyParameters` is two optional `Date`s, so it keys a window with synthesised
+    /// conformances. Same iOS-only reasoning as `corpusAnalyticsScene`: macOS has
+    /// `frus.chronology` already.
+    private var chronologyScene: some Scene {
+        WindowGroup(for: ChronologyParameters.self) { $params in
+            ChronologyView(initialParameters: params)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 860, height: 760)
     }
 
     /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.

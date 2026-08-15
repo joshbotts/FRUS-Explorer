@@ -148,7 +148,11 @@ struct DayFrequency: Sendable, Identifiable {
 ///   1.0 — Session 2026-06-07: introduced for Search ↔ Analytics integration
 ///   1.1 — Session 164: `scopeVolumeIds` / `scopeLabel` for the Word Cloud → Analytics
 ///          handoff (volume / subseries scope, with whole-corpus fallback)
-struct AnalyticsParameters: Sendable, Equatable {
+/// `Codable & Hashable` since CW-9b, so the same value can key the iOS
+/// `corpusAnalyticsScene` window: `openWindow(value:)` and `AppState.openAuxWindow` both require
+/// it. Every field is a `String`, `Int?` or `[String]?`, so both conformances are synthesised —
+/// which is what made this surface the second-cheapest analytics window after the map's.
+struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
     /// The keyword term to chart. Required — `AnalyticsView.runSearch()` is a
     /// no-op for an empty term.
     var term: String
