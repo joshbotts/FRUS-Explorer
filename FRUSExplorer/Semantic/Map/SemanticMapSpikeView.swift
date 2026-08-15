@@ -323,6 +323,24 @@ final class SemanticMapModel {
     ///     downloaded but not yet indexed reads perfectly well.
     func select(at point: CGPoint, size: CGSize, isReadable: (String) -> Bool) {
         guard let map = BundledSemanticMap.vectors, let index else { return }
+        // UI review F-29 / M-21: a tap on a region's NAME selects the region.
+        //
+        // Resolved here rather than by making the label layer hit-testable, and that is the whole
+        // design. `labelOverlay` is an `.overlay` of the Metal surface and the tap/drag/magnify
+        // gestures are applied *after* it, so they wrap it — turning those `Text`s into `Button`s
+        // reproduces the failure this file documents twice already, where the control highlights
+        // and nothing happens. Resolving inside the existing gesture introduces no new
+        // hit-testable view at all, so `.allowsHitTesting(false)` stays exactly as it is.
+        if let label = regionLabel(at: point, size: size) {
+            // Identity from `clusters`, NOT `labelledClusters`: the latter substitutes the
+            // in-scope count into `documentCount` while leaving `eraCounts` whole-corpus, so a
+            // card built from it would print era rows that do not sum to its own headline — on
+            // the one surface whose stated job is to be honest about what it can say. The
+            // in-scope number is carried separately, below.
+            selectedRegion = clusters.first { $0.id == label.id }
+            selection = nil
+            return
+        }
         guard let hit = SemanticMapPicking.hit(
             at: point, positions: positions, camera: camera, size: size,
             scopeMask: scope?.flags) else {
@@ -356,6 +374,35 @@ final class SemanticMapModel {
 
     /// Clears the selection.
     func clearSelection() { selection = nil }
+
+    /// The region whose name the reader tapped, or `nil` (UI review F-29 / M-21).
+    ///
+    /// Whole-corpus identity straight out of the artifact, so `documentCount` and `eraCounts`
+    /// describe the same population. Any in-scope number shown beside it is read separately from
+    /// `scope?.regionCounts`.
+    private(set) var selectedRegion: SemanticMapArtifacts.Cluster?
+
+    /// Dismisses the region card.
+    func clearRegion() { selectedRegion = nil }
+
+    /// The drawn label within tap range of `point`, if any.
+    ///
+    /// Tests the **laid-out label position**, not the projected centroid, and the difference is
+    /// visible on screen: `SemanticMapLabelLayout` nudges a name into an inset so it stays
+    /// readable near an edge, which can move it well off its region's centre. The reader aims at
+    /// the word they can see, so that is what this measures against.
+    ///
+    /// Suppressed in a slice for the reason `labelOverlay` gives: region names are not drawn there,
+    /// and a tap must not select something invisible.
+    func regionLabel(at point: CGPoint, size: CGSize) -> SemanticMapLabel? {
+        guard slice == nil else { return nil }
+        return SemanticMapLabelLayout.labels(for: labelledClusters, camera: camera, size: size)
+            .first { hypot($0.position.x - point.x, $0.position.y - point.y) <= Self.regionTapRadius }
+    }
+
+    /// How near a name a tap counts as hitting it. Matches the document picker's own radius, so a
+    /// name and a point are equally easy to hit.
+    static let regionTapRadius: CGFloat = 22
 
     /// Extends the lasso being drawn.
     /// - Parameter point: The latest point, in view points.
@@ -715,7 +762,7 @@ struct SemanticMapSpikeView: View {
 
     /// The action cards a compact layout can single out.
     enum CompactCard: String, CaseIterable, Identifiable {
-        case axis, selection, lasso
+        case axis, region, selection, lasso
         var id: String { rawValue }
     }
     /// What was saved, so the card can say so instead of leaving the reader guessing.
@@ -1297,6 +1344,7 @@ struct SemanticMapSpikeView: View {
     private var populatedCards: [CompactCard] {
         var cards: [CompactCard] = []
         if model.slice != nil || model.poles.negative != nil { cards.append(.axis) }
+        if model.selectedRegion != nil { cards.append(.region) }
         if model.selection != nil { cards.append(.selection) }
         if model.lassoResult != nil { cards.append(.lasso) }
         return cards
@@ -1327,6 +1375,7 @@ struct SemanticMapSpikeView: View {
                 .padding(.horizontal, 12)
                 switch resolvedCompactCard {
                 case .axis: sliceCard
+                case .region: regionCard
                 case .selection: selectionCard
                 case .lasso: lassoCard
                 case nil: EmptyView()
@@ -1335,6 +1384,7 @@ struct SemanticMapSpikeView: View {
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 sliceCard
+                regionCard
                 selectionCard
                 lassoCard
             }
@@ -1353,6 +1403,7 @@ struct SemanticMapSpikeView: View {
     private func compactCardName(_ card: CompactCard) -> String {
         switch card {
         case .axis: return String(localized: "semanticMap.card.axis", defaultValue: "Axis")
+        case .region: return String(localized: "semanticMap.card.region", defaultValue: "Region")
         case .selection: return String(localized: "semanticMap.card.selection",
                                        defaultValue: "Selection")
         case .lasso: return String(localized: "semanticMap.card.lasso", defaultValue: "Lasso")
@@ -1363,6 +1414,7 @@ struct SemanticMapSpikeView: View {
     private func compactCardIcon(_ card: CompactCard) -> String {
         switch card {
         case .axis: return "arrow.left.and.right"
+        case .region: return "circle.hexagongrid"
         case .selection: return "hand.point.up.left"
         case .lasso: return "lasso"
         }
@@ -1421,6 +1473,102 @@ struct SemanticMapSpikeView: View {
             .padding(.horizontal, 12)
             .padding(.top, 12)
         }
+    }
+
+    /// A tapped region: how big it is, and when it is (UI review F-29 / M-21).
+    ///
+    /// **This card is what gives `eraCounts` a reader.** The artifact has carried a per-region era
+    /// histogram since the map shipped, stored — in its own words — "so a cluster tooltip can say
+    /// *when* as well as *what*", and until now nothing in the app read it. The region names told
+    /// you what a cluster is about; nothing told you which decades it came from, which is often
+    /// the more interesting half (`shah iran iranian mosadeq` is 1,444 documents from 1900–1944
+    /// and 3,855 from 1945–1990; `nanking shanghai hankow chinese` is overwhelmingly pre-war).
+    ///
+    /// Two rules the rows follow, both of which look like fussiness and are not:
+    ///
+    /// - **Only the eras present are drawn.** Iterating `CoverageEra.allCases` would print a
+    ///   permanently empty "1991–present" on every card in the shipped artifact, and an era row
+    ///   reading zero is a claim about the corpus rather than an absence of data.
+    /// - **A key that is not a `CoverageEra` is kept, not dropped.** The generator emits
+    ///   `"unknown"` for a volume with no parseable coverage year, and `"3"` becomes reachable the
+    ///   moment a post-1991 volume enters the manifest. Dropping either would make the rows stop
+    ///   summing to the headline without saying why.
+    @ViewBuilder
+    private var regionCard: some View {
+        if let region = model.selectedRegion {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label(String(localized: "semanticMap.region.title", defaultValue: "Region"),
+                          systemImage: "circle.hexagongrid")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 12)
+                    Button {
+                        model.clearRegion()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .controlHelp(
+                        String(localized: "semanticMap.region.clear", defaultValue: "Dismiss region"),
+                        detail: String(localized: "semanticMap.region.clear.help",
+                                       defaultValue: "Closes this region's card"),
+                        systemImage: "xmark.circle.fill")
+                }
+                // The region's own words. `verbatim` because these are corpus tokens, not UI copy.
+                Text(verbatim: region.terms.prefix(3).joined(separator: " "))
+                    .font(.callout.weight(.medium))
+                Text(regionCountSummary(region))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(regionEraRows(region), id: \.label) { row in
+                    HStack(spacing: 6) {
+                        Text(verbatim: row.label)
+                            .font(.caption2)
+                        Spacer(minLength: 8)
+                        Text(verbatim: row.count)
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Text(String(localized: "semanticMap.region.eraCaveat",
+                            defaultValue: "Era is the volume's coverage midpoint, not each document's own date."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: 340)
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+        }
+    }
+
+    /// The region's size, with the in-scope number beside it when a scope is on.
+    ///
+    /// The two counts come from different places on purpose: the headline is the artifact's
+    /// whole-corpus `documentCount`, which is what the era rows below add up to, while the
+    /// in-scope figure is read from `scope.regionCounts`. Substituting one for the other — which
+    /// `labelledClusters` does for the label layer, correctly, for its own purpose — would leave
+    /// the rows silently failing to sum to the number above them.
+    private func regionCountSummary(_ region: SemanticMapArtifacts.Cluster) -> String {
+        let total = String(format: String(localized: "semanticMap.region.count %lld",
+                                          defaultValue: "%1$lld documents in the series"),
+                           Int64(region.documentCount))
+        guard let inScope = model.scope?.regionCounts[UInt16(clamping: region.id)] else {
+            return total
+        }
+        return total + " · " + String(format: String(
+            localized: "semanticMap.region.inScope %lld",
+            defaultValue: "%1$lld in scope"), Int64(inScope))
+    }
+
+    /// The era rows, in era order, keeping any key the app does not recognise.
+    ///
+    /// Delegates to `SemanticMapRegionRows` so the rule is testable — see that type for why.
+    private func regionEraRows(_ region: SemanticMapArtifacts.Cluster)
+        -> [SemanticMapRegionRows.Row] {
+        SemanticMapRegionRows.eraRows(region)
     }
 
     /// What the reader tapped, and what they can do about it.
