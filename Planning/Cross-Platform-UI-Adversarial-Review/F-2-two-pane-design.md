@@ -279,8 +279,35 @@ probe, pushes included — it is a better answer than §7.1 on every axis: it is
 two-pane, it supplies Back and titles and transitions for free, and it deletes rather than adds
 code. **It should be tried first**, and it costs one probe run.
 
-The order for the next session is therefore: §7.6's split probe, then §7.1 only if the split still
-misbehaves.
+### 7.7 The split probe has been run. The split still misbehaves — §7.1 it is.
+
+Run 2026-08-15 on a freshly erased iPad Pro 13-inch (1032×1376), with `splitLayout` restored
+behind a launch argument and the §7.5 probe drilling from the corpus root.
+
+| representation | after opening a subseries |
+|---|---|
+| floating top tab bar | `cells=32 list=17 detail=15 widestCell=662 navBars=2` — **two panes, correct** |
+| sidebar | `cells=0 list=0 detail=0 navBars=1 staticTexts=5` — **the content is gone** |
+
+**In the sidebar representation the nested `NavigationSplitView` empties itself the moment a level
+is opened.** Not a collapse to one column — no cells at all, and five static texts where there
+were sixty-five. That is #238's family of defect surviving into iPadOS 26, in the representation
+#238 did not name.
+
+So the answer to §7.6 is **no**: the platform's own two-pane is still not usable inside a
+`.sidebarAdaptable` tab, and `splitLayout` should stay unreferenced. **§7.1 is the design to
+build.**
+
+**One honest limit on the passing half.** The floating representation's three drill steps returned
+*byte-identical* numbers (`32/17/15/662` each time) with an empty `firstDetail` label, which means
+the level-2 and level-3 taps did not advance — they hit a cell that did nothing. So the floating
+result is verified for **one** push, not three. That does not change the verdict (the sidebar half
+fails outright), but a future probe of §7.1 must pick its deeper targets by label rather than by
+"first cell past the divider", or it will report the same false depth.
+
+The two-pane in the floating representation is nonetheless real and worth recording: a 662pt
+detail beside a 340-ish list in a 1032pt window, with **two** navigation bars — the split composes
+there.
 
 ---
 
