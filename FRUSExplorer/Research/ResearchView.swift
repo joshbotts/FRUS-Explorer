@@ -169,7 +169,13 @@ struct ResearchView: View {
     #if os(macOS)
     @State private var selectedItem: ResearchSidebarItem? = .allNotes
     #else
+    // Deliberately `nil` on iOS — see the comment above, and
+    // `UIObstructionTests.assertResearchLaunchedAtCategoryRoot`, which is its gate. The F-2
+    // two-pane does NOT change this: the Research tab still opens at the category root, with the
+    // detail pane showing its empty state until the reader chooses.
     @State private var selectedItem: ResearchSidebarItem?
+    /// This container's measured width, driving the F-2 two-pane gate.
+    @State private var containerWidth: CGFloat = 0
     #endif
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
     @State private var documentHeaders: [String: String] = [:]
@@ -230,8 +236,51 @@ struct ResearchView: View {
     /// for `.sidebarAdaptable`: the category list is the stack root and the document list is pushed on
     /// selection. The path projects `selectedItem`, so a push sets it (header loading keys on it) and a
     /// pop clears it. Mirrors BrowserView's Fix B.
+    // MARK: - Two-pane (F-2)
+
+    #if os(iOS)
+    /// Narrowest content area that earns a second pane. Matches `BrowserView`'s constant and its
+    /// reasoning: the gate reads MEASURED width because the `.sidebarAdaptable` tab sidebar takes
+    /// a column without changing the horizontal size class.
+    private static let twoPaneMinimumWidth: CGFloat = 820
+
+    /// Width of the persistent category list.
+    private static let listPaneWidth: CGFloat = 320
+
+    /// Whether this container is wide enough for two panes.
+    private var isTwoPane: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && containerWidth >= Self.twoPaneMinimumWidth
+    }
+
+    /// What the detail pane shows before a category is chosen — the same copy the macOS split has
+    /// always used, so the two hosts say the same thing.
+    private var researchDetailPlaceholder: some View {
+        ContentUnavailableView(
+            String(localized: "research.empty.noSelection", defaultValue: "Select a category"),
+            systemImage: "note.text",
+            description: Text(String(localized: "research.empty.noSelection.detail",
+                                     defaultValue: "Choose a tag or All Annotated Documents from the sidebar."))
+        )
+    }
+    #endif
+
     @ViewBuilder
     private var navigationContainer: some View {
+        navigationContainerBody
+        #if os(iOS)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onChange(of: proxy.size.width, initial: true) { _, width in
+                            containerWidth = width
+                        }
+                }
+            }
+        #endif
+    }
+
+    @ViewBuilder
+    private var navigationContainerBody: some View {
         #if os(macOS)
         NavigationSplitView {
             sidebar
@@ -250,11 +299,39 @@ struct ResearchView: View {
         }
         .frame(minWidth: 640, minHeight: 480)
         #else
-        NavigationStack(path: researchNavigationPath) {
-            sidebar
-                .navigationDestination(for: ResearchSidebarItem.self) { item in
-                    destination(for: item)
+        // **F-2 on Research.** Same shape as Browse's (`BrowserView.twoPaneLayout`): one outer
+        // NavigationStack for the chrome, an HStack of list + a detail that RENDERS the selection
+        // rather than pushing it. Two other shapes were refuted by measurement first — a nested
+        // stack collapses on the first push, and a nested `NavigationSplitView` empties itself in
+        // the sidebar representation (`F-2-two-pane-design.md` §6a, §7.7).
+        //
+        // Research is the easier half despite `sidebarRow` using `NavigationLink`, because
+        // `selectedItem` is ALREADY the single source of truth: `researchNavigationPath` is a
+        // one-deep projection of it (#272), and the macOS branch above already renders
+        // `destination(for:)` from it directly. The two-pane is that branch without the split.
+        if isTwoPane {
+            NavigationStack {
+                HStack(spacing: 0) {
+                    sidebar
+                        .frame(width: Self.listPaneWidth)
+                    Divider()
+                    Group {
+                        if let item = selectedItem {
+                            destination(for: item)
+                        } else {
+                            researchDetailPlaceholder
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            }
+        } else {
+            NavigationStack(path: researchNavigationPath) {
+                sidebar
+                    .navigationDestination(for: ResearchSidebarItem.self) { item in
+                        destination(for: item)
+                    }
+            }
         }
         #endif
     }
@@ -278,7 +355,20 @@ struct ResearchView: View {
     private func sidebarRow<Content: View>(_ item: ResearchSidebarItem,
                                            @ViewBuilder content: () -> Content) -> some View {
         #if os(iOS)
-        NavigationLink(value: item) { content() }
+        if isTwoPane {
+            // **A `NavigationLink(value:)` outside an enclosing stack is INERT**, which is the one
+            // way Research is harder than Browse — Browse's rows were already Buttons. Converting
+            // re-arms #312 (a row whose tap target is only its glyphs) unless the greedy frame and
+            // `contentShape` come with it, so they do: that defect cost three investigations.
+            Button { selectedItem = item } label: {
+                content()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        } else {
+            NavigationLink(value: item) { content() }
+        }
         #else
         content().tag(item)
         #endif
