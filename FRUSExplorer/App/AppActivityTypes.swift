@@ -46,10 +46,19 @@ enum AppActivityTypes {
 /// `WordCloudScope` or `ArchivalScopeRequest` is, because none of them has ever needed to leave the
 /// device.
 ///
+/// `Hashable` so the same value can key a `WindowGroup(for:)` (CW-9a). That conformance is what
+/// made the iPad map window nearly free: `openWindow(value:)` and `AppState.openAuxWindow` both
+/// require `Codable & Hashable`, and this type was already `Codable` for Handoff — so the window
+/// reuses the identity Handoff had already been given rather than inventing a second one. The
+/// equality semantics are the useful ones here too: `openWindow(value:)` focuses an existing
+/// window for an equal request and opens a new one otherwise, so two different scopes get two
+/// windows and re-opening the same scope raises the one already showing it.
+///
 /// Version history:
 ///   1.0 — CW-7c: initial implementation (scope + lens; see `AppActivityTypes.semanticMap` for
 ///         why the slice poles are excluded)
-struct SemanticMapRequest: Codable, Equatable, Sendable {
+///   1.1 — CW-9a: `Hashable`, so it can key the iPad/macOS map window scene
+struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
 
     /// The volumes the map is scoped to, or `nil` for the whole series.
     var volumeIDs: [String]?
@@ -71,6 +80,21 @@ struct SemanticMapRequest: Codable, Equatable, Sendable {
         self.scopeLabel = scopeLabel
         self.lensRawValue = lensRawValue
     }
+
+    /// The unscoped whole-series map at the default lens — what the Browse menu's Semantic
+    /// Analytics item means (CW-9a).
+    ///
+    /// A named value rather than a defaulted `init`, because this is the request that keys the
+    /// window: `openWindow(value:)` focuses an existing window for an **equal** request, so every
+    /// caller meaning "the whole corpus" has to produce the *same* value or the app opens a
+    /// second identical map. Spelling it once is what guarantees that.
+    ///
+    /// `lensRawValue` tracks `SemanticMapSpikeView`'s own default (`.cluster`); the view falls
+    /// back to `.cluster` anyway when handed a lens its build does not have, so a drift here
+    /// degrades to the same map rather than to a broken one.
+    static let wholeCorpus = SemanticMapRequest(volumeIDs: nil,
+                                                scopeLabel: nil,
+                                                lensRawValue: SemanticMapLens.cluster.rawValue)
 
     // MARK: - userInfo
 

@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #903. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #904. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -30,10 +30,14 @@ app, not against the review's prose.
 | **F-3** (HIGH, iPad) | "five rows above ~900 pt of empty column" | **Holds structurally, two details wrong.** `TabSection` has never existed in the app target on any branch (`git log --all -S` → zero commits) and `.sidebarAdaptable` is live and ungated. But Collections is already the fourth sidebar row, and the void is ~510 pt — "~900 pt" exceeds the entire column in the figure the finding cites. Implementation gate: `TabSection` lives in a `@TabContentBuilder`, so the extraction must conform to **`TabContent`, not `View`** — no such type exists in the repo yet. |
 | **F-5** (LOW, iPad) | dock stretches edge to edge; welcome copy, scope picker and buttons all affected | **Premise exact — unusually, both line citations are still accurate — but only one of the three symptoms was real.** Measured on the iPad simulator: the scope picker filled **1294 of 1294 pt**, while the welcome body was already capped at 340 pt and the primary button is 128 pt and centred. Fixed in #902. |
 | **F-17** (HIGH, iPad) | "conveys exactly one level"; iPad gets less context than iPhone across five levels | **Suppression real and unfixed; damage overstated.** iPhone has no breadcrumb at the document level either (Session 121) and none at the corpus root, so the delta is three levels, not five — and of those, the volume screen's own title already names its series and period. The level that genuinely loses its ancestor is the **compilation**. Fixed there in #902. |
+| **M-2** (HIGH, macOS) | per-document tools are singletons that "cross-wire" between document windows | **Singletons confirmed; the cross-wiring is largely FIXED.** Both doc comments the finding quotes as evidence are records of *shipped repairs* — one literally says "used to". Source Explorer renders a `noteSnapshot`, so a background `loadDocument` cannot reach an open explorer; the graph binds its global live, but every writer is a deliberate user open. So the live defect is **scene COUNT** (you cannot compare A's graph against B's), not silent cross-wiring, and the second reader adds that the **cold Window-menu path** is still exposed. Two corrections to scope: the **word cloud does not belong** in this finding (it is an app-level analysis window with its own scope picker, not a per-document tool), and the finding *under*-states its case — `SourceExplorerRequest` and `GraphWindowRequest` already exist and already ship value-based **on iPad** (#317). Cost: `openWindow.fronting(id:)` is id-only with ~20 call sites and a build-failing test, and a `WindowGroup(for:)` loses its automatic macOS Window-menu entry. |
+| **M-3** (MEDIUM, macOS) | one Search window; result sets cannot be compared | **Singleton confirmed and unfixed, but "S" effort is refuted** — six shared-state couplings sit between here and a second window, plus an unpriced Window-menu regression and two test gates. And it needs an **owner decision first**: value-based windows reuse by request *equality*, but a Search window opens empty and is typed into, so what keys it is the actual design question. |
+| **F-11 / F-13** (iPad) | five analytics sheets; the Search→Analytics hand-off teleports across tabs | **Mechanism exactly right, inventory wrong twice.** There are **six** analytics sheets plus the word cloud, not five, and **Archival Analytics is not presented by `BrowserView` at all** (#833 routes it through a hand-off). F-13 reproduces line for line, and the second reader found it is **three routes, not one**. |
+| **F-25** (HIGH, iPad) | the semantic map is a sheet; the reader is buried inside it | **HOLDS, and is worse than the review or the first reader said — measured on a booted iPad Pro 13-inch.** The sheet reports **compact** width, so the 13-inch iPad ran the map's *phone* layout, and with the header at its default expanded state the Metal canvas was **~582×201pt — about 8% of the screen, for 314,483 documents**. The pushed document's Research rail then opened as a **third stacked sheet** over the map, because SwiftUI auto-presents `.inspector` as a sheet at compact width. Two review clauses are wrong: only **one** of the six sheets declares `.presentationSizing(.page)`, and the pushed document **does** offer Open in New Window. Fixed in #904. |
 | **X-8** | Committed screenshots are stale | **Confirmed and load-bearing** — it is what made P-1 look real. Treat any screenshot-based finding as unverified until re-driven. |
 
 **Standing rule from this program:** verify a finding against the current build before implementing
-it. **Ten of the items above** would have produced wrong or wasted work if taken at face value — and
+it. **Fourteen of the items above** would have produced wrong or wasted work if taken at face value — and
 F-2 is the sharpest case yet, because there the finding is *true* and the obvious remedy is what
 breaks.
 
@@ -81,6 +85,7 @@ that is a discipline in the commit, not a script.
 | by-catch | [#901](https://github.com/joshbotts/FRUS-Explorer/pull/901) | Three missing sheet exits; Chronology range bar at accessibility sizes |
 | CW-10a | [#902](https://github.com/joshbotts/FRUS-Explorer/pull/902) | Onboarding dock cap (F-5); compilation parent line (F-17) |
 | CW-10b | [#903](https://github.com/joshbotts/FRUS-Explorer/pull/903) | Dead search-scope chip removed (M-10); Mac toolbar centre names its location (M-8) |
+| CW-9a | [#904](https://github.com/joshbotts/FRUS-Explorer/pull/904) | The semantic map gets an iPad window (F-25) — the first analytics window scene on iOS |
 
 ---
 
@@ -88,9 +93,26 @@ that is a discipline in the commit, not a script.
 
 Wave 2 is complete. What remains, in the review's own order:
 
-**CW-9 — the window model** (X-7). De-singleton the Mac tools, multi-Search, and analytics
-`WindowGroup`s on iPad with Semantic first. The largest remaining item and mostly macOS, which
-these sessions cannot drive; it wants the owner's hand on verification.
+**CW-9 — the window model** (X-7). Verified in full (§1); **F-25 shipped in #904**, which is the
+"analytics `WindowGroup`s on iPad, Semantic first" half of the item and proves the pattern on the
+sharpest surface. What remains:
+
+- **F-11's other five analytics surfaces.** The pattern is now demonstrated, but each needs a
+  `Codable & Hashable` request type and only some have a value-shaped entry point today
+  (`AnalyticsView` and `ChronologyView` take `initialParameters`; the others do not). Mechanical
+  but not free, and worth doing after #904 has been used for a while.
+- **M-2, rescoped by measurement.** The word cloud is **out** (app-level, not per-document). The
+  real work is Source Explorer + graph, whose request types already exist from #317's iPad port —
+  so the cost is not the values but `fronting(id:)`, which is id-only across ~20 sites and guarded
+  by a build-failing test, plus the lost macOS Window-menu entry.
+- **M-3 needs an owner decision before code**: what keys a Search window that opens empty and is
+  typed into? Value-based windows reuse by request equality, and an empty request is the same
+  empty request.
+- **A consequence of #904 worth watching**: the map window is a real scene, so iPadOS restores it,
+  and the app can relaunch showing the map with no tab bar. The two sibling value-based scenes have
+  always behaved this way, so it is the pattern's behaviour rather than new — but the map is the
+  first one reachable from a top-level menu, which makes it far more likely to be the restored
+  scene. Scenario 10 handles both entry states rather than assuming a cold start.
 
 **CW-10 — chrome and width.** Verified in full (§1); **F-5 and F-17 shipped in #902**. What remains,
 with the constraint that makes each one bigger than it looks:
@@ -128,6 +150,18 @@ standing convention, plus the manual caption corrections that depend on them.
   ships a permanently half-drawn axis card.
 - ~~Two by-catch items found while driving~~ — **shipped in #901**, and the count was wrong: it was
   *three* missing Done buttons, not two. See §5.
+
+## 3a. Owner decisions taken 2026-08-15
+
+Recorded here because each one closes a question a later session would otherwise re-open, and two
+of them overrule the recommendation I gave.
+
+| Question | Decision | What it means |
+|---|---|---|
+| **F-2** — iPad width discipline, given that capping a root `List` breaks its native style | **Two-pane at regular width** | Browse and Research gain a list + detail layout following `CollectionEditorView.iPadCollectionLayout` (`:734`, reached via `if sizeClass == .regular` at `:518`). Must honour the #238 rule: a plain `HStack` of two panes, **never** a nested `NavigationSplitView`. This is the largest of the four options and was chosen over my recommendation of capping row content — so the row-content cap is NOT a fallback to drift into; if the two-pane shape proves wrong, that is a new decision. |
+| **F-3** — what populates the iPad tab sidebar | **Saved searches + projects** | `SavedSearch` (`Models/SavedSearch.swift`) and `Project` (`Models/Project.swift`). Collections is deliberately excluded: it is already the fourth sidebar row, and listing it inside the sidebar would duplicate a tab. Recent volumes are excluded too. The extraction must conform to **`TabContent`**, not `View`. |
+| **P-8's real defect** — Archival Analytics' mode picker truncating to `Col… Net… Flo… You…` | **Menu at compact width** | Matches the other dashboards' compact behaviour. Accepts the stated cost: one extra tap, and the loss of the at-a-glance sense that four views exist. |
+| **What comes next** | **CW-9, the window model** | Ahead of implementing F-2, the Mac chrome items (M-4/M-9), and F-3. |
 
 ## 4. By-catch: what driving the app found that the review did not (#901)
 
