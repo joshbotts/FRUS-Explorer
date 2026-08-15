@@ -637,6 +637,14 @@ struct FRUSExplorerApp: App {
         // Same value-based pattern: `RelatedDocumentsRequest` fully describes the ranked
         // find-related query, so the window restores by construction.
         relatedDocumentsScene
+
+        // MARK: - Semantic Map Window (UI review F-25 / CW-9a)
+        //
+        // The FIRST analytics surface to get a window on iOS — the scene table above has
+        // listed five value-based groups and no analytics one since it was written. See
+        // `semanticMapScene` for why the repair is regular width rather than modality, and
+        // why this surface came first (its request type already existed for Handoff).
+        semanticMapScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -1160,6 +1168,55 @@ struct FRUSExplorerApp: App {
             .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 600)
+    }
+
+    /// Value-based `WindowGroup(for:)` for the semantic map (UI review F-25 / W-12).
+    ///
+    /// ## The repair is REGULAR WIDTH, not "not a sheet"
+    /// Stating this because a reviewer will otherwise read the change as a modality preference.
+    /// Measured on a booted iPad Pro 13-inch before this scene existed: the map's sheet reported
+    /// **compact** horizontal size class, so a 1032×1376pt tablet ran the map's *phone* layout —
+    /// folded display options, one action card at a time — inside a ~582×653pt form sheet. With
+    /// the explanatory header at its default expanded state the Metal canvas was **~582×201pt,
+    /// about 8% of the screen, for 314,483 documents**. A window is regular width, so
+    /// `SemanticMapSpikeView.isCompactWidth` flips and the iPad stops getting the phone stack for
+    /// free. That, not the absence of a dimming backdrop, is what this buys.
+    ///
+    /// ## Why this one first
+    /// It is the sixth analytics sheet and the only one that pushes a **reader** into itself, so
+    /// the modality costs more here than anywhere else: the depth reached was Browse tab → map
+    /// sheet → pushed document → and then the document's Research rail as a *third* stacked sheet,
+    /// because SwiftUI auto-presents `.inspector` as a sheet at compact width.
+    ///
+    /// It was also the cheapest: `SemanticMapRequest` already existed for Handoff (#897) and was
+    /// one synthesised `Hashable` from being a window value, and `SemanticAnalyticsView` already
+    /// accepted it as its initial-state channel. The other five analytics surfaces have no such
+    /// value type yet, which is why W-9 remains open.
+    ///
+    /// ## iOS ONLY, unlike its two sibling scenes — and that is deliberate
+    /// `archivalNeighborsScene` and `relatedDocumentsScene` are referenced from both platform
+    /// regions because neither platform had them. macOS has had a semantic-map window since
+    /// CW-7c: the singleton `Window("Semantic Analytics", id: "frus.semanticAnalytics")` at
+    /// `:769`. Converting *that* to this value-based group is review finding **M-2**, not this
+    /// one, and it is not free — `openWindow.fronting(id:)` is id-only with no value-based
+    /// analogue, `MacWindowFrontingTests` fails the build on a bare `openWindow(id:)`, and a
+    /// `WindowGroup(for:)` loses its automatic macOS Window-menu entry (the cost #363 had to pay
+    /// with new Help/Settings routes). Adding a second scene for the same surface here would give
+    /// macOS two map windows with different behaviour, which is worse than the one it has.
+    private var semanticMapScene: some Scene {
+        WindowGroup(for: SemanticMapRequest.self) { $request in
+            // Unlike the two sibling scenes, a nil request is NOT an empty state here: the map's
+            // whole-corpus view is its normal, useful default, and it is what the Browse menu
+            // opens. A `ContentUnavailableView` would turn the commonest entry point into a dead
+            // end.
+            SemanticAnalyticsView(appState: appState, continued: request)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        // Wider and taller than the two sibling scenes on purpose: this one draws a 314,483-point
+        // projection, where they show a list.
+        .defaultSize(width: 900, height: 720)
     }
 
     /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.

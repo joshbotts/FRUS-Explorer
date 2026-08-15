@@ -129,6 +129,18 @@ standing convention, plus the manual caption corrections that depend on them.
 - ~~Two by-catch items found while driving~~ — **shipped in #901**, and the count was wrong: it was
   *three* missing Done buttons, not two. See §5.
 
+## 3a. Owner decisions taken 2026-08-15
+
+Recorded here because each one closes a question a later session would otherwise re-open, and two
+of them overrule the recommendation I gave.
+
+| Question | Decision | What it means |
+|---|---|---|
+| **F-2** — iPad width discipline, given that capping a root `List` breaks its native style | **Two-pane at regular width** | Browse and Research gain a list + detail layout following `CollectionEditorView.iPadCollectionLayout` (`:734`, reached via `if sizeClass == .regular` at `:518`). Must honour the #238 rule: a plain `HStack` of two panes, **never** a nested `NavigationSplitView`. This is the largest of the four options and was chosen over my recommendation of capping row content — so the row-content cap is NOT a fallback to drift into; if the two-pane shape proves wrong, that is a new decision. |
+| **F-3** — what populates the iPad tab sidebar | **Saved searches + projects** | `SavedSearch` (`Models/SavedSearch.swift`) and `Project` (`Models/Project.swift`). Collections is deliberately excluded: it is already the fourth sidebar row, and listing it inside the sidebar would duplicate a tab. Recent volumes are excluded too. The extraction must conform to **`TabContent`**, not `View`. |
+| **P-8's real defect** — Archival Analytics' mode picker truncating to `Col… Net… Flo… You…` | **Menu at compact width** | Matches the other dashboards' compact behaviour. Accepts the stated cost: one extra tap, and the loss of the at-a-glance sense that four views exist. |
+| **What comes next** | **CW-9, the window model** | Ahead of implementing F-2, the Mac chrome items (M-4/M-9), and F-3. |
+
 ## 4. By-catch: what driving the app found that the review did not (#901)
 
 > **Naming correction.** PR #901 called itself "CW-12". The review's own master worklist already

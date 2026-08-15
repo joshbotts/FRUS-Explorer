@@ -134,6 +134,10 @@ struct BrowserView: View {
     // pendingBrowseDocument/filterDownloadedOnly below.
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    /// Gates the semantic map onto its own window where one is available (F-25 / CW-9a).
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Opens the value-based `semanticMapScene`.
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         @Bindable var appState = appState
@@ -351,7 +355,7 @@ struct BrowserView: View {
                           systemImage: "archivebox")
                 }
                 Button {
-                    showSemanticAnalytics = true
+                    presentSemanticMap(nil)
                 } label: {
                     Label(String(localized: "browse.semanticAnalytics.a11y",
                                  defaultValue: "Semantic Analytics"),
@@ -716,6 +720,29 @@ struct BrowserView: View {
         guard let sceneID,
               let request = appState.consumeHandoff(\.pendingSemanticMap, for: sceneID,
                                                     orAnyWindow: true) else { return }
+        presentSemanticMap(request)
+    }
+
+    /// Opens the semantic map in a window where one is available, and in the sheet where it is
+    /// not (UI review F-25 / CW-9a).
+    ///
+    /// **The window is not a nicety, it is the layout.** Measured on an iPad Pro 13-inch, the
+    /// sheet reports *compact* horizontal size class, so a 1032×1376pt tablet runs the map's
+    /// phone layout — folded display options, one action card at a time — and with the
+    /// explanatory header at its default expanded state the Metal canvas is ~582×201pt, about 8%
+    /// of the screen, for 314,483 documents. A window is regular width, so
+    /// `SemanticMapSpikeView.isCompactWidth` flips and the tablet layout comes back.
+    ///
+    /// The sheet stays for iPhone and for iPads without multi-window, following the gate shape
+    /// `DocumentView.openCrossReferenceGraph` uses. `supportsMultipleWindows` is plist-derived
+    /// and the repo already records doubt about whether it reflects Stage Manager on iPad
+    /// (F-18, still unprobed) — so the fallback is a real path, not a formality.
+    private func presentSemanticMap(_ request: SemanticMapRequest?) {
+        if supportsMultipleWindows {
+            // A nil request is the whole-corpus map, which is this menu item's normal meaning.
+            appState.openAuxWindow(request ?? .wholeCorpus, from: sceneID, using: openWindow)
+            return
+        }
         continuedSemanticMap = request
         showSemanticAnalytics = true
     }

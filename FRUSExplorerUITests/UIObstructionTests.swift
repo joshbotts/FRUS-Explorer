@@ -1254,4 +1254,66 @@ final class UIObstructionTests: XCTestCase {
                 + "\(trailingGap)pt) — a leading-aligned cap leaves the slab hugging one edge"
         )
     }
+
+    // MARK: - Scenario 10 · the semantic map gets a REGULAR-width host on iPad (CW-9a / F-25)
+
+    /// On an iPad the semantic map must not run its phone layout.
+    ///
+    /// ## What this caught, measured on an iPad Pro 13-inch
+    /// The map was a `.sheet`, and an iOS form sheet reports **compact** horizontal size class. So
+    /// a 1032×1376pt tablet ran the map's phone layout inside a ~582×653pt sheet: display options
+    /// folded behind a disclosure, one action card at a time, and — with the explanatory header at
+    /// its default expanded state — a Metal canvas of roughly **582×201pt, about 8% of the screen,
+    /// for 314,483 documents**.
+    ///
+    /// So the repair is not "a window instead of a modal", it is **regular width**. That is worth
+    /// stating precisely because the two are easy to conflate, and only one of them is testable:
+    /// modality is a presentation style, whereas size class has an observable consequence.
+    ///
+    /// ## `Display options` is the probe, and it is a good one
+    /// `SemanticMapSpikeView` emits that `DisclosureGroup` inside `if isCompactWidth` and nowhere
+    /// else — the single occurrence in the repo. Its presence *is* the compact layout, so
+    /// asserting its absence asserts the thing that actually changed. Asserting on the canvas's
+    /// pixel size instead would measure a Metal view through screenshots, which is what the
+    /// original measurement had to do and is why it carried ±10pt error bars.
+    func testSemanticMapIsNotCompactOniPad() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: on iPhone the compact layout is correct, so this asserts nothing there"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        selectBrowseSection()
+
+        let analysisMenu = app.buttons["Analysis Tools"]
+        XCTAssertTrue(analysisMenu.waitForExistence(timeout: 10),
+                      "The Browse 'Analysis Tools' menu was not found")
+        analysisMenu.tap()
+
+        let semantic = app.buttons["Semantic Analytics"].firstMatch
+        XCTAssertTrue(semantic.waitForExistence(timeout: 5),
+                      "'Semantic Analytics' was not in the Analysis Tools menu")
+        semantic.tap()
+
+        // The map's own caveat strip is the surface's landmark on both hosts.
+        let caveat = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Experimental'")).firstMatch
+        XCTAssertTrue(caveat.waitForExistence(timeout: 20),
+                      "The semantic map never appeared after choosing Semantic Analytics")
+
+        // The assertion. `Display options` exists only under `isCompactWidth`.
+        let compactOnlyControl = app.buttons["Display options"].firstMatch
+        let disclosureAsAny = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "Display options")).firstMatch
+        let isCompact = compactOnlyControl.waitForExistence(timeout: 3) || disclosureAsAny.exists
+        XCTAssertFalse(
+            isCompact,
+            "The semantic map is running its COMPACT (phone) layout on an iPad — 'Display "
+                + "options' is emitted only inside `if isCompactWidth`. A form sheet reports "
+                + "compact width, which is the F-25 defect; a window is regular width (CW-9a)."
+        )
+    }
 }
