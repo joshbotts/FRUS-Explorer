@@ -216,6 +216,16 @@ struct MainTabView: View {
         // forward-looking. (BigPicture-iPadMacParity Phase 1 + #238 correction — note that
         // doc carries its own stale copy of this ledger; this comment is authoritative.)
         .tabViewStyle(.sidebarAdaptable)
+        // UI review F-3: the sidebar was five rows above an empty column (~510 pt measured, not
+        // the review's ~900). The researcher's own objects now fill it. Gated on the pad idiom
+        // because iPhone never shows the sidebar representation and the footer's two `@Query`s
+        // would otherwise run there for nothing — see `SidebarShortcuts` for why this is a footer
+        // rather than the `TabSection`s the review names.
+        .tabViewSidebarFooter {
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                SidebarShortcuts()
+            }
+        }
         // #338 — publish this window's scene identity to every tab (and the sheets they present) so a
         // hand-off producer can address its `Handoff` to this scene, and only this scene consumes it
         // (the foundation for fixing the pendingX fan-out across open iPad windows).
