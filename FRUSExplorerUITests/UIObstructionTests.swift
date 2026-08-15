@@ -1286,23 +1286,33 @@ final class UIObstructionTests: XCTestCase {
         throw XCTSkip("UIKit-only test")
         #endif
 
-        selectBrowseSection()
-
-        let analysisMenu = app.buttons["Analysis Tools"]
-        XCTAssertTrue(analysisMenu.waitForExistence(timeout: 10),
-                      "The Browse 'Analysis Tools' menu was not found")
-        analysisMenu.tap()
-
-        let semantic = app.buttons["Semantic Analytics"].firstMatch
-        XCTAssertTrue(semantic.waitForExistence(timeout: 5),
-                      "'Semantic Analytics' was not in the Analysis Tools menu")
-        semantic.tap()
-
         // The map's own caveat strip is the surface's landmark on both hosts.
         let caveat = app.staticTexts.containing(
             NSPredicate(format: "label CONTAINS[c] 'Experimental'")).firstMatch
-        XCTAssertTrue(caveat.waitForExistence(timeout: 20),
-                      "The semantic map never appeared after choosing Semantic Analytics")
+
+        // **The map window is a real scene, so iPadOS may RESTORE it as the frontmost one** and
+        // the app can come up showing the map with no tab bar at all. That is a property of the
+        // value-based window this scenario exists to test — the two sibling scenes
+        // (`archivalNeighborsScene`, `relatedDocumentsScene`) have always behaved the same way —
+        // so the scenario handles both entry states rather than assuming a cold start. Navigating
+        // unconditionally is what made this test fail spuriously on its second run.
+        if !caveat.waitForExistence(timeout: 3) {
+            selectBrowseSection()
+
+            let analysisMenu = app.buttons["Analysis Tools"]
+            XCTAssertTrue(analysisMenu.waitForExistence(timeout: 10),
+                          "The Browse 'Analysis Tools' menu was not found, and the app did not "
+                              + "restore into the map window either")
+            analysisMenu.tap()
+
+            let semantic = app.buttons["Semantic Analytics"].firstMatch
+            XCTAssertTrue(semantic.waitForExistence(timeout: 5),
+                          "'Semantic Analytics' was not in the Analysis Tools menu")
+            semantic.tap()
+
+            XCTAssertTrue(caveat.waitForExistence(timeout: 20),
+                          "The semantic map never appeared after choosing Semantic Analytics")
+        }
 
         // The assertion. `Display options` exists only under `isCompactWidth`.
         let compactOnlyControl = app.buttons["Display options"].firstMatch
