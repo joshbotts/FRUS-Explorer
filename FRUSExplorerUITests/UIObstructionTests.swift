@@ -1388,4 +1388,59 @@ final class UIObstructionTests: XCTestCase {
                 + "labels truncate to 'Col… Net… Flo… You…', naming none of the four views (P-8)."
         )
     }
+
+    // MARK: - Scenario 12 · the iPad sidebar carries the researcher's own objects (F-3)
+
+    /// The `.sidebarAdaptable` sidebar must not be five rows above an empty column.
+    ///
+    /// ## What this caught
+    /// `MainTabView` declared five flat `Tab`s and nothing else — `TabSection` had never existed
+    /// in the app target on any branch — so the expanded sidebar was five rows above roughly
+    /// **510 pt** of nothing, while the researcher's own objects (saved searches, projects) lived
+    /// behind toolbars and tabs.
+    ///
+    /// ## Why the assertion is on a PROJECT and not a saved search
+    /// Both are in the footer, but only one can be created from the UI in a few taps: the suite
+    /// already owns `ensureActiveProjectWithResearchQuestion()`, whereas saving a search needs an
+    /// indexed corpus and a query first. Asserting on the reachable half keeps this scenario
+    /// honest about what it verifies — the footer renders, is populated from SwiftData, and
+    /// appears in the sidebar representation — rather than pretending to cover both lists.
+    ///
+    /// ## iPad-only and sidebar-only
+    /// The footer belongs to the sidebar representation, which iPhone never shows. Scenario 4's
+    /// toggle helper is reused rather than duplicated, and `tearDown` restores the representation
+    /// so this does not leak into later runs — the same courtesy scenario 10 owes its window.
+    func testSidebarCarriesResearcherObjectsOniPad() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: iPhone never shows the sidebar representation this footer belongs to"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        // A project to find. This also proves the footer reads live SwiftData rather than a
+        // snapshot taken at launch.
+        try ensureActiveProjectWithResearchQuestion()
+
+        guard let toggle = sidebarToggleButton(timeout: 8) else {
+            throw XCTSkip("No sidebar toggle on this iPad representation — scenario 4 documents "
+                          + "that the control is absent in some states, and without the sidebar "
+                          + "there is no footer to assert on")
+        }
+        toggle.tap()
+        didToggleSidebar = true
+
+        // Matched by IDENTIFIER, not by label. "Projects" also names a row in Settings, and
+        // `ensureActiveProjectWithResearchQuestion` above navigates through exactly that row — so
+        // a label match passes with this entire footer deleted. The first version of this
+        // scenario did precisely that and survived its own mutation test.
+        let projectsHeader = app.descendants(matching: .any)["SidebarShortcuts.folder"]
+        XCTAssertTrue(
+            projectsHeader.waitForExistence(timeout: 10),
+            "The iPad sidebar shows no Projects group — the sidebar footer is missing, so the "
+                + "column below the five tabs is still empty (F-3)."
+        )
+    }
 }

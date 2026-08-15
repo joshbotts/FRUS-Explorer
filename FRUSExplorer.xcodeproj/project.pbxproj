@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		008F58A3E3F01F014E1BBB2C /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF60752821D1C24BB478D600 /* DownloadManager.swift */; };
 		00C0C596338F7F9609688A73 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373770EEFB83CBEE8238D8D2 /* SubseriesView.swift */; };
+		016AAA4CDEB701A5FD8D2971 /* SidebarShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B113FA945A845DD250BF0FA /* SidebarShortcuts.swift */; };
 		01878C1C29A1E81973C2938F /* CloudVectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62243B81DB4A661655C1821C /* CloudVectors.swift */; };
 		01D0F0B37B11E39760509373 /* BatchRunReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = B687777681B0B3DDDC53498E /* BatchRunReadiness.swift */; };
 		0229BCA50C87015B5807CFF9 /* OrphanedTagRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CD0F18E6B410DD30B5D9908 /* OrphanedTagRepair.swift */; };
@@ -629,6 +630,7 @@
 		8DAA15E20A69406BC0D210E9 /* WorkingCorporaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB131DD1D624D1A63440B4F /* WorkingCorporaView.swift */; };
 		8E1222FE6CAE1ED935C80D29 /* QueryInspectorControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB52A4507ED2B11D1487971 /* QueryInspectorControllerTests.swift */; };
 		8E5F1D26B3C64E5D15DA6269 /* ArchivalNeighborsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2146D6E173015245F0474DAD /* ArchivalNeighborsSheet.swift */; };
+		8E71B8094E4F67826DAE520B /* SidebarShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B113FA945A845DD250BF0FA /* SidebarShortcuts.swift */; };
 		8E7C09068FA5EDDB36F5E100 /* GlobalContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA37AF54A23793804F86A33 /* GlobalContextView.swift */; };
 		8EA026D1ED11D5A4489B3E63 /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8FA0DEEA5CAD1582FFE3DC /* DocumentTagAssignment.swift */; };
 		8EFA5E5B8B07DF5BF219D83B /* ArchivalAnalyticsAxes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE84844AF1097D8A7D4A4CB1 /* ArchivalAnalyticsAxes.swift */; };
@@ -1399,6 +1401,7 @@
 		3A1DB6D82807F8D83FF105FE /* PresidentialLibraryIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresidentialLibraryIndex.swift; sourceTree = "<group>"; };
 		3A4896883FA7FA9B695B2B9B /* PersonAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonAnalyticsTests.swift; sourceTree = "<group>"; };
 		3AC3AEBAE1592338041CD61C /* FRUSParserSession07Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSParserSession07Tests.swift; sourceTree = "<group>"; };
+		3B113FA945A845DD250BF0FA /* SidebarShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarShortcuts.swift; sourceTree = "<group>"; };
 		3BD1B9BB52B39A607932B080 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		3BDEC832CA4006C937C3D91E /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		3C28092808E6B978DB482326 /* ResearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchView.swift; sourceTree = "<group>"; };
@@ -2287,6 +2290,7 @@
 				4F7C1F384F2AAF05C44D3D70 /* MainTabView.swift */,
 				B55BC6B54C26290940931C4E /* MainWindowView.swift */,
 				7D8327430EB70882B55BC015 /* SearchSheet.swift */,
+				3B113FA945A845DD250BF0FA /* SidebarShortcuts.swift */,
 				01092BC91BE7D0016D7CAE6C /* StoreSchemaMismatchAlert.swift */,
 				F3F7846242E591D480DD177A /* SupportingViews.swift */,
 				71A0024DD239A9AE34E005CC /* SyncStatusBanner.swift */,
@@ -3678,6 +3682,7 @@
 				5796E8C7F0E7CA9B72E08C18 /* SettingsPaneModel.swift in Sources */,
 				ECEC974318BC2D0655189761 /* SettingsSyncCoordinator.swift in Sources */,
 				99D0EF41B0EDD9F3D23D4D38 /* SettingsView.swift in Sources */,
+				016AAA4CDEB701A5FD8D2971 /* SidebarShortcuts.swift in Sources */,
 				0E211377FAA14FF62EBE46C6 /* SimilarityGenerators.swift in Sources */,
 				3DADC9D00BE3CD464B3DCCF0 /* SimilarityModel.swift in Sources */,
 				6348308E416076F182DD6223 /* SimilarityScorers.swift in Sources */,
@@ -4113,6 +4118,7 @@
 				56C7E19E8DE696F84A622960 /* SettingsPaneModel.swift in Sources */,
 				3D566F83817E3867DF018348 /* SettingsSyncCoordinator.swift in Sources */,
 				20FD93E148FBC9D2BA2F1C25 /* SettingsView.swift in Sources */,
+				8E71B8094E4F67826DAE520B /* SidebarShortcuts.swift in Sources */,
 				27C537C91984A23B4A510C78 /* SimilarityGenerators.swift in Sources */,
 				C7B77077C4DE8A5C2C5056B1 /* SimilarityModel.swift in Sources */,
 				255ADDF71A74471453D33E81 /* SimilarityScorers.swift in Sources */,
