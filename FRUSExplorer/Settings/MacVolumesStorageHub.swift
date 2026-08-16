@@ -165,6 +165,9 @@ struct MacVolumesStorageHub: View {
             }
             keepingCurrentSection
             storageAndIndexSection
+            // #900: one shared view, mounted by BOTH hubs. These two files are hand-maintained
+            // twins, so a section written twice is two places for the same four numbers to drift.
+            SemanticStorageSection()
             advancedSection
         }
         .formStyle(.grouped)

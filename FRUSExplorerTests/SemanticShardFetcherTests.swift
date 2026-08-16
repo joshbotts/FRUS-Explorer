@@ -192,4 +192,56 @@ struct SemanticShardFetcherTests {
         let shard = try #require(await store.shard(for: volume.volumeID))
         #expect(shard.documentCount == volume.documentCount)
     }
+
+    /// A shard whose bytes verify but whose HEADER the store refuses must be recorded (#900).
+    ///
+    /// ## The failure this pins was recorded nowhere at all
+    /// `fetchShard` caught `SemanticUnavailable` from `adoptShard` and rethrew it **without
+    /// touching `failed`**. Two consequences, and the second is the worse one:
+    ///
+    /// 1. The volume appeared in no diagnostic list, so the storage screen #900 adds would have
+    ///    shown the device as problem-free while a volume silently had no vectors.
+    /// 2. `failed` is *also* the do-not-retry gate, so the one failure that repeated on every
+    ///    launch was the one nothing could report — the app re-downloaded and re-refused the same
+    ///    bytes forever.
+    ///
+    /// It is the exact generation-skew case the manifest digest check exists to catch, which makes
+    /// it the last one that should have been silent.
+    ///
+    /// The payload here passes the fetcher's own checks — its length and SHA-256 are computed from
+    /// the bytes being served — and fails at the store, which is what separates this from
+    /// `integrityMismatch`.
+    @Test("A shard the store refuses is recorded as a failure, not silently rethrown")
+    func storeRefusalIsRecorded() async throws {
+        let (store, index) = try await Self.makeStore()
+        let volumeID = index.volumes[0].volumeID
+
+        // Not a shard: right transport, wrong contents. The store's header check rejects it.
+        let payload = Data(repeating: 0x7F, count: 4_096)
+        let digest = Data(SHA256.hash(data: payload)).map { String(format: "%02x", $0) }.joined()
+        StubShardProtocol.bodies = ["\(volumeID).vec": (payload, 200)]
+        let fetcher = SemanticShardFetcher(
+            baseURL: URL(string: "https://stub.invalid/shards")!,
+            expectations: [volumeID: .init(bytes: payload.count, sha256: digest)],
+            session: StubShardProtocol.makeSession())
+
+        await #expect(throws: (any Error).self) {
+            try await fetcher.fetchShard(for: volumeID, into: store)
+        }
+
+        let recorded = await fetcher.failure(for: volumeID)
+        #expect(recorded != nil, """
+            The store refused the shard and the fetcher recorded nothing. That volume is then \
+            invisible to every diagnostic AND exempt from the do-not-retry gate, so it re-downloads \
+            and is re-refused on every launch.
+            """)
+        if case .rejectedByStore = recorded {
+            // The distinction that matters: the bytes arrived intact, so this is not a transport
+            // or integrity fault and must not be described to the user as one.
+        } else {
+            Issue.record("expected .rejectedByStore, got \(String(describing: recorded))")
+        }
+        #expect(await store.volumeIDsOnDisk().isEmpty,
+                "a refused shard was kept on disk — adoptShard validates BEFORE it moves")
+    }
 }
