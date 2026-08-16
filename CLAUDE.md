@@ -175,7 +175,16 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
   noticed and may never say there is nothing wrong; `SemanticStorageReport` owns that distinction
   and its wording. **No progress is reported, deliberately**: the transfer is a one-shot
   `URLSession.download(from:)` with no callback, a shard is ~148 KB fetched in ~0.1 s, and the app
-  shows no byte progress for the 5.3 MB volume download beside it.
+  shows no byte progress for the 5.3 MB volume download beside it. **#926 added the controls**: a
+  device-local `SettingsKeys.autoDownloadSemanticShards` (default ON, so its introduction changes
+  nothing for anyone who never touches it) gating both automatic paths, and a manual **Download
+  Missing Vectors** that ignores the switch — pressing a button is the consent it withholds. The
+  preference is deliberately NOT on `SyncedPreferences`: a download policy is about one device's
+  storage and network, and a stored property on a mirrored `@Model` would need a CloudKit
+  Production deploy (the #488 gate) to ship. The manual run reports a **count** ("12 of 340"),
+  which is observable where per-file bytes are not, and the missing count is computed over
+  **downloaded volumes only** — `published − onDisk` would tell a 12-volume library it was missing
+  544.
 
 **SPM package targets** (separate from the app, in `Package.swift`):
 - `ManifestGenerator`, `TaxonomyGenerator`, `FTS5Store` (reusable SQLite FTS5 actor)

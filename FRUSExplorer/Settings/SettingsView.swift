@@ -1875,6 +1875,21 @@ enum SettingsKeys {
     /// Downloads settings "Settings" section (Session 154).
     static let allowCellularDownloads = "frus.downloads.allowCellular"
 
+    /// UserDefaults key (Bool, default `true`) controlling whether a volume's semantic-vector
+    /// shard is fetched automatically when the volume downloads, and on demand when a semantic
+    /// surface first wants it.
+    ///
+    /// **Device-local by nature, and deliberately NOT on `SyncedPreferences`.** A download policy
+    /// is about this device's storage and network — a phone on cellular and a Mac on ethernet want
+    /// different answers — which is the same reasoning that keeps
+    /// ``allowCellularDownloads`` local. It also keeps this off the CloudKit schema entirely: a
+    /// stored property on a mirrored `@Model` would need a Production deploy before shipping
+    /// (the #488 gate), and a preference about bytes on one disk has no business there.
+    ///
+    /// Read by `AppState.fetchSemanticShardIfNeeded(for:)`. **The manual download ignores it** —
+    /// pressing a button IS the consent this switch withholds.
+    static let autoDownloadSemanticShards = "frus.semantic.autoDownloadShards"
+
     /// UserDefaults key (Bool, default `true`) controlling whether the document
     /// reader's invisible leading/trailing edge-tap zones page through to the
     /// previous/next document while in Read mode. Read by
