@@ -160,21 +160,41 @@ struct FilterPanelCollapseTests {
             let corpus = try #require(order.firstIndex(of: "workingCorpusSection"))
             let custom = try #require(order.firstIndex(of: "customScopeSection"))
             let person = try #require(order.firstIndex(of: "personSection"))
-            let type = try #require(order.firstIndex(of: "documentTypeSection"))
             #expect(corpus < custom, "\(body): working corpora must precede volume scopes")
-            #expect(person < type, "\(body): person holds the only TextField and must sit higher")
+
+            // `documentTypeSection` is iOS-only since M-4 — see `bothBodiesAgree`. Its ordering
+            // rule is asserted where the section exists, rather than dropped: person still holds
+            // this Form's only TextField and still has to sit above it.
+            if body.contains("iOSBody") {
+                let type = try #require(order.firstIndex(of: "documentTypeSection"))
+                #expect(person < type,
+                        "\(body): person holds the only TextField and must sit higher")
+            } else {
+                #expect(!order.contains("documentTypeSection"), """
+                    macOS re-adopted the popover's Type picker — document type is edited in the \
+                    Search window's filter token row now (M-4 §5), and two editors for one field \
+                    is what that consolidation removed.
+                    """)
+            }
         }
     }
 
     /// The two bodies are hand-maintained forty lines apart and nothing else pins them together.
     /// Accidental divergence here is the standing hazard in this file.
+    ///
+    /// **Two sections are excluded as INTENTIONAL divergence, which this test's own message asks
+    /// for rather than tolerates.** The volume-scope section has always been per-platform. The
+    /// document-type section became macOS-absent in M-4: the Search window's filter token row is
+    /// now that field's editor, carrying the same three options and the same three tooltips, and
+    /// §5 of the design removes the popover's duplicate so document type has one editor per
+    /// window. iOS has no token row, so it keeps the section.
     @Test("Both platform bodies order their shared sections identically")
     func bothBodiesAgree() throws {
         let text = try Self.source()
         let mac = try Self.order(in: "private var macBody", from: text)
             .filter { $0 != "volumeScopeSectionMac" }
         let iOS = try Self.order(in: "private var iOSBody", from: text)
-            .filter { $0 != "volumeScopeSectioniOS" }
+            .filter { $0 != "volumeScopeSectioniOS" && $0 != "documentTypeSection" }
         #expect(mac == iOS,
                 """
                 The platform bodies diverged.

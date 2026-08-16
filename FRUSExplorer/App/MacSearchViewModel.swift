@@ -476,6 +476,30 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    /// Includes or excludes front matter in the executed query (M-4).
+    ///
+    /// ## This field was reachable and inert on macOS before this existed
+    /// `SearchFilterView`'s "Include front matter" toggle binds `filterVM.includeFrontMatter`, and
+    /// #916 put that property into `advancedFilterSignature` so the popover re-applies when it
+    /// changes. But ``applyAdvancedFilters()`` copied its three siblings — `includeDocumentText`,
+    /// `includeSummaries`, `includeNotes` — and **not this one**, and ``syncToFilterVM(…)`` never
+    /// seeded it either. So on macOS the toggle moved, the search re-ran, and the results were
+    /// identical: the third instance of this review's no-silent-no-ops defect, and the second for
+    /// this very field. Both halves are fixed alongside this setter, because a token that writes
+    /// `parameters` while the popover writes `filterVM` would otherwise let each silently undo the
+    /// other.
+    ///
+    /// Writing **both** stores is the same shape ``setDocumentTypeFilter(_:)`` uses, and it is what
+    /// keeps a subsequent `applyAdvancedFilters()` from reverting a token's edit.
+    ///
+    /// - Parameter include: `true` to search front matter (the default), `false` to exclude it.
+    func setIncludeFrontMatter(_ include: Bool) {
+        guard parameters.includeFrontMatter != include else { return }
+        parameters.includeFrontMatter = include
+        filterVM?.includeFrontMatter = include
+        parametersVersion += 1
+    }
+
     /// A short label for the active person filter, or `nil` when there is none.
     ///
     /// Exists so a People facet click reads back in the filter row the way a Volume or Date
@@ -504,6 +528,14 @@ final class MacSearchViewModel {
         parameters.personAnchor = nil
         filterVM?.personRollupId = nil
         filterVM?.personAnchor = nil
+        // **Both halves of the mirror, or the clear undoes itself.** `applyAdvancedFilters` rebuilds
+        // `personRef` from `filterVM.personRefText` (:712) and `personLabel` from `filterVM`
+        // (:714). Clearing only the rollup fields left the typed ref alive in the filter VM, so the
+        // person filter came back the next time anything in the Advanced popover changed — a ×
+        // that held until the reader touched an unrelated control. Found while wiring M-4's token
+        // row, which routes its remove button here.
+        filterVM?.personRefText = ""
+        filterVM?.personLabel = nil
         parametersVersion += 1
     }
 
@@ -584,6 +616,11 @@ final class MacSearchViewModel {
 
     func clearTagFilter() {
         parameters.userTagIds = []
+        // The same stale-mirror defect as `clearPersonFilter`: `applyAdvancedFilters` rebuilds
+        // `parameters.userTagIds` from `filterVM.selectedUserTagIds` (:727), so clearing only the
+        // parameters left the selection checked in the popover and the filter returned on the next
+        // edit there.
+        filterVM?.selectedUserTagIds = []
         parametersVersion += 1
     }
 
@@ -643,6 +680,10 @@ final class MacSearchViewModel {
         filterVM.includeDocumentText = parameters.includeDocumentText
         filterVM.includeSummaries   = parameters.includeSummaries
         filterVM.includeNotes       = parameters.includeNotes
+        // Seeded, not merely applied. A saved search archives the whole `SearchParameters` (#756),
+        // so a recalled search really can arrive with front matter excluded; without this line the
+        // popover would show it included and the next edit would silently re-include it.
+        filterVM.includeFrontMatter = parameters.includeFrontMatter
 
         // User-tag filter (188-D parity, #212): feed the live tag list so the shared
         // `SearchFilterView.userTagsSection` appears on macOS, and reconstruct the active
@@ -689,6 +730,11 @@ final class MacSearchViewModel {
         parameters.includeDocumentText = filterVM.includeDocumentText
         parameters.includeSummaries = filterVM.includeSummaries
         parameters.includeNotes     = filterVM.includeNotes
+        // The fourth scope toggle, missing here until M-4. Its absence made the popover's
+        // "Include front matter" checkbox a live control that changed nothing on macOS: #916 had
+        // already put the property into `advancedFilterSignature`, so flipping it re-ran the search
+        // — with this field unchanged. See `setIncludeFrontMatter(_:)`.
+        parameters.includeFrontMatter = filterVM.includeFrontMatter
         // User-tag filter (188-D parity, #212): write the selection back so a chosen tag
         // actually narrows the FTS query and drives the "Tagged" summary chip.
         parameters.userTagIds       = filterVM.selectedUserTagIds.map(\.uuidString)
