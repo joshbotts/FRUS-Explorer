@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #916. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #917. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -98,6 +98,7 @@ that is a discipline in the commit, not a script.
 | F-2 | [#914](https://github.com/joshbotts/FRUS-Explorer/pull/914) | **§7.1 SHIPS** — Browse is two panes at wide iPad width; two oracles reworked pane-aware |
 | F-2 (Research) | [#915](https://github.com/joshbotts/FRUS-Explorer/pull/915) | Research gets the same two-pane; **F-2 is now complete** |
 | M-9 · M-3 · M-4 | [#916](https://github.com/joshbotts/FRUS-Explorer/pull/916) | Read-mode chevrons visible; M-3 closed by recorded decision; M-4 design brief; a live inert toggle found and fixed |
+| CW-9e | [#917](https://github.com/joshbotts/FRUS-Explorer/pull/917) | Cross-Reference Analytics window — **F-11 complete, all six surfaces**; integration logged separately |
 
 ---
 

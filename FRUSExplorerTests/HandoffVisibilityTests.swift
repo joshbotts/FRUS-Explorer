@@ -109,24 +109,43 @@ struct HandoffVisibilityTests {
 
     // MARK: - 2a. The analytics sheet dismisses itself (H-5)
 
-    @Test("Cross-Reference Analytics dismisses before handing off on iOS")
+    @Test("Cross-Reference Analytics dismisses the SHEET before handing off, and the window does not")
     func analyticsSheetDismissesFirst() throws {
         let source = try Self.source("Analytics/CrossReferenceAnalyticsView.swift")
-        #expect(source.contains("@Environment(\\.dismiss) private var dismiss"), """
-            CrossReferenceAnalyticsView had NO dismiss at all. It is presented by BrowserView and \
-            hands off to BrowserView, so its taps appended to the stack directly underneath itself \
-            (#750 / H-5).
+
+        // The contract changed shape in CW-9e and got STRICTER, not looser. The view used to call
+        // `dismiss()` itself. That is right for the sheet — BrowserView both presents it and
+        // consumes the hand-off, so without dismissing first the document lands on the stack
+        // underneath and the tap reads as dead (#750 / H-5) — and fatal for the window this
+        // surface now also opens in, where `dismiss()` CLOSES THE SCENE. So the dismissal is
+        // injected: the sheet passes one, the window passes nil.
+        //
+        // Both halves are checked. Losing either reintroduces a real defect: no callback at all
+        // puts the document under the sheet again, and a callback in the window closes the
+        // analysis on the reader's first citation tap.
+        #expect(source.contains("var onNavigate: (() -> Void)?"), """
+            CrossReferenceAnalyticsView lost its injected navigate callback. It is presented BOTH             as a sheet and as a window, and those need opposite behaviour on a row tap — the sheet             must dismiss, the window must not (#750 / H-5, CW-9e).
             """)
 
         for function in ["private func openDocument(volumeId: String, documentId: String, header: String)",
                          "private func openVolume(_ volumeId: String)"] {
             let body = try Self.functionBody(function, in: source)
-            let dismissAt = try #require(body.range(of: "dismiss()"),
-                                         "\(function) must dismiss the sheet before handing off")
+            let notifyAt = try #require(body.range(of: "onNavigate?()"),
+                                        "\(function) must invoke the navigate callback before handing off")
             let handoffAt = try #require(body.range(of: "appState.openBrowse"))
-            #expect(dismissAt.lowerBound < handoffAt.lowerBound,
-                    "\(function) must dismiss BEFORE the hand-off, or it lands beneath the sheet")
+            #expect(notifyAt.lowerBound < handoffAt.lowerBound,
+                    "\(function) must notify BEFORE the hand-off, or the sheet's dismissal races the push")
+            #expect(!body.contains("dismiss()"), """
+                \(function) calls dismiss() directly again. In the window presentation that closes \
+                the scene on the first landmark tap — the whole reason the callback is injected.
+                """)
         }
+
+        // The sheet supplies the dismisser; the window's nil is pinned by
+        // `AnalyticsWindowValueTests.crossRefWindowKeepsItsNavigateCallbackNil`.
+        let browser = try Self.source("Browser/BrowserView.swift")
+        #expect(browser.contains("CrossReferenceAnalyticsView(onNavigate:"),
+                "the sheet presentation must pass a dismisser, or a row tap lands beneath it")
     }
 
     // MARK: - 2b. Sheet-hosted readers stay in their own stack (H-10, M-15)

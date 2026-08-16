@@ -220,7 +220,17 @@ struct AnalyticsWindowValueTests {
 
         #expect(browser.contains("CrossReferenceAnalyticsView(onNavigate:"),
                 "the SHEET must pass a dismisser, or a row tap lands on the stack underneath it")
-        #expect(scene.contains("CrossReferenceAnalyticsView()"),
+        // Bounded to the scene's own body. `FRUSExplorerApp.swift` constructs this view TWICE —
+        // the new iOS scene and a pre-existing macOS window — so a whole-file `contains` is
+        // satisfied by the other one and passes with this scene mutated. That is the same
+        // wrong-match trap #909's "Projects" label fell into; caught here by mutation.
+        let sceneStart = try #require(scene.range(of: "private var crossReferenceAnalyticsScene"),
+                                      "the Cross-Reference window scene is gone")
+        let sceneRest = scene[sceneStart.upperBound...]
+        let sceneEnd = try #require(sceneRest.range(of: "\n    }"), "no end to the scene body")
+        let sceneBody = String(sceneRest[..<sceneEnd.lowerBound])
+
+        #expect(sceneBody.contains("CrossReferenceAnalyticsView()"),
                 "the WINDOW must construct the view without onNavigate, or it closes on the first landmark tap")
         #expect(!view.contains("        dismiss()\n        appState.openBrowseDocument"),
                 "the view calls dismiss() directly again — that is the window-closing defect")
