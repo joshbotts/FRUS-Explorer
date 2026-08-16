@@ -776,9 +776,28 @@ struct ArchivalExportWiringTests {
         // is built from `facets.volumes`, so without this the button renders only for a reader who
         // happened to open Volumes first — and Provenance, the dead-end section this door exists
         // to open a way out of, would be the one hiding it.
+        //
+        // **Retargeted by #850, which moved where the rule is enforced rather than whether.** The
+        // companion request used to live in the disclosure closure, which fires once; that is
+        // exactly the shape #850 fixed, because a section outlives the search that filled it and
+        // the door vanished with the data after any new search. The rule now lives in
+        // `FacetPanelController.sectionsNeedingLoad(expanded:)`, which answers "what is open and
+        // has no data" — so the door is rebuilt on recovery too, not only on first disclosure.
+        //
+        // The behavioural half is pinned in `FacetPanelControllerTests.provenancePullsVolumes`;
+        // this keeps the structural half, so the rule cannot quietly move back into a one-shot.
         let panel = try Self.source("../FRUSExplorer/Search/FacetPanelView.swift")
-        #expect(panel.contains("if kind == .provenance { onDiscloseSection(.volumes) }"), """
-            Disclosing Provenance must also ask for the volume breakdown the door is made of.
+        #expect(panel.contains("if wanted.contains(.provenance) { wanted.insert(.volumes) }"), """
+            An open Provenance must also ask for the volume breakdown the door is made of. If this \
+            moved again, point the assertion at its new home — do not delete it: the door renders \
+            only for a reader who opened Volumes by hand without it.
+            """)
+        // And it must be derived from what is OPEN, not re-attached to the one-shot disclosure
+        // that #850 removed.
+        #expect(!panel.contains("if kind == .provenance { onDiscloseSection(.volumes) }"), """
+            The companion request is back in the disclosure closure, which fires once — so after \
+            any new search the archival door is missing until the reader collapses and re-opens \
+            Provenance (#850).
             """)
     }
 
