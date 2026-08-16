@@ -244,4 +244,57 @@ struct SemanticShardFetcherTests {
         #expect(await store.volumeIDsOnDisk().isEmpty,
                 "a refused shard was kept on disk — adoptShard validates BEFORE it moves")
     }
+
+    // MARK: - Generation purge
+
+    /// Shards from a previous generation are discarded at boot, not discovered one at a time.
+    ///
+    /// Before this, a generation change left the old shards on disk: the storage screen counted
+    /// them as present, and each was refused only when some surface happened to ask for it. The
+    /// 256 -> 512 move would have produced exactly that on every device that already had vectors.
+    @MainActor
+    @Test("A generation change discards the shards, and an unchanged one keeps them")
+    func generationPurge() async throws {
+        let (store, index) = try await Self.makeStore()
+        let directory = await store.directory
+
+        // Two files that look exactly like shards to every path that counts them.
+        for name in ["frus1861.vec", "frus1862.vec"] {
+            try Data(repeating: 0, count: 128).write(to: directory.appendingPathComponent(name))
+        }
+        #expect(await store.volumeIDsOnDisk().count == 2)
+
+        // FIRST RUN: no marker. Their generation cannot be recovered, so they go — the owner
+        // decision taken with the 256 -> 512 move in view.
+        let discarded = await store.purgeIfGenerationChanged()
+        #expect(discarded == 2, "shards predating the marker were kept and would be refused on use")
+        #expect(await store.volumeIDsOnDisk().isEmpty)
+
+        // SECOND RUN, same generation: nothing is touched. A purge that ran every launch would
+        // re-download the whole library on every cold start.
+        try Data(repeating: 0, count: 128)
+            .write(to: directory.appendingPathComponent("frus1863.vec"))
+        #expect(await store.purgeIfGenerationChanged() == 0,
+                "an unchanged generation discarded shards it had just written the marker for")
+        #expect(await store.volumeIDsOnDisk() == ["frus1863"])
+
+        // A DIFFERENT generation: gone again. Same directory, a store pinned to another provenance.
+        let other = SemanticVectorsArtifacts.Provenance(
+            model: index.provenance.model, modelFileSHA256: index.provenance.modelFileSHA256,
+            nativeDims: index.provenance.nativeDims,
+            shippingDims: index.provenance.shippingDims * 2,   // the 256 -> 512 move, exactly
+            chunkChars: index.provenance.chunkChars, overlapChars: index.provenance.overlapChars,
+            prefix: index.provenance.prefix, pooling: index.provenance.pooling,
+            quantization: index.provenance.quantization)
+        #expect(other.digestHex != index.provenance.digestHex,
+                "widening shippingDims did not move the digest — the family rule has stopped working")
+        let next = SemanticShardStore(directory: directory, provenance: other, expectedCounts: [:])
+        #expect(await next.purgeIfGenerationChanged() == 1)
+        #expect(await next.volumeIDsOnDisk().isEmpty)
+
+        // The marker itself is never counted as a shard, or the screen would report one too many.
+        #expect(FileManager.default.fileExists(
+            atPath: directory.appendingPathComponent(".generation").path))
+        #expect(await next.diskUsage().volumes == 0)
+    }
 }

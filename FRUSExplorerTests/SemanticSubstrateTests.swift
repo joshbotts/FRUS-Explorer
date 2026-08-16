@@ -191,8 +191,18 @@ struct SemanticSubstrateTests {
             .appendingPathComponent("FRUSExplorer/App/FRUSExplorerApp.swift")
         let source = try String(contentsOf: app, encoding: .utf8)
         #expect(source.contains("await BundledSemanticVectors.prepare()"))
-        #expect(source.contains("appState.semanticShardStore = SemanticShardStore("))
+        // The store is built and assigned. Matched in two parts since the construction gained a
+        // `let store = …` binding: the generation purge has to run against the store *before* any
+        // surface can reach it through `appState`, so the one-expression assignment this used to
+        // pin is no longer the shape. What matters is unchanged — a store is constructed from the
+        // bundled provenance and lands on `appState`.
+        #expect(source.contains("SemanticShardStore("))
+        #expect(source.contains("appState.semanticShardStore = store"))
         #expect(source.contains("makeSemanticVectorsDirectory"))
+        // …and the purge runs at boot, or a generation change leaves unusable shards on disk being
+        // counted as present and refused one at a time (the 256 -> 512 case).
+        #expect(source.contains("await store.purgeIfGenerationChanged()"),
+                "boot no longer discards shards from a previous vector generation")
         // Teardown: a shard must not outlive its volume.
         #expect(source.contains("semanticShardStore?.removeShard(for: volumeId)"))
 

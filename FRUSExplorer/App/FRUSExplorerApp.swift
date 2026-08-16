@@ -1434,12 +1434,25 @@ struct FRUSExplorerApp: App {
                     // unavailable rather than empty.
                     await BundledSemanticVectors.prepare()
                     if let semanticIndex = BundledSemanticVectors.index {
-                        appState.semanticShardStore = SemanticShardStore(
+                        let store = SemanticShardStore(
                             directory: Self.makeSemanticVectorsDirectory(),
                             provenance: semanticIndex.provenance,
                             expectedCounts: Dictionary(
                                 semanticIndex.volumes.map { ($0.volumeID, $0.documentCount) },
                                 uniquingKeysWith: { first, _ in first }))
+                        // Shards from a previous generation are discarded here rather than
+                        // discovered one at a time by whichever surface happens to ask. Without it
+                        // they sit on disk being counted as present and refused on use — which is
+                        // precisely what the 256 → 512 move would have produced on every device
+                        // that already had vectors. One string comparison; see the method.
+                        let discarded = await store.purgeIfGenerationChanged()
+                        appState.semanticShardStore = store
+                        #if DEBUG
+                        if discarded > 0 {
+                            print("[FRUSExplorer] discarded \(discarded) shards from a previous "
+                                + "vector generation")
+                        }
+                        #endif
                         // The two bundled manifests must describe the same generation, or the app
                         // would verify downloads against digests for vectors it cannot use — every
                         // fetch would succeed and every shard would then be refused by its header.
@@ -2153,7 +2166,7 @@ struct FRUSExplorerApp: App {
 
                     // Semantic-ready when search-ready: 148 KB beside the ~6 MB volume the user
                     // just chose to download.
-                    await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId) }
+                    await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
                     #if DEBUG
                     print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif

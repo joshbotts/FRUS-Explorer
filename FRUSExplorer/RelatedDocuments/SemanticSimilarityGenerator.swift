@@ -83,7 +83,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
         // is the volume the reader is already looking at.
         guard let anchorEntry = index.volume(anchor.volumeId) else { return .empty }
         guard let anchorShard = await store.shard(for: anchor.volumeId) else {
-            appState.fetchSemanticShardIfNeeded(for: anchor.volumeId)
+            appState.fetchSemanticShardIfNeeded(for: anchor.volumeId, reason: .readerAskedForSemantics)
             return .empty
         }
         guard let query = anchorShard.vector(at: anchorRow - anchorEntry.rowOffset) else {
@@ -128,7 +128,9 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
                 row: located.localRow, query: query.codes, queryScale: query.scale) else { continue }
             scored.append((row: row, score: score))
         }
-        for volumeID in missingVolumes { appState.fetchSemanticShardIfNeeded(for: volumeID) }
+        for volumeID in missingVolumes {
+            appState.fetchSemanticShardIfNeeded(for: volumeID, reason: .readerAskedForSemantics)
+        }
 
         scored.sort { $0.score == $1.score ? $0.row < $1.row : $0.score > $1.score }
         let top = Array(scored.prefix(limit))

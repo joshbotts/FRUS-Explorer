@@ -63,9 +63,14 @@ struct SemanticStorageSection: View {
         } header: {
             Text(String(localized: "settings.vectors.header", defaultValue: "Semantic Vectors"))
         } footer: {
+            // Says WHERE the benefit appears and WHAT ITS STANDING IS. "Experimental" is not
+            // hedging: the semantic axis ships at weight 0 by owner decision, contributing
+            // candidates but never to a document's aggregate score, and its early-era quality is a
+            // declared unknown rather than a measured pass. A reader deciding whether to spend
+            // 155 MB deserves to know they are funding an experiment.
             Text(String(
-                localized: "settings.vectors.footer",
-                defaultValue: "Vectors let the app find documents that are about the same thing, not just ones sharing a word. A volume’s vectors download with the volume and are removed with it."))
+                localized: "settings.vectors.footer.v2",
+                defaultValue: "Vectors let the app find documents about the same subject even when they share no words — they power the Related Documents panel, where the matches appear as their own section. The feature is experimental, and its accuracy on nineteenth-century material is not yet established. A volume’s vectors download with the volume and are removed with it."))
         }
         .task(id: reloadToken) { await reload() }
     }
@@ -118,9 +123,14 @@ struct SemanticStorageSection: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "settings.vectors.auto.label",
                             defaultValue: "Download With Volumes"))
+                // **Value, then price, then where it shows up.** The first draft of this line stated
+                // only the cost — "Adds about 287 KB per volume" — so the one control that decides
+                // whether to spend the bytes said nothing about what they buy, while the section
+                // footer explaining that sat *below every row* in the Form. The reader was being
+                // asked to price something the screen described afterwards.
                 Text(String(
-                    format: String(localized: "settings.vectors.auto.detail %@",
-                                   defaultValue: "Adds about %@ per volume. Turn this off to fetch them yourself."),
+                    format: String(localized: "settings.vectors.auto.detail.v2 %@",
+                                   defaultValue: "Lets Related Documents find documents about the same subject even when they share no words. About %@ per volume."),
                     Self.bytes(report.perVolumeEstimate)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -129,7 +139,7 @@ struct SemanticStorageSection: View {
         }
         .accessibilityHint(String(
             localized: "settings.vectors.auto.a11y",
-            defaultValue: "When off, a volume's vectors are only fetched when you ask for them here"))
+            defaultValue: "When off, a volume's vectors are not fetched as it downloads. You can still fetch them here, and a volume you look at semantically fetches its own."))
     }
 
     /// Fetches every shard this device is missing for the volumes it holds.
@@ -145,8 +155,8 @@ struct SemanticStorageSection: View {
                               defaultValue: "Download Missing Vectors"),
                 systemImage: "arrow.down.circle",
                 detail: String(
-                    format: String(localized: "settings.vectors.download.detail %lld %@",
-                                   defaultValue: "%lld volumes on this device have none yet — about %@."),
+                    format: String(localized: "settings.vectors.download.detail.v2 %lld %@",
+                                   defaultValue: "%lld volumes on this device have none yet. About %@, and Related Documents improves for those volumes."),
                     Int64(awaiting.count), Self.bytes(awaiting.count * report.perVolumeEstimate))
             )
         }
