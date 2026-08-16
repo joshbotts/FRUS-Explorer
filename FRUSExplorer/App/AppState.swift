@@ -503,6 +503,63 @@ final class AppState {
     /// as `semanticShardStore`, plus a bundled shard manifest that disagrees with the bundled index.
     var semanticShardFetcher: SemanticShardFetcher?
 
+    /// What the storage screens show about semantic vectors (#900).
+    ///
+    /// Assembled here rather than in either hub because the two are hand-maintained twins: a figure
+    /// computed in one and re-derived in the other is a figure that will eventually disagree.
+    ///
+    /// Returns ``SemanticStorageReport/unavailable`` when the semantic stack has not booted — the
+    /// store and fetcher are `nil` together, and on a build with missing or provenance-mismatched
+    /// bundled artifacts they stay `nil`. The screens distinguish that from "nothing downloaded",
+    /// because they are different facts about the app.
+    func semanticStorageReport() async -> SemanticStorageReport {
+        // **The two guards are separate, and collapsing them hides bytes the reader owns.** The
+        // fetcher is `nil` under a strictly WIDER condition than the store: the store exists
+        // whenever the bundled index loads, while the fetcher additionally requires a shard
+        // manifest of the same generation (`FRUSExplorerApp`, where the mismatch branch is a
+        // `#if DEBUG print` — silent in release). That is precisely the build where a user has
+        // megabytes of now-unusable vectors on disk, so bailing out on `fetcher == nil` would show
+        // them no row and no Remove button in the one state where removal is the whole point.
+        guard let store = semanticShardStore else { return .unavailable }
+
+        let usage = await store.diskUsage()
+        let refusals = await store.recordedRefusals
+
+        // The denominator survives a missing fetcher: `bundledExpectations()` is a static read of
+        // a bundled resource, not actor state, so the published totals are available either way.
+        let published: (volumes: Int, bytes: Int)
+        let failures: [String: SemanticShardFetcher.FetchError]
+        if let fetcher = semanticShardFetcher {
+            published = await fetcher.publishedTotals
+            failures = await fetcher.recordedFailures
+        } else {
+            let expectations = SemanticShardFetcher.bundledExpectations() ?? [:]
+            published = (expectations.count, expectations.values.reduce(0) { $0 + $1.bytes })
+            failures = [:]
+        }
+
+        return SemanticStorageReport(
+            volumesOnDisk: usage.volumes,
+            bytesOnDisk: usage.bytes,
+            volumesPublished: published.volumes,
+            bytesPublished: published.bytes,
+            failures: failures.mapValues { SemanticStorageReport.describe($0) },
+            // `compactMapValues`: two refusal cases are ORDINARY STATES, not faults — `noArtifact`
+            // means nothing was ever fetched, and `documentNotVectorised` is about one document
+            // rather than this volume's storage. `describe` returns nil for both, and listing them
+            // would fill a problems list with the normal condition of an un-fetched library.
+            refusals: refusals.compactMapValues { SemanticStorageReport.describe($0) })
+    }
+
+    /// Clears remembered shard-fetch failures so the next attempt can retry.
+    ///
+    /// The fetcher deliberately remembers a failure for the session so the lazy path does not retry
+    /// on every query; that is right for a query and wrong for a person who has just reconnected
+    /// and pressed the button. This is the button's half.
+    func retrySemanticShardFetches() async {
+        await semanticShardFetcher?.clearFailures()
+    }
+
     /// Fetches a volume's semantic shard if it is missing, on a detached background task.
     ///
     /// Called from two places, and the split is deliberate. A volume's own download hook fetches

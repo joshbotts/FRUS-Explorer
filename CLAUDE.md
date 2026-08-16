@@ -166,10 +166,16 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
   drives it on a deliberate split — **eagerly** when a volume downloads (148 KB beside ~6 MB is
   invisible, and it makes the volume semantic-ready exactly when it becomes search-ready) and
   **lazily** for volumes already on disk, so an existing library does not silently pull 82 MB at
-  launch for a feature the reader has not opened. What is still missing is the **UI** (#900):
-  nothing reports how many shards are on disk, and `SemanticShardFetcher.failure(for:)`,
-  `clearFailures()` and `SemanticShardStore.refusal(for:)` have **no readers at all** — a fetch that
-  fails is recorded, diagnosed, and shown to nobody.
+  launch for a feature the reader has not opened. **#900 added the storage UI**: one
+  `SemanticStorageSection` mounted by *both* hubs (they are hand-maintained twins, so a section
+  written twice is two places to drift), reporting disk usage against the published total, the
+  problems the app has actually noticed, and a Remove control. **Two of its four figures are
+  structurally partial** — a fetch failure lives only in memory for the session, and a refusal is
+  recorded only for volumes something has already asked about — so the screen may say what it has
+  noticed and may never say there is nothing wrong; `SemanticStorageReport` owns that distinction
+  and its wording. **No progress is reported, deliberately**: the transfer is a one-shot
+  `URLSession.download(from:)` with no callback, a shard is ~148 KB fetched in ~0.1 s, and the app
+  shows no byte progress for the 5.3 MB volume download beside it.
 
 **SPM package targets** (separate from the app, in `Package.swift`):
 - `ManifestGenerator`, `TaxonomyGenerator`, `FTS5Store` (reusable SQLite FTS5 actor)

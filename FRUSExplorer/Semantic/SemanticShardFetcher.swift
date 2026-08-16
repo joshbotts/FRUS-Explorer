@@ -78,6 +78,15 @@ public actor SemanticShardFetcher {
         case integrityMismatch(volumeID: String, expected: String, found: String)
         /// The transfer failed.
         case transport(String)
+        /// The bytes arrived intact and the **store** would not keep them.
+        ///
+        /// Added in #900 for a failure mode that was previously recorded nowhere at all. The
+        /// `SemanticUnavailable` thrown by `adoptShard` used to be rethrown without touching
+        /// `failed`, which had two consequences: the volume appeared in no diagnostic list, and —
+        /// because `failed` is also the "do not retry this session" gate — it was re-downloaded and
+        /// re-refused on every launch. It is the exact generation-skew case the digest check exists
+        /// to catch, so it is the last one that should have been silent.
+        case rejectedByStore(volumeID: String, reason: String)
     }
 
     /// Where shards are fetched from.
@@ -162,6 +171,11 @@ public actor SemanticShardFetcher {
             failed[volumeID] = error
             throw error
         } catch let error as SemanticUnavailable {
+            // RECORDED, not merely rethrown (#900). Rethrowing alone left this case out of `failed`,
+            // so it was invisible to every diagnostic AND exempt from the do-not-retry gate — the
+            // one failure that repeated on every launch was also the one nothing could report. The
+            // original error still propagates; only the bookkeeping is new.
+            failed[volumeID] = .rejectedByStore(volumeID: volumeID, reason: "\(error)")
             throw error
         } catch {
             let wrapped = FetchError.transport("\(error)")
@@ -172,6 +186,24 @@ public actor SemanticShardFetcher {
 
     /// Clears the remembered failures so a later attempt can retry — for a connectivity change.
     public func clearFailures() { failed.removeAll() }
+
+    /// Every failure recorded this session, as a snapshot.
+    ///
+    /// **Session-scoped, and callers must say so.** `failed` is in-memory and starts empty at every
+    /// launch, so a volume that failed yesterday is simply absent today. A screen built on this may
+    /// report what it has noticed; it may not report that everything succeeded.
+    ///
+    /// This exists because `failure(for:)` had **no readers anywhere in the app** (#900): the fetch
+    /// recorded a diagnosis and `AppState.fetchSemanticShardIfNeeded` swallowed the throw into a
+    /// `#if DEBUG print`, so the information was computed and shown to nobody.
+    public var recordedFailures: [String: FetchError] { failed }
+
+    /// Total bytes every published shard would occupy, from the bundled manifest.
+    ///
+    /// The denominator a storage screen needs to say "8 of 552" and "12 MB of 79 MB".
+    public var publishedTotals: (volumes: Int, bytes: Int) {
+        (expectations.count, expectations.values.reduce(0) { $0 + $1.bytes })
+    }
 
     /// Why a volume's fetch failed this session, if it did.
     ///

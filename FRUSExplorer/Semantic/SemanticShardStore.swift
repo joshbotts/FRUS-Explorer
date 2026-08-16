@@ -133,6 +133,39 @@ public actor SemanticShardStore {
         }.sorted()
     }
 
+    /// Bytes the shards on disk occupy, and how many there are.
+    ///
+    /// One `contentsOfDirectory` plus a `stat` per entry — the same listing `volumeIDsOnDisk()`
+    /// does, with the sizes it already had to walk past. Returned together because every caller
+    /// wants both and two passes over the directory could disagree if a fetch landed between them.
+    ///
+    /// The filesystem is the source of truth here for the reason the type's header gives: a
+    /// registry would be a second answer to a question `stat` answers authoritatively.
+    ///
+    /// - Returns: The count and the total byte size.
+    public func diskUsage() -> (volumes: Int, bytes: Int) {
+        // Built on `volumeIDsOnDisk()` rather than a second directory walk **on purpose**. A first
+        // draft listed the directory itself with `.skipsHiddenFiles`, which counts a different set
+        // of files than the plain `contentsOfDirectory(atPath:)` this reuses — so a dotfile could
+        // be sized by one and deleted by the other, and the count a screen showed would not be the
+        // count `removeAllShards()` acts on. One reader, one answer.
+        let ids = volumeIDsOnDisk()
+        let bytes = ids.reduce(0) { total, id in
+            let size = (try? FileManager.default.attributesOfItem(
+                atPath: shardURL(for: id).path)[.size] as? Int) ?? nil
+            return total + (size ?? 0)
+        }
+        return (ids.count, bytes)
+    }
+
+    /// Every refusal recorded so far, as a snapshot.
+    ///
+    /// **Partial by construction, and callers must say so.** `refused` is populated by
+    /// `shard(for:)`, so it holds only volumes some surface has already asked about — a damaged
+    /// shard for a volume nobody has searched is not in here. A screen built on this may report
+    /// what it has noticed; it may not report that there is nothing wrong.
+    public var recordedRefusals: [String: SemanticUnavailable] { refused }
+
     /// Removes a volume's shard and forgets any mapping of it.
     ///
     /// Called from volume teardown. Idempotent, because teardown runs twice on the Settings storage
