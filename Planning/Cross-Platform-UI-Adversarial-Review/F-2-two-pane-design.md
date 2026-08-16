@@ -394,6 +394,13 @@ produced a document with no Back and no list, reachable from three surfaces.
 Back is therefore `depth > 1 || (list pane absent && depth > 0)`, and the second guard is not
 decoration: Back pops with `removeLast()`, which traps on an empty array.
 
+**The test that covers it had to be driven, not reasoned about.** Every step of the scenario above
+is at depth 4, where `depth > 1` renders Back on its own — so with the coupling reverted the whole
+suite would still pass. `ResumeReadingRow` calls `vm.select(.document(entry))`, which *replaces*
+the path, so it reaches depth 1 from the corpus root in one tap and needs only the reading history
+the scenario has already created. Mutation-tested: restoring `depth > 1` fails at that assertion
+and nowhere earlier.
+
 ### 8.5 A recorded hazard that did not reproduce
 
 `CompilationDocumentsTests`' coverage ledger records a `testDocumentRowOpensReader` that was
