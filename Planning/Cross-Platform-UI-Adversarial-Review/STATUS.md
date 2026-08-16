@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #918. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #919. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -100,6 +100,7 @@ that is a discipline in the commit, not a script.
 | M-9 · M-3 · M-4 | [#916](https://github.com/joshbotts/FRUS-Explorer/pull/916) | Read-mode chevrons visible; M-3 closed by recorded decision; M-4 design brief; a live inert toggle found and fixed |
 | CW-9e | [#917](https://github.com/joshbotts/FRUS-Explorer/pull/917) | Cross-Reference Analytics window — **F-11 complete, all six surfaces**; integration logged separately |
 | stale comments | [#918](https://github.com/joshbotts/FRUS-Explorer/pull/918) | P-8's falsified comment retired; four stale "Used by" claims corrected; the class closed by a test |
+| P-3 | [#919](https://github.com/joshbotts/FRUS-Explorer/pull/919) | The concordance keeps its columns and the phone scrolls to them — **the last compact-width finding** |
 
 ---
 
@@ -171,8 +172,11 @@ standing convention, plus the manual caption corrections that depend on them.
 
 **Carried over, each with its reason:**
 
-- **P-3** (concordance columns at compact width) — real; needs a designed compact form rather than
-  a wiring change. It is now the last unaddressed compact-width finding, P-8's having shipped.
+- ~~**P-3**~~ — shipped in #919, and the design turned out to be a **viewport** rather than a
+  compact form. The lines already carry a 60-character radius; a phone was showing about a quarter
+  of it. The view's own header forbids a phone-specific arrangement ("a concordance whose columns
+  differ between platforms is a concordance that cannot be compared across them"), so the geometry
+  is identical everywhere and only the narrow screen scrolls to it.
 - **P-8's actual defect** — Archival Analytics' mode picker truncates to `Col… Net… Flo… You…` and
   is the only analytics dashboard with no size-class awareness at all. Folding four visible
   segments into a menu costs a tap and the at-a-glance sense that four views exist: **the owner's

@@ -40,6 +40,14 @@ struct ConcordanceView: View {
     /// Opens a document when a line is chosen.
     let onOpen: (KWICLine) -> Void
 
+    /// The context radius the lines were built with, so the table can be sized to show it
+    /// (UI review P-3). Defaults to `SearchService.concordance`'s own default.
+    var contextRadius: Int = 60
+
+    /// Width this view was given, measured rather than assumed — the two-pane and inspector
+    /// layouts mean the tab's width is not the container's.
+    @State private var availableWidth: CGFloat = 0
+
     /// Monospaced so the columns line up character-for-character; a proportional face would make
     /// the margins ragged and defeat the scan.
     private let lineFont = Font.system(.caption, design: .monospaced)
@@ -50,6 +58,32 @@ struct ConcordanceView: View {
             Divider()
             if result.lines.isEmpty {
                 emptyState
+            } else if ConcordanceMetrics.needsHorizontalScroll(radius: contextRadius,
+                                                              available: availableWidth) {
+                // **P-3: the columns keep their geometry and the viewport scrolls.** The lines
+                // already carry a 60-character radius; a phone was showing about a quarter of it
+                // and calling the result a concordance. A phone-specific arrangement would break
+                // this view's own stated contract — that columns must not differ between
+                // platforms, or two concordances cannot be compared — so the table is laid out at
+                // its natural width everywhere and only the narrow screen scrolls to it.
+                //
+                // ONE scroll view over the whole table, both axes. Per-row horizontal scrolling
+                // would let rows drift out of step, which destroys the alignment that is the
+                // entire feature.
+                ScrollView([.horizontal, .vertical]) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(sort.apply(to: result.lines)) { line in
+                            Button { onOpen(line) } label: { row(line) }
+                                .buttonStyle(.plain)
+                                .contentShape(Rectangle())
+                            Divider()
+                        }
+                    }
+                    .frame(width: ConcordanceMetrics.tableWidth(radius: contextRadius,
+                                                                available: availableWidth),
+                           alignment: .leading)
+                    .padding(.horizontal)
+                }
             } else {
                 List(sort.apply(to: result.lines)) { line in
                     Button { onOpen(line) } label: { row(line) }
@@ -63,6 +97,14 @@ struct ConcordanceView: View {
                 #endif
             }
             if result.omittedCount > 0 || result.documentsWithoutLines > 0 { caveats }
+        }
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onChange(of: proxy.size.width, initial: true) { _, width in
+                        availableWidth = width
+                    }
+            }
         }
     }
 
