@@ -316,3 +316,91 @@ being at 138 in both while `firstMatch` picks up the sidebar's own bar at 86 in 
 finding (2) is the likeliest explanation of the 52.0, not a real gap. **Confirming that is the
 next session's first ten minutes**, because if it *is* a real 52pt gap at the top of the detail
 pane, it is a cosmetic defect the design should fix rather than inherit.
+
+---
+
+## 8. The document level — the interaction §7.5's probe did not reach
+
+§7.5 said the probe must **push**, and #914's does: subseries, volume, compilation, three levels
+deep, cells on both sides of the divider after each. It stops one level short of the bottom.
+
+**The document is the level that brings a second pane of its own.** `DocumentView` presents the
+Research rail as a trailing `.inspector` on every non-phone idiom, defaulting *open* —
+`panelVisible` is `true` and the shipped `.rememberLast` mode leaves it alone. So a document in
+the detail pane asks for three columns in a container gated for two.
+
+### 8.1 Measured, on both iPads
+
+`FRUSExplorerUITests/TwoPaneDocumentTests`, iPadOS 26.5, reaching a real reader through
+`CompilationDocumentsTests`' seeded-volume seam:
+
+| device | window | before | after |
+|---|---|---|---|
+| iPad Pro 13-inch | 1032 | list 340 + **reader 451.5** + rail 240 | **reader 752** + rail 280 |
+| iPad Pro 11-inch | 834 | list 340 + reader 493.5, rail **overlaying** ~280 of it | **reader 554** + rail 280 |
+
+The two failures are the same defect wearing different clothes. At 1032 the rail takes a column
+and compresses to 240; at 834 there is no room for a third column, so iPadOS overlays the rail on
+the document and leaves roughly 213 pt of *visible* prose.
+
+**The rail's width is 280, not 240.** The 240 is what it compressed to while squeezed between a
+list pane and a reader — a symptom of the arrangement, not the rail's size. Budgeting the
+compressed figure would let a container keep three columns and then discover it could not afford
+them.
+
+### 8.2 Why 451.5 pt is too narrow by this app's own standards
+
+Two numbers already in the codebase say so, which is what makes this a defect rather than a taste.
+
+1. **`MacDocumentView.railOverlayBreakpoint`** (`:349`) exists so the Mac's reading column "never
+   reflows below its ~340 pt floor". The 11-inch's ~213 pt of visible prose is below the floor the
+   Mac refuses to cross.
+2. **`HTMLTemplate`'s 70 ch measure** (`:122`) was added by *this review package's* one CRITICAL,
+   X-1, because ~190 characters per line on a 13-inch iPad was "two to four times the ~66-char
+   typographic measure". The wrapper's padding is a fixed 48 px a side, so a 451.5 pt web view
+   leaves a 355.5 px content box — narrower than 70 ch at any plausible character width. The cap
+   stops binding and the column sits *below* its designed measure instead of at it. X-1 fixed
+   lines that were too long; this ships the same error inverted, and the reader cannot resize out
+   of it because both flanking panes are the app's own.
+
+### 8.3 The rule
+
+**The list pane survives a document only when the container can still honour F-2's own promise
+with the rail present**: `minimumWidth + researchRailWidth` = 820 + 280 = **1100**
+(`BrowseTwoPaneMetrics`). The arithmetic is F-2's, unchanged — the rail is a third column and a
+third column costs its width.
+
+Two properties are deliberate:
+
+- **It reads the level, not `panelVisible`.** Keying on whether the rail is currently open would
+  mean closing a panel makes the reader's content *narrower*, as the list pane slid back in and
+  took 340 pt. That is a worse interaction than the one being fixed.
+- **It is a width rule, not "documents are always full width".** At 1366 pt — a 13-inch in
+  landscape, a wide Stage Manager window — three columns still leave 746 pt, within a few points
+  of the 752 the same device measured as a single column in portrait.
+
+What is given up costs little: the list pane is `CorpusView`, the **corpus root**, always — not
+the document's parent. While reading a document three levels down it lists subseries, and charges
+half the reader's width for the privilege.
+
+### 8.4 The coupling that nearly shipped a dead end
+
+The two-pane's Back is `depth > 1`, on the stated grounds that at depth 1 the parent is the corpus
+list sitting beside it. **`consumePendingBrowseDocument` appends**, so a document handed off from
+Research, Search or a citation onto a fresh Browse tab *is* depth 1 — and the pane that made Back
+unnecessary there is exactly the one this rule gives up. The first draft of the fix would have
+produced a document with no Back and no list, reachable from three surfaces.
+
+Back is therefore `depth > 1 || (list pane absent && depth > 0)`, and the second guard is not
+decoration: Back pops with `removeLast()`, which traps on an empty array.
+
+### 8.5 A recorded hazard that did not reproduce
+
+`CompilationDocumentsTests`' coverage ledger records a `testDocumentRowOpensReader` that was
+written, run and **removed**: after the reader pushed, every XCUI query timed out for ~200 s on
+iPhone 17 Pro, with two candidate causes left unseparated. That is why this suite measures before
+it asserts and prints every number it takes.
+
+**It did not reproduce on either iPad.** The reader opens, the web view answers a frame query, and
+the whole scenario runs in ~35 s. That does not resolve the iPhone finding — it narrows it, and
+the ledger's refusal to pick a cause still stands.

@@ -94,6 +94,10 @@ import SwiftUI
 ///         volumes, which the subject pivot routinely targets.
 ///   2.10 — Session 2026-08-11: #833 — the Archival Analytics row produces a hand-off instead
 ///          of presenting its own sheet, so iOS has one presenter of that surface
+///   2.11 — F-2 follow-up: the two-pane's list pane is conditional on the LEVEL as well as the
+///          width. A document brings the Research rail with it, and three columns measured
+///          451.5pt of reader on a 13-inch iPad. `BrowseTwoPaneMetrics` holds the rule; the
+///          detail pane's Back is coupled to it, or a handed-off document at depth 1 has neither
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -567,7 +571,7 @@ struct BrowserView: View {
 
     // MARK: - Two-pane (F-2)
 
-    /// Narrowest content area that earns a second pane.
+    /// Whether this container is wide enough for two panes.
     ///
     /// **Measured width, not size class**, and the difference is not pedantry: in the
     /// `.sidebarAdaptable` *sidebar* representation the tab sidebar consumes a column without
@@ -575,17 +579,30 @@ struct BrowserView: View {
     /// a detail pane into whatever is left. The design measured that at roughly **194 pt of
     /// detail** on an 11-inch iPad in portrait — a second pane that makes the first one useless.
     ///
-    /// 820 leaves at least 480 pt of detail beside a 340 pt list. A 13-inch iPad in portrait gets
-    /// two panes in the floating-tab-bar representation (~1032 pt) and one in the sidebar
-    /// representation (~712 pt), which is the right answer both times.
-    private static let twoPaneMinimumWidth: CGFloat = 820
-
-    /// Width of the persistent list pane.
-    private static let listPaneWidth: CGFloat = 340
-
-    /// Whether this container is wide enough for two panes.
+    /// The widths, and the third one that decides whether the list pane survives a *document*,
+    /// live in `BrowseTwoPaneMetrics` with the measurements behind them.
     private var isTwoPane: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad && containerWidth >= Self.twoPaneMinimumWidth
+        UIDevice.current.userInterfaceIdiom == .pad
+            && BrowseTwoPaneMetrics.showsDetailPane(containerWidth: containerWidth)
+    }
+
+    /// Whether the deepest level on the path is a document — the only level that brings a second
+    /// pane of its own (`DocumentView`'s trailing Research `.inspector`).
+    private func isDocumentLevel(_ vm: BrowserViewModel) -> Bool {
+        if case .document = vm.navigationPath.last { return true }
+        return false
+    }
+
+    /// Whether the corpus list pane belongs on screen right now.
+    ///
+    /// At every level but the document this is just `isTwoPane`. At a document it additionally
+    /// requires room for the Research rail, because otherwise the three columns leave the reader
+    /// 451.5 pt on the largest iPad there is — measured, against 752 pt with this rule, and below
+    /// the document's own 70 ch measure. `BrowseTwoPaneMetrics` carries the numbers and the
+    /// argument.
+    private func showsListPane(_ vm: BrowserViewModel) -> Bool {
+        BrowseTwoPaneMetrics.showsListPane(containerWidth: containerWidth,
+                                           isDocumentLevel: isDocumentLevel(vm))
     }
 
     /// The subseries list beside the level it opens (UI review F-2).
@@ -619,17 +636,23 @@ struct BrowserView: View {
     /// `navigationDestination` is the detail's, and is the only one: a second copy on the outer
     /// stack would let a level render across both panes.
     private func twoPaneLayout(vm: BrowserViewModel) -> some View {
-        NavigationStack {
+        let listPane = showsListPane(vm)
+        return NavigationStack {
             HStack(spacing: 0) {
-                CorpusView(vm: vm, showsWorkingOnSubtitle: true)
-                    .frame(width: Self.listPaneWidth)
-                    // #486: the banner belongs to content inside a navigation container, never to
-                    // the container. It renders nothing at pad + regular width, so it costs this
-                    // layout nothing — but moving it to the `HStack` would re-open #486 for the
-                    // compact-width iPad that falls through to `stackLayout`.
-                    .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
+                // **The list pane is conditional, and the condition is width plus level.** A
+                // document brings the Research rail with it, and three columns leave the reader
+                // 451.5 pt on a 13-inch iPad — measured. `BrowseTwoPaneMetrics` has the numbers.
+                if listPane {
+                    CorpusView(vm: vm, showsWorkingOnSubtitle: true)
+                        .frame(width: BrowseTwoPaneMetrics.listPaneWidth)
+                        // #486: the banner belongs to content inside a navigation container, never
+                        // to the container. It renders nothing at pad + regular width, so it costs
+                        // this layout nothing — but moving it to the `HStack` would re-open #486
+                        // for the compact-width iPad that falls through to `stackLayout`.
+                        .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
 
-                Divider()
+                    Divider()
+                }
 
                 // **The detail pane RENDERS the path; it does not push it.** No second navigation
                 // container — that shape was built and refuted (design §6a): a nested stack's
@@ -642,7 +665,7 @@ struct BrowserView: View {
                 // `Button` mutating `vm.navigationPath`. Selection was always array mutation, and
                 // a `NavigationStack` exists to present one thing over its container, which is the
                 // opposite of what a detail pane is for.
-                detailPane(vm: vm)
+                detailPane(vm: vm, listPaneShown: listPane)
             }
             .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
             .navigationBarTitleDisplayMode(.inline)
@@ -672,11 +695,17 @@ struct BrowserView: View {
     /// The detail pane: the deepest level on the path, or the empty state.
     ///
     /// ## Back, since there is no stack to supply it
-    /// `vm.navigationPath.removeLast()`, shown only when there is a parent level to return to.
-    /// At depth 1 there is none — the parent is the **corpus list, which is on screen in the pane
-    /// beside this one** — so a Back there would offer to return the reader somewhere they can
-    /// already see. That is the one respect in which this is better than the stack's Back rather
-    /// than merely equal to it.
+    /// `vm.navigationPath.removeLast()`, shown when there is a parent level to return to **or when
+    /// the list pane is absent**. At depth 1 with the list beside it there is nothing to offer —
+    /// the parent is the corpus list, already on screen — which is the one respect in which this
+    /// is better than the stack's Back rather than merely equal to it.
+    ///
+    /// **The two conditions are coupled, and decoupling them strands the reader.**
+    /// `consumePendingBrowseDocument` *appends*, so a document handed off from Research, Search or
+    /// a citation lands at depth 1 on a fresh Browse tab. With the list pane given up for the
+    /// reader's width (see `showsListPane`) a `count > 1` rule would leave that document with no
+    /// Back and no list — a dead end reachable from three surfaces. Popping to an empty path also
+    /// restores the list pane, because an empty path is not a document level.
     ///
     /// ## Titles and toolbars resolve to the OUTER bar, deliberately
     /// Each level sets its own `navigationTitle` (`SubseriesView:82`, `VolumeView:98`,
@@ -685,10 +714,17 @@ struct BrowserView: View {
     /// how a split view is supposed to behave. The design flags the open question honestly: it is
     /// whether the combined toolbar (three persistent Browse items plus the level's) overflows at
     /// 1032pt, and that is a screenshot rather than an argument.
+    ///
+    /// ## `showsWorkingOnSubtitle` is the list pane's, unless there is no list pane
+    /// Both panes carry `.workingOnSubtitle()` and only one was ever on screen before this layout,
+    /// so the two-pane gives it to the list. When the list pane is given up at a document (see
+    /// `showsListPane`), the subtitle would otherwise vanish from Browse entirely — the single
+    /// column shows it at every depth, document included. So it follows the pane that is present.
     @ViewBuilder
-    private func detailPane(vm: BrowserViewModel) -> some View {
+    private func detailPane(vm: BrowserViewModel, listPaneShown: Bool) -> some View {
         VStack(spacing: 0) {
-            if vm.navigationPath.count > 1 {
+            if BrowseTwoPaneMetrics.showsBackControl(pathDepth: vm.navigationPath.count,
+                                                     listPaneShown: listPaneShown) {
                 HStack {
                     Button {
                         vm.navigationPath.removeLast()
@@ -705,10 +741,11 @@ struct BrowserView: View {
             }
 
             if let level = vm.navigationPath.last {
-                // `showsWorkingOnSubtitle: false` — the research question is already on the bar via
-                // the list pane. Both carry `.workingOnSubtitle()` and only one was ever on screen
-                // before this layout; in a two-pane both are, and the reader would see it twice.
-                levelView(for: level, vm: vm, showsWorkingOnSubtitle: false)
+                // The research question follows whichever pane is on screen. With a list pane it is
+                // the list's — both carry `.workingOnSubtitle()` and the reader would otherwise see
+                // it twice. Without one it is this pane's, matching the single column, which shows
+                // it at every depth including a document.
+                levelView(for: level, vm: vm, showsWorkingOnSubtitle: !listPaneShown)
             } else {
                 detailPlaceholder
             }
