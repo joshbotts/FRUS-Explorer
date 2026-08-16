@@ -158,6 +158,8 @@ struct ProjectEditorView: View {
         NavigationStack {
             editorForm
                 .navigationTitle(editorTitle)
+                // #861: the Research Question editor is multi-line, so Return inserts a newline.
+                .keyboardDismissBar()
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

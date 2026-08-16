@@ -392,25 +392,50 @@ struct CustomScopeEditorView: View {
             .sheet(item: $facetSheet) { facet in
                 facetPicker(facet)
             }
+            // **`.navigationBarDrawer(.always)` is the fix for #862, and it is not cosmetic.**
+            // Measured on iPhone (iOS 26): with the default placement, Save is present before the
+            // filter is touched and **absent after it is used** — an active `.searchable` takes
+            // the navigation bar over, and Save is a `.confirmationAction` toolbar item living in
+            // it. So a reader who filtered to find the volumes they wanted — the entire purpose of
+            // the field — lost the only way to keep the scope. "Custom volume scopes do not save
+            // on iOS" is that, exactly.
+            //
+            // A drawer keeps the field *below* the bar instead of replacing it, so the toolbar
+            // survives, and `.always` stops it hiding on scroll and taking Save with it again.
             .searchable(text: $filterText,
+                        placement: .navigationBarDrawer(displayMode: .always),
                         prompt: String(localized: "settings.scopes.editor.search",
                                        defaultValue: "Filter volumes by title"))
             .navigationTitle(editorTitle)
             .navigationBarTitleDisplayMode(.inline)
+            // **Cancel and Save sit in the BOTTOM bar, not the navigation bar (#862).** Measured on
+            // iPhone (iOS 26): with them as `.cancellationAction`/`.confirmationAction`, Save is
+            // present before the volume filter is used and **absent after** — an active
+            // `.searchable` takes the navigation bar over, and takes the primary action with it. A
+            // reader who filtered to find the volumes they wanted (the field's whole purpose) was
+            // left with no way to keep the scope, which is "custom volume scopes do not save on
+            // iOS" exactly. The bottom bar is a separate surface that search does not touch.
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .bottomBar) {
                     Button(String(localized: "common.cancel", defaultValue: "Cancel")) {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .bottomBar) { Spacer() }
+                ToolbarItem(placement: .bottomBar) {
                     Button(String(localized: "common.save", defaultValue: "Save")) {
                         save()
                     }
+                    .fontWeight(.semibold)
                     .disabled(!canSave)
                 }
             }
             .onAppear(perform: seed)
+            // #861/#862: measured on iPhone (402x874), this sheet's `.searchable` filter renders
+            // at y 803-841 while the keyboard occupies y 583-816 — so with the name field's
+            // keyboard up the filter is UNDER it and reports isHittable == false. Nothing else on
+            // this screen dismisses the keyboard, which is why the scope could not be completed.
+            .keyboardDismissBar()
         }
     }
     #endif
@@ -991,6 +1016,10 @@ private struct CoverageFacetSheet: View {
                     Button(String(localized: "common.cancel", defaultValue: "Cancel")) { dismiss() }
                 }
             }
+            // #861: the three year/editor fields here are `.numberPad`-adjacent free text with no
+            // submit action, and this sheet has no Done — so the keyboard could only be dismissed
+            // by cancelling the sheet, losing the entry.
+            .keyboardDismissBar()
         }
         #endif
     }
