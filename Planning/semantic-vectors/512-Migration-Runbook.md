@@ -1,6 +1,6 @@
 # Moving the corpus to 512 dimensions — runbook
 
-**Status:** device side complete and rehearsed 2026-08-16. Waiting on one owner step.
+**Status:** COMPLETE. Shards published and bundle swapped 2026-08-16.
 
 Owner decision (2026-08-16): ship 512 for everyone rather than as a user option, and clear the old
 shards automatically. The cost was measured in `Dimension-Ladder-Spike.md`: **+86.5 MB on device,
@@ -55,9 +55,20 @@ curl -sI https://raw.githubusercontent.com/joshbotts/frus-semantic-vectors/main/
 
 ## Step 3 — swap the bundle
 
-Copy the three regenerated files over `FRUSExplorer/Resources/`. A same-name refresh needs **no**
-`xcodegen`. The map artifacts (`semantic-map.bin`, `semantic-map-index.json`) are Tier 0 and
-**unaffected by width** — do not swap them unless the layout was rebuilt.
+Copy **all five** regenerated files over `FRUSExplorer/Resources/`. A same-name refresh needs **no**
+`xcodegen`.
+
+> **Correction, made while executing this step.** An earlier draft said the map artifacts
+> (`semantic-map.bin`, `semantic-map-index.json`) were "Tier 0 and unaffected by width — do not swap
+> them". That is true of their *placements* and false of their *header*: `BundledSemanticMap`
+> validates the map's provenance digest against the loaded vectors and returns
+> `.provenanceMismatch` when they disagree, so leaving the old map behind takes the entire map
+> surface dark — silently, with nothing in the diff to show for it. Measured after the swap: the
+> repacked 512 map is byte-identical from offset 64 onward (same 179 clusters, same 314,483
+> placements) and differs **only** in the 32-byte digest at offset 20. Swap it.
+>
+> `VectorGenerationMigrationTests.bundledArtifactsAgree` now pins all five against one digest, so
+> this cannot recur quietly.
 
 Then bump the build number (see CLAUDE.md — never `xcodegen` for that).
 
@@ -78,16 +89,25 @@ storage screen reports what is missing while it refills.
 ## Step 5 — verify
 
 ```bash
-TEST_RUNNER_SEMANTIC_512_DIR=/tmp/vectors512 \
-TEST_RUNNER_SEMANTIC_512_SHARDS=/tmp/vectors512-shards \
 xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "id=<simulator udid>" \
   -only-testing FRUSExplorerTests/VectorGenerationMigrationTests
 ```
 
-`TEST_RUNNER_` is required: `xcodebuild` does not forward the shell environment to the test process,
-and without the prefix the suite skips itself and passes — which is why both tests print what they
-exercised rather than only asserting.
+**No environment is needed any more.** The suite used to point at an out-of-repo 512 build through
+`TEST_RUNNER_`-prefixed variables and skip itself without them — which, once 512 shipped, would have
+left it passing while testing nothing. It now derives the "previous" generation from whatever is
+bundled, so it runs in every ordinary pass and survives the next width change unedited.
+
+Also verify the published host, which is what a device actually reads:
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{size_download}\n' -L \
+  https://raw.githubusercontent.com/joshbotts/frus-semantic-vectors/main/shards/frus1861.vec
+```
+
+(`curl -sI … | grep content-length` also works, but the header is last in a long HTTP/2 response and
+is easy to lose; the write-out form prints only the two numbers that matter.)
 
 ---
 
