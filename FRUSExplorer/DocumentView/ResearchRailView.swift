@@ -704,7 +704,8 @@ struct ResearchRailView: View {
     private func openGraph() {
         appState.currentGraphEntry = entry
         appState.bindTool(.graph, to: documentHostID)
-        openWindow.fronting(id: "frus.crossReferenceGraph")
+        // M-2: per-document window (see ResearchView's twin).
+        openWindow(value: GraphWindowRequest(entry: entry))
     }
 
     /// Opens the value-based Related Documents window (focuses an existing equal-request

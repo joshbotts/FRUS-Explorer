@@ -55,6 +55,18 @@ import SwiftUI
 ///          hand-off, replacing the Corpus Browser's `VolumeConnectionGraphView` sheet
 struct CrossReferenceGraphWindowView: View {
 
+    /// The document this window was opened for, when it was opened with one (UI review M-2).
+    ///
+    /// **Additive by design.** `nil` reproduces the previous behaviour exactly — read
+    /// `appState.currentGraphEntry`, and fall back to the picker when that is nil too — so the
+    /// cold Window-menu path and its picker are preserved by construction rather than by care.
+    /// A non-nil request makes this window's subject *its own*, which is the whole of M-2: two
+    /// documents' graphs can be open at once because neither is reading a process-global slot.
+    ///
+    /// The type already existed and already ships value-based on iPad (#317), so this is the
+    /// macOS half of a port rather than a new shape.
+    var request: GraphWindowRequest? = nil
+
     @Environment(AppState.self) private var appState
 
     // MARK: - Picker state
@@ -107,7 +119,11 @@ struct CrossReferenceGraphWindowView: View {
 
     var body: some View {
         Group {
-            if let entry = appState.currentGraphEntry,
+            // The window's OWN subject wins over the shared slot. #749 / M-13 made a live-bound
+            // retarget *visible* (open-and-raise) because it could not be prevented while every
+            // graph read one global; with a request there is nothing to retarget — a second
+            // document opens a second window.
+            if let entry = request?.entry ?? appState.currentGraphEntry,
                let store = appState.crossReferenceStore {
                 CrossReferenceGraphView(
                     entry: entry,

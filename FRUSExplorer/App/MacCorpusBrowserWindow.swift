@@ -394,6 +394,9 @@ private struct SubseriesVolumeListView: View {
                 // this browser's provenance (transitive bind).
                 appState.pendingVolumeGraph = vol.volumeId
                 appState.bindTool(.graph, to: appState.provenance(of: .corpusBrowser))
+                // Deliberately still id-based: a VOLUME graph has no document to key a request on,
+                // and the window consumes `pendingVolumeGraph` itself. Fronting is what that
+                // hand-off needs (#749), and the group keeps its id precisely for this.
                 openWindow.fronting(id: "frus.crossReferenceGraph")
             } label: {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -1367,7 +1370,8 @@ private struct CorpusSectionDocumentView: View {
             Button {
                 appState.currentGraphEntry = doc
                 appState.bindTool(.graph, to: appState.provenance(of: .corpusBrowser))
-                openWindow.fronting(id: "frus.crossReferenceGraph")
+                // M-2: per-document window.
+                openWindow(value: GraphWindowRequest(entry: doc))
             } label: {
                 Label("Show Cross-Reference Graph",
                       systemImage: "point.3.connected.trianglepath.dotted")
