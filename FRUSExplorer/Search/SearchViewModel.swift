@@ -283,6 +283,9 @@ final class SearchViewModel {
         parts.append(includeDocumentText ? "1" : "0")
         parts.append(includeSummaries ? "1" : "0")
         parts.append(includeNotes ? "1" : "0")
+        // The fourth scope, missing until now: the Mac's live "Include front matter" toggle moved
+        // and nothing re-applied. See `AdvancedFilterSignatureTests`, which pins the whole class.
+        parts.append(includeFrontMatter ? "1" : "0")
         parts.append(selectedSubseriesIds.sorted().joined(separator: ","))
         // M-1: without this the Mac's `applyAdvancedFilters` never fires on an apply or a clear —
         // the signature is what tells it the filter VM changed — so the corpus was set, shown as
