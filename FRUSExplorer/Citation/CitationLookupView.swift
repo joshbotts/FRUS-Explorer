@@ -125,6 +125,9 @@ struct CitationLookupView: View {
             .onSubmit(of: .text) { submitIfActionable() }
             .navigationTitle(String(localized: "citation.lookup.title",
                                     defaultValue: "Citation Lookup"))
+            // #861: the "Document no." and "Page" fields use .numberPad, a keyboard with NO return key,
+            // so `.submitLabel(.search)` on them is inert and nothing could dismiss it at all.
+            .keyboardDismissBar()
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             // Done is sheet chrome — iOS only. On macOS the view lives in the

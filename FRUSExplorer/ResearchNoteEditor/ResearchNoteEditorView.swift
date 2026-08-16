@@ -168,6 +168,9 @@ struct ResearchNoteEditorView: View {
                     : String(localized: "note.editor.title.edit",
                              defaultValue: "Edit Note")
             )
+            // #861: the note BODY is a multi-line TextEditor, where Return inserts a newline by design and
+            // therefore can never double as dismissal.
+            .keyboardDismissBar()
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
