@@ -665,6 +665,12 @@ struct FRUSExplorerApp: App {
         // The first analytics window whose request type had to be created rather than
         // adopted. Keyed by Trends/Network so the two readings open side by side.
         personAnalyticsScene
+
+        // MARK: - Cross-Reference Analytics Window (UI review F-11, CW-9e)
+        //
+        // The sixth and last. An empty-marker request — the surface has no parameters, so
+        // one window, always focused.
+        crossReferenceAnalyticsScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -1343,6 +1349,27 @@ struct FRUSExplorerApp: App {
     private var personAnalyticsScene: some Scene {
         WindowGroup(for: PersonAnalyticsRequest.self) { $request in
             PersonAnalyticsView(initialMode: (request ?? PersonAnalyticsRequest()).mode)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 900, height: 760)
+    }
+
+    /// Value-based `WindowGroup(for:)` for Cross-Reference Analytics on iOS (UI review F-11,
+    /// CW-9e) — the sixth and last analytics surface to get one.
+    ///
+    /// Its request is an **empty marker**: the surface takes no parameters, so every value is
+    /// equal and `openWindow(value:)` always focuses the single window. See
+    /// `CrossReferenceAnalyticsRequest` for why an integration with the cross-reference graph was
+    /// assessed and deliberately did NOT change that shape.
+    ///
+    /// `onNavigate` is left nil here — that is the whole point of the window. The sheet passes
+    /// `dismiss`, because its presenter also consumes the hand-off; a window that did the same
+    /// would close itself on the reader's first landmark tap.
+    private var crossReferenceAnalyticsScene: some Scene {
+        WindowGroup(for: CrossReferenceAnalyticsRequest.self) { _ in
+            CrossReferenceAnalyticsView()
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }

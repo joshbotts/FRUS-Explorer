@@ -182,6 +182,60 @@ struct AnalyticsWindowValueTests {
         #expect(PersonAnalyticsMode.allCases.count == 2)
     }
 
+    // MARK: - Cross-Reference Analytics (CW-9e, empty marker)
+
+    @Test("the empty marker means exactly one window")
+    func crossRefIsOneWindow() {
+        // Every value equal is the CORRECT semantics for a parameterless surface: asking twice
+        // focuses the window already open rather than stacking an identical second one.
+        #expect(CrossReferenceAnalyticsRequest() == CrossReferenceAnalyticsRequest())
+        #expect(CrossReferenceAnalyticsRequest().hashValue
+                == CrossReferenceAnalyticsRequest().hashValue)
+    }
+
+    @Test("it survives scene restoration")
+    func crossRefRoundTrips() throws {
+        let request = CrossReferenceAnalyticsRequest()
+        #expect(try roundTrip(request) == request)
+    }
+
+    @Test("the window does not close itself on the first landmark tap")
+    func crossRefWindowKeepsItsNavigateCallbackNil() throws {
+        // **The gate that makes this window worth having.** The view's row taps used to call
+        // `dismiss()` unconditionally — necessary in the sheet, because its presenter also
+        // consumes the hand-off, but fatal in a window, where dismiss CLOSES THE SCENE. A window
+        // that shut itself the moment the reader followed a citation would be worse than the
+        // sheet it replaced.
+        //
+        // Asserted from source because the asymmetry is the contract: the sheet passes a
+        // dismisser, the scene passes nothing.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let scene = try String(contentsOf: root.appending(path: "FRUSExplorer/App/FRUSExplorerApp.swift"),
+                               encoding: .utf8)
+        let browser = try String(contentsOf: root.appending(path: "FRUSExplorer/Browser/BrowserView.swift"),
+                                 encoding: .utf8)
+        let view = try String(contentsOf: root.appending(path: "FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift"),
+                              encoding: .utf8)
+
+        #expect(browser.contains("CrossReferenceAnalyticsView(onNavigate:"),
+                "the SHEET must pass a dismisser, or a row tap lands on the stack underneath it")
+        // Bounded to the scene's own body. `FRUSExplorerApp.swift` constructs this view TWICE —
+        // the new iOS scene and a pre-existing macOS window — so a whole-file `contains` is
+        // satisfied by the other one and passes with this scene mutated. That is the same
+        // wrong-match trap #909's "Projects" label fell into; caught here by mutation.
+        let sceneStart = try #require(scene.range(of: "private var crossReferenceAnalyticsScene"),
+                                      "the Cross-Reference window scene is gone")
+        let sceneRest = scene[sceneStart.upperBound...]
+        let sceneEnd = try #require(sceneRest.range(of: "\n    }"), "no end to the scene body")
+        let sceneBody = String(sceneRest[..<sceneEnd.lowerBound])
+
+        #expect(sceneBody.contains("CrossReferenceAnalyticsView()"),
+                "the WINDOW must construct the view without onNavigate, or it closes on the first landmark tap")
+        #expect(!view.contains("        dismiss()\n        appState.openBrowseDocument"),
+                "the view calls dismiss() directly again — that is the window-closing defect")
+    }
+
     // MARK: - The semantic map's value (CW-9a)
 
     @Test("a map request survives scene restoration and keys by scope")

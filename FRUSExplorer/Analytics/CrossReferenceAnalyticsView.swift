@@ -113,7 +113,44 @@ private struct HeatCell: Identifiable, Equatable {
 ///          bar by Swift Charts' categorical aggregation; (b) reloads on
 ///          `readOnlyStoresGeneration` so a dashboard on screen when a reindex finishes
 ///          refreshes against the reopened store instead of showing stale-connection emptiness
+/// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
+///
+/// ## An empty marker, deliberately — and the assessment that chose it
+/// This surface takes no parameters, so a window value carries no information and every value is
+/// equal: `openWindow(value:)` therefore always focuses the one window, which is the correct
+/// semantics for a parameterless surface.
+///
+/// The owner asked whether integrating with the cross-reference **graph** should change that
+/// shape. Assessed, it should not — and the reason is worth keeping, because it is the argument
+/// against widening this type on a hunch later. Every focus an integration would introduce fails
+/// for its own reason: a **document** focus is already owned by `GraphWindowRequest`; a **matrix
+/// cell** has no tap target and the two surfaces reach volume-to-volume counts by two different
+/// queries; and a **volume scope** has no producer at all — both call sites construct this view
+/// with no arguments, so a scope-carrying request would ship with exactly one reachable value,
+/// which is an empty marker with extra fields.
+///
+/// Widening later is safe and non-breaking: optional fields decode cleanly from restoration
+/// payloads written before the widening (the `GraphWindowRequest` pattern). So the integration is
+/// logged as its own feature rather than pre-empted here — see
+/// `Planning/Cross-Platform-UI-Adversarial-Review/crossref-integration.md`.
+///
+/// Version history:
+///   1.0 — CW-9e
+struct CrossReferenceAnalyticsRequest: Codable, Hashable, Sendable {
+    /// Creates the request. It carries nothing, by design.
+    init() {}
+}
+
 struct CrossReferenceAnalyticsView: View {
+
+    /// Invoked after a row tap posts its navigation hand-off. **The sheet passes `dismiss`; the
+    /// window passes `nil`.**
+    ///
+    /// Without this the window would close on the first landmark tap: `dismiss()` closes a
+    /// `WindowGroup` scene, and the sheet needs it because `BrowserView` both presents the sheet
+    /// and consumes the hand-off (#750 / audit H-5). Same shape as
+    /// `RelatedDocumentsView.onNavigate`, for the same reason.
+    var onNavigate: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     /// Dismisses this sheet before handing a document or volume off to the Browse tab (#750 /
@@ -1270,7 +1307,7 @@ struct CrossReferenceAnalyticsView: View {
         // hand-off, so without this the document was appended to the stack directly underneath —
         // the tap read as dead, and each retry stacked another copy the user found later.
         // `openTab(.browse)` cannot help: Browse is already the selected tab.
-        dismiss()
+        onNavigate?()
         appState.openBrowseDocument(entry, from: sceneID)
         appState.openTab(.browse, from: sceneID)
         #endif
@@ -1283,7 +1320,7 @@ struct CrossReferenceAnalyticsView: View {
     /// the volume-grain sibling used by Cross-Volume Provenance rows).
     private func openVolume(_ volumeId: String) {
         #if os(iOS)
-        dismiss()   // same reason as openDocument (#750 / audit H-5)
+        onNavigate?()   // same reason as openDocument (#750 / audit H-5)
         #endif
         appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(iOS)
