@@ -50,6 +50,25 @@ struct CollocationWiringAuditTests {
         [(Self.iOSHost, try source(Self.iOSHost)), (Self.macHost, try source(Self.macHost))]
     }
 
+    /// The same source with comment lines removed.
+    ///
+    /// **Written after a mutation survived because of a doc comment.** `modesAreMutuallyExclusive`
+    /// asserts `contains("let flags = selected.flags")`; when the macOS host adopted the Picker its
+    /// doc comment *quoted that literal* to explain the rule, so breaking the assignment left the
+    /// suite green — the guard was reading prose. This is the same failure recorded in
+    /// `AdvancedFilterSignatureTests`, where a comment naming `includeFrontMatter` kept a deleted
+    /// append alive. A scan that means "the code does this" has to read only code.
+    ///
+    /// Line comments only: a `//` inside a string literal would be stripped too, but no assertion
+    /// in this suite keys on one, and the failure direction is safe — stripping too much can make a
+    /// check fail, never pass.
+    private func strippingComments(_ source: String) -> String {
+        source
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
     /// One function's text, bounded at its closing brace — not a character window.
     ///
     /// A `contains` over the whole file passes on any other call site that happens to use the same
@@ -118,22 +137,36 @@ struct CollocationWiringAuditTests {
         // different means, so pinning one mechanism everywhere would fail the host that improved.
         // Branching is safe because a host doing NEITHER falls into the `else` and fails there.
         for host in try bothHosts() {
-            if host.text.contains("selection: readingSelection") {
-                // iOS (Q wave): exclusivity is structural. `ResultReading.flags` yields all three
-                // values at once and the setter assigns all three, so no reachable assignment
-                // leaves two on. The hand-clearing toggles are gone BECAUSE of that.
-                #expect(host.text.contains("let flags = selected.flags"),
+            // CODE ONLY — see `strippingComments`. Both branches below match on literals that a
+            // doc comment explaining the rule would otherwise satisfy, and one did.
+            let code = strippingComments(host.text)
+            if code.contains("selection: readingSelection") {
+                // Structural exclusivity (iOS since the Q wave, macOS since M-4 / 1b):
+                // `ResultReading.flags` yields all three values at once and the setter assigns all
+                // three, so no reachable assignment leaves two on. The hand-clearing toggles are
+                // gone BECAUSE of that.
+                #expect(code.contains("let flags = selected.flags"),
                         "\(host.name): a Picker without the whole-triple assignment behind it")
-                #expect(!host.text.contains("showTimeline.toggle()"),
+                #expect(!code.contains("showTimeline.toggle()"),
                         "\(host.name): a hand-rolled toggle returned alongside the Picker")
+                // The negative used to name only the timeline, so a residual concordance or
+                // collocates toggle passed. A half-migration is exactly what this test exists to
+                // fail, and two thirds of it were unguarded.
+                #expect(!code.contains("showConcordance.toggle()"),
+                        "\(host.name): a hand-rolled concordance toggle returned alongside the Picker")
+                #expect(!code.contains("showCollocates.toggle()"),
+                        "\(host.name): a hand-rolled collocates toggle returned alongside the Picker")
             } else {
-                // macOS: still three independent buttons, so every toggle must clear the other two
-                // — the shape whose absence produced the empty-menu defect recorded in AnalyticsView.
-                #expect(host.text.contains("if showTimeline { showConcordance = false; showCollocates = false }"),
+                // A host that has NOT migrated: three independent buttons, so every toggle must
+                // clear the other two — the shape whose absence produced the empty-menu defect
+                // recorded in AnalyticsView. Both hosts have migrated as of M-4 / 1b, so this
+                // branch is now unreached; it stays because the invariant, not the mechanism, is
+                // what this test is for, and a host that regressed would land here.
+                #expect(code.contains("if showTimeline { showConcordance = false; showCollocates = false }"),
                         "\(host.name): the timeline toggle must clear both other modes")
-                #expect(host.text.contains("if showConcordance { showTimeline = false; showCollocates = false }"),
+                #expect(code.contains("if showConcordance { showTimeline = false; showCollocates = false }"),
                         "\(host.name): the concordance toggle must clear both other modes")
-                #expect(host.text.contains("if showCollocates { showTimeline = false; showConcordance = false }"),
+                #expect(code.contains("if showCollocates { showTimeline = false; showConcordance = false }"),
                         "\(host.name): the collocates toggle must clear both other modes")
             }
         }

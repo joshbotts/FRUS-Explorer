@@ -261,22 +261,47 @@ struct ExamineMenuAuditTests {
 
     /// On macOS the capture action sat physically between Concordance and Collocates — an action
     /// in the middle of three mutually exclusive readings.
-    @Test("macOS orders the three readings together, then the capture action")
+    ///
+    /// **Retargeted for M-4 / 1b, not relaxed.** The readings are now one `Picker` over
+    /// `ResultReading.allCases`, so an action cannot sit *between* two of them — the ordering this
+    /// asserted is structurally unreachable. What can still go wrong is the same mistake one level
+    /// up: putting Save Corpus **inside** the readings' own toolbar item, where it would read as a
+    /// fourth reading. So the assertion moves to that boundary. Deleting it instead would have
+    /// retired a guard whose defect is still expressible.
+    @Test("macOS keeps the capture action beside the readings, never inside them")
     func macOSGrouping() throws {
         let source = try Self.source("FRUSExplorer/App/SearchSheet.swift")
-        let collocates = try #require(source.range(of: "search.collocates.show.a11y"))
-        let save = try #require(source.range(of: #"Image(systemName: "tray.full")"#))
-        #expect(save.lowerBound > collocates.upperBound,
-                "the capture action is back between two readings")
+        let picker = try #require(source.range(of: "selection: readingSelection"),
+                                  "the macOS readings are no longer a Picker — see modesAreMutuallyExclusive")
+        let save = try #require(source.range(of: #""tray.full""#))
+        #expect(save.lowerBound > picker.upperBound,
+                "Save Corpus precedes the readings; source order is what the original finding was about")
+
+        // The boundary: a new `ToolbarItem(` must open between the picker and the capture action,
+        // or the two share one item and Save Corpus has become a fourth segment.
+        let between = source[picker.upperBound..<save.lowerBound]
+        #expect(between.contains("ToolbarItem("), """
+            Save Corpus is inside the same toolbar item as the readings picker. It writes a durable \
+            WorkingCorpus, it is the only one of these whose effect outlives the search, and it \
+            gates on displayedResults where the readings gate on results — it is not a reading.
+            """)
     }
 
     /// macOS showed `text.alignright` for the INACTIVE concordance — the symbol iOS uses for the
     /// ACTIVE one, so the same state read as two different glyphs across platforms.
-    @Test("macOS concordance keeps one glyph and lets tint carry the state")
+    ///
+    /// **Retargeted for M-4 / 1b.** The macOS picker draws its glyph from `ResultReading.systemImage`,
+    /// which a source scan of `SearchSheet.swift` cannot see — so the positive half moves to the
+    /// enum, where it becomes a behavioural assertion instead of a text match, and covers *both*
+    /// platforms at once. The negative half stays on the macOS source, because that is where the
+    /// wrong glyph was written and where it could be written again.
+    @Test("the concordance keeps one glyph and lets tint carry the state")
     func macOSConcordanceGlyph() throws {
         let source = try Self.source("FRUSExplorer/App/SearchSheet.swift")
-        #expect(!source.contains(#""text.alignright""#))
-        #expect(source.contains(#"Image(systemName: "text.alignleft")"#))
+        #expect(!source.contains(#""text.alignright""#),
+                "macOS re-adopted the symbol iOS uses for the ACTIVE concordance to mean INACTIVE")
+        #expect(ResultReading.concordance.systemImage == "text.alignleft",
+                "the shared glyph changed — both platforms draw the concordance from this one value now")
     }
 }
 
