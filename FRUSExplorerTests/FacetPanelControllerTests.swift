@@ -151,6 +151,75 @@ struct FacetPanelControllerTests {
         #expect(controller.loadedSections.isEmpty)
     }
 
+    // MARK: - #850 · an open section that lost its data
+
+    @Test("After a new search, a section still open on screen is asked for again")
+    func openSectionIsReRequestedAfterANewSearch() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let controller = FacetPanelController()
+        controller.invalidate(signature: "q1")
+        await controller.load(.volumes, parameters: SearchParameters(keywords: "containment"),
+                              service: service, pipeline: pipeline)
+
+        // The reader has Volumes open and it has rows: nothing to request.
+        #expect(controller.sectionsNeedingLoad(expanded: [.volumes]).isEmpty)
+
+        // A new search. The data is correctly discarded — but on macOS the panel is a long-lived
+        // `.inspector`, so the section is STILL OPEN on screen with nothing in it.
+        controller.invalidate(signature: "q2")
+        #expect(controller.sectionsNeedingLoad(expanded: [.volumes]) == [.volumes], """
+            An expanded section whose data was just discarded was not reported as needing a \
+            reload. That is #850: header visible, body blank, indefinitely, recoverable only by \
+            collapsing and re-opening the section.
+            """)
+    }
+
+    @Test("A section the reader never opened is still never computed")
+    func closedSectionsAreNeverRequested() async throws {
+        let controller = FacetPanelController()
+        controller.invalidate(signature: "q1")
+
+        // Decision R-1-1, which the #850 fix must not trade away: laziness comes from the fact
+        // that the answer is derived from what is OPEN, not from what exists.
+        #expect(controller.sectionsNeedingLoad(expanded: []).isEmpty)
+        #expect(controller.sectionsNeedingLoad(expanded: [.people]) == [.people])
+    }
+
+    @Test("An open Provenance section asks for the volume breakdown its door is built from")
+    func provenancePullsVolumes() async throws {
+        let controller = FacetPanelController()
+        controller.invalidate(signature: "q1")
+
+        // #833: Provenance's archival door is built from the volume breakdown, so Provenance being
+        // open implies Volumes must be computed even though Volumes itself is shut. Deriving this
+        // in ONE place is what keeps first-disclosure and post-search recovery from disagreeing —
+        // before #850 the companion request lived only in the disclosure closure, so after a new
+        // search the door came back only for a reader who had also opened Volumes by hand.
+        let needed = controller.sectionsNeedingLoad(expanded: [.provenance])
+        #expect(needed.contains(.volumes))
+        #expect(needed.contains(.provenance))
+        // …and opening Volumes is not implied in reverse.
+        #expect(controller.sectionsNeedingLoad(expanded: [.volumes]) == [.volumes])
+    }
+
+    @Test("A section already in flight is not asked for twice")
+    func inFlightSectionsAreNotRerequested() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let controller = FacetPanelController()
+        controller.invalidate(signature: "q1")
+        // Drive a real load and check the settled state: once loaded, the section stops being
+        // requested. The in-flight half is covered by `load`'s own guard, which this mirrors.
+        await controller.load(.people, parameters: SearchParameters(keywords: "containment"),
+                              service: service, pipeline: pipeline)
+        #expect(controller.loadedSections.contains(.people))
+        #expect(controller.sectionsNeedingLoad(expanded: [.people]).isEmpty,
+                "a loaded section was requested again, which would re-run a full aggregation on every body evaluation")
+    }
+
     @Test("Re-invalidating with the same signature keeps the cache")
     func sameSignatureKeepsTheCache() async throws {
         let (dir, service, pipeline) = try await makeFixture()

@@ -298,6 +298,40 @@ final class FacetPanelController {
         pendingNarrowedFrom = matchCount
     }
 
+    /// Which open sections have no data and must be (re)computed (#850).
+    ///
+    /// ## The defect this exists to close
+    /// Disclosure used to be the *only* thing that requested a section, and disclosure fires once.
+    /// On macOS the panel is a long-lived `.inspector`, so a section stays expanded across a
+    /// search — while `invalidate(signature:)` correctly throws the data away. The result was a
+    /// section with its header visible and its body permanently blank, recoverable only by
+    /// collapsing and re-opening it. iOS never showed it because the panel is a sheet rebuilt per
+    /// presentation, so its expanded set resets.
+    ///
+    /// Framing it as *"what is open and has no data"* rather than *"re-request on invalidation"*
+    /// makes the answer self-healing: any future path that clears `facets` is covered too, and the
+    /// view needs no notion of why the data went away.
+    ///
+    /// **Laziness is preserved** (decision R-1-1: nothing computes until it is asked for) — the
+    /// answer is derived from the sections the reader has actually opened, so one never opened is
+    /// never computed.
+    ///
+    /// - Parameter expanded: The sections currently open on screen.
+    /// - Returns: The sections to request, in `FacetSection.allCases` order so the set of requests
+    ///   is stable between evaluations and cannot drive a view update loop.
+    func sectionsNeedingLoad(expanded: Set<FacetSection>) -> [FacetSection] {
+        var wanted = expanded
+        // Provenance's archival door is built from the volume breakdown (#833), so an open
+        // Provenance needs Volumes computed even when Volumes itself is closed. Deriving that
+        // here rather than at the disclosure site is what stops the first-open path and the
+        // re-request path from disagreeing about it — the door would otherwise return only for a
+        // reader who had also opened Volumes by hand.
+        if wanted.contains(.provenance) { wanted.insert(.volumes) }
+        return FacetSection.allCases.filter {
+            wanted.contains($0) && !loadedSections.contains($0) && !loadingSections.contains($0)
+        }
+    }
+
     /// Computes `section` if it has not been computed for the current match.
     func load(
         _ section: FacetSection,
@@ -435,6 +469,25 @@ struct FacetPanelView: View {
             }
             .padding(.vertical, 12)
         }
+        // **The panel's single requester** (#850). Fires on first disclosure *and* whenever a new
+        // search empties the data under a section that is still open — which are the same
+        // condition, "open with nothing in it", rather than two paths to keep in step.
+        //
+        // Keyed on the derived list, so it re-runs exactly when that list changes and settles to
+        // `[]` once every open section is loading or loaded. Requesting is idempotent besides:
+        // `load` returns early for a section already loaded or in flight.
+        //
+        // This is the file's first `.task`. It could not have been added earlier without the
+        // controller-side rule above — a view-local "re-request on change" would have had to know
+        // *why* the data vanished, and would have missed every cause but invalidation.
+        .task(id: pendingSections) {
+            for section in pendingSections { onDiscloseSection(section) }
+        }
+    }
+
+    /// Open sections with no data — see `FacetPanelController.sectionsNeedingLoad(expanded:)`.
+    private var pendingSections: [FacetSection] {
+        controller.sectionsNeedingLoad(expanded: expanded)
     }
 
     // MARK: - Preamble
@@ -492,17 +545,18 @@ struct FacetPanelView: View {
             isExpanded: Binding(
                 get: { expanded.contains(kind) },
                 set: { isOpen in
+                    // Opening a section only records that it is open. **Requesting it is not done
+                    // here** (#850): disclosure fires once, and on macOS a section outlives the
+                    // search that filled it, so a one-shot request left an expanded section blank
+                    // forever after any new search. The single requester is the `.task` on the
+                    // panel body, which asks for whatever is open and has no data — first
+                    // disclosure and post-invalidation recovery being the same case.
+                    //
+                    // Lazy per decision R-1-1: `sectionsNeedingLoad` derives from this set, so a
+                    // section the reader never opened is still never computed. The Provenance →
+                    // Volumes companion (#833) moved there with it.
                     if isOpen {
                         expanded.insert(kind)
-                        // Lazy per decision R-1-1: nothing is computed until it is asked for.
-                        onDiscloseSection(kind)
-                        // …but Provenance now ASKS for the volume breakdown, because its archival
-                        // door is built from it (#833). Without this the door renders only for a
-                        // reader who happened to open the Volumes section first — and the section
-                        // this door exists to open a way out of is the one that would hide it.
-                        // The controller no-ops if `.volumes` is already loaded, and loading a
-                        // section does not expand it: Volumes stays closed.
-                        if kind == .provenance { onDiscloseSection(.volumes) }
                     } else {
                         expanded.remove(kind)
                     }
