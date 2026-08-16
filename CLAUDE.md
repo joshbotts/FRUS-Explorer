@@ -161,9 +161,15 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
   artifact. App-side, `BundledSemanticVectors` (prepare()-shape loader, maps the 10.23 MB
   binary) and `SemanticShardStore` (filesystem-truthed, no SQLite registry — the app
   already reads downloaded-ness from disk, and a table would drift) are in
-  `FRUSExplorer/Semantic/`. **Tier 2 has no host yet**: shards arrive through
-  `adoptShard(from:for:)`, which validates before it keeps, and that is the seam a fetch
-  will use.
+  `FRUSExplorer/Semantic/`. **Tier 2 now has a host**: `SemanticShardFetcher` fetches through
+  `adoptShard(from:for:)`, which validates before it keeps, and `AppState.fetchSemanticShardIfNeeded`
+  drives it on a deliberate split — **eagerly** when a volume downloads (148 KB beside ~6 MB is
+  invisible, and it makes the volume semantic-ready exactly when it becomes search-ready) and
+  **lazily** for volumes already on disk, so an existing library does not silently pull 82 MB at
+  launch for a feature the reader has not opened. What is still missing is the **UI** (#900):
+  nothing reports how many shards are on disk, and `SemanticShardFetcher.failure(for:)`,
+  `clearFailures()` and `SemanticShardStore.refusal(for:)` have **no readers at all** — a fetch that
+  fails is recorded, diagnosed, and shown to nobody.
 
 **SPM package targets** (separate from the app, in `Package.swift`):
 - `ManifestGenerator`, `TaxonomyGenerator`, `FTS5Store` (reusable SQLite FTS5 actor)

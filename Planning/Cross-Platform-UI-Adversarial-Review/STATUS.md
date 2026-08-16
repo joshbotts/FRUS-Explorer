@@ -103,6 +103,8 @@ that is a discipline in the commit, not a script.
 | P-3 | [#919](https://github.com/joshbotts/FRUS-Explorer/pull/919) | The concordance keeps its columns and the phone scrolls to them — **the last compact-width finding** |
 | M-2 (graph) | [#920](https://github.com/joshbotts/FRUS-Explorer/pull/920) | The Mac graph window is value-based — two documents' graphs at once; Source Explorer deferred with a reason |
 | F-2 (document) | [#921](https://github.com/joshbotts/FRUS-Explorer/pull/921) | The level #914's probe stopped short of: a document in the detail pane made Browse **three** columns and left the reader 451.5pt. Design §8 |
+| M-4 (3a) | [#922](https://github.com/joshbotts/FRUS-Explorer/pull/922) | The filter token row. Verifying the commissioned design found **three live defects**, incl. a front-matter toggle inert on macOS, and refuted "each token reopens its existing editor" for six of seven fields |
+| M-4 (1b) | [#923](https://github.com/joshbotts/FRUS-Explorer/pull/923) | The titlebar toolbar; the readings become one Picker. Two design premises already false; a wiring audit found **reading its own doc comment** instead of the code |
 
 ---
 
@@ -171,6 +173,12 @@ with the constraint that makes each one bigger than it looks:
 **CW-11 — the rest of the documentation sweep.** The ledger rule is now written (§1a) and the
 guide doors are shipped. What remains is the **re-captures themselves**, which are the owner's by
 standing convention, plus the manual caption corrections that depend on them.
+
+> **Owner decision 2026-08-16: the re-captures are deliberately held.** Wave 2 changed the shape of
+> five surfaces (Browse and Research two-pane, the concordance viewport, the Search window's token
+> row and its new titlebar), and #900 will change a sixth. Capturing now would produce a second
+> stale set — which is X-8, the finding that made P-1 look real, repeated on purpose. **Screenshots
+> resume once the UI settles**, and until then any screenshot-based claim stays unverified by rule.
 
 **Carried over, each with its reason:**
 
