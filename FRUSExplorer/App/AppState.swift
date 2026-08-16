@@ -1487,7 +1487,8 @@ final class AppState {
     /// Volume titles for the volumes currently waiting in the download queue, in order.
     ///
     /// Resolved from `manifestStore`; falls back to `volumeId` when the manifest has no entry.
-    /// Used by `IndexingQueueBannerView`'s expanded pending-list section.
+    /// Used by `MainTabView` and `SupportingViews`' indexing banner. (Was documented as
+    /// `IndexingQueueBannerView`, which no longer references it — corrected 2026-08-15.)
     ///
     /// Version history:
     ///   1.0 — Session 116: initial implementation

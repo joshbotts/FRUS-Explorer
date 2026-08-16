@@ -227,10 +227,22 @@ struct CrossReferenceAnalyticsView: View {
                     }
                 }
             }
-            // iOS omits the nav title so the full nav-bar width goes to the trailing controls —
-            // this is the worst-crowding view (longest title, no compact fold) (#219). The
-            // accessible screen name is preserved via .accessibilityLabel. macOS keeps the title
-            // for its window title bar.
+            // iOS omits the nav title so the full nav-bar width goes to the trailing controls
+            // (#219), unifying the "no-title" pattern across the analytics family. The accessible
+            // screen name is preserved via `.accessibilityLabel`; macOS keeps the title for its
+            // window title bar.
+            //
+            // **The original reason given here — "this is the worst-crowding view (longest title,
+            // no compact fold)" — was false within the hour.** #209 moved this view's chart/table
+            // picker and out-degree toggle into their own collapsible sections thirty minutes
+            // after that sentence was committed, leaving a bar with a single glyph in it. The
+            // surface is now the LEAST crowded in the family, and the one that genuinely truncates
+            // is Archival Analytics' four-segment mode picker (fixed in #908).
+            //
+            // The claim outlived its own refutation because nothing re-reads a comment after the
+            // code beneath it changes — and the UI review then quoted it back as evidence for
+            // finding P-8, which is how a stale comment becomes a work item. The no-title choice
+            // stands on the family-consistency reason above; the crowding reason is retired.
             #if os(macOS)
             .navigationTitle(
                 String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics")
