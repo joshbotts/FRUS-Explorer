@@ -257,7 +257,7 @@ struct BrowserView: View {
                 .statusBarHidden(false)
         }
         .sheet(isPresented: $showCrossRefAnalytics) {
-            CrossReferenceAnalyticsView()
+            CrossReferenceAnalyticsView(onNavigate: dismissCrossRefSheet)
                 .environment(appState)
                 .modelContainer(modelContext.container)
                 // #338 step 4: publish this window's scene id so the analytics view's document /
@@ -398,7 +398,7 @@ struct BrowserView: View {
                     }
                 }
                 Button {
-                    showCrossRefAnalytics = true
+                    presentCrossRefAnalytics()
                 } label: {
                     Label(String(localized: "browse.crossRefAnalytics.a11y", defaultValue: "Cross-Reference Analytics"),
                           systemImage: "point.3.connected.trianglepath.dotted")
@@ -987,6 +987,27 @@ struct BrowserView: View {
             return
         }
         showPersonAnalytics = true
+    }
+
+    /// Dismisses the Cross-Reference sheet after a row hand-off.
+    ///
+    /// The sheet needs this because `BrowserView` both presents it and consumes the hand-off, so
+    /// without dismissing first the document lands on the stack underneath and the tap reads as
+    /// dead (#750 / audit H-5). The WINDOW deliberately passes nil — closing itself on the first
+    /// landmark tap is the opposite of what a window is for.
+    private func dismissCrossRefSheet() {
+        showCrossRefAnalytics = false
+    }
+
+    /// Opens Cross-Reference Analytics in a window where one is available, and in the sheet where
+    /// it is not (UI review F-11 / CW-9e).
+    private func presentCrossRefAnalytics() {
+        if supportsMultipleWindows {
+            appState.openAuxWindow(CrossReferenceAnalyticsRequest(),
+                                   from: sceneID, using: openWindow)
+            return
+        }
+        showCrossRefAnalytics = true
     }
 
     /// Chronology twin of ``presentAnalytics``.
