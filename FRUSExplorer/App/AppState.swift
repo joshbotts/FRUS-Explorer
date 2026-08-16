@@ -665,18 +665,39 @@ final class AppState {
     /// silently pull 82 MB at launch to enable a feature the user has not opened yet.
     ///
     /// - Parameter volumeID: Manifest `volumeId`.
-    func fetchSemanticShardIfNeeded(for volumeID: String) {
+    /// Why a shard fetch is being started — which decides whether the off switch applies.
+    ///
+    /// Stated at every call site rather than defaulted, so a future one cannot inherit the wrong
+    /// answer silently.
+    enum SemanticShardFetchReason {
+        /// A volume finished downloading and its shard is riding along. **Honours the switch** —
+        /// these are the bytes #926 is about: 552 requests fired by a corpus download for an axis
+        /// that is off by default and may never be read.
+        case volumeDownloaded
+        /// A semantic surface is being used right now and wants this shard. **Ignores the switch.**
+        ///
+        /// Reaching here already required a finer and later act of consent than the toggle:
+        /// `.semanticSimilarity` has `defaultWeight` 0 and is the only axis with
+        /// `skipsGenerationAtZeroWeight`, so `RelatedDocumentsEngine` does not even run the
+        /// generator until the reader has deliberately raised an experimental axis off zero.
+        /// Gating this as well would let a coarse, earlier setting overrule a specific, later
+        /// request — and the result would be an axis the reader switched on that scores nothing,
+        /// forever, with the remedy buried in Settings.
+        case readerAskedForSemantics
+    }
+
+    func fetchSemanticShardIfNeeded(for volumeID: String,
+                                    reason: SemanticShardFetchReason) {
         guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
         guard isOnline else { return }
-        // **The off switch (#926).** Read the way `DownloadManager` reads its cellular twin —
-        // straight from `UserDefaults` with the default spelled here, so no view has to own it and
-        // a device that has never seen the toggle behaves as it always did.
+        // **The off switch (#926)**, read the way `DownloadManager` reads its cellular twin —
+        // straight from `UserDefaults` with the default spelled here, so no view owns it and a
+        // device that has never seen the toggle behaves as it always did.
         //
-        // This gates the AUTOMATIC paths only. `downloadAllSemanticShards()` deliberately does not
-        // consult it: pressing a button is the consent this switch withholds, and a manual action
-        // that silently did nothing because of a setting elsewhere would be the no-silent-no-ops
-        // defect this review has spent a fortnight removing.
-        guard Self.automaticSemanticShardDownloads else { return }
+        // It applies to the ride-along only. That is what the control says on screen — "Download
+        // With Volumes" — and a switch that quietly governed more than its label would be the
+        // defect this review keeps removing, committed in the copy instead of the code.
+        if reason == .volumeDownloaded, !Self.automaticSemanticShardDownloads { return }
         Task.detached(priority: .utility) {
             guard await store.shard(for: volumeID) == nil else { return }
             guard await fetcher.hasShard(for: volumeID) else { return }

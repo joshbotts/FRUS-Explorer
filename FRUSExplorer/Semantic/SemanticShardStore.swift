@@ -179,6 +179,42 @@ public actor SemanticShardStore {
         try? FileManager.default.removeItem(at: shardURL(for: volumeID))
     }
 
+    /// The file recording which generation the shards on disk belong to.
+    private var generationMarkerURL: URL { directory.appendingPathComponent(".generation") }
+
+    /// Discards every shard when the bundled generation has moved, and records the new one.
+    ///
+    /// ## Why a marker rather than checking the shards
+    /// A stale shard is otherwise discovered one at a time, by `shard(for:)` throwing
+    /// `provenanceMismatch` when some surface happens to ask — so after a generation change the
+    /// bytes sit on disk indefinitely, the storage screen counts them as present, and the reader is
+    /// told they have vectors they cannot use. Verifying them eagerly means opening 552 files and
+    /// reading 552 headers at launch. One marker file makes it one string comparison.
+    ///
+    /// ## An ABSENT marker is treated as stale, deliberately
+    /// Shards written before this mechanism existed carry no marker and their generation cannot be
+    /// recovered cheaply. Purging them costs a re-download of files the reader can re-fetch; keeping
+    /// them risks presenting another generation's vectors as usable, which the family rule exists to
+    /// forbid. Owner decision 2026-08-16, taken with the 256 → 512 move in view: clear them.
+    ///
+    /// - Returns: How many shards were discarded, so a caller can log or report it.
+    @discardableResult
+    public func purgeIfGenerationChanged() -> Int {
+        let current = provenance.digestHex
+        let recorded = try? String(contentsOf: generationMarkerURL, encoding: .utf8)
+        let present = volumeIDsOnDisk()
+
+        if recorded?.trimmingCharacters(in: .whitespacesAndNewlines) == current {
+            return 0
+        }
+        if !present.isEmpty {
+            removeAllShards()
+        }
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? current.write(to: generationMarkerURL, atomically: true, encoding: .utf8)
+        return present.count
+    }
+
     /// Removes every shard — the corpus-wide teardown partner.
     ///
     /// `ResetService.resetLocalData` deletes volume XML directly through `FileManager`, bypassing

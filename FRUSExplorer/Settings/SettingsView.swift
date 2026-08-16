@@ -1886,8 +1886,13 @@ enum SettingsKeys {
     /// stored property on a mirrored `@Model` would need a Production deploy before shipping
     /// (the #488 gate), and a preference about bytes on one disk has no business there.
     ///
-    /// Read by `AppState.fetchSemanticShardIfNeeded(for:)`. **The manual download ignores it** —
-    /// pressing a button IS the consent this switch withholds.
+    /// Read by `AppState.fetchSemanticShardIfNeeded(for:reason:)` and applied to the
+    /// `.volumeDownloaded` reason ONLY — the ride-along this control names on screen.
+    ///
+    /// Two paths deliberately ignore it. The manual download, because pressing a button IS the
+    /// consent this withholds. And an on-demand fetch from a semantic surface, because reaching one
+    /// already required raising an experimental axis off its zero default — a finer and later
+    /// consent that a coarser earlier setting should not overrule.
     static let autoDownloadSemanticShards = "frus.semantic.autoDownloadShards"
 
     /// UserDefaults key (Bool, default `true`) controlling whether the document
