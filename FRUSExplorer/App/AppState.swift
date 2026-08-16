@@ -503,6 +503,102 @@ final class AppState {
     /// as `semanticShardStore`, plus a bundled shard manifest that disagrees with the bundled index.
     var semanticShardFetcher: SemanticShardFetcher?
 
+    /// Whether a shard may be fetched without the reader asking (`SettingsKeys.autoDownloadSemanticShards`).
+    ///
+    /// Defaults to **true**, which is what the app has always done. Flipping the default would
+    /// quietly stop filling libraries that are being filled today, and a setting whose introduction
+    /// changes behaviour for people who never touched it is a worse trade than one extra request per
+    /// volume — the bytes are already being spent, and this makes them declinable rather than
+    /// retroactively withheld.
+    /// `nonisolated` because it reads `UserDefaults` and nothing else — the same shape
+    /// `DownloadManager.processQueue()` uses for its cellular twin. Isolating a policy read to the
+    /// main actor would force every background caller to hop for a Bool.
+    nonisolated static var automaticSemanticShardDownloads: Bool {
+        (UserDefaults.standard.object(forKey: SettingsKeys.autoDownloadSemanticShards) as? Bool)
+            ?? true
+    }
+
+    /// Progress of a manual shard download, or `nil` when none is running.
+    ///
+    /// **A count, not a byte figure**, and the distinction is the same one #925 made: a shard is
+    /// one `URLSession.download(from:)` with no progress callback, so bytes-within-a-file are not
+    /// observable. Across *many* files the completed count is, and it is what a reader actually
+    /// wants from a bulk action.
+    var semanticShardDownload: SemanticShardDownloadProgress?
+
+    /// A manual bulk shard download in flight.
+    struct SemanticShardDownloadProgress: Equatable, Sendable {
+        /// Shards finished, successfully or not.
+        var completed: Int
+        /// Shards this run set out to fetch.
+        var total: Int
+        /// Shards that failed; their diagnoses are in the fetcher and reach the screen through
+        /// `semanticStorageReport()` like any other failure.
+        var failed: Int
+        /// Set when the reader asks to stop; the loop checks it between shards.
+        var isCancelled: Bool = false
+
+        /// Fraction done, for a determinate progress view.
+        var fraction: Double { total > 0 ? Double(completed) / Double(total) : 0 }
+    }
+
+    /// Volume ids whose shard could be fetched right now: published, absent from disk, and
+    /// belonging to a volume this device actually has.
+    ///
+    /// **Restricted to downloaded volumes on purpose.** A shard for a volume the reader does not
+    /// hold would still score in the funnel — the vectors are independent of the XML — but the
+    /// neighbour it produced could not be opened, so fetching it spends bytes on a result the app
+    /// would have to withhold.
+    func semanticShardsAwaitingDownload() async -> [String] {
+        guard let store = semanticShardStore, let fetcher = semanticShardFetcher,
+              let downloads = downloadManager else { return [] }
+        let onDisk = Set(await store.volumeIDsOnDisk())
+        let known = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
+        var awaiting: [String] = []
+        for entry in known where downloads.isVolumeDownloaded(entry.volumeId) {
+            guard !onDisk.contains(entry.volumeId) else { continue }
+            guard await fetcher.hasShard(for: entry.volumeId) else { continue }
+            awaiting.append(entry.volumeId)
+        }
+        return awaiting.sorted()
+    }
+
+    /// Fetches every shard the device is missing for the volumes it holds.
+    ///
+    /// Serial, deliberately: 552 shards at ~145 KB are many small requests rather than a few large
+    /// ones, and the app's own volume downloads are already queued through `DownloadManager` with a
+    /// concurrency limit the reader controls. Racing an unbounded fan-out against that would
+    /// contend with the downloads this feature exists to accompany.
+    ///
+    /// Ignores ``automaticSemanticShardDownloads`` — see its note.
+    func downloadAllSemanticShards() async {
+        guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
+        // A remembered failure blocks a re-request for the session, which is right for the lazy
+        // path and wrong for someone who just pressed a button.
+        await fetcher.clearFailures()
+
+        let awaiting = await semanticShardsAwaitingDownload()
+        guard !awaiting.isEmpty else { return }
+        semanticShardDownload = SemanticShardDownloadProgress(
+            completed: 0, total: awaiting.count, failed: 0)
+
+        for volumeID in awaiting {
+            if semanticShardDownload?.isCancelled == true { break }
+            do {
+                try await fetcher.fetchShard(for: volumeID, into: store)
+            } catch {
+                semanticShardDownload?.failed += 1
+            }
+            semanticShardDownload?.completed += 1
+        }
+        semanticShardDownload = nil
+    }
+
+    /// Asks a running manual download to stop after the shard in flight.
+    func cancelSemanticShardDownload() {
+        semanticShardDownload?.isCancelled = true
+    }
+
     /// What the storage screens show about semantic vectors (#900).
     ///
     /// Assembled here rather than in either hub because the two are hand-maintained twins: a figure
@@ -572,6 +668,15 @@ final class AppState {
     func fetchSemanticShardIfNeeded(for volumeID: String) {
         guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
         guard isOnline else { return }
+        // **The off switch (#926).** Read the way `DownloadManager` reads its cellular twin —
+        // straight from `UserDefaults` with the default spelled here, so no view has to own it and
+        // a device that has never seen the toggle behaves as it always did.
+        //
+        // This gates the AUTOMATIC paths only. `downloadAllSemanticShards()` deliberately does not
+        // consult it: pressing a button is the consent this switch withholds, and a manual action
+        // that silently did nothing because of a setting elsewhere would be the no-silent-no-ops
+        // defect this review has spent a fortnight removing.
+        guard Self.automaticSemanticShardDownloads else { return }
         Task.detached(priority: .utility) {
             guard await store.shard(for: volumeID) == nil else { return }
             guard await fetcher.hasShard(for: volumeID) else { return }

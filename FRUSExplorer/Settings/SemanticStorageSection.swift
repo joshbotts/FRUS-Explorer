@@ -36,6 +36,11 @@ struct SemanticStorageSection: View {
     @State private var report: SemanticStorageReport = .unavailable
     /// Set while a destructive action runs, so the buttons cannot be pressed twice.
     @State private var busy = false
+    /// Shards this device could fetch right now — published, missing, and for a volume it holds.
+    @State private var awaiting: [String] = []
+    /// The off switch (#926). Device-local, like the cellular-downloads twin beside it.
+    @AppStorage(SettingsKeys.autoDownloadSemanticShards)
+    private var autoDownload: Bool = true
     /// Bumped to re-run the loader after an action.
     @State private var reloadToken = 0
 
@@ -43,6 +48,12 @@ struct SemanticStorageSection: View {
         Section {
             if report.isAvailable {
                 summaryRow
+                if let progress = appState.semanticShardDownload {
+                    downloadProgressRow(progress)
+                } else if !awaiting.isEmpty {
+                    downloadButton
+                }
+                autoDownloadToggle
                 problemsRow
                 if !report.failures.isEmpty { retryButton }
                 if report.volumesOnDisk > 0 { removeButton }
@@ -81,28 +92,98 @@ struct SemanticStorageSection: View {
         )
     }
 
-    // MARK: - Why there is no progress row
+    // MARK: - Why there is no PER-FILE progress, but there is per-shard progress
     //
-    // The issue asks to "report download progress to users", and this section deliberately reports
-    // **none**. Three measurements, not a preference:
+    // #900 asked to "report download progress"; #925 shipped none, and this adds a count. Both are
+    // the same rule applied at two granularities, so neither contradicts the other:
     //
-    // 1. **There is no progress to read.** `SemanticShardFetcher` transfers with
-    //    `URLSession.download(from:)`, a one-shot `async` call with no progress callback. The
-    //    obvious one-line fix — passing a delegate to `download(from:delegate:)` — compiles, reads
-    //    correctly, and delivers zero callbacks, so it would ship a bar pinned at 0%.
-    // 2. **The window is shorter than any refresh.** A shard is ~148 KB and fetches in roughly
-    //    0.065–0.185 s. A one-shot read in `.task` misses essentially every real fetch, and — worse
-    //    — an in-flight row painted from such a read never clears, on a window this file's twin
-    //    documents as being left open overnight. A row that is usually absent and occasionally
-    //    stuck is worse than no row.
-    // 3. **The app's own precedent is state-only for a payload 43× larger.** Volume XML has a
-    //    median of ~5.3 MB and its Active Downloads row shows a title and a Cancel button, no
-    //    bytes. Giving a 148 KB shard strictly more fidelity than the 5.3 MB download beside it
-    //    would read as a bug.
+    // * **Within one shard there is nothing to read.** The transfer is a one-shot
+    //   `URLSession.download(from:)` with no progress callback — passing a delegate to
+    //   `download(from:delegate:)` compiles and delivers zero callbacks, so a bar would sit at 0%.
+    //   The file is ~145 KB and lands in about 0.1 s; a bar would be a flash even if it worked.
+    // * **Across many shards the completed COUNT is observable and worth showing.** A manual
+    //   download of 340 volumes is a minutes-long action, and "downloading 12 of 340" is a true
+    //   sentence the app can produce. That is `AppState.SemanticShardDownloadProgress`.
     //
-    // What a reader actually needs is the **outcome**, and that is what the two rows above give:
-    // how much is here, and what went wrong. If live progress is ever wanted it needs an observable
-    // on `AppState` written by the fetch itself — not a poll — and that is a separate change.
+    // What is still not shown is an in-flight row for the AUTOMATIC path: that fetch is one file,
+    // fired from a background task, and a one-shot read of its state is stale before it renders —
+    // measured in #925, which wrote such a row and deleted it rather than ship one that sticks.
+
+    /// The off switch, and the only place the reader learns these downloads happen at all.
+    ///
+    /// Default ON, matching what the app has always done: a switch whose *introduction* changed
+    /// behaviour for people who never touched it would be a worse trade than the request it saves.
+    private var autoDownloadToggle: some View {
+        Toggle(isOn: $autoDownload) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "settings.vectors.auto.label",
+                            defaultValue: "Download With Volumes"))
+                Text(String(
+                    format: String(localized: "settings.vectors.auto.detail %@",
+                                   defaultValue: "Adds about %@ per volume. Turn this off to fetch them yourself."),
+                    Self.bytes(report.perVolumeEstimate)))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityHint(String(
+            localized: "settings.vectors.auto.a11y",
+            defaultValue: "When off, a volume's vectors are only fetched when you ask for them here"))
+    }
+
+    /// Fetches every shard this device is missing for the volumes it holds.
+    private var downloadButton: some View {
+        Button {
+            Task {
+                await appState.downloadAllSemanticShards()
+                reloadToken += 1
+            }
+        } label: {
+            SettingsNavRow(
+                label: String(localized: "settings.vectors.download.label",
+                              defaultValue: "Download Missing Vectors"),
+                systemImage: "arrow.down.circle",
+                detail: String(
+                    format: String(localized: "settings.vectors.download.detail %lld %@",
+                                   defaultValue: "%lld volumes on this device have none yet — about %@."),
+                    Int64(awaiting.count), Self.bytes(awaiting.count * report.perVolumeEstimate))
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(busy || !appState.isOnline)
+    }
+
+    /// A COUNT, not a byte bar.
+    ///
+    /// One shard is a single `URLSession.download(from:)` with no progress callback, so
+    /// bytes-within-a-file are not observable — but across many files the completed count is, and it
+    /// is what a reader wants from a bulk action anyway. #925 refused to show a per-file bar for
+    /// exactly this reason; this is the same rule reaching the opposite, honest answer at a
+    /// different granularity.
+    private func downloadProgressRow(_ progress: AppState.SemanticShardDownloadProgress) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ProgressView(value: progress.fraction) {
+                Text(String(
+                    format: String(localized: "settings.vectors.download.progress %lld %lld",
+                                   defaultValue: "Downloading %lld of %lld"),
+                    Int64(progress.completed), Int64(progress.total)))
+            }
+            if progress.failed > 0 {
+                Text(String(
+                    format: String(localized: "settings.vectors.download.failed %lld",
+                                   defaultValue: "%lld could not be fetched — see Problems below."),
+                    Int64(progress.failed)))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Button(String(localized: "settings.vectors.download.cancel", defaultValue: "Stop")) {
+                appState.cancelSemanticShardDownload()
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+        }
+    }
 
     /// What has gone wrong that the app has actually noticed.
     ///
@@ -192,6 +273,7 @@ struct SemanticStorageSection: View {
 
     private func reload() async {
         report = await appState.semanticStorageReport()
+        awaiting = await appState.semanticShardsAwaitingDownload()
     }
 
     /// Human byte sizes, one formatter for every figure in this section.

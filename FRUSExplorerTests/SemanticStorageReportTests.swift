@@ -175,6 +175,51 @@ struct SemanticStorageReportTests {
             """)
     }
 
+    // MARK: - #926 · the download controls
+
+    @Test("the per-volume figure is a mean, derived from the authoritative totals")
+    func perVolumeIsDerived() {
+        let r = report(published: 552, publishedBytes: 81_800_908)
+        #expect(r.perVolumeEstimate == 81_800_908 / 552)
+        // Never a stored second copy: if it were, it could disagree with the totals beside it.
+        #expect(report(published: 0, publishedBytes: 0).perVolumeEstimate == 0,
+                "a device with nothing publishable divided by zero")
+    }
+
+    @Test("the off-switch default preserves today's behaviour")
+    func autoDownloadDefaultsOn() {
+        // The switch is device-local (`SettingsKeys.autoDownloadSemanticShards`, never on
+        // `SyncedPreferences`, so no CloudKit deploy) and defaults ON — a preference whose
+        // INTRODUCTION stopped filling libraries that are being filled today would change behaviour
+        // for people who never touched it.
+        let key = SettingsKeys.autoDownloadSemanticShards
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let saved { UserDefaults.standard.set(saved, forKey: key) }
+            else { UserDefaults.standard.removeObject(forKey: key) }
+        }
+
+        UserDefaults.standard.removeObject(forKey: key)
+        #expect(AppState.automaticSemanticShardDownloads,
+                "an app that has never seen the toggle stopped downloading shards")
+
+        UserDefaults.standard.set(false, forKey: key)
+        #expect(!AppState.automaticSemanticShardDownloads)
+        UserDefaults.standard.set(true, forKey: key)
+        #expect(AppState.automaticSemanticShardDownloads)
+    }
+
+    @Test("bulk progress is a count, and reports its own fraction safely")
+    func downloadProgressIsCounted() {
+        var p = AppState.SemanticShardDownloadProgress(completed: 0, total: 340, failed: 0)
+        #expect(p.fraction == 0)
+        p.completed = 170
+        #expect(abs(p.fraction - 0.5) < 0.0001)
+        // A run that found nothing to do must not divide by zero on its way to a progress view.
+        let empty = AppState.SemanticShardDownloadProgress(completed: 0, total: 0, failed: 0)
+        #expect(empty.fraction == 0)
+    }
+
     @Test("a shard the store rejects is a reportable failure, not a silence")
     func storeRejectionIsDescribed() {
         // Before #900 this case was rethrown WITHOUT being recorded, so it appeared in no list and
