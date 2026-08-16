@@ -77,6 +77,14 @@ enum FacetNarrowing: Sendable, Equatable {
             // leaving a stale ref set would AND them and silently return fewer documents
             // than the facet promised.
             parameters.personRef = nil
+            // Drop any anchor from a previous person: it names someone else, and leaving it would
+            // make the next rebind silently re-point this filter back at them. The iOS twin
+            // (`SearchViewModel.applyFacetNarrowing`) has always cleared it, with that reason
+            // written down; this shared path — the one macOS takes — did not, so
+            // `refreshPersonRollupBinding` could re-resolve a facet-chosen person B back to the
+            // popover-chosen person A and overwrite both the id and the label. Found while giving
+            // the person filter a token, which promotes its label to primary window chrome.
+            parameters.personAnchor = nil
         case .documentType(let filter):
             parameters.documentTypeFilter = filter
         }

@@ -150,7 +150,14 @@ struct SearchFilterView: View {
                 if showVolumeScopeSections          { subjectFacetSection }
                 if showVolumeScopeSections          { volumeScopeSectionMac }
                 personSection
-                documentTypeSection
+                // `documentTypeSection` is DELIBERATELY ABSENT on macOS (M-4 §5). The Search
+                // window's token row is now the editor for document type, and the comment above —
+                // "the Type chip in the search bar is not [the editor]" — describes the state
+                // before it: three chips that set the filter but explained nothing. The token's
+                // menu carries the same three options and the same three tooltips.
+                //
+                // This is the one intentional divergence between the two bodies, and
+                // `FilterPanelCollapseTests` is updated to say so rather than being worked around.
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
                 resultPreviewSection
@@ -1278,11 +1285,17 @@ struct SearchFilterView: View {
                        defaultValue: "Include research notes"),
                 isOn: $vm.includeNotes
             )
+            // iOS only (M-4). On macOS front matter is a token in the Search window's filter row,
+            // where it is visible whenever it is narrowing — this toggle was buried three sections
+            // down in a popover, which is why an excluded-front-matter saved search could be in
+            // force with nothing on screen saying so.
+            #if os(iOS)
             Toggle(
                 String(localized: "search.scope.frontMatter",
                        defaultValue: "Include front matter"),
                 isOn: $vm.includeFrontMatter
             )
+            #endif
             if !vm.includeDocumentText {
                 Text(String(localized: "search.scope.documentText.help",
                             defaultValue: "Document text is excluded. Results will match only in summaries and/or research notes."))

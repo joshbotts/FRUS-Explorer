@@ -238,8 +238,9 @@ struct MacSearchWindowView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 scopeRow
-                filterRow
-                documentTypeRow
+                // M-4 / design option 3a: the filter chips row and the always-visible Type row
+                // collapse into one token row where only ACTIVE filters take space.
+                filterTokenRow
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -787,186 +788,383 @@ struct MacSearchWindowView: View {
         }
     }
 
-    // MARK: - Filter Row
+    // MARK: - Filter Token Row (M-4 / design option 3a)
 
-    private var filterRow: some View {
-        HStack(spacing: 8) {
-            FilterChip(
-                label: "Date",
-                value: searchVM.dateRangeLabel,
-                isActive: searchVM.parameters.dateRange != nil
-            ) { searchVM.clearDateFilter() }
-            .help(String(
-                localized: "search.filter.date.help",
-                defaultValue: "Date-range filter (TEI document dates). Tap × to clear."
-            ))
+    /// The label strings the token projection needs, read from the view model that computes them.
+    private var filterTokenLabels: SearchFilterTokens.Labels {
+        SearchFilterTokens.Labels(
+            date:   searchVM.dateRangeLabel,
+            years:  searchVM.yearFilterLabel,
+            volume: searchVM.volumeFilterLabel,
+            person: searchVM.personFilterLabel,
+            tags:   searchVM.tagFilterLabel
+        )
+    }
 
-            Divider().frame(height: 16)
+    /// The filters currently narrowing the search.
+    private var filterTokens: [SearchFilterToken] {
+        SearchFilterTokens.tokens(parameters: searchVM.parameters, labels: filterTokenLabels)
+    }
 
-            // #775: the Years facet's set is a filter the date chip cannot represent — a set of
-            // years is not an interval — so it needs a chip of its own or it would be in force
-            // with nothing on screen saying so.
-            FilterChip(
-                label: "Years",
-                value: searchVM.yearFilterLabel,
-                isActive: searchVM.parameters.yearKeys != nil
-            ) { searchVM.clearYearFilter() }
-            .help(String(
-                localized: "search.filter.years.help",
-                defaultValue: "Years chosen in the facet panel. Matches a document's start year, which is what the facet counts. Tap × to clear."
-            ))
+    /// The sentence beside the tokens: the stated default, a named residual narrowing, or nothing.
+    private var filterRowCaption: String? {
+        SearchFilterTokens.caption(parameters: searchVM.parameters,
+                                   hasTokens: !filterTokens.isEmpty)
+    }
 
-            Divider().frame(height: 16)
-
-            FilterChip(
-                label: "Volume / subseries",
-                value: searchVM.volumeFilterLabel,
-                isActive: searchVM.parameters.volumeIds != nil
-            ) { searchVM.clearVolumeFilter() }
-            .help(String(
-                localized: "search.filter.volume.help",
-                defaultValue: "Volume or subseries filter. Tap × to clear."
-            ))
-
-            Divider().frame(height: 16)
-
-            FilterChip(
-                label: "Person",
-                value: searchVM.personFilterLabel,
-                isActive: searchVM.personFilterLabel != nil
-            ) { searchVM.clearPersonFilter() }
-            .help(String(
-                localized: "search.filter.person.help",
-                defaultValue: "Person filter — set from the People facet or the filter sheet. Tap × to clear."
-            ))
-
-            Divider().frame(height: 16)
-
-            FilterChip(
-                label: "Tagged",
-                value: searchVM.tagFilterLabel,
-                isActive: !searchVM.parameters.userTagIds.isEmpty
-            ) { searchVM.clearTagFilter() }
-            .help(String(
-                localized: "search.filter.tags.help",
-                defaultValue: "User-tag filter. Tap × to clear."
-            ))
-
-            Divider().frame(height: 16)
-
-            Button {
-                searchVM.syncToFilterVM(
-                    searchService: appState.searchService,
-                    volumeEntries: appState.manifestStore.diffResult?.known
-                        ?? appState.manifestStore.bundledEntries,
-                    indexedVolumeIds: appState.indexedVolumeIds,
-                    userTags: allUserTags
-                )
-                // Open the popover IMMEDIATELY, then load the project-scope engaged set
-                // off the main thread (#377 Phase 2a fix). Doing the fetch synchronously
-                // here froze the UI on a large library and made the popover appear not to
-                // display at all.
-                showAdvancedFilters = true
-                refreshProjectScope(resetSelection: false)
-            } label: {
-                HStack(spacing: 3) {
-                    if searchVM.activeFilterSummary != nil {
-                        Image(systemName: "line.3.horizontal.decrease.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Color.accentColor)
-                    } else {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("Advanced…")
-                        .font(.system(size: 11))
-                        .foregroundStyle(searchVM.activeFilterSummary != nil
-                            ? Color.accentColor : Color.secondary)
-                }
+    /// One row where only ACTIVE filters take space (M-4, design option 3a).
+    ///
+    /// ## What this replaces, and the claim that licenses it
+    /// Two rows: five `FilterChip`s that spelled their field name and an italic "any" whether or
+    /// not anything was set, and a permanently visible three-way Type control. Between them they
+    /// spent a full row of a 640 pt window advertising defaults.
+    ///
+    /// The design's argument for removing the always-visible Type chips is that **the at-rest line
+    /// states the whole default in words**, so nothing is hidden. That is only true if the sentence
+    /// is true — see `SearchFilterTokens.atRestCaption(parameters:)`, which refuses to claim
+    /// "everything indexed" while a working corpus, a project gate, a phrase, excluded terms or a
+    /// prefix wildcard is in force. Those are real narrowings that no token represents.
+    ///
+    /// ## Why a wrapping layout rather than a scroll or a truncation
+    /// Seven tokens do not fit 640 pt, and the design makes this "the only chrome row permitted to
+    /// grow vertically" — a truncated filter is an in-force filter the reader cannot see, which is
+    /// the #775 defect the Years chip exists to prevent. `FlowLayout` is the repo's existing
+    /// wrapping layout, moved out of `WordCloudSettingsView` rather than written again.
+    private var filterTokenRow: some View {
+        FlowLayout(spacing: 7) {
+            ForEach(filterTokens) { token in
+                filterTokenView(token)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open advanced search filters")
-            .help(String(
-                localized: "search.filter.advanced.help",
-                defaultValue: "Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately."
-            ))
-            // Live filter popover (UI audit C4): anchored to the button so the
-            // result list stays visible while filtering — the modal sheet this
-            // replaces hid the very results being narrowed. Edits apply
-            // immediately via the `advancedFilterSignature` observation below;
-            // there is no dismiss-time batch.
-            .popover(isPresented: $showAdvancedFilters, arrowEdge: .bottom) {
-                // `filterVM` is created by `syncToFilterVM` only once `appState.searchService`
-                // exists. When it does not, this used to render nothing at all — a zero-size
-                // popover, which reads as a control that simply does not work. The guard above
-                // should make that unreachable now; this stays because "unreachable" is a claim
-                // about today's scene graph, and the failure it replaces was silent.
-                if searchVM.filterVM == nil {
-                    VStack(spacing: 6) {
-                        ProgressView()
-                        Text(String(localized: "search.filters.preparing",
-                                    defaultValue: "Filters aren’t ready yet — the index is still loading."))
-                            .font(.callout)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(24)
-                    .frame(width: 320)
-                }
-                if let filterVM = searchVM.filterVM {
-                    // `filterVM` is the sheet's own view model and `syncToFilterVM` copies
-                    // `phrase` but not `keywords`, so counting against its own parameters
-                    // would describe a different result set than the one behind the sheet.
-                    SearchFilterView(vm: filterVM,
-                                     tagCountParameters: searchVM.submittedSearchParameters)
-                        .frame(width: 480, height: 560)
-                        .onChange(of: filterVM.advancedFilterSignature) { _, _ in
-                            searchVM.applyAdvancedFilters()
-                        }
-                }
+
+            addFilterMenu
+
+            // **Shown whenever it has something to say, not only when the row is empty.** Gating
+            // this on `filterTokens.isEmpty` — the obvious reading of "at-rest caption" — hides the
+            // residual sentence in exactly the case that needs it most: a Date token beside an
+            // applied working corpus would show "Date · 1948" and say nothing about the document
+            // set the query is actually confined to, which is the stronger narrowing of the two.
+            if let caption = filterRowCaption {
+                Text(caption)
+                    .font(.system(size: 11))
+                    .italic()
+                    .foregroundStyle(.tertiary)
+                    .fixedSize()
             }
+
+            Divider().frame(height: 16)
+
+            advancedFiltersButton
         }
     }
 
-    // MARK: - Document Type Row
+    /// One active filter: field name, value, an edit affordance, and a remove button.
+    ///
+    /// The edit affordance is **per field**, because the editors are not uniform — see
+    /// `SearchFilterField.editor`. Type and Front matter carry their own menu; Date, Volume, Person
+    /// and Tags open the Advanced popover, which holds their only editor; Years opens the facet
+    /// panel, which is the only thing in the app that produces a year set.
+    @ViewBuilder
+    private func filterTokenView(_ token: SearchFilterToken) -> some View {
+        HStack(spacing: 4) {
+            if token.field.editor == .inlineMenu {
+                Menu {
+                    inlineEditorMenuItems(for: token.field)
+                } label: {
+                    filterTokenBody(token)
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+            } else {
+                Button { openEditor(for: token.field) } label: {
+                    filterTokenBody(token)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canOpenEditor(for: token.field))
+            }
 
-    private var documentTypeRow: some View {
-        HStack(spacing: 6) {
-            Text("Type")
+            Button { clearFilter(token.field) } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .help(String(localized: "search.token.clear.help",
+                         defaultValue: "Remove this filter"))
+            .accessibilityLabel(String(
+                format: String(localized: "search.token.clear.a11y %@",
+                               defaultValue: "Clear %@ filter"),
+                token.field.displayName))
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 3)
+        .background(Color.accentColor.opacity(0.10))
+        .clipShape(Capsule())
+        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 0.5))
+        .help(editorHelpText(for: token.field))
+        // One element for VoiceOver, so the field and its value are announced together rather
+        // than as two unrelated fragments; the remove button stays separately focusable.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(
+            format: String(localized: "search.token.a11y %@ %@",
+                           defaultValue: "%@ filter, %@"),
+            token.field.displayName, token.value))
+    }
+
+    /// The token's text: field name in secondary, value in accent, chevron when it can be edited.
+    private func filterTokenBody(_ token: SearchFilterToken) -> some View {
+        HStack(spacing: 4) {
+            Text(token.field.displayName)
                 .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
+            Text(token.value)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.accentColor)
+            if canOpenEditor(for: token.field) {
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(Color.accentColor.opacity(0.7))
+            }
+        }
+        .fixedSize()
+    }
 
+    /// The "+ Filter" pull-down: every field that has no token yet.
+    ///
+    /// A field whose value is chosen from a short list is offered with its values inline (Type as a
+    /// submenu, Front matter as the single non-default choice), so adding it is one gesture rather
+    /// than "add, then find its editor". The rest open their editor, which is the design's
+    /// "the token appears and immediately opens its editor".
+    @ViewBuilder
+    private var addFilterMenu: some View {
+        let addable = SearchFilterTokens.addableFields(parameters: searchVM.parameters,
+                                                       labels: filterTokenLabels)
+        Menu {
+            ForEach(addable) { field in
+                switch field.editor {
+                case .inlineMenu:
+                    if field == .type {
+                        Menu(field.displayName) { inlineEditorMenuItems(for: field) }
+                    } else {
+                        Button(field.displayName) { searchVM.setIncludeFrontMatter(false) }
+                    }
+                case .advancedPopover, .facetPanel:
+                    Button(field.displayName) { openEditor(for: field) }
+                        .disabled(!canOpenEditor(for: field))
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "plus").font(.system(size: 9))
+                Text(String(localized: "search.token.add", defaultValue: "Filter"))
+                    .font(.system(size: 11))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 3)
+            .overlay(Capsule().strokeBorder(Color.secondary.opacity(0.35), lineWidth: 0.5))
+            .fixedSize()
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(addable.isEmpty)
+        .help(String(localized: "search.token.add.help",
+                     defaultValue: "Add a filter — date, years, volume, person, tags, type or front matter"))
+        .accessibilityLabel(String(localized: "search.token.add.a11y", defaultValue: "Add a filter"))
+    }
+
+    /// The value choices for a field edited inline.
+    @ViewBuilder
+    private func inlineEditorMenuItems(for field: SearchFilterField) -> some View {
+        switch field {
+        case .type:
+            // The trio stays exclusive and keeps `DocumentTypeFilter.searchUIOptions`' wording, so
+            // the menu and the Advanced popover's picker (where it survives, on iOS) agree.
             ForEach(DocumentTypeFilter.searchUIOptions, id: \.label) { option in
                 Button {
                     searchVM.setDocumentTypeFilter(option.filter)
                 } label: {
-                    Text(option.label)
-                        .font(.system(size: 11))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(
-                            searchVM.parameters.documentTypeFilter == option.filter
-                                ? Color.green.opacity(0.15)
-                                : Color.secondary.opacity(0.08)
-                        )
-                        .foregroundStyle(
-                            searchVM.parameters.documentTypeFilter == option.filter
-                                ? Color.green : Color.secondary
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 5)
-                                .strokeBorder(
-                                    searchVM.parameters.documentTypeFilter == option.filter
-                                        ? Color.green.opacity(0.4)
-                                        : Color.secondary.opacity(0.2),
-                                    lineWidth: 0.5
-                                )
-                        )
+                    if searchVM.parameters.documentTypeFilter == option.filter {
+                        Label(option.label, systemImage: "checkmark")
+                    } else {
+                        Text(option.label)
+                    }
                 }
-                .buttonStyle(.plain)
+                // The three explanations the removed Type row carried in its tooltips. They say
+                // what each option DOES, which the three-word labels do not, so they follow the
+                // control rather than being retired with the row.
                 .help(documentTypeHelpText(for: option.filter))
+            }
+        case .frontMatter:
+            Button {
+                searchVM.setIncludeFrontMatter(true)
+            } label: {
+                if searchVM.parameters.includeFrontMatter {
+                    Label(String(localized: "search.token.frontMatter.included",
+                                 defaultValue: "Included"), systemImage: "checkmark")
+                } else {
+                    Text(String(localized: "search.token.frontMatter.included",
+                                defaultValue: "Included"))
+                }
+            }
+            Button {
+                searchVM.setIncludeFrontMatter(false)
+            } label: {
+                if searchVM.parameters.includeFrontMatter {
+                    Text(String(localized: "search.token.frontMatter.excludedMenu",
+                                defaultValue: "Excluded"))
+                } else {
+                    Label(String(localized: "search.token.frontMatter.excludedMenu",
+                                 defaultValue: "Excluded"), systemImage: "checkmark")
+                }
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    /// Whether this field's editor can be opened right now.
+    ///
+    /// The facet panel needs results to describe, and its own toggle is disabled without them —
+    /// so a Years token must be too, rather than opening an empty panel.
+    private func canOpenEditor(for field: SearchFilterField) -> Bool {
+        switch field.editor {
+        case .inlineMenu:      return true
+        case .advancedPopover: return true
+        case .facetPanel:      return !searchVM.results.isEmpty
+        }
+    }
+
+    /// Opens the surface that edits this field.
+    private func openEditor(for field: SearchFilterField) {
+        switch field.editor {
+        case .inlineMenu:
+            break   // handled by the token's own Menu
+        case .advancedPopover:
+            openAdvancedFilters()
+        case .facetPanel:
+            guard !searchVM.results.isEmpty else { return }
+            // **Seed the panel with the filter being edited, or editing it destroys it.**
+            // `FacetPanelController.seedSelection` was written for exactly this — its doc comment
+            // says it exists "so opening the panel shows what is filtering rather than an empty
+            // slate the Apply button would then undo" — and it had **zero callers** repo-wide
+            // until this line. Without it, a Years token's chevron opens a panel with no years
+            // checked, and the reader's first Apply clears the filter they came to change.
+            facetController.seedSelection(searchVM.parameters.yearKeys, in: .years)
+            showFacetPanel = true
+        }
+    }
+
+    /// The hover text naming where a token's value is edited.
+    private func editorHelpText(for field: SearchFilterField) -> String {
+        switch field.editor {
+        case .inlineMenu:
+            return String(localized: "search.token.editor.menu.help",
+                          defaultValue: "Change this filter’s value")
+        case .advancedPopover:
+            return String(localized: "search.token.editor.advanced.help",
+                          defaultValue: "Edit this filter in Advanced filters")
+        case .facetPanel:
+            return String(localized: "search.token.editor.facets.help",
+                          defaultValue: "Years are chosen in the facet panel")
+        }
+    }
+
+    /// Resets one field to its default, which is what makes its token disappear.
+    private func clearFilter(_ field: SearchFilterField) {
+        switch field {
+        case .date:        searchVM.clearDateFilter()
+        case .years:       searchVM.clearYearFilter()
+        case .volume:      searchVM.clearVolumeFilter()
+        case .person:      searchVM.clearPersonFilter()
+        case .tags:        searchVM.clearTagFilter()
+        case .type:        searchVM.setDocumentTypeFilter(.all)
+        case .frontMatter: searchVM.setIncludeFrontMatter(true)
+        }
+    }
+
+    /// Prepares and presents the Advanced filters popover.
+    ///
+    /// Extracted so the button and every token that routes here share one preamble — a second call
+    /// site that forgot `syncToFilterVM` would open the popover against stale state, and a second
+    /// that forgot `refreshProjectScope` would drop the project gate.
+    private func openAdvancedFilters() {
+        searchVM.syncToFilterVM(
+            searchService: appState.searchService,
+            volumeEntries: appState.manifestStore.diffResult?.known
+                ?? appState.manifestStore.bundledEntries,
+            indexedVolumeIds: appState.indexedVolumeIds,
+            userTags: allUserTags
+        )
+        // Open the popover IMMEDIATELY, then load the project-scope engaged set off the main
+        // thread (#377 Phase 2a fix). Doing the fetch synchronously here froze the UI on a large
+        // library and made the popover appear not to display at all.
+        showAdvancedFilters = true
+        refreshProjectScope(resetSelection: false)
+    }
+
+    /// The Advanced… button, unchanged by M-4 apart from carrying a count (D11).
+    private var advancedFiltersButton: some View {
+        Button {
+            openAdvancedFilters()
+        } label: {
+            HStack(spacing: 3) {
+                if searchVM.activeFilterSummary != nil {
+                    Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.accentColor)
+                } else {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                Text("Advanced…")
+                    .font(.system(size: 11))
+                    .foregroundStyle(searchVM.activeFilterSummary != nil
+                        ? Color.accentColor : Color.secondary)
+            }
+            .fixedSize()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open advanced search filters")
+        .help(String(
+            localized: "search.filter.advanced.help",
+            defaultValue: "Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately."
+        ))
+        // Live filter popover (UI audit C4): anchored to the button so the
+        // result list stays visible while filtering — the modal sheet this
+        // replaces hid the very results being narrowed. Edits apply
+        // immediately via the `advancedFilterSignature` observation below;
+        // there is no dismiss-time batch.
+        .popover(isPresented: $showAdvancedFilters, arrowEdge: .bottom) {
+            // `filterVM` is created by `syncToFilterVM` only once `appState.searchService`
+            // exists. When it does not, this used to render nothing at all — a zero-size
+            // popover, which reads as a control that simply does not work. The guard above
+            // should make that unreachable now; this stays because "unreachable" is a claim
+            // about today's scene graph, and the failure it replaces was silent.
+            if searchVM.filterVM == nil {
+                VStack(spacing: 6) {
+                    ProgressView()
+                    Text(String(localized: "search.filters.preparing",
+                                defaultValue: "Filters aren’t ready yet — the index is still loading."))
+                        .font(.callout)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(24)
+                .frame(width: 320)
+            }
+            if let filterVM = searchVM.filterVM {
+                // `filterVM` is the sheet's own view model and `syncToFilterVM` copies
+                // `phrase` but not `keywords`, so counting against its own parameters
+                // would describe a different result set than the one behind the sheet.
+                SearchFilterView(vm: filterVM,
+                                 tagCountParameters: searchVM.submittedSearchParameters)
+                    .frame(width: 480, height: 560)
+                    .onChange(of: filterVM.advancedFilterSignature) { _, _ in
+                        searchVM.applyAdvancedFilters()
+                    }
             }
         }
     }
