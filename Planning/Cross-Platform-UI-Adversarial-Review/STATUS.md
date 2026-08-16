@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #915. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #916. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -97,6 +97,7 @@ that is a discipline in the commit, not a script.
 | F-2 (split probe) | [#913](https://github.com/joshbotts/FRUS-Explorer/pull/913) | §7.6 answered NO — the nested split empties itself in the sidebar representation; §7.1 is the design to build |
 | F-2 | [#914](https://github.com/joshbotts/FRUS-Explorer/pull/914) | **§7.1 SHIPS** — Browse is two panes at wide iPad width; two oracles reworked pane-aware |
 | F-2 (Research) | [#915](https://github.com/joshbotts/FRUS-Explorer/pull/915) | Research gets the same two-pane; **F-2 is now complete** |
+| M-9 · M-3 · M-4 | [#916](https://github.com/joshbotts/FRUS-Explorer/pull/916) | Read-mode chevrons visible; M-3 closed by recorded decision; M-4 design brief; a live inert toggle found and fixed |
 
 ---
 
@@ -189,6 +190,7 @@ of them overrule the recommendation I gave.
 |---|---|---|
 | **F-2** — iPad width discipline, given that capping a root `List` breaks its native style | **Two-pane at regular width** — SHIPPED — Browse in #914, Research in #915, as §7.1 after two shapes were refuted by measurement (#912 nested stack, #913 nested split). **Complete.** | Browse and Research gain a list + detail layout following `CollectionEditorView.iPadCollectionLayout` (`:734`, reached via `if sizeClass == .regular` at `:518`). Must honour the #238 rule: a plain `HStack` of two panes, **never** a nested `NavigationSplitView`. This is the largest of the four options and was chosen over my recommendation of capping row content — so the row-content cap is NOT a fallback to drift into; if the two-pane shape proves wrong, that is a new decision. |
 | **F-3** — what populates the iPad tab sidebar | **Saved searches + projects** | Shipped in #909, **as a sidebar footer rather than the `TabSection`s the review names**. `TabSection`'s children must be `Tab`s carrying the selection binding's type, and that binding is `@SceneStorage("frus.selectedTab") var selectedTab: AppTab` — persisted across launches and threaded through `openTab` / `consumePendingTab` / `seedActiveTab` and ~20 hand-off sites. So `TabSection` costs a change to how the app remembers where you were, in exchange for a shortcut list. There is also a semantic objection that decided it: a saved search is not a peer of Browse and Search, it is a shortcut that *runs* in the Search tab. If true `TabSection`s are ever wanted, the identity widening is the prerequisite. |
+| **M-4** (HIGH, macOS) | ten hover-explained icon toggles; "opens at minWidth 640" | **Holds on five of six points.** The window opens at **820** (640 is the resize floor); the sort bar has **11** controls not 8; only **four** are icon-only; and "meaning delivered exclusively via `.help`" is **true for sighted users, false for VoiceOver** — every icon-only button carries a state-dependent `accessibilityLabel`. Two things the finding misses entirely: one SF Symbol convention (`X` vs `X.fill`) carries **two contradictory meanings** in the same window, and the segmented picker it calls an iOS pattern **already ships inside this window's own Advanced popover**. Brief: `M-4-mac-search-chrome-brief.md`. |
 | **P-8's real defect** — Archival Analytics' mode picker truncating to `Col… Net… Flo… You…` | **Menu at compact width** | Shipped in #908. Half the stated cost was recovered for free: a `.menu`-style `Picker` still shows its current selection as its label, so the reader keeps the sense of *which* view they are in — only the sense that four exist is traded for the extra tap. |
 | **What comes next** | **CW-9, the window model** | Ahead of implementing F-2, the Mac chrome items (M-4/M-9), and F-3. |
 

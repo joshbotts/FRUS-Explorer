@@ -71,7 +71,13 @@ struct AdvancedFilterSignatureTests {
             ?? String(rest.prefix(3_000))
 
         for scope in Self.booleanScopes {
-            #expect(body.contains(scope), """
+            // The APPEND, not the identifier. Checking `body.contains(scope)` is satisfied by any
+            // mention — including the explanatory comment that sits directly above the append and
+            // names the very property it documents. Mutation-tested: with the loose check, deleting
+            // the append left the suite green, because the comment kept the word alive. That is the
+            // same shape as the review findings this program has repeatedly caught citing a doc
+            // comment instead of code.
+            #expect(body.contains("parts.append(\(scope)"), """
                 `\(scope)` is copied into SearchParameters but does not appear in \
                 advancedFilterSignature. On macOS the Advanced popover applies live, and this \
                 signature is what tells applyAdvancedFilters() the filter view model changed — so \

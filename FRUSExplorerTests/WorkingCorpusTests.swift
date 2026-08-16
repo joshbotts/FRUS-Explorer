@@ -253,7 +253,14 @@ struct WorkingCorpusPlatformParityTests {
         let rest = vm[start.upperBound...]
         let end = try #require(rest.range(of: "\n    }"), "no closing brace for advancedFilterSignature")
         let body = String(vm[start.lowerBound..<end.upperBound])
-        #expect(body.count < 2_500, "the extracted window is too large to be one computed property")
+        // A sanity bound on the EXTRACTION — "did the range-finding grab more than one computed
+        // property?" — not a budget on how long the property may be. Raised from 2,500 when a
+        // fourth scope was added (`includeFrontMatter`): measured at that point the body was 2,615
+        // characters for **22 code lines**, over half of it comments, so the extraction was
+        // correct and only the number was stale. A correct new scope must not fail this test by
+        // pushing an existing one past the edge, which is the same reasoning
+        // `HandoffVisibilityTests` records for its own scan window.
+        #expect(body.count < 3_200, "the extracted window is too large to be one computed property")
         #expect(body.contains("parts.append"), "sanity: this really is the signature body")
         // The Mac copies filter state into `parameters` only when this string changes. Applying or
         // clearing a corpus without touching it left the corpus set, shown as applied, and ignored.
