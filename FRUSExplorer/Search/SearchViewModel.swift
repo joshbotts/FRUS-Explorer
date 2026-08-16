@@ -283,6 +283,17 @@ final class SearchViewModel {
         parts.append(includeDocumentText ? "1" : "0")
         parts.append(includeSummaries ? "1" : "0")
         parts.append(includeNotes ? "1" : "0")
+        // The fourth scope, and it was missing — the third instance of the bug class this
+        // function's own comments already record twice. `includeFrontMatter` reaches
+        // `SearchParameters` and has real SQL effect (`IndexingPipeline` filters on it), but the
+        // macOS Advanced popover's live "Include front matter" toggle perturbed nothing, because
+        // this signature is what tells `applyAdvancedFilters()` the filter VM changed. So the
+        // control moved, the results did not, and the window went on drawing its teal
+        // "front matter" chips on rows the reader had just asked to exclude.
+        //
+        // Found while inventorying this window for a design brief — not by the M-10 scope-chip
+        // test, which parses `ScopeChip(` lines and structurally cannot see a `Toggle`.
+        parts.append(includeFrontMatter ? "1" : "0")
         parts.append(selectedSubseriesIds.sorted().joined(separator: ","))
         // M-1: without this the Mac's `applyAdvancedFilters` never fires on an apply or a clear —
         // the signature is what tells it the filter VM changed — so the corpus was set, shown as

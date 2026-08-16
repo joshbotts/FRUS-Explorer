@@ -696,6 +696,27 @@ struct FRUSExplorerApp: App {
         }
 
         // MARK: - Search Window
+        //
+        // **A singleton by decision, not by omission** (UI review M-3, owner decision
+        // 2026-08-15). The finding asks for multi-window Search so two result sets can be
+        // compared; the worklist row that carries it says "multi-window Search (or recorded
+        // decision)", and this is the recorded decision.
+        //
+        // The reason is that the value-based `WindowGroup(for:)` pattern the other tool windows
+        // use does not fit this surface. Those windows reuse by request EQUALITY — ask for the
+        // same archival source twice and the existing window is focused — which works because
+        // each carries a request that fully describes it. A Search window is opened **empty and
+        // typed into**, so every open would present the same empty request: keyed by equality it
+        // collapses to one window anyway, and keyed by a minted id it opens an unbounded pile of
+        // identical empty windows. Neither is the comparison the finding wants.
+        //
+        // The measured cost is also real rather than theoretical: `MacSearchViewModel` holds six
+        // pieces of state a second window would share, so two windows would show two views of one
+        // query — worse than one window, not better.
+        //
+        // If side-by-side comparison is revisited, the shape that fits is a window keyed by a
+        // SAVED SEARCH (a value that does describe itself), opened from the Saved Searches
+        // surface — not a second empty window. That is a feature, not a scene change.
         Window("Search", id: "frus.search") {
             MacSearchWindowView()
                 .environment(appState)

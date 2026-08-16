@@ -897,17 +897,31 @@ struct MacDocumentView: View {
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(.black.opacity(0.05)))
                     // Hit region = the 34 pt circle only (NOT the padded frame), so a click anywhere
-                    // else in the margin passes through to the web view. The circle can't swallow a
-                    // click while it's faded out: on macOS a pointer can't reach the circle without a
-                    // mouseEntered firing first (which reveals it), so any click there lands on a
-                    // shown chevron (C2b review D3). The inset below keeps it clear of the scrollbar.
+                    // else in the margin passes through to the web view. The inset below keeps it
+                    // clear of the scrollbar.
+                    //
+                    // C2b review D3 argued the circle could not swallow a click while faded out,
+                    // because a pointer cannot reach it without a `mouseEntered` revealing it
+                    // first. That reasoning is now moot rather than wrong: M-9 made the chevron
+                    // visible at rest, so there is no faded-out state to click into.
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
             // 16 pt inset (not 8) so the circle sits inboard of the trailing overlay scrollbar band;
             // otherwise reaching for the scrollbar would land on this button instead (C2b review D3a).
             .padding(edge == .leading ? .leading : .trailing, 16)
-            .opacity(hoveredNavEdge == edge ? 1 : 0)
+            // **Visible, not hover-revealed** (UI review M-9). These were `opacity(0)` until the
+            // pointer entered, which meant the mode named *Read* — the one for reading through a
+            // volume — offered no visible way to turn the page at all: the bottom volume bar
+            // renders only in Research mode, so a reader who never happened to sweep the margin
+            // had ⌘⌥↑/↓ or nothing. An affordance you must already know about is not an
+            // affordance.
+            //
+            // Hover still *emphasises* them, which keeps the quiet-until-wanted feel the original
+            // was reaching for while leaving them discoverable. The resting opacity is deliberately
+            // not 1: at full strength two circles sit in the margin of every document competing
+            // with the text, which is what the hover-reveal was avoiding.
+            .opacity(hoveredNavEdge == edge ? 1 : 0.35)
             .onHover { hoveredNavEdge = $0 ? edge : nil }
             .animation(.easeInOut(duration: 0.15), value: hoveredNavEdge)
             .help(String(localized: edge == .leading ? "document.nav.previous.help"
