@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #919. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #920. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
 
 ---
 
@@ -101,6 +101,7 @@ that is a discipline in the commit, not a script.
 | CW-9e | [#917](https://github.com/joshbotts/FRUS-Explorer/pull/917) | Cross-Reference Analytics window — **F-11 complete, all six surfaces**; integration logged separately |
 | stale comments | [#918](https://github.com/joshbotts/FRUS-Explorer/pull/918) | P-8's falsified comment retired; four stale "Used by" claims corrected; the class closed by a test |
 | P-3 | [#919](https://github.com/joshbotts/FRUS-Explorer/pull/919) | The concordance keeps its columns and the phone scrolls to them — **the last compact-width finding** |
+| M-2 (graph) | [#920](https://github.com/joshbotts/FRUS-Explorer/pull/920) | The Mac graph window is value-based — two documents' graphs at once; Source Explorer deferred with a reason |
 
 ---
 

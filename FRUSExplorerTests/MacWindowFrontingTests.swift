@@ -196,15 +196,30 @@ struct MacWindowFrontingTests {
         }
     }
 
-    @Test("Both graph context menus front the Cross-Reference Graph window")
-    func graphContextMenusFront() throws {
-        // M-13: these retarget `currentGraphEntry`, which the graph window binds LIVE — so without
-        // fronting, a buried graph silently became a different document's graph.
+    @Test("Document graph openings are keyed by document, so nothing retargets")
+    func graphContextMenusOpenByValue() throws {
+        // **M-13's concern is dissolved, not relaxed, and the difference matters.** That finding
+        // was: these menus retarget `currentGraphEntry`, which the window bound LIVE, so a buried
+        // graph silently became a different document's graph. #749's remedy was to make the
+        // retarget VISIBLE (open-and-raise) — the best available fix while one window read one
+        // global.
+        //
+        // M-2 removed the global from the path: a document opening is now `openWindow(value:)`
+        // with a `GraphWindowRequest`, so a second document opens a SECOND WINDOW and there is no
+        // retarget left to make visible. Asserting `fronting(id:)` here would now be asserting the
+        // absence of the fix.
         for relative in ["App/MacCorpusBrowserWindow.swift", "Research/ResearchView.swift"] {
             let source = try Self.source(relative)
-            #expect(source.contains("openWindow.fronting(id: \"frus.crossReferenceGraph\")"),
-                    "\(relative) must front the graph window when it retargets it (#749 / M-13)")
+            #expect(source.contains("openWindow(value: GraphWindowRequest(entry:"),
+                    "\(relative) must open a document's graph BY VALUE — an id-based open would reuse one window and retarget it, which is #749 / M-13 all over again")
         }
+
+        // The volume hand-off keeps its id-based fronting deliberately: a volume graph has no
+        // document to key on, and the window consumes `pendingVolumeGraph` itself. The scene keeps
+        // an `id` precisely so this and the cold Window-menu door still have a way in.
+        let browser = try Self.source("App/MacCorpusBrowserWindow.swift")
+        #expect(browser.contains("openWindow.fronting(id: \"frus.crossReferenceGraph\")"),
+                "the VOLUME graph hand-off must still front by id — it has no request to key on")
     }
 
     @Test("Complete History… and About front their windows")

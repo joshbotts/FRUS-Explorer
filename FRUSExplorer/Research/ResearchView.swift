@@ -823,7 +823,10 @@ struct ResearchView: View {
             appState.currentGraphEntry = browsEntry
             // The graph inherits this Research window's provenance (transitive bind).
             appState.bindTool(.graph, to: appState.provenance(of: .research))
-            openWindow.fronting(id: "frus.crossReferenceGraph")
+            // M-2: keyed by the document, so a second graph is a second WINDOW rather than a
+            // retarget of this one. `currentGraphEntry` is still set above for any consumer that
+            // reads it; the window itself now prefers its own request.
+            openWindow(value: GraphWindowRequest(entry: browsEntry))
         } label: {
             Label(
                 String(localized: "research.action.showGraph",

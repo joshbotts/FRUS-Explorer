@@ -785,9 +785,29 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 520, height: 640)
 
-        // MARK: - Cross-Reference Graph Window
-        Window("Cross-Reference Graph", id: "frus.crossReferenceGraph") {
-            CrossReferenceGraphWindowView()
+        // MARK: - Cross-Reference Graph Window (UI review M-2)
+        //
+        // **Value-based, so two documents' graphs can be open at once.** That is M-2's actual
+        // defect: the cross-wiring it describes was largely closed already (Source Explorer
+        // snapshots its note; every writer of `currentGraphEntry` is a deliberate user open), and
+        // what remained was scene COUNT — comparing document A's citations against B's was
+        // impossible because the second open retargeted the first window. #749 / M-13 made that
+        // retarget *visible* rather than preventing it, which was the best available fix while a
+        // single window read a single global.
+        //
+        // `GraphWindowRequest` is not new: it has shipped value-based on iPad since #317, so this
+        // is the macOS half of that port.
+        //
+        // **A nil request is the cold Window-menu state and still works** — the view falls back to
+        // the shared slot and then to its volume/document picker, exactly as before. The cost
+        // #363 records is real though: a value-based group is NOT auto-listed on the macOS Window
+        // menu, so the explicit command below replaces the door this conversion removes.
+        // **An `id` AND a value type.** The id keeps the two openings that have no document to
+        // key on — the volume hand-off, and the cold Window-menu door — working exactly as before
+        // via `fronting(id:)`, while `openWindow(value:)` mints or focuses a per-document window.
+        // Without the id those two would have no way in at all.
+        WindowGroup(id: "frus.crossReferenceGraph", for: GraphWindowRequest.self) { $request in
+            CrossReferenceGraphWindowView(request: request)
                 .environment(appState)
                 // Parity with every other scene. Nothing under `CrossReference/` reads `@Query` or
                 // `\.modelContext` today, so this is latent rather than a live defect — but the
