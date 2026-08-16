@@ -369,7 +369,8 @@ public actor CrossReferenceStore {
     /// Returns every `(volumeId, documentId, userTagIds)` tuple where `document_cache`
     /// has at least one user tag stored in the `user_tag_ids` column.
     ///
-    /// Used by `ResearchView` to build the directly-tagged-documents data source,
+    /// Used by `FRUSExplorerApp`'s research plumbing to build the directly-tagged-documents source,
+    /// (documented as `ResearchView` until 2026-08-15, which no longer references it),
     /// independently of whether those documents also have `ResearchNote` records in
     /// SwiftData. This keeps user tags and research notes as separate annotation types.
     public func documentsWithUserTags() throws -> [(volumeId: String, documentId: String, userTagIds: [UUID])] {
@@ -610,7 +611,15 @@ public actor CrossReferenceStore {
     ///   subseries to scope the graph to that subseries rather than the entire corpus.
     ///   `nil` returns all cross-volume connections (corpus-wide).
     ///
-    /// Used by `VolumeConnectionGraphView` in the Corpus Browser.
+    /// Used by **Cross-Reference Analytics' volume heat matrix**, and by nothing else in the app.
+    ///
+    /// This comment used to name `VolumeConnectionGraphView`, and had not been true since that
+    /// view was redesigned onto `volumeEgoGraph`. It is corrected rather than deleted because the
+    /// difference is load-bearing: the two surfaces reach volume-to-volume counts by **two
+    /// different queries**, so anyone scoping work across them from this comment starts from a
+    /// false map — which is exactly what the cross-reference integration assessment found (see
+    /// `Planning/Cross-Platform-UI-Adversarial-Review/crossref-integration.md` §1, §3c, where
+    /// reconciling the two is logged as its own task).
     public func volumeLevelConnections(limitToVolumeIds: [String]? = nil,
                                        yearRange: ClosedRange<Int>? = nil) throws -> [VolumeConnectionEdge] {
         // The heat matrix is a volume×volume adjacency, so `limitToVolumeIds` keeps its

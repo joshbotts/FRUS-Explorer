@@ -8087,7 +8087,8 @@ public actor IndexingPipeline {
 
     /// Returns the raw source-note text for a single document from `document_cache`.
     ///
-    /// Used by `CollectionEditorView` when the export footnote style is `.sourceNoteOnly`
+    /// Used by `CollectionEntryInspector` and `CollectionContentResolver` (documented as
+    /// `CollectionEditorView` until 2026-08-15, which no longer references it) when the export footnote style is `.sourceNoteOnly`
     /// so the exporter can append the archival provenance note without emitting all
     /// editorial/explanatory footnotes.
     ///
