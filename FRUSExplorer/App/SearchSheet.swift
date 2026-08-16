@@ -167,6 +167,37 @@ struct MacSearchWindowView: View {
     @State private var concordanceSort: KWICSort = .leftContext
     /// Collocates mode (S-2). Mutually exclusive with the other two — all three replace the list.
     @State private var showCollocates = false
+
+    /// Which reading the three flags currently amount to.
+    ///
+    /// `ResultReading` was already used in this file for `isPaged`; M-4's toolbar adopts the rest
+    /// of it. The precedence lives in the enum, beside the flags, so the control cannot name one
+    /// reading while `resultsList`'s `else if` chain shows another.
+    private var activeReading: ResultReading {
+        ResultReading.active(timeline: showTimeline,
+                             concordance: showConcordance,
+                             collocates: showCollocates)
+    }
+
+    /// The toolbar picker's binding — **assigns all three flags, never toggles one** (M-4 / 1b).
+    ///
+    /// This is the same shape `SearchView.readingSelection` has carried since the Q wave, and
+    /// adopting it makes macOS's exclusivity **structural** rather than maintained by hand: the
+    /// three buttons this replaces each cleared the other two in their own action closure, so the
+    /// invariant lived at three call sites and a fourth reading would have had to remember it.
+    /// `CollocationWiringAuditTests.modesAreMutuallyExclusive` branches on exactly this literal and
+    /// then demands `let flags = selected.flags` below — it is written to fail a half-migration.
+    private var readingSelection: Binding<ResultReading> {
+        Binding(
+            get: { activeReading },
+            set: { selected in
+                let flags = selected.flags
+                showTimeline = flags.timeline
+                showConcordance = flags.concordance
+                showCollocates = flags.collocates
+            }
+        )
+    }
     @State private var showSaveCorpusSheet = false
     @State private var collocation: CollocationAnalysis.Outcome = .pending
     @State private var isLoadingCollocation = false
@@ -352,13 +383,13 @@ struct MacSearchWindowView: View {
         .frame(minWidth: 640, idealWidth: 820, maxWidth: .infinity,
                minHeight: 500, idealHeight: 680, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: searchVM.showTips)
-        // The facet panel (R-1). `.inspector` is the macOS idiom the design asks for; the
-        // *toggle* lives in the sort bar rather than the titlebar because
-        // `MacSearchWindowView` has no `.toolbar` at all — verified, zero occurrences — so
-        // the design's "toggled from a titlebar inspector button" has no host. Adding one
-        // would change this window's chrome, which is a separate decision from shipping the
-        // panel; the sort bar already carries the timeline and checklist toggles, so the
-        // control sits with its siblings.
+        // The facet panel (R-1). `.inspector` is the macOS idiom the design asks for, and its
+        // toggle now sits where that design wanted it: the **titlebar**, in the standard trailing
+        // inspector position. R-1's own note here recorded why it could not — "`MacSearchWindowView`
+        // has no `.toolbar` at all — verified, zero occurrences ... Adding one would change this
+        // window's chrome, which is a separate decision from shipping the panel". M-4 / option 1b
+        // is that decision, taken; `searchToolbar` below is the host R-1 lacked.
+        .toolbar { searchToolbar }
         .inspector(isPresented: $showFacetPanel) {
             FacetPanelView(
                 controller: facetController,
@@ -785,6 +816,126 @@ struct MacSearchWindowView: View {
             let keys = await ProjectEngagedDocuments.keys(forProject: pid, container: container)
             fvm.projectEngagedDocumentKeys = keys.sorted()
             searchVM.applyProjectScope()
+        }
+    }
+
+    // MARK: - Titlebar toolbar (M-4 / design option 1b)
+
+    /// The window's titlebar controls: how to read the results, and what to do with them.
+    ///
+    /// ## What this fixes, in the review's own words
+    /// M-4's complaint is that the Search window delivers meaning through hover: a row of icon-only
+    /// toggles whose names existed only in `.help` text, on the one platform where hover is an
+    /// interaction a reader need never perform. **Every control here carries a visible label.** The
+    /// sort bar keeps only what reads the list — the count, the page size, the sort order.
+    ///
+    /// ## Why the three readings become one control rather than three labelled buttons
+    /// Because exclusivity stops being a rule three call sites must remember. Each of the buttons
+    /// this replaces did `showX.toggle(); if showX { showY = false; showZ = false }` — the invariant
+    /// restated three times, once per control, with nothing checking that a fourth reading would
+    /// restate it. A `Picker` over `ResultReading` assigns the whole triple through
+    /// ``readingSelection``, so no reachable assignment leaves two readings on. It also gives the
+    /// control real picker semantics for VoiceOver ("Timeline, 2 of 4") in place of four unrelated
+    /// buttons, and it makes **List an explicit state** rather than the absence of the other three.
+    ///
+    /// ## What is lost, and why it is acceptable
+    /// A segmented picker cannot carry per-segment `.help`, so the four individual tooltips go. The
+    /// one fact they carried that the labels do not is the **denominator**: the concordance covers
+    /// one page while its neighbours cover the whole retained set. That is preserved on the
+    /// picker's own tooltip, from `ResultReading.denominatorDescription` — the same string iOS
+    /// shows under its menu row, rather than a second wording of the same fact.
+    ///
+    /// ## Placement is load-bearing in two ways
+    /// **Save Corpus is beside the readings, never inside them.** It writes a durable
+    /// `WorkingCorpus`, it is the only one of these whose effect outlives the search, and it gates
+    /// on `displayedResults` where the readings gate on `results`. It once sat physically between
+    /// Concordance and Collocates, which `ResultReadingTests.macOSGrouping` was written to prevent;
+    /// that test is retargeted at this structure rather than retired.
+    /// **Facets is trailing**, the standard position for an inspector toggle, which is what it is.
+    ///
+    /// ## No keyboard shortcuts here, deliberately
+    /// The design proposes ⌘1–⌘4, ⌥⌘S, ⇧⌘L and ⌥⌘F. **⌥⌘F is already this window's own summon
+    /// shortcut** (`FindMenuContent`, with a recorded M-14 decision behind it: "⌘S is Save
+    /// everywhere on the platform"), so binding Facets to it would collide with the command that
+    /// opens the window Facets lives in. The rest are free — but the app has no Search
+    /// `CommandMenu` and no Search focused-value key, so they would ship with **no menu-bar
+    /// equivalent**, i.e. as meaning discoverable only by already knowing it. That is M-4's own
+    /// complaint in a new costume. Shortcuts and their menu-bar equivalents belong together, in a
+    /// change that adds the command channel.
+    @ToolbarContentBuilder
+    private var searchToolbar: some ToolbarContent {
+        ToolbarItem(placement: .automatic) {
+            Picker(selection: readingSelection) {
+                ForEach(ResultReading.allCases) { reading in
+                    Label(reading.title, systemImage: reading.systemImage)
+                        .tag(reading)
+                }
+            } label: {
+                Text(String(localized: "search.reading.label", defaultValue: "Reading"))
+            }
+            .pickerStyle(.segmented)
+            // macOS renders a toolbar `Label` icon-only unless the style is forced.
+            .labelStyle(.titleAndIcon)
+            .disabled(searchVM.results.isEmpty)
+            .help(String(
+                format: String(localized: "search.reading.help %@",
+                               defaultValue: "How to read these results. The concordance covers %@; the others cover the whole retained set."),
+                ResultReading.concordance.denominatorDescription?.lowercased()
+                    ?? String(localized: "search.mode.denominator.concordance.fallback",
+                              defaultValue: "this page")))
+        }
+
+        ToolbarItem(placement: .automatic) {
+            Button {
+                showSaveCorpusSheet = true
+            } label: {
+                Label(String(localized: "search.corpus.save", defaultValue: "Save as Working Corpus…"),
+                      systemImage: "tray.full")
+            }
+            .labelStyle(.titleAndIcon)
+            .disabled(searchVM.displayedResults.isEmpty)
+            .help(String(localized: "search.corpus.save.help",
+                         defaultValue: "Save these results as a named working corpus you can search inside later"))
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                searchVM.setChecklistMode(!searchVM.checklistMode)
+            } label: {
+                Label(String(localized: "search.checklist.short", defaultValue: "Checklist"),
+                      systemImage: "checklist")
+            }
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(searchVM.checklistMode ? Color.accentColor : Color.secondary)
+            .disabled(searchVM.results.isEmpty)
+            .help(searchVM.checklistMode
+                  ? String(localized: "search.checklist.off.help",
+                           defaultValue: "Turn off Checklist Mode and show every result")
+                  : String(localized: "search.checklist.on.help",
+                           defaultValue: "Checklist review mode — hide results as you review them"))
+            .accessibilityLabel(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"))
+            .accessibilityValue(searchVM.checklistMode
+                                ? String(localized: "search.checklist.state.on", defaultValue: "On")
+                                : String(localized: "search.checklist.state.off", defaultValue: "Off"))
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                showFacetPanel.toggle()
+            } label: {
+                Label(String(localized: "search.facets.short", defaultValue: "Facets"),
+                      systemImage: "chart.bar.doc.horizontal")
+            }
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(showFacetPanel ? Color.accentColor : Color.secondary)
+            .disabled(searchVM.results.isEmpty)
+            .help(showFacetPanel
+                  ? String(localized: "search.facets.off.help",
+                           defaultValue: "Hide the result-set facets")
+                  : String(localized: "search.facets.on.help.v2",
+                           defaultValue: "Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply"))
+            .accessibilityLabel(String(localized: "search.facets.a11y",
+                                       defaultValue: "Result-set facets"))
         }
     }
 
@@ -1255,153 +1406,14 @@ struct MacSearchWindowView: View {
 
             Spacer()
 
-            // Checklist review mode (#189-D) — a self-labeling icon+text control (#218) so it
-            // reads as "Checklist" without hovering, instead of a bare icon discoverable only by
-            // tooltip. Hides results as they're reviewed (opened by any means, or marked via the
-            // row context menu), turning a long result set into a shrinking to-do list. Disabled
-            // until there are results; stays enabled in the all-reviewed state (gated on raw
-            // `results`) so the user can always turn it back off.
-            // Facet panel toggle (R-1). Placed here rather than the titlebar because this
-            // window has no toolbar to hang it from — see the `.inspector` comment.
-            Button {
-                showFacetPanel.toggle()
-            } label: {
-                Label(String(localized: "search.facets.short", defaultValue: "Facets"),
-                      systemImage: "chart.bar.doc.horizontal")
-                    .font(.system(size: 12))
-                    .foregroundStyle(showFacetPanel ? Color.accentColor : Color.secondary)
-                    .lineLimit(1)
-                    .fixedSize()
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.results.isEmpty)
-            .help(showFacetPanel
-                  ? String(localized: "search.facets.off.help",
-                           defaultValue: "Hide the result-set facets")
-                  : String(localized: "search.facets.on.help.v2",
-                           defaultValue: "Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply"))
-            .accessibilityLabel(String(localized: "search.facets.a11y",
-                                       defaultValue: "Result-set facets"))
-
-            Divider().frame(height: 16)
-
-            Button {
-                searchVM.setChecklistMode(!searchVM.checklistMode)
-            } label: {
-                Label(String(localized: "search.checklist.short", defaultValue: "Checklist"),
-                      systemImage: "checklist")
-                    .font(.system(size: 12))
-                    .foregroundStyle(searchVM.checklistMode ? Color.accentColor : Color.secondary)
-                    .lineLimit(1)
-                    .fixedSize()  // keep the label intact; the flexible result-count text absorbs
-                                  // any compression in the dense sort bar at minimum window width
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.results.isEmpty)
-            .help(searchVM.checklistMode
-                  ? String(localized: "search.checklist.off.help",
-                           defaultValue: "Turn off Checklist Mode and show every result")
-                  : String(localized: "search.checklist.on.help",
-                           defaultValue: "Checklist review mode — hide results as you review them"))
-            .accessibilityLabel(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"))
-            .accessibilityValue(searchVM.checklistMode
-                                ? String(localized: "search.checklist.state.on", defaultValue: "On")
-                                : String(localized: "search.checklist.state.off", defaultValue: "Off"))
-
-            Divider().frame(height: 14)
-
-            // Timeline toggle — swaps the results list/pagination for a
-            // chronological Swift Charts visualization (DocumentTimelineView,
-            // shared with the iOS Search tab and Collections editor). Mirrors
-            // the toggle in SearchView.swift so the feature reaches macOS too.
-            Button {
-                showTimeline.toggle()
-                if showTimeline { showConcordance = false; showCollocates = false }
-            } label: {
-                Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
-                    .font(.system(size: 12))
-                    .foregroundStyle(showTimeline ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.results.isEmpty)
-            // Its own tooltip and label at last. These strings previously sat on the CONCORDANCE
-            // button — a second, stacked `.help` that silently won, plus the timeline's
-            // accessibility label attached to the wrong control — so the timeline toggle had
-            // neither and the concordance announced itself as the timeline.
-            .help(showTimeline
-                  ? String(localized: "search.timeline.hide.help",
-                           defaultValue: "Hide the chronological timeline and show the results list")
-                  : String(localized: "search.timeline.show.help",
-                           defaultValue: "Show these results as a chronological timeline"))
-            .accessibilityLabel(showTimeline
-                ? String(localized: "search.timeline.hide.a11y", defaultValue: "Hide timeline")
-                : String(localized: "search.timeline.show.a11y", defaultValue: "Show timeline"))
-
-            Button {
-                showConcordance.toggle()
-                if showConcordance { showTimeline = false; showCollocates = false }
-            } label: {
-                // `text.alignright` when off meant macOS showed, for the INACTIVE state, the very
-                // symbol iOS uses for the ACTIVE one. Tint already carries the state on this bar
-                // (every neighbour does it that way), so the glyph should simply stay put.
-                Image(systemName: "text.alignleft")
-                    .font(.system(size: 12))
-                    .foregroundStyle(showConcordance ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.results.isEmpty)
-            .help(showConcordance
-                  ? String(localized: "search.kwic.hide.help",
-                           defaultValue: "Hide the concordance and show the results list")
-                  : String(localized: "search.kwic.show.help.v2",
-                           defaultValue: "Show every occurrence of your term on its own line, aligned — for the documents on this page"))
-            .accessibilityLabel(showConcordance
-                ? String(localized: "search.kwic.hide.a11y", defaultValue: "Hide concordance")
-                : String(localized: "search.kwic.show.a11y", defaultValue: "Show concordance"))
-
-            Button {
-                showCollocates.toggle()
-                if showCollocates { showTimeline = false; showConcordance = false }
-            } label: {
-                Image(systemName: "circle.grid.cross")
-                    .font(.system(size: 12))
-                    .foregroundStyle(showCollocates ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.results.isEmpty)
-            .help(showCollocates
-                  ? String(localized: "search.collocates.hide.help",
-                           defaultValue: "Hide the collocates and show the results list")
-                  : String(localized: "search.collocates.show.help",
-                           defaultValue: "Show which words appear near your search term across all of these results"))
-            .accessibilityLabel(showCollocates
-                ? String(localized: "search.collocates.hide.a11y", defaultValue: "Hide collocates")
-                : String(localized: "search.collocates.show.a11y", defaultValue: "Show collocates"))
-
-            Divider().frame(height: 14)
-
-            // Behind the divider, after the three readings rather than wedged between two of
-            // them. Timeline / Concordance / Collocates are mutually exclusive ways of looking at
-            // the set; this writes a durable `WorkingCorpus` and is the only one of the four with
-            // an effect that outlives the search. It also gates on `displayedResults` where the
-            // readings gate on `results`.
-            Button {
-                showSaveCorpusSheet = true
-            } label: {
-                Image(systemName: "tray.full")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.displayedResults.isEmpty)
-            .help(String(localized: "search.corpus.save.help",
-                         defaultValue: "Save these results as a named working corpus you can search inside later"))
-            .accessibilityLabel(String(localized: "search.corpus.save",
-                                       defaultValue: "Save as Working Corpus…"))
-
-            Divider().frame(height: 14)
-
-
+            // **Six controls left this bar for the titlebar in M-4 / option 1b**: the three
+            // readings (now one `Picker`), Save Corpus, Checklist and Facets. What remains is
+            // exactly what READS the list — how many results there are, how many fit a page, and
+            // in what order. The review's density finding dissolves rather than being managed.
+            //
+            // "Visualize in Corpus Analytics" is NOT missing from this list: it is nested inside
+            // `resultCountLabel` below, beside the count it acts on, and adding a second one here
+            // would give the window two buttons firing `openSearchInAnalytics()`.
             pageSizePicker
 
             Divider().frame(height: 14)

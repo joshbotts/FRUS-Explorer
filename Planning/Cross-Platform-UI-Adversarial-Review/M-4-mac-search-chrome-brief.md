@@ -199,3 +199,86 @@ the bar neither moves nor removes it), and ⌥⌘F — proposed for Facets — i
 shortcut by an explicit single-owner decision that the code warns against re-adding.
 
 **Shipped: 3a. Deferred: 1b**, as the design's own §9 allows.
+
+---
+
+## Part 3 — 1b, the titlebar toolbar
+
+Shipped after 3a, as its own change. The two share no symbol, which is why they could be separated
+at all.
+
+### What moved, and what the sort bar keeps
+
+Six controls left the sort bar for a native titlebar toolbar: the three readings (now **one**
+`Picker`), Save Corpus, Checklist and Facets. The bar keeps exactly what *reads the list* — the
+count, the page size, the sort order. Every toolbar control carries a **visible label**, which is
+the actual answer to M-4's complaint: meaning was being delivered through hover, on the one
+platform where hover is an interaction a reader need never perform.
+
+**R-1 wrote this change's justification a wave early.** The `.inspector` comment in `SearchSheet`
+read: *"the toggle lives in the sort bar rather than the titlebar because `MacSearchWindowView` has
+no `.toolbar` at all — verified, zero occurrences — so the design's 'toggled from a titlebar
+inspector button' has no host. Adding one would change this window's chrome, which is a separate
+decision."* 1b is that decision.
+
+### The readings picker removes an invariant that was maintained by hand
+
+Each of the three buttons did `showX.toggle(); if showX { showY = false; showZ = false }` — the
+exclusivity rule restated once per control, with nothing ensuring a fourth reading would restate
+it. The picker assigns the whole triple through `readingSelection`, so no reachable assignment
+leaves two readings on. `ResultReading` already compiled into the Mac target and was already used
+in this file for `isPaged`, so this is adoption, not a new type. List becomes an **explicit**
+state rather than the absence of the other three, and VoiceOver gets real picker semantics
+("Timeline, 2 of 4") in place of four unrelated buttons.
+
+**What is lost:** a segmented picker cannot carry per-segment `.help`, so the four tooltips go. The
+one fact they carried that the labels do not is the *denominator* — the concordance covers one page
+while its neighbours cover the whole retained set — and that moves to the picker's own tooltip,
+read from `ResultReading.denominatorDescription` rather than spelled a second time.
+
+### Two of the design's premises were already false
+
+- **"The sort bar then slims to: result count + Visualize in Corpus Analytics…"** — *Visualize* is
+  not a sort-bar member. It is nested inside `resultCountLabel`, beside the count it acts on.
+  Adding one to the slimmed bar would have given the window two buttons firing
+  `openSearchInAnalytics()`.
+- **"Facets ⌥⌘F"** — ⌥⌘F is *already this window's own summon shortcut*, with a recorded M-14
+  decision behind it ("⌘S is Save everywhere on the platform, and repurposing it fought every
+  muscle memory the target user has"). Binding Facets to it would collide with the command that
+  opens the window Facets lives in.
+
+### No keyboard shortcuts, deliberately
+
+The rest of the proposed set (⌘1–⌘4, ⌥⌘S, ⇧⌘L, ⌘D, ⇧⌘D, ⌥⌘T) is free — audited across every
+`.keyboardShortcut` in the app. They are still not in this change, because the app has **no Search
+`CommandMenu` and no Search focused-value key** (only Document, CollectionManager and
+CollectionDetail have one). Shortcuts would therefore ship with no menu-bar equivalent — meaning
+discoverable only by already knowing it, which is M-4's own complaint in a new costume. They belong
+with the command channel that makes them visible, in one change.
+
+### The pinned tests were retargeted, not retired
+
+Both `ResultReadingTests` macOS assertions broke by construction and both were pointed at what can
+still go wrong:
+
+- `macOSGrouping` asserted Save Corpus followed the readings in source order. With a `Picker` an
+  action cannot sit *between* two readings at all — but it can be put **inside** the readings'
+  toolbar item, where it would read as a fourth reading. The assertion moved to that boundary.
+- `macOSConcordanceGlyph` asserted the literal `Image(systemName: "text.alignleft")` in
+  `SearchSheet.swift`. The picker draws that glyph from `ResultReading.systemImage`, which a source
+  scan cannot see, so the positive half became a behavioural assertion on the enum — covering both
+  platforms — while the negative (`text.alignright` must not return) stayed on the macOS source,
+  where the wrong glyph was once written.
+
+### A guard that was reading prose
+
+`CollocationWiringAuditTests.modesAreMutuallyExclusive` branches on `selection: readingSelection`
+and then requires `let flags = selected.flags`. Mutation-testing the migration found the assertion
+**survived** a broken binding — because the doc comment explaining the rule quoted that literal, so
+`contains` matched the prose after the code was gone. This is the failure `AdvancedFilterSignatureTests`
+records verbatim ("deleting the append left the suite green, because the comment kept the word
+alive"), reproduced in a second suite.
+
+The audit now strips comment lines before matching. Two further gaps closed while there: the
+negative named only `showTimeline.toggle()`, so a residual `showConcordance.toggle()` or
+`showCollocates.toggle()` passed — a half-migration, which is exactly what the test exists to fail.
