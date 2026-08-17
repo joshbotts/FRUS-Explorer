@@ -417,8 +417,15 @@ final class SemanticMapModel {
     @discardableResult
     func reveal(documentKey key: String, isReadable: (String) -> Bool) -> RevealOutcome {
         let parts = key.split(separator: "/", maxSplits: 1)
-        guard parts.count == 2 else { return .notFound }
-        guard let index, let map = BundledSemanticMap.vectors else { return .notReady }
+        guard parts.count == 2 else {
+            pendingRevealKey = nil
+            return .notFound
+        }
+        guard let index, let map = BundledSemanticMap.vectors else {
+            pendingRevealKey = key
+            return .notReady
+        }
+        pendingRevealKey = nil
         guard let row = index.row(documentID: String(parts[1]), volumeID: String(parts[0])),
               let placement = map.placement(at: row) else { return .notFound }
         // Region identity by ROW and from `clusters`, exactly as `select(at:)` derives it — a reveal
@@ -464,6 +471,16 @@ final class SemanticMapModel {
         /// The map is not loaded yet. Ask again; do not record this as an answer.
         case notReady
     }
+
+    /// A reveal asked for before the map could honour it.
+    ///
+    /// **The same shape as `requestedScope`, and for the same reason.** The caller's copy of the
+    /// request does not survive: measured on macOS, the continuation reaches the view, `reveal`
+    /// answers `.notReady` because `prepare()` is still uploading 314,483 points, and by the time
+    /// prepare finishes the view's `continued` has gone back to nil — so a retry driven from the
+    /// caller's value finds nothing to apply. Storing the key HERE makes the retry independent of
+    /// whatever happens to the caller's state.
+    private(set) var pendingRevealKey: String?
 
     /// How much of the map a reveal leaves in view, in grid units.
     ///
@@ -1171,11 +1188,26 @@ struct SemanticMapSpikeView: View {
             model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
                         provenanceForVolume: provenanceForVolume)
             applyContinuedRequestIfNeeded()
+            // **And then honour a reveal the map was not ready for.** Driven from the MODEL's
+            // memory, not from `continued`, because measurement showed `continued` is nil again by
+            // now: the request arrives, `reveal` defers, prepare finishes, and the caller's copy has
+            // gone. This line is what actually selects the document a reader arrived from.
+            applyPendingRevealIfNeeded()
         }
         // The macOS window is a singleton: a second reveal reaches an EXISTING view, where the
         // `.task` above has already run and will not run again. Without this the first "On the Map"
         // worked and every later one silently did nothing.
         .onChange(of: continued) { _, _ in applyContinuedRequestIfNeeded() }
+    }
+
+    /// Reveals a document the map could not place when it was first asked.
+    ///
+    /// `prepare()` frames the whole map as its last act, so this must run after it or the camera
+    /// move is immediately overruled — which is why it lives at the end of the view's `.task`
+    /// rather than inside `prepare`.
+    private func applyPendingRevealIfNeeded() {
+        guard let key = model.pendingRevealKey else { return }
+        revealFailed = model.reveal(documentKey: key, isReadable: isReadable) == .notFound
     }
 
     /// Whether a continuation that produced this reveal outcome may be marked applied.

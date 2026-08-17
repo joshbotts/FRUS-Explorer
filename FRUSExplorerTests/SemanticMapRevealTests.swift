@@ -248,6 +248,113 @@ struct SemanticMapRevealTests {
             """)
     }
 
+    // MARK: - The deferral, which is what the console output measured
+
+    /// **The failure a reader hit, reproduced.** Console output from the shipped build:
+    ///
+    /// ```
+    /// apply() continued=frus1946v06/d475  ->  reveal -> notReady
+    /// apply() continued=nil
+    /// ```
+    ///
+    /// The reveal correctly deferred, and by the time `prepare()` finished the caller's `continued`
+    /// was nil again — so a retry driven from the caller had nothing to apply. The model must
+    /// therefore remember the key itself, exactly as it already does for `requestedScope`.
+    @MainActor
+    @Test("A deferred reveal is remembered by the model, not by its caller")
+    func deferredRevealIsRemembered() {
+        let model = SemanticMapModel()   // unprepared: no index
+        #expect(model.pendingRevealKey == nil, "nothing asked for yet")
+        #expect(model.reveal(documentKey: "frus1946v06/d475", isReadable: { _ in true }) == .notReady)
+        #expect(model.pendingRevealKey == "frus1946v06/d475", """
+            A reveal the map could not honour was forgotten. The caller's copy of the request does \
+            not survive until prepare() finishes — measured — so if the model does not hold the key \
+            the document is never selected.
+            """)
+    }
+
+    /// And once the map is ready, that remembered key selects the document and then clears.
+    @MainActor
+    @Test("The remembered reveal is honoured after prepare, then forgotten",
+          .enabled(if: revealTestsHaveMetal))
+    func rememberedRevealIsHonouredAfterPrepare() async throws {
+        await BundledSemanticMap.prepare()
+        try #require(BundledSemanticMap.isAvailable)
+        let index = try #require(BundledSemanticVectors.index)
+        let document = try #require(index.document(at: 0))
+        let key = "\(document.volumeID)/\(document.documentID)"
+
+        let model = SemanticMapModel()
+        #expect(model.reveal(documentKey: key, isReadable: { _ in true }) == .notReady)
+        #expect(model.pendingRevealKey == key)
+
+        await model.prepare(eraForVolume: { _ in nil }, isDownloaded: { _ in false })
+        try #require(model.unavailable == nil, "prepare reported: \(model.unavailable ?? "")")
+
+        // What the view's `.task` does after prepare.
+        let pending = try #require(model.pendingRevealKey,
+                                   "the key was dropped between the deferral and prepare finishing")
+        #expect(model.reveal(documentKey: pending, isReadable: { _ in true }) == .revealed)
+        #expect(model.selection?.documentID == document.documentID)
+        #expect(model.pendingRevealKey == nil, """
+            The pending key survived a successful reveal, so every later prepare would re-select \
+            this document and fight the reader.
+            """)
+    }
+
+    /// A key that can never resolve must not be remembered forever.
+    @MainActor
+    @Test("A malformed key is not remembered")
+    func malformedKeyIsNotRemembered() {
+        let model = SemanticMapModel()
+        #expect(model.reveal(documentKey: "no-separator", isReadable: { _ in true }) == .notFound)
+        #expect(model.pendingRevealKey == nil,
+                "an unresolvable key was queued for retry, which would retry on every prepare")
+    }
+
+    /// The model can remember a deferred reveal perfectly and still never be asked.
+    ///
+    /// **A mutation deleting the view's retry survived a suite that tested the memory itself** —
+    /// the third time in this feature that a correct mechanism was left with no caller. The
+    /// `.task` body is a SwiftUI closure that cannot be driven from a test, so the source is the
+    /// instrument, and the assertion is positional: the retry must come after `model.prepare`, or
+    /// `prepare`'s closing `frameAll` overrules the camera move and the document is selected
+    /// off-screen.
+    @Test("The view retries a deferred reveal, after prepare")
+    func viewRetriesAfterPrepare() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
+            encoding: .utf8)
+        // Comments are stripped so prose naming the call cannot stand in for it.
+        let code = source.components(separatedBy: .newlines)
+            .map { line -> String in
+                guard let slashes = line.range(of: "//") else { return line }
+                return String(line[..<slashes.lowerBound])
+            }
+            .joined(separator: "\n")
+
+        // **The CALL, not the declaration.** A first version searched for the bare name, which the
+        // `private func` line satisfies — so deleting the only call site left the test green, and a
+        // mutation proved it. A call site is a line that is exactly the invocation.
+        let lines = code.components(separatedBy: .newlines)
+        let callLine = lines.firstIndex { $0.trimmingCharacters(in: .whitespaces)
+            == "applyPendingRevealIfNeeded()" }
+        try #require(callLine != nil, """
+            Nothing CALLS applyPendingRevealIfNeeded() (its declaration does not count). The model \
+            remembers a deferred reveal and is never asked for it, so a document revealed while the \
+            map was still loading is never selected — the defect a reader reported, restored.
+            """)
+        let retry = try #require(code.range(of: lines[callLine!]))
+        let prepare = try #require(code.range(of: "await model.prepare("))
+        #expect(prepare.lowerBound < retry.lowerBound, """
+            The deferred reveal is retried BEFORE model.prepare(). prepare() ends by framing the \
+            whole map, so the camera move would be immediately overruled and the reader would be \
+            looking at the whole corpus with a selection somewhere off screen.
+            """)
+    }
+
     // MARK: - The neighbour list's contract
 
     /// The map's neighbour list must ask for exactly ten.
