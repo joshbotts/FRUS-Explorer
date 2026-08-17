@@ -162,9 +162,15 @@ struct WordCloudDriftCanvasFrame: View {
 
     var body: some View {
         Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: true) { ctx, size in
+            // The clock reads and the meter are DEBUG-only: `DrawCostMeter` does not exist in a
+            // release build, and this ran on every production draw for a number nothing drained.
+            #if DEBUG
             let started = CFAbsoluteTimeGetCurrent()
             draw(into: &ctx, size: size)
             DrawCostMeter.record(microseconds: (CFAbsoluteTimeGetCurrent() - started) * 1_000_000)
+            #else
+            draw(into: &ctx, size: size)
+            #endif
         } symbols: {
             symbols
         }

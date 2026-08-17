@@ -733,6 +733,7 @@
 		9E54DB42B5093763B151ECDE /* SemanticMapPicking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */; };
 		9E969DB873526FB979B44591 /* ZoteroAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522924485B8BCC275CFB229A /* ZoteroAPIModels.swift */; };
 		9EA3CB3FFDB94ED688819FD1 /* ParsedTEIHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 629A78D564067AC753D2604B /* ParsedTEIHeader.swift */; };
+		9EB95795FB7BDD0565407CA9 /* DeveloperInstrumentationGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCEC2369DD472F0D20A74FED /* DeveloperInstrumentationGateTests.swift */; };
 		9EBEFA74CE4DE532831B26E3 /* CrossReferenceGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7D01A4B33C4FF10103FA6B /* CrossReferenceGraphTests.swift */; };
 		9EC7F347CFF35B49AF2689A6 /* CrossReferenceAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261D1581649E3CE8247D528F /* CrossReferenceAnalyticsView.swift */; };
 		9F5BAB74E69B20AED3E1D0E9 /* PersonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE9909AA39DA3A99793427 /* PersonAnalyticsView.swift */; };
@@ -1806,6 +1807,7 @@
 		BC0A2D961A685D79513317A5 /* ResearchSessionsSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchSessionsSummaryTests.swift; sourceTree = "<group>"; };
 		BC39A86BEFED37BD150EA49F /* CollectionBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionBrowserView.swift; sourceTree = "<group>"; };
 		BC53DE94BFFB9FF572199894 /* PageRangeStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageRangeStoreTests.swift; sourceTree = "<group>"; };
+		BCEC2369DD472F0D20A74FED /* DeveloperInstrumentationGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperInstrumentationGateTests.swift; sourceTree = "<group>"; };
 		BCFCF5210FFA8C1613F9BA25 /* FRUSExplorerWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSExplorerWidgets.swift; sourceTree = "<group>"; };
 		BD5D8E81D46123965E0B18DB /* PersonMentionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonMentionStore.swift; sourceTree = "<group>"; };
 		BDD1879571BF79E0BE564965 /* DocumentHeaderDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentHeaderDisplay.swift; sourceTree = "<group>"; };
@@ -2493,6 +2495,7 @@
 				D6EE89402A46D51FB9EC0319 /* DecimalClassLabelTests.swift */,
 				E4B96612540EB50673701274 /* DecimalFileSegmentTests.swift */,
 				44B70A4EDD3D16FBC0FDBAB6 /* DecimalNeighbourSpaceTests.swift */,
+				BCEC2369DD472F0D20A74FED /* DeveloperInstrumentationGateTests.swift */,
 				7E09648CEEBD5E330349FE62 /* DigitizedRangeIndexTests.swift */,
 				67DBC7ED9653820E56909F20 /* DiscoveryTipWiringAuditTests.swift */,
 				1F90C473C5F3F0E1236E38C0 /* DistributionTests.swift */,
@@ -4358,6 +4361,7 @@
 				897A97CD26A0B027C111D214 /* DecimalClassLabelTests.swift in Sources */,
 				68A79012C4F5584D611874A3 /* DecimalFileSegmentTests.swift in Sources */,
 				73425055601A14CDF65DC09A /* DecimalNeighbourSpaceTests.swift in Sources */,
+				9EB95795FB7BDD0565407CA9 /* DeveloperInstrumentationGateTests.swift in Sources */,
 				A20CFA4A9147FFC3E14E2B00 /* DigitizedRangeIndexTests.swift in Sources */,
 				AA80A62E59F8BC00C7411071 /* DiscoveryTipWiringAuditTests.swift in Sources */,
 				5BAAE20BF4C40A53111E6468 /* DistributionTests.swift in Sources */,

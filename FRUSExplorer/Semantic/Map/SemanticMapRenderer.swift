@@ -93,6 +93,21 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         var scopeActive: Float
     }
 
+    // MARK: - Frame statistics (DEBUG only)
+    //
+    // **The overlay was gated and the measurement behind it was not**, so a shipping build was
+    // paying for a number no shipping view could read: a GPU completion handler on every command
+    // buffer, a lock and an array append per presented frame, and an unstructured `Task` hop to the
+    // main actor per presented frame — during pan and zoom, which is precisely when the main actor
+    // is worth protecting. `#if DEBUG` on the overlay's *mount* (`SemanticMapSpikeView`) removed the
+    // readout and left all of that behind it.
+    //
+    // Everything from here to the end of `StatsSink` is therefore gated, not merely the display.
+    // Every reference was enumerated before gating — `Stats`, `onStats`, `statsSink`,
+    // `setPointCount`, the completion handler, and the model's `stats`/`accept` are the whole set,
+    // and nothing outside this file and `SemanticMapSpikeView` touches them.
+
+    #if DEBUG
     /// Rolling frame statistics — the spike's original output, now the DEBUG overlay's.
     struct Stats: Sendable, Equatable {
         /// Documents in the vertex buffer.
@@ -119,6 +134,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         get { statsSink.onStats }
         set { statsSink.onStats = newValue }
     }
+    #endif
 
     /// The colour format the pipeline is built for; the MTKView must be given the same one, and
     /// `SemanticMapSurfaceTests` asserts they agree because nothing else does.
@@ -275,10 +291,12 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     private var drawCallCount = 0
     #endif
 
+    #if DEBUG
     /// Accumulates GPU frame times off the main actor and publishes a value type per frame.
     /// GPU-reported timestamps are the honest measure; CPU wall time around `commit` is not, because
     /// the command buffer has barely started when `commit` returns.
     private let statsSink = StatsSink()
+    #endif
 
     /// Compiled pipelines, keyed by device.
     ///
@@ -384,7 +402,9 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     func setPoints(_ points: [MapPoint]) {
         pointCount = points.count
         uploadCount += 1
+        #if DEBUG
         statsSink.setPointCount(points.count)
+        #endif
         // A fresh buffer carries `flags: 0` for every row, so the scope is gone until the caller
         // re-asserts it. Saying so here is what keeps `isScoped` from describing the previous upload.
         isScoped = false
@@ -559,15 +579,21 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         // The completion handler runs on a Metal-owned thread, so the sample window is behind a
         // lock and only a value type crosses to the main actor — capturing `self` here is what
         // Swift 6 correctly refuses.
+        //
+        // DEBUG-only: this handler is the per-frame cost a shipping build was paying for a readout
+        // it could not show. A release build now registers no completion handler at all.
+        #if DEBUG
         let sink = statsSink
         buffer.addCompletedHandler { completed in
             let elapsed = (completed.gpuEndTime - completed.gpuStartTime) * 1000.0
             sink.record(elapsed)
         }
+        #endif
         buffer.present(drawable)
         buffer.commit()
     }
 
+    #if DEBUG
     /// Thread-safe accumulator for frame times.
     ///
     /// A final class behind a lock rather than an actor: `addCompletedHandler` is synchronous and on
@@ -623,6 +649,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             Task { @MainActor in sink(stats) }
         }
     }
+    #endif
 
     /// The point-sprite shader pair.
     ///

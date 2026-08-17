@@ -74,8 +74,10 @@ final class SemanticMapModel {
     private(set) var renderer: SemanticMapRenderer?
     /// Why the map cannot be drawn, when it cannot.
     private(set) var unavailable: String?
-    /// The most recent frame statistics.
+    #if DEBUG
+    /// The most recent frame statistics. DEBUG-only, like the overlay that is its only reader.
     var stats = SemanticMapRenderer.Stats()
+    #endif
     /// Documents placed, for the overlay.
     private(set) var placedCount = 0
     /// The regions the artifact names, for the label layer.
@@ -208,7 +210,10 @@ final class SemanticMapModel {
             return
         }
         // No `Task` hop here: `onStats` is already `@MainActor`, and `StatsSink` does the hop.
+        // DEBUG-only: a release build leaves the sink with no callback, so nothing is published.
+        #if DEBUG
         made.onStats = { [weak self] measured in self?.accept(measured) }
+        #endif
         renderer = made
     }
 
@@ -221,10 +226,12 @@ final class SemanticMapModel {
     /// timings it carries are a rolling mean either way.
     ///
     /// - Parameter measured: The window as reported.
+    #if DEBUG
     private func accept(_ measured: SemanticMapRenderer.Stats) {
         guard measured.presentedFrames >= stats.presentedFrames else { return }
         stats = measured
     }
+    #endif
 
     /// Narrows the map to a set of volumes, or restores the whole series.
     ///
@@ -1196,7 +1203,12 @@ struct SemanticMapSpikeView: View {
         appState.downloadManager?.isVolumeDownloaded(volumeID) ?? false
     }
 
+    #if DEBUG
     /// Frame statistics, for judging the renderer while the surface is still experimental.
+    ///
+    /// Gated with its mount, not merely beside it: the declaration used to compile in release and
+    /// only the `.overlay` call was guarded, which is how the whole measuring chain behind it stayed
+    /// alive in a shipping build.
     ///
     /// **No `String(format:)` here, and the reason is a Swift trap worth carrying elsewhere.**
     ///
@@ -1253,6 +1265,7 @@ struct SemanticMapSpikeView: View {
         let rate = (1000 / value).formatted(.number.precision(.fractionLength(0)))
         return "\(rate) fps equivalent"
     }
+    #endif
 
     /// The names of the regions, drawn over the points.
     ///
