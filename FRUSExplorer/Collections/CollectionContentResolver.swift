@@ -31,8 +31,8 @@ enum CollectionResolveError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .searchServiceUnavailable:
-            return String(localized: "export.smart.noSearchService",
-                          defaultValue: "Search service unavailable. Please try again.")
+            return String(localized: "export.smart.noSearchService.v2",
+                          defaultValue: "Search is not ready yet. Try again in a moment.")
         case .savedSearchMissing:
             return String(localized: "export.smart.missingSearch",
                           defaultValue: "The linked saved search could not be found. It may have been deleted.")

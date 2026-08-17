@@ -96,8 +96,8 @@ struct BackgroundSummarizationSettingsView: View {
                     if !on { BackgroundSummarizationRequestStore.clear() }
                 }
         } footer: {
-            Text(String(localized: "bg.summarizer.continue.hint",
-                        defaultValue: "When on, summarization resumes opportunistically while the device is idle, a few documents at a time, even after you close the app. Uses the on-device model and some battery."))
+            Text(String(localized: "bg.summarizer.continue.hint.v2",
+                        defaultValue: "When on, the app keeps summarizing a few documents at a time while you are not using the device, even after you close the app. Uses the on-device model and some battery."))
         }
     }
     #endif

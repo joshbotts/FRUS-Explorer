@@ -203,8 +203,8 @@ enum ZoteroAPIError: Error, LocalizedError, Sendable {
             return String(localized: "zotero.error.decoding",
                           defaultValue: "Zotero returned a response FRUS Explorer couldn't read.")
         case .rateLimited:
-            return String(localized: "zotero.error.rateLimited",
-                          defaultValue: "Zotero is rate-limiting requests. Please try again shortly.")
+            return String(localized: "zotero.error.rateLimited.v2",
+                          defaultValue: "Zotero is receiving too many requests right now. Try again in a moment.")
         }
     }
 }

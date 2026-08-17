@@ -158,8 +158,8 @@ struct WordCloudSettingsView: View {
         } header: {
             Text(String(localized: "settings.wordcloud.performance.header", defaultValue: "Performance"))
         } footer: {
-            Text(String(localized: "settings.wordcloud.precompute.footer",
-                        defaultValue: "When enabled, the most demanding clouds — the whole corpus, a subseries — are computed in the background after indexing, so they open instantly. Runs only while the device is idle."))
+            Text(String(localized: "settings.wordcloud.precompute.footer.v2",
+                        defaultValue: "When enabled, the most demanding clouds — the whole corpus, a subseries — are prepared in the background after indexing, so they open instantly. This happens only while you are not using the device."))
         }
     }
 
