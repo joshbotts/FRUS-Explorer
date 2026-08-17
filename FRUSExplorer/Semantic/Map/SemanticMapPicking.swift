@@ -190,6 +190,47 @@ enum SemanticMapPicking {
         return (found, total)
     }
 
+    /// The rows belonging to one region, capped, with the honest total beside them.
+    ///
+    /// A sibling of `rows(inside:…)` and deliberately the same shape, because both feed the same
+    /// `WorkingCorpus` capture and the truncation note compares the same two numbers. Everything
+    /// that method's documentation says about the cap and the scope mask applies here: the scan runs
+    /// to completion rather than stopping at the limit, so `total` is a denominator rather than a
+    /// restatement of the numerator, and the mask gates the total as well as the kept rows.
+    ///
+    /// Takes a closure rather than an array so the caller can read cluster ids straight out of the
+    /// mapped artifact without materialising 314,483 `UInt16`s, while a test can pass a synthetic
+    /// corpus. One implementation, two callers, no second copy of the rule to drift.
+    ///
+    /// - Parameters:
+    ///   - cluster: The region's id.
+    ///   - count: How many rows the artifact holds.
+    ///   - clusterAt: The cluster id of a row.
+    ///   - limit: Keep at most this many rows.
+    ///   - scopeMask: The active scope, when there is one. A mask whose length does not match
+    ///     `count` is stale and is ignored, matching the lasso.
+    /// - Returns: The kept rows, ascending, and every in-scope row in the region.
+    static func rows(
+        inCluster cluster: UInt16,
+        count: Int,
+        clusterAt: (Int) -> UInt16,
+        limit: Int,
+        scopeMask: [UInt8]? = nil
+    ) -> (rows: [Int], total: Int) {
+        guard count > 0, limit > 0, cluster != SemanticMapArtifacts.unclustered else { return ([], 0) }
+        let mask = (scopeMask?.count == count) ? (scopeMask ?? []) : []
+        let isScoped = !mask.isEmpty
+        var found: [Int] = []
+        var total = 0
+        for row in 0..<count {
+            if isScoped && mask[row] != 0 { continue }
+            guard clusterAt(row) == cluster else { continue }
+            total += 1
+            if found.count < limit { found.append(row) }
+        }
+        return (found, total)
+    }
+
     /// Even-odd containment.
     ///
     /// - Parameters:
