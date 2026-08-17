@@ -485,6 +485,22 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0), halfExtent: extent)
     }
 
+    /// Brings the camera to one point on the grid.
+    ///
+    /// **Here rather than on the model, because the renderer owns the camera.** `SemanticMapModel`
+    /// keeps a mirror for the SwiftUI layers — region labels and the selection marker project
+    /// through it — and every other move (`pan`, `zoom`, `frameAll`) changes the renderer's copy and
+    /// then re-reads the mirror from it. A reveal that assigned the mirror directly moved the labels
+    /// and left the points where they were, which is exactly what a reader saw: names floating off
+    /// the edge of the cloud they belong to.
+    ///
+    /// - Parameters:
+    ///   - centre: Where to look, in grid units.
+    ///   - halfExtent: How much to keep in view.
+    func focus(on centre: SIMD2<Float>, halfExtent: Float) {
+        camera = SemanticMapCamera(centre: centre, halfExtent: halfExtent)
+    }
+
     /// Multiplies the zoom about the centre.
     /// - Parameter factor: >1 magnifies.
     func zoom(by factor: Float) {
