@@ -922,7 +922,15 @@ struct SemanticMapSpikeView: View {
     /// on macOS, a temp file plus `ShareLink` on iOS — without this view knowing which.
     @State private var exportBox = SeriesExportBox()
     /// Whether a Handoff continuation has already been applied to this map (UI review F-28).
-    @State private var hasAppliedContinuation = false
+    /// The continuation already applied, so a re-render does not re-apply it and a genuinely new
+    /// one is not ignored.
+    ///
+    /// **Was a `Bool`, which was wrong on macOS.** That window is a valueless singleton, so a second
+    /// "On the Map" from another document hands the same live view a new request — and a flag that
+    /// only remembers *that* something was applied refuses it. Remembering *what* was applied keeps
+    /// the original guarantee (a rebuild with an unchanged request must not fight the reader's own
+    /// scope changes) and fixes the second reveal.
+    @State private var appliedContinuation: SemanticMapRequest?
     @State private var revealFailed = false
     /// The nearest documents to the current selection, once computed.
     @State private var neighbours: [GeneratedCandidate] = []
@@ -1146,6 +1154,10 @@ struct SemanticMapSpikeView: View {
                         provenanceForVolume: provenanceForVolume)
             applyContinuedRequestIfNeeded()
         }
+        // The macOS window is a singleton: a second reveal reaches an EXISTING view, where the
+        // `.task` above has already run and will not run again. Without this the first "On the Map"
+        // worked and every later one silently did nothing.
+        .onChange(of: continued) { _, _ in applyContinuedRequestIfNeeded() }
     }
 
     /// Applies a Handoff continuation's scope and lens, once (UI review F-28).
@@ -1159,8 +1171,8 @@ struct SemanticMapSpikeView: View {
     /// is a `let`-shaped input from the host: the view is re-created on any host re-render, and a
     /// continuation that re-applied on every rebuild would fight the reader's own scope changes.
     private func applyContinuedRequestIfNeeded() {
-        guard let continued, !hasAppliedContinuation else { return }
-        hasAppliedContinuation = true
+        guard let continued, continued != appliedContinuation else { return }
+        appliedContinuation = continued
         // An unknown lens string is ignored rather than rejected — an older build receiving a lens
         // it does not have should still open the scoped map.
         if let restored = SemanticMapLens(rawValue: continued.lensRawValue) {

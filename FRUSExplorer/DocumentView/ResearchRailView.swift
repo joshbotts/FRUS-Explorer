@@ -730,14 +730,25 @@ struct ResearchRailView: View {
 
     /// Opens the semantic map focused on this document.
     ///
-    /// The request carries the document key, which is part of `SemanticMapRequest`'s identity — so
-    /// revealing a second document opens its own window rather than focusing the first and leaving
-    /// it pointed at the previous one.
+    /// **Not `openWindow(value:)`, and that mistake shipped once.** The other tool windows on this
+    /// rail are value-based `WindowGroup(for:)` scenes, so opening them by value is right; the
+    /// macOS semantic map is not one. It is the valueless singleton
+    /// `Window("Semantic Analytics", id: "frus.semanticAnalytics")` — deliberately, because an
+    /// `MTKView` needs a window rather than a sheet, and converting it to a value-based group is a
+    /// separate review finding with its own costs. Passing it a value produced
+    /// `No Scene presenting type 'SemanticMapRequest' is defined` at runtime and nothing opened.
+    ///
+    /// The request therefore rides `AppState.openSemanticMap(_:from:)` — the same hand-off slot the
+    /// iPad continuation uses, consumed both by `.task` and `.onChange` so it works whether or not
+    /// the window already exists — and the window is raised separately.
     private func openSemanticMap() {
         appState.bindTool(.semanticAnalytics, to: documentHostID)
-        openWindow(value: SemanticMapRequest(
-            volumeIDs: nil, scopeLabel: nil, lensRawValue: SemanticMapLens.cluster.rawValue,
-            focusDocumentKey: "\(entry.volumeId)/\(entry.documentId)"))
+        appState.openSemanticMap(
+            SemanticMapRequest(
+                volumeIDs: nil, scopeLabel: nil, lensRawValue: SemanticMapLens.cluster.rawValue,
+                focusDocumentKey: "\(entry.volumeId)/\(entry.documentId)"),
+            from: nil)
+        openWindow.fronting(id: "frus.semanticAnalytics")
     }
     #endif
 }
