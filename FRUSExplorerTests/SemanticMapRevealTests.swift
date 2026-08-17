@@ -391,6 +391,54 @@ struct SemanticMapRevealTests {
                 "the reveal did not actually zoom in")
     }
 
+    // MARK: - A reveal that finds nothing says so
+
+    /// **The state existed and nothing drew it.** #941's commit claimed a failed reveal "is
+    /// reported, rather than leaving the reader looking at an unmoved map". `revealFailed` was
+    /// assigned and never read: its only two mentions in the file were its declaration and that
+    /// assignment. The reader got precisely the unmoved, silent map the commit said they would not.
+    ///
+    /// A rendered state cannot be observed from a unit test, so this reads source — but it asserts
+    /// the thing that was missing (a *use*), not merely that the property exists, because the
+    /// property existing is exactly what was true while the feature was broken.
+    @Test("The reveal-failure state is rendered, not merely stored")
+    func revealFailureIsRendered() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
+            encoding: .utf8)
+        let code = source.components(separatedBy: .newlines)
+            .map { line -> String in
+                guard let slashes = line.range(of: "//") else { return line }
+                return String(line[..<slashes.lowerBound])
+            }
+            .joined(separator: "\n")
+
+        // **The key must be SET from a `.notFound` reveal.** A first version of this test counted
+        // reads against writes, which a mutation walked straight through: replacing the assignment
+        // with `revealFailedKey = nil` keeps the counts healthy while making the notice unreachable.
+        // What matters is that a failing reveal stores the document, so assert that shape.
+        let storesOnFailure = code.contains("== .notFound ? key : nil")
+        #expect(storesOnFailure, """
+            Nothing stores the document when a reveal answers .notFound, so `revealFailureNotice` \
+            can never appear however well it is written. That is the defect restored: the reader \
+            gets an unmoved map and no explanation.
+            """)
+        // And it must be read where the notice is built.
+        #expect(code.contains("if let key = revealFailedKey"),
+                "the notice does not read the stored key, so it cannot name the document")
+        // And the view that draws it must be mounted, not merely declared — the mistake made twice
+        // already in this feature.
+        let lines = code.components(separatedBy: .newlines)
+        #expect(lines.contains { $0.trimmingCharacters(in: .whitespaces) == "revealFailureNotice" }, """
+            `revealFailureNotice` is declared but never mounted in the view hierarchy. A view that \
+            nothing places renders nothing, which is indistinguishable from the defect it fixes.
+            """)
+        #expect(code.contains("semanticMap.reveal.notOnMap"),
+                "the notice carries no localized explanation")
+    }
+
     // MARK: - The neighbour list's contract
 
     /// The map's neighbour list must ask for exactly ten.
