@@ -223,7 +223,32 @@ struct MainTabView: View {
         // rather than the `TabSection`s the review names.
         .tabViewSidebarFooter {
             if UIDevice.current.userInterfaceIdiom == .pad {
+                // **The footer is NOT inside the TabView's environment chain, and this crashed
+                // build 42 on iPad (#950).** `.tabViewSidebarFooter` content is hosted by the
+                // sidebar container, so none of the modifiers applied to the `TabView` below reach
+                // it — not `.environment(appState)` from the scene, not the `\.sceneID` set at
+                // `:232`, not the scene's `.modelContainer`. `SidebarShortcuts` opens with
+                // `@Environment(AppState.self)`, which is resolved EAGERLY on declaration rather
+                // than lazily in `body`, so it traps the instant the footer is built:
+                //
+                //     Fatal error: No Observable object of type AppState found.
+                //
+                // It only shows on iPad, and only when the window is wide enough for the sidebar
+                // representation — which is why the reproduction is *resizing the main window*
+                // rather than any particular tap. Every scene in the app injects `appState`
+                // correctly; this hierarchy simply is not descended from one.
+                //
+                // All three are re-injected, not just the one that trapped:
+                //  * `appState` — the crash.
+                //  * `\.modelContext` — `SidebarShortcuts` runs two `@Query`s. They would fail for
+                //    exactly the same reason the moment the first failure stopped masking them.
+                //  * `\.sceneID` — silently defaulted rather than trapping, which is worse: the
+                //    footer's saved-search hand-off would be addressed to the wrong window on a
+                //    second iPad scene, the #752 failure mode.
                 SidebarShortcuts()
+                    .environment(appState)
+                    .environment(\.modelContext, modelContext)
+                    .environment(\.sceneID, SceneID(sceneIDToken))
             }
         }
         // #338 — publish this window's scene identity to every tab (and the sheets they present) so a
