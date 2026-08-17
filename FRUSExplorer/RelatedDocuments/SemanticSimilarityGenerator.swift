@@ -23,7 +23,7 @@ import Foundation
 ///
 /// ## The pipeline, and why each stage is where it is
 ///
-/// 1. **Candidates come from the bundled Tier-1 block**, a 256-bit sign vector per document for all
+/// 1. **Candidates come from the bundled Tier-1 block**, a sign vector per document (one bit per shipping dimension) for all
 ///    314,483 documents — so candidate generation works with *zero volumes downloaded* and reaches
 ///    volumes the reader does not have. A full corpus scan is 1.43 ms.
 /// 2. **The display fence is applied inside the scan**, as a precomputed per-row eligibility byte

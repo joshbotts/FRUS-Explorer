@@ -78,6 +78,12 @@ final class SemanticMapModel {
     /// The most recent frame statistics. DEBUG-only, like the overlay that is its only reader.
     var stats = SemanticMapRenderer.Stats()
     #endif
+    /// Why the last attempt to set an axis pole did not produce a slice.
+    ///
+    /// Exists because the refusal used to be silent: `setPole` returned without drawing and without
+    /// saying why, so a legitimate constraint was indistinguishable from a dead control. Cleared on
+    /// the next pole attempt and when the slice is cleared.
+    var axisNotice: String?
     /// Documents placed, for the overlay.
     private(set) var placedCount = 0
     /// The regions the artifact names, for the label layer.
@@ -498,15 +504,30 @@ final class SemanticMapModel {
                  yearForVolume: (String) -> Int?,
                  reapplyLens: (() -> Void)? = nil) {
         if isPositive { poles.positive = volumeID } else { poles.negative = volumeID }
+        axisNotice = nil
         guard let negativeID = poles.negative, let positiveID = poles.positive else { return }
-        guard negativeID != positiveID,
-              let negative = centroid(forVolume: negativeID),
+        // **Refusing silently is what this used to do, and it read as a broken button.** An axis
+        // needs two volumes: the poles are volume centroids, not the documents tapped, so two
+        // documents from the same volume have no direction between them and drawing one would be
+        // rounding error. That is a real constraint and worth stating, but the surface said nothing
+        // at all — the reader chose "…to here" and the map simply did not change, with no way to
+        // tell a refusal from a bug. The refusal stands; it now explains itself.
+        guard negativeID != positiveID else {
+            if isPositive { poles.positive = nil } else { poles.negative = nil }
+            axisNotice = String(
+                localized: "semanticMap.axis.sameVolume",
+                defaultValue: "An axis runs between two volumes, and both of these documents are in the same one. Pick a document from a different volume as the second end.")
+            return
+        }
+        guard let negative = centroid(forVolume: negativeID),
               let positive = centroid(forVolume: positiveID),
               let axis = SemanticAxis.between(
                 negative: negative, negativeLabel: negativeID,
                 positive: positive, positiveLabel: positiveID) else {
-            // Two poles that are the same volume have no direction between them. Say nothing and
-            // stay on the map rather than drawing a slice made of rounding error.
+            if isPositive { poles.positive = nil } else { poles.negative = nil }
+            axisNotice = String(
+                localized: "semanticMap.axis.noCentroid",
+                defaultValue: "These two volumes are too alike for an axis between them to mean anything. Try two volumes you expect to differ.")
             return
         }
         setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
@@ -516,6 +537,7 @@ final class SemanticMapModel {
     /// - Parameter yearForVolume: A volume's coverage midpoint.
     func clearSlice(yearForVolume: (String) -> Int?, reapplyLens: (() -> Void)? = nil) {
         poles = (nil, nil)
+        axisNotice = nil
         setSlice(axis: nil, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
     }
 
@@ -1057,18 +1079,39 @@ struct SemanticMapSpikeView: View {
     }
 
     /// The caveat a slice carries.
+    ///
+    /// **This sentence said "256-bit signatures" for as long as 512 shipped.** The width was written
+    /// as a literal, #933 doubled it, and nothing failed — a user-facing claim about the artifact
+    /// went quietly wrong and stayed wrong. It is now read from the artifact itself, so it cannot
+    /// disagree with what the app is actually using, whatever the next width turns out to be.
+    ///
+    /// The number is also no longer the point of the sentence. "From 512-bit signatures" tells a
+    /// historian nothing; what they need is that a position is approximate, so small left–right
+    /// differences are not evidence. The bit width stays, parenthesised, for the reader who wants it.
+    ///
     /// - Parameters:
     ///   - negative: The low-end pole.
     ///   - positive: The high-end pole.
     /// - Returns: The sentence.
-    private static func sliceCaveat(from negative: String, to positive: String) -> String {
-        String(format: String(
-            localized: "semanticMap.caveat.slice %@ %@",
+    static func sliceCaveat(from negative: String, to positive: String) -> String {
+        let bits = BundledSemanticVectors.index?.provenance.shippingDims
+        let position = bits.map {
+            String(format: String(
+                localized: "semanticMap.caveat.slice.position.v2 %@ %@ %lld",
+                defaultValue: """
+                    Left to right is how far each document leans from %1$@ toward %2$@. The reading \
+                    is approximate — it comes from a compact %3$lld-bit summary of each document — \
+                    so treat a clear side as meaningful and a small gap as noise.
+                    """), negative, positive, Int64($0))
+        } ?? String(format: String(
+            localized: "semanticMap.caveat.slice.position.nobits.v2 %@ %@",
             defaultValue: """
-                Left–right is each document's projection onto %@ → %@, from 256-bit signatures, \
-                scaled to the observed range. Up–down is the volume's coverage midpoint, not the \
-                document's date.
+                Left to right is how far each document leans from %1$@ toward %2$@. The reading is \
+                approximate, so treat a clear side as meaningful and a small gap as noise.
                 """), negative, positive)
+        let vertical = String(localized: "semanticMap.caveat.slice.vertical.v2",
+                              defaultValue: "Up and down is the volume's coverage midpoint, not each document's own date.")
+        return position + " " + vertical
     }
 
     /// A volume's coverage era, from the manifest.
@@ -1402,7 +1445,8 @@ struct SemanticMapSpikeView: View {
     /// The cards that currently have content, in the stack's own order.
     private var populatedCards: [CompactCard] {
         var cards: [CompactCard] = []
-        if model.slice != nil || model.poles.negative != nil { cards.append(.axis) }
+        if model.slice != nil || model.poles.negative != nil || model.poles.positive != nil
+            || model.axisNotice != nil { cards.append(.axis) }
         if model.selectedRegion != nil { cards.append(.region) }
         if model.selection != nil { cards.append(.selection) }
         if model.lassoResult != nil { cards.append(.lasso) }
@@ -1515,15 +1559,21 @@ struct SemanticMapSpikeView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                } else if let negative = model.poles.negative {
+                } else if let pole = model.poles.negative ?? model.poles.positive {
                     // One pole in. Say so, and say what the second one costs.
-                    Text(verbatim: negative)
+                    Text(verbatim: pole)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(String(localized: "semanticMap.axis.needsSecondPole",
-                                defaultValue: "Tap another document and choose \u{201C}…to here\u{201D}."))
+                    Text(String(localized: "semanticMap.axis.needsSecondPole.v2",
+                                defaultValue: "Tap a document in a different volume and choose \u{201C}…to here\u{201D}. The map will then lay every document out by how far it leans between the two."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                if let notice = model.axisNotice {
+                    Text(notice)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(12)
