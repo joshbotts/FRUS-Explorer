@@ -389,7 +389,33 @@ struct RelatedDocumentsContent: View {
                             defaultValue: "Available when detected-topic data ships (experimental)."))
                     .font(.caption2).foregroundStyle(.tertiary)
             }
+            if axis == .semanticSimilarity {
+                Text(semanticAxisCaption)
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+    }
+
+    /// What the semantic axis is, said where the reader actually meets it.
+    ///
+    /// **This axis was the only one nobody could learn about from its own surface.** Every other
+    /// axis names itself adequately — "Shared people", "Close in date", "Archival provenance" — but
+    /// "Semantically similar (experimental)" says nothing about what it matches on, and it ships at
+    /// weight 0, so a reader who never drags this slider never sees a single semantic result. The
+    /// only prose describing it lived in Settings ▸ Data & Recovery ▸ Semantic Match Feedback, a
+    /// screen reached for an entirely different purpose. The app's most usable semantic feature was
+    /// its least discoverable.
+    ///
+    /// Two states, because the useful sentence differs. At zero the reader needs to know what
+    /// turning it on would buy and what it costs in confidence; above zero they need to know that
+    /// their judgement of the results is the thing being collected.
+    private var semanticAxisCaption: String {
+        weights[.semanticSimilarity] == 0
+            ? String(localized: "related.weights.semantic.off",
+                     defaultValue: "Off. Raise it to also match documents whose wording reads alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.")
+            : String(localized: "related.weights.semantic.on",
+                     defaultValue: "Matches carry a “Semantic match” score. Press and hold one — or right-click on a Mac — to say whether it helped. Those verdicts are how this axis gets judged.")
     }
 
     /// The scopes offered: this volume, this subseries (when it has more than one known member), all
