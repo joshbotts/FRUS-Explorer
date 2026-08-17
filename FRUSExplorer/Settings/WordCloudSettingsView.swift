@@ -43,7 +43,7 @@ struct WordCloudSettingsView: View {
     @AppStorage(WordCloudSettings.Keys.minCount) private var minCount = WordCloudSettings.defaultMinCount
     @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
     @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
-    @AppStorage(WordCloudSettings.Keys.backgroundPrecompute) private var precomputeWordClouds = true
+    @AppStorage(WordCloudSettings.Keys.backgroundPrecompute) private var precomputeWordClouds = false
     /// Bumped by every stop-list mutation, including ones arriving over iCloud. Observed so the
     /// sample re-filters when a hidden word is added on another device.
     @AppStorage(WordCloudSettings.Keys.revision) private var settingsRevision = 0
@@ -158,8 +158,13 @@ struct WordCloudSettingsView: View {
         } header: {
             Text(String(localized: "settings.wordcloud.performance.header", defaultValue: "Performance"))
         } footer: {
-            Text(String(localized: "settings.wordcloud.precompute.footer.v2",
-                        defaultValue: "When enabled, the most demanding clouds — the whole corpus, a subseries — are prepared in the background after indexing, so they open instantly. This happens only while you are not using the device."))
+            // **The v2 copy promised what the feature could not do, and the promise is the reason
+            // it stayed on.** It said the heavy clouds are prepared in the background "so they open
+            // instantly"; measured, the corpus job is killed by iOS at 97% CPU before it finishes,
+            // and an entry it did write would be invalidated by the next volume indexed. Now off by
+            // default, and the footer says what it costs rather than what it was meant to buy.
+            Text(String(localized: "settings.wordcloud.precompute.footer.v3",
+                        defaultValue: "Off by default. When on, the app prepares the heaviest clouds — the whole corpus, a subseries — in the background after indexing. On a full corpus this is a long, heavy job that can use enough battery for the system to stop the app, and any volume you index afterwards makes the prepared cloud stale. Leave it off unless you index rarely and open the corpus cloud often."))
         }
     }
 
