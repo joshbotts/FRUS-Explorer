@@ -413,13 +413,14 @@ final class SemanticMapModel {
     ///   - key: `"volumeId/documentId"`.
     ///   - isReadable: Whether a volume's XML is on disk — the same closure `select(at:)` takes, and
     ///     for the same reason: readability is the view's question, not the artifact's.
-    /// - Returns: Whether the document was found and revealed.
+    /// - Returns: What happened — and `.notReady` is the case that matters, see `RevealOutcome`.
     @discardableResult
-    func reveal(documentKey key: String, isReadable: (String) -> Bool) -> Bool {
+    func reveal(documentKey key: String, isReadable: (String) -> Bool) -> RevealOutcome {
         let parts = key.split(separator: "/", maxSplits: 1)
-        guard parts.count == 2, let index, let map = BundledSemanticMap.vectors else { return false }
+        guard parts.count == 2 else { return .notFound }
+        guard let index, let map = BundledSemanticMap.vectors else { return .notReady }
         guard let row = index.row(documentID: String(parts[1]), volumeID: String(parts[0])),
-              let placement = map.placement(at: row) else { return false }
+              let placement = map.placement(at: row) else { return .notFound }
         // Region identity by ROW and from `clusters`, exactly as `select(at:)` derives it — a reveal
         // and a tap on the same document must produce the same card, or the two paths disagree
         // about which region a document is in.
@@ -444,7 +445,24 @@ final class SemanticMapModel {
         // marker already does.
         camera.centre = position
         camera.halfExtent = Self.revealHalfExtent
-        return true
+        return .revealed
+    }
+
+    /// The three ways a reveal can end.
+    ///
+    /// **`.notReady` exists because collapsing it into failure shipped a broken feature.** The map
+    /// opens, `prepare()` starts uploading 314,483 points, and the continuation can arrive before
+    /// the index exists — at which point a `Bool`-returning reveal says "false", the caller records
+    /// the continuation as applied, and the retry that would have worked never happens. The document
+    /// simply never gets selected, which is exactly what a reader reported. `setScope` had solved
+    /// the same race years earlier by deferring; this is the same lesson arriving late.
+    enum RevealOutcome: Equatable {
+        /// Selected, and the camera moved to it.
+        case revealed
+        /// The map is loaded and has no such document — 2,356 display rows were never embedded.
+        case notFound
+        /// The map is not loaded yet. Ask again; do not record this as an answer.
+        case notReady
     }
 
     /// How much of the map a reveal leaves in view, in grid units.
@@ -1160,6 +1178,19 @@ struct SemanticMapSpikeView: View {
         .onChange(of: continued) { _, _ in applyContinuedRequestIfNeeded() }
     }
 
+    /// Whether a continuation that produced this reveal outcome may be marked applied.
+    ///
+    /// **Extracted because the inline version could not be tested, and the bug lived in it.** A
+    /// mutation that banked the continuation on `.notReady` survived a suite that already tested the
+    /// outcome enum — the enum was right and the caller threw the answer away. Marking a
+    /// continuation applied is precisely what prevents the retry that makes the feature work.
+    ///
+    /// - Parameter outcome: The reveal's result, or `nil` when the continuation carried no document.
+    /// - Returns: `true` when the answer is final.
+    nonisolated static func continuationIsSettled(_ outcome: SemanticMapModel.RevealOutcome?) -> Bool {
+        outcome != .notReady
+    }
+
     /// Applies a Handoff continuation's scope and lens, once (UI review F-28).
     ///
     /// **After `prepare()` has returned, deliberately.** `setScope` would in fact tolerate arriving
@@ -1172,7 +1203,6 @@ struct SemanticMapSpikeView: View {
     /// continuation that re-applied on every rebuild would fight the reader's own scope changes.
     private func applyContinuedRequestIfNeeded() {
         guard let continued, continued != appliedContinuation else { return }
-        appliedContinuation = continued
         // An unknown lens string is ignored rather than rejected — an older build receiving a lens
         // it does not have should still open the scoped map.
         if let restored = SemanticMapLens(rawValue: continued.lensRawValue) {
@@ -1181,9 +1211,18 @@ struct SemanticMapSpikeView: View {
         applyScope(continued.volumeIDs, label: continued.scopeLabel)
         // The reveal comes last, and after the scope on purpose: `applyScope` moves the camera to
         // frame the scope, so revealing first would centre the document and then be overruled.
+        var outcome: SemanticMapModel.RevealOutcome?
         if let key = continued.focusDocumentKey {
-            revealFailed = !model.reveal(documentKey: key, isReadable: isReadable)
+            outcome = model.reveal(documentKey: key, isReadable: isReadable)
+            revealFailed = outcome == .notFound
         }
+        // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
+        // first line of the method, so the continuation was banked before the reveal was even
+        // attempted — and since recording it is exactly what stops the retry, a reveal that arrived
+        // while `prepare()` was still uploading 314,483 points was discarded and never asked again.
+        // The map opened with nothing selected, which is what a reader reported.
+        guard Self.continuationIsSettled(outcome) else { return }
+        appliedContinuation = continued
     }
 
     /// Whether a requested reveal could not be honoured.

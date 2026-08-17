@@ -113,7 +113,7 @@ struct SemanticMapRevealTests {
         let key = "\(document.volumeID)/\(document.documentID)"
         let before = model.camera
 
-        #expect(model.reveal(documentKey: key, isReadable: { _ in true }), """
+        #expect(model.reveal(documentKey: key, isReadable: { _ in true }) == .revealed, """
             The first document in the artifact did not reveal. Every row the artifact places has a             point by construction, so this is a lookup failure rather than an unembedded document.
             """)
         let selection = try #require(model.selection)
@@ -140,7 +140,7 @@ struct SemanticMapRevealTests {
         let row = try #require(clustered, "no clustered row in the first 5,000")
         let document = try #require(index.document(at: row))
         #expect(model.reveal(documentKey: "\(document.volumeID)/\(document.documentID)",
-                             isReadable: { _ in true }))
+                             isReadable: { _ in true }) == .revealed)
         #expect(model.selection?.regionName != nil, """
             A document the artifact places inside a region was revealed with no region name, so the             reveal and a tap would show different cards for the same document.
             """)
@@ -152,7 +152,7 @@ struct SemanticMapRevealTests {
           .enabled(if: revealTestsHaveMetal))
     func malformedKeyRevealsNothing() async throws {
         let (model, _) = try await loadedModel()
-        #expect(model.reveal(documentKey: "frus1861", isReadable: { _ in true }) == false)
+        #expect(model.reveal(documentKey: "frus1861", isReadable: { _ in true }) == .notFound)
         #expect(model.selection == nil)
     }
 
@@ -163,8 +163,89 @@ struct SemanticMapRevealTests {
           .enabled(if: revealTestsHaveMetal))
     func unknownDocumentIsReported() async throws {
         let (model, _) = try await loadedModel()
-        #expect(model.reveal(documentKey: "frus9999/d99999", isReadable: { _ in true }) == false)
+        #expect(model.reveal(documentKey: "frus9999/d99999", isReadable: { _ in true }) == .notFound)
         #expect(model.selection == nil, "a failed reveal must not leave a selection behind")
+    }
+
+    /// **The defect a reader hit: the map opened and the document was not selected.**
+    ///
+    /// On macOS the continuation can arrive while `prepare()` is still uploading 314,483 points, so
+    /// the model has no index yet. A reveal then must say `.notReady` — NOT `.notFound` — because
+    /// the caller banks the continuation on any definite answer and never asks again. Collapsing the
+    /// two is what made "On the Map" open a map with nothing selected.
+    @MainActor
+    @Test("A reveal before the map has loaded reports notReady, not notFound")
+    func revealBeforeLoadIsNotReady() {
+        let model = SemanticMapModel()   // never prepared: no index
+        #expect(model.reveal(documentKey: "frus1861/d1", isReadable: { _ in true }) == .notReady, """
+            An un-prepared map answered something other than .notReady. The caller treats every \
+            answer except .notReady as final, so the retry that would have selected the document \
+            never runs and the map opens with nothing selected.
+            """)
+        #expect(model.selection == nil)
+    }
+
+    /// A malformed key is a real answer even before the map loads — it can never become valid.
+    @MainActor
+    @Test("A malformed key is notFound even before the map loads")
+    func malformedKeyIsFinal() {
+        let model = SemanticMapModel()
+        #expect(model.reveal(documentKey: "no-separator", isReadable: { _ in true }) == .notFound,
+                "a key that can never parse should not make the caller retry forever")
+    }
+
+    /// The half of the fix that a mutation caught surviving: the outcome was right and the caller
+    /// discarded it.
+    @Test("A continuation is settled by every outcome except notReady")
+    func onlyNotReadyDefersTheContinuation() {
+        #expect(SemanticMapSpikeView.continuationIsSettled(.revealed))
+        #expect(SemanticMapSpikeView.continuationIsSettled(.notFound), """
+            A document the map genuinely does not have must SETTLE the continuation, or the view \
+            re-attempts the same missing document forever.
+            """)
+        #expect(SemanticMapSpikeView.continuationIsSettled(nil),
+                "a continuation carrying no document has nothing to wait for")
+        #expect(!SemanticMapSpikeView.continuationIsSettled(.notReady), """
+            A reveal that could not run yet was recorded as applied. That is the bug a reader hit — \
+            the map opens, the continuation is banked, the retry never happens, and the document is \
+            never selected.
+            """)
+    }
+
+    /// The continuation must be recorded **after** the reveal is consulted, not before.
+    ///
+    /// **This is the shape of the original defect and the extracted predicate does not catch it.**
+    /// `continuationIsSettled` can be perfectly correct while the caller assigns
+    /// `appliedContinuation` on its first line — which is exactly what shipped, and what a mutation
+    /// moving the assignment back to the top proved was untested. The method is `private` to a
+    /// SwiftUI view and takes no arguments, so its ordering cannot be driven from a test; reading
+    /// the source is the honest instrument, and the assertion is positional rather than textual.
+    @Test("The applied continuation is recorded after the reveal, not before it")
+    func continuationIsRecordedLast() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
+            encoding: .utf8)
+        let start = try #require(source.range(of: "private func applyContinuedRequestIfNeeded()"))
+        // The method ends at the first line that is exactly four-space-indented `}`.
+        let rest = source[start.upperBound...]
+        let end = try #require(rest.range(of: "\n    }"))
+        let body = String(rest[..<end.lowerBound])
+
+        let assign = try #require(body.range(of: "appliedContinuation = continued"), """
+            The method no longer records the applied continuation at all, so every re-render \
+            re-applies the continuation and fights the reader's own scope changes.
+            """)
+        let consult = try #require(body.range(of: "continuationIsSettled"), """
+            The method no longer consults continuationIsSettled, so a reveal that could not run yet \
+            is banked as an answer and never retried — the map opens with nothing selected.
+            """)
+        #expect(consult.lowerBound < assign.lowerBound, """
+            `appliedContinuation` is assigned BEFORE the reveal outcome is consulted. Recording the \
+            continuation is what prevents the retry, so assigning first discards a reveal that \
+            arrived while prepare() was still loading — the original defect, verbatim.
+            """)
     }
 
     // MARK: - The neighbour list's contract
