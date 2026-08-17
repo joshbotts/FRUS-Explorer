@@ -6,9 +6,18 @@ the analytics info popovers and captions, the Source Explorer panels, the method
 stamped on every export, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38).** Every block below was re-read from the code on
-that date: the `lines:` field is freshly computed, 16 blocks that named the wrong source file were
-corrected, and four new sections cover surfaces this file had never carried.
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42.**
+
+The build-42 amendment adds **§13**, which covers the semantic map and the Settings section that
+governs its files — a surface this file had never carried, and which grew a great deal in this
+release. It also refreshes four blocks in §6 and §7 whose text *and* localization key changed in the
+build-42 plain-language pass, so the prose here matches what ships. Every string in §13 was read
+out of the source rather than transcribed.
+
+Not yet carried, and worth knowing: the build-42 pass also touched about twenty short strings
+elsewhere — the storage hubs' reindex controls, the document reader's person and term popovers, the
+Collections search-unavailable notice and the Zotero rate-limit error. They are one or two sentences
+each and read plainly now; say the word and they get blocks of their own.
 
 **The plain-language pass (2026-08-09).** 126 of the app's longest strings were rewritten to read
 more plainly, and 122 of them changed. The rule was that plainer must not mean vaguer: every
@@ -1213,11 +1222,11 @@ Words hidden only when the selected lens is active — useful for trimming a rec
 
 #### Performance footer — background precompute
 
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | performanceSection footer | lines: 161–162 | key: settings.wordcloud.precompute.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | performanceSection footer | lines: 161–162 | key: settings.wordcloud.precompute.footer.v2 | shared: iOS+macOS (single edit point) -->
 
-When enabled, the most demanding clouds — the whole corpus, a subseries — are computed in the background after indexing, so they open instantly. Runs only while the device is idle.
+When enabled, the most demanding clouds — the whole corpus, a subseries — are prepared in the background after indexing, so they open instantly. This happens only while you are not using the device.
 
-<!-- END SOURCE: settings.wordcloud.precompute.footer -->
+<!-- END SOURCE: settings.wordcloud.precompute.footer.v2 -->
 
 #### Sample footer — where the preview's terms come from
 
@@ -1762,13 +1771,11 @@ Notes, highlights, and tags are never affected. For reference: the full FRUS cor
 
 #### Rebuild From Scratch — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | rebuild confirmation | lines: 198–199 | key: settings.hub.rebuild.message | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | rebuild confirmation | lines: 198–199 | key: settings.hub.rebuild.message.v2 | shared: iOS (macOS carries the same text separately) -->
 
-This deletes the whole search index: full-text rows, cross-references, page ranges, document dates, person mentions, and the document cache. It then rebuilds the index by re-parsing all \(volumes) you have downloaded.
+This deletes everything the app has built for searching — document text, cross-references, page numbers, dates and the people named in each document — and builds it again by re-reading all (volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately. They are not affected.
 
-Your research notes, highlights, summaries, collections, and tags are stored separately. They are not affected.
-
-<!-- END SOURCE: settings.hub.rebuild.message -->
+<!-- END SOURCE: settings.hub.rebuild.message.v2 -->
 
 #### Free Up Space — removal confirmation
 
@@ -1788,11 +1795,11 @@ Each size is the XML file plus an estimated 2.8× for its share of the search in
 
 #### Needs Attention footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | needsAttentionSection footer | lines: 437–438 | key: settings.hub.interrupted.footer | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | needsAttentionSection footer | lines: 437–438 | key: settings.hub.interrupted.footer.v2 | shared: iOS (macOS carries the same text separately) -->
 
-These volumes were being indexed when the app last quit. Shown only when something needs you.
+These volumes were still being indexed when the app last closed. This section appears only when something needs your attention.
 
-<!-- END SOURCE: settings.hub.interrupted.footer -->
+<!-- END SOURCE: settings.hub.interrupted.footer.v2 -->
 
 #### Download options footer (iOS only)
 
@@ -1935,11 +1942,11 @@ This usually happens when your stored data does not match the build you are runn
 ### Background Summarization
 
 #### Continue-in-background footer
-<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 99–100 | key: bg.summarizer.continue.hint | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 99–100 | key: bg.summarizer.continue.hint.v2 | shared: iOS+macOS (single edit point) -->
 
-When on, summarization resumes opportunistically while the device is idle, a few documents at a time, even after you close the app. Uses the on-device model and some battery.
+When on, the app keeps summarizing a few documents at a time while you are not using the device, even after you close the app. Uses the on-device model and some battery.
 
-<!-- END SOURCE: bg.summarizer.continue.hint -->
+<!-- END SOURCE: bg.summarizer.continue.hint.v2 -->
 
 ---
 
@@ -4692,3 +4699,319 @@ Pick a scope above, or open a word cloud from a document, volume, collection, ta
 <!-- END SOURCE: wordcloud.window.empty.detail -->
 
 ---
+
+---
+
+## 13. Semantic Analytics — the map, its regions, its slices, and its vectors
+
+*The map surface and everything that explains it, plus the Settings section that governs the files
+it needs. Gathered here rather than split across §5 and §6 because an editor working on this feature
+is working on one idea, and the prose has to hold together: a **region** is a grouping the corpus
+produced on its own, a **slice** is a contrast the reader proposed, and the difference between those
+two sentences is the feature. Nearly all of it is new in build 42.*
+
+**The standing rule for this section: plainer must not become more confident.** The semantic axis
+ships at weight 0, its quality before 1900 is a declared unknown rather than a measured pass, and
+the neighbour list is drawn only from volumes on the device even though the map draws all 552. Every
+one of those limits is stated somewhere below. If an edit reads as having removed one rather than
+unpacked it, that is a defect — say so and it goes back.
+
+---
+
+### 13.1 What the window says about itself
+
+
+#### Panel heading
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 137 | key: semanticAnalytics.about.title | shared: iOS+macOS (single edit point) -->
+
+How the corpus's language sits
+
+<!-- END SOURCE: semanticAnalytics.about.title -->
+
+#### What the map is
+<!-- The four verbs a reader can act on — tap, lasso, two poles, and (build 42) arriving from a document. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 158 | key: semanticAnalytics.about.body.v2 | shared: iOS+macOS (single edit point) -->
+
+
+
+<!-- END SOURCE: semanticAnalytics.about.body.v2 -->
+
+#### Experimental standing
+<!-- Not hedging. The blind panel that would have graded early-era quality was retired as a gate, so pre-1900 IS unmeasured, and this is the sentence that says so. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 170 | key: semanticAnalytics.about.experimental | shared: iOS+macOS (single edit point) -->
+
+
+
+<!-- END SOURCE: semanticAnalytics.about.experimental -->
+
+#### Layout caveat, under the map
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1289 | key: semanticMap.caveat.map | shared: iOS+macOS (single edit point) -->
+
+
+
+<!-- END SOURCE: semanticMap.caveat.map -->
+
+
+### 13.2 Regions — a grouping the corpus produced
+
+
+#### What a region is
+<!-- New in build 42. The second sentence is load-bearing: the names are the most distinctive words in a SAMPLE (c-TF-IDF over up to 300 documents), not subject headings, and a reader who takes them for topic labels over-reads every region. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1920 | key: semanticMap.region.whatItIs | shared: iOS+macOS (single edit point) -->
+
+A region is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its name is the most distinctive words in a sample of those documents, not a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it.
+
+<!-- END SOURCE: semanticMap.region.whatItIs -->
+
+#### Save the region as a working corpus
+<!-- New in build 42. The lasso could carry a set off the map and a region could not. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1951 | key: semanticMap.region.save | shared: iOS+macOS (single edit point) -->
+
+Save as Working Corpus
+
+<!-- END SOURCE: semanticMap.region.save -->
+
+#### Confirmation after saving
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1944 | key: semanticMap.region.saved | shared: iOS+macOS (single edit point) -->
+
+Saved as “%@”. Find it under Working Corpora, where it can scope a search.
+
+<!-- END SOURCE: semanticMap.region.saved -->
+
+
+### 13.3 Slices — a contrast the reader proposed
+
+
+#### What a slice adds, on the selection card
+<!-- New in build 42, and the complement of §13.2. The last sentence is the one that keeps it honest: ANY two differing volumes produce a spread, so a tidy picture is not evidence. Removing it would leave the text selling the feature. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2163 | key: semanticMap.axis.whatItAdds | shared: iOS+macOS (single edit point) -->
+
+On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document leans between two volumes you pick, with time running up the side. Any two volumes will produce a spread, so read it as a contrast you proposed — not one the corpus found.
+
+<!-- END SOURCE: semanticMap.axis.whatItAdds -->
+
+#### After one pole is set
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1842 | key: semanticMap.axis.needsSecondPole.v2 | shared: iOS+macOS (single edit point) -->
+
+Tap a document in a different volume and choose “…to here”. The map will then lay every document out by how far it leans between the two.
+
+<!-- END SOURCE: semanticMap.axis.needsSecondPole.v2 -->
+
+#### Refused: both documents in one volume
+<!-- An axis runs between two volume summaries, not the two documents tapped. Before build 42 this refusal was silent and read as a dead control. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 649 | key: semanticMap.axis.sameVolume | shared: iOS+macOS (single edit point) -->
+
+An axis runs between two volumes, and both of these documents are in the same one. Pick a document from a different volume as the second end.
+
+<!-- END SOURCE: semanticMap.axis.sameVolume -->
+
+#### Refused: the two volumes are too alike
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 671 | key: semanticMap.axis.tooAlike | shared: iOS+macOS (single edit point) -->
+
+These two volumes read so alike that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.
+
+<!-- END SOURCE: semanticMap.axis.tooAlike -->
+
+#### Refused: no summary for a volume
+<!-- Split from the message above in build 42. A missing summary is a property of the build, not of the volumes, and saying 'too alike' there sent the reader to change the wrong thing. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 662 | key: semanticMap.axis.noSummary | shared: iOS+macOS (single edit point) -->
+
+This version of the app has no language summary for one of these volumes, so it cannot place an axis between them. Try a different volume as that end.
+
+<!-- END SOURCE: semanticMap.axis.noSummary -->
+
+#### Reading a slice's position
+<!-- The bit width is READ FROM THE ARTIFACT, not typed — it said '256-bit' for a whole generation after the corpus moved to 512. Keep the placeholder. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1321 | key: semanticMap.caveat.slice.position.v2 | shared: iOS+macOS (single edit point) -->
+
+Left to right is how far each document leans from %1$@ toward %2$@. The reading is approximate — it comes from a compact %3$lld-bit summary of each document — so treat a clear side as meaningful and a small gap as noise.
+
+<!-- END SOURCE: semanticMap.caveat.slice.position.v2 -->
+
+#### Reading a slice's vertical axis
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1333 | key: semanticMap.caveat.slice.vertical.v2 | shared: iOS+macOS (single edit point) -->
+
+Up and down is the volume's coverage midpoint, not each document's own date.
+
+<!-- END SOURCE: semanticMap.caveat.slice.vertical.v2 -->
+
+
+### 13.4 Arriving from a document, and leaving by its neighbours
+
+
+#### Research-rail tile
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 784 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
+
+On the Map
+
+<!-- END SOURCE: researchRail.tile.semanticMap -->
+
+#### Research-rail tile help
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 785 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
+
+Show where this document sits on the semantic map, among the documents whose language is most like it
+
+<!-- END SOURCE: researchRail.tile.semanticMap.help -->
+
+#### Nearest-documents heading
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2039 | key: semanticMap.nearest.header | shared: iOS+macOS (single edit point) -->
+
+Nearest in language
+
+<!-- END SOURCE: semanticMap.nearest.header -->
+
+#### What the nearest list is drawn from
+<!-- The map draws all 552 volumes; this list can only score documents whose vectors are on the device. Saying so is not optional — without it the ten rows read as the ten nearest in the corpus. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2063 | key: semanticMap.nearest.fence | shared: iOS+macOS (single edit point) -->
+
+Drawn only from volumes downloaded on this device — the map shows the whole series, so there may be nearer documents it cannot score yet.
+
+<!-- END SOURCE: semanticMap.nearest.fence -->
+
+#### When the anchor's own volume is absent
+<!-- The anchor's own vectors ARE the query, so this is a harder limit than the one above: no vectors for this volume means no comparison at all. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2074 | key: semanticMap.nearest.needsVolume | shared: iOS+macOS (single edit point) -->
+
+Finding nearest documents needs this volume on the device. Download it to compare this document with others.
+
+<!-- END SOURCE: semanticMap.nearest.needsVolume -->
+
+#### A document with no place on the map
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1693 | key: semanticMap.reveal.notOnMap | shared: iOS+macOS (single edit point) -->
+
+This document has no place on the map
+
+<!-- END SOURCE: semanticMap.reveal.notOnMap -->
+
+#### …and why
+<!-- About 2,356 display rows — chapter openers, front matter, appendix structure — were never embedded. Ordinary, not a fault, and the wording carries that. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1697 | key: semanticMap.reveal.notOnMap.detail | shared: iOS+macOS (single edit point) -->
+
+Chapter openers, front matter and appendix material were not included when the map was built, so %@ has no point to show. The rest of the series is here.
+
+<!-- END SOURCE: semanticMap.reveal.notOnMap.detail -->
+
+
+### 13.5 Related Documents — the semantic axis
+
+
+#### Axis caption when the weight is 0
+<!-- The axis ships OFF. Until build 42 the only prose describing it lived in a feedback screen in Settings ▸ Data & Recovery, so the app's most usable semantic feature was its least discoverable. -->
+
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 415 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
+
+Off. Raise it to also match documents whose wording reads alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.
+
+<!-- END SOURCE: related.weights.semantic.off -->
+
+#### Axis caption when the weight is raised
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 417 | key: related.weights.semantic.on | shared: iOS+macOS (single edit point) -->
+
+Matches carry a “Semantic match” score. Press and hold one — or right-click on a Mac — to say whether it helped. Those verdicts are how this axis gets judged.
+
+<!-- END SOURCE: related.weights.semantic.on -->
+
+
+### 13.6 Settings ▸ Volumes & Storage ▸ Semantic Vectors
+
+*One view mounted by both storage hubs, so every string here is a single edit point.*
+
+
+#### Section header
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 64 | key: settings.vectors.header | shared: iOS+macOS (single edit point) -->
+
+Semantic Vectors
+
+<!-- END SOURCE: settings.vectors.header -->
+
+#### Section footer
+<!-- Rewritten in build 42: the previous version opened 'Vectors let the app…', which asks the reader to know what a vector is before the sentence will parse. -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 77 | key: settings.vectors.footer.v3 | shared: iOS+macOS (single edit point) -->
+
+The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it. The feature is experimental, and how well it works on nineteenth-century material is not yet established.
+
+<!-- END SOURCE: settings.vectors.footer.v3 -->
+
+#### Download-with-volumes toggle
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 129 | key: settings.vectors.auto.label | shared: iOS+macOS (single edit point) -->
+
+Download With Volumes
+
+<!-- END SOURCE: settings.vectors.auto.label -->
+
+#### …its detail
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 137 | key: settings.vectors.auto.detail.v3 | shared: iOS+macOS (single edit point) -->
+
+Helps Related Documents find documents on the same subject even when they use none of the same words. About %@ per volume.
+
+<!-- END SOURCE: settings.vectors.auto.detail.v3 -->
+
+#### …its accessibility hint
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 148 | key: settings.vectors.auto.a11y.v2 | shared: iOS+macOS (single edit point) -->
+
+When this is off, the extra file is not downloaded alongside a volume. You can still download them all from the button above, and if you open Related Documents for a volume, the app fetches that volume's file then.
+
+<!-- END SOURCE: settings.vectors.auto.a11y.v2 -->
+
+#### Manual download button
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 161 | key: settings.vectors.download.label | shared: iOS+macOS (single edit point) -->
+
+Download Missing Vectors
+
+<!-- END SOURCE: settings.vectors.download.label -->
+
+#### …its detail
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 165 | key: settings.vectors.download.detail.v3 | shared: iOS+macOS (single edit point) -->
+
+%lld volumes on this device are missing this file. About %@ to download, and Related Documents gets better for those volumes.
+
+<!-- END SOURCE: settings.vectors.download.detail.v3 -->
+
+#### Remove downloaded vectors
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 263 | key: settings.vectors.remove.detail.v2 | shared: iOS+macOS (single edit point) -->
+
+Frees %@. Your volumes, notes and search stay exactly as they are. Related Documents keeps working, but its matches are less precise until these files download again.
+
+<!-- END SOURCE: settings.vectors.remove.detail.v2 -->
+
+#### Retry failed downloads
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 236 | key: settings.vectors.retry.detail.v2 | shared: iOS+macOS (single edit point) -->
+
+Lets the app try the downloads that failed earlier. Worth using if you were offline before.
+
+<!-- END SOURCE: settings.vectors.retry.detail.v2 -->
+
+#### When the build carries no vectors
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 283 | key: settings.vectors.unavailable.detail.v2 | shared: iOS+macOS (single edit point) -->
+
+This version of the app cannot match documents by subject, so that part of Related Documents is unavailable. Nothing is wrong with your library.
+
+<!-- END SOURCE: settings.vectors.unavailable.detail.v2 -->
+
+#### Problems — nothing noticed
+<!-- This deliberately REFUSES to give a clean bill of health: the app only notices a problem when it downloads or searches a volume, so 'no problems' would claim more than it knows. -->
+
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 118 | key: settings.vectors.problems.none.v2 | shared: iOS+macOS (single edit point) -->
+
+Nothing has gone wrong since the app opened. The app only notices a problem when it downloads or searches a volume, so this does not mean every file is good.
+
+<!-- END SOURCE: settings.vectors.problems.none.v2 -->
+
+#### A file that did not arrive intact
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 150 | key: settings.vectors.error.integrity.v2 | shared: iOS+macOS (single edit point) -->
+
+The file did not arrive intact, so the app discarded it. Downloading again usually fixes this.
+
+<!-- END SOURCE: settings.vectors.error.integrity.v2 -->

@@ -1,43 +1,50 @@
-# What's New Since Build 37 (Mac)
+# What's New Since Build 40 (Mac)
 
-Three builds at once. The headline is **Archival Analytics**, a new way to see which archives FRUS drew on. Source Explorer now answers trip-planning questions. Plus two new lookups, multi-select search facets, and window and menu repair.
+The headline is **Semantic Analytics** — a map of the whole series arranged by how documents are written rather than by who cites whom. It is entirely new: none of it existed in build 40. The analytics surfaces also stop borrowing each other's windows.
 
-**First launch re-indexes every volume you have downloaded, and it is not quick** — the index format moved a long way since build 37. The app stays usable and offers the Research Guide while it runs, but Search results and analytics are incomplete until it finishes.
+**First launch re-indexes every volume you have downloaded, and it is not quick.** The date index moved (36 → 40) and person rollups moved with it, and a date-version change forces a full clean re-parse of the XML. The app stays usable while it runs, but Search results, dates and person analytics are incomplete until it finishes.
 
-## Archival Analytics (new)
+The app downloads a small extra file per volume for the semantic features (about 287 KB each). That is on by default and can be turned off — Settings ▸ Volumes & Storage ▸ **Semantic Vectors**.
 
-Its own window: sidebar ▸ **Archival Analytics**, the Analytics menu, or the door on the Research Guide's Archival Sourcing page. Four views:
+## Semantic Analytics (new)
 
-- **Collections** — which archival units the editors leaned on, ranked inside one era band. Central-file class keys now read in words: `812.6363` is *Mexico — Petroleum*.
-- **Network** — which collections the same volumes drew on together, in custodian sectors.
-- **Flows** — where footnotes point *outside* the printed record.
-- **Your Library** — the archival profile of the volumes you have indexed.
+Its own window: the **Analytics** menu, or the toolbar's analytics menu in the main window. Every document in the published series is placed on one map by the shape of its language, so documents that read alike land near each other whether or not they share a volume, a date or a citation.
 
-Two things that look like bugs and are not. Class readings appear only in **Through 1947**; the classification was renumbered in 1950 and later eras are left bare rather than guessed. And the *Central Files* umbrella is withheld from the ranking by default — one undifferentiated record that would flatten every other bar. Both say so on screen.
+- **Regions** are groups the corpus fell into on its own, named by their most distinctive words. Click one for its size and era mix, or **Save as Working Corpus** to keep it and scope a search to it.
+- **Slices** are the opposite move: click two documents in *different* volumes as poles and the whole series lays out along the contrast you named, with time up the side.
+- **Lasso** an area to keep everything inside it as a working corpus.
+- **Colour by** region, era, what you have downloaded, or archival provenance. ⌘+ / ⌘− / ⌘0 zoom.
 
-## What NARA can tell you before you travel
+Two honest limits, both stated on screen. The layout preserves *local* similarity — near neighbours mean something, the distance between two far-apart regions does not. And a region's name comes from a sample of its documents, so read it as a hint rather than a claim about every document in it.
 
-On a citation that resolves to a NARA series, the **NARA Catalog Record** box now carries **Created by**, **Access** (whether you can read it), **Use** (whether you can publish it — a different question), **Extent**, and **Held At**. Presidential-library citations route to the right finding aid. Unverified lookups are labelled *candidates*, not answers. For a lot NARA split across several series, the creator appears only when every claimant agrees.
+## From a document, and back out again (new)
 
-These rows are **absent** on most decimal-file citations by design: those resolve to a whole record group whose creator would read "Department of State" for three-quarters of the corpus.
+Open any document ▸ Research rail ▸ **On the Map**. The map opens with that document selected and the view brought to it, and its card lists the **ten documents whose language is nearest**. Click one to travel there.
 
-## Two new lookups
+That list is drawn only from volumes you have downloaded, even though the map draws all 552 — it says so under the list. If the document's own volume is not on the device there is nothing to compare against at all, and it says that too.
 
-**Batch citation triage** — Citation Lookup ▸ Batch. Paste a chapter's footnotes; each becomes a row, worst-first, and a resolved row opens its document. **Abbreviations** — Search's overflow menu. `EUR` carries 30 definitions across 231 volumes.
+## Semantic matches in Related Documents (new, and off)
+
+Related Documents ▸ **Adjust weights** ▸ raise *Semantically similar*. It finds documents on the same subject even when they share no words, citations or archive. It ships at zero because **its accuracy on nineteenth-century material has not been established** — a real unknown, not modesty. Right-click a match to say whether it helped.
+
+## Windows behave
+
+Six analytics surfaces now open in their own windows and are raised rather than re-created when already open. Two documents can hold **two cross-reference graphs** at once instead of one window teleporting between them. The **Search** window gets a proper titlebar, and its filters become a row of tokens you can remove individually.
 
 ## Smaller things
 
-Search facets take several years at once (click to include, again to exclude). Corpus Browser moved to the **Find** menu beside Search and Citation Lookup, and ⌘⇧B now fronts an open-but-buried window instead of doing nothing. Drag across a Corpus Analytics chart to narrow the years. Related Documents says when the pool cut you off. Side-loaded volumes are browsable.
+A filter section that was open when its data reloaded asks for it again instead of sitting empty. About thirty explanatory passages were rewritten more plainly — no stated limit was softened. The frame-rate readout that used to sit over the map is gone from release builds.
 
 ## What to test
 
-1. Let the re-index finish. Tell us roughly how long, and how many volumes.
-2. Open **Archival Analytics** and step through all four views and all five era bands. Anything that reads as empty, wrong, or unexplained. Watch the layout — long collection names and class readings can run wide.
-3. In **Collections**, check the class readings in Through 1947 — do they match the number? Then confirm later bands show bare numbers.
-4. Open a document citing a lot file: does **Access**/**Use** read sensibly? A long FOIA list can run wide.
-5. Open a document citing a **decimal file**. Creator and access rows should be absent, not "Department of State".
-6. Open a **divided lot** (`61D146` has 13 claimants). A creator should appear only if they agree.
-7. Paste a chapter of footnotes into Citation Lookup ▸ Batch, especially one where a note **wraps across lines**.
-8. Drag across a Corpus Analytics chart. Confirm the drag does not fight window or text selection.
+1. Let the re-index finish. Roughly how long, and how many volumes?
+2. Open **Semantic Analytics** and move around. Pan, zoom, and switch lenses — anything that stutters or draws wrong.
+3. From a document, **On the Map** — then do it again from a *second* document without closing the map. Both should select their document and travel to it.
+4. Read the **ten nearest documents** for a few anchors. Are they useful research leads, or plausible noise? This matters more than anything else here: we have no measurement that can answer it.
+5. Click two documents in the **same volume** as poles. It should explain why it cannot make an axis rather than doing nothing.
+6. **Colour by ▸ Era** — can you tell the four bands apart, and do they read as ordered early-to-late? Region names should sit on their clusters at every zoom.
+7. Save a region as a **working corpus**, then scope a search to it.
+8. Raise the **Semantically similar** weight and judge a few matches, especially pre-1900. Right-click to record a verdict.
+9. Open two documents and a graph for each; then open several analytics windows and re-invoke them from the menu — each should raise, not duplicate.
 
-Include macOS version, what you clicked, what you expected, what happened. Thanks!
+Include macOS version, what you clicked, what you expected, what happened. Thanks for testing!
