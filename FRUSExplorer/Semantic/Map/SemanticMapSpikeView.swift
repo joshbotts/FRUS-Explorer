@@ -968,7 +968,14 @@ struct SemanticMapSpikeView: View {
     /// the original guarantee (a rebuild with an unchanged request must not fight the reader's own
     /// scope changes) and fixes the second reveal.
     @State private var appliedContinuation: SemanticMapRequest?
-    @State private var revealFailed = false
+    /// A document the reader asked to see that the map cannot place, or `nil`.
+    ///
+    /// **Was a `Bool` that nothing rendered.** #941's commit claimed a failed reveal "is reported,
+    /// rather than leaving the reader looking at an unmoved map"; it was assigned and never read, so
+    /// the reader got exactly the unmoved map that commit said they would not. Holding the key
+    /// rather than a flag also lets the notice say which volume, which is the part that tells a
+    /// reader this is about their document and not about the map being broken.
+    @State private var revealFailedKey: String?
     /// The nearest documents to the current selection, once computed.
     @State private var neighbours: [GeneratedCandidate] = []
     /// Set while the neighbour query runs, so the card can say it is working.
@@ -1065,6 +1072,7 @@ struct SemanticMapSpikeView: View {
                 // bare siblings a lasso result drew exactly on top of a selection card — hiding Open
                 // Document and the pole buttons behind a card that looked like the only thing there.
                 cardStack
+                revealFailureNotice
             }
             provenanceCaveat
             controls
@@ -1209,7 +1217,7 @@ struct SemanticMapSpikeView: View {
     /// rather than inside `prepare`.
     private func applyPendingRevealIfNeeded() {
         guard let key = model.pendingRevealKey else { return }
-        revealFailed = model.reveal(documentKey: key, isReadable: isReadable) == .notFound
+        revealFailedKey = model.reveal(documentKey: key, isReadable: isReadable) == .notFound ? key : nil
     }
 
     /// Whether a continuation that produced this reveal outcome may be marked applied.
@@ -1248,7 +1256,7 @@ struct SemanticMapSpikeView: View {
         var outcome: SemanticMapModel.RevealOutcome?
         if let key = continued.focusDocumentKey {
             outcome = model.reveal(documentKey: key, isReadable: isReadable)
-            revealFailed = outcome == .notFound
+            revealFailedKey = outcome == .notFound ? key : nil
         }
         // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
         // first line of the method, so the continuation was banked before the reveal was even
@@ -1664,6 +1672,60 @@ struct SemanticMapSpikeView: View {
         if model.selection != nil { cards.append(.selection) }
         if model.lassoResult != nil { cards.append(.lasso) }
         return cards
+    }
+
+    /// Says so when a document the reader arrived from has no place on the map.
+    ///
+    /// **An ordinary outcome, not an error, and the wording carries that.** 2,356 of the app's
+    /// display rows are chapter openers, front matter and appendix structure that were never
+    /// embedded, so they have no point to place. Silence here is the worst option: the reader chose
+    /// "On the Map", the map opened on the whole corpus, and nothing said why — indistinguishable
+    /// from the routing bugs that preceded this.
+    ///
+    /// Withdrawn as soon as there is a selection, because a tap has superseded the question.
+    @ViewBuilder
+    private var revealFailureNotice: some View {
+        if let key = revealFailedKey, model.selection == nil {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "mappin.slash")
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "semanticMap.reveal.notOnMap",
+                                defaultValue: "This document has no place on the map"))
+                        .font(.caption.weight(.semibold))
+                    Text(String(
+                        format: String(localized: "semanticMap.reveal.notOnMap.detail %@",
+                                       defaultValue: "Chapter openers, front matter and appendix material were not included when the map was built, so %@ has no point to show. The rest of the series is here."),
+                        volumeTitle(forKey: key)))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    revealFailedKey = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "semanticMap.reveal.notOnMap.dismiss",
+                                           defaultValue: "Dismiss"))
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: 340)
+            .padding(12)
+        }
+    }
+
+    /// The volume's title for a `"volumeId/documentId"` key, falling back to the id.
+    ///
+    /// The raw key is developer-speak on a screen that already prefers titles — the selection card
+    /// learned the same lesson (X-4/MR-14).
+    private func volumeTitle(forKey key: String) -> String {
+        let volumeID = String(key.split(separator: "/", maxSplits: 1).first ?? "")
+        let title = appState.manifestStore.entry(forVolumeId: volumeID)?.title
+        return (title?.isEmpty == false ? title : nil) ?? volumeID
     }
 
     /// The action cards: all of them at regular width, one at a time at compact (P-13).
