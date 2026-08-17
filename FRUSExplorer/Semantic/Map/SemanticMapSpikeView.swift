@@ -398,6 +398,44 @@ final class SemanticMapModel {
     /// Dismisses the region card.
     func clearRegion() { selectedRegion = nil }
 
+    /// Gathers the selected region as a capture, ready to become a working corpus.
+    ///
+    /// **Returns the same type the lasso does, on purpose.** A region is a set of documents the map
+    /// can already name and count, and the reader has had no way to carry it anywhere — the lasso
+    /// could save one and a region could not, which meant tracing a shape by hand around a set the
+    /// artifact had already decided. Producing a `LassoResult` means the save path, its naming rule,
+    /// its truncation disclosure and its scope provenance are the ones already in use rather than a
+    /// second set that could disagree.
+    ///
+    /// Honours the active scope for the same reason the lasso does: a scoped map shows a region
+    /// partly greyed, and a capture that quietly included the grey would not be the set on screen.
+    ///
+    /// - Returns: The capture, or `nil` when no region is selected or the map is unavailable.
+    func regionCapture() -> SemanticMapPicking.LassoResult? {
+        guard let region = selectedRegion,
+              let map = BundledSemanticMap.vectors,
+              let index else { return nil }
+        let found = SemanticMapPicking.rows(
+            inCluster: UInt16(region.id),
+            count: index.documentCount,
+            clusterAt: { map.placement(at: $0)?.cluster ?? SemanticMapArtifacts.unclustered },
+            limit: SemanticMapPicking.corpusCaptureLimit,
+            scopeMask: scope?.flags)
+        var keys: [String] = []
+        keys.reserveCapacity(found.rows.count)
+        for row in found.rows {
+            guard let document = index.document(at: row) else { continue }
+            keys.append("\(document.volumeID)/\(document.documentID)")
+        }
+        // The region's own name, so the saved corpus is identifiable in a list months later. The
+        // lasso derives its name from whichever regions it happened to cross; here there is exactly
+        // one, and it is the thing the reader pointed at.
+        return SemanticMapPicking.LassoResult(
+            documentKeys: keys, total: found.total,
+            regionNames: [region.terms.prefix(3).joined(separator: " ")])
+    }
+
+
     /// The drawn label within tap range of `point`, if any.
     ///
     /// Tests the **laid-out label position**, not the projected centroid, and the difference is
@@ -813,6 +851,10 @@ struct SemanticMapSpikeView: View {
     }
     /// What was saved, so the card can say so instead of leaving the reader guessing.
     @State private var savedCorpusName: String?
+    /// The corpus a region save produced, so the card can confirm it by name.
+    @State private var savedRegionCorpusName: String?
+    /// A region capture that hit the cap, so the card can say what it is a fraction of.
+    @State private var regionCaptureTruncation: SemanticMapPicking.LassoResult?
     /// The volumes the map is scoped to, or `nil` for the whole series.
     ///
     /// An array rather than a set because that is `AnalyticsScopeBar`'s binding type, and the whole
@@ -1640,6 +1682,24 @@ struct SemanticMapSpikeView: View {
                 Text(regionCountSummary(region))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                // **What a region is, and what its name is not.**
+                //
+                // The complement of the slice introduction on the selection card, and the pair is
+                // the point: a slice is a contrast the reader *proposes*, a region is a grouping the
+                // corpus *produced* without being asked. Saying so is what makes the two features
+                // legible as different tools rather than two ways of colouring the same dots.
+                //
+                // The second sentence is the load-bearing one. These names are the most distinctive
+                // words in a SAMPLE of each region's documents — c-TF-IDF over up to 300 of them —
+                // and they are not subject headings, were not chosen by an editor, and do not mean
+                // every document in the region is about them. A reader who takes "maize cottonseed
+                // oversea" for a topic label will over-read every region on the map.
+                Text(String(
+                    localized: "semanticMap.region.whatItIs",
+                    defaultValue: "A region is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its name is the most distinctive words in a sample of those documents, not a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 ForEach(regionEraRows(region), id: \.label) { row in
                     HStack(spacing: 6) {
                         Text(verbatim: row.label)
@@ -1655,12 +1715,48 @@ struct SemanticMapSpikeView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                // The lasso could carry a set off the map and a region could not, which left the
+                // reader tracing a shape by hand around a group the artifact had already decided.
+                if let saved = savedRegionCorpusName {
+                    Text(String(
+                        format: String(localized: "semanticMap.region.saved %@",
+                                       defaultValue: "Saved as “%@”. Find it under Working Corpora, where it can scope a search."),
+                        saved))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Button(String(localized: "semanticMap.region.save",
+                                  defaultValue: "Save as Working Corpus")) {
+                        if let capture = model.regionCapture() {
+                            savedRegionCorpusName = saveWorkingCorpus(capture)
+                            regionCaptureTruncation = capture.isTruncated ? capture : nil
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                if let truncated = regionCaptureTruncation {
+                    Text(String(
+                        format: String(localized: "semanticMap.region.saved.truncated %lld %lld",
+                                       defaultValue: "Saved the first %1$lld of %2$lld."),
+                        Int64(truncated.documentKeys.count), Int64(truncated.total)))
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .padding(12)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
             .frame(maxWidth: 340)
             .padding(.horizontal, 12)
             .padding(.top, 12)
+            // A new region is a new capture: without this the previous region's "Saved as …" line
+            // stays on screen over a different set, which reads as having saved this one.
+            .onChange(of: region.id) { _, _ in
+                savedRegionCorpusName = nil
+                regionCaptureTruncation = nil
+            }
         }
     }
 

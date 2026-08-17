@@ -307,11 +307,28 @@ enum SemanticMapColouring {
                 return hsb(hue: hue, saturation: 0.55, brightness: 0.95, alpha: 0.72)
             }
         case .era:
-            // A sequential ramp, dark to light, because era is ordered.
+            // A sequential ramp, dark to light, because era is ordered — but interpolated in
+            // **OKLCh**, not in RGB, and the difference is the whole point.
+            //
+            // The RGB version mixed a blue (0.25, 0.45, 0.85) into a khaki (0.80, 0.80, 0.65) along
+            // a straight line, and that line passes close to the grey axis. With only four eras the
+            // two interior stops landed on (0.43, 0.57, 0.78) and (0.62, 0.68, 0.72) — a pair of
+            // near-identical greys, which is exactly what a reader sees as "no contrast". Mixing two
+            // colours on opposite sides of neutral always desaturates the middle; it is a property
+            // of the space, not of the endpoints chosen.
+            //
+            // Interpolating lightness, chroma and HUE separately keeps the middle chromatic. The hue
+            // runs *down* from indigo through teal and green to amber rather than taking the short
+            // way round through magenta, so lightness climbs monotonically and no two stops share a
+            // lightness — the ramp still reads as ordered in greyscale, and stays legible to a
+            // reader with red-green colour blindness, for whom the whole path is one axis.
             return (0..<paletteSize).map { index in
-                let t = Float(min(index, CoverageEra.allCases.count - 1))
-                    / Float(max(1, CoverageEra.allCases.count - 1))
-                return SIMD4(0.25 + 0.55 * t, 0.45 + 0.35 * t, 0.85 - 0.20 * t, 0.70)
+                let steps = max(1, CoverageEra.allCases.count - 1)
+                let t = Float(min(index, steps)) / Float(steps)
+                return oklch(lightness: 0.32 + (0.90 - 0.32) * t,
+                             chroma: 0.12 + (0.17 - 0.12) * t,
+                             hueDegrees: 272 - 177 * t,
+                             alpha: 0.78)
             }
         case .availability:
             return [SIMD4(0.34, 0.36, 0.40, 0.28), SIMD4(0.35, 0.78, 0.52, 0.80)]
@@ -346,6 +363,55 @@ enum SemanticMapColouring {
     ///   - brightness: 0–1.
     ///   - alpha: 0–1.
     /// - Returns: The RGBA colour.
+    /// One stop of a perceptual ramp, given in OKLCh and returned as sRGB.
+    ///
+    /// OKLab is used rather than HSB because HSB's "brightness" is not lightness: a fully saturated
+    /// yellow and a fully saturated blue at brightness 0.95 differ by more than half the visible
+    /// lightness range, so a ramp built on it climbs unevenly and its middle stops crowd together.
+    /// OKLab's L is close enough to perceived lightness that equal steps look equal, which is the
+    /// only reason a four-stop ramp can be read as an order at all.
+    ///
+    /// Returned **gamma-encoded**, matching every other palette here: the renderer's pixel format is
+    /// `.bgra8Unorm`, which performs no sRGB decode, so these values reach the screen as written.
+    /// Out-of-gamut results are clamped per channel — at the chroma this ramp uses nothing clips,
+    /// but a future edit that raises it should degrade to a duller colour rather than a wrapped one.
+    ///
+    /// - Parameters:
+    ///   - lightness: OKLab L, 0…1.
+    ///   - chroma: OKLab chroma. Roughly 0…0.4 for displayable colours.
+    ///   - hueDegrees: OKLCh hue in degrees.
+    ///   - alpha: Straight alpha, passed through untouched.
+    /// - Returns: Gamma-encoded sRGB with the given alpha.
+    static func oklch(lightness: Float, chroma: Float, hueDegrees: Float, alpha: Float)
+        -> SIMD4<Float> {
+        let radians = hueDegrees * .pi / 180
+        let a = chroma * cos(radians)
+        let b = chroma * sin(radians)
+
+        // OKLab -> LMS' -> LMS (Björn Ottosson's matrices).
+        let l_ = lightness + 0.3963377774 * a + 0.2158037573 * b
+        let m_ = lightness - 0.1055613458 * a - 0.0638541728 * b
+        let s_ = lightness - 0.0894841775 * a - 1.2914855480 * b
+        let l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_
+
+        // LMS -> linear sRGB.
+        let red = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+        let green = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+        let blue = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+        return SIMD4(gammaEncode(red), gammaEncode(green), gammaEncode(blue), alpha)
+    }
+
+    /// Linear sRGB to gamma-encoded sRGB, clamped into gamut.
+    /// - Parameter value: One linear channel.
+    /// - Returns: The encoded channel, 0…1.
+    private static func gammaEncode(_ value: Float) -> Float {
+        let clamped = min(max(value, 0), 1)
+        return clamped <= 0.0031308
+            ? 12.92 * clamped
+            : 1.055 * pow(clamped, 1 / 2.4) - 0.055
+    }
+
     static func hsb(hue: Float, saturation: Float, brightness: Float, alpha: Float)
         -> SIMD4<Float> {
         let sector = (hue - hue.rounded(.down)) * 6
