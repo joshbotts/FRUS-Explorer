@@ -1105,6 +1105,7 @@
 		E50F95856BB90C6AC6D011B7 /* WhyRelatedChipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3D36C3120683A02B651204 /* WhyRelatedChipTests.swift */; };
 		E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */; };
 		E53C5727E7ABEE6F54A55308 /* ProjectContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1ACCE2EDE0DFEC2D2850F /* ProjectContextTests.swift */; };
+		E552CEFF5623D916DB35C1BC /* MacWindowRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5D89EA1B4FE55376D3FA3B /* MacWindowRoutingTests.swift */; };
 		E5FAFAFD35125C07270E56DD /* AnalyticsFigureExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA68BE5B1301B47853D393FE /* AnalyticsFigureExport.swift */; };
 		E69E1D10C09ABA8D2058E992 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9948E709929FAB592E9B615E /* KeychainStoreTests.swift */; };
 		E6AB6D6575ABE06CB7F5D9DA /* VolumesStorageHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667389952E46E73E4D594A7A /* VolumesStorageHubView.swift */; };
@@ -2007,6 +2008,7 @@
 		FA95163C58F401025F855304 /* CuratedLibraryResolutionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuratedLibraryResolutionsTests.swift; sourceTree = "<group>"; };
 		FAB902F94782DED888EF1B67 /* SemanticVectorsArtifacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticVectorsArtifacts.swift; sourceTree = "<group>"; };
 		FAC28DDC19E5D2D71E5E031D /* IndexingPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingPipelineTests.swift; sourceTree = "<group>"; };
+		FB5D89EA1B4FE55376D3FA3B /* MacWindowRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWindowRoutingTests.swift; sourceTree = "<group>"; };
 		FBE0716B4B3C7052EC58ACEB /* OnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTests.swift; sourceTree = "<group>"; };
 		FBEF8EA1255978E96A233C26 /* Keyness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyness.swift; sourceTree = "<group>"; };
 		FC0040B3BD8BC38F863A88F9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -2557,6 +2559,7 @@
 				EE7C8E93B510701DB6DDE278 /* MacDocumentOpenRoutingTests.swift */,
 				7F55CBFB1680DD882C3B9C21 /* MacSettingsViewTests.swift */,
 				43675704D75D181CD23AC74B /* MacWindowFrontingTests.swift */,
+				FB5D89EA1B4FE55376D3FA3B /* MacWindowRoutingTests.swift */,
 				8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */,
 				260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */,
 				577CB7289F3041BE4B61ABC2 /* ManuscriptRepositoryBridgeTests.swift */,
@@ -4429,6 +4432,7 @@
 				C1E35EA063C5D08951AF8BEB /* MacDocumentOpenRoutingTests.swift in Sources */,
 				14533B37DD02A330F098DE0A /* MacSettingsViewTests.swift in Sources */,
 				EDF9F2C6DDE4C2E7EA17E4A2 /* MacWindowFrontingTests.swift in Sources */,
+				E552CEFF5623D916DB35C1BC /* MacWindowRoutingTests.swift in Sources */,
 				FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */,
 				64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */,
 				3F6F74048838C9BDAD35D45E /* ManuscriptRepositoryBridgeTests.swift in Sources */,
