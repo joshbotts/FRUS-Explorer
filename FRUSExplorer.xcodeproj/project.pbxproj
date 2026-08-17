@@ -697,6 +697,7 @@
 		96713B6E46558012E34B0698 /* WordCloudLens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A33EBFCE9A063865BB3BFC /* WordCloudLens.swift */; };
 		96807926D5097842925BB2FA /* ChartInspectorAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF84F4088310E0476C47235E /* ChartInspectorAdapters.swift */; };
 		96C15FF491FF41C95F441EEF /* ModelModificationStamper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF00BF71BD0DEF692A0BBAF0 /* ModelModificationStamper.swift */; };
+		96CF0B0FF5BA245E82065E08 /* WordCloudPrecomputeDefaultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED11C70D2E3B3DD8671E482 /* WordCloudPrecomputeDefaultTests.swift */; };
 		97064198F213D857786F7DE5 /* MacSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */; };
 		971DC9A65F7308AE8C2933B0 /* ZoteroAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AE3C1692EE4BEA75C7DC777 /* ZoteroAPITests.swift */; };
 		9786AEFA7BCAC9E30F1BDC78 /* VolumesStorageHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667389952E46E73E4D594A7A /* VolumesStorageHubView.swift */; };
@@ -1872,6 +1873,7 @@
 		CD6268EF1887D2F42698EA93 /* TopCollectionsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopCollectionsCard.swift; sourceTree = "<group>"; };
 		CD80D34C25941ADB37C27236 /* StorageHubModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageHubModel.swift; sourceTree = "<group>"; };
 		CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
+		CED11C70D2E3B3DD8671E482 /* WordCloudPrecomputeDefaultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudPrecomputeDefaultTests.swift; sourceTree = "<group>"; };
 		CEE1ACCE2EDE0DFEC2D2850F /* ProjectContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectContextTests.swift; sourceTree = "<group>"; };
 		CEFBA46CE9F486C16583F05C /* SummarizationRetryPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationRetryPolicy.swift; sourceTree = "<group>"; };
 		CF46DCBA26A796E0B5EB60F7 /* ChartScrubRangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartScrubRangeTests.swift; sourceTree = "<group>"; };
@@ -2689,6 +2691,7 @@
 				7F769AC66D451AF2C98F6777 /* WordCloudDriftFieldTests.swift */,
 				D40555A8F50EB80F861F74C4 /* WordCloudDriftRenderTests.swift */,
 				BFD09A7610552D32EC319FC5 /* WordCloudLayoutRegressionTests.swift */,
+				CED11C70D2E3B3DD8671E482 /* WordCloudPrecomputeDefaultTests.swift */,
 				0FA30F56D426612E1A60D22F /* WordCloudTests.swift */,
 				2022C7FF20BF287B5CAB8803 /* WorkingCorpusTests.swift */,
 				9E7729E7ECD239B193AC7772 /* WorkingCorpusVisibilityTests.swift */,
@@ -4564,6 +4567,7 @@
 				909B7461CC61D59FCF370884 /* WordCloudDriftFieldTests.swift in Sources */,
 				68B743707BF6D1A6876EF15E /* WordCloudDriftRenderTests.swift in Sources */,
 				DD423FDD805E3288FA12E4A4 /* WordCloudLayoutRegressionTests.swift in Sources */,
+				96CF0B0FF5BA245E82065E08 /* WordCloudPrecomputeDefaultTests.swift in Sources */,
 				8AF497E762EE4ED25681C3CC /* WordCloudTests.swift in Sources */,
 				9A42088ABADB1C91F1A06A19 /* WorkingCorpusTests.swift in Sources */,
 				2C801BC7789950F1492445DE /* WorkingCorpusVisibilityTests.swift in Sources */,
