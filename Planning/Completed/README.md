@@ -5,9 +5,20 @@ here 2026-08-05 so `Planning/` holds only live documents. Nothing was edited in 
 files carry status lines that predate their own completion (e.g. `Collections-Authoring-Scope`
 says "no implementation started" — the shipped code says otherwise). Where a completed document
 left residual work, that work is tracked in GitHub issues or in
-`../Feature-Priorities-Review-2026-08.md`, not here.
+`../Plan-Of-Record-2026-08-17.md`, not here.
 
 **What lives here, by cluster:**
+
+- **The 2026-08-17 consolidation (16 files)** — every plan, review and assessment archived when
+  `../Plan-Of-Record-2026-08-17.md` became the single live plan after the build-42 TestFlight
+  release. Its §8 records where each document's live residue went. The set: the consolidated and
+  resolve-open-issues plans, the eight-issue plan, the feature-priorities review, the three Q&CA
+  documents, the restoration-depth design (#754; its deferred §B/§C are pointed at from the live
+  plan), the lexical-similarity assessment (withdrawn-as-artifact), the #645 pool-depth
+  measurement, the analytics big-picture blueprint, the 2026-05 pre-index feasibility, the
+  cross-platform porting assessment, the Dynamic Type worklist, and the two Archival Analytics
+  feature documents (feasibility + design handoff) — the feature shipped; its open remainders are
+  tracked on `../Archival-Analytics-Adversarial-Review.md` and issues #825/#830–#838.
 
 - **Numbered session plans (01…406)** — the session-by-session build of the app, all delivered.
   Includes the architecture/design records for shipped subsystems
