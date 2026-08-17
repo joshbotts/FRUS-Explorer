@@ -355,6 +355,42 @@ struct SemanticMapRevealTests {
             """)
     }
 
+    // MARK: - The camera the labels project through
+
+    /// **The renderer owns the camera; the model keeps a mirror. They must agree.**
+    ///
+    /// Region labels and the selection marker are SwiftUI layers that project through
+    /// `model.camera`, while the points are drawn by Metal through `renderer.camera`. A reveal that
+    /// assigned the mirror directly moved the names and left the cloud where it was — a reader saw
+    /// "soviet gorin" floating in empty space off the right edge of the map. Every other camera move
+    /// (`pan`, `zoom`, `frameAll`) changes the renderer and then re-reads the mirror; this pins that
+    /// a reveal does the same.
+    @MainActor
+    @Test("A reveal leaves the model's camera equal to the renderer's",
+          .enabled(if: revealTestsHaveMetal))
+    func revealKeepsCamerasInStep() async throws {
+        await BundledSemanticMap.prepare()
+        try #require(BundledSemanticMap.isAvailable)
+        let index = try #require(BundledSemanticVectors.index)
+        let model = SemanticMapModel()
+        await model.prepare(eraForVolume: { _ in nil }, isDownloaded: { _ in false })
+        try #require(model.unavailable == nil, "prepare reported: \(model.unavailable ?? "")")
+        let renderer = try #require(model.renderer)
+        #expect(model.camera == renderer.camera, "the mirror is already out of step before any move")
+
+        let document = try #require(index.document(at: 0))
+        #expect(model.reveal(documentKey: "\(document.volumeID)/\(document.documentID)",
+                             isReadable: { _ in true }) == .revealed)
+
+        #expect(model.camera == renderer.camera, """
+            After a reveal the model's camera and the renderer's disagree. The points are drawn \
+            through the renderer's and the region labels through the model's, so they would be \
+            drawn against different views of the map — names detached from the cloud they name.
+            """)
+        #expect(model.camera.halfExtent == SemanticMapModel.revealHalfExtent,
+                "the reveal did not actually zoom in")
+    }
+
     // MARK: - The neighbour list's contract
 
     /// The map's neighbour list must ask for exactly ten.

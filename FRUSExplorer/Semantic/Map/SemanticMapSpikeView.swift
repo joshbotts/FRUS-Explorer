@@ -450,8 +450,10 @@ final class SemanticMapModel {
         // screen — the question a reveal answers is "what is this document *near*", and a camera
         // pinned to the point alone would answer "where is this document", which the selection
         // marker already does.
-        camera.centre = position
-        camera.halfExtent = Self.revealHalfExtent
+        // The RENDERER first, then the mirror — the same order `pan` and `zoom` use. Writing the
+        // mirror alone moves the labels and the marker while the points stay put.
+        renderer?.focus(on: position, halfExtent: Self.revealHalfExtent)
+        if let renderer { camera = renderer.camera }
         return .revealed
     }
 
