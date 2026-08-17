@@ -29,6 +29,8 @@ enum ResearchRailTool {
     case graph
     /// Find related documents.
     case related
+    /// Reveal this document on the semantic map.
+    case semanticMap
     /// Generate a summary (iOS: the `.summarizePromptPicker` sheet).
     case summarize
 }
@@ -264,6 +266,8 @@ struct ResearchRailView: View {
             railTile("archivebox", RailTileCopy.sources, action: openSources)
             railTile("point.3.connected.trianglepath.dotted", RailTileCopy.graph, action: openGraph)
             railTile("doc.on.doc", RailTileCopy.related, action: openRelated)
+            railTile("point.3.filled.connected.trianglepath.dotted", RailTileCopy.semanticMap,
+                     action: openSemanticMap)
             railTile("square.and.arrow.up", RailTileCopy.share) {
                 showSharePopover = true
             }
@@ -280,6 +284,9 @@ struct ResearchRailView: View {
             railTile("archivebox", RailTileCopy.sources) { onOpenTool(.sources) }
             railTile("point.3.connected.trianglepath.dotted", RailTileCopy.graph) { onOpenTool(.graph) }
             railTile("doc.on.doc", RailTileCopy.related) { onOpenTool(.related) }
+            railTile("point.3.filled.connected.trianglepath.dotted", RailTileCopy.semanticMap) {
+                onOpenTool(.semanticMap)
+            }
             DocumentShareMenu(vm: vm) {
                 tileLabel("square.and.arrow.up", RailTileCopy.share.title)
             }
@@ -720,6 +727,18 @@ struct ResearchRailView: View {
         appState.bindTool(.relatedDocuments(request), to: documentHostID)
         openWindow(value: request)
     }
+
+    /// Opens the semantic map focused on this document.
+    ///
+    /// The request carries the document key, which is part of `SemanticMapRequest`'s identity — so
+    /// revealing a second document opens its own window rather than focusing the first and leaving
+    /// it pointed at the previous one.
+    private func openSemanticMap() {
+        appState.bindTool(.semanticAnalytics, to: documentHostID)
+        openWindow(value: SemanticMapRequest(
+            volumeIDs: nil, scopeLabel: nil, lensRawValue: SemanticMapLens.cluster.rawValue,
+            focusDocumentKey: "\(entry.volumeId)/\(entry.documentId)"))
+    }
     #endif
 }
 
@@ -747,6 +766,13 @@ enum RailTileCopy {
         /// The sentence explaining what the tool does — the macOS tooltip, the iOS VoiceOver
         /// hint and Large Content Viewer detail, and a row in the header's info popover.
         let detail: String
+    }
+
+    /// Semantic Map — where this document sits in the corpus's language.
+    static var semanticMap: Entry {
+        Entry(title: String(localized: "researchRail.tile.semanticMap", defaultValue: "On the Map"),
+              detail: String(localized: "researchRail.tile.semanticMap.help",
+                             defaultValue: "Show where this document sits on the semantic map, among the documents whose language is most like it"))
     }
 
     /// Cite — the citation popover / sheet.

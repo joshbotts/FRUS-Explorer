@@ -63,6 +63,8 @@ enum DocumentSheet: Identifiable {
     /// The #308 find-related list, on surfaces without multiple windows (iPhone / non-Stage-Manager
     /// iPad). Where windows exist the caller opens the `RelatedDocumentsRequest` window instead.
     case relatedDocuments(RelatedDocumentsRequest)
+    /// The semantic map focused on this document, where there are no extra windows to open one in.
+    case semanticMap(SemanticMapRequest)
     /// The Research rail as an iPhone bottom sheet (Phase D). On iPad the rail is the trailing
     /// `.inspector` instead; on iPhone it folds into this consolidated sheet (owner decision D2).
     case researchRail
@@ -86,6 +88,7 @@ enum DocumentSheet: Identifiable {
         case .glossNotFound:                   return "glossNotFound"
         case .naraLookup:                      return "naraLookup"
         case .relatedDocuments(let r):         return "relatedDocs-\(r.anchor.compositeString)"
+        case .semanticMap(let r):              return "semanticMap-\(r.focusDocumentKey ?? "all")"
         case .researchRail:                    return "researchRail"
         }
     }
@@ -804,6 +807,9 @@ struct DocumentView: View {
                     // #338 step 4: publish this window's scene id so RelatedDocuments' open-document
                     // action targets THIS window (a sheet doesn't reliably inherit `\.sceneID`).
                     .environment(\.sceneID, sceneID)
+            case .semanticMap(let request):
+                SemanticAnalyticsView(appState: appState, continued: request)
+                    .environment(\.sceneID, sceneID)
             case .researchRail:
                 // iPhone bottom-sheet rail (iPad uses the trailing .inspector). medium/large detents
                 // + a visible drag indicator (owner decision D2 / plan §5). Swipe-dismiss writes
@@ -973,6 +979,21 @@ struct DocumentView: View {
             ), from: sceneID, using: openWindow)
         } else {
             activeSheet = .sourceExplorer(vm.sourceNote ?? "")
+        }
+    }
+
+    /// Opens the semantic map with this document revealed on it.
+    ///
+    /// Multi-window where there is one (Stage Manager on iPad), the in-place sheet otherwise —
+    /// the same split `openRelatedDocuments` makes, and for the same reason.
+    private func openSemanticMap() {
+        let request = SemanticMapRequest(
+            volumeIDs: nil, scopeLabel: nil, lensRawValue: SemanticMapLens.cluster.rawValue,
+            focusDocumentKey: "\(entry.volumeId)/\(entry.documentId)")
+        if supportsMultipleWindows {
+            appState.openAuxWindow(request, from: sceneID, using: openWindow)
+        } else {
+            activeSheet = .semanticMap(request)
         }
     }
 
@@ -1316,6 +1337,8 @@ struct DocumentView: View {
             openCrossReferenceGraph()
         case .related:
             openRelatedDocuments()
+        case .semanticMap:
+            openSemanticMap()
         case .summarize:
             activeSheet = .summarizePromptPicker
         }

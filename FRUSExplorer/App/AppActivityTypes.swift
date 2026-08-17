@@ -70,15 +70,30 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
     /// build receiving a lens it does not have falls back rather than failing to decode.
     var lensRawValue: String
 
+    /// A document to reveal when the map opens, as `"volumeId/documentId"`.
+    ///
+    /// **Part of the identity, deliberately.** `SemanticMapRequest` keys the map's window scene, so
+    /// including this means revealing a second document opens a second window rather than silently
+    /// re-pointing the first — which is the behaviour this type already documents for scopes ("two
+    /// different scopes get two windows"). Excluding it would be worse than either: `openWindow`
+    /// would treat the two requests as equal, focus the existing window, and leave `continued`
+    /// carrying the *first* document, so the control would appear to do nothing.
+    ///
+    /// Optional, and absent from every payload written before this field existed — an older
+    /// Handoff activity decodes with `nil` and behaves exactly as it did.
+    var focusDocumentKey: String?
+
     /// Creates a request.
     /// - Parameters:
     ///   - volumeIDs: Scope, or `nil` for the whole series.
     ///   - scopeLabel: The scope's name.
     ///   - lensRawValue: The colour lens's raw value.
-    init(volumeIDs: [String]?, scopeLabel: String?, lensRawValue: String) {
+    init(volumeIDs: [String]?, scopeLabel: String?, lensRawValue: String,
+         focusDocumentKey: String? = nil) {
         self.volumeIDs = volumeIDs
         self.scopeLabel = scopeLabel
         self.lensRawValue = lensRawValue
+        self.focusDocumentKey = focusDocumentKey
     }
 
     /// The unscoped whole-series map at the default lens — what the Browse menu's Semantic

@@ -298,6 +298,7 @@
 		4141F604EC22CFB3FB9EB798 /* SeriesGeographyData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E4F3D3F106FDF9A1331D90F /* SeriesGeographyData.swift */; };
 		416856D82FF1887F977836F8 /* FTS5Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0975FA5C560DCC925D601728 /* FTS5Connection.swift */; };
 		4168912A56749F9EAC797FD7 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AD5E4C3F5410E494B55EEF /* NARAAPIKeyStore.swift */; };
+		4179D67EC02D5C4536AF7A50 /* SemanticMapRevealTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962B1240E0CAA1CF5FBD2C32 /* SemanticMapRevealTests.swift */; };
 		41A8715EB2E705D0434495E9 /* PendingCloudBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5BFCC7AFB5CE81483D61BA1 /* PendingCloudBackdrop.swift */; };
 		42157C64CC18CA076697FDB1 /* ProjectLeadSnippetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE8BD60968BA412108108F78 /* ProjectLeadSnippetTests.swift */; };
 		421AE5B2BAAF70224901CEDD /* CloudKitSchemaInventoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5B76CB7F496D16CC557F41 /* CloudKitSchemaInventoryTests.swift */; };
@@ -1711,6 +1712,7 @@
 		9548E0A9BF3D900143E1777D /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		95DAD2A89647A61EA3BF6765 /* ArchivalNetworkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivalNetworkTests.swift; sourceTree = "<group>"; };
 		962ABB0A381BEFD120413449 /* ResearchSessionsSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchSessionsSummary.swift; sourceTree = "<group>"; };
+		962B1240E0CAA1CF5FBD2C32 /* SemanticMapRevealTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapRevealTests.swift; sourceTree = "<group>"; };
 		9744323A28A14AEF580A72E5 /* ResetInventoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetInventoryTests.swift; sourceTree = "<group>"; };
 		979F9D639250AD785AC82C4D /* QueryMethodAppendix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryMethodAppendix.swift; sourceTree = "<group>"; };
 		9863245E183A705A15D03E63 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -2630,6 +2632,7 @@
 				B7C7487A368785E6B6762275 /* SemanticCopyAccuracyTests.swift */,
 				48A8F19AC70D1794EE9D3ED5 /* SemanticFollowUpTests.swift */,
 				07DE3406A07D665B0E1EDD64 /* SemanticMapRegionTests.swift */,
+				962B1240E0CAA1CF5FBD2C32 /* SemanticMapRevealTests.swift */,
 				D1DBC8A05B4E925541FB9B76 /* SemanticMapSurfaceTests.swift */,
 				D7080A5712E6CAE599E2BACE /* SemanticShardFetcherTests.swift */,
 				A681DE69BB3AFAEA0BC588F8 /* SemanticSliceGuidanceTests.swift */,
@@ -4501,6 +4504,7 @@
 				04F5694810F8882EEF935063 /* SemanticCopyAccuracyTests.swift in Sources */,
 				7CCCA249D6A5B86E87215175 /* SemanticFollowUpTests.swift in Sources */,
 				68AA02449192028336DC8E1E /* SemanticMapRegionTests.swift in Sources */,
+				4179D67EC02D5C4536AF7A50 /* SemanticMapRevealTests.swift in Sources */,
 				20DB5A7E2D734E5CA460A136 /* SemanticMapSurfaceTests.swift in Sources */,
 				1DA1B05DCFD9DB16EDFA5B93 /* SemanticShardFetcherTests.swift in Sources */,
 				B9907E30C9380E630B1C65FC /* SemanticSliceGuidanceTests.swift in Sources */,
