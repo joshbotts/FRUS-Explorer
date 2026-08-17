@@ -881,6 +881,7 @@
 		B9194D1EDE0254B62DCFE524 /* CustomVolumeScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314A46C43DF0C4373AFA5452 /* CustomVolumeScopeTests.swift */; };
 		B98F32DECC303257F9DD7AAE /* NativeCollectionFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */; };
 		B98FC305D6D8115550513284 /* CollectionExcerpts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA4D049C98F1AD30D8A1C01 /* CollectionExcerpts.swift */; };
+		B9907E30C9380E630B1C65FC /* SemanticSliceGuidanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A681DE69BB3AFAEA0BC588F8 /* SemanticSliceGuidanceTests.swift */; };
 		B9A6B5B72E030AB9F1B0848C /* FloatingSelectionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCE6131D0C55D635FD0796F /* FloatingSelectionBar.swift */; };
 		B9D561B055D8E51B6F26774B /* BackgroundDownloadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */; };
 		BA011168F1E4FC343022CE91 /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFFFF3C4599E5F0FCDEEB89 /* VolumeConnectionGraphView.swift */; };
@@ -1749,6 +1750,7 @@
 		A5EDA1DF0837B607E33D0E37 /* administrations.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = administrations.json; sourceTree = "<group>"; };
 		A6016A27A7FA06E9422FE9D4 /* CrossReferenceGraphViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphViewModel.swift; sourceTree = "<group>"; };
 		A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FRUSExplorerMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A681DE69BB3AFAEA0BC588F8 /* SemanticSliceGuidanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticSliceGuidanceTests.swift; sourceTree = "<group>"; };
 		A68CEF66ACB47B4524FF2FC1 /* CatalogQueryEvidenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogQueryEvidenceTests.swift; sourceTree = "<group>"; };
 		A6909B8BF1949C639A2FD6D0 /* CentralFilesIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralFilesIndex.swift; sourceTree = "<group>"; };
 		A6EE2422F991AFD4AB9EE005 /* BrokenRefsIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokenRefsIndexTests.swift; sourceTree = "<group>"; };
@@ -2627,6 +2629,7 @@
 				48A8F19AC70D1794EE9D3ED5 /* SemanticFollowUpTests.swift */,
 				D1DBC8A05B4E925541FB9B76 /* SemanticMapSurfaceTests.swift */,
 				D7080A5712E6CAE599E2BACE /* SemanticShardFetcherTests.swift */,
+				A681DE69BB3AFAEA0BC588F8 /* SemanticSliceGuidanceTests.swift */,
 				A50E38C9A958835840AE43B5 /* SemanticStorageReportTests.swift */,
 				5FD1902D5112A41DB8C34F56 /* SemanticSubstrateTests.swift */,
 				101652AA7C8E8CAFA8DCB0EC /* SeriesAnalyticsExportTests.swift */,
@@ -4496,6 +4499,7 @@
 				7CCCA249D6A5B86E87215175 /* SemanticFollowUpTests.swift in Sources */,
 				20DB5A7E2D734E5CA460A136 /* SemanticMapSurfaceTests.swift in Sources */,
 				1DA1B05DCFD9DB16EDFA5B93 /* SemanticShardFetcherTests.swift in Sources */,
+				B9907E30C9380E630B1C65FC /* SemanticSliceGuidanceTests.swift in Sources */,
 				5000240C4196EB318366CB1A /* SemanticStorageReportTests.swift in Sources */,
 				EC4AE2069AB66E660D1DA389 /* SemanticSubstrateTests.swift in Sources */,
 				AD13FE455BB3D87B06511DB8 /* SeriesAnalyticsExportTests.swift in Sources */,

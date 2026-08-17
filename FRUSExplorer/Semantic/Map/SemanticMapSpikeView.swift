@@ -519,15 +519,26 @@ final class SemanticMapModel {
                 defaultValue: "An axis runs between two volumes, and both of these documents are in the same one. Pick a document from a different volume as the second end.")
             return
         }
+        // **Two causes, two messages.** These were one branch with one sentence, and that sentence
+        // named a cause it could not know: a volume the artifact carries no summary for was reported
+        // to the reader as two volumes being "too alike", which is a confident diagnosis of the
+        // wrong thing. A missing centroid is a property of the build; a cancelling difference is a
+        // property of the two volumes. Only the second is about their likeness.
         guard let negative = centroid(forVolume: negativeID),
-              let positive = centroid(forVolume: positiveID),
-              let axis = SemanticAxis.between(
-                negative: negative, negativeLabel: negativeID,
-                positive: positive, positiveLabel: positiveID) else {
+              let positive = centroid(forVolume: positiveID) else {
             if isPositive { poles.positive = nil } else { poles.negative = nil }
             axisNotice = String(
-                localized: "semanticMap.axis.noCentroid",
-                defaultValue: "These two volumes are too alike for an axis between them to mean anything. Try two volumes you expect to differ.")
+                localized: "semanticMap.axis.noSummary",
+                defaultValue: "This version of the app has no language summary for one of these volumes, so it cannot place an axis between them. Try a different volume as that end.")
+            return
+        }
+        guard let axis = SemanticAxis.between(
+            negative: negative, negativeLabel: negativeID,
+            positive: positive, positiveLabel: positiveID) else {
+            if isPositive { poles.positive = nil } else { poles.negative = nil }
+            axisNotice = String(
+                localized: "semanticMap.axis.tooAlike",
+                defaultValue: "These two volumes read so alike that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.")
             return
         }
         setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
@@ -1720,6 +1731,29 @@ struct SemanticMapSpikeView: View {
                                 defaultValue: "Between regions"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                // **What a slice adds, said where a slice is started.**
+                //
+                // The map and the slice answer different questions, and until now the app said so
+                // nowhere a reader would meet it — the onboarding section explains the mechanism,
+                // and slices are reachable only from this card. The distinction is the whole reason
+                // the feature exists: the map's plane has no nameable direction (UMAP preserves
+                // local similarity; "left" means nothing, and the surface caveat says as much),
+                // whereas a slice's horizontal IS a direction the reader chose and can state.
+                //
+                // The second sentence is the one that keeps this honest, and it is not decoration.
+                // **Any two differing volumes produce a slice, and every document lands somewhere on
+                // it.** The picture is equally tidy whether the contrast is real or arbitrary, so a
+                // smooth spread is not evidence of anything — the map cannot invite that error
+                // because it offers no axis to over-read, and the slice can. A reader told only what
+                // a slice shows, and not what it will show regardless, is worse off than before.
+                if model.slice == nil {
+                    Text(String(
+                        localized: "semanticMap.axis.whatItAdds",
+                        defaultValue: "On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document leans between two volumes you pick, with time running up the side. Any two volumes will produce a spread, so read it as a contrast you proposed — not one the corpus found."))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 // Poles come from tapped documents, so the control lives on the selection card.
                 HStack(spacing: 8) {
