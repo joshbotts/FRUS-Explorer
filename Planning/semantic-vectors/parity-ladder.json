@@ -1,0 +1,320 @@
+{
+  "_meta": {
+    "corpus_rows": 314483,
+    "elapsed_s": 110.7,
+    "per_band": 400,
+    "perturbation": "isotropic rotation of the 768-d query by exactly arccos(target)",
+    "queries": 1200,
+    "rerank_pool": 800,
+    "seed": 18610810,
+    "shipping_config": "Matryoshka 768->512, L2 renorm, int8 per-vector symmetric, 512-bit sign tier, Hamming-800 -> int8-512 rerank",
+    "sign_bits_verified_identical_to_shipped_binary": true,
+    "top_k": 10
+  },
+  "cos_0.8": {
+    "agreement@10_vs_exact_query_funnel256": 0.5763,
+    "agreement@10_vs_exact_query_funnel512": 0.7234,
+    "per_band_agreement512": {
+      "1900_1945": 0.7262,
+      "post1945": 0.6967,
+      "pre1900": 0.7472
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.701,
+      "post1945": 0.6763,
+      "pre1900": 0.7212
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.6942,
+    "realized_cos256_median": 0.778726,
+    "realized_cos512_median": 0.793874,
+    "realized_cos512_p05": 0.77858,
+    "realized_cos768_median": 0.8,
+    "recall@10_exactfloat768_vs_truth": 0.785,
+    "recall@10_funnel256_vs_float768truth": 0.5308,
+    "recall@10_funnel512_vs_float768truth": 0.6995,
+    "target_cos768": 0.8
+  },
+  "cos_0.85": {
+    "agreement@10_vs_exact_query_funnel256": 0.6551,
+    "agreement@10_vs_exact_query_funnel512": 0.7743,
+    "per_band_agreement512": {
+      "1900_1945": 0.781,
+      "post1945": 0.7457,
+      "pre1900": 0.7963
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.7443,
+      "post1945": 0.7117,
+      "pre1900": 0.7703
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.7417,
+    "realized_cos256_median": 0.832803,
+    "realized_cos512_median": 0.845238,
+    "realized_cos512_p05": 0.832498,
+    "realized_cos768_median": 0.85,
+    "recall@10_exactfloat768_vs_truth": 0.816,
+    "recall@10_funnel256_vs_float768truth": 0.594,
+    "recall@10_funnel512_vs_float768truth": 0.7421,
+    "target_cos768": 0.85
+  },
+  "cos_0.9": {
+    "agreement@10_vs_exact_query_funnel256": 0.7215,
+    "agreement@10_vs_exact_query_funnel512": 0.8169,
+    "per_band_agreement512": {
+      "1900_1945": 0.824,
+      "post1945": 0.7903,
+      "pre1900": 0.8365
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.7913,
+      "post1945": 0.7585,
+      "pre1900": 0.796
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.8058,
+    "realized_cos256_median": 0.887423,
+    "realized_cos512_median": 0.896407,
+    "realized_cos512_p05": 0.88735,
+    "realized_cos768_median": 0.9,
+    "recall@10_exactfloat768_vs_truth": 0.8546,
+    "recall@10_funnel256_vs_float768truth": 0.6421,
+    "recall@10_funnel512_vs_float768truth": 0.7819,
+    "target_cos768": 0.9
+  },
+  "cos_0.95": {
+    "agreement@10_vs_exact_query_funnel256": 0.8126,
+    "agreement@10_vs_exact_query_funnel512": 0.8736,
+    "per_band_agreement512": {
+      "1900_1945": 0.8712,
+      "post1945": 0.8588,
+      "pre1900": 0.8908
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.827,
+      "post1945": 0.805,
+      "pre1900": 0.836
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.8675,
+    "realized_cos256_median": 0.942968,
+    "realized_cos512_median": 0.948024,
+    "realized_cos512_p05": 0.94335,
+    "realized_cos768_median": 0.95,
+    "recall@10_exactfloat768_vs_truth": 0.8967,
+    "recall@10_funnel256_vs_float768truth": 0.699,
+    "recall@10_funnel512_vs_float768truth": 0.8227,
+    "target_cos768": 0.95
+  },
+  "cos_0.98": {
+    "agreement@10_vs_exact_query_funnel256": 0.879,
+    "agreement@10_vs_exact_query_funnel512": 0.9136,
+    "per_band_agreement512": {
+      "1900_1945": 0.9183,
+      "post1945": 0.9105,
+      "pre1900": 0.912
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8478,
+      "post1945": 0.8317,
+      "pre1900": 0.8525
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.92,
+    "realized_cos256_median": 0.977155,
+    "realized_cos512_median": 0.979203,
+    "realized_cos512_p05": 0.977293,
+    "realized_cos768_median": 0.98,
+    "recall@10_exactfloat768_vs_truth": 0.9337,
+    "recall@10_funnel256_vs_float768truth": 0.7307,
+    "recall@10_funnel512_vs_float768truth": 0.844,
+    "target_cos768": 0.98
+  },
+  "cos_0.99": {
+    "agreement@10_vs_exact_query_funnel256": 0.9126,
+    "agreement@10_vs_exact_query_funnel512": 0.9413,
+    "per_band_agreement512": {
+      "1900_1945": 0.9413,
+      "post1945": 0.9323,
+      "pre1900": 0.9505
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8608,
+      "post1945": 0.8478,
+      "pre1900": 0.8655
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9492,
+    "realized_cos256_median": 0.988432,
+    "realized_cos512_median": 0.989623,
+    "realized_cos512_p05": 0.988644,
+    "realized_cos768_median": 0.99,
+    "recall@10_exactfloat768_vs_truth": 0.9503,
+    "recall@10_funnel256_vs_float768truth": 0.7395,
+    "recall@10_funnel512_vs_float768truth": 0.858,
+    "target_cos768": 0.99
+  },
+  "cos_0.995": {
+    "agreement@10_vs_exact_query_funnel256": 0.9302,
+    "agreement@10_vs_exact_query_funnel512": 0.9527,
+    "per_band_agreement512": {
+      "1900_1945": 0.953,
+      "post1945": 0.949,
+      "pre1900": 0.956
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8633,
+      "post1945": 0.8525,
+      "pre1900": 0.8668
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9683,
+    "realized_cos256_median": 0.994256,
+    "realized_cos512_median": 0.994802,
+    "realized_cos512_p05": 0.994318,
+    "realized_cos768_median": 0.995,
+    "recall@10_exactfloat768_vs_truth": 0.9654,
+    "recall@10_funnel256_vs_float768truth": 0.7463,
+    "recall@10_funnel512_vs_float768truth": 0.8608,
+    "target_cos768": 0.995
+  },
+  "cos_0.998": {
+    "agreement@10_vs_exact_query_funnel256": 0.9551,
+    "agreement@10_vs_exact_query_funnel512": 0.9705,
+    "per_band_agreement512": {
+      "1900_1945": 0.9733,
+      "post1945": 0.9657,
+      "pre1900": 0.9725
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8675,
+      "post1945": 0.8562,
+      "pre1900": 0.8678
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9842,
+    "realized_cos256_median": 0.997695,
+    "realized_cos512_median": 0.99792,
+    "realized_cos512_p05": 0.997717,
+    "realized_cos768_median": 0.998,
+    "recall@10_exactfloat768_vs_truth": 0.9769,
+    "recall@10_funnel256_vs_float768truth": 0.7502,
+    "recall@10_funnel512_vs_float768truth": 0.8638,
+    "target_cos768": 0.998
+  },
+  "cos_0.999": {
+    "agreement@10_vs_exact_query_funnel256": 0.9637,
+    "agreement@10_vs_exact_query_funnel512": 0.977,
+    "per_band_agreement512": {
+      "1900_1945": 0.9792,
+      "post1945": 0.9733,
+      "pre1900": 0.9785
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8683,
+      "post1945": 0.8558,
+      "pre1900": 0.873
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9775,
+    "realized_cos256_median": 0.998841,
+    "realized_cos512_median": 0.998962,
+    "realized_cos512_p05": 0.998864,
+    "realized_cos768_median": 0.999,
+    "recall@10_exactfloat768_vs_truth": 0.9813,
+    "recall@10_funnel256_vs_float768truth": 0.7506,
+    "recall@10_funnel512_vs_float768truth": 0.8657,
+    "target_cos768": 0.999
+  },
+  "cos_0.9995": {
+    "agreement@10_vs_exact_query_funnel256": 0.9742,
+    "agreement@10_vs_exact_query_funnel512": 0.9806,
+    "per_band_agreement512": {
+      "1900_1945": 0.981,
+      "post1945": 0.9788,
+      "pre1900": 0.982
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.868,
+      "post1945": 0.8538,
+      "pre1900": 0.8728
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9817,
+    "realized_cos256_median": 0.999422,
+    "realized_cos512_median": 0.99948,
+    "realized_cos512_p05": 0.999431,
+    "realized_cos768_median": 0.9995,
+    "recall@10_exactfloat768_vs_truth": 0.9892,
+    "recall@10_funnel256_vs_float768truth": 0.7499,
+    "recall@10_funnel512_vs_float768truth": 0.8648,
+    "target_cos768": 0.9995
+  },
+  "cos_0.9999": {
+    "agreement@10_vs_exact_query_funnel256": 0.9831,
+    "agreement@10_vs_exact_query_funnel512": 0.9864,
+    "per_band_agreement512": {
+      "1900_1945": 0.9868,
+      "post1945": 0.9853,
+      "pre1900": 0.9873
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8673,
+      "post1945": 0.8553,
+      "pre1900": 0.873
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9875,
+    "realized_cos256_median": 0.999885,
+    "realized_cos512_median": 0.999896,
+    "realized_cos512_p05": 0.999886,
+    "realized_cos768_median": 0.9999,
+    "recall@10_exactfloat768_vs_truth": 0.9947,
+    "recall@10_funnel256_vs_float768truth": 0.7508,
+    "recall@10_funnel512_vs_float768truth": 0.8652,
+    "target_cos768": 0.9999
+  },
+  "cos_0.99999": {
+    "agreement@10_vs_exact_query_funnel256": 0.9924,
+    "agreement@10_vs_exact_query_funnel512": 0.9921,
+    "per_band_agreement512": {
+      "1900_1945": 0.9922,
+      "post1945": 0.992,
+      "pre1900": 0.992
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8673,
+      "post1945": 0.8545,
+      "pre1900": 0.8705
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 0.9958,
+    "realized_cos256_median": 0.999988,
+    "realized_cos512_median": 0.99999,
+    "realized_cos512_p05": 0.999989,
+    "realized_cos768_median": 0.99999,
+    "recall@10_exactfloat768_vs_truth": 0.9989,
+    "recall@10_funnel256_vs_float768truth": 0.75,
+    "recall@10_funnel512_vs_float768truth": 0.8641,
+    "target_cos768": 0.99999
+  },
+  "cos_1.0": {
+    "agreement@10_vs_exact_query_funnel256": 1.0,
+    "agreement@10_vs_exact_query_funnel512": 1.0,
+    "per_band_agreement512": {
+      "1900_1945": 1.0,
+      "post1945": 1.0,
+      "pre1900": 1.0
+    },
+    "per_band_recall_funnel512": {
+      "1900_1945": 0.8678,
+      "post1945": 0.8535,
+      "pre1900": 0.8715
+    },
+    "rank1_agreement_vs_exact_query_funnel512": 1.0,
+    "realized_cos256_median": 1.0,
+    "realized_cos512_median": 1.0,
+    "realized_cos512_p05": 1.0,
+    "realized_cos768_median": 1.0,
+    "recall@10_exactfloat768_vs_truth": 1.0,
+    "recall@10_funnel256_vs_float768truth": 0.7501,
+    "recall@10_funnel512_vs_float768truth": 0.8642,
+    "target_cos768": 1.0
+  },
+  "renorm_invariance": {
+    "int8_code_mismatches": 0,
+    "int8_codes_identical": true,
+    "note": "int8 codes and sign bits are invariant to a positive scalar on the query; a missing query-side renorm rescales the reported cosine, not the ranking",
+    "scale_ratio_median": 0.800261,
+    "sign_bits_identical": true
+  }
+}
