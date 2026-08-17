@@ -7643,3 +7643,44 @@ owner's; what is written here is the discipline that says which ones are owed.
 `STATUS.md` also gains the four findings this wave corrected — P-2's `.help` clause, P-4's legend
 and tap claims, P-7's list-panel claim, and P-8's stale "worst-crowding" comment — bringing the
 corrected-by-measurement table to eleven entries.
+
+---
+
+## Release 2026-08-17 — TestFlight build 42 (v0.2), both platforms
+
+Tagged **`build-42`** at `724d87c1`. The tag is annotated and carries the summary, the re-index
+requirement and the CloudKit position, because this session lost real time reconstructing what
+build 40 had contained — `git show build-42` should stop that happening again.
+
+**The headline is Semantic Analytics, and it is wholly new to a tester.** Build 40's tree has no
+`FRUSExplorer/Semantic/` directory and no semantic resources at all; its shipped notes never mention
+the map. So the tester notes introduce the map, its regions, its slices, reveal-from-a-document and
+the ten nearest documents from scratch rather than narrating changes to them. Also in the range: the
+iPad two-pane Browse and Research, six macOS analytics windows that raise rather than duplicate, the
+Search window's titlebar and filter tokens, Settings' search field, Unprinted pointers in Archival
+Analytics, and a plain-language pass over about thirty explanatory passages.
+
+**A full re-index is required on first launch** — `currentDateIndexVersion` 36 → 40 and
+`currentPersonRollupVersion` 8 → 9, and that constant's own doc comment says a date bump triggers a
+full clean reindex. The first draft of the notes claimed no re-index was needed; comparing
+`IndexingPipeline` between the two commits is what corrected it, and "let the re-index finish —
+roughly how long?" is now the first thing asked of testers.
+
+**No CloudKit deploy.** `identifiersAwaitingDeploy` is empty and Production is deployed through
+build 40.
+
+**Two baseline facts worth keeping**, because both were unrecoverable from the repo alone and had to
+come from the owner: build 41 was never released, and **build 38 was iOS-only** — which is why the
+two platforms carried different "since" baselines before this release, and why the repo's Mac notes
+said "Since Build 37" while the shipped iOS notes said "Since Build 38". Build 40 went to both, so
+both files now say **Since Build 40**.
+
+Tester notes live in `Docs/TestFlight-Instructions-ios.md` and `-mac.md` and are what gets pasted
+into App Store Connect's *What to Test*, one per platform. `Docs/EditableContent.md` gained §13 for
+the map and the Semantic Vectors settings section; its header records the roughly twenty short
+strings from the same plain-language pass that it does not yet carry.
+
+**Branches were cleaned to `v2` at this point.** The abandoned first attempt at F-2 — two WIP
+commits that never opened a PR — is preserved as **`archive/f2-two-pane-wip`** under the convention
+`archive/377-project-home-switcher-pr458` established. F-2 shipped later and differently via
+#911–#921, so it is superseded rather than lost.
