@@ -198,8 +198,8 @@ struct VolumesStorageHubView: View {
                           defaultValue: "Cancel"), role: .cancel) {}
         } message: {
             let volumes = HubCopy.volumes(storageReport?.perVolume.count ?? 0)
-            Text(String(localized: "settings.hub.rebuild.message",
-                        defaultValue: "This deletes the whole search index: full-text rows, cross-references, page ranges, document dates, person mentions, and the document cache. It then rebuilds the index by re-parsing all \(volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately. They are not affected."))
+            Text(String(localized: "settings.hub.rebuild.message.v2",
+                        defaultValue: "This deletes everything the app has built for searching — document text, cross-references, page numbers, dates and the people named in each document — and builds it again by re-reading all \(volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately. They are not affected."))
         }
     }
 
@@ -349,8 +349,8 @@ struct VolumesStorageHubView: View {
                        defaultValue: "Downloaded Volumes")) {
             if let report = storageReport {
                 if report.perVolume.isEmpty {
-                    Text(String(localized: "settings.hub.downloaded.empty.iOS",
-                                defaultValue: "No volumes on this device yet. Download from GitHub, or sideload an XML file you already have."))
+                    Text(String(localized: "settings.hub.downloaded.empty.iOS.v2",
+                                defaultValue: "No volumes on this device yet. Download them from GitHub, or add an XML file you already have."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
@@ -438,8 +438,8 @@ struct VolumesStorageHubView: View {
         } header: {
             Text(String(localized: "settings.hub.interrupted.header", defaultValue: "Needs Attention"))
         } footer: {
-            Text(String(localized: "settings.hub.interrupted.footer",
-                        defaultValue: "These volumes were being indexed when the app last quit. Shown only when something needs you."))
+            Text(String(localized: "settings.hub.interrupted.footer.v2",
+                        defaultValue: "These volumes were still being indexed when the app last closed. This section appears only when something needs your attention."))
         }
     }
 
@@ -590,8 +590,8 @@ struct VolumesStorageHubView: View {
 
             if let failures = bulkIndexingFailureCount, failures > 0 {
                 SettingsStatusRow(
-                    label: String(localized: "settings.hub.indexFailures",
-                                  defaultValue: "\(HubCopy.volumes(failures)) failed to index"),
+                    label: String(localized: "settings.hub.indexFailures.v2",
+                                  defaultValue: "\(HubCopy.volumes(failures)) could not be indexed"),
                     detail: String(localized: "settings.hub.indexFailures.detail.iOS",
                                    defaultValue: "Try Index Remaining again; if it keeps failing, Rebuild From Scratch."),
                     state: .error
@@ -628,8 +628,8 @@ struct VolumesStorageHubView: View {
         } header: {
             Text(String(localized: "settings.hub.advanced.header", defaultValue: "Advanced"))
         } footer: {
-            Text(String(localized: "settings.storage.indexHealth.footer",
-                        defaultValue: "The index updates itself automatically when a new version of the app improves indexing. Check Integrity runs the full corruption diagnostic on demand."))
+            Text(String(localized: "settings.storage.indexHealth.footer.v2",
+                        defaultValue: "The app updates the index by itself when a new version improves how indexing works. Check Integrity runs a full check whenever you ask for one."))
         }
 
         Section {

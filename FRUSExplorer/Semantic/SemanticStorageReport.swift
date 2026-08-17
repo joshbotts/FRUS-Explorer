@@ -115,12 +115,12 @@ struct SemanticStorageReport: Equatable, Sendable {
         let count = problemVolumeIDs.count
         if count == 0 {
             return String(
-                localized: "settings.vectors.problems.none",
-                defaultValue: "No problems noticed this session. Faults are only recorded when a volume is fetched or searched, so this is not a clean bill of health.")
+                localized: "settings.vectors.problems.none.v2",
+                defaultValue: "Nothing has gone wrong since the app opened. The app only notices a problem when it downloads or searches a volume, so this does not mean every file is good.")
         }
         return String(
-            format: String(localized: "settings.vectors.problems.some %lld",
-                           defaultValue: "%lld noticed this session — others may exist in volumes nothing has searched yet."),
+            format: String(localized: "settings.vectors.problems.some.v2 %lld",
+                           defaultValue: "%lld found since the app opened. There may be others in volumes nothing has searched yet."),
             Int64(count))
     }
 }
@@ -140,21 +140,21 @@ extension SemanticStorageReport {
     static func describe(_ error: SemanticShardFetcher.FetchError) -> String {
         switch error {
         case .notInManifest:
-            return String(localized: "settings.vectors.error.notPublished",
-                          defaultValue: "No vectors are published for this volume.")
+            return String(localized: "settings.vectors.error.notPublished.v2",
+                          defaultValue: "There is no file available for this volume.")
         case .httpStatus(let code):
-            return String(format: String(localized: "settings.vectors.error.http %lld",
-                                         defaultValue: "The download server answered %lld."),
+            return String(format: String(localized: "settings.vectors.error.http.v2 %lld",
+                                         defaultValue: "The server refused the download (error %lld)."),
                           Int64(code))
         case .integrityMismatch:
-            return String(localized: "settings.vectors.error.integrity",
-                          defaultValue: "The downloaded file did not match its published checksum, so it was discarded.")
+            return String(localized: "settings.vectors.error.integrity.v2",
+                          defaultValue: "The file did not arrive intact, so the app discarded it. Downloading again usually fixes this.")
         case .transport:
-            return String(localized: "settings.vectors.error.transport",
-                          defaultValue: "The download did not complete. It will be retried after a connection change.")
+            return String(localized: "settings.vectors.error.transport.v2",
+                          defaultValue: "The download did not finish. The app tries again when your connection changes.")
         case .rejectedByStore:
-            return String(localized: "settings.vectors.error.rejected",
-                          defaultValue: "The vectors downloaded correctly but were built for a different version of the app, so they were not kept. A future update will publish matching ones.")
+            return String(localized: "settings.vectors.error.rejected.v2",
+                          defaultValue: "The file downloaded correctly, but it was made for a different version of the app, so it was not kept. A future update will publish a matching one.")
         }
     }
 
@@ -173,11 +173,11 @@ extension SemanticStorageReport {
             return String(localized: "settings.vectors.refused.pending",
                           defaultValue: "Still preparing.")
         case .provenanceMismatch:
-            return String(localized: "settings.vectors.refused.provenance",
-                          defaultValue: "These vectors were built for a different version of the app and cannot be mixed with the bundled ones. Remove them and download again.")
+            return String(localized: "settings.vectors.refused.provenance.v2",
+                          defaultValue: "This file was made for a different version of the app, so it cannot be used with this one. Remove it and download again.")
         case .shardMissing:
-            return String(localized: "settings.vectors.refused.missing",
-                          defaultValue: "The file is gone from disk.")
+            return String(localized: "settings.vectors.refused.missing.v2",
+                          defaultValue: "The file is no longer on this device.")
         case .malformedArtifact:
             return String(localized: "settings.vectors.refused.malformed",
                           defaultValue: "The file on disk is damaged and was not used. Remove it and download again.")

@@ -68,9 +68,14 @@ struct SemanticStorageSection: View {
             // candidates but never to a document's aggregate score, and its early-era quality is a
             // declared unknown rather than a measured pass. A reader deciding whether to spend
             // 155 MB deserves to know they are funding an experiment.
+            // **Plain-language pass, build 42.** The v2 wording opened on "Vectors let the app…",
+            // which asks the reader to know what a vector is before the sentence will parse. It
+            // now opens on what the reader gets and names the file second. The hedges are kept
+            // word for word: this ships at weight 0 and its early-era quality is a declared
+            // unknown, so "experimental" and "not yet established" are findings, not throat-clearing.
             Text(String(
-                localized: "settings.vectors.footer.v2",
-                defaultValue: "Vectors let the app find documents about the same subject even when they share no words — they power the Related Documents panel, where the matches appear as their own section. The feature is experimental, and its accuracy on nineteenth-century material is not yet established. A volume’s vectors download with the volume and are removed with it."))
+                localized: "settings.vectors.footer.v3",
+                defaultValue: "The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it. The feature is experimental, and how well it works on nineteenth-century material is not yet established."))
         }
         .task(id: reloadToken) { await reload() }
     }
@@ -129,17 +134,19 @@ struct SemanticStorageSection: View {
                 // footer explaining that sat *below every row* in the Form. The reader was being
                 // asked to price something the screen described afterwards.
                 Text(String(
-                    format: String(localized: "settings.vectors.auto.detail.v2 %@",
-                                   defaultValue: "Lets Related Documents find documents about the same subject even when they share no words. About %@ per volume."),
+                    format: String(localized: "settings.vectors.auto.detail.v3 %@",
+                                   defaultValue: "Helps Related Documents find documents on the same subject even when they use none of the same words. About %@ per volume."),
                     Self.bytes(report.perVolumeEstimate)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        // "a volume you look at semantically fetches its own" asked the reader to picture looking
+        // at a volume semantically. Says the same thing as a sequence of plain events instead.
         .accessibilityHint(String(
-            localized: "settings.vectors.auto.a11y",
-            defaultValue: "When off, a volume's vectors are not fetched as it downloads. You can still fetch them here, and a volume you look at semantically fetches its own."))
+            localized: "settings.vectors.auto.a11y.v2",
+            defaultValue: "When this is off, the extra file is not downloaded alongside a volume. You can still download them all from the button above, and if you open Related Documents for a volume, the app fetches that volume's file then."))
     }
 
     /// Fetches every shard this device is missing for the volumes it holds.
@@ -155,8 +162,8 @@ struct SemanticStorageSection: View {
                               defaultValue: "Download Missing Vectors"),
                 systemImage: "arrow.down.circle",
                 detail: String(
-                    format: String(localized: "settings.vectors.download.detail.v2 %lld %@",
-                                   defaultValue: "%lld volumes on this device have none yet. About %@, and Related Documents improves for those volumes."),
+                    format: String(localized: "settings.vectors.download.detail.v3 %lld %@",
+                                   defaultValue: "%lld volumes on this device are missing this file. About %@ to download, and Related Documents gets better for those volumes."),
                     Int64(awaiting.count), Self.bytes(awaiting.count * report.perVolumeEstimate))
             )
         }
@@ -181,8 +188,8 @@ struct SemanticStorageSection: View {
             }
             if progress.failed > 0 {
                 Text(String(
-                    format: String(localized: "settings.vectors.download.failed %lld",
-                                   defaultValue: "%lld could not be fetched — see Problems below."),
+                    format: String(localized: "settings.vectors.download.failed.v2 %lld",
+                                   defaultValue: "%lld could not be downloaded — see Problems below."),
                     Int64(progress.failed)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -226,8 +233,8 @@ struct SemanticStorageSection: View {
                 label: String(localized: "settings.vectors.retry.label",
                               defaultValue: "Try Failed Downloads Again"),
                 systemImage: "arrow.clockwise",
-                detail: String(localized: "settings.vectors.retry.detail",
-                               defaultValue: "Forgets this session’s failures so the next search can re-request them.")
+                detail: String(localized: "settings.vectors.retry.detail.v2",
+                               defaultValue: "Lets the app try the downloads that failed earlier. Worth using if you were offline before.")
             )
         }
         .buttonStyle(.plain)
@@ -253,8 +260,8 @@ struct SemanticStorageSection: View {
                               defaultValue: "Remove Downloaded Vectors"),
                 systemImage: "trash",
                 detail: String(
-                    format: String(localized: "settings.vectors.remove.detail %@",
-                                   defaultValue: "Frees %@. Your volumes and search index are untouched; related-document results become less precise until the vectors download again."),
+                    format: String(localized: "settings.vectors.remove.detail.v2 %@",
+                                   defaultValue: "Frees %@. Your volumes, notes and search stay exactly as they are. Related Documents keeps working, but its matches are less precise until these files download again."),
                     Self.bytes(report.bytesOnDisk))
             )
             .foregroundStyle(.red)
@@ -273,8 +280,8 @@ struct SemanticStorageSection: View {
         SettingsStatusRow(
             label: String(localized: "settings.vectors.unavailable.label",
                           defaultValue: "Not available"),
-            detail: String(localized: "settings.vectors.unavailable.detail",
-                           defaultValue: "This build has no semantic vectors, so related-document search is unavailable. Nothing is wrong with your library."),
+            detail: String(localized: "settings.vectors.unavailable.detail.v2",
+                           defaultValue: "This version of the app cannot match documents by subject, so that part of Related Documents is unavailable. Nothing is wrong with your library."),
             state: .warning
         )
     }

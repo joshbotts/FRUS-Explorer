@@ -205,8 +205,8 @@ struct CollectionListView: View {
     private func snapshotSmartCollection(_ collection: Collection) async {
         guard let searchId = collection.savedSearchId else { return }
         guard let searchService = appState.searchService else {
-            snapshotError = String(localized: "export.smart.noSearchService",
-                                   defaultValue: "Search service unavailable. Please try again.")
+            snapshotError = String(localized: "export.smart.noSearchService.v2",
+                                   defaultValue: "Search is not ready yet. Try again in a moment.")
             return
         }
         let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })

@@ -224,8 +224,8 @@ struct MacVolumesStorageHub: View {
                           defaultValue: "Cancel"), role: .cancel) {}
         } message: {
             let volumes = HubCopy.volumes(storageReport?.perVolume.count ?? 0)
-            Text(String(localized: "settings.hub.rebuild.message",
-                        defaultValue: "This deletes the whole search index: full-text rows, cross-references, page ranges, document dates, person mentions, and the document cache. It then rebuilds the index by re-parsing all \(volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately. They are not affected."))
+            Text(String(localized: "settings.hub.rebuild.message.v2",
+                        defaultValue: "This deletes everything the app has built for searching — document text, cross-references, page numbers, dates and the people named in each document — and builds it again by re-reading all \(volumes) you have downloaded.\n\nYour research notes, highlights, summaries, collections, and tags are stored separately. They are not affected."))
         }
     }
 
@@ -320,8 +320,8 @@ struct MacVolumesStorageHub: View {
                        defaultValue: "Downloaded Volumes")) {
             if let report = storageReport {
                 if report.perVolume.isEmpty {
-                    Text(String(localized: "settings.hub.downloaded.empty",
-                                defaultValue: "No volumes on this Mac yet. Download from GitHub, or sideload an XML file you already have."))
+                    Text(String(localized: "settings.hub.downloaded.empty.v2",
+                                defaultValue: "No volumes on this Mac yet. Download them from GitHub, or add an XML file you already have."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
@@ -406,8 +406,8 @@ struct MacVolumesStorageHub: View {
         } header: {
             Text(String(localized: "settings.hub.interrupted.header", defaultValue: "Needs Attention"))
         } footer: {
-            Text(String(localized: "settings.hub.interrupted.footer",
-                        defaultValue: "These volumes were being indexed when the app last quit. Shown only when something needs you."))
+            Text(String(localized: "settings.hub.interrupted.footer.v2",
+                        defaultValue: "These volumes were still being indexed when the app last closed. This section appears only when something needs your attention."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -547,8 +547,8 @@ struct MacVolumesStorageHub: View {
                 .controlHelp(
                     String(localized: "settings.hub.indexRemaining.a11y",
                            defaultValue: "Index volumes that have not been indexed yet"),
-                    detail: String(localized: "settings.hub.indexRemaining.help",
-                                   defaultValue: "Only volumes not yet in the search index are processed; already-indexed volumes are left alone"),
+                    detail: String(localized: "settings.hub.indexRemaining.help.v2",
+                                   defaultValue: "Indexes only the volumes that still need it, and leaves the rest untouched"),
                     systemImage: "plus.circle"
                 )
 
@@ -564,16 +564,16 @@ struct MacVolumesStorageHub: View {
                 .controlHelp(
                     String(localized: "settings.hub.rebuild.a11y",
                            defaultValue: "Delete the search index and rebuild it"),
-                    detail: String(localized: "settings.hub.rebuild.help",
-                                   defaultValue: "Wipes every index table then re-parses all downloaded volumes — use this to clear index corruption or data orphaned by deleted volumes"),
+                    detail: String(localized: "settings.hub.rebuild.help.v2",
+                                   defaultValue: "Deletes what the app has built for searching and builds it again from every downloaded volume. Use this if search results look wrong, or if leftovers remain from volumes you deleted."),
                     systemImage: "trash.circle"
                 )
             }
 
             if let failures = bulkIndexingFailureCount, failures > 0 {
                 SettingsStatusRow(
-                    label: String(localized: "settings.hub.indexFailures",
-                                  defaultValue: "\(HubCopy.volumes(failures)) failed to index"),
+                    label: String(localized: "settings.hub.indexFailures.v2",
+                                  defaultValue: "\(HubCopy.volumes(failures)) could not be indexed"),
                     detail: String(localized: "settings.hub.indexFailures.detail",
                                    defaultValue: "Check Console.app (subsystem: bottsywattsy.FRUS-Explorer) for the reason."),
                     state: .error
@@ -620,8 +620,8 @@ struct MacVolumesStorageHub: View {
                 .controlHelp(
                     String(localized: "settings.hub.spotlight.a11y",
                            defaultValue: "Rebuild the system Spotlight index"),
-                    detail: String(localized: "settings.hub.spotlight.help",
-                                   defaultValue: "Clears and re-submits Spotlight entries from cached document text, without re-parsing volume XML"),
+                    detail: String(localized: "settings.hub.spotlight.help.v2",
+                                   defaultValue: "Rebuilds what Spotlight knows about your documents. Quicker than a full reindex, because it reuses text the app has already read."),
                     systemImage: "magnifyingglass"
                 )
             }
