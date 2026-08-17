@@ -398,6 +398,62 @@ final class SemanticMapModel {
     /// Dismisses the region card.
     func clearRegion() { selectedRegion = nil }
 
+    /// Reveals one document on the map: selects it and brings the camera to it.
+    ///
+    /// The map draws every document in the published series, so this works for a volume the device
+    /// does not hold — the point is *there*, and showing where a document sits in the corpus's
+    /// language is worth doing whether or not it can be opened. The selection card already says
+    /// when a volume is absent.
+    ///
+    /// **Not every document has a point.** 2,356 of the app's display rows are chapter divs, front
+    /// matter and appendix structure that were never embedded, so a reveal can legitimately fail.
+    /// The caller is told, rather than left looking at an unmoved map wondering which dot lit up.
+    ///
+    /// - Parameters:
+    ///   - key: `"volumeId/documentId"`.
+    ///   - isReadable: Whether a volume's XML is on disk — the same closure `select(at:)` takes, and
+    ///     for the same reason: readability is the view's question, not the artifact's.
+    /// - Returns: Whether the document was found and revealed.
+    @discardableResult
+    func reveal(documentKey key: String, isReadable: (String) -> Bool) -> Bool {
+        let parts = key.split(separator: "/", maxSplits: 1)
+        guard parts.count == 2, let index, let map = BundledSemanticMap.vectors else { return false }
+        guard let row = index.row(documentID: String(parts[1]), volumeID: String(parts[0])),
+              let placement = map.placement(at: row) else { return false }
+        // Region identity by ROW and from `clusters`, exactly as `select(at:)` derives it — a reveal
+        // and a tap on the same document must produce the same card, or the two paths disagree
+        // about which region a document is in.
+        let region = placement.cluster == SemanticMapArtifacts.unclustered
+            ? nil
+            : clusters.first { $0.id == Int(placement.cluster) }
+        let position = SIMD2(Float(placement.x), Float(placement.y))
+        // Only now, having found the document: a reveal that fails must not clear a region card the
+        // reader opened. The two cards are alternatives, so a SUCCESSFUL reveal replaces one with
+        // the other, exactly as `select(at:)` does.
+        selectedRegion = nil
+        selection = SemanticMapPicking.Selection(
+            row: row,
+            volumeID: String(parts[0]),
+            documentID: String(parts[1]),
+            position: position,
+            regionName: region.map { $0.terms.prefix(3).joined(separator: " ") },
+            isDownloaded: isReadable(String(parts[0])))
+        // Close enough to read the neighbourhood, not so close the surrounding language is off
+        // screen — the question a reveal answers is "what is this document *near*", and a camera
+        // pinned to the point alone would answer "where is this document", which the selection
+        // marker already does.
+        camera.centre = position
+        camera.halfExtent = Self.revealHalfExtent
+        return true
+    }
+
+    /// How much of the map a reveal leaves in view, in grid units.
+    ///
+    /// `nonisolated` because it is a constant, and because a test asserting it is closer than the
+    /// default camera has no reason to hop to the main actor to read a number.
+    nonisolated static let revealHalfExtent: Float = 900
+
+
     /// Gathers the selected region as a capture, ready to become a working corpus.
     ///
     /// **Returns the same type the lasso does, on purpose.** A region is a set of documents the map
@@ -867,6 +923,14 @@ struct SemanticMapSpikeView: View {
     @State private var exportBox = SeriesExportBox()
     /// Whether a Handoff continuation has already been applied to this map (UI review F-28).
     @State private var hasAppliedContinuation = false
+    @State private var revealFailed = false
+    /// The nearest documents to the current selection, once computed.
+    @State private var neighbours: [GeneratedCandidate] = []
+    /// Set while the neighbour query runs, so the card can say it is working.
+    @State private var neighboursLoading = false
+    /// The selection the current `neighbours` describe, so a stale list is never shown
+    /// against a newly tapped document.
+    @State private var neighboursAnchor: Int?
     /// What to call the active scope, in the reader's terms.
     @State private var scopeLabel: String?
     @Environment(\.modelContext) private var modelContext
@@ -1103,7 +1167,18 @@ struct SemanticMapSpikeView: View {
             lens = restored
         }
         applyScope(continued.volumeIDs, label: continued.scopeLabel)
+        // The reveal comes last, and after the scope on purpose: `applyScope` moves the camera to
+        // frame the scope, so revealing first would centre the document and then be overruled.
+        if let key = continued.focusDocumentKey {
+            revealFailed = !model.reveal(documentKey: key, isReadable: isReadable)
+        }
     }
+
+    /// Whether a requested reveal could not be honoured.
+    ///
+    /// Worth its own state rather than a silent no-op: 2,356 display rows — chapter divs, front
+    /// matter, appendix structure — were never embedded and have no point on the map. A reader who
+    /// chose "Show on Semantic Map" and saw an unchanged map would reasonably read that as a bug.
 
     /// What the reader is looking at, and what it does and does not mean.
     ///
@@ -1787,6 +1862,99 @@ struct SemanticMapSpikeView: View {
         SemanticMapRegionRows.eraRows(region)
     }
 
+    /// The ten nearest documents in the corpus's language, for the selected point.
+    ///
+    /// **Reuses `SemanticSimilarityGenerator`, which is the answer to "does the Related Documents
+    /// axis provide this path".** It does, and taking it whole rather than re-deriving the funnel
+    /// means a neighbour here is a neighbour there: the same Tier-1 Hamming candidates over all
+    /// 314,483 documents, the same exact int8 rerank, the same tie-breaks, the same shard fetches
+    /// queued for next time. A second implementation would be a second thing to drift.
+    ///
+    /// **What it inherits is a fence, and the map is exactly where that matters.** The generator
+    /// scores against Tier-2 shards and *drops* a candidate whose shard is absent rather than
+    /// ranking it by Hamming — raw binary recalls 0.53 against the funnel's 0.745 and the two are
+    /// different scales, so a mixed list would be sorted by a number meaning different things in
+    /// different rows. On a map that draws the whole published series including volumes the reader
+    /// does not have, that means this list is drawn from a **subset of what is on screen**, and the
+    /// caption says so. Silently presenting it as "the ten nearest" would be the map's most
+    /// confident lie.
+    @ViewBuilder
+    private func nearestSection(for selection: SemanticMapPicking.Selection) -> some View {
+        Divider().padding(.vertical, 2)
+        if neighboursLoading {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.mini)
+                Text(String(localized: "semanticMap.nearest.loading",
+                            defaultValue: "Finding nearest documents…"))
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        } else if !neighbours.isEmpty {
+            Text(String(localized: "semanticMap.nearest.header",
+                        defaultValue: "Nearest in language"))
+                .font(.caption.weight(.semibold))
+            ForEach(Array(neighbours.enumerated()), id: \.offset) { _, candidate in
+                Button {
+                    model.reveal(documentKey: "\(candidate.key.volumeId)/\(candidate.key.documentId)",
+                                 isReadable: isReadable)
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(verbatim: candidate.record.header)
+                            .font(.caption2)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 6)
+                        Text(String(
+                            format: String(localized: "semanticMap.nearest.score %lld",
+                                           defaultValue: "%lld%%"),
+                            Int64((candidate.strength * 100).rounded())))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            Text(String(localized: "semanticMap.nearest.fence",
+                        defaultValue: "Drawn only from volumes downloaded on this device — the map shows the whole series, so there may be nearer documents it cannot score yet."))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if neighboursAnchor == selection.row {
+            // Ran, found nothing. The commonest cause by far is the anchor's own volume: its shard
+            // IS the query vector, so without it there is nothing to compare against at all.
+            Text(selection.isDownloaded
+                 ? String(localized: "semanticMap.nearest.none",
+                          defaultValue: "No nearest documents yet. The vectors for this volume may still be downloading — try again in a moment.")
+                 : String(localized: "semanticMap.nearest.needsVolume",
+                          defaultValue: "Finding nearest documents needs this volume on the device. Download it to compare this document with others."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Runs the neighbour query for a selection, once per selection.
+    private func loadNeighbours(for selection: SemanticMapPicking.Selection) async {
+        guard neighboursAnchor != selection.row else { return }
+        neighbours = []
+        neighboursAnchor = selection.row
+        neighboursLoading = true
+        defer { neighboursLoading = false }
+        let pool = try? await SemanticSimilarityGenerator().candidates(
+            for: DocumentKey(volumeId: selection.volumeID, documentId: selection.documentID),
+            anchorYear: nil,
+            limit: Self.nearestCount,
+            // Unscoped on purpose: a map scope narrows what is DRAWN, and a reader asking what a
+            // document is nearest to is asking about the corpus, not about their current view.
+            scopeVolumeIds: nil,
+            appState: appState)
+        // Only apply if the reader has not moved on — an await here can outlive the selection.
+        guard neighboursAnchor == selection.row else { return }
+        neighbours = pool?.candidates ?? []
+    }
+
+    /// How many neighbours the card offers.
+    static let nearestCount = 10
+
     /// What the reader tapped, and what they can do about it.
     ///
     /// An **overlay, never a sheet**: a SwiftUI sheet on macOS does not composite the Metal layer
@@ -1871,6 +2039,7 @@ struct SemanticMapSpikeView: View {
                     .controlSize(.small)
                     .disabled(model.poles.negative == nil)
                 }
+                nearestSection(for: selection)
                 if selection.isDownloaded {
                     openButton(for: selection)
                 } else {
@@ -1886,6 +2055,7 @@ struct SemanticMapSpikeView: View {
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
             .frame(maxWidth: 320)
             .padding(12)
+            .task(id: selection.row) { await loadNeighbours(for: selection) }
         }
     }
 
