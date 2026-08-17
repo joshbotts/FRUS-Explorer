@@ -14,6 +14,21 @@
 
 import SwiftUI
 
+// MARK: - Developer instrumentation, DEBUG only
+//
+// This whole file is a measuring instrument for the word-cloud backdrop's animation, and none of it
+// belongs in a shipping build. It used to be gated *only* by `FRUS_FRAME_PROBE=1` at runtime, which
+// left every type below — and the readout's strings — compiled into the release binary, inert but
+// present (`FRUS_FRAME_PROBE` was verifiably in both AppStore products). A launched App Store or
+// TestFlight app cannot carry a custom environment, so nothing could switch it on; but a runtime
+// string compare is a weaker guarantee than a compilation condition, and the semantic map's own
+// overlay had the stronger one. Both gates now agree.
+//
+// `DrawCostMeter.record` in `WordCloudDriftCanvas` is gated at its call site for the same reason:
+// it ran on every production draw, accumulating into scalars nothing ever drained.
+
+#if DEBUG
+
 /// Draw-cost accounting for the word-cloud renderer.
 ///
 /// ## Why this is separate from frame intervals
@@ -217,6 +232,14 @@ struct FrameTimeProbe: ViewModifier {
     ///
     /// Resolved once. The first version re-read `ProcessInfo.processInfo.environment` —
     /// which materialises the whole environment dictionary — on every body evaluation.
+    ///
+    /// **The environment check is now the inner of two gates, not the only one.** It shipped as the
+    /// only gate, which made this probe *compiled into* the release binary and merely inert —
+    /// `FRUS_FRAME_PROBE` was verifiably present in both AppStore products. That was safe in
+    /// practice, since a TestFlight or App Store launch cannot carry a custom environment, but it is
+    /// a runtime string compare standing where a compilation condition belongs, and it is a weaker
+    /// guarantee than the semantic map's overlay has. The variable is kept inside `#if DEBUG` so a
+    /// developer still opts in per-scheme rather than having the readout appear on every debug run.
     static let isEnabled: Bool =
         ProcessInfo.processInfo.environment["FRUS_FRAME_PROBE"] == "1"
 
@@ -313,12 +336,20 @@ struct FrameTimeProbe: ViewModifier {
     }
 }
 
+#endif
+
 extension View {
 
-    /// Overlays a frame-time readout when `FRUS_FRAME_PROBE=1`, otherwise does nothing.
+    /// Overlays a frame-time readout on a DEBUG build with `FRUS_FRAME_PROBE=1`, otherwise nothing.
     ///
-    /// Applied to the word-cloud backdrop, whose animation cost is the thing being decided.
+    /// Applied to the word-cloud backdrop, whose animation cost is the thing being decided. In a
+    /// release build this is `self` — the modifier, its readout and its statistics do not exist, so
+    /// the call site needs no gate of its own.
     func frameTimeProbe() -> some View {
+        #if DEBUG
         modifier(FrameTimeProbe())
+        #else
+        self
+        #endif
     }
 }
