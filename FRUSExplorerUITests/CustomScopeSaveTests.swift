@@ -228,19 +228,40 @@ final class CustomScopeSaveTests: XCTestCase {
         // The list sorts by name and we scrolled down to reach "New Scope…", so scroll back up
         // before looking — a lazy List omits off-screen rows from the tree entirely, and reading
         // that as "the scope did not save" is the mistake this scenario has already made twice.
-        let saved = app.staticTexts.matching(
+        // A scope row is `Button { … } label: { scopeRow(scope) }`, and SwiftUI folds a Button's
+        // label into the BUTTON's own accessibility label — the inner Text is not published as a
+        // separate staticText. Matching only `staticTexts` therefore reported "the write did not
+        // persist" for a row that was on screen, which is the whole of #862's unexplained
+        // residual. Check both classes; the print below records which one carried it.
+        let savedButton = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] 'Keyboard Probe'")).firstMatch
-        for _ in 0..<6 where !saved.exists {
+        let savedText = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Keyboard Probe'")).firstMatch
+        var rowPresent: Bool { savedButton.exists || savedText.exists }
+        for _ in 0..<6 where !rowPresent {
             app.swipeDown(velocity: .slow)
             Thread.sleep(forTimeInterval: 0.4)
         }
         print("[#862] after Save: editor dismissed = \(!nameField.exists), "
-              + "scope row present = \(saved.exists)")
-        XCTAssertTrue(saved.waitForExistence(timeout: 5), """
-            The scope was named, given a volume, and saved — and it is not in the list (#862). If \
-            the editor is still on screen, the Save tap never landed; if the editor closed and the \
-            row is absent, the write did not persist. The two have different causes and the log \
-            line above distinguishes them.
+              + "row as button = \(savedButton.exists), row as staticText = \(savedText.exists)")
+        // THE DECIDING SIGNAL. `scopes.isEmpty` renders this sentence instead of the ForEach, so
+        // its presence says the @Query returned nothing — which separates "the row is there and
+        // the selector missed it" from "the write is not in the store". Measured 2026-08-17: the
+        // empty state IS on screen after a Save that dismissed the editor, so #862's residual is a
+        // real defect and not the harness artefact #928 suspected.
+        let emptyState = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH[c] 'Create a named set of volumes'")).firstMatch
+        print("[#862] empty state on screen = \(emptyState.exists)")
+        print("[#862] buttons on the list screen: "
+              + (0..<app.buttons.count).map { app.buttons.element(boundBy: $0).label }
+                  .filter { !$0.isEmpty }.joined(separator: " | "))
+        XCTAssertTrue(rowPresent, """
+            The scope was named, given a volume, and saved — and it is in neither the button nor \
+            the staticText tree (#862). Read the two lines above before theorising: if the empty \
+            state is on screen the @Query returned nothing and the write never reached the store; \
+            if it is absent the row exists and this selector is what is wrong. NOTE the app's own \
+            print() does NOT reach this log — the app is a separate process — so nothing here can \
+            tell you whether save() threw or whether isDraft was true.
             """)
     }
 }
