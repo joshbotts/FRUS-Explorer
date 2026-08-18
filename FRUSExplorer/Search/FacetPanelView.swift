@@ -483,6 +483,11 @@ struct FacetPanelView: View {
         .task(id: pendingSections) {
             for section in pendingSections { onDiscloseSection(section) }
         }
+        // One application covers all three hosts — the iPhone sheet, the iPad inspector and the
+        // compact-iPad sheet-as-inspector — because this view IS the inspector's content. Do NOT
+        // also apply it at the SearchView call site: that is the same responder chain and would
+        // put two Done buttons in one accessory bar.
+        .keyboardDismissBar()
     }
 
     /// Open sections with no data — see `FacetPanelController.sectionsNeedingLoad(expanded:)`.

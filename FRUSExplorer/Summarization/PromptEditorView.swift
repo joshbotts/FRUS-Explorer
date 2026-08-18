@@ -160,6 +160,7 @@ struct PromptEditorView: View {
                     : String(localized: "prompt.editor.title.edit",
                              defaultValue: "Edit Prompt")
             )
+            .keyboardDismissBar()
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

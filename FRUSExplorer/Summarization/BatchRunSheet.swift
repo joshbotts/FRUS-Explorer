@@ -101,6 +101,10 @@ struct BatchRunSheet: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            // Applied to the sheet's own body, NOT to the embedded settings view: that is a Group
+            // of six Sections, and a Group replicates its modifiers per child — six Done buttons,
+            // and it would compile.
+            .keyboardDismissBar()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "settings.summarization.runSheet.done",

@@ -292,6 +292,7 @@ struct CollectionEntryInspector: View {
             }
         }
         .navigationTitle(collectionDisplayTitle)
+        .keyboardDismissBar()
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

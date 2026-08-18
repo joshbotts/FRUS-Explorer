@@ -766,9 +766,42 @@ extension RichTextPlatformEditor: UIViewRepresentable {
             linkItem = link
             let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace,
                                         target: nil, action: nil)
-            toolbar.items = [bold, space, italic, space, underline, space, color, space, link]
+            // The Done this toolbar owes the reader (#861/#928).
+            //
+            // `inputAccessoryView` and `ToolbarItemGroup(placement: .keyboard)` occupy the SAME
+            // slot, so `.keyboardDismissBar()` structurally cannot appear over a rich-text
+            // editor — #928 recorded that limit and left the two prose editors with no way to
+            // put the keyboard away. Appending here is the fix, and it reaches both iOS mount
+            // sites (the collection Introduction and CollectionProseRow) because both funnel
+            // through this one representable.
+            //
+            // Titled, not an image: `item(_:label:action:)` above builds icon-only buttons with
+            // an accessibilityLabel, and "Done" is the platform's own word for this control —
+            // the same argument KeyboardDismissBar makes for not renaming its own button. The
+            // key is shared with it deliberately; keys here are inline, with no catalog to
+            // collide in.
+            //
+            // A FRESH flexible space, not a fifth reuse of `space`: that single instance is
+            // already shared by the four separators, and making it five would leave "pin Done
+            // trailing" indistinguishable from "distribute six items evenly".
+            let doneSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace,
+                                            target: nil, action: nil)
+            let done = UIBarButtonItem(
+                title: String(localized: "common.keyboard.done", defaultValue: "Done"),
+                style: .done, target: self, action: #selector(dismissKeyboard))
+            toolbar.items = [bold, space, italic, space, underline, space, color, space, link,
+                             doneSpace, done]
             toolbar.sizeToFit()
             return toolbar
+        }
+
+        /// Puts the keyboard away from the formatting bar's Done.
+        ///
+        /// Resigns on the text view directly rather than routing through
+        /// `KeyboardDismissBar.dismiss()`: that is what the shared helper does anyway, and this
+        /// keeps the Coordinator free of an actor-isolated call it does not need.
+        @objc private func dismissKeyboard() {
+            textView?.resignFirstResponder()
         }
 
         /// Toggles bold on the selection via the standard text-view action and persists.

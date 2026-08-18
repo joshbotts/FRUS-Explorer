@@ -61,6 +61,7 @@ struct AnalyticsYearRangeBar: View {
     /// Whether the range-picker popover is presented.
     @State private var isRangePopoverPresented = false
 
+
     var body: some View {
         switch presentation {
         case .bar:
@@ -114,9 +115,34 @@ struct AnalyticsYearRangeBar: View {
     /// behind the chip rather than crowding the filter row.
     private var rangePickerPopover: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(String(localized: "analytics.yearRange.label",
-                        defaultValue: "Year range:"))
-                .font(.headline)
+            HStack {
+                Text(String(localized: "analytics.yearRange.label",
+                            defaultValue: "Year range:"))
+                    .font(.headline)
+                #if os(iOS)
+                Spacer()
+                // MEASURED, not assumed, and TWICE (`KeyboardDismissBarReachTests`).
+                //
+                // The year fields are `.numberPad` — no return key — and on a default range the
+                // popover's only other control, Reset, is hidden, so there was no way to put the
+                // keyboard down at all. Two obvious fixes were tried and BOTH are inert here:
+                // `.keyboardDismissBar()` (the shared modifier) never renders, and a Done gated
+                // on a parent `@FocusState` never appears either. A `.popover` is a DETACHED
+                // hosting environment — the same shape as #950's sidebar footer — so neither
+                // `.keyboard` toolbar placement nor the presenting view's focus state crosses
+                // into it. The test proves the field is focused (typing moves its value) and
+                // counts Done buttons before and after, so neither result was a missed tap.
+                //
+                // Hence a plain, always-present button owned by the popover's own content. It
+                // also gives the popover the dismiss control it has never had.
+                Button(String(localized: "common.keyboard.done", defaultValue: "Done")) {
+                    KeyboardDismissBar.dismiss()
+                    isRangePopoverPresented = false
+                }
+                .font(.callout.weight(.semibold))
+                .accessibilityIdentifier("yearRangeDone")
+                #endif
+            }
 
             HStack(spacing: 10) {
                 yearEntryField(

@@ -721,6 +721,10 @@ struct CollectionEditorView: View {
         }
         .navigationTitle(String(localized: "collection.editor.settings.title",
                                 defaultValue: "Collection settings"))
+        // `noteField` is a `.vertical`-axis TextField with `.lineLimit(3...6)`, so Return inserts
+        // a newline and never dismisses. Additive to the Done now in the rich-text editor's own
+        // accessory bar — each serves a different first responder on this same screen.
+        .keyboardDismissBar()
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -786,6 +790,7 @@ struct CollectionEditorView: View {
             .formStyle(.grouped)
             .navigationTitle(String(localized: "collection.editor.settings.title",
                                     defaultValue: "Collection settings"))
+            .keyboardDismissBar()
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
