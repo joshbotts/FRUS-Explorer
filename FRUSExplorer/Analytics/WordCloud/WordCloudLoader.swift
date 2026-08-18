@@ -20,8 +20,7 @@ import SwiftData
 @MainActor
 enum WordCloudLoader {
 
-    /// The standard number of terms requested by the main view and the background
-    /// precompute, kept in one place so their on-disk cache keys always match.
+    /// The standard number of terms requested by the main view.
     ///
     /// ## Why 1,000 and not the 220 this shipped with
     /// The cloud itself never draws more than `WordCloudLayout.place`'s 180-word cap, so this
@@ -43,35 +42,6 @@ enum WordCloudLoader {
     /// `@AppStorage` used by `WordCloudView`).
     static let excludeBoilerplateKey = "frus.wordcloud.excludeBoilerplate"
 
-    /// Computes one queued scope and writes it to the disk cache, using exactly the
-    /// parameters the UI will later request so the precomputed result is a cache hit.
-    ///
-    /// - Returns: `true` when the job is finished with (success or unrecoverable
-    ///   failure) and should be dequeued; `false` when it was cancelled (e.g. the
-    ///   background task expired) and should be retried later.
-    static func precompute(
-        signature: String,
-        appState: AppState,
-        modelContext: ModelContext
-    ) async -> Bool {
-        guard let scope = WordCloudScope(signature: signature) else { return true }
-        let exclude = UserDefaults.standard.object(forKey: excludeBoilerplateKey) as? Bool ?? true
-        let hidden = WordCloudOverrides.hidden(for: signature)
-        do {
-            _ = try await load(
-                scope: scope, excludeBoilerplate: exclude, hiddenWords: hidden,
-                limit: standardTermLimit, appState: appState, modelContext: modelContext
-            )
-            return true
-        } catch is CancellationError {
-            return false
-        } catch {
-            #if DEBUG
-            print("[WordCloudLoader] Precompute failed for \(signature): \(error)")
-            #endif
-            return true
-        }
-    }
 
     /// Computes the word cloud for `scope`.
     ///

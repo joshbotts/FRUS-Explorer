@@ -47,10 +47,22 @@ enum WordCloudSettings {
         static let density = "frus.wordcloud.density"
         /// Monotonic revision bumped whenever a stop list changes.
         static let revision = "frus.wordcloud.settingsRevision"
-        /// Background precompute of heavy clouds. Declared here (S-2a) because the literal was
-        /// previously written out in both the Settings toggle and `WordCloudPrecomputeQueue`,
-        /// where a one-sided edit would have silently decoupled the switch from the queue.
-        static let backgroundPrecompute = "frus.wordcloud.backgroundPrecompute"
+    }
+
+    /// Removes the defaults left by the retired background precompute.
+    ///
+    /// The feature is gone — it ran NLTagger over the corpus until iOS killed the app, and could
+    /// not have paid for itself even when it finished. Three keys outlive it: the preference, the
+    /// one-shot migration marker that turned it off, and the QUEUE, which is the one that matters.
+    /// A queue is state, not a setting: it could still hold a scope signature enqueued by a build
+    /// that had the feature, and leaving that behind is exactly the kind of residue that turns up
+    /// years later looking meaningful. Idempotent, so calling it on every launch costs one lookup.
+    static func removeRetiredPrecomputeDefaults() {
+        for key in ["frus.wordcloud.backgroundPrecompute",
+                    "frus.wordcloud.backgroundPrecompute.defaultOffMigrated",
+                    "frus.wordcloud.precomputeQueue"] {
+            store.removeObject(forKey: key)
+        }
     }
 
     /// Default minimum token length.

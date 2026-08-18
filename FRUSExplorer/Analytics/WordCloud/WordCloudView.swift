@@ -995,6 +995,24 @@ struct WordCloudView: View {
     }
 
     // MARK: - States
+    /// What to say while a cloud builds, sized to what the scope actually costs.
+    ///
+    /// Three tiers rather than two: the corpus is the one that takes minutes and is worth warning
+    /// about explicitly; a subseries is heavy enough to deserve more than "building"; everything
+    /// else is quick and should not be made to sound slow.
+    private var loadingMessage: String {
+        switch scope {
+        case .corpus:
+            return String(localized: "wordcloud.loading.corpus.v2",
+                          defaultValue: "Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.")
+        case .subseries:
+            return String(localized: "wordcloud.loading.subseries",
+                          defaultValue: "Reading this subseries' documents. This can take a minute or two.")
+        default:
+            return String(localized: "wordcloud.loading", defaultValue: "Building word cloud…")
+        }
+    }
+
 
     private var loadingView: some View {
         VStack(spacing: 12) {
@@ -1008,10 +1026,15 @@ struct WordCloudView: View {
             } else {
                 ProgressView()
             }
-            Text(scope == .corpus
-                 ? String(localized: "wordcloud.loading.corpus",
-                          defaultValue: "Analyzing the corpus — this can take a moment…")
-                 : String(localized: "wordcloud.loading", defaultValue: "Building word cloud…"))
+            // **"A moment" was never true, and there is no longer a precompute to make it true.**
+            // A corpus cloud runs the on-device language tagger over every indexed document —
+            // hundreds of thousands of them — which is minutes, not moments. The background
+            // precompute that was supposed to hide this cost was removed: it ran the same work
+            // until iOS terminated the app for CPU use, and any result it did write was
+            // invalidated by the next volume indexed. So the honest thing is to say the cost up
+            // front. The progress bar above is determinate for exactly these scopes, so the
+            // reader can see it moving rather than trusting a spinner.
+            Text(loadingMessage)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

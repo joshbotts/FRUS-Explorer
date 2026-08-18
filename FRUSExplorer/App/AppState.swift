@@ -1770,10 +1770,10 @@ final class AppState {
                     }
                     #if os(iOS)
                     self.endIndexingLiveActivity()
-                    // The index just changed, invalidating the corpus word cloud's
-                    // on-disk cache. Queue a background precompute so the next time
-                    // the user opens the corpus cloud it's already warm.
-                    WordCloudPrecomputeQueue.enqueue(WordCloudScope.corpus.signature)
+                    // Nothing is queued here any more. The background word-cloud precompute this
+                    // site fed was removed: it ran NLTagger over the corpus at 97% CPU until iOS
+                    // terminated the app, and an entry it managed to write was invalidated by the
+                    // next volume indexed — which is to say, by the very event this call sits in.
                     #endif
                 } else {
                     let isNewVolume = self.currentIndexingProgress?.volumeId != update.volumeId
