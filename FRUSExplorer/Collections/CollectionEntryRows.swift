@@ -996,5 +996,19 @@ struct InlineNoteCreateSheet: View {
             .padding(.vertical, 14)
         }
         .frame(minWidth: 440, minHeight: 280)
+        // A bare VStack with no navigation container and no toolbar of any kind, so the body
+        // TextEditor had no dismissal at all. The frame stays: it is this sheet's only size on
+        // Mac. (That 440pt frame also clips on a 402pt iPhone — a real but separate layout
+        // defect, deliberately not bundled here.)
+        //
+        // **UNVERIFIED IN THIS HOST.** The identical modifier is INERT over the year-range
+        // popover — measured in `KeyboardDismissBarReachTests`, which proves the field is focused
+        // and then finds no Done — because a popover hosts its content detached from the
+        // presenter, so `.keyboard` toolbar placement never reaches it. A sheet is not a popover
+        // and may well behave differently, but nobody has watched this one. If the bar does not
+        // appear, the fix is the same shape as the popover's: a plain Done in this VStack's own
+        // chrome calling `KeyboardDismissBar.dismiss()`. Unlike the popover, this sheet at least
+        // has visible Cancel/Save, so the failure mode is awkward rather than trapping.
+        .keyboardDismissBar()
     }
 }

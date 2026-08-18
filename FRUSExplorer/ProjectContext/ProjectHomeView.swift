@@ -146,6 +146,10 @@ struct ProjectHomeView: View {
             }
         }
         .navigationTitle(project?.name ?? String(localized: "project.home.title", defaultValue: "Project Home"))
+        // Unguarded, unlike ProjectEditorView's `#if os(iOS)` — that guard is an artifact of THAT
+        // file's platform-split body. This view has one shared body and is also the macOS
+        // `frus.projectHome` window; the modifier compiles away on macOS itself.
+        .keyboardDismissBar()
         .task(id: projectId) {
             // Reset per-project state — this view can be reused for a different project (the iOS
             // sheet reuses identity when `activeProjectId` changes), so drop any in-flight recompute

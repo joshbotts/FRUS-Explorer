@@ -53,11 +53,19 @@ struct CustomScopesView: View {
 
     @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
 
-    /// The scope being edited in the sheet, or `nil`. A fresh unsaved instance for
-    /// "create" (inserted only on Save), an existing record for "edit".
-    @State private var editorTarget: CustomVolumeScope?
-    /// Whether `editorTarget` is a not-yet-inserted draft (create) vs a live record (edit).
-    @State private var editorIsDraft = false
+    /// The scope being edited in the sheet, or `nil` — carrying its draft-ness with it.
+    ///
+    /// ## Why one property and not two (#862)
+    /// This was two `@State`s, `editorTarget` and `editorIsDraft`, written together in each
+    /// action and read separately by `.sheet(item:)`'s content closure. Measured on the
+    /// scenario in `CustomScopeSaveTests`, the closure read `isDraft` as **false** for a
+    /// freshly created draft. With that flag false `save()` skipped `modelContext.insert`,
+    /// so the save succeeded having written nothing, the editor dismissed, and the scope
+    /// never reached the list — a silent no-op that looked, from outside, exactly like a
+    /// keyboard problem. The editor title read "Edit Scope" for the same reason.
+    ///
+    /// Two pieces of state that must agree can disagree. One value cannot.
+    @State private var editorTarget: ScopeEditorTarget?
     /// The scope pending delete confirmation, or `nil`.
     ///
     /// A bare `.onDelete` was enabling SwiftUI's default full-swipe, so one uninterrupted gesture
@@ -76,8 +84,7 @@ struct CustomScopesView: View {
                 } else {
                     ForEach(scopes) { scope in
                         Button {
-                            editorIsDraft = false
-                            editorTarget = scope
+                            editorTarget = ScopeEditorTarget(scope: scope, isDraft: false)
                         } label: {
                             scopeRow(scope)
                         }
@@ -105,8 +112,8 @@ struct CustomScopesView: View {
                 // at all except that "+".
                 SettingsNewItemRow(label: String(localized: "settings.scopes.new",
                                                  defaultValue: "New Scope…")) {
-                    editorIsDraft = true
-                    editorTarget = CustomVolumeScope(name: "")
+                    editorTarget = ScopeEditorTarget(scope: CustomVolumeScope(name: ""),
+                                                     isDraft: true)
                 }
             } footer: {
                 Text(String(localized: "settings.scopes.footer",
@@ -116,7 +123,7 @@ struct CustomScopesView: View {
         .navigationTitle(String(localized: "settings.scopes.title",
                                 defaultValue: "Volume Scopes"))
         .sheet(item: $editorTarget) { target in
-            CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
+            CustomScopeEditorView(scope: target.scope, isDraft: target.isDraft)
                 .environment(appState)
         }
         // The same dialog the macOS pane raises, in the same words and under the same keys.
@@ -207,6 +214,18 @@ struct CustomScopesView: View {
 /// chrome — header / inline filter field / list / bottom-right Cancel–Save — the repo's
 /// established mac-sheet idiom, resolving Phase 1's caution against `.searchable` inside
 /// a sheet-hosted stack on macOS. The list content and save logic are shared.
+/// One sheet item carrying both facts the editor needs: which scope, and whether it is a
+/// not-yet-inserted draft. See `CustomScopesView.editorTarget` for why they travel together.
+///
+/// `id` is a fresh `UUID` rather than the scope's `persistentModelID` on purpose: a draft's
+/// persistent id CHANGES the moment it is inserted, and a sheet whose item identity changes
+/// under it is a second way to lose an edit.
+private struct ScopeEditorTarget: Identifiable {
+    let id = UUID()
+    let scope: CustomVolumeScope
+    let isDraft: Bool
+}
+
 struct CustomScopeEditorView: View {
 
     /// The record being edited. For a draft (create), it is not yet in the context and
@@ -231,6 +250,10 @@ struct CustomScopeEditorView: View {
     /// picker dismisses — so a fast Save could snapshot `selection` before the union
     /// lands and silently drop the person's volumes. Save is disabled while nonzero.
     @State private var pendingPersonUnions = 0
+
+    /// A failed `modelContext.save()`, surfaced instead of swallowed. Non-nil presents the alert
+    /// and the editor stays open, so the user's selection is still there to retry or copy out.
+    @State private var saveError: String?
 
     /// The four rich selection facets (sketch §5). Each presents a picker whose result
     /// is UNIONED into `selection` — facets add, they never replace.
@@ -261,6 +284,19 @@ struct CustomScopeEditorView: View {
     }
 
     var body: some View {
+        editorBody
+            .alert(String(localized: "settings.scopes.save.failed.title",
+                          defaultValue: "Couldn't Save Scope"),
+                   isPresented: Binding(get: { saveError != nil },
+                                        set: { if !$0 { saveError = nil } })) {
+                Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+            } message: {
+                Text(saveError ?? "")
+            }
+    }
+
+    @ViewBuilder
+    private var editorBody: some View {
         #if os(macOS)
         macBody
         #else
@@ -581,15 +617,23 @@ struct CustomScopeEditorView: View {
         scope.name = name.trimmingCharacters(in: .whitespaces)
         scope.volumeIds = Array(selection).sorted()   // wholesale replace — never mutate in place
         scope.lastModified = Date()
-        if isDraft { modelContext.insert(scope) }
+        // Branch on the object's OWN evidence, not on a flag that can disagree with it. A model
+        // that belongs to no context has by definition never been saved, and that is the fact
+        // worth testing — #862 skipped this insert because `isDraft` arrived false, and the save
+        // then succeeded with nothing to write. The flag is fixed at its source above; this makes
+        // the method correct even if it ever comes back wrong.
+        if scope.modelContext == nil { modelContext.insert(scope) }
         do {
             try modelContext.save()
         } catch {
-            // A swallowed save error would present as a silent no-op to the user (#366). We
-            // can't raise a blocking alert from here without more plumbing, but never lose it.
+            // Never dismiss over a failed save (#366). Dismissing returns the user to a list
+            // that does not contain their work and says nothing about why — the same silent
+            // shape as #862, arrived at from the other direction.
+            saveError = error.localizedDescription
             #if DEBUG
             print("[CustomScopeEditorView] save failed: \(error)")
             #endif
+            return
         }
         dismiss()
     }
