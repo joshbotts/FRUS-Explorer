@@ -50,16 +50,37 @@ struct SemanticStorageReportTests {
 
     // MARK: - The honesty boundary
 
+    /// Phrases that disclose the report's partial scan, in any wording the app has shipped.
+    ///
+    /// **Deliberately a set and not a literal.** These two tests originally matched the exact
+    /// sentences ("not a clean bill of health", "may exist"). The plain-language pass reworded
+    /// both captions — to "…so this does not mean every file is good" and "There may be others in
+    /// volumes nothing has searched yet" — which says precisely the same thing in plainer words,
+    /// and both tests went red against copy that was not wrong. A test that fails for the wrong
+    /// reason gets its assertion deleted by the next person through, taking the real guarantee
+    /// with it.
+    ///
+    /// So the rule is the property: the caption must hedge. Add a marker here when copy changes;
+    /// removing the LAST hedge from a caption is what must stay impossible.
+    private static let hedgeMarkers = [
+        "does not mean", "only notices", "may be others",
+        "not a clean bill of health", "only recorded", "may exist",
+    ]
+
+    private func hedges(_ caption: String) -> Bool {
+        let lowered = caption.lowercased()
+        return Self.hedgeMarkers.contains { lowered.contains($0) }
+    }
+
     @Test("an empty problem list never claims there are no problems")
     func emptyProblemsIsNotACleanBillOfHealth() {
         let caption = report().problemsCaption
         #expect(!caption.isEmpty)
-        #expect(caption.lowercased().contains("not a clean bill of health")
-                || caption.lowercased().contains("only recorded"), """
+        #expect(hedges(caption), """
             With nothing recorded the screen said something that reads as "everything is fine". \
             It cannot know that: a fetch failure is forgotten at every launch, and a damaged shard \
             is only noticed once some surface asks for that volume. The caption has to disclose \
-            what it did NOT look at.
+            what it did NOT look at, in whatever words — see hedgeMarkers.
             """)
     }
 
@@ -67,8 +88,20 @@ struct SemanticStorageReportTests {
     func someProblemsStillDisclosesThePartialScan() {
         let caption = report(failures: ["frus1861": "The download did not complete."]).problemsCaption
         #expect(caption.contains("1"))
-        #expect(caption.lowercased().contains("may exist"),
+        #expect(hedges(caption),
                 "reporting a count without saying the scan was partial reads as a total")
+    }
+
+    /// The guard on the guard: a caption stripped of every hedge must FAIL the check above.
+    ///
+    /// Without this, widening `hedgeMarkers` far enough to accept any sentence would make both
+    /// tests vacuous and nothing would say so.
+    @Test("a caption with no hedge at all is rejected")
+    func aBareClaimIsCaught() {
+        #expect(!hedges("No problems found."), """
+            The hedge check accepts a caption that flatly claims there are no problems, so the two \
+            tests above cannot fail and are guarding nothing.
+            """)
     }
 
     // MARK: - Deduplication
