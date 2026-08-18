@@ -1819,8 +1819,8 @@ struct MacSourceExplorerView: View {
     @ViewBuilder
     private func digitizedScansBox(_ match: DigitizedRangeMatch,
                                    fileIdentifier: String) -> some View {
-        GroupBox(String(localized: "source.explorer.scans.header",
-                        defaultValue: "Digitised Scans")) {
+        GroupBox(String(localized: "source.explorer.scans.header.v2",
+                        defaultValue: "Digitized Scans")) {
             VStack(alignment: .leading, spacing: 8) {
                 switch match {
                 case .resolved(let range):
