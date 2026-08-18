@@ -304,7 +304,6 @@
 		421AE5B2BAAF70224901CEDD /* CloudKitSchemaInventoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5B76CB7F496D16CC557F41 /* CloudKitSchemaInventoryTests.swift */; };
 		424A38E0255D7A5F6609C6BE /* FacetPanelControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3071533CEB37BF4076CEB42 /* FacetPanelControllerTests.swift */; };
 		42D28CE4FF272178BEB3E191 /* SearchNearHighlightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C1AFE40CEF473CBD3D87F6 /* SearchNearHighlightTests.swift */; };
-		42D8CBEAE384F5DEAD24D3BC /* WordCloudPrecomputeQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACC4C8D8526B0D17510AA8 /* WordCloudPrecomputeQueue.swift */; };
 		43271775F9297C6E750B28AD /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
 		43BDB6A22D792DEAC07A783F /* PresidentialLibraryIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1DB6D82807F8D83FF105FE /* PresidentialLibraryIndex.swift */; };
@@ -591,6 +590,7 @@
 		8260B873F7600CFD59AD98E7 /* CollectionContentResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0BA4A19EB994D91DB21AF8D /* CollectionContentResolver.swift */; };
 		8275CDB52D02112C66D15D69 /* GlobalContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6ED77F4EA3F5EAB393FE0A8 /* GlobalContextTests.swift */; };
 		82DBEA310A92CF1890503F2D /* WordCloudLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81468F37DEEF01DF5BC14F13 /* WordCloudLayout.swift */; };
+		82DE9617FD5E3EA180D1CB9F /* WordCloudPrecomputeRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06EC5A7376A9418968D4365 /* WordCloudPrecomputeRemovalTests.swift */; };
 		830A26532D247F5C56B05483 /* SavedSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0ADA1D9C2433D796F840F4 /* SavedSearch.swift */; };
 		8336749F1376871FD269FE44 /* BackgroundSummarizationRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F92256A5FDF107B5ACD773 /* BackgroundSummarizationRequest.swift */; };
 		8353416348E783BBD748EB92 /* SeriesChartExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910D9E41AD53AA49C88E7227 /* SeriesChartExport.swift */; };
@@ -601,7 +601,6 @@
 		846BD22AACDF6E36CB26B611 /* SearchViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381F38D6FE6162A8A67F0016 /* SearchViewTests.swift */; };
 		847945A167DF0F1355C18E20 /* IndexingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */; };
 		84EAF2DF3004527033FDABE2 /* SummarizationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BAA83CD70417BEC8E4736E /* SummarizationProvider.swift */; };
-		853188559D0D75021272F04A /* WordCloudPrecomputeQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACC4C8D8526B0D17510AA8 /* WordCloudPrecomputeQueue.swift */; };
 		8550CC389C96BEE7286FFC46 /* IndexingCloudStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2A375E1B8AF4727A9F9305 /* IndexingCloudStrip.swift */; };
 		857544EB045529562F5FD29B /* AXChartDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDF49D99C59998027E706CD /* AXChartDescriptorTests.swift */; };
 		85E00A0F56EB86B3925ECA7A /* ArchivalFlowsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7928D243528ED9036291FF /* ArchivalFlowsData.swift */; };
@@ -697,7 +696,6 @@
 		96713B6E46558012E34B0698 /* WordCloudLens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A33EBFCE9A063865BB3BFC /* WordCloudLens.swift */; };
 		96807926D5097842925BB2FA /* ChartInspectorAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF84F4088310E0476C47235E /* ChartInspectorAdapters.swift */; };
 		96C15FF491FF41C95F441EEF /* ModelModificationStamper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF00BF71BD0DEF692A0BBAF0 /* ModelModificationStamper.swift */; };
-		96CF0B0FF5BA245E82065E08 /* WordCloudPrecomputeDefaultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED11C70D2E3B3DD8671E482 /* WordCloudPrecomputeDefaultTests.swift */; };
 		97064198F213D857786F7DE5 /* MacSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */; };
 		971DC9A65F7308AE8C2933B0 /* ZoteroAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AE3C1692EE4BEA75C7DC777 /* ZoteroAPITests.swift */; };
 		9786AEFA7BCAC9E30F1BDC78 /* VolumesStorageHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667389952E46E73E4D594A7A /* VolumesStorageHubView.swift */; };
@@ -1577,7 +1575,6 @@
 		67DBC7ED9653820E56909F20 /* DiscoveryTipWiringAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryTipWiringAuditTests.swift; sourceTree = "<group>"; };
 		680B9F692F9A781EB3EBC137 /* RollScansIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RollScansIndex.swift; sourceTree = "<group>"; };
 		687B6FDF834A77620D0E974A /* ResolvedEdgeIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResolvedEdgeIndexTests.swift; sourceTree = "<group>"; };
-		68ACC4C8D8526B0D17510AA8 /* WordCloudPrecomputeQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudPrecomputeQueue.swift; sourceTree = "<group>"; };
 		68B0AC87D6D2D373CC930B24 /* TermCount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermCount.swift; sourceTree = "<group>"; };
 		69230EB5695AC63BFDB59149 /* RISExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RISExporter.swift; sourceTree = "<group>"; };
 		69F92256A5FDF107B5ACD773 /* BackgroundSummarizationRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationRequest.swift; sourceTree = "<group>"; };
@@ -1873,12 +1870,12 @@
 		CD6268EF1887D2F42698EA93 /* TopCollectionsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopCollectionsCard.swift; sourceTree = "<group>"; };
 		CD80D34C25941ADB37C27236 /* StorageHubModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageHubModel.swift; sourceTree = "<group>"; };
 		CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
-		CED11C70D2E3B3DD8671E482 /* WordCloudPrecomputeDefaultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudPrecomputeDefaultTests.swift; sourceTree = "<group>"; };
 		CEE1ACCE2EDE0DFEC2D2850F /* ProjectContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectContextTests.swift; sourceTree = "<group>"; };
 		CEFBA46CE9F486C16583F05C /* SummarizationRetryPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationRetryPolicy.swift; sourceTree = "<group>"; };
 		CF46DCBA26A796E0B5EB60F7 /* ChartScrubRangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartScrubRangeTests.swift; sourceTree = "<group>"; };
 		CFD2E73E596DAB68D9D2DC4A /* CollectionUsageIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUsageIndexTests.swift; sourceTree = "<group>"; };
 		D00307BB1EBC64677D8B8975 /* PendingStoreReset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingStoreReset.swift; sourceTree = "<group>"; };
+		D06EC5A7376A9418968D4365 /* WordCloudPrecomputeRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudPrecomputeRemovalTests.swift; sourceTree = "<group>"; };
 		D07C56177C2677EF390399D4 /* TEIParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TEIParserTests.swift; sourceTree = "<group>"; };
 		D07CD656E735173912D320E3 /* ResearchRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchRailView.swift; sourceTree = "<group>"; };
 		D0EA2D61F0005B06BF5A0642 /* ToolbarAccessibilityAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarAccessibilityAuditTests.swift; sourceTree = "<group>"; };
@@ -2691,7 +2688,7 @@
 				7F769AC66D451AF2C98F6777 /* WordCloudDriftFieldTests.swift */,
 				D40555A8F50EB80F861F74C4 /* WordCloudDriftRenderTests.swift */,
 				BFD09A7610552D32EC319FC5 /* WordCloudLayoutRegressionTests.swift */,
-				CED11C70D2E3B3DD8671E482 /* WordCloudPrecomputeDefaultTests.swift */,
+				D06EC5A7376A9418968D4365 /* WordCloudPrecomputeRemovalTests.swift */,
 				0FA30F56D426612E1A60D22F /* WordCloudTests.swift */,
 				2022C7FF20BF287B5CAB8803 /* WorkingCorpusTests.swift */,
 				9E7729E7ECD239B193AC7772 /* WorkingCorpusVisibilityTests.swift */,
@@ -2727,7 +2724,6 @@
 				8C62C528984EEA78DAF451E0 /* WordCloudLoader.swift */,
 				5CCD4B79D4110F10E75A4E67 /* WordCloudModels.swift */,
 				A55053214F8330B5F2F51CC0 /* WordCloudOverrides.swift */,
-				68ACC4C8D8526B0D17510AA8 /* WordCloudPrecomputeQueue.swift */,
 				902A3937D1FAC16D46AAF626 /* WordCloudScopeResolver.swift */,
 				E80DA93DED6A670C6150EC07 /* WordCloudSettings.swift */,
 				7F246B94919B9F8E66BA470F /* WordCloudStopwords.swift */,
@@ -3837,7 +3833,6 @@
 				16E082FFE147B1AACEDF4C1C /* WordCloudMultiLensTokenizer.swift in Sources */,
 				05A01041FB63560FD4979C46 /* WordCloudOverrides.swift in Sources */,
 				7FCD802AFF00B084ECCF859B /* WordCloudPayloadDigest.swift in Sources */,
-				42D8CBEAE384F5DEAD24D3BC /* WordCloudPrecomputeQueue.swift in Sources */,
 				C50945F54AD47651EC8D1CD4 /* WordCloudScopeResolver.swift in Sources */,
 				D8A74378798D06D28EA2D27D /* WordCloudSettings.swift in Sources */,
 				D9A7D0ABECF044F462E0E055 /* WordCloudSettingsView.swift in Sources */,
@@ -4280,7 +4275,6 @@
 				90E242C6040EDFA870AB9F91 /* WordCloudMultiLensTokenizer.swift in Sources */,
 				5204D327F7AFB4573B157FDC /* WordCloudOverrides.swift in Sources */,
 				EE035ADCDEB0A34A611546BE /* WordCloudPayloadDigest.swift in Sources */,
-				853188559D0D75021272F04A /* WordCloudPrecomputeQueue.swift in Sources */,
 				EFC94D9D2AA50C201591DBFC /* WordCloudScopeResolver.swift in Sources */,
 				FE8FD8C67BA83E3D3422B887 /* WordCloudSettings.swift in Sources */,
 				8FDEB704CF4A1F06EAA88918 /* WordCloudSettingsView.swift in Sources */,
@@ -4567,7 +4561,7 @@
 				909B7461CC61D59FCF370884 /* WordCloudDriftFieldTests.swift in Sources */,
 				68B743707BF6D1A6876EF15E /* WordCloudDriftRenderTests.swift in Sources */,
 				DD423FDD805E3288FA12E4A4 /* WordCloudLayoutRegressionTests.swift in Sources */,
-				96CF0B0FF5BA245E82065E08 /* WordCloudPrecomputeDefaultTests.swift in Sources */,
+				82DE9617FD5E3EA180D1CB9F /* WordCloudPrecomputeRemovalTests.swift in Sources */,
 				8AF497E762EE4ED25681C3CC /* WordCloudTests.swift in Sources */,
 				9A42088ABADB1C91F1A06A19 /* WorkingCorpusTests.swift in Sources */,
 				2C801BC7789950F1492445DE /* WorkingCorpusVisibilityTests.swift in Sources */,

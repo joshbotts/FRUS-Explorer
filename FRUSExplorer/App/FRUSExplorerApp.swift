@@ -319,6 +319,7 @@ struct FRUSExplorerApp: App {
     /// macOS launch setup: TipKit only (no background-task registration).
     init() {
         Self.configureTipKit()
+        WordCloudSettings.removeRetiredPrecomputeDefaults()
     }
     #endif
 
@@ -380,25 +381,6 @@ struct FRUSExplorerApp: App {
         }
     }
 
-    /// Drains the word-cloud precompute queue within the background task's remaining
-    /// budget, one scope at a time. A scope is dequeued only when finished; if the
-    /// task is cancelled (budget expired) the loop stops and the rest stay queued
-    /// for the next wake.
-    @MainActor
-    private static func drainWordCloudPrecompute(appState: AppState, modelContext: ModelContext) async {
-        guard WordCloudPrecomputeQueue.isEnabled else { return }
-        for signature in WordCloudPrecomputeQueue.pending() {
-            if Task.isCancelled { break }
-            let finished = await WordCloudLoader.precompute(
-                signature: signature, appState: appState, modelContext: modelContext
-            )
-            if finished {
-                WordCloudPrecomputeQueue.remove(signature)
-            } else {
-                break
-            }
-        }
-    }
 
     /// Registers the BGProcessingTask handler with the system.
     ///
@@ -465,9 +447,6 @@ struct FRUSExplorerApp: App {
                         try? await pipeline.indexVolume(volumeId)
                     }
                 }
-                // With any remaining budget, precompute queued heavy word clouds
-                // (corpus / subseries) into the on-disk cache so they open instantly.
-                await Self.drainWordCloudPrecompute(appState: state, modelContext: container.mainContext)
                 // Then summarize a small, resumable batch if the user opted in. Last
                 // because it's the most expensive/thermal work; the cap + expiration
                 // keep it conservative, and `shouldSkip` resumes it next wake.
@@ -2412,10 +2391,8 @@ struct FRUSExplorerApp: App {
                 // download simply did not index until the app was reopened.
                 let hasIndexingWork = appState.indexingBatch != nil
                     || !appState.interruptedVolumeIds.isEmpty
-                let hasPrecomputeWork = WordCloudPrecomputeQueue.isEnabled
-                    && WordCloudPrecomputeQueue.hasPending
                 let hasSummarizationWork = BackgroundSummarizationRequestStore.hasPending
-                guard hasIndexingWork || hasPrecomputeWork || hasSummarizationWork else { return }
+                guard hasIndexingWork || hasSummarizationWork else { return }
                 let request = BGProcessingTaskRequest(identifier: Self.indexingBGTaskID)
                 request.requiresNetworkConnectivity = false
                 request.requiresExternalPower = false

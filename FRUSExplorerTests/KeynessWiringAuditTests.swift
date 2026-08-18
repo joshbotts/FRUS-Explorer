@@ -147,8 +147,11 @@ struct KeynessWiringAuditTests {
         // places live. Reverting it is invisible to every other test in the suite — checked by
         // mutation — so the number is pinned to a literal here.
         #expect(WordCloudLoader.standardTermLimit == 1_000)
-        // The precompute and the view must request the SAME limit or the warmed disk entry is never
-        // a hit, and nothing would report that — the cloud would just always be slow.
+        // The view must request the loader's limit, not a literal of its own. The original reason
+        // was that a mismatch missed the background precompute's warmed disk entry; that feature is
+        // gone, but the constraint outlived it — `limit` is still part of both cache keys, so a view
+        // asking for a different number misses every entry the LAST session wrote and recomputes a
+        // corpus cloud that is now measured in minutes rather than moments.
         #expect(WordCloudView.termLimitForTesting == WordCloudLoader.standardTermLimit)
     }
 

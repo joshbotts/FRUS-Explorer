@@ -1220,13 +1220,6 @@ Words hidden only when the selected lens is active — useful for trimming a rec
 
 <!-- END SOURCE: settings.wordcloud.lens.footer -->
 
-#### Performance footer — background precompute
-
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | performanceSection footer | lines: 161–162 | key: settings.wordcloud.precompute.footer.v2 | shared: iOS+macOS (single edit point) -->
-
-When enabled, the most demanding clouds — the whole corpus, a subseries — are prepared in the background after indexing, so they open instantly. This happens only while you are not using the device.
-
-<!-- END SOURCE: settings.wordcloud.precompute.footer.v2 -->
 
 #### Sample footer — where the preview's terms come from
 
