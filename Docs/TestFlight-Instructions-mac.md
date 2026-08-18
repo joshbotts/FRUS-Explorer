@@ -26,22 +26,22 @@ Adjust weights ▸ raise *Semantically similar*. It finds documents on the same 
 
 ## Archives
 
-Source Explorer and collection details now show where the editors pointed **outside the printed record**, and Archival Analytics ▸ Collections adds **Unprinted pointers** as a third ranking — where readers were *sent*, not where documents came *from*. Never added together, and the screen says so.
+Source Explorer and collection details now show where the editors pointed **outside the printed record**, and Archival Analytics ▸ Collections adds **Unprinted pointers** — where readers were *sent*, not where documents came *from*. Never added together, and the screen says so.
 
 ## Windows and menus
 
-Six analytics surfaces open in their own windows and are raised, not re-created. Two documents can hold two cross-reference graphs at once. The Search window gains a titlebar and removable filter tokens. Settings has a search field, and ⌘P prints the open document.
+Six analytics surfaces open in their own windows and are raised, not re-created; two documents can hold two cross-reference graphs. The Search window gains a titlebar and removable filter tokens, Settings a search field, and ⌘P prints the open document.
 
 ## Also
 
-Several sheets that could not be closed now can, a filter section that reloads asks for its data again, and about thirty passages read more plainly — no stated limit softened.
+Corpus word clouds are built on demand now — allow several minutes. Several sheets that could not be closed now can, a filter section that reloads asks for its data again, and about thirty passages read more plainly — no stated limit softened.
 
 ## What to test
 
 1. Let the re-index finish — roughly how long, and how many volumes?
 2. Semantic Analytics: pan, zoom, switch lenses — anything that stutters or draws wrong?
 3. **On the Map** from a document, then from a second without closing it.
-4. Read the ten nearest for a few anchors: useful leads, or plausible noise? This matters most — we have no measurement that can answer it.
+4. Read the ten nearest for a few anchors: useful leads, or plausible noise? This matters most.
 5. Two poles in the *same* volume should explain the refusal, not do nothing.
 6. Colour by Era: four distinguishable bands, and names on their clusters at every zoom?
 7. Save a region as a working corpus and scope a search to it.
