@@ -30,7 +30,7 @@ Source Explorer and collection details now show where the editors pointed **outs
 
 ## Also
 
-iPad at full width keeps the Browse and Research lists beside what you opened. Stuck keyboards can be dismissed. A filter section that reloads asks for its data again instead of sitting empty. About thirty passages read more plainly; no stated limit was softened.
+Resizing an iPad window no longer crashes. A new volume scope now saves — it could be lost silently. Every stuck text field gains a Done above the keyboard. iPad at full width keeps Browse and Research beside what you opened; a filter section that reloads asks for its data again. Corpus word clouds are built on demand now — allow several minutes — rather than in a background pass that never paid for itself. About thirty passages read more plainly; no stated limit was softened.
 
 ## What to test
 

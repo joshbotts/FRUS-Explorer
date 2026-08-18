@@ -700,16 +700,16 @@ struct SourceExplorerView: View {
            let (cls, serial) = DigitizedRangeIndex.classAndSerial(fromFileIdentifier: fileIdentifier) {
             switch index.match(decimalClass: cls, serial: serial) {
             case .resolved(let range):
-                Section(String(localized: "source.explorer.scans.header",
-                               defaultValue: "Digitised Scans")) {
+                Section(String(localized: "source.explorer.scans.header.v2",
+                               defaultValue: "Digitized Scans")) {
                     digitizedRangeRow(range, isCandidate: false)
                     Text(Self.scanCaveat)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             case .multipleRanges(let ranges):
-                Section(String(localized: "source.explorer.scans.header",
-                               defaultValue: "Digitised Scans")) {
+                Section(String(localized: "source.explorer.scans.header.v2",
+                               defaultValue: "Digitized Scans")) {
                     Text(String(localized: "source.explorer.scans.multiple",
                                 defaultValue: """
                                 \(ranges.count) scanned file ranges contain \(fileIdentifier). \
@@ -722,8 +722,8 @@ struct SourceExplorerView: View {
                     ForEach(ranges) { digitizedRangeRow($0, isCandidate: true) }
                 }
             case .classDigitizedButSerialNotCovered(let count):
-                Section(String(localized: "source.explorer.scans.header",
-                               defaultValue: "Digitised Scans")) {
+                Section(String(localized: "source.explorer.scans.header.v2",
+                               defaultValue: "Digitized Scans")) {
                     Text(String(localized: "source.explorer.scans.classOnly",
                                 defaultValue: """
                                 NARA has scanned \(count) file ranges in decimal class \(cls), \

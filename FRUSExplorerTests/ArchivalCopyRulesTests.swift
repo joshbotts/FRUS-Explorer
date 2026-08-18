@@ -43,6 +43,10 @@ struct ArchivalCopyRulesTests {
         "Analytics/ArchivalAllUnitsSheet.swift",
         "Analytics/ArchivalAnalyticsExport.swift",
         "Analytics/ArchivalAnalyticsAxes.swift",
+        // The scans header lives here, not in the archival family — and the copy rule is about
+        // artboard-derived strings wherever they ship.
+        "SourceExplorer/SourceExplorerView.swift",
+        "SourceExplorer/MacSourceExplorerView.swift",
     ]
 
     private static func source(_ relative: String) throws -> String {
@@ -113,13 +117,20 @@ struct ArchivalCopyRulesTests {
         // The app localizes en-US. `Coloured`, `recognises` and `digitised` all appear in
         // handoff copy marked final — and `Coloured` is in the README's own caption text, so it
         // would be copied verbatim by anyone working from the document rather than the mock.
-        let banned = ["Coloured", "coloured", "recognises", "recognise", "digitised", "digitise",
-                      "organise", "organised", "neighbours", "Neighbours", "behaviour", "centre",
-                      "colour", "Colour"]
+        // Lower-case entries matched CASE-INSENSITIVELY below, rather than a hand-kept list of
+        // pairs. The list HAD capitalised variants for some words and not others — "Coloured"
+        // and "Neighbours" but only a lower-case "digitised" — so four shipped
+        // `defaultValue: "Digitised Scans"` strings walked past it, and adding the files that
+        // hold them to `sources` would STILL have left the suite green. A guard whose coverage
+        // depends on which capitalisations someone remembered is not a guard.
+        let banned = ["coloured", "recognises", "recognise", "digitised", "digitise",
+                      "organise", "organised", "neighbours", "behaviour", "centre",
+                      "colour"]
         for relative in Self.sources {
             for text in Self.shippedStrings(in: try Self.source(relative)) {
+                let lowered = text.lowercased()
                 for word in banned {
-                    #expect(!text.contains(word), """
+                    #expect(!lowered.contains(word), """
                         \(relative) ships "\(word)" in: \(text.prefix(80))
                         """)
                 }
