@@ -112,6 +112,16 @@ decisions past one more build.
   SourceProvenanceIndex).
 - **#312:** `UIObstructionTests` — #272's detail column only partially gated. Unstarted.
 
+### 3.6 Collection export parity — #960 *(added 2026-08-18, owner evidence)*
+The in-app preview **is** `CollectionItemHTMLRenderer` (`CollectionPreviewView.swift:450`), so HTML
+matches by construction — but PDF and DOCX are independent re-implementations with no parity test,
+and the owner's build-43 export set shows the drift: DOCX silently drops the word cloud (the option
+is never read) and ships an un-refreshed TOC field; PDF wastes a blank page 18 and embeds the
+share-card image with app chrome. Two further defects are **shared by every format and the preview
+itself** — the `Source: Source:` doubling on post-1969 notes (fix once at a shared point, not three
+times) and a mangled `foldered material],` row in Sources & Archives that belongs to #353 (S-5).
+The session's first deliverable is the parity harness, which turns the rest into red tests.
+
 ## 4. The combination clusters — where one session serves several needs
 
 ### 4.1 S-5 · The source-note grammar cluster — #353, #809, #372, #733 + #808, #681
@@ -205,6 +215,7 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 | S-3 | iOS input finish | #861, #862 residuals | none |
 | S-4 | Archival narrow set | #825(1,2), #832(a), #838(1,3), #829 rider | #838(2,4) sentences help, don't block |
 | S-5 | Source-note grammar cluster | #353, #809, #372 PR1, #733/#808, #681 tests | O-1/O-7 for the tail items |
+| S-5b | Collection export parity | #960: harness first, then DOCX cloud/TOC, PDF pagination, shared Source: fix | #960 item 6 rides S-5; RIS/BibTeX titles ride #888 |
 | S-6 | Storage + content loose ends | #926 items 2–3, EditableContent §13 gap, #777 residuals | none |
 | S-7 | Infra debt | #270 ×4, #268 ×4, #312 | none |
 | S-8 | R-2b retirement | schema 19 → 17 | owner deploy (§5, batch per 4.5) |
