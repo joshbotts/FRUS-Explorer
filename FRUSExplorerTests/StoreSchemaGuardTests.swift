@@ -49,6 +49,9 @@ struct StoreSchemaDiagnosticTests {
         #expect(diagnostic.isMismatch)
     }
 
+    /// The `ResearchSession` side of this is no longer hypothetical: R-2b retired that type, so
+    /// every store written before it carries an entity this build's model does not declare. That
+    /// is exactly `absentFromModel`, and it must read as a benign mismatch rather than a fault.
     @Test("Both directions at once — an older store and an older build")
     func mismatchInBothDirections() {
         let diagnostic = StoreSchemaDiagnostic(

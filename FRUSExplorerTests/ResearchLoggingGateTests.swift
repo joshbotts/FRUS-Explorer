@@ -594,10 +594,6 @@ struct ResearchLoggingGateTests {
             // `ExportSheetView` call sites route through that recorder precisely so the gate is
             // written once rather than copied four times into a view.
             "ExportHistoryEntry.swift",
-            // SearchHistoryEntry + ExportHistoryEntry — the migration, and deliberately NOT gated.
-            // It moves records the user already has rather than collecting new ones; skipping it
-            // when the switch is off would destroy them. See `ResearchTrailMigration`'s doc.
-            "ResearchTrailMigration.swift",
         ]
 
         let enumerator = try #require(

@@ -99,10 +99,12 @@ struct ResetInventoryTests {
         }
     }
 
+    /// R-2b removed `SessionEvent`/`ResearchSession` from the schema, so they leave this list
+    /// with the types themselves. The three trail tables they were migrated INTO are what must
+    /// stay erased — which is the guarantee Wave R-2a's fix was actually about.
     @Test("The research trail stays erased — Wave R-2a's fix is not regressed")
     func researchTrailStaysErased() {
-        for name in ["ReadingHistoryEntry", "SearchHistoryEntry", "ExportHistoryEntry",
-                     "SessionEvent", "ResearchSession"] {
+        for name in ["ReadingHistoryEntry", "SearchHistoryEntry", "ExportHistoryEntry"] {
             #expect(ResetInventory.erasedNames.contains(name),
                     "\(name) must stay in the reset list (Wave R-2a)")
         }
@@ -132,8 +134,6 @@ struct ResetInventoryTests {
             ("DocumentTagAssignment", "UserTag", "#406 orphaned-tag resurrection"),
             // Collection's delete rule is .nullify, not cascade.
             ("CollectionEntry", "Collection", ".nullify delete rule"),
-            // Same .nullify reason, documented by ResearchSessionAdmin.
-            ("SessionEvent", "ResearchSession", ".nullify delete rule"),
             // Raw-UUID references to Project — no @Relationship makes these structural, so only
             // the ordering protects them.
             ("ProjectLeadEntry", "Project", "ProjectLeadEntry.projectId is a raw UUID"),

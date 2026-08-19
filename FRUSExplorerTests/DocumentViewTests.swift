@@ -251,7 +251,7 @@ struct SummarizationErrorSurfacingTests {
             ResearchNote.self, UserTag.self, Collection.self, GeneratedSummary.self,
             SummarizationPrompt.self, Project.self, ReadingHistoryEntry.self,
             SearchHistoryEntry.self, DocumentHighlight.self, DocumentTagAssignment.self,
-            SavedSearch.self, ResearchSession.self,
+            SavedSearch.self,
         ])
         let container = try ModelContainer(
             for: schema,
