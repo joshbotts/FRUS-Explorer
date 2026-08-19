@@ -153,12 +153,29 @@ instrument whose positives are independent of lexical overlap — which the curr
 string-match tags cannot be (`V5-Query-Encoder-Assessment.md` §3). O-6 (send the #261 upstream
 ask) is the unblocked first move and costs an email.
 
-### 4.4 The archival data follow-ons — #831, #837 (#834 stays deferred)
-Both ride the same artifact family (`provenance-flow-index`, `external-citation-index`,
-`AuthorityLookup`). **#831** is scope-confirmed with the measure-first artifact test standing;
-**#837** (the graph's unprinted-citations layer) is unstarted and should follow #831 so the layer
-draws era-keyed data rather than being built twice. **#834** (the decimal channel) stays deferred
-by design — it is the pre-war reach, and it waits on the deferred file-number grammar.
+### 4.4 The archival data follow-ons — #837 (#831 measured and closed; #834 stays deferred)
+**#831 is closed by measurement, 2026-08-19** — its own measure-first clause, exercised. Both of
+its questions were answered against the corpus and both came back negative for a surface:
+
+- **The mixed (collection↔class) axis is real but concentrated.** 1,886 references over 686 pairs
+  (2.7/pair, better than the 1.7 that made #764 ship the class axis as measurement-only) — but the
+  top five cells are **30.3%** and reduce to *two* editorial situations (the 1945 Potsdam volumes
+  between Truman's PSF and 740.00119; one 1952–54 conference volume between Lot 60 D 627 and
+  396.1-BE). Strip those five and the rest is 1.9/pair — the rejected number, within noise.
+- **Banding does not survive the class axis.** Per band, class references between units run
+  204 / 3,443 / 922 / 103 / **0** — the last band is empty, not thin, because the `dN` idiom
+  postdates 1945 while decimal classes end in 1963. Collections band cleanly (3.9–6.5/pair in the
+  three middle bands), but **Through 1947 — 261 of 552 volumes — yields 276 references over 56
+  pairs**, so a chip would offer half the series and return almost nothing.
+
+Shipped instead: one sentence in the Flows caveat naming the two concentrations, and
+`MEASURE=1 swift run ProvenanceFlowIndexGenerator` as the reproducible instrument. **No schema
+bump**, so `provenance-flow-index.json` stays at schema 1.
+
+**#837** (the graph's unprinted-citations layer) is unstarted and is now unblocked rather than
+waiting: it was sequenced after #831 so it would draw era-keyed data, and there is no era keying
+to wait for. **#834** (the decimal channel) stays deferred by design — the pre-war reach, waiting
+on the file-number grammar (#965's territory).
 
 ### 4.5 The schema-deploy batch — O-4 (#279), O-5 (#266), R-2b
 Each alone costs a CloudKit Production promotion (#488 is what happens when one is skipped).

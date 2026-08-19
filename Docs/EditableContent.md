@@ -5260,3 +5260,16 @@ Colours group collections by who holds the records — four custodians, not the 
 Digitized Scans
 
 <!-- END SOURCE: source.explorer.scans.header.v2 -->
+
+
+### Archival Flows — the crossing-citations caveat
+
+#### Some footnotes cross between the two filing systems
+<!-- Added by #831's measurement. The numbers are literal because the artifact does not carry this
+     axis: the measurement found it too concentrated to draw. If it is ever regenerated with a
+     mixed axis, these figures must be re-measured or removed — they are not read from data. -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | key: archival.flows.caveats.mixed -->
+
+Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram above.
+
+<!-- END SOURCE: archival.flows.caveats.mixed -->
