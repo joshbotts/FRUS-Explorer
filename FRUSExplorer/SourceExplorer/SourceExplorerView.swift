@@ -352,19 +352,10 @@ struct SourceExplorerView: View {
     /// honest rather than a silencer.
     nonisolated static func resolve(_ citation: ExternalCitation,
                                     authority: CollectionAuthorityIndex) -> AuthorityCollectionRecord? {
-        if let lot = citation.lotFileNorm, !lot.isEmpty {
-            return authority.record(forLotNorm: lot)
-        }
-        guard let collection = citation.collection else { return nil }
-        let head = collection.split(separator: ",", maxSplits: 1).first.map(String.init) ?? collection
-        let segment = head.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !segment.isEmpty else { return nil }
-        let match = authority.record(repository: citation.repository, leadingSegment: segment)
-        if match?.id.hasPrefix("lot:") == true, let repository = citation.repository,
-           CollectionKeying.isLibraryRepositoryName(repository) {
-            return nil
-        }
-        return match
+        ExternalCitationAuthorityJoin.record(lotFileNorm: citation.lotFileNorm,
+                                             collectionName: citation.collection,
+                                             repository: citation.repository,
+                                             authority: authority)
     }
 
     // MARK: - Raw Note Section
