@@ -940,8 +940,9 @@ final class PDFCollectionExporter: CollectionExporter {
             result.append(NSAttributedString(string: "\n\u{00A0}\n", attributes: ruleAttrs))
             for note in model.footnotes {
                 if case .footnoteBody(_, _, _, _, let label, let children) = note {
+                    // #985: the printed number, or a bullet when the volume printed none.
                     let fnMark = NSMutableAttributedString(
-                        string: "\(label). ",
+                        string: label.map { "\($0). " } ?? "\u{2022} ",
                         attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.3))
                     result.append(fnMark)
                     for child in children {
@@ -1111,10 +1112,13 @@ final class PDFCollectionExporter: CollectionExporter {
             return paintedString(s, attrs: makeStyledAttrs(fontSize: fontSize, bold: false, italic: true))
         case .lineBreak:
             return paintedString("\n", attrs: makeAttrs(fontSize: fontSize, bold: false))
-        case .footnoteMarker(_, let label):
+        case .footnoteMarker(_, _, _, let label):
             var attrs = makeAttrs(fontSize: max(fontSize - 3, 6), bold: false)
             attrs[NSAttributedString.Key(kCTSuperscriptAttributeName as String)] = 1 as CFNumber
-            return NSAttributedString(string: label, attributes: attrs)
+            // #985: a note the volume printed unnumbered gets a bullet, not an invented number.
+            // The reading view shows an archival glyph for `.source` here; a PDF cannot carry the
+            // inline SVG, and a bullet keeps the marker paired with its endnote entry either way.
+            return NSAttributedString(string: label ?? "\u{2022}", attributes: attrs)
         case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
             return inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: italic)
         case .pageBreak:

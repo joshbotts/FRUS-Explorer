@@ -212,11 +212,13 @@ struct FRUSRenderNodeHTMLSerializerTests {
     func footnoteMarker() {
         let out = html([.paragraph([
             .plainText("Text"),
-            .footnoteMarker(id: nil, displayLabel: "1")
+            .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1")
         ])])
         #expect(out.contains("class=\"fn-marker\""))
         #expect(out.contains("data-skip=\"1\""))
-        #expect(out.contains("popovertarget=\"fn-1\""))
+        // #985: the target is the DOM key, not the label. This node carries no xml:id, so it
+        // takes the synthesised branch of `FRUSRenderNode.footnoteDOMKey`.
+        #expect(out.contains("popovertarget=\"fn-n-1\""))
         #expect(out.contains("aria-label=\"Footnote 1\""))
     }
 
@@ -233,7 +235,9 @@ struct FRUSRenderNodeHTMLSerializerTests {
             children: [.paragraph([.plainText("See also...")])]
         )
         let out = s.serialize(model(body: [], footnotes: [footnoteNode]))
-        #expect(out.contains("<aside class=\"footnote fn-footnote\" id=\"fn-1\" popover data-skip=\"1\">"))
+        // #985: this fixture always supplied an xml:id ("fn1") that the old serializer discarded
+        // in favour of the label. The id now comes from it.
+        #expect(out.contains("<aside class=\"footnote fn-footnote\" id=\"fn-x-fn1\" popover data-skip=\"1\">"))
         #expect(out.contains("See also..."))
         #expect(out.contains("</aside>"))
     }
@@ -262,15 +266,42 @@ struct FRUSRenderNodeHTMLSerializerTests {
 
     @Test("Marker popovertarget matches footnote aside id")
     func markerMatchesAside() {
-        let marker = FRUSRenderNode.footnoteMarker(id: nil, displayLabel: "7")
+        let marker = FRUSRenderNode.footnoteMarker(id: nil, type: .footnote, sequentialNumber: 7, displayLabel: "7")
         let fn = FRUSRenderNode.footnoteBody(
             id: nil, type: .footnote, printedNumber: "7",
             sequentialNumber: 7, displayLabel: "7",
             children: [.plainText("Footnote text.")]
         )
         let out = s.serialize(model(body: [.paragraph([marker])], footnotes: [fn]))
-        #expect(out.contains("popovertarget=\"fn-7\""))
-        #expect(out.contains("id=\"fn-7\""))
+        #expect(out.contains("popovertarget=\"fn-n-7\""))
+        #expect(out.contains("id=\"fn-n-7\""))
+    }
+
+    /// #985: the test above passed throughout the lifetime of the duplicate-id bug, because a
+    /// model holding one footnote cannot express a collision. This is the two-note version — an
+    /// unnumbered source note ahead of a real footnote 1, which is what shipped.
+    @Test("Two notes sharing a display label still get distinct ids")
+    func collidingLabelsGetDistinctIDs() {
+        let sourceMarker = FRUSRenderNode.footnoteMarker(
+            id: nil, type: .source, sequentialNumber: 1, displayLabel: nil)
+        let bodyMarker = FRUSRenderNode.footnoteMarker(
+            id: "d1fn1", type: .footnote, sequentialNumber: 2, displayLabel: "1")
+        let sourceNote = FRUSRenderNode.footnoteBody(
+            id: nil, type: .source, printedNumber: nil, sequentialNumber: 1,
+            displayLabel: nil, children: [.plainText("782.022/5-350")])
+        let bodyNote = FRUSRenderNode.footnoteBody(
+            id: "d1fn1", type: .footnote, printedNumber: "1", sequentialNumber: 2,
+            displayLabel: "1", children: [.plainText("Not printed.")])
+
+        let out = s.serialize(model(body: [.paragraph([sourceMarker, bodyMarker])],
+                                    footnotes: [sourceNote, bodyNote]))
+
+        let ids = out.matches(of: /id="([^"]*)"/).map { String($0.1) }
+        #expect(Set(ids).count == ids.count, "duplicate ids emitted: \(ids)")
+
+        let targets = out.matches(of: /popovertarget="([^"]*)"/).map { String($0.1) }
+        #expect(targets == ["fn-n-1", "fn-x-d1fn1"],
+                "each marker must target its own note, got \(targets)")
     }
 
     // MARK: - Tables
@@ -499,7 +530,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
 
     @Test("HTML characters in footnote display label are escaped")
     func escapedFootnoteLabel() {
-        let marker = FRUSRenderNode.footnoteMarker(id: nil, displayLabel: "1")
+        let marker = FRUSRenderNode.footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1")
         let fn = FRUSRenderNode.footnoteBody(
             id: nil, type: .footnote, printedNumber: "1",
             sequentialNumber: 1, displayLabel: "1",
@@ -517,7 +548,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     func bodyBeforeFootnotes() {
         let body: [FRUSRenderNode] = [
             .heading([.plainText("Document 1")]),
-            .paragraph([.plainText("Content."), .footnoteMarker(id: nil, displayLabel: "1")])
+            .paragraph([.plainText("Content."), .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1")])
         ]
         let footnote = FRUSRenderNode.footnoteBody(
             id: nil, type: .footnote, printedNumber: nil,
@@ -581,7 +612,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
 
     @Test("footnoteMarker carries data-skip=1")
     func footnoteMarkerHasSkip() {
-        let out = html([.footnoteMarker(id: nil, displayLabel: "2")])
+        let out = html([.footnoteMarker(id: nil, type: .footnote, sequentialNumber: 2, displayLabel: "2")])
         #expect(out.contains("data-skip=\"1\""))
     }
 
@@ -761,7 +792,7 @@ struct HighlightInjectionTests {
         // Flat text = "Text more text" — the marker label "12" is offset-invisible.
         let body: [FRUSRenderNode] = [.paragraph([
             .plainText("Text "),
-            .footnoteMarker(id: nil, displayLabel: "12"),
+            .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 12, displayLabel: "12"),
             .plainText("more text")
         ])]
         let out = highlighted(body, mark: "more")
@@ -775,7 +806,7 @@ struct HighlightInjectionTests {
     func highlightSpanningFootnoteMarker() {
         let body: [FRUSRenderNode] = [.paragraph([
             .plainText("Text "),
-            .footnoteMarker(id: nil, displayLabel: "12"),
+            .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 12, displayLabel: "12"),
             .plainText("more text")
         ])]
         // Highlight "Text more" — it straddles the offset-invisible marker.
@@ -892,7 +923,7 @@ struct HighlightInjectionTests {
         // its text must not shift or absorb a body highlight.
         let body: [FRUSRenderNode] = [.paragraph([
             .plainText("Alpha"),
-            .footnoteMarker(id: nil, displayLabel: "1"),
+            .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1"),
             .plainText("Bravo")
         ])]
         let footnote = FRUSRenderNode.footnoteBody(

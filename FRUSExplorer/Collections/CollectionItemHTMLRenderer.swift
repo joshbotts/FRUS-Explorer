@@ -276,7 +276,13 @@ struct CollectionItemHTMLRenderer {
             let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
             let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
             if let model = doc.renderModel {
-                body += FRUSRenderNodeHTMLSerializer().serialize(
+                // #985: this page carries many documents, and a footnote DOM key is only unique
+                // within one. Both branches of the key repeat across documents — 46,695 note
+                // `xml:id`s recur across volumes (`d1fn2` is in 314 of them), and the synthesised
+                // branch restarts at `n-1` per document because each gets its own converter — so
+                // without a per-document scope two footnotes on one exported page share an id and
+                // every marker for the second opens the first.
+                body += FRUSRenderNodeHTMLSerializer(idScope: "\(Self.anchorId(doc: doc))-").serialize(
                     model,
                     includeFootnotes: includeFootnotes,
                     highlights: applyHighlights ? doc.highlights : []

@@ -3340,7 +3340,7 @@ struct CollectionTests {
         let model = FRUSDocumentRenderModel(
             documentId: "d1",
             bodyNodes: [.paragraph([.plainText("Gated body."),
-                                    .footnoteMarker(id: "fn1", displayLabel: "1")])],
+                                    .footnoteMarker(id: "fn1", type: .editorial, sequentialNumber: 1, displayLabel: "1")])],
             footnotes: [.footnoteBody(id: "fn1", type: .editorial, printedNumber: "1",
                                       sequentialNumber: 1, displayLabel: "1",
                                       children: [.plainText("The footnote text.")])])
@@ -3374,7 +3374,7 @@ struct CollectionTests {
         let model = FRUSDocumentRenderModel(
             documentId: "d1",
             bodyNodes: [.paragraph([.plainText("Gated body."),
-                                    .footnoteMarker(id: "fn1", displayLabel: "1")])],
+                                    .footnoteMarker(id: "fn1", type: .editorial, sequentialNumber: 1, displayLabel: "1")])],
             footnotes: [.footnoteBody(id: "fn1", type: .editorial, printedNumber: "1",
                                       sequentialNumber: 1, displayLabel: "1",
                                       children: [.plainText("The footnote text.")])])
@@ -3916,7 +3916,7 @@ struct CollectionTests {
             documentId: "d1",
             bodyNodes: [
                 .paragraph([.plainText("They agreed to the proposal."),
-                            .footnoteMarker(id: "fn1", displayLabel: "1")]),
+                            .footnoteMarker(id: "fn1", type: .editorial, sequentialNumber: 1, displayLabel: "1")]),
                 .paragraph([.plainText("The Secretary replied at once.")]),
             ],
             footnotes: [])

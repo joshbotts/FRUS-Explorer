@@ -348,16 +348,47 @@ enum HTMLTemplate {
       padding-left: 1.5em;
       font-size: var(--font-size-footnote);
       color: var(--color-footnote-text);
+      /* #985: the <ol> counter is positional, so it numbered the source note 1 and pushed every
+         printed footnote number down by one — and in the volumes whose notes run continuously
+         across a printed page (44.2% of documents with numbered notes; frus1915 runs to n=99) it
+         restarted at 1 and disagreed outright. 134,697 of 268,465 documents with notes were
+         affected. The label span below carries the volume's own number instead. */
+      list-style: none;
+      padding-left: 0;
     }
 
     .fn-list-item {
       margin-bottom: 0.5em;
       line-height: 1.55;
+      /* room for the label, which now hangs in the margin like a printed footnote */
+      padding-left: 2.2em;
+      text-indent: -2.2em;
     }
 
     .fn-list-label {
-      /* hidden — the <ol> counter provides the visual number */
-      display: none;
+      /* #985: the number as PRINTED IN THE VOLUME — the number a citation names. */
+      display: inline-block;
+      min-width: 1.8em;
+      text-indent: 0;
+      color: var(--color-accent);
+    }
+
+    /* The archival/bullet mark shown for a note the volume printed without a number. Sized in em
+       so it tracks --font-size-body through the four TextSizePreference steps, and filled with
+       currentColor so it takes the accent colour and the dark-mode palette for free. */
+    .fn-glyph {
+      width: 1em;
+      height: 1em;
+      vertical-align: -0.12em;
+    }
+
+    /* The marker button sets line-height:0 for superscript alignment, which gives a replaced
+       element no line box to sit in. Restoring it locally keeps the glyph from overlapping the
+       line above without disturbing the numeric markers. */
+    button.fn-marker-unnumbered {
+      line-height: 1;
+      vertical-align: baseline;
+      font-size: 0.9em;
     }
 
     .fn-list-item p.body { margin: 0; display: inline; }

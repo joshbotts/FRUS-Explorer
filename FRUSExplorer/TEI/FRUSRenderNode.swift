@@ -31,6 +31,11 @@ import Foundation
 ///   1.x — Session 42: `.footnoteBody` and `.footnoteMarker` gain `displayLabel: String` and `printedNumber: String?`
 ///   1.2 — Session 78: `.attachmentBlock` and `.attachmentHeading` added for `<frus:attachment>` rendering
 ///   1.3 — Session 79: `.titlePageBlock` added for `<titlePage>` centred rendering
+///   1.4 — #985: `displayLabel` becomes `String?` on both footnote cases — a note the volume
+///          printed without a number no longer gets one invented. `.footnoteMarker` gains `type`
+///          (to pick an affordance for the `nil` case) and `sequentialNumber` (so it can derive
+///          the same DOM key as its body via `footnoteDOMKey`, the pairing having previously
+///          rested on a shared label that was neither unique nor well-formed).
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -54,10 +59,11 @@ public indirect enum FRUSRenderNode: Sendable {
     case paragraph([FRUSRenderNode])
 
     /// Footnote body, rendered in the footnote section at the bottom of the document.
-    /// `printedNumber` is the TEI `@n` value (nil for notes without `@n`).
+    /// `printedNumber` is the raw TEI `@n` value (nil for notes without `@n`).
     /// `sequentialNumber` is the 1-based counter assigned by the converter.
-    /// `displayLabel` is `printedNumber ?? "\(sequentialNumber)"` — use this for rendering.
-    case footnoteBody(id: String?, type: FootnoteType, printedNumber: String?, sequentialNumber: Int, displayLabel: String, children: [FRUSRenderNode])
+    /// `displayLabel` is the number **as printed in the volume**, or `nil` when the note carries
+    /// none. It is never synthesised — see the `#985` note on `footnoteMarker`.
+    case footnoteBody(id: String?, type: FootnoteType, printedNumber: String?, sequentialNumber: Int, displayLabel: String?, children: [FRUSRenderNode])
 
     // MARK: Inline Elements
 
@@ -82,8 +88,22 @@ public indirect enum FRUSRenderNode: Sendable {
     // MARK: Footnote Marker
 
     /// Inline superscript footnote reference number.
-    /// `displayLabel` matches the corresponding `footnoteBody.displayLabel`.
-    case footnoteMarker(id: String?, displayLabel: String)
+    ///
+    /// `displayLabel` matches the corresponding `footnoteBody.displayLabel`, and is `nil` for a
+    /// note the volume printed without a number — chiefly the unnumbered source note, which is
+    /// 193,500 of the corpus's 196,040 id-less notes. Before #985 this was a non-optional
+    /// `printedNumber ?? "\(sequentialNumber)"`, which handed the source note the label "1" and
+    /// collided with the real footnote 1 in 51,368 documents.
+    ///
+    /// `type` rides along solely so a renderer can pick an affordance for the `nil` case: a
+    /// `.source` note is this document's provenance and earns the archival mark, while the ~73
+    /// other unnumbered notes in the corpus must not, since an archival glyph on them would
+    /// assert a provenance they do not carry.
+    ///
+    /// `sequentialNumber` is NOT for display. It exists so the marker can derive the same DOM key
+    /// as its body through ``footnoteDOMKey(id:sequentialNumber:)`` — the two must agree or the
+    /// popover does not open, and they no longer share a label to agree on.
+    case footnoteMarker(id: String?, type: FootnoteType, sequentialNumber: Int, displayLabel: String?)
 
     // MARK: Interactive Elements
 
@@ -174,6 +194,50 @@ public indirect enum FRUSRenderNode: Sendable {
     case unknown(name: String, children: [FRUSRenderNode])
 }
 
+// MARK: - Footnote DOM key (#985)
+
+public extension FRUSRenderNode {
+
+    /// The stable per-document key identifying one footnote in rendered output.
+    ///
+    /// Every renderer that pairs a marker with its body MUST derive both sides from this one
+    /// function. Before #985 the pairing key was the *display label*, which is neither unique nor
+    /// well-formed: an unnumbered source note was labelled `"1"` alongside the real footnote 1
+    /// (51,368 documents), and because `@n` is copied verbatim from the TEI the corpus also
+    /// produced `id="fn-*"` (3,854 notes), `id="fn-†"` (944), `id="fn- 1"` — a literal space
+    /// inside an HTML id — and `id="fn-"` from an empty `@n`.
+    ///
+    /// The TEI `xml:id` is the right key and is measurably clean: **unique within a volume across
+    /// every element type in all 552 shippable volumes**, and matching `^[A-Za-z][A-Za-z0-9_-]*$`
+    /// in 574,903 of 574,904 occurrences (the exception is `d89fnǁ` in `frus1919Parisv06`, valid
+    /// as both an HTML id and a CSS ident).
+    ///
+    /// But it is absent exactly where it is most needed: **196,040 in-document notes carry no
+    /// `xml:id` (25.4%), and 193,500 of those are the unnumbered source notes**. Having `@n` and
+    /// having `xml:id` is very nearly the same property — 574,901 notes have both and 195,518 have
+    /// neither — so the note stripped of its label by #985 is, 99.9% of the time, the note that
+    /// cannot be keyed by `xml:id`. The synthesised branch is the main path, not an edge case.
+    ///
+    /// The two branches are made disjoint **structurally**, by a discriminator that precedes any
+    /// corpus-supplied text, rather than by the observation that no `xml:id` currently begins with
+    /// `n-`. The Office of the Historian re-mints these ids between drops; a guarantee that rests
+    /// on today's values is not a guarantee.
+    ///
+    /// - Parameters:
+    ///   - id: the note's TEI `xml:id`, or `nil`.
+    ///   - sequentialNumber: the converter's 1-based per-document counter.
+    /// - Returns: a key unique within one converted document.
+    static func footnoteDOMKey(id: String?, sequentialNumber: Int) -> String {
+        // Whitespace is the one character class that is invalid in an HTML id and would silently
+        // truncate the attribute. Measured at 0 occurrences in note xml:ids today; a future drop
+        // that introduced one would fall back to the synthesised key rather than emit broken HTML.
+        if let id, !id.isEmpty, !id.contains(where: \.isWhitespace) {
+            return "x-\(id)"
+        }
+        return "n-\(sequentialNumber)"
+    }
+}
+
 // MARK: - Table Cell
 
 /// A single cell within a `tableBlock` row.
@@ -211,7 +275,9 @@ public struct FRUSDocumentRenderModel: Sendable {
     public let documentId: String
 
     /// The main document content in order of appearance.
-    /// `footnoteMarker` nodes within this list reference entries in `footnotes` by number.
+    /// `footnoteMarker` nodes within this list pair with entries in `footnotes` through
+    /// ``FRUSRenderNode/footnoteDOMKey(id:sequentialNumber:)`` — not by displayed number, which
+    /// is neither unique nor always present (#985).
     public let bodyNodes: [FRUSRenderNode]
 
     /// Footnote bodies in sequential display order (1-based numbering).

@@ -140,7 +140,7 @@ struct FRUSOffsetEngineTests {
         let m = model(body: [
             .paragraph([
                 .plainText("Body text"),
-                .footnoteMarker(id: nil, displayLabel: "1"),
+                .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1"),
                 .plainText(" continues.")
             ])
         ])
@@ -178,7 +178,7 @@ struct FRUSOffsetEngineTests {
         let m = model(
             body: [.paragraph([
                 .plainText("Main text."),
-                .footnoteMarker(id: nil, displayLabel: "1")
+                .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1")
             ])],
             footnotes: [footnote]
         )
@@ -326,7 +326,7 @@ struct FRUSOffsetEngineTests {
                 .pageBreak(pageNumber: .roman(5)),         // invisible
                 .paragraph([
                     .plainText("Text "),
-                    .footnoteMarker(id: nil, displayLabel: "1"), // invisible
+                    .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1"), // invisible
                     .plainText("here.")
                 ]),
                 .figureBlock(altText: "Invisible figure")   // invisible

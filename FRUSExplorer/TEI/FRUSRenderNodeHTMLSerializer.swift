@@ -43,10 +43,12 @@ import Foundation
 /// focus trapping, and light-dismiss natively:
 /// ```html
 /// <!-- inline marker in body -->
-/// <button class="fn-marker" data-skip="1" popovertarget="fn-1">1</button>
+/// <button class="fn-marker" data-skip="1" popovertarget="fn-x-d748fn3">3</button>
 /// <!-- aside at end of .frus-document -->
-/// <aside class="footnote fn-footnote" id="fn-1" popover data-skip="1">…</aside>
+/// <aside class="footnote fn-footnote" id="fn-x-d748fn3" popover data-skip="1">…</aside>
 /// ```
+/// The id is ``FRUSRenderNode/footnoteDOMKey(id:sequentialNumber:)`` — the TEI `xml:id`, not the
+/// displayed number. Keying on the number produced duplicate ids (#985); see that function.
 ///
 /// ## Interactive links
 /// persName, gloss, and cross-reference links are emitted with `frusexplorer://`
@@ -75,6 +77,19 @@ import Foundation
 ///          inside skipped subtrees (footnote-marker labels, figure captions, the broken-ref
 ///          dagger) and skipped `<br>`, so any HTML-export highlight after a footnote marker
 ///          was shifted and could emit boundary-crossing `<mark>` markup.
+///   1.4 — #985: footnote DOM ids are keyed on the TEI `xml:id` via
+///          `FRUSRenderNode.footnoteDOMKey`, not on the displayed number. The number was neither
+///          unique nor well-formed: the unnumbered source note was labelled "1" beside the real
+///          footnote 1 in 51,368 documents, so `id="fn-1"` was emitted twice and `popovertarget`
+///          — which resolves to the first match — opened the source note when the reader clicked
+///          footnote 1. `@n` is verbatim TEI, so the corpus also produced `id="fn-*"` (3,854),
+///          `id="fn-†"` (944), `id="fn- 1"` (a space inside an id) and `id="fn-"`.
+///          The endnote list now prints that key's note number from the label span instead of a
+///          positional `<ol>` counter, which disagreed with the printed volume in 134,697 of
+///          268,465 documents with notes. A note the volume printed unnumbered shows an
+///          affordance rather than an invented number — an archival mark for `.source`, a bullet
+///          otherwise — because an empty `<button class="fn-marker">` has zero width and cannot
+///          be clicked. `idScope` lets a multi-document page keep the ids unique.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -82,12 +97,97 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// the default `false` so exported HTML/PDF/DOCX output is unchanged.
     private let annotateSourceClassification: Bool
 
+    /// A prefix applied to every footnote DOM id, for pages that concatenate several documents.
+    ///
+    /// ``FRUSRenderNode/footnoteDOMKey(id:sequentialNumber:)`` is unique within one *document*,
+    /// which is all the reading view needs — it renders one. `CollectionItemHTMLRenderer` puts
+    /// many documents on one page, and both branches of the key repeat across documents there:
+    /// 46,695 note `xml:id`s recur across volumes (`d1fn2` appears in 314 of them), and the
+    /// synthesised branch restarts at `n-1` for every document because each gets a fresh
+    /// converter. Empty by default, so the reading view's ids are unprefixed.
+    private let idScope: String
+
     /// Creates a serializer.
     ///
-    /// - Parameter annotateSourceClassification: Whether `.source` footnotes get a
-    ///   classification-markings chip. Default `false` (exports).
-    public init(annotateSourceClassification: Bool = false) {
+    /// - Parameters:
+    ///   - annotateSourceClassification: Whether `.source` footnotes get a
+    ///     classification-markings chip. Default `false` (exports).
+    ///   - idScope: A per-document prefix for footnote DOM ids, for multi-document pages.
+    ///     Default `""`.
+    public init(annotateSourceClassification: Bool = false, idScope: String = "") {
         self.annotateSourceClassification = annotateSourceClassification
+        self.idScope = idScope
+    }
+
+    // MARK: - Footnote affordance (#985)
+
+    /// The mark shown in place of a number for a note the volume printed without one.
+    ///
+    /// A `.source` note is the document's own provenance statement, so it takes the app's
+    /// established source glyph — `archivebox`, the Sources rail tile ("Resolve this document's
+    /// source note in the NARA Catalog"), redrawn here as our own path data.
+    ///
+    /// **It is deliberately not `building.columns`.** That symbol already means one specific thing
+    /// in this app — *View in National Archives Catalog* (`VolumeSourcesView.swift:368`, and the
+    /// unit nodes on the cross-reference graph) — i.e. a link that leaves for the catalogue. This
+    /// marker opens a popover. Reusing the link glyph would promise navigation the control does
+    /// not perform.
+    ///
+    /// Every other unnumbered note gets a neutral bullet, keyed on `type` rather than on the
+    /// absence of a label: an archival mark on a note that is not a provenance statement asserts
+    /// something untrue. This branch is small but real — `<note rend="inline">` without
+    /// `type="source"` never reaches the footnote apparatus at all (`FRUSDocumentParser`'s
+    /// `isTransparent` hoists its children into the text flow), which leaves roughly 73 corpus
+    /// notes here: 72 bare `<note>` elements and one `type="sourcee"` typo.
+    ///
+    /// U+2022 is safe as a marker because it is not itself a printed FRUS label — the corpus's
+    /// `@n` symbols are `*` (3,854), `†` (944), `‡` (486), `§` (334), `¶`, `║`, `ǁ` and the like,
+    /// and a bullet appears among none of them.
+    private func markerGlyph(label: String?, type: FootnoteType) -> String {
+        if let label { return escaped(label) }
+        guard type == .source else { return "\u{2022}" }
+        return Self.sourceGlyphSVG
+    }
+
+    /// The archival mark, as inline SVG.
+    ///
+    /// SVG rather than an SF Symbol because this HTML is not a native surface. There is no SF
+    /// Symbols font to reference (`CoreGlyphs.bundle` is an asset catalog, and no installed face
+    /// covers the U+100000 private-use block), bundling SF Pro as a webfont is barred by Apple's
+    /// font licence, and rendering `UIImage(systemName:)` to a base64 PNG would make the output
+    /// OS-version-dependent, need the colour scheme threaded in, and — because this same
+    /// serializer feeds the HTML *export* — put an Apple system image into a file opened off
+    /// Apple platforms, which the Xcode agreement's §2.10 grant does not cover.
+    ///
+    /// Drawn on a 16×16 viewBox to match SF Symbols' proportions. `fill="currentColor"` and `1em`
+    /// sizing inherit the marker's accent colour and text size, so it is correct in dark mode and
+    /// at all four `TextSizePreference` sizes without the serializer knowing either.
+    /// `aria-hidden` because the button already carries the label.
+    private static let sourceGlyphSVG =
+        "<svg class=\"fn-glyph\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" focusable=\"false\">"
+        + "<path fill=\"currentColor\" d=\"M1.4 2.2h13.2v3H1.4z\"/>"
+        // fill-rule="evenodd" is load-bearing: the handle slot is a second subpath wound the same
+        // way as the box, and under the default nonzero rule a same-winding subpath is filled
+        // rather than cut out — the glyph would render as a solid block with no slot.
+        + "<path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M2.6 6.2h10.8v7.6H2.6zm3 1.9h4.8v1.4H5.6z\"/>"
+        + "</svg>"
+
+    /// The VoiceOver announcement for a footnote marker.
+    ///
+    /// The old label was `"Footnote \(label)"` built from the display label, which had nothing to
+    /// say once the label could be absent — it announced "Footnote " — and was a raw literal
+    /// rather than `String(localized:)`.
+    static func markerAccessibilityLabel(label: String?, type: FootnoteType) -> String {
+        if let label {
+            return String(localized: "document.footnote.marker",
+                          defaultValue: "Footnote \(label)")
+        }
+        if type == .source {
+            return String(localized: "document.footnote.marker.source",
+                          defaultValue: "Source note")
+        }
+        return String(localized: "document.footnote.marker.unnumbered",
+                      defaultValue: "Unnumbered note")
     }
 
     // MARK: - Public API
@@ -413,8 +513,15 @@ public struct FRUSRenderNodeHTMLSerializer {
     private func footnoteSectionHTML(_ footnotes: [FRUSRenderNode]) -> String {
         var html = "<section class=\"footnotes-section\"><hr class=\"fn-rule\"><h2 class=\"fn-section-heading\">Footnotes</h2><ol class=\"fn-list\">"
         for footnote in footnotes {
-            guard case .footnoteBody(_, let type, _, _, let label, let children) = footnote else { continue }
-            html += "<li class=\"fn-list-item\" id=\"fnote-\(escaped(label))\"><span class=\"fn-list-label\">\(escaped(label))</span>"
+            guard case .footnoteBody(let id, let type, _, let seq, let label, let children) = footnote else { continue }
+            let key = idScope + FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+            // The label span is the PRINTED number and is now visible (HTMLTemplate no longer
+            // hides it, and the list no longer carries a decimal counter). The `<ol>` counter it
+            // replaces was positional, so it disagreed with the volume in 134,697 of 268,465
+            // documents with notes — every volume whose footnotes run continuously across a page,
+            // plus every document whose unnumbered source note occupied slot 1.
+            html += "<li class=\"fn-list-item\" id=\"fnote-\(escaped(key))\">"
+                + "<span class=\"fn-list-label\">\(markerGlyph(label: label, type: type))</span>"
             html += block(children)
             // The footnotes section sits outside .frus-document (the offset engine's
             // DFS root), so the chip cannot perturb flat-text offsets.
@@ -553,10 +660,13 @@ public struct FRUSRenderNodeHTMLSerializer {
                 return "<figure data-skip=\"1\"></figure>"
             }
 
-        case .footnoteMarker(_, let label):
+        case .footnoteMarker(let id, let type, let seq, let label):
             // data-skip="1" — marker text is excluded from flat-text offset count.
-            // aria-label provides a meaningful VoiceOver announcement ("Footnote 1").
-            return "<button class=\"fn-marker\" data-skip=\"1\" popovertarget=\"fn-\(escaped(label))\" aria-label=\"Footnote \(escaped(label))\">\(escaped(label))</button>"
+            let key = idScope + FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+            return "<button class=\"fn-marker\(label == nil ? " fn-marker-unnumbered" : "")\" "
+                + "data-skip=\"1\" popovertarget=\"fn-\(escaped(key))\" "
+                + "aria-label=\"\(escaped(Self.markerAccessibilityLabel(label: label, type: type)))\">"
+                + "\(markerGlyph(label: label, type: type))</button>"
 
         case .footnoteBody:
             // Footnote bodies appear in model.footnotes, not model.bodyNodes.
@@ -621,15 +731,16 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// Called for nodes in `model.footnotes`. `data-skip="1"` marks the aside
     /// as offset-invisible so the JS flat-text engine excludes its text.
     private func footnoteAsideHTML(_ node: FRUSRenderNode) -> String {
-        guard case .footnoteBody(_, let type, _, _, let label, let children) = node else {
+        guard case .footnoteBody(let id, let type, _, let seq, _, let children) = node else {
             return ""
         }
+        let key = idScope + FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
         let typeClass = footnoteTypeClass(type)
         // No whitespace inside or after the aside — it has data-skip="1" so the
         // JS walker skips the element, but sibling text nodes (e.g. "\n" after
         // </aside>) ARE visible to the walker and would cause mismatches.
         // The chip rides inside the (already offset-invisible) aside.
-        return "<aside class=\"footnote \(typeClass)\" id=\"fn-\(escaped(label))\" popover data-skip=\"1\">\(block(children))\(classificationChipHTML(type: type, children: children))</aside>"
+        return "<aside class=\"footnote \(typeClass)\" id=\"fn-\(escaped(key))\" popover data-skip=\"1\">\(block(children))\(classificationChipHTML(type: type, children: children))</aside>"
     }
 
     // MARK: - Classification Chip (Source Explorer Phase 5)
