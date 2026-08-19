@@ -38,9 +38,11 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///
 /// ## What the caveats have to carry
 /// The archival numbers are the ones in this app that most need their method attached, because
-/// two of them are honest but counter-intuitive: Documents and Volumes count **different
-/// populations**, and the default view **withholds** the Central Files umbrella. A CSV that
-/// stated neither would be read as a complete ranking.
+/// they are honest but counter-intuitive: the three weights count **different populations** —
+/// Documents and Volumes measure where documents were drawn from, Unprinted pointers measures
+/// where readers were sent, and it is never added to the other two — and the default view
+/// **withholds** the Central Files umbrella. A CSV that stated neither would be read as a
+/// complete ranking.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #787

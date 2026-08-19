@@ -224,8 +224,11 @@ struct FeatureInfoButton: View {
         )
     }
 
-    /// The Archival Analytics info button — explains what the two modes count, why the
-    /// Documents and Volumes weights disagree, and why one record is hidden by default.
+    /// The Archival Analytics info button — explains what the modes count, why the three
+    /// weights disagree, and why one record is hidden by default.
+    ///
+    /// Documents and Volumes measure where documents were drawn FROM; Unprinted pointers measures
+    /// where readers were SENT, and is never added to the other two.
     static var archivalAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "archival.info.heading", defaultValue: "About These Figures"),
