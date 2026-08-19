@@ -14,10 +14,10 @@ release. It also refreshes four blocks in §6 and §7 whose text *and* localizat
 build-42 plain-language pass, so the prose here matches what ships. Every string in §13 was read
 out of the source rather than transcribed.
 
-Not yet carried, and worth knowing: the build-42 pass also touched about twenty short strings
-elsewhere — the storage hubs' reindex controls, the document reader's person and term popovers, the
-Collections search-unavailable notice and the Zotero rate-limit error. They are one or two sentences
-each and read plainly now; say the word and they get blocks of their own.
+Those short strings now have blocks: **§14** carries the storage hubs' reindex controls, the
+document reader's person and term popovers, the Collections search-unavailable notice, the Zotero
+rate-limit error, and every other key the build-42 and build-43 sessions bumped without a block —
+31 in all, each read out of the source.
 
 **The plain-language pass (2026-08-09).** 126 of the app's longest strings were rewritten to read
 more plainly, and 122 of them changed. The rule was that plainer must not mean vaguer: every
@@ -5008,3 +5008,255 @@ Nothing has gone wrong since the app opened. The app only notices a problem when
 The file did not arrive intact, so the app discarded it. Downloading again usually fixes this.
 
 <!-- END SOURCE: settings.vectors.error.integrity.v2 -->
+
+---
+
+## 14. Short strings bumped since the build-42 pass
+
+*The strings the §13 header promised blocks for — the storage hubs' reindex controls, the
+reader's person and term popovers, the Collections search-unavailable notice, the Zotero
+rate-limit error — plus every other short string whose localization key was bumped by the
+build-42 and build-43 sessions without gaining a block here. Grouped by surface rather than
+by section, because each is one or two sentences and an editor working on one is working on
+its screen, not on a theme. Every string below was read out of the source, key and line
+included, like everything else in this file. A few strings carry Swift interpolations —
+`\(HubCopy.volumes(failures))` and the like; keep them intact exactly as written, as the
+placeholder notes elsewhere in this file already require. The §13 standing rule applies
+unchanged: plainer must not become more confident.*
+
+### Storage hub — the reindex and maintenance controls
+
+#### No volumes on this device yet. Download them from GitHub,…
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 352 | key: settings.hub.downloaded.empty.iOS.v2 -->
+
+No volumes on this device yet. Download them from GitHub, or add an XML file you already have.
+
+<!-- END SOURCE: settings.hub.downloaded.empty.iOS.v2 -->
+
+#### No volumes on this Mac yet. Download them from GitHub, or…
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 323 | key: settings.hub.downloaded.empty.v2 -->
+
+No volumes on this Mac yet. Download them from GitHub, or add an XML file you already have.
+
+<!-- END SOURCE: settings.hub.downloaded.empty.v2 -->
+
+#### \(HubCopy.volumes(failures)) could not be indexed
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 575 | key: settings.hub.indexFailures.v2 -->
+
+\(HubCopy.volumes(failures)) could not be indexed
+
+<!-- END SOURCE: settings.hub.indexFailures.v2 -->
+
+#### Indexes only the volumes that still need it, and leaves t…
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 550 | key: settings.hub.indexRemaining.help.v2 -->
+
+Indexes only the volumes that still need it, and leaves the rest untouched
+
+<!-- END SOURCE: settings.hub.indexRemaining.help.v2 -->
+
+#### Deletes what the app has built for searching and builds i…
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 567 | key: settings.hub.rebuild.help.v2 -->
+
+Deletes what the app has built for searching and builds it again from every downloaded volume. Use this if search results look wrong, or if leftovers remain from volumes you deleted.
+
+<!-- END SOURCE: settings.hub.rebuild.help.v2 -->
+
+#### Rebuilds what Spotlight knows about your documents. Quick…
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 623 | key: settings.hub.spotlight.help.v2 -->
+
+Rebuilds what Spotlight knows about your documents. Quicker than a full reindex, because it reuses text the app has already read.
+
+<!-- END SOURCE: settings.hub.spotlight.help.v2 -->
+
+### Storage hub — index health
+
+#### The app updates the index by itself when a new version im…
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 631 | key: settings.storage.indexHealth.footer.v2 -->
+
+The app updates the index by itself when a new version improves how indexing works. Check Integrity runs a full check whenever you ask for one.
+
+<!-- END SOURCE: settings.storage.indexHealth.footer.v2 -->
+
+### Semantic vectors — fetch failures and refusals
+
+#### There is no file available for this volume.
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 143 | key: settings.vectors.error.notPublished.v2 -->
+
+There is no file available for this volume.
+
+<!-- END SOURCE: settings.vectors.error.notPublished.v2 -->
+
+#### The file downloaded correctly, but it was made for a diff…
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 156 | key: settings.vectors.error.rejected.v2 -->
+
+The file downloaded correctly, but it was made for a different version of the app, so it was not kept. A future update will publish a matching one.
+
+<!-- END SOURCE: settings.vectors.error.rejected.v2 -->
+
+#### The download did not finish. The app tries again when you…
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 153 | key: settings.vectors.error.transport.v2 -->
+
+The download did not finish. The app tries again when your connection changes.
+
+<!-- END SOURCE: settings.vectors.error.transport.v2 -->
+
+#### The file is no longer on this device.
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 179 | key: settings.vectors.refused.missing.v2 -->
+
+The file is no longer on this device.
+
+<!-- END SOURCE: settings.vectors.refused.missing.v2 -->
+
+#### This file was made for a different version of the app, so…
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticStorageReport.swift | lines: 176 | key: settings.vectors.refused.provenance.v2 -->
+
+This file was made for a different version of the app, so it cannot be used with this one. Remove it and download again.
+
+<!-- END SOURCE: settings.vectors.refused.provenance.v2 -->
+
+### The document reader's person and term popovers
+
+#### This volume was indexed before the app recorded definitio…
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 288 | key: glossNotFound.detail.v2 -->
+
+This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
+
+<!-- END SOURCE: glossNotFound.detail.v2 -->
+
+#### This volume was indexed before the app recorded details a…
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 278 | key: personNotFound.detail.v2 -->
+
+This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
+
+<!-- END SOURCE: personNotFound.detail.v2 -->
+
+### Collections and Zotero
+
+#### Search is not ready yet. Try again in a moment.
+<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | lines: 34 | key: export.smart.noSearchService.v2 -->
+
+Search is not ready yet. Try again in a moment.
+
+<!-- END SOURCE: export.smart.noSearchService.v2 -->
+
+#### Zotero is receiving too many requests right now. Try agai…
+<!-- SOURCE: FRUSExplorer/Zotero/ZoteroAPIModels.swift | lines: 206 | key: zotero.error.rateLimited.v2 -->
+
+Zotero is receiving too many requests right now. Try again in a moment.
+
+<!-- END SOURCE: zotero.error.rateLimited.v2 -->
+
+### Word cloud
+
+#### The meaningful terms in the chosen scope — a document, vo…
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1101 | key: wordcloud.info.shows.detail.v2 -->
+
+The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
+
+<!-- END SOURCE: wordcloud.info.shows.detail.v2 -->
+
+#### Reading every indexed document. On a full library this ta…
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1006 | key: wordcloud.loading.corpus.v2 -->
+
+Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.
+
+<!-- END SOURCE: wordcloud.loading.corpus.v2 -->
+
+### Semantic map lenses
+
+#### Too few source notes
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 139 | key: semanticMap.legend.noProvenance.v2 -->
+
+Too few source notes
+
+<!-- END SOURCE: semanticMap.legend.noProvenance.v2 -->
+
+#### Each volume takes the category its source notes name most…
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 99 | key: semanticMap.lens.provenance.caption.v2 -->
+
+Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncoloured.
+
+<!-- END SOURCE: semanticMap.lens.provenance.caption.v2 -->
+
+### Archival analytics — the three weights
+
+#### The three weights count different things. A document coun…
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 315 | key: archival.export.caveat.weight.v2 -->
+
+The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
+
+<!-- END SOURCE: archival.export.caveat.weight.v2 -->
+
+#### Documents counts how many published documents came out of…
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 244 | key: archival.info.weights.detail.v2 -->
+
+Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and a hundred and eighty-one collections appear only under pointers, having supplied no printed document. A collection named only in a volume's front matter has volumes but no documents.
+
+<!-- END SOURCE: archival.info.weights.detail.v2 -->
+
+#### The three counts measure different things
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 243 | key: archival.info.weights.title.v2 -->
+
+The three counts measure different things
+
+<!-- END SOURCE: archival.info.weights.title.v2 -->
+
+### Chronology summary line
+
+#### \(editorialNotes) editorial note\(editorialNotes == 1 ?
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1319 | key: chronology.agg.editorial.v2 -->
+
+\(editorialNotes) editorial note\(editorialNotes == 1 ? 
+
+<!-- END SOURCE: chronology.agg.editorial.v2 -->
+
+#### \(volumes) volume\(volumes == 1 ?
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1314 | key: chronology.agg.volumes.v2 -->
+
+\(volumes) volume\(volumes == 1 ? 
+
+<!-- END SOURCE: chronology.agg.volumes.v2 -->
+
+### Menus, tooltips, and short labels
+
+#### Chronology, Corpus Analytics, Person Analytics, Cross-Ref…
+<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 438 | key: browse.analysisTools.help.v3 -->
+
+Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and the corpus Word Cloud
+
+<!-- END SOURCE: browse.analysisTools.help.v3 -->
+
+#### Corpus, Person, Cross-Reference, Archival, and Semantic a…
+<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 376 | key: mainwindow.tools.analytics.menu.help.v3 -->
+
+Corpus, Person, Cross-Reference, Archival, and Semantic analytics, Chronology, and Word Cloud
+
+<!-- END SOURCE: mainwindow.tools.analytics.menu.help.v3 -->
+
+#### Research window (⌘⌥R), Collections (⇧⌘K), and Complete Hi…
+<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 426 | key: mainwindow.tools.myResearch.help.v2 -->
+
+Research window (⌘⌥R), Collections (⇧⌘K), and Complete History
+
+<!-- END SOURCE: mainwindow.tools.myResearch.help.v2 -->
+
+#### Open Document
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 809 | key: research.action.openDocument.v2 -->
+
+Open Document
+
+<!-- END SOURCE: research.action.openDocument.v2 -->
+
+#### Colours group collections by who holds the records — four…
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 304 | key: series.provenance.topCollections.method.v2 -->
+
+Colours group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 catalogued volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking.
+
+<!-- END SOURCE: series.provenance.topCollections.method.v2 -->
+
+#### Digitized Scans
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1822 | key: source.explorer.scans.header.v2 -->
+
+Digitized Scans
+
+<!-- END SOURCE: source.explorer.scans.header.v2 -->
