@@ -303,9 +303,15 @@ public actor DownloadManager {
     /// file cannot be removed.
     public func deleteVolume(volumeId: String) throws {
         let dest = volumeURL(for: volumeId)
-        guard FileManager.default.fileExists(atPath: dest.path) else { return }
-        try FileManager.default.removeItem(at: dest)
-        Self.invalidateBlobSHA(for: volumeId)
+        // #926 item 3: the guard is about the XML, and ONLY the XML. It used to return
+        // here, which skipped the teardown callback — so any path that removed the file
+        // first (or called delete twice) left the volume's semantic shard on disk for a
+        // volume the user no longer has, and its index rows uncollected. Teardown of the
+        // other artifacts must not depend on which of them happens to be removed first.
+        if FileManager.default.fileExists(atPath: dest.path) {
+            try FileManager.default.removeItem(at: dest)
+            Self.invalidateBlobSHA(for: volumeId)
+        }
 
         // Index cleanup runs in an unstructured Task so file deletion returns
         // immediately; IndexingPipeline.removeVolume is idempotent, so callers that
@@ -349,15 +355,27 @@ public actor DownloadManager {
 
         let totalVolumes = perVolume.reduce(0) { $0 + $1.volumeFileBytes }
 
+        // #926 item 2: `Volumes/` and `SemanticVectors/` are CHILDREN of the index
+        // directory, and the recursive walk counted both — so volume XML was counted
+        // twice in the hero figure (once as itself, once inside "Index") for as long as
+        // the walk has existed, and shard bytes joined the double-count when vectors
+        // shipped. The index figure now excludes the two children, and vectors are
+        // measured once, as their own figure.
         var indexBytes = 0
+        var vectorBytes = 0
         if let indexDir = indexDirectory {
-            indexBytes = directorySize(at: indexDir)
+            let vectorsDir = indexDir.appendingPathComponent("SemanticVectors", isDirectory: true)
+            var excluded = [vectorsDir]
+            excluded.append(volumesDirectory)
+            indexBytes = Self.directorySize(at: indexDir, excludingSubdirectories: excluded)
+            vectorBytes = Self.directorySize(at: vectorsDir)
         }
 
         return StorageReport(
             totalVolumesBytes: totalVolumes,
             totalIndexBytes: indexBytes,
             totalSummariesBytes: 0,
+            totalVectorBytes: vectorBytes,
             perVolume: perVolume.sorted { $0.volumeId < $1.volumeId }
         )
     }
@@ -661,20 +679,37 @@ public actor DownloadManager {
 
     // MARK: - Helpers
 
-    /// Recursively sums file sizes under a directory. Returns 0 if the directory
-    /// does not exist or cannot be enumerated.
-    nonisolated private func directorySize(at url: URL) -> Int {
+    /// Recursively sums file sizes under a directory, optionally skipping whole
+    /// subdirectories (compared by standardized path, descendants included).
+    ///
+    /// The exclusion exists for one measured reason (#926 item 2): the index directory
+    /// CONTAINS the volumes and semantic-vector directories, so an unexcluded walk
+    /// counts their bytes into the index figure — which double-counts them against the
+    /// figures that report those directories directly. Internal + static so the rule is
+    /// unit-testable against a real temp tree.
+    nonisolated static func directorySize(
+        at url: URL,
+        excludingSubdirectories excluded: [URL] = []
+    ) -> Int {
+        let excludedPaths = Set(excluded.map { $0.standardizedFileURL.path })
         guard let enumerator = FileManager.default.enumerator(
             at: url,
-            includingPropertiesForKeys: [.fileSizeKey],
+            includingPropertiesForKeys: [.fileSizeKey, .isDirectoryKey],
             options: .skipsHiddenFiles
         ) else { return 0 }
-        return enumerator.reduce(0) { total, item in
-            guard let fileURL = item as? URL,
-                  let size = (try? fileURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
-            else { return total }
-            return total + size
+        var total = 0
+        while let item = enumerator.nextObject() {
+            guard let fileURL = item as? URL else { continue }
+            let values = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey])
+            if values?.isDirectory == true {
+                if excludedPaths.contains(fileURL.standardizedFileURL.path) {
+                    enumerator.skipDescendants()
+                }
+                continue
+            }
+            total += values?.fileSize ?? 0
         }
+        return total
     }
 }
 

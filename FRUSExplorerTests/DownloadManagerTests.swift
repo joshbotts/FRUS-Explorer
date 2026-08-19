@@ -632,4 +632,61 @@ struct DownloadManagerTests {
             #expect(try String(contentsOf: dest, encoding: .utf8) == "<old/>")
         }
     }
+
+    // MARK: - #926 items 2 and 3
+
+    /// The index walk must not count the volumes or vectors directories — they are its
+    /// CHILDREN on disk, and counting them is how the hero figure double-counted volume
+    /// XML for as long as the walk existed.
+    @Test("directorySize excludes named subdirectories, descendants included")
+    func directorySizeExcludesSubdirectories() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("walk-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volumes = dir.appendingPathComponent("Volumes", isDirectory: true)
+        let vectors = dir.appendingPathComponent("SemanticVectors", isDirectory: true)
+        let nested = vectors.appendingPathComponent("nested", isDirectory: true)
+        for d in [volumes, nested] {
+            try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        }
+        try Data(count: 1_000).write(to: dir.appendingPathComponent("index.sqlite"))
+        try Data(count: 700).write(to: volumes.appendingPathComponent("frus1900.xml"))
+        try Data(count: 300).write(to: vectors.appendingPathComponent("frus1900.vec"))
+        try Data(count: 200).write(to: nested.appendingPathComponent("deep.vec"))
+
+        #expect(DownloadManager.directorySize(at: dir) == 2_200, "unexcluded walk sums all")
+        #expect(DownloadManager.directorySize(
+            at: dir, excludingSubdirectories: [volumes, vectors]) == 1_000, """
+            The exclusion must remove the child directories AND their descendants from \
+            the index figure — this is #926 item 2, the hero double-count.
+            """)
+        #expect(DownloadManager.directorySize(at: vectors) == 500,
+                "the vectors figure counts the excluded tree once, on its own")
+    }
+
+    /// #926 item 3: the missing-XML guard used to return before the teardown callback,
+    /// so any path that removed the file first left the volume's semantic shard and
+    /// index rows behind. Teardown must not depend on which artifact vanished first.
+    @Test("deleteVolume fires teardown even when the XML is already gone")
+    func deleteVolumeFiresTeardownWithoutXML() async throws {
+        try await withTempDirectory { dir in
+            actor Seen { var ids: [String] = []; func add(_ v: String) { ids.append(v) } }
+            let seen = Seen()
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 1,
+                downloadTask: makeMockDownloadTask(),
+                onStateChanged: { _ in },
+                onVolumeDeleted: { id in await seen.add(id) }
+            )
+            #expect(dm.isVolumeDownloaded("frus1969-76v01") == false)
+            try await dm.deleteVolume(volumeId: "frus1969-76v01")
+            // The callback runs in an unstructured Task; give it a beat.
+            try await Task.sleep(nanoseconds: 200_000_000)
+            #expect(await seen.ids == ["frus1969-76v01"], """
+                deleteVolume with no XML on disk skipped the teardown callback — the \
+                shard and index rows for the volume outlive the volume (#926 item 3).
+                """)
+        }
+    }
 }

@@ -20,6 +20,17 @@ import Testing
 /// segment carrying everything.
 struct StorageUsageBreakdownTests {
 
+    /// The vectors segment is real only since the index walk stopped double-counting
+    /// (#926 item 2). Default 0 keeps every pre-existing caller and test unchanged.
+    @Test("Vector bytes draw as a fourth, count-once segment")
+    func vectorSegmentAppears() {
+        let b = StorageUsageBreakdown.make(volumeBytes: 100, indexBytes: 200,
+                                           summaryBytes: 50, vectorBytes: 50)
+        #expect(b.totalBytes == 400)
+        #expect(b.segments.count == 4)
+        #expect(abs((b.segments.first { $0.id == "vectors" }?.share ?? 0) - 0.125) < 0.0001)
+    }
+
     @Test("Shares are proportional and sum to one")
     func proportionalShares() {
         let b = StorageUsageBreakdown.make(volumeBytes: 100, indexBytes: 280, summaryBytes: 20)

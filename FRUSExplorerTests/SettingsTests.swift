@@ -152,6 +152,7 @@ struct SettingsTests {
             totalVolumesBytes: 500_000,
             totalIndexBytes: 100_000,
             totalSummariesBytes: 50_000,
+            totalVectorBytes: 0,
             perVolume: [entry]
         )
         #expect(report.grandTotalBytes == 650_000)
