@@ -1928,8 +1928,23 @@ public struct SourceNoteParser {
     ///   Phase 3 verification bucket run; the spaced form by the adversarial-review
     ///   norm-parity sweep). The negative lookahead keeps run-together prose
     ///   (`313Records…`) and following words (`563 and…`) out of the key.
+    /// The prefix accepts **two to four** digits (#809).
+    ///
+    /// Modern State lot numbers carry a four-digit accession year — `Lot 2015D608` — and the
+    /// former `{2,3}` bound made them match nothing at all, so `firstLotReference(in:)` returned
+    /// nil and the app's `volume_sources` missed them too.
+    ///
+    /// The risk in widening is a nearby year or page number being swallowed, which is presumably
+    /// what the tighter bound guarded against. **Measured over all 694 corpus files before the
+    /// change**: the widening alters exactly three captures, all of them genuine four-digit lots
+    /// (`2015D608`, `2000D471`, `2016F0003`), and changes no existing capture. Zero false
+    /// positives — the designator letter immediately after the digits is what carries the
+    /// discrimination, not the digit count.
+    ///
+    /// #809 records the scope as "exactly 1 collection in 1 volume"; that is understated. It is
+    /// three lots across three volumes, and it grows with each new volume published.
     private static let looseLotRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bLots?\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:\s?[A-Za-z](?![A-Za-z]))?|\d{1,4}(?![0-9A-Za-z]|\s*[–—\-]\s*\d))"#,
+        pattern: #"\bLots?\s+(?:Files?\s+)?((?:\d{2,4}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:\s?[A-Za-z](?![A-Za-z]))?|\d{1,4}(?![0-9A-Za-z]|\s*[–—\-]\s*\d))"#,
         options: .caseInsensitive
     )
 

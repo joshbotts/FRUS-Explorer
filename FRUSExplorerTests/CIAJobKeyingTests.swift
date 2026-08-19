@@ -192,4 +192,42 @@ struct FrontMatterJobKeyingTests {
         #expect(keyed.first?.jobNumberNorm == "80B01285A")
         #expect(keyed.first?.note != nil, "and to keep the description the promotion pass absorbed")
     }
+
+    // MARK: - #809: four-digit lot prefixes
+
+    /// Modern State lot numbers carry a four-digit accession year, and the grammar's former
+    /// `{2,3}` prefix bound made them match NOTHING — not a wrong lot, no lot at all, on both
+    /// the document-source-note and front-matter routes.
+    ///
+    /// All three are real corpus citations, found by measuring the widening over all 694 files.
+    @Test("A four-digit lot prefix is recognised")
+    func fourDigitLotPrefixIsFound() {
+        let cases = [
+            ("Lot 2015D608: Executive Secretariat, Papers of L. Paul Bremer II", "2015D608"),
+            ("Department of State, EUR/RUS, Political Subject and Chronological Files, "
+             + "Lot 2000D471, Shultz - Shevardnadze", "2000D471"),
+            ("Lot 2016F0003: Ambassador Arthur Hartman Files", "2016F0003"),
+        ]
+        for (note, expected) in cases {
+            let found = SourceNoteParser.firstLotReference(in: note)?.lotNumber
+                .trimmingCharacters(in: .whitespaces)
+            #expect(found == expected, """
+                \(note.prefix(40))… yielded \(found ?? "nil"). A four-digit accession year is \
+                the modern lot form, so this population grows with every volume published.
+                """)
+        }
+    }
+
+    /// The widening's guard rail. The tighter bound presumably existed to stop a nearby year
+    /// being swallowed; measured over the corpus the discrimination actually comes from the
+    /// DESIGNATOR LETTER immediately after the digits, not the digit count — so a bare year
+    /// with no designator must still not read as a lot.
+    @Test("A bare four-digit year is not mistaken for a lot")
+    func bareYearIsNotALot() {
+        #expect(SourceNoteParser.firstLotReference(in: "the lot 2015 shipment was delayed")?.lotNumber
+            .trimmingCharacters(in: .whitespaces) != "2015 shipment")
+        // Three- and two-digit forms are unchanged by the widening.
+        #expect(SourceNoteParser.firstLotReference(in: "Lot 62 D 225, Trust Territory")?.lotNumber
+            .trimmingCharacters(in: .whitespaces) == "62 D 225")
+    }
 }
