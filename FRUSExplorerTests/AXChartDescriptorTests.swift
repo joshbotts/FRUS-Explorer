@@ -145,5 +145,104 @@ struct AXChartDescriptorShapeTests {
         #expect(d?.series.first?.dataPoints.count == 3,
                 "a graph missing points still sounds complete — the failure is inaudible")
     }
+
+    // MARK: - #268 adoption wave: column overrides, series splits, blank-skipping
+
+    /// THE YEAR TRAP, pinned against the real corpus table. Under the default mapping the
+    /// label column is the TERM and the value column is the PERIOD — and "1969" parses, so
+    /// the descriptor would sonify years as values without a sound of complaint. This is why
+    /// every corpus adoption states (labelColumn: 1, valueColumn: 5), and why this test
+    /// drives the real builder rather than a hand-made fixture.
+    @Test("The corpus table's default mapping mis-reads years as values; the override reads Plotted")
+    func corpusTableNeedsColumnOverride() {
+        let table = AnalyticsChartTables.corpusSeriesTable(
+            id: "corpus.byYear", title: "Berlin \u{2014} by Year", periodColumn: "Year",
+            seriesByTerm: [(term: "Berlin", points: [
+                CorpusSeriesPoint(periodLabel: "1969", denominatorKey: 1969, count: 40),
+                CorpusSeriesPoint(periodLabel: "1970", denominatorKey: 1970, count: 55),
+            ])],
+            totals: [1969: 400, 1970: 500], isNormalized: false)
+
+        // The trap parses: default columns yield "points" whose y-values are YEARS.
+        let trapped = AXChartDescriptorBuilder.points(from: table)
+        #expect(trapped != nil, "if this starts refusing, the trap is gone and the doc comments should say so")
+        #expect(trapped?.map(\.y) == [1969, 1970], "the mis-read shape: periods as values")
+
+        // The stated mapping reads (Period, Plotted).
+        let points = AXChartDescriptorBuilder.points(from: table, labelColumn: 1, valueColumn: 5)
+        #expect(points?.map(\.label) == ["1969", "1970"])
+        #expect(points?.map(\.y) == [40, 55])
+    }
+
+    /// The interleaved multi-series shape, against the real trajectory builder: fed whole it
+    /// parses into one zig-zag; split by the person column it yields one series per person in
+    /// first-appearance order.
+    @Test("seriesSplit separates the trajectory table by person")
+    func trajectoryTableSplitsByPerson() {
+        let table = AnalyticsChartTables.personTrajectoryTable(
+            title: "Mention Trajectories", periodColumn: "Year",
+            series: [
+                (rollupId: 1, name: "Acheson", points: [
+                    (period: 1949, mentions: 10, mentioningDocs: 8, datedTotal: 100, plotted: 10),
+                    (period: 1950, mentions: 20, mentioningDocs: 15, datedTotal: 120, plotted: 20)]),
+                (rollupId: 2, name: "Dulles", points: [
+                    (period: 1949, mentions: 5, mentioningDocs: 4, datedTotal: 100, plotted: 5)]),
+            ], isNormalized: false)
+
+        let split = AXChartDescriptorBuilder.seriesSplit(
+            from: table, seriesColumn: 0, labelColumn: 2, valueColumn: 6)
+        #expect(split?.map(\.name) == ["Acheson", "Dulles"], "first-appearance order")
+        #expect(split?.first?.points.map(\.y) == [10, 20])
+        #expect(split?.last?.points.map(\.y) == [5])
+
+        // The zig-zag the split exists to prevent: fed whole, the table still parses.
+        let whole = AXChartDescriptorBuilder.points(from: table, labelColumn: 2, valueColumn: 6)
+        #expect(whole?.count == 3, "which is why splitBySeriesColumn is mandatory for this chart")
+    }
+
+    /// The distribution's optional outbound column: blank cells SKIP under
+    /// `skippingBlankValues`, and still refuse without it — absence is optional, garbage is not.
+    @Test("Blank optional cells skip when asked, refuse otherwise")
+    func distributionBlankOutboundCells() {
+        let table = AnalyticsChartTables.crossRefDistributionTable(
+            title: "Citation Degree Distribution",
+            rows: [(bucket: "1", inDegreeDocuments: 900, outDegreeDocuments: 700),
+                   (bucket: "2\u{2013}5", inDegreeDocuments: 400, outDegreeDocuments: nil)])
+        #expect(AXChartDescriptorBuilder.points(from: table, labelColumn: 0, valueColumn: 2) == nil,
+                "a blank cell refuses by default")
+        let out = AXChartDescriptorBuilder.points(from: table, labelColumn: 0, valueColumn: 2,
+                                                  skippingBlankValues: true)
+        #expect(out?.map(\.y) == [700], "the blank row is skipped, not zero-filled")
+        let inbound = AXChartDescriptorBuilder.points(from: table, labelColumn: 0, valueColumn: 1)
+        #expect(inbound?.map(\.y) == [900, 400])
+    }
+
+    /// The person ranking's stated columns, against the real builder — label is the
+    /// disambiguated chart label, value the mention count; the default would read (Rank,
+    /// Person) and sonify rank positions.
+    @Test("The person ranking's stated columns read label and mentions")
+    func personRankingColumns() {
+        let table = AnalyticsChartTables.personRankingTable(
+            title: "Most-Mentioned People",
+            rows: [(rollupId: 7, name: "Kissinger, Henry", axisLabel: "Kissinger, Henry",
+                    mentions: 3200)])
+        let points = AXChartDescriptorBuilder.points(from: table, labelColumn: 2, valueColumn: 4)
+        #expect(points?.first?.label == "Kissinger, Henry")
+        #expect(points?.first?.y == 3200)
+    }
+
+    /// The multi-series descriptor itself: one AXDataSeriesDescriptor per named series.
+    @Test("The multi-series descriptor carries one series per name")
+    @MainActor
+    func multiSeriesDescriptorShape() {
+        let a = [AXChartPoint(label: "1969", x: 1969, y: 1),
+                 AXChartPoint(label: "1970", x: 1970, y: 2)]
+        let b = [AXChartPoint(label: "1969", x: 1969, y: 3)]
+        let d = AXChartDescriptorBuilder.descriptor(
+            title: "Compare", xLabel: "Year", yLabel: "Documents",
+            namedSeries: [("Berlin", a), ("Vietnam", b)])
+        #expect(d?.series.count == 2)
+        #expect(d?.series.map(\.name) == ["Berlin", "Vietnam"])
+    }
 }
 #endif

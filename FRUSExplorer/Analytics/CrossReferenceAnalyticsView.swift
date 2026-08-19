@@ -546,12 +546,18 @@ struct CrossReferenceAnalyticsView: View {
     }
 
     /// Exports the most-referenced-documents ranking.
-    private func exportRankingCSV() {
-        let title = String(localized: "crossRefAnalytics.ranking.heading", defaultValue: "Most-Referenced Documents")
-        let table = AnalyticsChartTables.crossRefRankingTable(
-            title: title,
+    /// The ranking's tabular form — one build shared by CSV export and the Audio Graph (#268).
+    private var rankingInspectorTable: ChartInspectorData {
+        AnalyticsChartTables.crossRefRankingTable(
+            title: String(localized: "crossRefAnalytics.ranking.heading",
+                          defaultValue: "Most-Referenced Documents"),
             rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId,
                                  label: $0.displayLabel, inDegree: $0.inDegree) })
+    }
+
+    private func exportRankingCSV() {
+        let title = String(localized: "crossRefAnalytics.ranking.heading", defaultValue: "Most-Referenced Documents")
+        let table = rankingInspectorTable
         deliver(table, crossRefProvenance(
             figureTitle: title,
             axisLabel: String(localized: "crossRefAnalytics.export.axis.inDegree",
@@ -611,15 +617,22 @@ struct CrossReferenceAnalyticsView: View {
     }
 
     /// Exports the citation-degree distribution, including the out-degree overlay when shown.
-    private func exportDistributionCSV() {
-        let title = String(localized: "crossRefAnalytics.distribution.heading", defaultValue: "Citation Degree Distribution")
+    /// The distribution's tabular form — shared by CSV export and the Audio Graph (#268).
+    /// The outbound column exists only while the overlay is shown, mirroring the chart.
+    private var distributionInspectorTable: ChartInspectorData {
         let outByLabel = Dictionary(outDistribution.map { ($0.label, $0.documentCount) },
                                     uniquingKeysWith: { first, _ in first })
-        let table = AnalyticsChartTables.crossRefDistributionTable(
-            title: title,
+        return AnalyticsChartTables.crossRefDistributionTable(
+            title: String(localized: "crossRefAnalytics.distribution.heading",
+                          defaultValue: "Citation Degree Distribution"),
             rows: distribution.map { (bucket: $0.label,
                                       inDegreeDocuments: $0.documentCount,
                                       outDegreeDocuments: showOutDegree ? outByLabel[$0.label] : nil) })
+    }
+
+    private func exportDistributionCSV() {
+        let title = String(localized: "crossRefAnalytics.distribution.heading", defaultValue: "Citation Degree Distribution")
+        let table = distributionInspectorTable
         deliver(table, crossRefProvenance(
             figureTitle: title,
             axisLabel: String(localized: "crossRefAnalytics.export.axis.degree",
@@ -828,6 +841,12 @@ struct CrossReferenceAnalyticsView: View {
         // Highest in-degree at the top: `ranking` is sorted descending, and the first domain
         // element is placed at the top of a horizontal-bar categorical y-axis.
         .chartYScale(domain: ranking.map(\.id))
+        // #268: label = "Document", value = "Inbound references". The default (0, 1) reads
+        // (Rank, Document) — Rank parses, sonifying rank positions as values silently.
+        .axChartDescriptor(inspector: rankingInspectorTable,
+                           title: String(localized: "crossRefAnalytics.ranking.heading",
+                                         defaultValue: "Most-Referenced Documents"),
+                           labelColumn: 1, valueColumn: 4)
         .chartYAxis {
             AxisMarks(preset: .aligned) { value in
                 AxisValueLabel {
@@ -942,6 +961,13 @@ struct CrossReferenceAnalyticsView: View {
             range: [Color.accentColor, Color.orange]
         )
         .chartLegend(showOutDegree ? .visible : .hidden)
+        // #268: the in-degree histogram — (bucket, inbound documents). The outbound overlay is
+        // a SECOND VALUE COLUMN, not interleaved rows, so the split API does not apply; the
+        // descriptor carries the chart's primary series, and the table remains the full record.
+        .axChartDescriptor(inspector: distributionInspectorTable,
+                           title: String(localized: "crossRefAnalytics.distribution.heading",
+                                         defaultValue: "Citation Degree Distribution"),
+                           labelColumn: 0, valueColumn: 1)
         .frame(height: 260)
         .padding(.horizontal)
     }

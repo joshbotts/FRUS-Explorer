@@ -558,25 +558,27 @@ struct PersonAnalyticsView: View {
     /// Exports the most-mentioned-people ranking.
     private func exportRankingCSV() {
         let title = String(localized: "personAnalytics.ranking.heading", defaultValue: "Most-Mentioned People")
-        // Same id/suffix pairing the chart uses (`rankingChart`'s local `rowKey`), so the exported
-        // "chart label" column matches the figure's y-axis text row for row.
-        let labels = disambiguatedRankingLabels(
-            ranking.map { (id: String($0.rollupId), name: $0.canonicalName, shortSuffix: String($0.rollupId)) })
-        let table = AnalyticsChartTables.personRankingTable(
-            title: title,
-            rows: ranking.map { (rollupId: $0.rollupId,
-                                 name: $0.canonicalName,
-                                 axisLabel: labels[String($0.rollupId)] ?? $0.canonicalName,
-                                 mentions: $0.mentionCount) })
-        deliver(table, personProvenance(figureTitle: title, periodGrain: nil, valueMode: nil))
+        deliver(rankingInspectorTable(title: title),
+                personProvenance(figureTitle: title, periodGrain: nil, valueMode: nil))
     }
 
     /// Exports the mention-trajectory comparison, carrying both numerators and the denominator so the
     /// plotted share can be recomputed from the file.
-    private func exportTrajectoryCSV() {
-        let title = String(localized: "personAnalytics.comparison.heading", defaultValue: "Mention Trajectories")
+    /// The per-person trajectory series exactly as the CSV exports them — plotted value
+    /// included — shared with the render-time descriptor so the two cannot drift (#268).
+    private func trajectoryExportSeries()
+        -> [(rollupId: Int, name: String,
+             points: [(period: Int, mentions: Int, mentioningDocs: Int?,
+                       datedTotal: Int?, plotted: Double)])] {
+        trajectorySeriesBody()
+    }
+
+    private func trajectorySeriesBody()
+        -> [(rollupId: Int, name: String,
+             points: [(period: Int, mentions: Int, mentioningDocs: Int?,
+                       datedTotal: Int?, plotted: Double)])] {
         let plottedByPerson = Dictionary(grouping: trajectoryPoints, by: { $0.rollupId })
-        let series = selectedPeople.map { person -> (rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)]) in
+        return selectedPeople.map { person -> (rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)]) in
             let points = (plottedByPerson[person.rollupId] ?? []).sorted { $0.year < $1.year }.map { point in
                 let years = PersonAnalyticsMath.sourceYears(
                     forPeriod: point.year, byDecade: byDecade, range: yearRange)
@@ -593,12 +595,16 @@ struct PersonAnalyticsView: View {
             }
             return (rollupId: person.rollupId, name: person.canonicalName, points: points)
         }
-        let table = AnalyticsChartTables.personTrajectoryTable(
-            title: title, periodColumn: periodGrainLabel, series: series, isNormalized: isNormalized)
-        deliver(table, personProvenance(figureTitle: title,
-                                        periodGrain: periodGrainLabel,
-                                        valueMode: normalization.pickerLabel,
-                                        extra: decadeShareCaveat))
+    }
+
+    private func exportTrajectoryCSV() {
+        let title = String(localized: "personAnalytics.comparison.heading", defaultValue: "Mention Trajectories")
+        let series = trajectoryExportSeries()
+        deliver(trajectoryInspectorTable(title: title, series: series),
+                personProvenance(figureTitle: title,
+                                 periodGrain: periodGrainLabel,
+                                 valueMode: normalization.pickerLabel,
+                                 extra: decadeShareCaveat))
     }
 
     /// Renders one Person chart as a publication figure and shares (iOS) or saves (macOS).
@@ -648,6 +654,18 @@ struct PersonAnalyticsView: View {
                       chartHeight: 420) {
             trajectoryChart
         }
+    }
+
+    /// The trajectory's tabular form — one build shared by export and descriptor (#268).
+    private func trajectoryInspectorTable(
+        title: String,
+        series: [(rollupId: Int, name: String,
+                  points: [(period: Int, mentions: Int, mentioningDocs: Int?,
+                            datedTotal: Int?, plotted: Double)])]
+    ) -> ChartInspectorData {
+        AnalyticsChartTables.personTrajectoryTable(
+            title: title, periodColumn: periodGrainLabel, series: series,
+            isNormalized: isNormalized)
     }
 
     /// Exports the two-person relationship series (only meaningful with exactly two people selected).
@@ -911,8 +929,33 @@ struct PersonAnalyticsView: View {
         }
     }
 
+    /// The ranking's tabular form — ONE build shared by the CSV export and the Audio Graph
+    /// descriptor (#268), so the sonified series and the exported one cannot drift.
+    private func rankingInspectorTable(title: String) -> ChartInspectorData {
+        // Same id/suffix pairing the chart uses (`rankingChart`'s local `rowKey`), so the
+        // "chart label" column matches the figure's y-axis text row for row.
+        let labels = disambiguatedRankingLabels(
+            ranking.map { (id: String($0.rollupId), name: $0.canonicalName, shortSuffix: String($0.rollupId)) })
+        return AnalyticsChartTables.personRankingTable(
+            title: title,
+            rows: ranking.map { (rollupId: $0.rollupId,
+                                 name: $0.canonicalName,
+                                 axisLabel: labels[String($0.rollupId)] ?? $0.canonicalName,
+                                 mentions: $0.mentionCount) })
+    }
+
     private var rankingChart: some View {
         rankingChartBody(showsSelection: true)
+            // #268: label = "Chart label" (the disambiguated axis text), value = "Mentions in
+            // dated documents". The default (0, 1) reads (Rank, Person) — Rank parses, so it
+            // would sonify rank positions as values without complaint.
+            .axChartDescriptor(
+                inspector: rankingInspectorTable(
+                    title: String(localized: "personAnalytics.ranking.heading",
+                                  defaultValue: "Most-Mentioned People")),
+                title: String(localized: "personAnalytics.ranking.heading",
+                              defaultValue: "Most-Mentioned People"),
+                labelColumn: 2, valueColumn: 4)
             // Interaction belongs to the on-screen chart only; the exported figure omits it.
             .chartOverlay { proxy in
                 GeometryReader { geo in
@@ -1137,6 +1180,19 @@ struct PersonAnalyticsView: View {
                 }
             }
         }
+        // #268: the export's exact table (guarded by the same two-person condition the mount
+        // sits inside). Columns: 2 = period, 3 = co-mention count.
+        .axChartDescriptor(
+            inspector: isTwoPersonComparison ? AnalyticsChartTables.personRelationshipTable(
+                title: String(localized: "personAnalytics.relationship.heading",
+                              defaultValue: "Relationship Dynamics"),
+                periodColumn: periodGrainLabel,
+                personA: selectedPeople[0].canonicalName,
+                personB: selectedPeople[1].canonicalName,
+                points: relationshipPoints.map { (period: $0.year, coMentions: $0.coMentions) }) : nil,
+            title: String(localized: "personAnalytics.relationship.heading",
+                          defaultValue: "Relationship Dynamics"),
+            labelColumn: 2, valueColumn: 3)
         .frame(height: 220)
         .padding(.horizontal)
     }
@@ -1375,6 +1431,18 @@ struct PersonAnalyticsView: View {
                 }
             }
         }
+        // #268: THE chart the refusal cannot protect — the table interleaves every person's
+        // rows and all its cells parse, so fed whole it would sonify one zig-zag crossing
+        // every person. Split by Person (0); label = period (2); value = Plotted (6), which
+        // matches raw-vs-normalized exactly.
+        .axChartDescriptor(
+            inspector: trajectoryInspectorTable(
+                title: String(localized: "personAnalytics.comparison.heading",
+                              defaultValue: "Mention Trajectories"),
+                series: trajectoryExportSeries()),
+            title: String(localized: "personAnalytics.comparison.heading",
+                          defaultValue: "Mention Trajectories"),
+            labelColumn: 2, valueColumn: 6, splitBySeriesColumn: 0)
         .frame(height: 300)
         .padding(.horizontal)
     }
