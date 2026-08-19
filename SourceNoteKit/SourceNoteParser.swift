@@ -1021,8 +1021,23 @@ public struct SourceNoteParser {
     /// every decimal note silently stops matching. Measured, that mistake moved the corpus
     /// residue from 5,974 to 6,292 — a regression that looks like a rule being too narrow rather
     /// than a regex that never ran.
+    /// Widened for the 1906–51 suffix-bearing forms (#353), measured family by family:
+    ///
+    /// * An optional **infix** between the class and the slash — `763.72119 P 43/-`,
+    ///   `890h.001 Am 1/–`, `740.00111 A.R.–Subs/la`, `412.11–Catron, Hiram/Orig.`,
+    ///   `811.5034 (China); American Radio Service/41`. These are genuine State decimal-file
+    ///   subdivisions (country names, personal names, office designators); the bounded 50-char
+    ///   non-greedy body must still reach a `/`, so prose cannot ride it.
+    /// * The **item** admits the em dash (`818.6363/—`), vulgar fractions (`611.626/⅓` —
+    ///   the class side gained them first and the item side turned out to use them too),
+    ///   `orig`/`Orig.` (`663.119/orig: Telegram`), a short lowercase token (`…/la`), and a
+    ///   trailing item letter (`…/544a`).
+    /// * The infix may itself be **slash-subdivided** — `711.00111 Armament Control/Military
+    ///   Secrets /418` (93 notes), `811.612 Oranges/Spain/—` — with an optional space either
+    ///   side of the final slash, and the infix separator is optional because OCR sometimes
+    ///   joins it (`811.612Oranges/Spain/—`).
     private static let decimalFileRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^[A-Z0-9¼½¾⅓⅔⅛⅜⅝⅞]+\.[A-Z0-9¼½¾⅓⅔⅛⅜⅝⅞]+/[\d–\-]+"#,
+        pattern: #"^[A-Z0-9¼½¾⅓⅔⅛⅜⅝⅞]+\.[A-Z0-9.¼½¾⅓⅔⅛⅜⅝⅞]*[A-Z0-9¼½¾⅓⅔⅛⅜⅝⅞](?:[ –—-]?[A-Z0-9 ().,;'’&.–—-]{0,50}?(?:/[A-Z0-9 ().,;'’&.–—-]{1,40}?)*)?\s?/\s?(?:[Oo]rig\.?|[\d–—\-¼½¾⅓⅔⅛⅜⅝⅞]+[a-z]?|[a-z]{1,4}(?![A-Za-z]))"#,
         options: .caseInsensitive
     )
 
@@ -1137,7 +1152,7 @@ public struct SourceNoteParser {
     /// class with an optional `: Telegram` suffix (`102.8951: Telegram`,
     /// `103.9151: Telegram`). Anchored to the full note.
     private static let decimalNoItemRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.¼½¾⅓⅔⅛⅜⅝⅞]*?(?:\s[A-Z][^/:;"“”]{0,40}?)?)\.?\s*(?::\s*[A-Z][a-z]{2,14})?\.?\s*$"#,
+        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.¼½¾⅓⅔⅛⅜⅝⅞]*?(?:[\s–—-]?[A-Z][^/:;"“”]{0,40}?)?)\.?\s*(?::\s*[A-Z][a-z]{2,14})?\.?\s*$"#,
         options: []
     )
 

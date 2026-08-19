@@ -288,4 +288,47 @@ struct FrontMatterJobKeyingTests {
                 == "Flies were a problem", "a leading token has no preceding word and must not fold")
         #expect(SourceNoteParser.foldOCRKeywords("Defense Flies") == "Defense Files")
     }
+
+    // MARK: - #353: suffix-bearing decimal citations (1906-51)
+
+    /// The decimal file's subdivided forms — 269 notes, the largest #353 recovery so far,
+    /// measured by positional diff of two full eval runs: every move was
+    /// unrecognized -> centralFiles and NOTHING was stolen from a recognized class.
+    ///
+    /// Each case below is a verbatim corpus note.
+    @Test("Suffix-bearing decimal forms parse as central files")
+    func suffixBearingDecimalFormsParse() {
+        let parser = SourceNoteParser()
+        let cases = [
+            "763.72119 P 43/-",                                    // office infix, dash item
+            "890h.001 Am 1/\u{2013}",                               // lowercase class + infix
+            "740.00111 A.R.\u{2013}Subs/la",                        // dotted infix, letter item
+            "711.00111 Armament Control/Military Secrets /418",    // slash-subdivided, spaced /
+            "811.612 Oranges/Spain/\u{2014}",                       // two subdivisions, em-dash item
+            "811.612Oranges/Spain/\u{2014}",                        // OCR-joined infix
+            "611.626/\u{2153}",                                     // fraction as the ITEM
+            "818.6363/\u{2014}: Telegram",                          // em-dash item + tail
+            "663.119/orig: Telegram",                              // orig item
+            "412.11\u{2013}Catron, Hiram/Orig.: Telegram",          // personal-name infix
+            "365.112Eagan, Edward P. et al.",                      // OCR-joined name, no item
+        ]
+        for note in cases {
+            if case .centralFiles = parser.parse(note) { continue }
+            Issue.record("still unrecognized: \(note)")
+        }
+    }
+
+    /// The other side of the widening: prose is untouched. The strongest evidence is the
+    /// corpus-wide positional diff (zero steals over 267,663 notes); this pins the shape.
+    @Test("Prose and editorial notes do not ride the widened decimal grammar")
+    func proseDoesNotBecomeCentralFiles() {
+        let parser = SourceNoteParser()
+        for note in ["Received through the Chinese minister, July 19, 1909.",
+                     "[Enclosure\u{2014}Translation]",
+                     "S. Doc. No. 515, 60th Cong., 1st sess."] {
+            if case .centralFiles = parser.parse(note) {
+                Issue.record("prose classified as a central file: \(note)")
+            }
+        }
+    }
 }
