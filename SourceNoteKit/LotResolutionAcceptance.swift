@@ -190,6 +190,44 @@ public enum LotResolutionAcceptance {
         return found
     }
 
+    /// Lots NARA holds under a record group other than the one FRUS cites, folded key -> NARA RG.
+    ///
+    /// ## Why a measured table and not a rule
+    /// A `variantControlNumber` IS NARA's assertion that a series holds a lot, so the obvious
+    /// change is to let it outrank the cited record group everywhere. That is wrong, and a test
+    /// already pinned why: an **RG 29 (Census)** series carries `90D234`, which collides with a
+    /// State lot of the same shape. Nothing in the number distinguishes NARA's assertion from a
+    /// coincidence — only evidence that this particular lot genuinely moved does.
+    ///
+    /// ## Where these came from
+    /// Derived offline from the record-group harvest and verified against the corpus. The
+    /// disagreement is archival rather than erroneous: FRUS records provenance at the time of
+    /// writing while NARA files by present custody. The clearest case is USIA — FRUS says
+    /// "Department of State, USIA/IOP Files: Lot 59 D 260" and NARA holds USIA in **RG 306**.
+    ///
+    /// The asymmetry this removes is the argument for it: the RG 306 lots at the end of this
+    /// table (64D171, 68D393, 67D317, 67D333, 70D449) ALREADY reach the reader through volume
+    /// front matter, so the guard was refusing on one route what the app showed on another.
+    ///
+    /// Two entries run the other way — `84F53` and `71F154` are F-designator lots (so the app
+    /// infers RG 84) whose records NARA holds in RG 59.
+    ///
+    /// Adding a row is a research act, not a code change: it needs a harvested series whose
+    /// `variantControlNumbers` carry the lot, under a record group that is not the cited one.
+    static let crossRecordGroupLots: [String: String] = [
+        // Document-source-note route (15 lots, 134 documents)
+        "57D284": "43", "61D282A": "353", "56D581": "306", "53D443": "353", "65D68": "353",
+        "64D149": "43", "59D260": "306", "71D483": "306", "74D417": "84", "60D147": "306",
+        "61D445": "306", "64D423": "306", "64D484": "306", "64D535": "306", "70D398": "306",
+        // Cited only in footnotes / front matter, so invisible to the source-note measurement
+        "85D427": "84", "92D306": "84", "76D381": "84", "61D233": "306", "59D242": "306",
+        "72D291": "43", "77D146": "84", "86D339": "84", "68D458": "306", "64D27": "306",
+        "60D1": "306", "60D439": "306", "71D46": "306", "64D148": "43", "74D255": "84",
+        "84F53": "59", "71F154": "59",
+        // Already resolving cross-RG today via front matter — listed so both routes agree
+        "64D171": "306", "68D393": "306", "67D317": "306", "67D333": "306", "70D449": "306",
+    ]
+
     /// Whether a candidate record may be surfaced as the resolution of `normalizedLot` in
     /// `recordGroup`.
     ///
@@ -221,11 +259,26 @@ public enum LotResolutionAcceptance {
         variantControlNumbers: [String],
         controlNumberNotes: [String] = []
     ) -> Evidence? {
-        guard let candidateRecordGroup, candidateRecordGroup == recordGroup else { return nil }
+        // #321 stands: a record exposing NO record group is still refused. Absence of evidence
+        // is not evidence, and that branch is what put unrelated series behind lot citations.
+        guard let candidateRecordGroup else { return nil }
         guard let levelOfDescription, levelOfDescription != fileUnitLevel else { return nil }
+
+        // O-7: NARA's own control number outranks the record group FRUS named — but only for
+        // lots MEASURED to cross, never as a blanket rule. See `crossRecordGroupLots`.
         if carriesLotControlNumber(normalizedLot, variantControlNumbers: variantControlNumbers) {
-            return .controlNumber
+            if candidateRecordGroup == recordGroup { return .controlNumber }
+            if crossRecordGroupLots[foldControlNumber(normalizedLot)] == candidateRecordGroup {
+                return .controlNumber
+            }
+            return nil
         }
+
+
+        // A consolidation NOTE is weaker evidence — prose naming the lot, not a catalogued
+        // control number — so it still requires the record groups to agree. Lowering both at
+        // once would admit a match resting on a sentence that merely mentions the lot.
+        guard candidateRecordGroup == recordGroup else { return nil }
         let target = foldControlNumber(normalizedLot)
         guard !target.isEmpty else { return nil }
         for note in controlNumberNotes where lotsNamedInNote(note).contains(target) {

@@ -436,4 +436,79 @@ struct LotFoldAndNoteChannelTests {
         #expect(NARACatalogClient.firstAcceptable([result], recordGroup: "59",
                                                  lotNumber: "61D67")?.naId == "596518")
     }
+
+    // MARK: - O-7: the record-group guard, lowered on control-number evidence only
+
+    /// The decision itself: NARA's own control number outranks the record group FRUS named.
+    ///
+    /// Verified against the offline harvest — naId 1422076 sits in **RG 43** and carries
+    /// `57D284`, while every FRUS citation of that lot says RG 59. The two disagree because
+    /// FRUS records provenance at the time of writing and NARA files by present custody; the
+    /// control number is the assertion, and a record group is not a refutation of it.
+    /// The counter-case, and the reason this is a table rather than a rule: an RG 29 (Census)
+    /// series carries `90D234`, colliding with a State lot of the same shape. It is NOT in the
+    /// table and must stay refused — see `LotResolutionAcceptanceTests` above.
+    @Test("An unlisted cross-record-group hit is still refused")
+    func unlistedCrossRecordGroupStillRefused() {
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "90D234",
+            candidateRecordGroup: "29", levelOfDescription: "series",
+            variantControlNumbers: ["90D234"]) == nil)
+    }
+
+    @Test("A control-number match is accepted across record groups")
+    func controlNumberOutranksRecordGroup() {
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "57D284",
+            candidateRecordGroup: "43", levelOfDescription: "series",
+            variantControlNumbers: ["57D284", "NND 760090", "A1 713"]) == .controlNumber)
+    }
+
+    /// The USIA case, which is the one a reader is most likely to meet: FRUS says
+    /// "Department of State, USIA/IOP Files: Lot 59 D 260" and NARA holds USIA in RG 306.
+    @Test("The USIA lots resolve into RG 306")
+    func usiaLotsCrossIntoRG306() {
+        for lot in ["59D260", "61D445", "64D535"] {
+            #expect(LotResolutionAcceptance.isAcceptable(
+                recordGroup: "59", normalizedLot: lot,
+                candidateRecordGroup: "306", levelOfDescription: "series",
+                variantControlNumbers: [lot]),
+                "\(lot) is cited under RG 59 and held by NARA in RG 306")
+        }
+    }
+
+    /// The half that did NOT move. A consolidation note is prose that mentions the lot, not a
+    /// catalogued control number, so it still requires the record groups to agree — otherwise a
+    /// match could rest on a sentence naming a lot the series does not hold.
+    @Test("A consolidation note is still refused across record groups")
+    func consolidationNoteStillNeedsMatchingRecordGroup() {
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "61D67",
+            candidateRecordGroup: "306", levelOfDescription: "series",
+            variantControlNumbers: [], controlNumberNotes: [consolidationNote]) == nil)
+        // …and is still accepted when they do agree, so the clause above is not a blanket ban.
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "61D67",
+            candidateRecordGroup: "59", levelOfDescription: "series",
+            variantControlNumbers: [], controlNumberNotes: [consolidationNote]) == .consolidationNote)
+    }
+
+    /// #321 is untouched: a record exposing no record group at all is still refused, even with
+    /// a control-number hit. That branch is what put unrelated series behind lot citations.
+    @Test("A record with no exposed record group is still refused")
+    func nilRecordGroupStillRefused() {
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "57D284",
+            candidateRecordGroup: nil, levelOfDescription: "series",
+            variantControlNumbers: ["57D284"]) == nil)
+    }
+
+    /// And the file-unit exclusion survives the change.
+    @Test("A file unit is still refused across record groups")
+    func fileUnitStillRefused() {
+        #expect(LotResolutionAcceptance.evidence(
+            recordGroup: "59", normalizedLot: "57D284",
+            candidateRecordGroup: "43", levelOfDescription: "fileUnit",
+            variantControlNumbers: ["57D284"]) == nil)
+    }
 }
