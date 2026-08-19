@@ -206,6 +206,9 @@ final class UIObstructionTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        // #312: seed a research note so scenario 5's detail list has top-anchored CONTENT to
+        // gate — an empty list's centered placeholder cannot distinguish the fix from the bug.
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
         app.launchArguments = ["-hasCompletedOnboarding", "1"]
         app.launch()
     }
@@ -866,6 +869,25 @@ final class UIObstructionTests: XCTestCase {
                 + "floating top tab bar may be overlaying the detail column's top safe area (#272)"
         )
 
+        // #312: the CONTENT gate the scope note above withheld until seeded data existed. When
+        // the launch seeded a research note, the opened list has a top-anchored row — exactly
+        // what a mis-computed top safe area hides — and that row must be hittable. Gated on the
+        // seed key so an unseeded run keeps its honest chrome-only scope rather than failing on
+        // an empty list's centered placeholder.
+        if app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] == "1" {
+            let seededRow = app.staticTexts["UI Test Research Note"].firstMatch
+            XCTAssertTrue(seededRow.waitForExistence(timeout: 5),
+                "The seeded research note is not in the opened list (\(context)) - either the "
+                + "seeder did not run or the list did not load; fix that before reading the "
+                + "hittability assert as coverage.")
+            if seededRow.exists {
+                XCTAssertTrue(seededRow.isHittable,
+                    "The seeded top-anchored row exists but is not hittable (\(context)) - the "
+                    + "floating top tab bar is overlaying the detail column's CONTENT, which is "
+                    + "#272's original defect and was previously ungated (#312 gap 1).")
+            }
+        }
+
         // Reset. In a two-pane there is nothing to pop — the category list is on screen
         // throughout — so the selection is cleared by choosing nothing rather than by going back.
         let back = app.buttons["BackButton"]
@@ -962,14 +984,18 @@ final class UIObstructionTests: XCTestCase {
         // A/B run proved `.allNotes` vs nil on iOS are indistinguishable at launch, so that
         // assertion does NOT discriminate the ResearchView default. Claim it as nothing more.
         //
-        // NOT GATED, two distinct gaps, neither of which should be claimed as covered:
-        //   1. The detail push in the TOGGLED representation — blocked by the harness quirk noted
-        //      above (a preceding swipe defeats the tap), not by any app defect.
-        //   2. Obstruction of detail *content*, in either representation. On a fresh install the
-        //      document list is legitimately empty and renders a CENTERED ContentUnavailableView,
-        //      so the detail column holds no top-anchored content for a mis-computed safe area to
-        //      hide. No assertion over an empty list can tell the fix from the bug. Closing this
-        //      needs seeded research data (a note/tag fixture) before drilling in.
+        // GATED SINCE #312: obstruction of detail CONTENT, in the launch representation. The
+        // suite now launches with FRUS_UI_TEST_SEED_NOTE=1, `UITestResearchSeeder` puts one
+        // research note in the store, and the drill-in helper asserts that top-anchored row is
+        // hittable — the exact thing a mis-computed top safe area hides, which no assertion
+        // over an empty list could see. Verified live on iPad Pro 13-inch (M5): the pass
+        // requires the seeded row to exist AND be hittable, so it cannot pass vacuously.
+        //
+        // NOT GATED, one remaining gap, which should not be claimed as covered:
+        //   The detail push (and therefore the content gate) in the TOGGLED representation —
+        //   blocked by the harness quirk noted above (a preceding swipe defeats the tap), not by
+        //   any app defect. The known route is a relaunch after the toggle (the representation
+        //   is system-persisted per install); nobody has built that yet.
         //
         // History worth keeping: e403faf removed the original drill-in because its oracle
         // (`app.staticTexts["All Research Documents"]`) was vacuous — the stack root's own row

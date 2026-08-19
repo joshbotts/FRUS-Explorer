@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import GeneratorKit
 
 // MARK: - GoldenCheck
 
@@ -198,7 +199,7 @@ public struct CentralFilesIndexGeneratorRunner {
         let harvestedKeys = Set(harvested.map(\.lotNumber))
         let preservedLots = lotFiles.filter { !harvestedKeys.contains($0.lotNumber) }
         let index = CentralFilesIndex(
-            generated: isoToday(),
+            generated: generatorDateStamp(override: ProcessInfo.processInfo.environment["GENERATED_DATE"]),
             numericalFile: existing.numericalFile,
             countrySeries: existing.countrySeries,
             lotFiles: lotFiles)
@@ -318,7 +319,7 @@ public struct CentralFilesIndexGeneratorRunner {
         }
 
         let updated = CentralFilesIndex(
-            generated: isoToday(),
+            generated: generatorDateStamp(override: ProcessInfo.processInfo.environment["GENERATED_DATE"]),
             numericalFile: existing.numericalFile,
             countrySeries: existing.countrySeries,
             lotFiles: lotFiles)
@@ -388,7 +389,7 @@ public struct CentralFilesIndexGeneratorRunner {
         // fallback let in) to an already-shipped index without a full re-harvest.
         if ["1", "true", "yes"].contains((env["PRUNE_FLAGGED_LOTS"] ?? "").lowercased()) {
             pruneFlaggedLots(outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
-                             generated: env["GENERATED_DATE"] ?? isoToday())
+                             generated: generatorDateStamp(override: ProcessInfo.processInfo.environment["GENERATED_DATE"]))
             return
         }
 
@@ -499,7 +500,7 @@ public struct CentralFilesIndexGeneratorRunner {
 
         // 5. Write the combined index.
         let index = CentralFilesIndex(
-            generated: isoToday(),
+            generated: generatorDateStamp(override: ProcessInfo.processInfo.environment["GENERATED_DATE"]),
             numericalFile: result.index,
             countrySeries: seriesIndexes,
             lotFiles: lotFiles)
@@ -706,13 +707,10 @@ public struct CentralFilesIndexGeneratorRunner {
         return allPassed
     }
 
-    private static func isoToday() -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
-    }
+    // #270: isoToday() was a duplicate of GeneratorKit.generatorDateStamp (same format,
+    // locale, UTC). Migrating also gives the harvest/enrich/resolve paths GENERATED_DATE
+    // override coverage the PRUNE path alone had — byte-neutral for every existing
+    // invocation, and what a reproducible re-run wants.
 }
 
 // MARK: - CountryGoldenCheck

@@ -1871,6 +1871,10 @@ struct FRUSExplorerApp: App {
             // (SwiftData + CloudKit can't enforce unique `id`s) so they stop
             // appearing twice in lists.
             DuplicateRecordCleanup.run(context: modelContainer.mainContext)
+            #if DEBUG
+            // #312: research-content seed for UIObstructionTests scenario 5 — see the seeder.
+            UITestResearchSeeder.seedIfRequested(context: modelContainer.mainContext)
+            #endif
             // #406: reconstruct orphaned tag associations. On a local-only store there is no
             // CloudKit import to wait for and the local store is authoritative, so run it now.
             // When CloudKit IS enabled we DEFER this to the sync-event observer below, which runs
