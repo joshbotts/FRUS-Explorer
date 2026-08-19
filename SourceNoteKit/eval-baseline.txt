@@ -9,16 +9,16 @@ TOTAL NOTES: 267663
   unrecognized                   2033  (100.0%)
 
 === era 1906-1939  (volumes: 118, notes: 92013)
-  centralFiles                  89655  ( 97.4%)
+  centralFiles                  89895  ( 97.7%)
   presidentialLibrary             172  (  0.2%)
   naraCollection                  373  (  0.4%)
   ciaCollection                     1  (  0.0%)
   namedFileSeries                 655  (  0.7%)
   previouslyPublished             589  (  0.6%)
-  unrecognized                    568  (  0.6%)
+  unrecognized                    328  (  0.4%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
-  centralFiles                  74933  ( 87.0%)
+  centralFiles                  74962  ( 87.0%)
   lotFile                        4172  (  4.8%)
   presidentialLibrary             518  (  0.6%)
   naraCollection                  483  (  0.6%)
@@ -26,7 +26,7 @@ TOTAL NOTES: 267663
   namedFileSeries                4476  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
   previouslyPublished              74  (  0.1%)
-  unrecognized                    809  (  0.9%)
+  unrecognized                    780  (  0.9%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
   centralFiles                  10476  ( 69.7%)
@@ -95,7 +95,7 @@ TOTAL NOTES: 267663
   unrecognized                    187  (  1.5%)
 
 === OVERALL
-  centralFiles                 194681  ( 72.7%)
+  centralFiles                 194950  ( 72.8%)
   cfpfFile                       4028  (  1.5%)
   lotFile                       14015  (  5.2%)
   presidentialLibrary           28780  ( 10.8%)
@@ -104,19 +104,19 @@ TOTAL NOTES: 267663
   namedFileSeries                6060  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             894  (  0.3%)
-  unrecognized                   5940  (  2.2%)
+  unrecognized                   5671  (  2.1%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
-  1906-1939                       568  (  0.6%)
-  1940-1951                       809  (  0.9%)
+  1906-1939                       328  (  0.4%)
+  1940-1951                       780  (  0.9%)
   1952-1954                      1096  (  7.3%)
   1955-1957                       452  (  4.2%)
   1958-1960                       185  (  2.2%)
   1961-1963                       306  (  3.1%)
   1964-1976                       304  (  1.0%)
   1977+                           187  (  1.5%)
-  overall                        5940  (  2.2%)
+  overall                        5671  (  2.1%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -152,8 +152,6 @@ TOTAL NOTES: 267663
   | Left at the Department of State by the Ecuadorian minister.
   | A telegram from the minister of foreign affairs, Tokyo, received at Washington, July 5, 1910. Left at the Department of State by a Secretary of the Japanese Embassy.
   | No. 77. General Instruction Consular.
-  | 611.626/⅓
-  | 762.67/½
   | [Enclosure-Translation]
   | [Enclosure—Translation]
   | [Enclosure—Telegram]
@@ -171,25 +169,21 @@ TOTAL NOTES: 267663
   | Reading Room of the Allies. Interior. Partial View. [Caption is in the original. See Document 24.]
   | See Document 24.
   | See Document 39.
+  | See Document 44.
+  | Senate Doc. N. 36, 63d Cong.; 1st Sess.
 --- 1940-1951
   | 7601D 61/919: Telegram
-  | 740.00111 A.R.–Subs/la: Telegram
-  | 811.5034 (China); American Radio Service/41: Telegram
   | Printed from Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Adm
   | Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Administration, 
   | Roosevelt Papers The copy of this memorandum in the Department’s files (851A.01/87A) does not have the enclosure mentioned in the memorandum.
   | Hopkins: Papers
-  | 811.24546/la: Telegram
   | Paraphrased text reprinted from Department of State Bulletin, November 8, 1941, p. 365.
   | 123 Johnson, Louis A./½
   | Copy of telegram transmitted in covering letter of June 1 from the Chinese Minister for Foreign Affairs (Soong) to Harry L. Hopkins, with the explanation: “I shall be presenting this message from the 
   | 893 51/7502: Telegram
   | 862 20210/1221: Telegram
-  | 841.244/la: Circular telegram
   | Copy from Press Conference file in the News Division.
   | This letter, released to the press by the White House November 8, is reprinted from Department of State Bulletin, November 14, 1942, p. 906.
-  | 7400.00116 European War 1939/605: Telegram
-  | 0331.1110 Wallace, Henry A./164: Telegram
   | Enclosure
   | PR 10 “Foreign Relations of U.S.”/9–1069
   | A.E.C. Files (Historical Doc. No. 133)
@@ -197,6 +191,12 @@ TOTAL NOTES: 267663
   | A.E.C. Files (Historical Doc. No. 235)
   | A.E.C. Files (Historical Doc. No. 168)
   | A.E.C. Files (Historical Doc. No. 225)
+  | A.E.C. Files (Historical Doc. No. 226)
+  | FW 842.24/244
+  | Concerning the discussion of this subject by Roosevelt and Churchill on August 22, 1943, see ante, p. 931. No copy originating at Quebec has been found of the text agreed upon. The source text used he
+  | The source text is that printed in the London Times, August 27, 1943, p. 3. The final statement issued by the British Government contained a few changes from the text considered at Quebec on August 24
+  | PR 10 “Foreign Relations of U.S.”/1–3–68
+  | This message was sent to Algiers as War Department telegram No. 5752; copy obtained from the Department of the Army files.
 --- 1952-1954
   | [Extract]
   | [Attachment]
