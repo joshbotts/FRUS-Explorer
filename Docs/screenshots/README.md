@@ -5,9 +5,79 @@ Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has
 
 > **Note:** the manuals were rewritten and renumbered in August 2026 (first-time graduate-student
 > audience; the iOS manual is now iPad-first and embeds the `ipad/` captures). The `§N.N` section
-> pointers in the lists below refer to the **pre-rewrite** manual layout — match them by feature
-> name, not section number. The rewrite also wired in `macos/person-analytics-trends` and
-> `macos/research`, which were previously captured but unused.
+> pointers in the **historical** lists further down refer to the pre-rewrite layout. The
+> **current shot list, keyed to the new numbering, is the next section** — work from it. The
+> rewrite also wired in `macos/person-analytics-trends` and `macos/research`, which were
+> previously captured but unused.
+
+## Shot list for the rewritten manuals (capture pass 2026-08-19/20)
+
+Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new shot · 🔄 re-capture
+(existing file shows retired UI). Two rules keep the wiring cheap:
+
+- **🔄 items keep their existing filename** — the manuals reference the path, so a same-name
+  re-capture updates them with zero edits.
+- **🆕 items use the filenames below** (or note what you used instead, and the manual references
+  get adjusted to match when the shots are wired in).
+
+### Tier 1 — holes in the shipped manuals (placeholders and stale-flagged embeds)
+
+| Shot | For | What it must show |
+|------|-----|-------------------|
+| 🆕 `ipad/research-rail.png` | iOS §4.2 placeholder | Document open on iPad (landscape) with the Research rail as the trailing inspector: RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Sources · Graph · Related · Share), and the Summary/Notes/Tags/Collections accordions beside the text |
+| 🆕 `ipad/stage-manager.png` | iOS §4.5 placeholder | Stage Manager: a document window beside a Related Documents (or Archival Neighbors) window, main window behind |
+| 🔄 `macos/toolbar.png` | macOS §4.1 | The current trailing five: Search, Browse, **Analytics ▾**, **My Research ▾**, Research-rail toggle, with the centred `volumeId/documentId` title. (The older note below about separate Person/Cross-Reference Analytics *buttons* predates the menu consolidation — they now live inside Analytics ▾) |
+| 🔄 `macos/research-strip.png` | macOS §4.2 | The Research rail beside a document — tile grid + accordions (filename kept for continuity) |
+| 🔄 `macos/document.png` | macOS §4.3 | The reading view under the current toolbar (rail closed is fine) |
+
+### Tier 2 — iPad upgrades for the four iPhone stand-ins
+
+The iOS manual is iPad-first; these four slots currently embed `ios/` captures with an
+"(iPhone capture)" caption. Same content, iPad framing; the references get swapped once the
+files land.
+
+| Shot | For | Replaces |
+|------|-----|----------|
+| 🆕 `ipad/people-list.png` | iOS §6.5 | `ios/people-list.png` |
+| 🆕 `ipad/people-detail.png` | iOS §6.5 | `ios/people-detail.png` |
+| 🆕 `ipad/analytics.png` | iOS §15.1 | `ios/analytics.png` — ideally with **% of documents** on and the inline toolbar **Export** menu visible (the iPad placement is itself documented) |
+| 🆕 `ipad/chronology.png` | iOS §15.7 | `ios/chronology.png` |
+
+### Tier 3 — new slots the manuals will embed as they land
+
+No image exists on that platform today; each gets wired in on arrival.
+
+- 🆕 `ipad/collections-editor.png` — iOS §12.1: the two-column manager (Contents outline + live
+  preview), ideally with a section heading and a prose or excerpt row visible. The
+  teaching-reader centerpiece — the highest-value Tier-3 shot.
+- 🔄 `macos/collections.png` — macOS §12.1: the current Collections window (toolbar collection
+  picker, outline + preview, ⚙ Collection / inspector controls). The committed file shows the
+  retired UI, which is why the rewrite doesn't embed it; a fresh capture gets wired in.
+- 🆕 `ipad/source-explorer.png` — iOS §14 (macOS already has one).
+- 🆕 `ipad/cross-reference-graph.png` — iOS §8.6.
+- 🆕 `ipad/related-documents.png` — iOS §8.5: scope control + Adjust weights + why-related chips.
+- 🆕 `ipad/crossref-analytics.png` and `macos/crossref-analytics.png` — §15.4 on each (no capture
+  of the analytics window exists on either platform).
+- 🆕 `ipad/archival-analytics.png` and `macos/archival-analytics.png` — §15.5, Collections mode:
+  an era ranking with the Central Files umbrella chip visible.
+- 🆕 `ipad/semantic-map.png` and `macos/semantic-map.png` — §15.6, Regions colouring with labels
+  and the caveat line beneath the map.
+- 🆕 `ipad/word-cloud.png` and `macos/word-cloud.png` — §15.2, ideally in **Distinctive** mode
+  with the eligibility line under the control visible.
+- 🆕 `ipad/series-production.png` — iOS §16.1, offline per the Series-Analytics empty-corpus
+  convention below (macOS already embedded).
+- 🆕 `ipad/onboarding-volumes.png` — iOS §2.3, the Add Volumes step over the word-cloud backdrop
+  (needs a fresh install, per the historical notes below).
+
+### Housekeeping from the rewrite
+
+- `ios/browse-corpus.png`, `ios/search-results.png`, `ios/document-view.png`, and
+  `ios/settings.png` are **no longer embedded in either manual** (superseded by `ipad/` shots or
+  by the Settings rewrite). Keep, refresh, or ignore them — nothing references them.
+- The four `ios/` files still embedded are exactly the Tier-2 stand-ins above.
+- Known-hard items are unchanged and stay out of the tiers: the macOS Chronology **hover
+  magnifier** (capture problem documented below) and the **Live Activity / Dynamic Island**
+  (needs a physical iPhone with an active download).
 
 ## Capture conventions
 
