@@ -3,6 +3,12 @@
 Screenshots embedded in the user manuals (`../iOS-User-Manual.md`, `../macOS-User-Manual.md`).
 Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has not been captured yet.
 
+> **Note:** the manuals were rewritten and renumbered in August 2026 (first-time graduate-student
+> audience; the iOS manual is now iPad-first and embeds the `ipad/` captures). The `§N.N` section
+> pointers in the lists below refer to the **pre-rewrite** manual layout — match them by feature
+> name, not section number. The rewrite also wired in `macos/person-analytics-trends` and
+> `macos/research`, which were previously captured but unused.
+
 ## Capture conventions
 
 - **iOS / iPadOS** — captured from the iPhone 17 and iPad Pro 11″ simulators running the app against
