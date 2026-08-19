@@ -363,4 +363,28 @@ struct BrowserViewTests {
     // that no longer exists, in code no compiler had read for months.
     //
     // `SceneEnvironmentAuditTests` replaces it with something that can actually fail.
+
+    // MARK: - #777: side-loaded volumes in the counts
+
+    /// A side-loaded entry mints `status: .published` (its TEI header carries no status), and
+    /// `publishedCount` counting it is the shipped "553 of 552": a subseries claiming one more
+    /// published volume than the series has. Published means published BY THE CATALOGUE;
+    /// side-loaded files are counted separately, and both numbers stay honest.
+    @Test("A side-loaded volume is not counted as published")
+    func sideloadedVolumeCountsSeparately() {
+        var side = makeEntry(volumeId: "frusSIDE", subseries: "1969-1976",
+                              title: "Side-loaded volume", status: .published)
+        side.provenance = .sideloaded
+        let group = SubseriesGroup(subseries: "1969-1976", volumes: [
+            makeEntry(volumeId: "frus1969-76v01", subseries: "1969-1976",
+                       title: "Published volume", status: .published),
+            side,
+        ])
+        #expect(group.publishedCount == 1, """
+            The side-loaded entry inflated the published count — the catalogue has one \
+            published volume here, and the pill must say one.
+            """)
+        #expect(group.sideloadedCount == 1)
+        #expect(group.totalVolumes == 2, "the volume is still real and still counted as itself")
+    }
 }

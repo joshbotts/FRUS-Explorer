@@ -209,6 +209,26 @@ Your library — which volumes are on this Mac, and which are indexed — is the
 
 Any volume not yet downloaded shows a download button in the Corpus Browser — click it to queue the volume, with progress in the status bar and in **Settings → Volumes & Storage**. Downloaded volumes index automatically on completion. For bulk additions, **Settings → Volumes & Storage → Add Volumes → Download from GitHub…** opens the full browse list (**Sideload XML File…** imports a volume file you obtained separately). And anywhere you reach a document in an undownloaded volume — a cross-reference, a citation-lookup result, a graph node — the app offers the download rather than dead-ending.
 
+### 5.1a Side-Loaded Volumes
+
+**Sideload XML File…** exists for volumes you obtained somewhere other than the published
+catalogue — a pre-release copy, a corrected file, a volume you archived yourself. A side-loaded
+volume is a full citizen almost everywhere: it appears in Browse under its own subseries with a
+real title (the app reads the volume's own TEI header, with the same parser that built the
+catalogue), it is searched, indexed, and browsable like any download.
+
+Four things are deliberately different, and each is the honest consequence of the file not being
+the catalogue's:
+
+- Its row in Browse carries a **Side-loaded** label, and subseries counts list side-loaded
+  volumes separately — so the published count always matches the published series.
+- Citations from it carry a note instead of a history.state.gov link: the app has no catalogue
+  record, so it **cannot confirm the document is published**, and a citation that claims less is
+  safer than one that claims wrongly.
+- **Check for Corrections** skips it — there is no published copy to compare against.
+- Removing it is final: **the app cannot download it again.** The remove dialog says so; if you
+  no longer have the file, keep the volume.
+
 ### 5.2 Browsing vs. Indexing
 
 The two are distinct, and the app never makes you wait for the second to do the first. Once a volume is *downloaded* you can browse its full structure — front matter, chapters, compilations — immediately, indexed or not. *Indexing* is what enables full-text search, a chapter's document list, and the connections graph. If a volume isn't indexed yet (or a prior pass was interrupted — most likely on the large early annual volumes), a non-blocking banner at the top of its contents explains and offers **Index** / **Re-index**.

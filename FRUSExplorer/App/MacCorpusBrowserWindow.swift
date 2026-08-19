@@ -340,6 +340,16 @@ private struct SubseriesVolumeListView: View {
                         Text(vol.volumeId)
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
+                        // #777: mirrors the iOS row badge — the two browsers are hand-written
+                        // twins, and a label only one of them carries is the dual-Settings bug.
+                        if vol.provenance == .sideloaded {
+                            Text(String(localized: "browser.volume.sideloaded",
+                                        defaultValue: "Side-loaded"))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 4)
+                                .background(.quaternary, in: Capsule())
+                        }
                         if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
                             Label("Downloaded", systemImage: "arrow.down.circle.fill")
                                 .font(.system(size: 10))

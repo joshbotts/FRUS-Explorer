@@ -262,7 +262,14 @@ public struct SubseriesGroup: Sendable, Identifiable {
     public var totalVolumes: Int { volumes.count }
     public var totalDocuments: Int { volumes.reduce(0) { $0 + $1.documentCount } }
 
-    public var publishedCount: Int      { volumes.filter { $0.status == .published }.count }
+    /// Published BY THE CATALOGUE. A side-loaded entry mints `status: .published` (the TEI
+    /// header carries no status), and counting it here read "553 of 552" against a series
+    /// that has 552 published volumes (#777). Side-loaded files are counted separately.
+    public var publishedCount: Int {
+        volumes.filter { $0.status == .published && $0.provenance != .sideloaded }.count
+    }
+    /// Files the user added themselves — real, browsable, and not the catalogue's.
+    public var sideloadedCount: Int { volumes.filter { $0.provenance == .sideloaded }.count }
     public var partiallyPublishedCount: Int { volumes.filter { $0.status == .partiallyPublished }.count }
     public var plannedCount: Int        { volumes.filter { $0.status == .planned }.count }
 

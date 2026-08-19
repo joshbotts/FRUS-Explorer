@@ -229,6 +229,26 @@ Three routes, all equivalent:
 
 Downloads queue; progress appears in the indexing banner (Section 4.8) and in Settings. **Options** in Volumes & Storage sets concurrent downloads and whether cellular downloads are allowed.
 
+### 5.1a Side-Loaded Volumes
+
+**Sideload XML File…** exists for volumes you obtained somewhere other than the published
+catalogue — a pre-release copy, a corrected file, a volume you archived yourself. A side-loaded
+volume is a full citizen almost everywhere: it appears in Browse under its own subseries with a
+real title (the app reads the volume's own TEI header, with the same parser that built the
+catalogue), it is searched, indexed, and browsable like any download.
+
+Four things are deliberately different, and each is the honest consequence of the file not being
+the catalogue's:
+
+- Its row in Browse carries a **Side-loaded** label, and subseries counts list side-loaded
+  volumes separately — so the published count always matches the published series.
+- Citations from it carry a note instead of a history.state.gov link: the app has no catalogue
+  record, so it **cannot confirm the document is published**, and a citation that claims less is
+  safer than one that claims wrongly.
+- **Check for Corrections** skips it — there is no published copy to compare against.
+- Removing it is final: **the app cannot download it again.** The remove dialog says so; if you
+  no longer have the file, keep the volume.
+
 ### 5.2 Indexing
 
 Indexing is what turns a downloaded volume into a searchable one — it parses the TEI XML into the full-text index, the person index, the cross-reference table, and the date table. It runs automatically when a download completes, and the banner narrates it. **Index Remaining** (in Volumes & Storage → Storage & Index) indexes anything downloaded but not yet searchable; a **Needs Attention** section appears only when volumes were interrupted mid-index.
