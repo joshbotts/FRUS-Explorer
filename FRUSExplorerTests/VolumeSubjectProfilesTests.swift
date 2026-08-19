@@ -202,18 +202,50 @@ struct VolumeSubjectProfilesTests {
         #expect(v1944.contains { $0.name == "Lend-lease program" })
         let v1898 = try #require(profiles.topSubjects(forVolumeId: "frus1898"))
         #expect(v1898.contains { $0.name == "Neutrality" })
-        // The genericity floor holds: the 7 corpus-wide mega-subjects must appear in
-        // NO volume's profile (the whole feature fails if War/Peace top every list).
-        let stoplisted: Set<String> = [
+        // The genericity floor holds. What that means is "no subject is so corpus-wide that it
+        // crowds out what a volume is actually about" — the whole feature fails if War and Peace
+        // top every list. It is asserted two ways, because a fixed list of names cannot express it.
+        //
+        // These five are corpus-wide in any drop, and stay out:
+        let alwaysGeneric: Set<String> = [
             "War", "Peace", "Science and technology",
             "Treaties and international agreements", "Trade relations",
-            "Financial and monetary affairs", "International law",
         ]
         for (volumeId, subjects) in profiles.resolvedByVolume {
             for subject in subjects {
-                #expect(!stoplisted.contains(subject.name),
+                #expect(!alwaysGeneric.contains(subject.name),
                         "\(volumeId) carries stoplisted generic subject \(subject.name)")
             }
+        }
+
+        // The list used to also name "International law" and "Financial and monetary affairs".
+        // They were removed on 2026-08-19 when the source drop was refreshed, because the floor is
+        // a MEASURED threshold — a share of tagged corpus documents — and the cleaner export put
+        // both below it. That is the floor working, not failing: measured over the refreshed
+        // artifact, "International law" is listed by 102 of 552 volumes and tops exactly one, which
+        // makes it less common than eight subjects this test never stoplisted (Intelligence
+        // collection 178, Propaganda 166, Armed forces 162). Pinning the *output* of a data-driven
+        // rule re-fails on every legitimate refresh, so the invariant is asserted directly instead.
+        let volumeCount = profiles.resolvedByVolume.count
+        var listedIn: [String: Int] = [:]
+        var topsCount: [String: Int] = [:]
+        for (_, subjects) in profiles.resolvedByVolume {
+            for subject in subjects { listedIn[subject.name, default: 0] += 1 }
+            if let first = subjects.first { topsCount[first.name, default: 0] += 1 }
+        }
+        // Measured headroom: the most-listed subject is 32.2% of volumes in this drop and was
+        // 36.6% in the previous one, so 40% flags a real regression rather than ordinary drift.
+        if let (name, count) = listedIn.max(by: { $0.value < $1.value }) {
+            #expect(Double(count) / Double(volumeCount) < 0.40, """
+                \(name) is listed by \(count) of \(volumeCount) volumes — the genericity floor is \
+                no longer holding it back
+                """)
+        }
+        // And nothing should be the single most characteristic subject of a large slice of the
+        // corpus: 3.4% here, 3.8% before.
+        if let (name, count) = topsCount.max(by: { $0.value < $1.value }) {
+            #expect(Double(count) / Double(volumeCount) < 0.10,
+                    "\(name) tops \(count) of \(volumeCount) volumes' profiles")
         }
     }
 }
