@@ -37,6 +37,13 @@ struct SeriesChartCard<Controls: View, Content: View>: View {
     /// The chart's tabular representation; when non-nil, a "View as table" button
     /// appears in the header and invokes `onInspect` with this value.
     let inspector: ChartInspectorData?
+    /// Which inspector columns feed the Audio Graph descriptor — see
+    /// `AXChartDescriptorModifier`. Defaults fit the Series tables; the archival ranking and
+    /// bands tables carry their category NAME at column 1 and their count at column 2, so the
+    /// default silently refused there for as long as the card has hosted them (#268: adopted
+    /// in source, nothing delivered at runtime).
+    var axLabelColumn: Int = 0
+    var axValueColumn: Int = 1
     /// Invoked with `inspector` when the user taps "View as table" — the host opens
     /// its own `.sheet` from the value.
     let onInspect: (ChartInspectorData) -> Void
@@ -79,7 +86,9 @@ struct SeriesChartCard<Controls: View, Content: View>: View {
             // dashboard. Charts whose inspector cells are not numeric get no descriptor rather
             // than a wrong one; see `AXChartDescriptorBuilder.points(from:)`.
             content()
-                .modifier(AXChartDescriptorModifier(inspector: inspector, title: title))
+                .modifier(AXChartDescriptorModifier(inspector: inspector, title: title,
+                                                    labelColumn: axLabelColumn,
+                                                    valueColumn: axValueColumn))
         }
     }
 }
@@ -96,19 +105,25 @@ struct SeriesChartCard<Controls: View, Content: View>: View {
 /// card — one inside a `List` section, where the section header is already the chart's heading and
 /// the card's own title would render a second one — reach it through
 /// ``SwiftUI/View/axChartDescriptor(inspector:title:)``.
-private struct AXChartDescriptorModifier: ViewModifier {
+struct AXChartDescriptorModifier: ViewModifier {
     let inspector: ChartInspectorData?
     let title: String
+    /// Which table column holds the x label / plotted value. The defaults (0, 1) fit the
+    /// Series tables this shipped with. THEY DO NOT FIT the corpus analytics tables — there
+    /// column 0 is the term and column 1 the period, and "1969" PARSES, so the default would
+    /// have sonified years as values without a sound of complaint. Every adoption states its
+    /// columns; `AXChartDescriptorTests` pins each table's indices against the real builders.
+    var labelColumn: Int = 0
+    var valueColumn: Int = 1
+    /// Set for an interleaved multi-series table (a compare table, the trajectory table):
+    /// rows split into one audio series per distinct value of this column. Without it such a
+    /// table would flatten into one zig-zag series crossing every term — which parses cleanly
+    /// and is wrong.
+    var splitBySeriesColumn: Int? = nil
 
     func body(content: Content) -> some View {
         #if canImport(Accessibility)
-        if let inspector,
-           let points = AXChartDescriptorBuilder.points(from: inspector),
-           let descriptor = AXChartDescriptorBuilder.descriptor(
-                title: title,
-                xLabel: inspector.columns.first ?? "",
-                yLabel: inspector.columns.count > 1 ? inspector.columns[1] : "",
-                points: points) {
+        if let descriptor = builtDescriptor {
             content.accessibilityChartDescriptor(FixedChartDescriptor(descriptor))
         } else {
             content
@@ -117,6 +132,28 @@ private struct AXChartDescriptorModifier: ViewModifier {
         content
         #endif
     }
+
+    #if canImport(Accessibility)
+    private var builtDescriptor: AXChartDescriptor? {
+        guard let inspector else { return nil }
+        let xLabel = inspector.columns.indices.contains(labelColumn)
+            ? inspector.columns[labelColumn] : ""
+        let yLabel = inspector.columns.indices.contains(valueColumn)
+            ? inspector.columns[valueColumn] : ""
+        if let seriesColumn = splitBySeriesColumn {
+            guard let split = AXChartDescriptorBuilder.seriesSplit(
+                from: inspector, seriesColumn: seriesColumn,
+                labelColumn: labelColumn, valueColumn: valueColumn) else { return nil }
+            return AXChartDescriptorBuilder.descriptor(
+                title: title, xLabel: xLabel, yLabel: yLabel, namedSeries: split)
+        }
+        guard let points = AXChartDescriptorBuilder.points(
+            from: inspector, labelColumn: labelColumn, valueColumn: valueColumn)
+        else { return nil }
+        return AXChartDescriptorBuilder.descriptor(
+            title: title, xLabel: xLabel, yLabel: yLabel, points: points)
+    }
+    #endif
 }
 
 extension View {
@@ -131,8 +168,16 @@ extension View {
     ///   - inspector: The chart's tabular form — the same value its "View as table" button shows,
     ///     so the sonified series and the readable one cannot drift apart.
     ///   - title: The descriptor's title, normally the chart's own heading.
-    func axChartDescriptor(inspector: ChartInspectorData?, title: String) -> some View {
-        modifier(AXChartDescriptorModifier(inspector: inspector, title: title))
+    func axChartDescriptor(
+        inspector: ChartInspectorData?,
+        title: String,
+        labelColumn: Int = 0,
+        valueColumn: Int = 1,
+        splitBySeriesColumn: Int? = nil
+    ) -> some View {
+        modifier(AXChartDescriptorModifier(inspector: inspector, title: title,
+                                           labelColumn: labelColumn, valueColumn: valueColumn,
+                                           splitBySeriesColumn: splitBySeriesColumn))
     }
 }
 

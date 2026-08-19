@@ -125,7 +125,100 @@ enum AXChartDescriptorBuilder {
             series: [series]
         )
     }
+
+    /// A descriptor over SEVERAL named series — the compare charts and the trajectory chart.
+    ///
+    /// The single-series `descriptor` fed a compare table whole would produce one zig-zag
+    /// series crossing every term — which parses cleanly and is wrong, the worst kind of audio
+    /// graph. Each (name, points) pair becomes its own `AXDataSeriesDescriptor`; the axes span
+    /// the union.
+    @MainActor
+    static func descriptor(
+        title: String,
+        xLabel: String,
+        yLabel: String,
+        namedSeries: [(name: String, points: [AXChartPoint])]
+    ) -> AXChartDescriptor? {
+        let nonEmpty = namedSeries.filter { !$0.points.isEmpty }
+        guard !nonEmpty.isEmpty else { return nil }
+        let all = nonEmpty.flatMap(\.points)
+
+        let yValues = all.map(\.y)
+        let minY = yValues.min() ?? 0
+        let maxY = yValues.max() ?? 0
+        let yAxis = AXNumericDataAxisDescriptor(
+            title: yLabel,
+            range: minY...(maxY > minY ? maxY : minY + 1),
+            gridlinePositions: []
+        ) { value in
+            value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
+        }
+
+        let xAxis: AXDataAxisDescriptor
+        if all.allSatisfy({ $0.x != nil }) {
+            let xValues = all.compactMap(\.x)
+            let minX = xValues.min() ?? 0
+            let maxX = xValues.max() ?? 0
+            xAxis = AXNumericDataAxisDescriptor(
+                title: xLabel,
+                range: minX...(maxX > minX ? maxX : minX + 1),
+                gridlinePositions: []
+            ) { String(Int($0)) }
+        } else {
+            // Union of labels in first appearance order, deduplicated — several series share
+            // an axis, and repeating a category per series would misorder the rotor.
+            var seen = Set<String>()
+            let order = all.map(\.label).filter { seen.insert($0).inserted }
+            xAxis = AXCategoricalDataAxisDescriptor(title: xLabel, categoryOrder: order)
+        }
+
+        let series = nonEmpty.map { entry in
+            AXDataSeriesDescriptor(
+                name: entry.name,
+                isContinuous: entry.points.allSatisfy { $0.x != nil },
+                dataPoints: entry.points.map { point in
+                    AXDataPoint(x: point.x ?? Double(entry.points.firstIndex(of: point) ?? 0),
+                                y: point.y,
+                                additionalValues: [],
+                                label: point.label)
+                }
+            )
+        }
+        return AXChartDescriptor(title: title, summary: nil, xAxis: xAxis, yAxis: yAxis,
+                                 additionalAxes: [], series: series)
+    }
     #endif
+
+    /// Splits an interleaved multi-series table into named series by a series column.
+    ///
+    /// The compare tables and the trajectory table interleave every series' rows (outer loop
+    /// over terms/people), so `points(from:)` over the whole table is exactly the zig-zag the
+    /// multi-series descriptor exists to prevent. Series order is first appearance; the
+    /// refusal rule is unchanged — one unparseable value cell refuses the WHOLE table.
+    static func seriesSplit(
+        from data: ChartInspectorData,
+        seriesColumn: Int,
+        labelColumn: Int,
+        valueColumn: Int
+    ) -> [(name: String, points: [AXChartPoint])]? {
+        guard data.columns.indices.contains(seriesColumn),
+              data.columns.indices.contains(labelColumn),
+              data.columns.indices.contains(valueColumn),
+              !data.rows.isEmpty else { return nil }
+        var order: [String] = []
+        var byName: [String: [AXChartPoint]] = [:]
+        for row in data.rows {
+            guard row.cells.indices.contains(seriesColumn),
+                  row.cells.indices.contains(labelColumn),
+                  row.cells.indices.contains(valueColumn),
+                  let y = numeric(row.cells[valueColumn]) else { return nil }
+            let name = row.cells[seriesColumn]
+            let label = row.cells[labelColumn]
+            if byName[name] == nil { order.append(name) }
+            byName[name, default: []].append(AXChartPoint(label: label, x: numeric(label), y: y))
+        }
+        return order.map { ($0, byName[$0] ?? []) }
+    }
 
     /// Points parsed out of an inspector table, or `nil` when they cannot be read as numbers.
     ///
@@ -138,10 +231,15 @@ enum AXChartDescriptorBuilder {
     ///   - data: The inspector table.
     ///   - labelColumn: Index of the column holding the x label.
     ///   - valueColumn: Index of the column holding the plotted value.
+    ///   - skippingBlankValues: When `true`, a row whose value cell is EMPTY is skipped
+    ///     rather than refusing the table — for genuinely optional columns (the distribution
+    ///     table's outbound column is blank where no outbound count exists). A NON-empty cell
+    ///     that fails to parse still refuses: absence is optional, garbage is not.
     static func points(
         from data: ChartInspectorData,
         labelColumn: Int = 0,
-        valueColumn: Int = 1
+        valueColumn: Int = 1,
+        skippingBlankValues: Bool = false
     ) -> [AXChartPoint]? {
         guard data.columns.indices.contains(labelColumn),
               data.columns.indices.contains(valueColumn),
@@ -149,12 +247,16 @@ enum AXChartDescriptorBuilder {
         var points: [AXChartPoint] = []
         for row in data.rows {
             guard row.cells.indices.contains(labelColumn),
-                  row.cells.indices.contains(valueColumn),
-                  let y = numeric(row.cells[valueColumn]) else { return nil }
+                  row.cells.indices.contains(valueColumn) else { return nil }
+            let cell = row.cells[valueColumn]
+            if skippingBlankValues, cell.trimmingCharacters(in: .whitespaces).isEmpty {
+                continue
+            }
+            guard let y = numeric(cell) else { return nil }
             let label = row.cells[labelColumn]
             points.append(AXChartPoint(label: label, x: numeric(label), y: y))
         }
-        return points
+        return points.isEmpty ? nil : points
     }
 
     /// Reads a formatted cell back to a number, or `nil`.

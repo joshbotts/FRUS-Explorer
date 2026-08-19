@@ -2112,6 +2112,9 @@ struct AnalyticsView: View {
                     totals: documentTotalsByYear,
                     decadeStride: false
                 )
+                .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                                   labelColumn: 1, valueColumn: 5,
+                                   splitBySeriesColumn: 0)
                 normalizationCaption.padding(.horizontal)
             } else {
             if !coloring.series.isEmpty {
@@ -2130,6 +2133,11 @@ struct AnalyticsView: View {
                 decadeStride: false,
                 showsFitLine: showFitLine
             )
+            // #268: columns are (Period, Plotted) — the DEFAULT (0, 1) reads (Term,
+            // Period), and on the year axis "1969" parses, sonifying years as values
+            // silently. Plotted matches raw-vs-normalized exactly.
+            .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                               labelColumn: 1, valueColumn: 5)
             .frame(height: 280)
             .padding(.horizontal)
 
@@ -2176,6 +2184,9 @@ struct AnalyticsView: View {
                     totals: documentTotalsByDecade,
                     decadeStride: true
                 )
+                .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                                   labelColumn: 1, valueColumn: 5,
+                                   splitBySeriesColumn: 0)
                 normalizationCaption.padding(.horizontal)
             } else {
             if !coloring.series.isEmpty {
@@ -2193,6 +2204,11 @@ struct AnalyticsView: View {
                 decadeStride: true,
                 showsFitLine: showFitLine
             )
+            // #268: columns are (Period, Plotted) — the DEFAULT (0, 1) reads (Term,
+            // Period), and on the year axis "1969" parses, sonifying years as values
+            // silently. Plotted matches raw-vs-normalized exactly.
+            .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                               labelColumn: 1, valueColumn: 5)
             .frame(height: 280)
             .padding(.horizontal)
 
@@ -2233,6 +2249,9 @@ struct AnalyticsView: View {
                     compareDateChart(seriesByTerm: series,
                                      xLabel: String(localized: "analytics.axis.month", defaultValue: "Month"),
                                      xDomain: startDate...endDate)
+                .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                                   labelColumn: 1, valueColumn: 5,
+                                   splitBySeriesColumn: 0)
                 }
             } else {
             if data.isEmpty {
@@ -2279,6 +2298,8 @@ struct AnalyticsView: View {
                 .chartYAxisLabel(
                     valueAxisLabel
                 )
+                .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                               labelColumn: 1, valueColumn: 5)
                 .frame(height: 280)
                 .padding(.horizontal)
             }
@@ -2317,6 +2338,9 @@ struct AnalyticsView: View {
                     compareDateChart(seriesByTerm: series,
                                      xLabel: String(localized: "analytics.axis.date", defaultValue: "Date"),
                                      xDomain: startDate...endDate)
+                .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                                   labelColumn: 1, valueColumn: 5,
+                                   splitBySeriesColumn: 0)
                 }
             } else {
             if data.isEmpty {
@@ -2363,6 +2387,8 @@ struct AnalyticsView: View {
                 .chartYAxisLabel(
                     valueAxisLabel
                 )
+                .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                               labelColumn: 1, valueColumn: 5)
                 .frame(height: 280)
                 .padding(.horizontal)
             }
@@ -2562,6 +2588,8 @@ struct AnalyticsView: View {
             .chartOverlay { proxy in categoryTapOverlay(proxy) { subseries in
                 openScopedDocumentsInSearch(volumeIds: indexedVolumeIds(forSubseries: subseries))
             } }
+            .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                               labelColumn: 1, valueColumn: 5)
             .frame(height: max(240, CGFloat(subseriesData.count) * 28))
             .padding(.horizontal)
 
@@ -2618,6 +2646,8 @@ struct AnalyticsView: View {
                     openScopedDocumentsInSearch(volumeIds: [match.volumeId])
                 }
             } }
+            .axChartDescriptor(inspector: exportTable, title: exportFigureTitle,
+                               labelColumn: 1, valueColumn: 5)
             .frame(height: max(240, CGFloat(volumeData.count) * 28))
             .padding(.horizontal)
 

@@ -990,6 +990,10 @@ struct ArchivalAnalyticsView: View {
             title: title,
             caption: rankingCaption(ranking),
             inspector: table,
+            // #268: this table's column 1 is the custodian NAME, so the card's default value
+            // column silently refused for as long as the card has hosted this chart — adopted
+            // in source, nothing delivered at runtime. The count is column 2.
+            axValueColumn: 2,
             onInspect: { inspectorData = $0 },
             controls: {
                 exportControl(table: table, provenance: provenance) { format in
@@ -1316,6 +1320,7 @@ struct ArchivalAnalyticsView: View {
             caption: String(localized: "archival.library.bands.caption",
                             defaultValue: "The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department's decimal file, through the postwar bureau lot files, to the presidential libraries."),
             inspector: libraryBandsTable(profile),
+            axValueColumn: 2,
             onInspect: { inspectorData = $0 },
             controls: {
                 exportControl(table: libraryBandsTable(profile), provenance: provenance)
