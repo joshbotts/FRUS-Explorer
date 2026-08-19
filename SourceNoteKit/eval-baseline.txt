@@ -9,16 +9,16 @@ TOTAL NOTES: 267663
   unrecognized                   2033  (100.0%)
 
 === era 1906-1939  (volumes: 118, notes: 92013)
-  centralFiles                  89654  ( 97.4%)
+  centralFiles                  89655  ( 97.4%)
   presidentialLibrary             172  (  0.2%)
   naraCollection                  373  (  0.4%)
   ciaCollection                     1  (  0.0%)
   namedFileSeries                 655  (  0.7%)
   previouslyPublished             589  (  0.6%)
-  unrecognized                    569  (  0.6%)
+  unrecognized                    568  (  0.6%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
-  centralFiles                  74931  ( 87.0%)
+  centralFiles                  74933  ( 87.0%)
   lotFile                        4172  (  4.8%)
   presidentialLibrary             518  (  0.6%)
   naraCollection                  483  (  0.6%)
@@ -26,7 +26,7 @@ TOTAL NOTES: 267663
   namedFileSeries                4445  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
   previouslyPublished              74  (  0.1%)
-  unrecognized                    842  (  1.0%)
+  unrecognized                    840  (  1.0%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
   centralFiles                  10476  ( 69.7%)
@@ -95,7 +95,7 @@ TOTAL NOTES: 267663
   unrecognized                    187  (  1.5%)
 
 === OVERALL
-  centralFiles                 194678  ( 72.7%)
+  centralFiles                 194681  ( 72.7%)
   cfpfFile                       4028  (  1.5%)
   lotFile                       14015  (  5.2%)
   presidentialLibrary           28780  ( 10.8%)
@@ -104,19 +104,19 @@ TOTAL NOTES: 267663
   namedFileSeries                6029  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             894  (  0.3%)
-  unrecognized                   5974  (  2.2%)
+  unrecognized                   5971  (  2.2%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
-  1906-1939                       569  (  0.6%)
-  1940-1951                       842  (  1.0%)
+  1906-1939                       568  (  0.6%)
+  1940-1951                       840  (  1.0%)
   1952-1954                      1096  (  7.3%)
   1955-1957                       452  (  4.2%)
   1958-1960                       185  (  2.2%)
   1961-1963                       306  (  3.1%)
   1964-1976                       304  (  1.0%)
   1977+                           187  (  1.5%)
-  overall                        5974  (  2.2%)
+  overall                        5971  (  2.2%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -153,7 +153,6 @@ TOTAL NOTES: 267663
   | A telegram from the minister of foreign affairs, Tokyo, received at Washington, July 5, 1910. Left at the Department of State by a Secretary of the Japanese Embassy.
   | No. 77. General Instruction Consular.
   | 611.626/⅓
-  | 611.626⅓
   | 762.67/½
   | [Enclosure-Translation]
   | [Enclosure—Translation]
@@ -171,10 +170,10 @@ TOTAL NOTES: 267663
   | Reading Room of the Allies. Interior. Partial View. Note the American flags and War poster. Serious looking gentleman in shirt sleeves is the Manager. [Caption is in the original. See Document 24.]
   | Reading Room of the Allies. Interior. Partial View. [Caption is in the original. See Document 24.]
   | See Document 24.
+  | See Document 39.
 --- 1940-1951
   | 7601D 61/919: Telegram
   | 740.00111 A.R.–Subs/la: Telegram
-  | 311.6121½
   | 811.5034 (China); American Radio Service/41: Telegram
   | Printed from Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Adm
   | Defense Flies
@@ -197,6 +196,7 @@ TOTAL NOTES: 267663
   | PR 10 “Foreign Relations of U.S.”/9–1069
   | A.E.C. Files (Historical Doc. No. 133)
   | A.E.C. Files (Historical Doc. No. 166)
+  | A.E.C. Files (Historical Doc. No. 235)
 --- 1952-1954
   | [Extract]
   | [Attachment]

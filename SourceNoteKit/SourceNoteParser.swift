@@ -980,8 +980,19 @@ public struct SourceNoteParser {
 
     // MARK: - Era 2: Decimal File
 
+    /// The class body admits **vulgar fraction characters** (#353).
+    ///
+    /// The decimal file uses them as genuine subdivisions — `311.6121½`, `811.5034½/41` — and
+    /// each is a single Unicode character, not digit-slash-digit, so `[A-Z0-9]` could not match
+    /// one and the whole note fell to `unrecognized`.
+    ///
+    /// **Written as literal characters on purpose.** `\u{00BC}` is NOT valid
+    /// `NSRegularExpression` syntax: the pattern fails to compile, the property is `nil`, and
+    /// every decimal note silently stops matching. Measured, that mistake moved the corpus
+    /// residue from 5,974 to 6,292 — a regression that looks like a rule being too narrow rather
+    /// than a regex that never ran.
     private static let decimalFileRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^[A-Z0-9]+\.[A-Z0-9]+/[\d–\-]+"#,
+        pattern: #"^[A-Z0-9¼½¾⅓⅔⅛⅜⅝⅞]+\.[A-Z0-9¼½¾⅓⅔⅛⅜⅝⅞]+/[\d–\-]+"#,
         options: .caseInsensitive
     )
 
@@ -1096,7 +1107,7 @@ public struct SourceNoteParser {
     /// class with an optional `: Telegram` suffix (`102.8951: Telegram`,
     /// `103.9151: Telegram`). Anchored to the full note.
     private static let decimalNoItemRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.]*?(?:\s[A-Z][^/:;"“”]{0,40}?)?)\.?\s*(?::\s*[A-Z][a-z]{2,14})?\.?\s*$"#,
+        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.¼½¾⅓⅔⅛⅜⅝⅞]*?(?:\s[A-Z][^/:;"“”]{0,40}?)?)\.?\s*(?::\s*[A-Z][a-z]{2,14})?\.?\s*$"#,
         options: []
     )
 

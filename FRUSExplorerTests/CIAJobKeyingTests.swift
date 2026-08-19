@@ -230,4 +230,23 @@ struct FrontMatterJobKeyingTests {
         #expect(SourceNoteParser.firstLotReference(in: "Lot 62 D 225, Trust Territory")?.lotNumber
             .trimmingCharacters(in: .whitespaces) == "62 D 225")
     }
+
+    // MARK: - #353: vulgar fractions in a decimal class
+
+    /// The decimal file uses fraction characters as real subdivisions, and each is a single
+    /// Unicode character rather than digit-slash-digit — so `[A-Z0-9]` could not match one and
+    /// the entire note fell to `unrecognized`.
+    ///
+    /// Small family, honestly: 3 notes corpus-wide (eval residue 5,974 -> 5,971). It is here
+    /// because the failure mode is silent and recurs with every new decimal-era volume.
+    @Test("A decimal class carrying a vulgar fraction is recognised")
+    func decimalClassWithFractionParses() {
+        let parser = SourceNoteParser()
+        #expect(parser.parse("311.6121½") != nil, """
+            A fraction subdivision still defeats the decimal grammar. Note the trap this rule was \
+            first written into: `\\u{00BC}` is NOT valid NSRegularExpression syntax — the pattern \
+            silently fails to compile, the property is nil, and EVERY decimal note stops matching. \
+            Measured, that moved the residue to 6,292. Use literal characters.
+            """)
+    }
 }
