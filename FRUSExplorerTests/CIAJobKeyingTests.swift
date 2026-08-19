@@ -331,4 +331,58 @@ struct FrontMatterJobKeyingTests {
             }
         }
     }
+
+    // MARK: - #353: FRC accession series (158 notes, 1940-76)
+
+    /// Two shapes, both verbatim corpus notes.
+    ///
+    /// The bare comma form (`ECA Telegram Files, FRC Acc. No. 53A278, Paris Torep : Telegram`)
+    /// dies in the generic comma rule because its key segment excludes dots, which `Acc.` and
+    /// `No.` both carry. The narrative form (`Source: Washington National Records Center,
+    /// OASD/ISA Files: FRC 60 A 133`) dies because `tryNARACollection` requires a record group
+    /// and only a MODERN accession (`FRC 330-78-0011`) encodes one — the year-first style
+    /// (`FRC 60 A 133`) does not, so those notes fell through everything.
+    ///
+    /// Both land in `.namedFileSeries` on the argument `tryAgencyFileSeries` documents:
+    /// the accession encodes no catalogue route, and asserting one would be the
+    /// confidently-wrong link this workstream removes. The WNRC lead never enters the series
+    /// name — WNRC is where the series sits, not what it is.
+    @Test("FRC accession citations parse as named file series")
+    func frcAccessionFormsParse() {
+        let parser = SourceNoteParser()
+        let cases: [(String, String)] = [
+            ("ECA Telegram Files, FRC Acc. No. 53A278, Paris Torep : Telegram",
+             "ECA Telegram Files"),
+            ("ECA Telegram Files, FRC Acc. No. 53A278,", "ECA Telegram Files"),
+            ("ECA message files, FRC acc. no. 53 A 278: Telegram", "ECA message files"),
+            ("MSA telegram files, FRC Acc. No. 54 A 298, \u{201C}Paris Repto \u{201D}: Telegram",
+             "MSA telegram files"),
+            ("Source: Washington National Records Center, OASD/ISA Files: FRC 60 A 133. Secret.",
+             "OASD/ISA Files"),
+            ("Source: Washington National Records Center, McNamara Files: FRC 71-A-347, Box 5.",
+             "McNamara Files"),
+        ]
+        for (note, series) in cases {
+            if case .namedFileSeries(let name, let id) = parser.parse(note) {
+                #expect(name == series, "series for \(note.prefix(40))")
+                #expect(id?.contains("FRC") == true, "the accession stays in the identifier")
+            } else {
+                Issue.record("still unrecognized: \(note.prefix(60))")
+            }
+        }
+    }
+
+    /// The boundary that must not move: a MODERN accession leads with its record group, and
+    /// those WNRC citations keep resolving to `.naraCollection` — the route with a real
+    /// catalogue query — not to the weaker named-series class.
+    @Test("A modern RG-first FRC accession still yields naraCollection")
+    func modernFRCAccessionKeepsItsRecordGroup() {
+        let parser = SourceNoteParser()
+        let note = "Source: Washington National Records Center, OSD Files: FRC 330\u{2013}78\u{2013}0011, Box 63, Indian Ocean."
+        if case .naraCollection(let rg, _, _, _) = parser.parse(note) {
+            #expect(rg == "330", "the RG is encoded in the accession and must be extracted")
+        } else {
+            Issue.record("modern-accession WNRC note lost its naraCollection route")
+        }
+    }
 }
