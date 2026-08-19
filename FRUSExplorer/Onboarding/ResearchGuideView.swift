@@ -100,6 +100,18 @@ struct ResearchGuideView: View {
 /// Version history:
 ///   1.0 — #363 #7: initial implementation (value-based, off the Window menu)
 struct ResearchGuideWindowID: Codable, Hashable {}
+
+/// Marker value for the About window (#824(3)).
+///
+/// Always-equal, so `WindowGroup(id: "about", for:)` reuses one window exactly as the singleton
+/// `Window` it replaced did — while leaving the macOS Window menu, which lists one entry per
+/// `Window` scene and offers no way to suppress one. About belongs in the app menu, where it
+/// already is.
+struct AboutWindowID: Codable, Hashable {}
+
+/// Marker value for the New Project window (#824(3)). Same shape and reason as ``AboutWindowID``:
+/// New Project is an action rather than a place, so it does not belong in a list of windows.
+struct NewProjectWindowID: Codable, Hashable {}
 #endif
 
 // MARK: - ResearchGuideLinkButton
