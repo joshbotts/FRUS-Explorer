@@ -14,8 +14,8 @@ TOTAL NOTES: 267663
   naraCollection                  373  (  0.4%)
   ciaCollection                     1  (  0.0%)
   namedFileSeries                 655  (  0.7%)
-  previouslyPublished             589  (  0.6%)
-  unrecognized                    328  (  0.4%)
+  previouslyPublished             607  (  0.7%)
+  unrecognized                    310  (  0.3%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
   centralFiles                  74962  ( 87.0%)
@@ -25,8 +25,8 @@ TOTAL NOTES: 267663
   ciaCollection                   678  (  0.8%)
   namedFileSeries                4516  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
-  previouslyPublished              74  (  0.1%)
-  unrecognized                    740  (  0.9%)
+  previouslyPublished              90  (  0.1%)
+  unrecognized                    724  (  0.8%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
   centralFiles                  10476  ( 69.7%)
@@ -45,8 +45,8 @@ TOTAL NOTES: 267663
   ciaCollection                    52  (  0.5%)
   namedFileSeries                 122  (  1.1%)
   foreignGovernmentArchive          9  (  0.1%)
-  previouslyPublished               5  (  0.0%)
-  unrecognized                    417  (  3.9%)
+  previouslyPublished               6  (  0.1%)
+  unrecognized                    416  (  3.9%)
 
 === era 1958-1960  (volumes: 23, notes: 8547)
   centralFiles                   5092  ( 59.6%)
@@ -67,8 +67,8 @@ TOTAL NOTES: 267663
   ciaCollection                   447  (  4.5%)
   namedFileSeries                  46  (  0.5%)
   foreignGovernmentArchive          1  (  0.0%)
-  previouslyPublished               2  (  0.0%)
-  unrecognized                    291  (  2.9%)
+  previouslyPublished               6  (  0.1%)
+  unrecognized                    287  (  2.9%)
 
 === era 1964-1976  (volumes: 100, notes: 30790)
   centralFiles                   3008  (  9.8%)
@@ -91,8 +91,8 @@ TOTAL NOTES: 267663
   ciaCollection                   423  (  3.4%)
   namedFileSeries                 292  (  2.4%)
   foreignGovernmentArchive         20  (  0.2%)
-  previouslyPublished             116  (  0.9%)
-  unrecognized                    185  (  1.5%)
+  previouslyPublished             118  (  1.0%)
+  unrecognized                    183  (  1.5%)
 
 === OVERALL
   centralFiles                 194950  ( 72.8%)
@@ -103,20 +103,20 @@ TOTAL NOTES: 267663
   ciaCollection                  2903  (  1.1%)
   namedFileSeries                6218  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
-  previouslyPublished             894  (  0.3%)
-  unrecognized                   5513  (  2.1%)
+  previouslyPublished             935  (  0.3%)
+  unrecognized                   5472  (  2.0%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
-  1906-1939                       328  (  0.4%)
-  1940-1951                       740  (  0.9%)
+  1906-1939                       310  (  0.3%)
+  1940-1951                       724  (  0.8%)
   1952-1954                      1081  (  7.2%)
-  1955-1957                       417  (  3.9%)
+  1955-1957                       416  (  3.9%)
   1958-1960                       171  (  2.0%)
-  1961-1963                       291  (  2.9%)
+  1961-1963                       287  (  2.9%)
   1964-1976                       267  (  0.9%)
-  1977+                           185  (  1.5%)
-  overall                        5513  (  2.1%)
+  1977+                           183  (  1.5%)
+  overall                        5472  (  2.0%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -148,7 +148,6 @@ TOTAL NOTES: 267663
 --- 1906-1939
   | Received through the Chinese minister, July 19, 1909.
   | Left at the department by the Japanese Ambassador on July 17, 1909.
-  | S. Doc. No. 515, 60th Cong., 1st sess.
   | Left at the Department of State by the Ecuadorian minister.
   | A telegram from the minister of foreign affairs, Tokyo, received at Washington, July 5, 1910. Left at the Department of State by a Secretary of the Japanese Embassy.
   | No. 77. General Instruction Consular.
@@ -170,20 +169,19 @@ TOTAL NOTES: 267663
   | See Document 24.
   | See Document 39.
   | See Document 44.
-  | Senate Doc. N. 36, 63d Cong.; 1st Sess.
+  | H. R. Doc. No. 1444. 62d Cong., 3d sess.
+  | File No: 837.156/138.
 --- 1940-1951
   | 7601D 61/919: Telegram
   | Printed from Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Adm
   | Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Administration, 
   | Roosevelt Papers The copy of this memorandum in the Department’s files (851A.01/87A) does not have the enclosure mentioned in the memorandum.
   | Hopkins: Papers
-  | Paraphrased text reprinted from Department of State Bulletin, November 8, 1941, p. 365.
   | 123 Johnson, Louis A./½
   | Copy of telegram transmitted in covering letter of June 1 from the Chinese Minister for Foreign Affairs (Soong) to Harry L. Hopkins, with the explanation: “I shall be presenting this message from the 
   | 893 51/7502: Telegram
   | 862 20210/1221: Telegram
   | Copy from Press Conference file in the News Division.
-  | This letter, released to the press by the White House November 8, is reprinted from Department of State Bulletin, November 14, 1942, p. 906.
   | Enclosure
   | PR 10 “Foreign Relations of U.S.”/9–1069
   | A.E.C. Files (Historical Doc. No. 133)
@@ -197,6 +195,8 @@ TOTAL NOTES: 267663
   | The source text is that printed in the London Times, August 27, 1943, p. 3. The final statement issued by the British Government contained a few changes from the text considered at Quebec on August 24
   | PR 10 “Foreign Relations of U.S.”/1–3–68
   | This message was sent to Algiers as War Department telegram No. 5752; copy obtained from the Department of the Army files.
+  | Copy of letter obtained from the Department of Defense.
+  | Defense Files The Army copy is apparently derived from the Stilwell Papers in the library of the Hoover Institution, Stanford, California. See Stilwell ’s Command Problems , p. 57.
 --- 1952-1954
   | [Extract]
   | [Attachment]
@@ -231,7 +231,6 @@ TOTAL NOTES: 267663
   | Annex 1
   | [Enclosure] This enclosure and its subenclosure are also printed in United States–Vietnam Relations, 1945–1967 , Book 10, pp. 1001–1006.
   | [Subenclosure]
-  | Source: Public Law 4, approved on January 29; 69 Stat. 7. For text of a statement issued by the President upon signing the joint resolution, see Public Papers of the Presidents of the United States: D
   | [Annex] “E”
   | [Tab 1]
   | Enclosure
@@ -249,6 +248,7 @@ TOTAL NOTES: 267663
   | Appendix A
   | Appendix B
   | Appendix C
+  | Appendix D
 --- 1958-1960
   | [Enclosure]
   | [Postscript]
@@ -283,15 +283,11 @@ TOTAL NOTES: 267663
   | [Attachment 2]
   | [Appendix G]
   | [Tab A ]
-  | Source: Declassified Documents, 1976, 33H. Secret.
-  | Source: Senate Document 93–11. Printed in U.S. Senate 93d Congress, 1st session, Two Reports on Vietnam and Southeast Asia to the President of the United States by Senator Mike Mansfield (Washington, 
   | [Subenclosure]
   | [Annex]
   | [Tab A]
-  | Source: United States-Vietnam Relations, 1945-1967, Book 12, p. 574. Top Secret. Sent via CIA channels.
   | [Attachment 3]
   | Tab A
-  | Source: Declassified Documents, 1977, 94B. Secret; Priority; Eyes Only. The number of this cable was deleted when the document was declassified in 1976.
   | Enclosure
   | Attachment
   | Source:American Foreign Policy: Current Documents, 1960, p. 476. No classification marking.
@@ -301,6 +297,10 @@ TOTAL NOTES: 267663
   | Presidential statement on nuclear testing. Attached is a proposed Presidential statement. No classification marking. 3 pp. Seaborg, Journal, Vol. 2, pp. 350–352.
   | DCI McCone views on resumption of nuclear testing. Supplementing meeting notes of Annex A. Secret. 8pp. CIA Files, McCone Files, Memos for the Record, 11/29/61–4/5/62, Box 2, Folder 1.
   | Concern regarding U.S. negotiating stance on the test ban talks. CIA Files, DCI, ER Subject Files, Congress.
+  | Appendix
+  | Annex D
+  | A summary of Soviet and Satellite forces in Europe facing NATO is at Annex. For a full discussion and detailed tables of Soviet and Satellite military strengths, see NIE 11–4–61, “Main Trends in Sovie
+  | “Go ahead” guidance on coordinated approach to rural development. No classification marking. 7 pp. Two attachments provide background material. Yale University Library, Bowles Papers, Box 300, Folder 
 --- 1964-1976
   | Source: U.S. Army Center for Military History, DepCORDS/MACV Papers, Pacification Program (Planning): 1968. Confidential. Copies were sent to Bunker, Abrams, and Colby.
   | Source: U.S. Army Center for Military History, Dep CORDS/MACV Files, Pacification File, GVN Liaison File: 1968. Confidential. Prepared on December 10. The meeting was held at Independence Palace. Copi
@@ -345,7 +345,6 @@ TOTAL NOTES: 267663
   | Final Report of the Select Committee To Study Governmental Operations With Respect to Intelligence Activities, United States Senate, Book I, Foreign and Military Intelligence, pp. 56–57.
   | For text of NSDM 40, see Foreign Relations , 1969–1976, volume II, Organization and Management of U.S. Foreign Policy, 1969–1972, Document 203 .
   | Final Report of the Select Committee To Study Governmental Operations With Respect to Intelligence Activities, United States Senate, Book I, Foreign and Military Intelligence, pp. 54–55, 57.
-  | Public Law 93–559.
   | Executive Order 11905, “United States Foreign Intelligence Activities,” Weekly Compilation of Presidential Documents, Vol. 12, No. 8, February 23, 1976.
   | The broader NSC reorganization sought to reduce the number of NSC committees to two: the Policy Review Committee ( PRC ) and the Special Coordination Committee ( SCC ). The SCC ’s jurisdiction include
   | Executive Order 11985, “United States Foreign Intelligence Activities,” May 13, 1977, Weekly Compilation of Presidential Documents, Vol. 13, No. 20 (May 16, 1977), pp. 719–720.
@@ -353,3 +352,4 @@ TOTAL NOTES: 267663
   | PL 96–450, Sec. 407 (October 14, 1980). See also the description of the Hughes-Ryan amendment and its replacement by PL 96–450 in: Richard A. Best, Jr., “Covert Action: Legislative Background and Poss
   | Kissinger met with King Hassan during his visit to Rabat October 15, 1974. See Foreign Relations , 1969–1976, vol. E–9. Part 1, Documents on North Africa, 1973–1976, Document 90 .
   | See Document 151 .
+  | See footnote 3, Document 154 .

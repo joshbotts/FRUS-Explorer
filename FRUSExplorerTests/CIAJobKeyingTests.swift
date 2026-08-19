@@ -385,4 +385,66 @@ struct FrontMatterJobKeyingTests {
             Issue.record("modern-accession WNRC note lost its naraCollection route")
         }
     }
+
+    // MARK: - #353: published-source leads (41 notes)
+
+    /// Congressional prints, statutes, DDRS, and the reprint phrase — each a verbatim
+    /// corpus note, including the OCR-bent "God Cong." for "62d Cong.".
+    @Test("Published-source citations classify as previouslyPublished")
+    func publishedSourceLeadsClassify() {
+        let parser = SourceNoteParser()
+        let cases = [
+            "S. Doc. No. 515, 60th Cong., 1st sess.",
+            "Senate Doc. 157, God Cong., 1st sess.",
+            "42 Stat. 122\u{2013}141.",
+            "Printed from S. Doc. No. 150, 67th Cong., 2d sess.",
+            "Public Law 93\u{2013}559.",
+            "Source: Declassified Documents, 1976, 33H. Secret.",
+            "Source: United States-Vietnam Relations, 1945-1967, Book 12, p. 574. Top Secret.",
+            "Released to the press by the White House May 18, 1945; reprinted from "
+                + "Department of State Bulletin, May 20, 1945, p. 927.",
+        ]
+        for note in cases {
+            if case .previouslyPublished = parser.parse(note) { continue }
+            Issue.record("not previouslyPublished: \(note.prefix(60))")
+        }
+    }
+
+    /// The refuted rules, pinned so they are not re-derived. "Printed from" ALONE is
+    /// measured-wrong (three of its six notes are archival), and a contains-anywhere
+    /// Bulletin match is refuted by two editorial notes whose mention is a see-reference.
+    @Test("Archival and see-reference notes refuse the published rules")
+    func publishedRulesRefuseArchivalNotes() {
+        let parser = SourceNoteParser()
+        if case .previouslyPublished = parser.parse(
+            "Printed from draft copy obtained from the Library of Congress, Manuscripts "
+            + "Division, papers of Mr. Pasvolsky.") {
+            Issue.record("an LC manuscript classified as previously published")
+        }
+        if case .previouslyPublished = parser.parse(
+            "Vance discussed demilitarization with Gromyko. (Department of State Bulletin, "
+            + "April 25, 1977, p. 401)") {
+            Issue.record("a parenthetical see-reference classified as previously published")
+        }
+    }
+
+    /// THE STEAL GUARD. The first cut of the reprint-phrase rule ran early in the narrative
+    /// dispatch and took 46 archival citations whose notes merely REMARK on a reprint. The
+    /// phrase now runs only at the dispatch tails; an archival note with a reprint remark
+    /// must keep its archival class. The eval headline was IDENTICAL in the stolen and clean
+    /// runs (5,472 both) — only the positional per-note diff exposed the difference, which is
+    /// why this exists as a unit pin too.
+    @Test("A reprint remark cannot steal an archival citation")
+    func reprintRemarkDoesNotStealArchivalNotes() {
+        let parser = SourceNoteParser()
+        let note = "Source: Department of State, Central Files, 674.84A/2\u{2013}1157. Drafted by "
+            + "Dulles. The text was reprinted in the Department of State Bulletin, March 4, 1957."
+        if case .previouslyPublished = parser.parse(note) {
+            Issue.record("""
+                A Central Files citation with a Bulletin reprint remark was classified as \
+                previously published. The reprint phrase may only run AFTER every archival \
+                strategy has declined — check the dispatch tails.
+                """)
+        }
+    }
 }
