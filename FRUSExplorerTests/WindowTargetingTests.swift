@@ -132,6 +132,49 @@ struct WindowTargetingTests {
                 "MainTabView still presents the hand-off for scene-less and non-document producers")
     }
 
+    // MARK: - The macOS Window menu lists only windows (#824)
+
+    /// SwiftUI generates the Window menu from the `Window` scenes, one entry each, and exposes no
+    /// API to section or suppress an entry — `CommandGroup(before: .windowList)` can only insert
+    /// *around* the list, which is what produced the duplicate #823 had to remove.
+    ///
+    /// So a scene leaves that menu by not being a `Window`. It does **not** have to stop being a
+    /// window: `WindowGroup(id:for:)` keyed on an always-equal marker is one reused window that the
+    /// menu does not list — the shape `frus.crossReferenceGraph` already uses, and the one the
+    /// Research Guide moved to "so the guide no longer clutters the macOS Window menu".
+    ///
+    /// About was listed only as an implementation artefact — it already has its home in the app
+    /// menu — and New Project is an action rather than a place.
+    @Test("About and New Project are not Window scenes, so the Window menu does not list them")
+    func aboutAndNewProjectAreNotWindowScenes() throws {
+        let app = try Self.source("App/FRUSExplorerApp.swift")
+        let code = Self.codeLines(app).map(\.text)
+
+        for id in ["\"about\"", "\"frus.newProject\""] {
+            let declared = code.contains { $0.hasPrefix("Window(") && $0.contains(id) }
+                || code.contains { $0.contains("id: \(id))") && $0.hasPrefix("Window(") }
+            #expect(!declared, "\(id) is declared as a Window scene, so it is back in the Window menu")
+        }
+        #expect(app.contains("id: \"about\", for: AboutWindowID.self"))
+        #expect(app.contains("id: \"frus.newProject\", for: NewProjectWindowID.self"))
+    }
+
+    /// The explicit `id:` on those two groups is load-bearing, and is why they are not the Research
+    /// Guide's bare `WindowGroup(for:)`. `bringMacWindowToFront(id:)` matches on the window
+    /// identifier, so without an id the #749 fronting guarantee is silently forfeited and choosing
+    /// the menu item again while the window sits buried does nothing — the defect #749 found at
+    /// 11 of 56 call sites.
+    @Test("Both windows are still opened through a fronting call")
+    func bothStillFront() throws {
+        let app = try Self.source("App/FRUSExplorerApp.swift")
+        #expect(app.contains("openWindow.fronting(id: \"about\", value: AboutWindowID())"))
+        #expect(app.contains("openWindow.fronting(id: \"frus.newProject\", value: NewProjectWindowID())"))
+
+        let main = try Self.source("App/MainWindowView.swift")
+        #expect(main.contains("func fronting<V: Codable & Hashable>(id: String, value: V)"),
+                "the value-based fronting overload is what keeps #749's guarantee for these scenes")
+    }
+
     // MARK: - The helper earns its trust
 
     @Test("codeLines keeps code and drops prose")

@@ -843,30 +843,6 @@ struct FRUSExplorerApp: App {
         // and corpus graphs were readable.
         .defaultSize(width: 900, height: 640)
 
-        // MARK: - Semantic Analytics Window
-        //
-        // A sibling of frus.analytics / frus.personAnalytics / frus.crossRefAnalytics /
-        // frus.archivalAnalytics, and reached the same way — the Analytics menu.
-        //
-        // **A window and never a sheet, and that is a fix rather than a preference.** An `MTKView` in
-        // a SwiftUI `.sheet` on macOS draws and presents but never reaches the screen: a faithful
-        // reproduction logged it attached, sized, in `SheetPresentationWindow`, presenting 600 frames
-        // at a clean 60 fps against a sheet showing its own background. Moving the same view into a
-        // window scene, with nothing else changed, made the map appear. Anything Metal-backed added
-        // to this app needs a window on macOS.
-        Window("Semantic Analytics", id: "frus.semanticAnalytics") {
-            // UI review F-28: a map handed off from the iPad arrives here. The window is a
-            // valueless singleton, so the request rides the `pendingSemanticMap` hand-off slot the
-            // other aux windows use rather than a scene value — consumed BOTH ways, because a
-            // continuation that arrives before this window exists would never fire `.onChange`,
-            // and one that arrives while it is open would never fire `.task`.
-            SemanticAnalyticsWindowContent(appState: appState)
-                .environment(appState)
-                .modelContainer(modelContainer)
-                .task { await bootSearchInfrastructureOnce() }
-        }
-        .defaultSize(width: 900, height: 700)
-
         // MARK: - Source Explorer Window
         Window("Source Explorer", id: "frus.sourceExplorer") {
             SourceExplorerWindowView()
@@ -919,6 +895,30 @@ struct FRUSExplorerApp: App {
             .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 440, height: 520)
+
+        // MARK: - Semantic Analytics Window
+        //
+        // A sibling of frus.analytics / frus.personAnalytics / frus.crossRefAnalytics /
+        // frus.archivalAnalytics, and reached the same way — the Analytics menu.
+        //
+        // **A window and never a sheet, and that is a fix rather than a preference.** An `MTKView` in
+        // a SwiftUI `.sheet` on macOS draws and presents but never reaches the screen: a faithful
+        // reproduction logged it attached, sized, in `SheetPresentationWindow`, presenting 600 frames
+        // at a clean 60 fps against a sheet showing its own background. Moving the same view into a
+        // window scene, with nothing else changed, made the map appear. Anything Metal-backed added
+        // to this app needs a window on macOS.
+        Window("Semantic Analytics", id: "frus.semanticAnalytics") {
+            // UI review F-28: a map handed off from the iPad arrives here. The window is a
+            // valueless singleton, so the request rides the `pendingSemanticMap` hand-off slot the
+            // other aux windows use rather than a scene value — consumed BOTH ways, because a
+            // continuation that arrives before this window exists would never fire `.onChange`,
+            // and one that arrives while it is open would never fire `.task`.
+            SemanticAnalyticsWindowContent(appState: appState)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 900, height: 700)
 
         // MARK: - Analytics Window
         Window("Corpus Analytics", id: "frus.analytics") {
@@ -1049,8 +1049,11 @@ struct FRUSExplorerApp: App {
         // hosts are the iOS tab shell and the macOS Settings pane). This matches the Project Home
         // create path; the nudge stays best-effort/host-dependent by design rather than adding a
         // multi-instance main-window host, which would reintroduce the multi-fire the #456 review guarded.
-        Window(String(localized: "project.new.window.title", defaultValue: "New Project"),
-               id: "frus.newProject") {
+        // #824(3): New Project is an ACTION, not a place — it opens a window to perform one step,
+        // after which the window's purpose is done. Same marker-value treatment as About above;
+        // see there for why an explicit `id:` is kept.
+        WindowGroup(String(localized: "project.new.window.title", defaultValue: "New Project"),
+                    id: "frus.newProject", for: NewProjectWindowID.self) { _ in
             ProjectEditorView(showsInlineHeader: false)
                 .environment(appState)
                 .modelContainer(modelContainer)
@@ -1142,8 +1145,26 @@ struct FRUSExplorerApp: App {
         // synchronously inside the menu action, so the trap fires on the click. Worse, a singleton
         // `Window` scene is restorable — left open at quit, it trapped during the next LAUNCH.
         // `SceneEnvironmentAuditTests` now fails the suite if any scene omits either injection.
-        Window(String(localized: "about.title", defaultValue: "About FRUS Explorer"),
-               id: "about") {
+        // #824(3): a `WindowGroup(id:for:)` keyed on an always-equal marker, NOT a singleton
+        // `Window`. SwiftUI lists one Window-menu entry per `Window` scene and offers no API to
+        // section or suppress them, so the only way out of that list is to stop being a `Window`.
+        // About was in it purely as an implementation artefact — it already has its correct home in
+        // the app menu (`CommandGroup(replacing: .appInfo)`), so it was both duplicated and
+        // misfiled there.
+        //
+        // The issue reasoned that leaving the menu meant becoming a sheet. It does not, and a sheet
+        // would revert a deliberate decision: version 2.4 shipped About AS a sheet and 2.5 replaced
+        // it with a window. The app already had the right answer twice — `WindowGroup(id:for:)` at
+        // `frus.crossReferenceGraph`, and the Research Guide's marker-value group below, whose own
+        // comment records that it moved to this shape "so the guide no longer clutters the macOS
+        // Window menu". An always-equal marker means one window, reused, exactly as before.
+        //
+        // The explicit `id:` is load-bearing and is why this is not the Research Guide's bare
+        // `WindowGroup(for:)`: `bringMacWindowToFront(id:)` matches on the window identifier, so
+        // without it the #749 fronting guarantee would be lost and re-choosing About while its
+        // window sat buried would do nothing.
+        WindowGroup(String(localized: "about.title", defaultValue: "About FRUS Explorer"),
+                    id: "about", for: AboutWindowID.self) { _ in
             AboutView()
                 .environment(appState)
                 .modelContainer(modelContainer)
@@ -1569,7 +1590,7 @@ struct FRUSExplorerApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button(String(localized: "menu.about",
                               defaultValue: "About FRUS Explorer")) {
-                    openWindow.fronting(id: "about")
+                    openWindow.fronting(id: "about", value: AboutWindowID())
                 }
             }
 
@@ -3419,7 +3440,7 @@ struct ResearchMenuContent: View {
         // #377 Phase 5: create a project from the menu bar (works from any window). Opens the small
         // New Project window (a menu command can't present a sheet).
         Button(String(localized: "menu.research.newProject", defaultValue: "New Project…")) {
-            openWindow.fronting(id: "frus.newProject")
+            openWindow.fronting(id: "frus.newProject", value: NewProjectWindowID())
         }
 
         // #377 Phase 5: switch the app-wide active project from anywhere — a live, checkmarked list.

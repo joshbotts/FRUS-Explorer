@@ -558,6 +558,18 @@ extension OpenWindowAction {
         self(id: id)
         bringMacWindowToFront(id: id)
     }
+
+    /// Opens a value-based `WindowGroup(id:for:)` scene **and** raises it if already open (#824).
+    ///
+    /// The id-only overload above cannot serve these: `openWindow(id:)` does not match a scene that
+    /// takes a value. Without this pair, moving a window out of the macOS Window menu — which means
+    /// becoming a `WindowGroup` — would silently forfeit the #749 fronting guarantee, and choosing
+    /// the item again while its window sat buried would appear to do nothing. That is the exact
+    /// defect #749 fixed at 11 of 56 call sites, so it is not a hypothetical.
+    func fronting<V: Codable & Hashable>(id: String, value: V) {
+        self(id: id, value: value)
+        bringMacWindowToFront(id: id)
+    }
 }
 
 #endif // os(macOS)
