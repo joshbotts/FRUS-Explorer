@@ -488,9 +488,13 @@ final class PDFCollectionExporter: CollectionExporter {
             height = available.height
             width = height * imageAspect
         }
+        // Top-aligned, not vertically centred (#960 item 4's remainder): the image is
+        // wide-format, so centring floated it in a band of whitespace mid-page — the owner's
+        // build-43 export shows the shape. PDF coordinates put the origin bottom-left, so the
+        // top of the content area is maxY minus the drawn height.
         let rect = CGRect(
             x: page.midX - width / 2,
-            y: page.midY - height / 2,
+            y: available.maxY - height,
             width: width,
             height: height
         )

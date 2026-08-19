@@ -730,7 +730,12 @@ public actor IndexingPipeline {
     ///   on — `lot_file` holds the raw spelling, and one job is spelled up to four dash-split
     ///   ways). Column added to the CREATE **and** the drop-and-recreate guard together, the
     ///   v40 REPAIR lesson. Rides the same ≤40 combined reindex.
-    public static let currentDateIndexVersion: Int = 43
+    /// - v43→44 — #960 item 6: `extractBoxOrFileString` is word-anchored. A substring
+    ///   "Folder" matched the letters inside "[unfoldered material]", so six notes stored a
+    ///   mangled series/file fragment (`foldered material]`) that reached the Sources &
+    ///   Archives block of every export format. Field-only: zero classification moves by
+    ///   positional diff; the stored `series_name`/file fragments for those six change.
+    public static let currentDateIndexVersion: Int = 44
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

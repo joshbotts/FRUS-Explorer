@@ -2468,8 +2468,15 @@ public struct SourceNoteParser {
     }
 
     private func extractBoxOrFileString(from text: String) -> String? {
+        // Word-anchored, because a substring match lands MID-WORD (#960 item 6): the corpus
+        // prints `[unfoldered material]` and `Unfoldered Subject File`, and a bare "Folder"
+        // search matched the letters inside "unfoldered" — the extractor then took everything
+        // from that hit, which is how a Sources & Archives row shipped reading
+        // `foldered material], Lot 89D265`. `\bFile` still matches "Files"; it no longer
+        // matches "Unfiled". Six notes measured corpus-wide, all six mangled this way.
         for keyword in ["Box", "Folder", "File"] {
-            if let r = text.range(of: keyword, options: .caseInsensitive) {
+            if let r = text.range(of: "\\b\(keyword)",
+                                  options: [.caseInsensitive, .regularExpression]) {
                 let fragment = String(text[r.lowerBound...])
                     .components(separatedBy: ",").first?
                     .trimmingCharacters(in: .whitespaces)

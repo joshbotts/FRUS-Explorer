@@ -512,4 +512,38 @@ struct FrontMatterJobKeyingTests {
             }
         }
     }
+
+    // MARK: - #960 item 6: the mid-word keyword match
+
+    /// `extractBoxOrFileString` searched for "Folder" as a SUBSTRING, which matched inside
+    /// "[unfoldered material]" — the extractor then took everything from the hit, and the
+    /// Sources & Archives block of every export shipped a row reading
+    /// `foldered material], Lot 89D265`. Six notes corpus-wide, verbatim below.
+    @Test("A bracketed 'unfoldered' remark does not become the file identifier")
+    func unfolderedDoesNotBecomeFileIdentifier() {
+        let parser = SourceNoteParser()
+        let note = "Source: Department of State, Official Correspondence of the Under Secretary "
+            + "for Political Affairs, 1969\u{2013}1988, Lot 89D265, [unfoldered material]. "
+            + "Confidential."
+        if case .lotFile(_, let lot, let fid) = parser.parse(note) {
+            #expect(lot.contains("89D265"))
+            #expect(fid?.contains("foldered") != true, """
+                The file identifier captured the tail of "unfoldered" — the keyword search \
+                matched mid-word. It must anchor at a word boundary.
+                """)
+        } else {
+            Issue.record("the lot note stopped parsing as a lot file")
+        }
+        // The boundary must not cost the real matches: \bFile still matches "Files", and a
+        // real Box fragment still extracts.
+        if case .presidentialLibrary(_, _, let fid) = parser.parse(
+            "Source: Reagan Library, David Wigg Files, Unfoldered, Unfoldered Subject File, "
+            + "Food Aid. Confidential.") {
+            #expect(fid?.hasPrefix("foldered") != true)
+        }
+        if case .lotFile(_, _, let fid) = parser.parse(
+            "Source: Department of State, Conference Files: Lot 60 D 627, Box 12, CF 1372.") {
+            #expect(fid?.contains("Box 12") == true, "a genuine Box fragment must survive")
+        }
+    }
 }
