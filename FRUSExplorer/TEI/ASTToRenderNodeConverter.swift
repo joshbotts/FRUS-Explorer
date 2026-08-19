@@ -50,6 +50,16 @@ import Foundation
 ///          the flat text is byte-identical and no stored highlight goes stale. A reflexive
 ///          bump here would mark every highlight in every indexed volume stale for a change
 ///          that moved no characters.
+///   1.7 — #985: `displayLabel` is the number the volume PRINTED, or `nil`. The previous
+///          `printedNumber ?? "\(sequentialNumber)"` invented a number for every note without
+///          `@n` — 196,040 in-document notes, 193,500 of them unnumbered source notes — and
+///          since the source note is almost always first it was handed the label "1", colliding
+///          with the real footnote 1 in 51,368 documents. `sequentialNumber` still advances for
+///          every note; it is now a DOM-key input rather than a display value, and rides on
+///          `.footnoteMarker` too so a marker can derive the same key as its body.
+///          **`kVersion` is deliberately NOT bumped**: `flatText` skips `.footnoteMarker`
+///          entirely (the `default: break` arm), so no marker label has ever contributed a
+///          character to the highlight coordinate space and no stored highlight goes stale.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -248,10 +258,19 @@ public struct ASTToRenderNodeConverter {
         case .footnote(let id, let type, let printedNumber, let children):
             footnoteCounter += 1
             let sequentialNumber = footnoteCounter
-            // Use the printed number for display if available; fall back to sequential counter.
-            // The counter is always incremented to keep bookkeeping consistent even when
-            // some notes have @n and others do not within the same document.
-            let displayLabel = printedNumber ?? "\(sequentialNumber)"
+            // #985: the label is the number the VOLUME printed, or nothing. It is never
+            // synthesised. The old `printedNumber ?? "\(sequentialNumber)"` gave the unnumbered
+            // source note the label "1" — a number that belongs to a real footnote, duplicated in
+            // 51,368 documents, and used downstream as a DOM id and as a DOCX dictionary key.
+            //
+            // `@n` is taken verbatim from the TEI, so present-but-blank must be treated as absent:
+            // one note corpus-wide carries `n=""` (frus1969-76v25 d146) and six carry a leading
+            // space (`n=" 1"`). A bare `printedNumber != nil` test admits both, and the empty one
+            // reintroduces exactly the defect this change removes — an unlabelled marker keyed on
+            // an empty string. The counter still advances for every note, so the DOM key below is
+            // dense and stable regardless.
+            let trimmedPrintedNumber = printedNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let displayLabel: String? = (trimmedPrintedNumber?.isEmpty == false) ? trimmedPrintedNumber : nil
             let convertedChildren = convertNodes(children)
             // When a footnote contains only inline nodes (no <p> wrapper in the source TEI),
             // wrap them in a single .paragraph so the renderer treats them as continuous prose
@@ -267,7 +286,8 @@ public struct ASTToRenderNodeConverter {
                 children: footnoteChildren
             )
             collectedFootnotes.append(body)
-            return [.footnoteMarker(id: id, displayLabel: displayLabel)]
+            return [.footnoteMarker(id: id, type: type, sequentialNumber: sequentialNumber,
+                                    displayLabel: displayLabel)]
 
         case .persName(let ref, let children):
             // Normalise the ref by stripping the leading '#' that FRUS TEI uses

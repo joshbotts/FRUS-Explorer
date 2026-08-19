@@ -425,6 +425,10 @@ Tapping any document — from Browse, Search, Research, a Collection, or a citat
 
 Footnote markers and cross-reference links are tappable: a footnote marker scrolls to (or pops up) its note text; a cross-reference jumps to the referenced document if it's in your corpus, or offers to download the volume if not. Linked **person names** open the person's index entry, and glossary terms open the volume's Terms & Abbreviations entry.
 
+**Footnote numbers are the volume's own.** A marker shows the number as printed — including the symbols some nineteenth-century volumes use (`*`, `†`, `‡`) and the numbers that run continuously across a printed page rather than restarting at 1 in each document, which is the norm before roughly 1930. The list at the foot of the document repeats those same numbers. This matters when you are checking a citation: a note cited as *FRUS 1915, p. 442 n. 47* is the note the app labels 47.
+
+A document's **source note** — the archival provenance statement the volume prints unnumbered above the text — carries an archive-box mark (▤) instead of a number, because it has none in the original. Tap it to read the note, or open **Sources** (Section 14) to resolve it against the National Archives catalog.
+
 ### 8.2 Cross-References That Cannot Be Followed
 
 Not every printed reference has somewhere to go: occasionally a volume cites a page, document, or volume that does not exist in the digital corpus. References that a corpus-wide validation dataset confirms cannot be followed render in **muted grey with a dotted underline and a small dagger (†)** rather than posing as working links — the printed text itself is preserved. Tapping one opens an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. (The corpus-wide list of these is exportable — Section 17.6.)

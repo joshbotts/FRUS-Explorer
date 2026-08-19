@@ -879,26 +879,33 @@ final class DocxCollectionExporter: CollectionExporter {
         // Pre-assign Word integer IDs to every footnote in this document. Skipped when
         // footnotes are gated off — an empty map routes every marker to the
         // superscript-label fallback and nothing references word/footnotes.xml.
-        var labelMap: [String: Int] = [:]
+        // #985: keyed on the footnote's DOM key, NOT its display label. Keying on the label
+        // silently corrupted the export: an unnumbered source note was labelled "1" alongside the
+        // real footnote 1 in 51,368 documents, so the second `allocate()` overwrote the first and
+        // both footnote bodies registered against one Word id — every marker in the document then
+        // resolved to the same note. Dropping the fabricated label (part (a)) would have made it
+        // worse, collapsing every unnumbered note in a document onto the key "" (2,128 documents
+        // have two or more; one has 28).
+        var footnoteIDMap: [String: Int] = [:]
         if includeFootnotes {
             for note in model.footnotes {
-                if case .footnoteBody(_, _, _, _, let label, _) = note {
-                    labelMap[label] = ctx.allocate()
+                if case .footnoteBody(let id, _, _, let seq, _, _) = note {
+                    footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] = ctx.allocate()
                 }
             }
         }
 
         // Render body paragraphs
         let bodyXML = model.bodyNodes
-            .map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }
+            .map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }
             .joined()
 
         // Render footnote bodies and register with context — tracker: nil (see above).
         // With footnotes gated off the map is empty, so nothing registers.
         for note in model.footnotes {
-            if case .footnoteBody(_, _, _, _, let label, let children) = note,
-               let wordId = labelMap[label] {
-                let footXML = singleParaFootnoteXML(id: wordId, children: children, labelMap: labelMap)
+            if case .footnoteBody(let id, _, _, let seq, _, let children) = note,
+               let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] {
+                let footXML = singleParaFootnoteXML(id: wordId, children: children, footnoteIDMap: footnoteIDMap)
                 ctx.addFootnote(footXML)
             }
         }
@@ -910,40 +917,40 @@ final class DocxCollectionExporter: CollectionExporter {
     ///
     /// - Parameter tracker: Threaded through to inline-run rendering so highlight
     ///   spans can be painted onto leaf text. `nil` for footnote-body rendering.
-    private func blockNodeToDocxXML(_ node: FRUSRenderNode, labelMap: [String: Int],
+    private func blockNodeToDocxXML(_ node: FRUSRenderNode, footnoteIDMap: [String: Int],
                                      tracker: HighlightPaintTracker? = nil) -> String {
         switch node {
         case .heading(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "Heading3")
         case .dateline(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(italic: true), labelMap: labelMap, tracker: tracker),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(italic: true), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "Dateline")
         case .salutation(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "Normal")
         case .paragraph(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "Normal")
         case .letterOpener(let c), .letterCloser(let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
+            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .editorialNoteBlock(let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
+            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .attachmentBlock(_, let c):
             let sep = "    <w:p><w:pPr><w:pBdr><w:top w:val=\"single\" w:sz=\"6\" w:space=\"1\"/></w:pBdr></w:pPr></w:p>\n"
-            return sep + c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
+            return sep + c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .attachmentHeading(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "AttachmentHeading")
         case .titlePageBlock(let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
+            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .tableBlock(let rows):
-            return tableToDocxXML(rows, labelMap: labelMap, tracker: tracker)
+            return tableToDocxXML(rows, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .listBlock(let type, let items):
             return items.enumerated().map { (i, item) in
                 let bullet = (type == "ordered") ? "\(i + 1). " : "• "
                 let bulletRun = "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
-                let runs = inlineRunsXML(item, props: RunProps(), labelMap: labelMap, tracker: tracker)
+                let runs = inlineRunsXML(item, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker)
                 return "    <w:p>\n"
                     + "      <w:pPr><w:pStyle w:val=\"Normal\"/><w:ind w:left=\"360\"/></w:pPr>\n"
                     + "      \(bulletRun)\(runs)\n"
@@ -958,17 +965,17 @@ final class DocxCollectionExporter: CollectionExporter {
         case .pageBreak:
             return "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
         case .unknown(_, let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
+            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         default:
             // Inline node at block level — wrap in Normal paragraph
-            return wPara(runs: inlineNodeRunXML(node, props: RunProps(), labelMap: labelMap, tracker: tracker),
+            return wPara(runs: inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "Normal")
         }
     }
 
     private func inlineRunsXML(_ nodes: [FRUSRenderNode], props: RunProps,
-                                labelMap: [String: Int], tracker: HighlightPaintTracker? = nil) -> String {
-        nodes.map { inlineNodeRunXML($0, props: props, labelMap: labelMap, tracker: tracker) }.joined()
+                                footnoteIDMap: [String: Int], tracker: HighlightPaintTracker? = nil) -> String {
+        nodes.map { inlineNodeRunXML($0, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
     }
 
     /// Converts an inline render node to `<w:r>` run XML.
@@ -979,25 +986,25 @@ final class DocxCollectionExporter: CollectionExporter {
     ///   each carrying a `<w:highlight w:val="...">` when it falls within a highlight.
     ///   All other leaf/container cases simply thread `tracker` through unchanged.
     private func inlineNodeRunXML(_ node: FRUSRenderNode, props: RunProps,
-                                   labelMap: [String: Int], tracker: HighlightPaintTracker? = nil) -> String {
+                                   footnoteIDMap: [String: Int], tracker: HighlightPaintTracker? = nil) -> String {
         switch node {
         case .plainText(let s):
             guard !s.isEmpty else { return "" }
             return runsXML(for: s, props: props, tracker: tracker)
         case .boldText(let c):
-            return inlineRunsXML(c, props: props.adding(bold: true), labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props.adding(bold: true), footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .italicText(let c):
-            return inlineRunsXML(c, props: props.adding(italic: true), labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props.adding(italic: true), footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .smallCapsText(let c):
-            return inlineRunsXML(c, props: props.adding(smallCaps: true), labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props.adding(smallCaps: true), footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .underlineText(let c):
-            return inlineRunsXML(c, props: props.adding(underline: true), labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props.adding(underline: true), footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .sicText(let c):
-            return inlineRunsXML(c, props: props.adding(strike: true), labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props.adding(strike: true), footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .suppliedText(let c):
             let rpr = props.rPrXML()
             let open  = "<w:r>\(rpr)<w:t>[</w:t></w:r>"
-            let inner = inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
+            let inner = inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
             let close = "<w:r>\(rpr)<w:t>]</w:t></w:r>"
             return open + inner + close
         case .formulaText(let s):
@@ -1009,22 +1016,24 @@ final class DocxCollectionExporter: CollectionExporter {
             // cannot itself be shaded, so we just keep offsets aligned.
             _ = tracker?.partition("\n")
             return "<w:r><w:br/></w:r>"
-        case .footnoteMarker(_, let label):
-            guard let wordId = labelMap[label] else {
-                // Fallback: render label as superscript text
+        case .footnoteMarker(let id, _, let seq, let label):
+            guard let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] else {
+                // Fallback (footnotes gated off): render the label as superscript text. A note the
+                // volume printed unnumbered gets a bullet — an empty <w:t> would be an invisible
+                // run rather than a marker.
                 let sup = "<w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr>"
-                return "<w:r>\(sup)<w:t>\(xmlEscaped(label))</w:t></w:r>"
+                return "<w:r>\(sup)<w:t>\(xmlEscaped(label ?? "\u{2022}"))</w:t></w:r>"
             }
             return "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr>"
                 + "<w:footnoteReference w:id=\"\(wordId)\"/></w:r>"
         case .termText(let c), .corrText(let c):
-            return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
-            return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .pageBreak:
             return ""
         case .unknown(_, let c):
-            return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
+            return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         default:
             return "" // Block nodes in inline context: not expected in FRUS inline runs
         }
@@ -1062,7 +1071,7 @@ final class DocxCollectionExporter: CollectionExporter {
         return inner.isEmpty ? "" : "<w:rPr>\(inner)</w:rPr>"
     }
 
-    private func tableToDocxXML(_ rows: [[TableCell]], labelMap: [String: Int],
+    private func tableToDocxXML(_ rows: [[TableCell]], footnoteIDMap: [String: Int],
                                  tracker: HighlightPaintTracker? = nil) -> String {
         var xml = "    <w:tbl>\n"
         xml += "      <w:tblPr><w:tblBorders>"
@@ -1076,7 +1085,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 var tcPr = ""
                 if cell.colSpan > 1 { tcPr += "<w:gridSpan w:val=\"\(cell.colSpan)\"/>" }
                 let tcPrXML = tcPr.isEmpty ? "" : "<w:tcPr>\(tcPr)</w:tcPr>"
-                let runs = inlineRunsXML(cell.children, props: RunProps(), labelMap: labelMap, tracker: tracker)
+                let runs = inlineRunsXML(cell.children, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker)
                 xml += "<w:tc>\(tcPrXML)<w:p>\(runs)</w:p></w:tc>"
             }
             xml += "</w:tr>\n"
@@ -1091,11 +1100,11 @@ final class DocxCollectionExporter: CollectionExporter {
     private func singleParaFootnoteXML(
         id: Int,
         children: [FRUSRenderNode],
-        labelMap: [String: Int]
+        footnoteIDMap: [String: Int]
     ) -> String {
         let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
-        let runs = children.map { inlineOrBlockRuns($0, labelMap: labelMap) }.joined()
+        let runs = children.map { inlineOrBlockRuns($0, footnoteIDMap: footnoteIDMap) }.joined()
         return "      <w:footnote w:id=\"\(id)\">\n"
             + "        <w:p><w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
             + "\(refRun)\(spacer)\(runs)</w:p>\n"
@@ -1103,16 +1112,16 @@ final class DocxCollectionExporter: CollectionExporter {
     }
 
     /// Extracts inline runs from a node regardless of whether it is a block or inline.
-    private func inlineOrBlockRuns(_ node: FRUSRenderNode, labelMap: [String: Int]) -> String {
+    private func inlineOrBlockRuns(_ node: FRUSRenderNode, footnoteIDMap: [String: Int]) -> String {
         switch node {
         case .paragraph(let c), .heading(let c), .dateline(let c),
              .salutation(let c), .attachmentHeading(let c):
-            return inlineRunsXML(c, props: RunProps(), labelMap: labelMap)
+            return inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap)
         case .letterOpener(let c), .letterCloser(let c), .editorialNoteBlock(let c),
              .attachmentBlock(_, let c), .titlePageBlock(let c), .unknown(_, let c):
-            return c.map { inlineOrBlockRuns($0, labelMap: labelMap) }.joined()
+            return c.map { inlineOrBlockRuns($0, footnoteIDMap: footnoteIDMap) }.joined()
         default:
-            return inlineNodeRunXML(node, props: RunProps(), labelMap: labelMap)
+            return inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap)
         }
     }
 

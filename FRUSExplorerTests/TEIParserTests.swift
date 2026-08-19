@@ -616,7 +616,13 @@ struct TEIParserTests {
 
     // MARK: - Converter: Footnote Numbering
 
-    @Test("Converter: footnotes are numbered sequentially in document order")
+    /// #985 changed this test's expectation, deliberately.
+    ///
+    /// It used to assert that two `@n`-less notes are *labelled* "1" and "2" — the fabrication
+    /// this issue removed. The sequential counter survives and is still asserted, because the DOM
+    /// key falls back to it; what no longer happens is showing it to the reader as though the
+    /// volume had printed it.
+    @Test("Converter: notes without @n get sequential numbers but no display label")
     func footnoteSequentialNumbering() async throws {
         let url = try makeTEIFixture(body: """
         <div type="document" xml:id="d1">
@@ -632,11 +638,11 @@ struct TEIParserTests {
         #expect(model.footnotes.count == 2, "Two footnotes in source must produce two footnote bodies")
         if case .footnoteBody(_, _, _, let n1, let l1, _) = model.footnotes[0] {
             #expect(n1 == 1)
-            #expect(l1 == "1")
+            #expect(l1 == nil, "A note with no @n has no printed number; the counter is not a label")
         }
         if case .footnoteBody(_, _, _, let n2, let l2, _) = model.footnotes[1] {
             #expect(n2 == 2)
-            #expect(l2 == "2")
+            #expect(l2 == nil)
         }
     }
 
@@ -1100,7 +1106,7 @@ struct FootnoteNumberTests {
         // The inline marker in bodyNodes should also have displayLabel "7"
         func findMarker(_ nodes: [FRUSRenderNode]) -> String? {
             for node in nodes {
-                if case .footnoteMarker(_, let label) = node { return label }
+                if case .footnoteMarker(_, _, _, let label) = node { return label }
                 switch node {
                 case .paragraph(let c), .boldText(let c), .italicText(let c),
                      .smallCapsText(let c), .underlineText(let c), .termText(let c):

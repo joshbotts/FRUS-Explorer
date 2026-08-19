@@ -405,7 +405,10 @@ Each rendered document shows its **header** (document number, classification hea
 | Person reference | Underlined person name | Click to open the Person Index entry |
 | Glossary term | Styled term | Click to open the Terms & Abbreviations entry |
 | Cross-reference | Numbered or inline link | Click to jump to the referenced document; if its volume isn't downloaded, the app offers the download |
-| Source note | Text at the top of the document | Click to open Source Explorer (Section 14) |
+| Footnote | Superscript number as printed in the volume | Click to pop up the note; the list at the foot of the document repeats the same numbers |
+| Source note | Archive-box mark (▤) where a footnote number would sit | Click to read it, or open Source Explorer (Section 14) |
+
+**Footnote numbers are the volume's own.** A marker shows the number as printed, including the symbols some nineteenth-century volumes use (`*`, `†`, `‡`) and the numbers that run continuously across a printed page rather than restarting at 1 in each document — the norm before roughly 1930. A note cited as *FRUS 1915, p. 442 n. 47* is the note the app labels 47. The source note carries a mark rather than a number because the printed volume gives it none.
 
 **Cross-references that cannot be followed.** Occasionally the printed volume cites a page, document, or volume that does not exist in the digital corpus. References that a corpus-wide validation dataset confirms cannot be followed render in **muted grey with a dotted underline and a small dagger (†)** instead of posing as working links — the printed text is preserved, nothing is removed. Click one for an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. (The corpus-wide list is exportable as CSV or JSON — Section 17.5.)
 

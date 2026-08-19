@@ -1626,8 +1626,11 @@ class CollectionContentResolver {
             return s
         case .lineBreak:
             return " "
-        case .footnoteMarker(_, let label):
-            return "[\(label)]"
+        case .footnoteMarker(_, _, _, let label):
+            // #985: an unnumbered note contributes nothing to plain text. This walk reaches
+            // document heads and datelines, where a head-nested source note previously emitted a
+            // fabricated "[1]" into the exported title.
+            return label.map { "[\($0)]" } ?? ""
         case .listBlock(_, let items):
             return items.map { renderNodePlainText($0) }.joined(separator: " ")
         case .tableBlock(let rows):
