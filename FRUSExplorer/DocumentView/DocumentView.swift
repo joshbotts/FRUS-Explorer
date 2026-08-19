@@ -264,6 +264,11 @@ struct DocumentView: View {
     /// prompt offering to download it (or view the connection graph) rather than silently
     /// redirecting.
     @State private var crossRefDownloadVolumeId: String? = nil
+
+    /// The footnote to reveal in the rendered document (#988), seeded from `entry.footnoteAnchor`
+    /// when the reader arrived by following a reference to a note, and re-set in place when the
+    /// reference points at a note in this same document.
+    @State private var revealedFootnoteAnchor: String? = nil
     /// Selected detent for the cross-reference graph sheet; starts at `.large`
     /// so the graph never opens half-height (Session 161).
     @State private var graphSheetDetent: PresentationDetent = .large
@@ -436,6 +441,10 @@ struct DocumentView: View {
                 // HighlightCoordinator.reset(); this is the iOS twin the Phase-A note deferred.)
                 clearSelectionState()
             }
+            // #988: the note this navigation was aimed at. Seeded here rather than in an `onAppear`
+            // so a REUSED view (the iPad two-pane detail pane renders one `DocumentView` and swaps
+            // its `entry`) picks up the new entry's anchor and drops the previous document's.
+            revealedFootnoteAnchor = entry.footnoteAnchor
             // Apply the default document mode on open (owner decision D2). On iPad/Mac the rail is the
             // persistent trailing inspector: .read closes it, .research opens it (via `panelVisible`),
             // .rememberLast leaves the persisted state untouched (defaults open).
@@ -1097,6 +1106,10 @@ struct DocumentView: View {
         case .document(let volumeId, let documentId):
             navigateToCrossRef(documentId: documentId, volumeId: volumeId ?? entry.volumeId)
 
+        case .footnote(let volumeId, let documentId, let anchor):
+            navigateToCrossRef(documentId: documentId, volumeId: volumeId ?? entry.volumeId,
+                               footnoteAnchor: anchor)
+
         case .page(let volumeId, let page):
             resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId)
 
@@ -1125,8 +1138,20 @@ struct DocumentView: View {
 
     /// Opens `documentId` in `volumeId`, or the cross-reference graph when the
     /// volume isn't downloaded.
-    private func navigateToCrossRef(documentId: String, volumeId: String) {
+    private func navigateToCrossRef(documentId: String, volumeId: String,
+                                    footnoteAnchor: String? = nil) {
         guard !documentId.isEmpty else { return }
+        // #988: a reference to a footnote in the document already on screen — 8.5% of the 16,921
+        // footnote references — must NOT push. Pushing would stack a second copy of the document
+        // the reader is looking at (a pre-existing defect for same-document refs generally), and on
+        // the iPad two-pane layout it would not even reload: `detailPane` renders
+        // `navigationPath.last`, so an identical entry leaves this view's `entry` prop unchanged,
+        // `.task(id:)` does not re-fire and `WebViewSignature` does not change. Revealing the note
+        // in place is both the correct behaviour and the only one that works there.
+        if let footnoteAnchor, documentId == entry.documentId, volumeId == entry.volumeId {
+            revealedFootnoteAnchor = footnoteAnchor
+            return
+        }
         guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volumeId) else {
             crossRefDownloadVolumeId = volumeId
             #if DEBUG
@@ -1144,7 +1169,8 @@ struct DocumentView: View {
             // title with vm.documentTitle once the XML has been parsed.
             header: documentId,
             dateline: nil,
-            sourceNote: nil
+            sourceNote: nil,
+            footnoteAnchor: footnoteAnchor
         )
         // A sheet-hosted reader follows the reference inside its own stack (#750).
         if let onNavigateToDocument {
@@ -1482,6 +1508,7 @@ struct DocumentView: View {
             ZStack {
             FRUSDocumentWebView(
                 model: model,
+                footnoteAnchor: revealedFootnoteAnchor,
                 onPersonTap: { person in
                     vm.selectedPerson = person
                     if let person {

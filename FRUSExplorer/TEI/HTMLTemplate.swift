@@ -357,6 +357,35 @@ enum HTMLTemplate {
       padding-left: 0;
     }
 
+    /* #988: a cross-reference can name a specific footnote, and the reader is scrolled to it.
+       The offset keeps it clear of the viewport edge; the wash says which note was meant, since
+       the endnote list is a wall of similar-looking entries. */
+    .fn-list-item {
+      scroll-margin-block: 30vh;
+    }
+
+    .fn-list-item.fn-arrived {
+      animation: fn-arrived-flash 2.4s ease-out;
+      border-radius: 4px;
+    }
+
+    @keyframes fn-arrived-flash {
+      0%   { background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.35)); }
+      70%  { background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.35)); }
+      100% { background-color: transparent; }
+    }
+
+    /* The wash is the affordance; the motion is not. Under Reduce Motion the class still lands
+       and still tints, it just does not animate. The SCROLL is gated separately, in the script
+       that adds this class — an explicit `behavior` argument overrides `scroll-behavior`, so a
+       CSS-only guard here would leave the larger motion running. */
+    @media (prefers-reduced-motion: reduce) {
+      .fn-list-item.fn-arrived {
+        animation: none;
+        background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.35));
+      }
+    }
+
     .fn-list-item {
       margin-bottom: 0.5em;
       line-height: 1.55;

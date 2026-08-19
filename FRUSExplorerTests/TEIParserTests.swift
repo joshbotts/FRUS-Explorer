@@ -1732,10 +1732,48 @@ struct CrossRefResolverTests {
         #expect(withHint == .document(volumeId: "frus1964-68v18", documentId: "d65"))
     }
 
-    @Test("Footnote-suffixed document ids resolve to the base document")
+    /// #988 changed this expectation deliberately. The reference names a NOTE, and the app now
+    /// carries the note's id so the reader lands on it — 16,921 corpus references target a note
+    /// xml:id, and 90.8% of them point into a different document, where dropping the suffix left
+    /// the reader at the head of a document they had not been reading.
+    @Test("A footnote-suffixed id resolves to the footnote, carrying its document")
     func footnoteSuffixedDocument() {
         let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("#d100fn2", volumeId: nil)
-        #expect(dest == .document(volumeId: nil, documentId: "d100"))
+        #expect(dest == .footnote(volumeId: nil, documentId: "d100", anchor: "d100fn2"))
+    }
+
+    /// The 33 corpus references whose note id is section-prefixed or symbol-suffixed. Before #988
+    /// these missed the `d\d+fn\d+` pattern, fell through to the bare document branch, and made
+    /// the app try to open a document named after a footnote. Measured, the widened rule routes
+    /// all 33 to a document id that exists in the same volume.
+    @Test("Section-prefixed and symbol-suffixed note ids resolve to their real document",
+          arguments: [
+            ("#cr_d6fn4",      "cr_d6",  "cr_d6fn4"),
+            ("#es_d2fn1",      "es_d2",  "es_d2fn1"),
+            ("#ni_d4fn4",      "ni_d4",  "ni_d4fn4"),
+            ("#pm_d35fn2",     "pm_d35", "pm_d35fn2"),
+            ("#d705fn-sym1",   "d705",   "d705fn-sym1"),
+          ])
+    func prefixedFootnoteAnchors(target: String, expectedDoc: String, expectedAnchor: String) {
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: nil)
+                == .footnote(volumeId: nil, documentId: expectedDoc, anchor: expectedAnchor))
+    }
+
+    /// The volume hint must survive the footnote branch — 120 of these references are cross-volume.
+    @Test("A cross-volume footnote reference keeps its volume")
+    func crossVolumeFootnoteAnchor() {
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("frus1950v05#d748fn3", volumeId: nil)
+                == .footnote(volumeId: "frus1950v05", documentId: "d748", anchor: "d748fn3"))
+    }
+
+    /// The widened pattern is anchored on `d\d+`, so an ordinary document id cannot be split by a
+    /// stray "fn" and a bare footnote anchor keeps its existing `.unresolved` treatment.
+    @Test("The footnote pattern does not capture ordinary document ids")
+    func footnotePatternDoesNotOvermatch() {
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#d80", volumeId: nil)
+                == .document(volumeId: nil, documentId: "d80"))
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#fn3", volumeId: nil) == .unresolved)
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#note4", volumeId: nil) == .unresolved)
     }
 
     @Test("Printed-page anchors resolve to page numbers; roman numerals are unresolved")

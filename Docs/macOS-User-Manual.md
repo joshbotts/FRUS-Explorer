@@ -405,6 +405,7 @@ Each rendered document shows its **header** (document number, classification hea
 | Person reference | Underlined person name | Click to open the Person Index entry |
 | Glossary term | Styled term | Click to open the Terms & Abbreviations entry |
 | Cross-reference | Numbered or inline link | Click to jump to the referenced document; if its volume isn't downloaded, the app offers the download |
+| Cross-reference to a footnote | Same as above | Opens the document *and* scrolls to the specific note, tinting it briefly. Editors frequently cite a note in another document, so this lands you on the note rather than the document's first line |
 | Footnote | Superscript number as printed in the volume | Click to pop up the note; the list at the foot of the document repeats the same numbers |
 | Source note | Archive-box mark (▤) where a footnote number would sit | Click to read it, or open Source Explorer (Section 14) |
 

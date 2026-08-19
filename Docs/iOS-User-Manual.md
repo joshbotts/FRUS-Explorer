@@ -429,6 +429,8 @@ Footnote markers and cross-reference links are tappable: a footnote marker scrol
 
 A document's **source note** — the archival provenance statement the volume prints unnumbered above the text — carries an archive-box mark (▤) instead of a number, because it has none in the original. Tap it to read the note, or open **Sources** (Section 14) to resolve it against the National Archives catalog.
 
+**A cross-reference to a footnote lands on that footnote.** FRUS editors often point not at a document but at a particular note inside one — most often a note in a *different* document. Following one opens that document and scrolls to the note itself, briefly tinting it so you can see which of the entries was meant, rather than dropping you at the top of the document to hunt for it.
+
 ### 8.2 Cross-References That Cannot Be Followed
 
 Not every printed reference has somewhere to go: occasionally a volume cites a page, document, or volume that does not exist in the digital corpus. References that a corpus-wide validation dataset confirms cannot be followed render in **muted grey with a dotted underline and a small dagger (†)** rather than posing as working links — the printed text itself is preserved. Tapping one opens an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. (The corpus-wide list of these is exportable — Section 17.6.)
