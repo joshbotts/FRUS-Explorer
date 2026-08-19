@@ -221,12 +221,6 @@ enum CloudKitSchemaInventory {
         "CD_ResearchNote.CD_selectedSummaryIds",
         "CD_ResearchNote.CD_userTagIds",
         "CD_ResearchNote.CD_volumeId",
-        "CD_ResearchSession",
-        "CD_ResearchSession.CD_createdAt",
-        "CD_ResearchSession.CD_endedAt",
-        "CD_ResearchSession.CD_events",
-        "CD_ResearchSession.CD_id",
-        "CD_ResearchSession.CD_startedAt",
         "CD_SavedSearch",
         "CD_SavedSearch.CD_booleanModeRaw",
         "CD_SavedSearch.CD_createdAt",
@@ -257,15 +251,6 @@ enum CloudKitSchemaInventory {
         "CD_SearchHistoryEntry.CD_renderedExpression",
         "CD_SearchHistoryEntry.CD_resultCount",
         "CD_SearchHistoryEntry.CD_scopeSignature",
-        "CD_SessionEvent",
-        "CD_SessionEvent.CD_createdAt",
-        "CD_SessionEvent.CD_eventType",
-        "CD_SessionEvent.CD_id",
-        "CD_SessionEvent.CD_payload",
-        "CD_SessionEvent.CD_session",
-        "CD_SessionEvent.CD_sessionId",
-        "CD_SessionEvent.CD_sortOrder",
-        "CD_SessionEvent.CD_timestamp",
         "CD_SummarizationPrompt",
         "CD_SummarizationPrompt.CD_createdAt",
         "CD_SummarizationPrompt.CD_id",
@@ -333,16 +318,28 @@ enum CloudKitSchemaInventory {
     /// Console's history alongside this file.
     static let deployedOn = "2026-08-08"
 
-    /// How many identifiers the Production schema is attested to carry. Pinned by the test
-    /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
-    /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 234
+    /// How many identifiers **this build mirrors that are attested deployed**. Pinned by the
+    /// test against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the
+    /// baseline cannot drift from the inventory unnoticed.
+    ///
+    /// ## R-2b changed what this number is a claim ABOUT, and the difference matters
+    /// It fell 234 → 219 without a Production deploy, which every previous change to it
+    /// implied. That is correct, because **CloudKit Production schema is append-only**: a
+    /// record type cannot be deleted from it. Retiring `ResearchSession`/`SessionEvent` stops
+    /// the app mirroring them; the 15 identifiers stay in Production for ever, orphaned and
+    /// harmless, carrying whatever rows users' devices already pushed.
+    ///
+    /// So this is a SUBSET claim — every identifier this build mirrors is deployed — not an
+    /// equality claim about Production's contents. A future ADDITION still needs the full R-7
+    /// checklist; a future removal needs only this number and the digest, and must NOT bump
+    /// `deployedThroughBuild`, which would assert a promotion that never happened.
+    static let deployedIdentifierCount = 219
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "a91e9487231bbf0acb5ea2abc9e8ede7f98d96381d5fe083caf61d888dde2a89"
+        "d1297540c9adacce4e45cc2a3597f09c6e2b6d5cb75d5d6c7fb0c7918bac6de0"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -359,10 +356,11 @@ enum CloudKitSchemaInventory {
     /// Populated by the developer who changes the schema; cleared by whoever runs
     /// CloudKit Dashboard → Schema → **Deploy Schema Changes to Production**.
     ///
-    /// **Wave R-2a** added `ExportHistoryEntry` (contract D1). Seven identifiers — one record type
-    /// and its six fields — none of them deployed at the time of writing. The retiring
-    /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
-    /// and still in Production, and removing them is R-2b's, not this release's.
+    /// **Wave R-2b** removed `ResearchSession`/`SessionEvent` — 15 identifiers — and added
+    /// nothing, so this list is untouched by it. A removal cannot await a deploy: there is no
+    /// Production change to promote (the schema is append-only), and the two types' identifiers
+    /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
+    /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
         // Empty: Production matches this build.
         //

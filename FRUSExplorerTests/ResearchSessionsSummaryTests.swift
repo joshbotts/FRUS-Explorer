@@ -179,29 +179,10 @@ struct ResearchSessionsSummaryTests {
                 "newest session should win")
     }
 
-    /// An empty trail reports empty, whatever is left in the retired tables.
-    ///
-    /// A stray `SessionEvent` synced in from a device on an older build must not make the pane
-    /// claim there is something to look at: the log does not read those rows, and the migration
-    /// will retire them at the next pass.
-    @Test("Legacy session rows alone do not make the summary non-empty")
-    @MainActor
-    func legacyRowsDoNotCount() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        let session = ResearchSession(startedAt: Date(timeIntervalSince1970: 500))
-        context.insert(session)
-        let event = SessionEvent(sessionId: session.id,
-                                 timestamp: Date(timeIntervalSince1970: 500),
-                                 kind: .documentOpen(volumeId: "v", documentId: "d", title: "T"),
-                                 sortOrder: 0)
-        event.session = session
-        context.insert(event)
-        try context.save()
-
-        #expect(ResearchSessionsSummary.fetch(from: context).isEmpty)
-    }
+    // (`legacyRowsDoNotCount` retired with R-2b: it asserted that a stray legacy
+    // `SessionEvent` could not make the pane look non-empty. With both types out of the schema
+    // no such row can exist in the model at all, so the guarantee is structural rather than
+    // tested — a test that can no longer construct its own premise is not coverage.)
 
     // MARK: - Deleting
 
@@ -220,31 +201,18 @@ struct ResearchSessionsSummaryTests {
         insertVisit(context, at: 2_000)
         context.insert(SearchHistoryEntry(queryText: "quadripartite", resultCount: 31))
         context.insert(ExportHistoryEntry(format: "pdf", documentCount: 4))
-        // A legacy row a device on an older build might still be syncing in.
-        let session = ResearchSession(startedAt: Date(timeIntervalSince1970: 100))
-        context.insert(session)
-        let event = SessionEvent(sessionId: session.id,
-                                 timestamp: Date(timeIntervalSince1970: 100),
-                                 kind: .searchSubmit(query: "quadripartite", resultCount: 31),
-                                 sortOrder: 0)
-        event.session = session
-        context.insert(event)
         try context.save()
 
         let removed = HistoryTrailAdmin.deleteAll(context: context)
         #expect(removed.visits == 2)
         #expect(removed.searches == 1)
         #expect(removed.exports == 1)
-        #expect(removed.legacyEvents == 1)
-        #expect(removed.legacySessions == 1)
         #expect(removed.trailTotal == 4)
 
         #expect(ResearchSessionsSummary.fetch(from: context).isEmpty)
         #expect(try context.fetchCount(FetchDescriptor<ReadingHistoryEntry>()) == 0)
         #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 0)
         #expect(try context.fetchCount(FetchDescriptor<ExportHistoryEntry>()) == 0)
-        #expect(try context.fetchCount(FetchDescriptor<SessionEvent>()) == 0)
-        #expect(try context.fetchCount(FetchDescriptor<ResearchSession>()) == 0)
     }
 
     /// The delete leaves everything else alone, which is exactly what the confirmation copy
@@ -281,36 +249,10 @@ struct ResearchSessionsSummaryTests {
         #expect(removed == HistoryTrailAdmin.DeletedCounts())
     }
 
-    /// The legacy sweep the migration still depends on.
-    ///
-    /// Events are deleted explicitly rather than left to the relationship's delete rule:
-    /// `ResearchSession.events` is `.nullify`, so deleting only the sessions would leave orphaned
-    /// events alive with a dangling `sessionId` — invisible everywhere and impossible to remove.
-    /// This is the assertion that catches a well-meant "just delete the sessions, the cascade
-    /// handles it", and it matters more now than it did: `ResearchTrailMigration` finishes by
-    /// calling this.
-    @Test("The legacy sweep deletes events explicitly, not by cascade")
-    @MainActor
-    func legacySweepDeletesEventsExplicitly() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        for index in 0..<3 {
-            let session = ResearchSession(startedAt: Date(timeIntervalSince1970: Double(index * 100)))
-            context.insert(session)
-            let event = SessionEvent(sessionId: session.id,
-                                     timestamp: Date(timeIntervalSince1970: Double(index * 100 + 1)),
-                                     kind: .searchSubmit(query: "quadripartite", resultCount: 31),
-                                     sortOrder: 0)
-            event.session = session
-            context.insert(event)
-        }
-        try context.save()
-
-        let removed = ResearchSessionAdmin.deleteAll(context: context)
-        #expect(removed.sessions == 3)
-        #expect(removed.events == 3)
-        #expect(try context.fetchCount(FetchDescriptor<SessionEvent>()) == 0)
-        #expect(try context.fetchCount(FetchDescriptor<ResearchSession>()) == 0)
-    }
+    // (`legacySweepDeletesEventsExplicitly` retired with R-2b. It pinned
+    // `ResearchSessionAdmin.deleteAll` deleting events explicitly rather than trusting the
+    // `.nullify` relationship — a real hazard while the types existed, and moot now that both
+    // they and the sweep are gone. Kept as a note because the hazard it names is general: a
+    // `.nullify` relationship orphans children on parent delete, and any future model pair with
+    // that rule needs the same explicit sweep.)
 }

@@ -326,25 +326,8 @@ struct ResearchTrailSessionsTests {
         #expect(snapshot.sessions.isEmpty)
     }
 
-    /// The retired tables are not a source. A `SessionEvent` synced in from a device on an older
-    /// build shows up in the log only once the migration has re-homed it — which is the honest
-    /// behaviour, since the log's job is to describe the trail, not the thing being retired.
-    @Test("Legacy session rows are not a source for the derived log")
-    @MainActor
-    func legacyRowsAreNotASource() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        let session = ResearchSession(startedAt: Self.epoch)
-        context.insert(session)
-        let event = SessionEvent(sessionId: session.id,
-                                 timestamp: Self.epoch,
-                                 kind: .documentOpen(volumeId: "v", documentId: "d", title: "T"),
-                                 sortOrder: 0)
-        event.session = session
-        context.insert(event)
-        try context.save()
-
-        #expect(SessionLogSnapshot.fetch(from: context).isEmpty)
-    }
+    // (`legacyRowsAreNotASource` retired with R-2b, same reason as its sibling in
+    // `ResearchSessionsSummaryTests`: it asserted the derived log ignores legacy rows, and with
+    // both types out of the schema the test can no longer construct one. The guarantee is now
+    // structural — `SessionLogSnapshot` reads the three trail tables and nothing else.)
 }

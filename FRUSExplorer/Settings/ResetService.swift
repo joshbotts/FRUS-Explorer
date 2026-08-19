@@ -93,10 +93,6 @@ enum ResetInventory {
         ReadingHistoryEntry.self,
         SearchHistoryEntry.self,
         ExportHistoryEntry.self,
-        SessionEvent.self,
-        ResearchSession.self,
-        // Retiring (R-2b removes them from the schema); still deleted while enrolled so a reset
-        // does not leave rows a later migration would read back.
         SummarizationPrompt.self,
         // #746 additions — all CloudKit-synced user data that survived every previous reset.
         SavedSearch.self,

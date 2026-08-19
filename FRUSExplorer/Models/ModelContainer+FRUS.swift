@@ -49,10 +49,16 @@ extension ModelContainer {
     ///   1.6 — Wave R-2a: `ExportHistoryEntry` added (contract D1 — the only record that a
     ///          collection was exported, and the Zotero Web-API push has a real external side
     ///          effect), adding one record type. `ResearchSession`/`SessionEvent`
-    ///          are **retiring but still listed**: the migration has to be able to read them.
-    ///          R-2b removes them, at which point the count drops to 17. The gate fired on this
-    ///          change, as designed, and its seven identifiers are in
-    ///          `CloudKitSchemaInventory.identifiersAwaitingDeploy` until Production is promoted.
+    ///          were **retiring but still listed**: the migration had to be able to read them.
+    ///   1.7 — Wave R-2b: `ResearchSession`/`SessionEvent` removed — two fewer mirrored types
+    ///          (the count lives in `CloudKitSchemaInventory.recordTypeCount`, not here, for the
+    ///          reason the stale-count test states) and 15 identifiers out of the inventory. `ResearchTrailMigration` and
+    ///          `ResearchSessionAdmin` went with them; the trail is `ReadingHistoryEntry` /
+    ///          `SearchHistoryEntry` / `ExportHistoryEntry` and sessions are derived from those.
+    ///          **No Production deploy**: CloudKit's schema is append-only, so the two types stay
+    ///          in Production unmirrored rather than being removed. See
+    ///          `CloudKitSchemaInventory.deployedIdentifierCount` for what that does to the
+    ///          baseline's meaning.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -92,13 +98,6 @@ extension ModelContainer {
             ExportHistoryEntry.self,
             SummarizationPrompt.self,
             SavedSearch.self,
-            // RETIRING, Wave R-2a. Nothing writes these two any more — sessions are derived from
-            // the three history types above. They stay enrolled for one release **only** so
-            // `ResearchTrailMigration` can read rows already in users' stores, including rows a
-            // second device on an older build is still writing. Removing them is R-2b; doing it
-            // here would have left the app unable to read what it has to migrate.
-            ResearchSession.self,
-            SessionEvent.self,
             DocumentHighlight.self,
             DocumentTagAssignment.self,
             PersonClusterOverride.self,

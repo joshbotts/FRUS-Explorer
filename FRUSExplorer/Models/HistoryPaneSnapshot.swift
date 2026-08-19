@@ -611,11 +611,6 @@ enum HistoryTrailAdmin {
         var searches = 0
         /// Exports removed.
         var exports = 0
-        /// Legacy `SessionEvent` rows removed.
-        var legacyEvents = 0
-        /// Legacy `ResearchSession` rows removed.
-        var legacySessions = 0
-
         /// Everything the user would think of as "a thing that was recorded".
         var trailTotal: Int { visits + searches + exports }
     }
@@ -654,20 +649,12 @@ enum HistoryTrailAdmin {
         for export in exports { context.delete(export) }
         counts.exports = exports.count
 
-        let legacy = ResearchSessionAdmin.deleteAll(context: context)
-        counts.legacyEvents = legacy.events
-        counts.legacySessions = legacy.sessions
-
-        // `ResearchSessionAdmin.deleteAll` saves, but only after its own deletes are staged; save
-        // again so the trail deletes above are flushed even when the legacy tables were empty and
-        // that call had nothing to do.
         try? context.save()
 
         // Always-on, like `DuplicateRecordCleanup`'s: this removes CloudKit-mirrored user records
         // and propagates the removal to every device.
         print("[HistoryTrailAdmin] Deleted the research trail: \(counts.visits) visit(s), "
-              + "\(counts.searches) search(es), \(counts.exports) export(s), plus "
-              + "\(counts.legacyEvents) legacy event(s) in \(counts.legacySessions) session(s).")
+              + "\(counts.searches) search(es), \(counts.exports) export(s).")
         return counts
     }
 }
