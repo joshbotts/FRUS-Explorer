@@ -184,7 +184,10 @@ struct WordCloudDocumentKey: Hashable, Sendable {
 ///          arm of the detected-topic facets; signature `subject:<category>` or
 ///          `subject:<category>␟<subcategory>` (U+001F delimiter, absent from taxonomy
 ///          labels), resolved volume-grain like `.subseries`
-enum WordCloudScope: Hashable, Sendable, Identifiable {
+/// #752/M-31: `Codable` so the scope can key a value-based `WindowGroup` on iPad. The word cloud
+/// was the only Research-rail tool without a scene of its own, which is why it alone rode a
+/// cross-window hand-off and opened in the wrong window from a standalone document window.
+enum WordCloudScope: Hashable, Sendable, Identifiable, Codable {
     /// A single document.
     case document(volumeId: String, documentId: String)
     /// Every document in a single volume.

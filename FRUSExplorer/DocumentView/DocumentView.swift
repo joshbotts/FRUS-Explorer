@@ -65,6 +65,11 @@ enum DocumentSheet: Identifiable {
     case relatedDocuments(RelatedDocumentsRequest)
     /// The semantic map focused on this document, where there are no extra windows to open one in.
     case semanticMap(SemanticMapRequest)
+
+    /// This document's word cloud, presented in place when multi-window is unavailable (#752).
+    /// The four sibling rail tools already had this shape; the cloud rode an app-level hand-off
+    /// presented by `MainTabView`, which a standalone document window does not host.
+    case wordCloud(WordCloudScope)
     /// The Research rail as an iPhone bottom sheet (Phase D). On iPad the rail is the trailing
     /// `.inspector` instead; on iPhone it folds into this consolidated sheet (owner decision D2).
     case researchRail
@@ -89,6 +94,7 @@ enum DocumentSheet: Identifiable {
         case .naraLookup:                      return "naraLookup"
         case .relatedDocuments(let r):         return "relatedDocs-\(r.anchor.compositeString)"
         case .semanticMap(let r):              return "semanticMap-\(r.focusDocumentKey ?? "all")"
+        case .wordCloud(let scope):            return "wordCloud-\(scope.id)"
         case .researchRail:                    return "researchRail"
         }
     }
@@ -820,6 +826,12 @@ struct DocumentView: View {
             case .semanticMap(let request):
                 SemanticAnalyticsView(appState: appState, continued: request)
                     .environment(\.sceneID, sceneID)
+            case .wordCloud(let scope):
+                // #752: publish this window's scene id, exactly as the MainTabView presentation
+                // this replaces did — the cloud's own Analyze / Chronology producers address it,
+                // and a sheet does not reliably inherit `\.sceneID`.
+                WordCloudView(scope: scope)
+                    .environment(\.sceneID, sceneID)
             case .researchRail:
                 // iPhone bottom-sheet rail (iPad uses the trailing .inspector). medium/large detents
                 // + a visible drag indicator (owner decision D2 / plan §5). Swipe-dismiss writes
@@ -977,6 +989,19 @@ struct DocumentView: View {
     /// available (Stage Manager on iPad), it opens the value-based Source Explorer scene with a
     /// `SourceExplorerRequest` carrying the note + display fields (#317 — self-describing, so a
     /// restored window rebuilds correctly); otherwise the in-place sheet.
+    /// Opens this document's word cloud — a Stage Manager window when multi-window is available,
+    /// else an in-place sheet. Mirrors `openCrossReferenceGraph`, `openSourceExplorer`,
+    /// `openSemanticMap` and `openRelatedDocuments`; the word cloud was the one rail tool that did
+    /// not, and #752/M-31 is the bug that cost (see `openRailTool`).
+    private func openWordCloud() {
+        let scope = WordCloudScope.document(volumeId: entry.volumeId, documentId: entry.documentId)
+        if supportsMultipleWindows {
+            appState.openAuxWindow(scope, from: sceneID, using: openWindow)
+        } else {
+            activeSheet = .wordCloud(scope)
+        }
+    }
+
     private func openSourceExplorer(vm: DocumentViewModel) {
         if supportsMultipleWindows {
             appState.openAuxWindow(SourceExplorerRequest(
@@ -1348,16 +1373,19 @@ struct DocumentView: View {
         case .cite:
             activeSheet = .citation
         case .wordCloud:
-            // Word Cloud is the one tool NOT presented through `activeSheet` — it rides the
-            // app-level `pendingWordCloud` sheet on `MainTabView`, an ANCESTOR of this view. On
-            // iPhone the rail is a live `.sheet` (`.researchRail`), and SwiftUI won't present the
-            // ancestor sheet over a descendant one, so the tap would be a dead no-op (and the
-            // word cloud would later ghost-present when the rail is dismissed). Set the hand-off
-            // then dismiss the rail sheet — the same set-then-dismiss order `ChronologyView` uses.
-            // On iPad the rail is the `.inspector` column (not a sheet), so nothing to dismiss.
-            appState.openWordCloud(.document(
-                volumeId: entry.volumeId, documentId: entry.documentId), from: sceneID)
-            if activeSheet?.id == "researchRail" { activeSheet = nil }
+            // #752/M-31: resolved HERE, like the four sibling tools, rather than through the
+            // app-level `pendingWordCloud` hand-off. That hand-off is presented by `MainTabView`,
+            // an ancestor of this view in the tab hierarchy but NOT of a standalone document
+            // window — so from such a window the cloud presented in the LAUNCHING window, which
+            // iPadOS does not raise. #769 fixed only M-31's other half, a launcher that had since
+            // closed. Every other producer still routes through `openWordCloud`, where the
+            // launching window is the right destination.
+            //
+            // Assigning `activeSheet` also replaces the rail sheet on iPhone in one step, which is
+            // what the old set-then-dismiss dance was working around: SwiftUI will not present an
+            // ancestor's sheet over a descendant's, so the tap used to be a no-op that then
+            // ghost-presented when the rail was dismissed.
+            openWordCloud()
         case .sources:
             openSourceExplorer(vm: vm)
         case .graph:
