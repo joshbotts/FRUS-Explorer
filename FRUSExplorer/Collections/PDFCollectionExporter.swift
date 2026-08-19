@@ -698,7 +698,7 @@ final class PDFCollectionExporter: CollectionExporter {
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             drawHRule(ctx: ctx, y: y, gray: 0.75, thickness: 0.25)
             y -= 10
-            let snText = "Source: \(sourceNote)"
+            let snText = "Source: \(SourceNoteDisplay.withoutLeadingLabel(sourceNote))"
             // Approximate height: one line at 9pt
             let snH: CGFloat = 14
             draw(snText, in: ctx,
@@ -762,12 +762,24 @@ final class PDFCollectionExporter: CollectionExporter {
                     charOffset += visible.length
 
                     if charOffset < totalChars {
-                        // Text overflowed — new page
-                        drawPageNumber(ctx: ctx, number: pageNumber)
-                        ctx.endPDFPage()
-                        pageNumber += 1
-                        ctx.beginPDFPage(nil)
-                        y = H - M
+                        // #960: a whitespace-only remainder must not open a page. Trailing
+                        // newlines in a composed body could overflow onto a fresh page on
+                        // which CoreText then draws nothing — a blank page with only its
+                        // folio, which is exactly the shipped defect (p18 of the owner's
+                        // build-43 export). Whitespace left to draw is drawing done.
+                        let remainder = (composedBody.string as NSString)
+                            .substring(from: charOffset)
+                        if remainder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            charOffset = totalChars
+                            y = M + 20
+                        } else {
+                            // Text overflowed — new page
+                            drawPageNumber(ctx: ctx, number: pageNumber)
+                            ctx.endPDFPage()
+                            pageNumber += 1
+                            ctx.beginPDFPage(nil)
+                            y = H - M
+                        }
                     } else {
                         y = M + 20
                     }

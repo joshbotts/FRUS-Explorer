@@ -1302,6 +1302,26 @@ extension CollectionExporter {
     }
 }
 
+// MARK: - Source-note display
+
+/// The one label rule every export surface applies to a stored source note (#960).
+///
+/// Post-1969 volumes' stored notes ALREADY lead with `Source:` — the TEI carries the label —
+/// while every renderer prepends its own. Before this rule the doubling shipped in all three
+/// formats **and the in-app preview** (the preview is the HTML renderer), masked in HTML from
+/// naive search because the label carries markup (`<strong>Source:</strong> Source: …`).
+/// Fixing it per-renderer would be three sites that can drift; this is the single point.
+enum SourceNoteDisplay {
+    /// `sourceNote` without any leading `Source:` label, ready for a renderer that adds its own.
+    static func withoutLeadingLabel(_ sourceNote: String) -> String {
+        var t = sourceNote.trimmingCharacters(in: .whitespaces)
+        if let r = t.range(of: #"^Source\s*:\s*"#, options: [.regularExpression, .caseInsensitive]) {
+            t.removeSubrange(r)
+        }
+        return t
+    }
+}
+
 // MARK: - ExportError
 
 enum ExportError: Error, LocalizedError {
