@@ -149,6 +149,7 @@ let package = Package(
         /// exact roll for page-by-page review without any runtime API calls.
         .target(
             name: "CentralFilesIndexGeneratorCore",
+            dependencies: [.target(name: "GeneratorKit")],
             path: "CentralFilesIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -439,7 +440,7 @@ let package = Package(
         /// provenance evolution offline / zero-index. Entirely offline.
         .target(
             name: "SourceProvenanceIndexGeneratorCore",
-            dependencies: [.target(name: "SourceNoteKit")],
+            dependencies: [.target(name: "SourceNoteKit"), .target(name: "GeneratorKit")],
             path: "SourceProvenanceIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

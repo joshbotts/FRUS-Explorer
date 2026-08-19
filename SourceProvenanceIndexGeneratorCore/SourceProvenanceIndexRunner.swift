@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import GeneratorKit
 import SourceNoteKit
 
 /// Builds the bundled `source-provenance-index.json` (SA-3a): parses every locally
@@ -40,7 +41,7 @@ public enum SourceProvenanceIndexRunner {
         let volumesDir = URL(fileURLWithPath: env["VOLUMES_DIR"] ?? "/Users/jbotts/Development/frus/volumes")
         let manifestPath = env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json"
         let outputPath = env["OUTPUT"] ?? "FRUSExplorer/Resources/source-provenance-index.json"
-        let generated = env["GENERATED_DATE"] ?? today()
+        let generated = generatorDateStamp(override: env["GENERATED_DATE"])
 
         // MARK: Load manifest → volumeId → coverage decade.
         let manifestData = try Data(contentsOf: URL(fileURLWithPath: manifestPath))
@@ -51,14 +52,11 @@ public enum SourceProvenanceIndexRunner {
                 decadeByVolume[entry.volumeId] = decade
             }
         }
-        log("Loaded manifest: \(manifest.count) entries, \(decadeByVolume.count) with a coverage decade")
+        generatorLog("Loaded manifest: \(manifest.count) entries, \(decadeByVolume.count) with a coverage decade")
 
         // MARK: Iterate every volume XML.
-        let xmls = try FileManager.default
-            .contentsOfDirectory(at: volumesDir, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "xml" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
-        guard !xmls.isEmpty else { throw RunError.noVolumes(volumesDir.path) }
+        let xmls = try VolumeCorpusEnumerator.volumeFiles(in: volumesDir)
+        guard !xmls.isEmpty else { throw GeneratorError.noVolumes(volumesDir.path) }
 
         let scan = build(xmls: xmls, decadeByVolume: decadeByVolume, generated: generated)
         let output = scan.index
@@ -72,7 +70,7 @@ public enum SourceProvenanceIndexRunner {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(output).write(to: URL(fileURLWithPath: outputPath))
 
-        log("""
+        generatorLog("""
         source-provenance-index.json written to \(outputPath)
           schema:               2 (byDecade + byVolume)
           volumes covered:      \(volumesCovered) / \(xmls.count)
@@ -115,7 +113,7 @@ public enum SourceProvenanceIndexRunner {
         var skippedNoNotes = 0
 
         for url in xmls {
-            let volumeId = url.deletingPathExtension().lastPathComponent
+            let volumeId = VolumeCorpusEnumerator.volumeId(for: url)
             guard let decade = decadeByVolume[volumeId] else {
                 skippedNoDecade += 1
                 continue
@@ -177,26 +175,10 @@ public enum SourceProvenanceIndexRunner {
 
     // MARK: - Helpers
 
-    private static func today() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f.string(from: Date())
-    }
-
-    private static func log(_ message: String) {
-        FileHandle.standardError.write(Data((message + "\n").utf8))
-    }
-
-    /// Errors thrown by the runner.
-    public enum RunError: Error, CustomStringConvertible {
-        /// No `.xml` volumes were found in `VOLUMES_DIR`.
-        case noVolumes(String)
-        public var description: String {
-            switch self {
-            case .noVolumes(let dir): return "No .xml volumes found in \(dir)"
-            }
-        }
-    }
+    // #270: today()/log()/RunError were character-for-character duplicates of
+    // GeneratorKit's generatorDateStamp/generatorLog/GeneratorError (identical format, locale,
+    // UTC, stderr, and even the noVolumes message text). Duplicates that must stay identical
+    // are the drift this migration removes; the writer is untouched, and the migration was
+    // verified byte-identical by regenerating against the committed artifact under a pinned
+    // GENERATED_DATE.
 }
