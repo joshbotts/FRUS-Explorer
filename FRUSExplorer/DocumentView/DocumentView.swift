@@ -741,6 +741,7 @@ struct DocumentView: View {
                     CrossReferenceGraphView(
                         entry: entry,
                         crossReferenceStore: store,
+                        indexingPipeline: appState.indexingPipeline,
                         downloadedVolumeIds: downloadedVolumeIds
                     )
                     // The graph benefits from extra vertical room — large layouts and

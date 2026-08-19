@@ -127,6 +127,11 @@ struct CrossReferenceGraphView: View {
     /// (iOS only — macOS opens the S6 Archival Neighbors window instead).
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
     #endif
+    /// The collection record a tapped unit node routes to (#837), or `nil`.
+    ///
+    /// Outside the iOS gate above: a unit node terminates the walk on BOTH platforms, and
+    /// declaring this inside it compiled on iOS and broke the Mac build.
+    @State private var unitCollectionRecord: AuthorityCollectionRecord? = nil
     /// Volumes the user queued for download from this graph during the current
     /// presentation; drives the "Download queued" state in the node info panel.
     @State private var requestedDownloadVolumeIds: Set<String> = []
@@ -143,12 +148,14 @@ struct CrossReferenceGraphView: View {
     init(
         entry: DocumentBrowserEntry,
         crossReferenceStore: CrossReferenceStore,
+        indexingPipeline: IndexingPipeline? = nil,
         downloadedVolumeIds: Set<String>
     ) {
         _vm = State(initialValue: CrossReferenceGraphViewModel(
             centralDocumentId: entry.documentId,
             centralVolumeId: entry.volumeId,
             crossReferenceStore: crossReferenceStore,
+            indexingPipeline: indexingPipeline,
             downloadedVolumeIds: downloadedVolumeIds
         ))
     }
@@ -276,6 +283,15 @@ struct CrossReferenceGraphView: View {
                 .environment(\.sceneID, sceneID ?? .anyWindow)
         }
         #endif
+        // #837: where a unit node's walk ends — on BOTH platforms, so outside the gate above.
+        // `CollectionDetailView` declares a NON-optional `@Environment(AppState.self)`, which
+        // resolves on DECLARATION rather than on use, so the environment is re-injected here
+        // rather than assumed — the #950 shape.
+        .sheet(item: $unitCollectionRecord) { record in
+            CollectionDetailSheet(record: record)
+                .environment(appState)
+                .environment(\.sceneID, sceneID ?? .anyWindow)
+        }
     }
 
     // MARK: - Content Area
@@ -682,6 +698,12 @@ struct CrossReferenceGraphView: View {
 
     /// Accessibility hint matching the node's interaction (expand vs. details).
     private func nodeHitAreaHint(for node: DisplayNode) -> String {
+        if node.isUnit {
+            // #837: the walk ends here. Promising "actions" on a node with no document behind
+            // it is the fall-through this branch exists to prevent.
+            return String(localized: "graph.node.unit.hint",
+                          defaultValue: "Tap to open this collection's record. There is no document here to open.")
+        }
         if node.isDateCluster {
             return String(localized: "graph.node.dateCluster.hint",
                           defaultValue: "Tap to expand this date group")
@@ -701,6 +723,16 @@ struct CrossReferenceGraphView: View {
         // SwiftUI focus system. Tab-key and Full Keyboard Access users can now navigate
         // between nodes without VoiceOver (F-018).
         Button {
+            // #837: a unit node terminates the walk. There is no document behind it to select,
+            // recentre on, or open — so the tap routes to the collection record and returns
+            // before any of the document-node handling below.
+            if node.isUnit {
+                if let id = node.unitCollectionId,
+                   let record = CollectionAuthorityStore.shared?.record(id: id) {
+                    unitCollectionRecord = record
+                }
+                return
+            }
             #if os(macOS)
             // Toggle selection so the details stay visible until dismissed.
             // Hover state is cleared too: pinned wins in resolution, and a stale
@@ -756,7 +788,21 @@ struct CrossReferenceGraphView: View {
 
     @ViewBuilder
     private func nodeContextMenuItems(for node: DisplayNode) -> some View {
-        if node.isDateCluster {
+        if node.isUnit {
+            // Checked FIRST so a unit can never reach the document items below — two of which
+            // are disabled by `!isDownloaded` and would otherwise appear enabled on a node
+            // whose `isDownloaded` is `true` for an unrelated reason.
+            if let id = node.unitCollectionId,
+               let record = CollectionAuthorityStore.shared?.record(id: id) {
+                Button {
+                    unitCollectionRecord = record
+                } label: {
+                    Label(String(localized: "graph.contextMenu.openCollection",
+                                 defaultValue: "Open Collection Record"),
+                          systemImage: "building.columns")
+                }
+            }
+        } else if node.isDateCluster {
             Button {
                 vm.toggleDateCluster(node.id)
                 vm.selectedNodeKey = nil
@@ -879,6 +925,14 @@ struct CrossReferenceGraphView: View {
                 }
                 Text(String(localized: "graph.legend.size",
                             defaultValue: "Size = connection count"))
+                // #837, conditional: the key appears only when the canvas carries a unit node.
+                // A permanent entry for something usually absent teaches a vocabulary the
+                // reader will not see, and the strip is already at its width budget.
+                if vm.displayNodes.contains(where: \.isUnit) {
+                    legendItem(color: .teal, text: String(
+                        localized: "graph.legend.unit",
+                        defaultValue: "Not printed — opens the collection"))
+                }
             }
             // Narrow fallback (iPhone graph mode): colours + arrow only.
             HStack(spacing: 12) {
@@ -893,6 +947,11 @@ struct CrossReferenceGraphView: View {
                         .font(.system(size: 8, weight: .semibold))
                     Text(String(localized: "graph.legend.arrow.shorter",
                                 defaultValue: "To the cited document"))
+                }
+                if vm.displayNodes.contains(where: \.isUnit) {
+                    legendItem(color: .teal, text: String(
+                        localized: "graph.legend.unit.short",
+                        defaultValue: "Not printed"))
                 }
             }
         }
@@ -1184,6 +1243,9 @@ struct CrossReferenceGraphView: View {
         case .extended:
             return String(localized: "graph.context.extendedRef",
                           defaultValue: "Extended reference")
+        case .unit:
+            return String(localized: "graph.context.unprinted",
+                          defaultValue: "Not printed")
         default:
             return String(localized: "graph.context.context",
                           defaultValue: "Context")
@@ -1417,7 +1479,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
                 body:  String(localized: "graph.info.interact.body",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.")
+                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead. A citation the app could not match to a known collection is left off the graph rather than drawn as a guess.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",
@@ -1667,6 +1729,14 @@ struct CrossReferenceGraphView: View {
         case .clusterInbound:              fillColor = isSelected ? .blue.opacity(0.5) : .blue.opacity(0.2)
         case .clusterOutbound:             fillColor = isSelected ? .orange.opacity(0.5) : .orange.opacity(0.2)
         case .dateCluster:                 fillColor = isSelected ? .purple.opacity(0.5) : .purple.opacity(0.25)
+        // #837. TEAL because every other hue is spoken for: accent is central, blue inbound,
+        // orange outbound (chosen for red-green safety), secondary extended, purple date
+        // clusters. And it is a CIRCLE like every other node, not the handoff's rounded square:
+        // the shipped archival vocabulary already reads circle = collection and square = class,
+        // and inverting it here would make one shape mean two things across one feature (owner's
+        // decision, 2026-08-19). The `building.columns` glyph below carries the distinction
+        // redundantly, so colour is not the only signal.
+        case .unit:                        fillColor = isSelected ? .teal.opacity(0.7) : .teal.opacity(0.3)
         }
         ctx.fill(Path(ellipseIn: rect), with: .color(fillColor))
 
@@ -1679,7 +1749,12 @@ struct CrossReferenceGraphView: View {
                 with: .color(.white),
                 lineWidth: 2
             )
-        } else if !node.isDownloaded {
+        } else if !node.isDownloaded && !node.isUnit {
+            // The `!isUnit` is load-bearing, not defensive. Dash means "volume not downloaded"
+            // and is the PRIMARY carrier of that (the icon reinforces it), so a unit node
+            // inheriting it would say something false: a unit has no volume to download. Unit
+            // nodes are built with `isDownloaded: true` for the same reason, and this guard
+            // means neither fact alone can put a dash on one.
             ctx.stroke(
                 Path(ellipseIn: rect.insetBy(dx: -1.5, dy: -1.5)),
                 with: .color(.secondary.opacity(0.8)),
@@ -1689,7 +1764,12 @@ struct CrossReferenceGraphView: View {
 
         // SF Symbol icon
         let symbolName: String
-        if node.isDateCluster {
+        if node.isUnit {
+            // The app's established archive glyph — the same one "View in National Archives
+            // Catalog" uses. Checked BEFORE isDownloaded so a unit can never draw icloud.slash,
+            // which would offer a download that does not exist.
+            symbolName = "building.columns"
+        } else if node.isDateCluster {
             symbolName = "calendar"
         } else if node.isCluster {
             symbolName = "folder"

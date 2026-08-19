@@ -128,6 +128,7 @@ struct CrossReferenceGraphWindowView: View {
                 CrossReferenceGraphView(
                     entry: entry,
                     crossReferenceStore: store,
+                    indexingPipeline: appState.indexingPipeline,
                     downloadedVolumeIds: downloadedVolumeIds
                 )
                 // Rebuild (re-querying the reopened store) when the focus changes OR after an
