@@ -249,4 +249,43 @@ struct FrontMatterJobKeyingTests {
             Measured, that moved the residue to 6,292. Use literal characters.
             """)
     }
+
+    // MARK: - #353: OCR corruptions of the Files keyword
+
+    /// The scanned volumes misread `Files` as `Flies`/`Piles` inside `type="source"` notes —
+    /// `frus1941-43` d144 is literally `<note type="source">Defense Flies</note>`. The fold
+    /// runs BEFORE every strategy, so the stored series name is the corrected one; a widened
+    /// keyword regex would instead have stored "Defense Flies", which `AuthorityLookup` (a
+    /// name join) could never match to the real Defense Files cluster.
+    ///
+    /// Measured: 31 notes, all 1940-51, moving unrecognized -> namedFileSeries with nothing
+    /// else shifting anywhere (category-level diff of two full eval runs).
+    @Test("OCR-corrupted Files keywords fold before parsing")
+    func ocrFilesVariantsFoldAndParse() {
+        let parser = SourceNoteParser()
+        if case .namedFileSeries(let name, _) = parser.parse("Defense Flies") {
+            #expect(name == "Defense Files", "the STORED name must be the corrected one")
+        } else {
+            Issue.record("'Defense Flies' still unrecognized — the OCR fold is not running")
+        }
+        if case .namedFileSeries(let name, _) = parser.parse("Department of the Army Piles") {
+            #expect(name == "Department of the Army Files")
+        } else {
+            Issue.record("'Department of the Army Piles' still unrecognized")
+        }
+        // The fold also unlocks LATER strategies: `CFM Flies: Lot M-88` becomes an inline
+        // lot-file citation once the keyword reads Files (frus1949v03).
+        if case .unrecognized = parser.parse("CFM Flies: Lot M–88: Box 140") {
+            Issue.record("the folded text should reach the inline-lot strategy")
+        }
+    }
+
+    /// The guard is keyword POSITION — a token not preceded by a capitalized word never folds,
+    /// so the fold cannot touch prose even in principle.
+    @Test("The OCR fold requires series-name position")
+    func ocrFoldRequiresNamePosition() {
+        #expect(SourceNoteParser.foldOCRKeywords("Flies were a problem")
+                == "Flies were a problem", "a leading token has no preceding word and must not fold")
+        #expect(SourceNoteParser.foldOCRKeywords("Defense Flies") == "Defense Files")
+    }
 }

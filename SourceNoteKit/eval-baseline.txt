@@ -23,10 +23,10 @@ TOTAL NOTES: 267663
   presidentialLibrary             518  (  0.6%)
   naraCollection                  483  (  0.6%)
   ciaCollection                   678  (  0.8%)
-  namedFileSeries                4445  (  5.2%)
+  namedFileSeries                4476  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
   previouslyPublished              74  (  0.1%)
-  unrecognized                    840  (  1.0%)
+  unrecognized                    809  (  0.9%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
   centralFiles                  10476  ( 69.7%)
@@ -101,22 +101,22 @@ TOTAL NOTES: 267663
   presidentialLibrary           28780  ( 10.8%)
   naraCollection                10291  (  3.8%)
   ciaCollection                  2903  (  1.1%)
-  namedFileSeries                6029  (  2.3%)
+  namedFileSeries                6060  (  2.3%)
   foreignGovernmentArchive         71  (  0.0%)
   previouslyPublished             894  (  0.3%)
-  unrecognized                   5971  (  2.2%)
+  unrecognized                   5940  (  2.2%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
   1906-1939                       568  (  0.6%)
-  1940-1951                       840  (  1.0%)
+  1940-1951                       809  (  0.9%)
   1952-1954                      1096  (  7.3%)
   1955-1957                       452  (  4.2%)
   1958-1960                       185  (  2.2%)
   1961-1963                       306  (  3.1%)
   1964-1976                       304  (  1.0%)
   1977+                           187  (  1.5%)
-  overall                        5971  (  2.2%)
+  overall                        5940  (  2.2%)
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906
@@ -176,10 +176,8 @@ TOTAL NOTES: 267663
   | 740.00111 A.R.–Subs/la: Telegram
   | 811.5034 (China); American Radio Service/41: Telegram
   | Printed from Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Adm
-  | Defense Flies
   | Civilian Production Administration, Bureau of Demobilization, Minutes of the Supply Priorities and Allocations Board, September 2, 1941, to January 15, 1942, Historical Reports on War Administration, 
   | Roosevelt Papers The copy of this memorandum in the Department’s files (851A.01/87A) does not have the enclosure mentioned in the memorandum.
-  | Department of the Army Piles
   | Hopkins: Papers
   | 811.24546/la: Telegram
   | Paraphrased text reprinted from Department of State Bulletin, November 8, 1941, p. 365.
@@ -197,6 +195,8 @@ TOTAL NOTES: 267663
   | A.E.C. Files (Historical Doc. No. 133)
   | A.E.C. Files (Historical Doc. No. 166)
   | A.E.C. Files (Historical Doc. No. 235)
+  | A.E.C. Files (Historical Doc. No. 168)
+  | A.E.C. Files (Historical Doc. No. 225)
 --- 1952-1954
   | [Extract]
   | [Attachment]
