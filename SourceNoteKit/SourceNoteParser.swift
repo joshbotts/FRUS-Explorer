@@ -1355,7 +1355,39 @@ public struct SourceNoteParser {
         // already declined, so it cannot steal from one. See `tryAgencyFileSeries`.
         if let agencyResult = tryAgencyFileSeries(body) { return agencyResult }
 
+        // WNRC-led series under an OLD-STYLE FRC accession (#353). `tryNARACollection`
+        // requires a record group, and derives one from a MODERN accession (`FRC 330–78–0011`
+        // leads with the RG) — but the year-first style (`FRC 60 A 133`, `FRC 71-A-347`)
+        // encodes no RG, so those WNRC citations fell through everything. After the agency
+        // pass for the same reason it is after everything: it can only claim declined notes.
+        if let wnrcResult = tryWNRCAgencySeries(body) { return wnrcResult }
+
         return nil
+    }
+
+    /// `Source: Washington National Records Center, OASD/ISA Files: FRC 60 A 133. …` —
+    /// an agency series retired to the records center under a year-first accession number.
+    ///
+    /// Stored as `.namedFileSeries` on the argument `tryAgencyFileSeries` documents: the
+    /// accession is real but encodes no record group, so asserting a NARA catalogue route
+    /// would be the confidently-wrong link this workstream removes. The WNRC lead is
+    /// REQUIRED (same trust rule as `tryNARACollection`: a trailing "copy in WNRC…" must
+    /// never reclassify a note), and the repository is NOT stored in the series name — WNRC
+    /// is where the series sits, not what it is.
+    private static let wnrcAgencySeriesRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: "^(?:Washington\\s+National\\s+Records?\\s+Center|WNRC)[,:]\\s*([A-Z][^:;]{1,60}?(?:[Ff]iles?|[Rr]ecords|[Pp]apers))\\s*[:,]\\s*((?:[^.;:]{0,30}?)?FRC[ :]?[^.;]{2,40})",
+        options: []
+    )
+
+    private func tryWNRCAgencySeries(_ body: String) -> ParsedSourceNote? {
+        guard let regex = Self.wnrcAgencySeriesRegex else { return nil }
+        let ns = NSRange(body.startIndex..., in: body)
+        guard let match = regex.firstMatch(in: body, range: ns),
+              let nameRange = Range(match.range(at: 1), in: body),
+              let keyRange = Range(match.range(at: 2), in: body) else { return nil }
+        return .namedFileSeries(
+            seriesName: String(body[nameRange]).trimmingCharacters(in: .whitespaces),
+            fileIdentifier: String(body[keyRange]).trimmingCharacters(in: .whitespaces))
     }
 
     // MARK: - Agency-Held File Series
@@ -2112,6 +2144,19 @@ public struct SourceNoteParser {
         pattern: "^(\(seriesNamePattern))\\s*:\\s*(\\S.*)$", options: []
     )
 
+    /// FRC-accession comma form (#353): `ECA Telegram Files, FRC Acc. No. 53A278, Paris
+    /// Torep : Telegram`, `ECA message files, FRC acc. no. 53 A 278: Telegram`.
+    ///
+    /// The generic comma form below cannot see these — its key segment excludes dots, which
+    /// `Acc.` and `No.` both carry. 170 notes, 1940–76, dominated by the ECA telegram files.
+    /// The optional post segment (`Paris Torep`, `Paris Repto – Torep Telegrams`) stays in the
+    /// file identifier; the `: Telegram` genre tail is dropped like every other strategy drops
+    /// it.
+    private static let namedSeriesFRCRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: "^(\(seriesNamePattern))\\s*,\\s*(FRC\\s+[Aa]cc\\.?\\s*[Nn]o\\.?\\s*[0-9][0-9A-Za-z ]{2,12}(?:,?\\s+[“\"]?[A-Z][A-Za-z –—-]{2,40}[”\"]?)?)\\s*[,.]?\\s*(?::.*)?$",
+        options: []
+    )
+
     /// Comma form: `Conference files, CF 292` — the key segment must contain a digit
     /// (a file designation, not prose).
     private static let namedSeriesCommaRegex: NSRegularExpression? = try? NSRegularExpression(
@@ -2135,6 +2180,14 @@ public struct SourceNoteParser {
            let match = regex.firstMatch(in: text, range: ns),
            let nameRange = Range(match.range(at: 1), in: text) {
             return .namedFileSeries(seriesName: String(text[nameRange]), fileIdentifier: nil)
+        }
+        if let regex = Self.namedSeriesFRCRegex,
+           let match = regex.firstMatch(in: text, range: ns),
+           let nameRange = Range(match.range(at: 1), in: text),
+           let keyRange = Range(match.range(at: 2), in: text) {
+            return .namedFileSeries(seriesName: String(text[nameRange]),
+                                    fileIdentifier: String(text[keyRange])
+                                        .trimmingCharacters(in: .whitespaces))
         }
         if let regex = Self.namedSeriesColonRegex,
            let match = regex.firstMatch(in: text, range: ns),
