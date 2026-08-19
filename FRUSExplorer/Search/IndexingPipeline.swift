@@ -720,7 +720,12 @@ public actor IndexingPipeline {
     ///   **zero steals**. Parse outputs changed, so `document_sources` rows on an existing index
     ///   describe the OLD grammar until re-parse; this bump is what carries the recoveries to
     ///   already-downloaded corpora (owner-approved reindex, 2026-08-18).
-    public static let currentDateIndexVersion: Int = 41
+    /// - v42 — #353's accuracy half: 29 misclassified notes repaired (21 central-files
+    ///   citations reclaimed from library remarks, 2 library-led notes reclaimed from riding
+    ///   lot numbers, 4 mangled-RG notes now naraCollection, 2 NSC institutional files to
+    ///   their documented class). Classification changes, so stored rows are wrong until
+    ///   re-parse. Ships in the same reindex as v41 for any device still at ≤40.
+    public static let currentDateIndexVersion: Int = 42
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

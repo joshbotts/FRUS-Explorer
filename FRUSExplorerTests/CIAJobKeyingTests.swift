@@ -447,4 +447,69 @@ struct FrontMatterJobKeyingTests {
                 """)
         }
     }
+
+    // MARK: - #353 accuracy: the strategy-steal repairs (29 notes)
+
+    /// A library named as the LOCATION of related material must not claim the note. The
+    /// audit counted 456 of these; `droppingSecondaryCopyClauses` had fixed all but 14, and
+    /// every survivor used a verb phrase instead of the word "copy" — or opened its clause
+    /// lowercase, which the sentence splitter cannot see.
+    @Test("A related-material library remark cannot claim a central-files citation")
+    func libraryRemarkDoesNotStealCentralFiles() {
+        let parser = SourceNoteParser()
+        let cases = [
+            "Source: Department of State, Central Files, 611.93/7\u{2013}1155. Top Secret. "
+                + "Early drafts of the first two paragraphs are in Eisenhower Library, Whitman File.",
+            "Source: Department of State, Central Files, 320/2\u{2013}1157. a copy is in the "
+                + "Eisenhower Library, Dulles\u{2013}Herter Series.",
+            "Source: Department of State, Central Files, 600.0012/5\u{2013}1757. Secret. "
+                + "Goodpaster and Taylor also made records of this meeting: Kennedy Library, NSF.",
+        ]
+        for note in cases {
+            if case .centralFiles = parser.parse(note) { continue }
+            Issue.record("stolen by the library remark: \(note.prefix(70))")
+        }
+    }
+
+    /// §3.5: a note that LEADS with a presidential library is that library's citation, even
+    /// when a State lot number rides later — the lot is the records' State-era designation,
+    /// and classifying by it sends a reader to NARA for boxes that are in Boston.
+    @Test("A library-led note keeps its library over a riding lot number")
+    func libraryLeadOutranksRidingLot() {
+        let parser = SourceNoteParser()
+        let note = "Source: Kennedy Library, Crockett Papers, MS 75\u{2013}45, Lot 68 D 323. "
+            + "No classification marking."
+        if case .presidentialLibrary(let library, _, _) = parser.parse(note) {
+            #expect(library.contains("Kennedy"), "the leading library is the repository")
+        } else {
+            Issue.record("library-led note still classified by its riding lot number")
+        }
+        // The reverse boundary: a LOT-led note remarking on a library copy stays a lot file.
+        let lotLed = "Source: Department of State, Presidential Correspondence: Lot 66 D 204. "
+            + "A copy is in the Eisenhower Library."
+        if case .presidentialLibrary = parser.parse(lotLed) {
+            Issue.record("a lot-led note was claimed by its library remark")
+        }
+    }
+
+    /// The RG extractor admits the corpus's mangled forms — `RG, 330` (an OCR comma) and
+    /// `RG59` (run together). Both were dropping NARA-led notes into weaker classes; both
+    /// were found in the steal diff, not by reading.
+    @Test("Mangled RG forms still yield naraCollection with the right record group")
+    func mangledRGFormsExtract() {
+        let parser = SourceNoteParser()
+        let byNote = [
+            ("Source: Washington National Records Center, RG, 330, OSD Files: "
+             + "FRC 70 A 5127, 381 Vietnam Sensitive. Top Secret.", "330"),
+            ("Source: National Archives, RG59, Central Files 1970\u{2013}73, UN 3 SC. "
+             + "Confidential.", "59"),
+        ]
+        for (note, rg) in byNote {
+            if case .naraCollection(let got, _, _, _) = parser.parse(note) {
+                #expect(got == rg, "record group for \(note.prefix(50))")
+            } else {
+                Issue.record("mangled RG not extracted: \(note.prefix(60))")
+            }
+        }
+    }
 }
