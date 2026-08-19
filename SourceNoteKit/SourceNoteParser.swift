@@ -899,7 +899,7 @@ public struct SourceNoteParser {
         var results: [ArchiveCitation] = []
 
         // Pattern 1: "National Archives[/WNRC], RG N, Series…"
-        let naPattern = #"(?:National Archives(?:\s+and\s+Records\s+Administration)?|Washington\s+National\s+Records\s+Center),?\s*RG\s+(\d+\w*),?\s*([^.;,\(]{5,60}?)(?=[.,;\(]|$)"#
+        let naPattern = #"(?:National Archives(?:\s+and\s+Records\s+Administration)?|Washington\s+National\s+Records\s+Center),?\s*RG[,.]?\s*(\d+\w*),?\s*([^.;,\(]{5,60}?)(?=[.,;\(]|$)"#
         if let regex = try? NSRegularExpression(pattern: naPattern, options: .caseInsensitive) {
             let nsText = text as NSString
             let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsText.length))
@@ -1207,7 +1207,10 @@ public struct SourceNoteParser {
     // MARK: - Full Narrative (Era 3c / Era 4)
 
     private static let rgRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#,
+        // `RG[,.]?\s*` rather than `RG\s+`: the corpus prints `RG, 330` (an OCR comma) and
+        // `RG59` (run together), and requiring whitespace dropped those NARA-led notes into
+        // weaker classes — both found in the §3.2 steal diff, not by reading.
+        pattern: #"\bRG[,.]?\s*(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#,
         options: .caseInsensitive
     )
 
@@ -1324,6 +1327,20 @@ public struct SourceNoteParser {
 
         // National Archives or WNRC with an RG number → .naraCollection
         if let naraResult = tryNARACollection(body) { return naraResult }
+
+        // A note that LEADS with a presidential library is that library's citation, even
+        // when a State lot number rides later in it (#353 §3.5): `Kennedy Library, Crockett
+        // Papers, MS 75–45, Lot 68 D 323` is at the Kennedy Library — the lot is the records'
+        // State-era designation, and classifying by it sends a reader to NARA for boxes that
+        // are in Boston. Leading means STARTING the note: a mid-note keyword stays with the
+        // lot route, so a genuine lot citation remarking on a library is untouched.
+        if let (_, keyRange) = Self.earliestLibraryKeyword(in: body),
+           keyRange.lowerBound == body.startIndex
+            || body[..<keyRange.lowerBound].allSatisfy({ $0.isLetter || $0.isWhitespace }),
+           body.distance(from: body.startIndex, to: keyRange.lowerBound) <= 24,
+           let libResult = tryPresidentialLibrary(body) {
+            return libResult
+        }
 
         // Lot file in narrative (State Dept.) → .lotFile
         if let lotResult = tryNarrativeLotFile(body) { return lotResult }
@@ -1847,10 +1864,33 @@ public struct SourceNoteParser {
     /// abstract forms the citation is in the tail and never says "copy" — so a content rule is
     /// safe in both directions where a positional one would not be.
     static func droppingSecondaryCopyClauses(_ body: String) -> String {
+        // The lowercase-clause cut runs BEFORE sentence splitting, because it exists for the
+        // one shape the splitter cannot see: `…320/2–1157. a copy is in the Eisenhower
+        // Library…` opens its clause lowercase, so the period-whitespace-capital rule never
+        // fires and the remark rides the first sentence — which the index-0 exemption below
+        // then protects. Measured on the 14 residual §3.2 steals, this exact form is one of
+        // them and no primary citation opens `. a copy is in`.
+        var body = body
+        if let r = body.range(of: #"(?<=[.;])\s*a copy is in\b[^.]*(?:\.|$)"#,
+                              options: .regularExpression) {
+            body = body.replacingCharacters(in: r, with: " ")
+        }
         let parts = sentences(of: body)
         guard parts.count > 1 else { return body }
         let kept = parts.enumerated().filter { index, sentence in
             guard index > 0 else { return true }
+            // A related-material remark: a library named as the LOCATION of some other
+            // version — `…drafts of the first two paragraphs are in Eisenhower Library`,
+            // `The original of this memorandum is in the Kennedy Library`, `…also made
+            // records of this meeting: Kennedy Library`. The audit's §3.2 counted 456 of
+            // these; the copy-rule below caught all but 14, and every survivor used a verb
+            // phrase instead of the word "copy". The abstract-tail citations this must NOT
+            // touch (`… 2 pp. Kennedy Library, NSF, …`) are bare segments with no verb, so
+            // the verb phrase is the discriminator.
+            if sentence.range(of: #"(?i)\b(?:is|are)\s+in\s+(?:the\s+)?[^.]{0,40}Library\b"#,
+                              options: .regularExpression) != nil { return false }
+            if sentence.range(of: #"(?i)\brecords? of\b[^.]{0,60}Library\b"#,
+                              options: .regularExpression) != nil { return false }
             guard sentence.range(of: #"(?i)\bcop(?:y|ies)\b"#,
                                  options: .regularExpression) != nil else { return true }
             return sentence.range(of: #"(?i)\bobtained\s+from\b"#,
