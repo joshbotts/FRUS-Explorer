@@ -101,6 +101,18 @@ private enum CompactGraphContent {
 ///          viewport, info) name themselves in their `Label`s. This toolbar carries three
 ///          primary items plus Done, so it is the most overflow-prone in the app, and an
 ///          overflowed row takes its name from the label closure — not `.controlHelp`.
+///   2.2 — The graph help now names the footnote harvest's SCOPE, not only its match failures.
+///          The previous wording said an unmatched citation is left off, which reads as "the app
+///          tried and missed" and is true only of citations the harvest actually read. It reads
+///          exactly two anchors — lot files and presidential-library collections — so a footnote
+///          citing the central files by decimal number (`681.8229/8–2950`) yields no node at all,
+///          and the reader had no way to tell that case from a document whose editors cited
+///          nothing. Measured over the shippable corpus, that is the majority channel well past
+///          the point the old wording implied: in `frus1950v05`, 446 of 2,623 body footnotes name
+///          a decimal file against 77 a lot and 2 a library; over a 20-volume 1950s sample,
+///          3,883 decimal against 880 lot and 92 library. `ArchivalFlowsView` already disclosed
+///          this ("which this measure does not yet read"); the graph, built on the same index,
+///          did not — so the two surfaces described the same limit differently.
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1479,7 +1491,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
                 body:  String(localized: "graph.info.interact.body",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead. A citation the app could not match to a known collection is left off the graph rather than drawn as a guess.")
+                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead.\n\nOnly two kinds of citation are read: State Department lot files, and collections in the presidential libraries. A footnote that cites the central files by decimal number, such as 681.8229/8–2950, is not read at all — so a document whose editors cited that way shows no teal nodes however many archival footnotes it carries. Citing the central files by number is the usual practice in the earlier volumes and still accounts for most archival footnotes in the volumes covering the 1950s, so an empty graph is not evidence that the editors cited little. Separately, a citation that was read but could not be matched to a known collection is left off rather than drawn as a guess.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",
