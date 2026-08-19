@@ -563,6 +563,7 @@ struct FRUSExplorerApp: App {
                     CrossReferenceGraphView(
                         entry: request.entry,
                         crossReferenceStore: store,
+                        indexingPipeline: appState.indexingPipeline,
                         downloadedVolumeIds: downloaded
                     )
                     // Keyed on the store generation as well as the entry: the view captures the

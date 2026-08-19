@@ -5273,3 +5273,27 @@ Digitized Scans
 Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram above.
 
 <!-- END SOURCE: archival.flows.caveats.mixed -->
+
+
+### Cross-Reference Graph — unprinted archival material (#837)
+
+#### Teal nodes are archival material the editors pointed to but did not print
+<!-- The graph's help sheet. Keeps the shipped shape vocabulary: unit nodes are CIRCLES like
+     every other node (owner's decision 2026-08-19) — the design handoff drew rounded squares,
+     which would have inverted the archival Network view's circle=collection / square=class
+     reading. The last sentence is a refusal and must survive editing: an unmatched citation is
+     left off rather than guessed. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.help.body -->
+
+Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead. A citation the app could not match to a known collection is left off the graph rather than drawn as a guess.
+
+<!-- END SOURCE: graph.help.body -->
+
+#### The legend key
+<!-- Shown only when the canvas actually carries a unit node — a permanent key for something
+     usually absent teaches a vocabulary the reader will not see. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.legend.unit -->
+
+Not printed — opens the collection
+
+<!-- END SOURCE: graph.legend.unit -->

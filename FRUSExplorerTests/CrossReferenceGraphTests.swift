@@ -748,4 +748,84 @@ struct CrossReferenceGraphTests {
             #expect(e.degree == 1, "Degree-1 display edges should carry degree 1")
         }
     }
+
+    // MARK: - #837: unprinted archival units on the canvas
+
+    /// A unit node attaches to its citing document and carries an edge to it.
+    @Test("Unit nodes join the display with an edge from their citing document")
+    @MainActor
+    func unitNodesAttachToTheirDocument() throws {
+        let graph = makeTestGraph(inboundCount: 2, outboundCount: 2)
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1")
+        vm.graph = graph
+        vm.unitsByDocument = ["vol1/d0": [
+            DisplayNode(id: "unit/vol1/d0/lot:60D627",
+                        kind: .unit(collectionId: "lot:60D627", name: "Conference Files"),
+                        metadata: nil, isDownloaded: true)
+        ]]
+        vm.rebuildDisplay()
+
+        let unit = try #require(vm.displayNodes.first { $0.isUnit })
+        #expect(unit.unitCollectionId == "lot:60D627")
+        #expect(vm.displayEdges.contains { $0.source == "vol1/d0" && $0.target == unit.id }, """
+            The unit node is on the canvas with no edge to the document that cites it — a \
+            floating node saying nothing about who pointed at it.
+            """)
+    }
+
+    /// A unit whose citing document is NOT on the canvas must not be drawn: the canvas would
+    /// otherwise carry an archival node with no visible reason for being there.
+    @Test("A unit whose document is absent is not drawn")
+    @MainActor
+    func unitWithoutItsDocumentIsDropped() throws {
+        let graph = makeTestGraph(inboundCount: 1, outboundCount: 1)
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1")
+        vm.graph = graph
+        vm.unitsByDocument = ["vol9/dNotOnCanvas": [
+            DisplayNode(id: "unit/vol9/dNotOnCanvas/lot:X",
+                        kind: .unit(collectionId: "lot:X", name: "Elsewhere"),
+                        metadata: nil, isDownloaded: true)
+        ]]
+        vm.rebuildDisplay()
+        #expect(!vm.displayNodes.contains { $0.isUnit })
+    }
+
+    /// A unit node is `isDownloaded: true` BY CONSTRUCTION — it has no volume, so every
+    /// not-downloaded affordance (dashed ring, icloud.slash, the two disabled menu items)
+    /// would be lying about it. The drawing code additionally guards on `isUnit`, so this
+    /// pins the invariant the guard depends on.
+    @Test("A unit node never presents as an undownloaded document")
+    @MainActor
+    func unitNodeIsNeverUndownloaded() throws {
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1")
+        vm.graph = makeTestGraph(inboundCount: 1, outboundCount: 1)
+        vm.unitsByDocument = ["vol1/d0": [
+            DisplayNode(id: "unit/vol1/d0/lot:A",
+                        kind: .unit(collectionId: "lot:A", name: "A Collection"),
+                        metadata: nil, isDownloaded: true)
+        ]]
+        vm.rebuildDisplay()
+        let unit = try #require(vm.displayNodes.first { $0.isUnit })
+        #expect(unit.isDownloaded, """
+            A unit node built as not-downloaded would take the dashed ring and the icloud.slash \
+            glyph, offering a download for a node that has no volume.
+            """)
+        #expect(unit.metadata == nil, "a unit stands for an archive, not a document")
+    }
+
+    /// The VoiceOver label is the only description a screen-reader user gets — the canvas is
+    /// accessibilityHidden — so it must say both what the node is and what happens on tap.
+    @Test("A unit node's accessibility label names it and its action")
+    @MainActor
+    func unitAccessibilityLabelSaysWhatItDoes() throws {
+        let unit = DisplayNode(id: "unit/vol1/d0/lot:A",
+                               kind: .unit(collectionId: "lot:A", name: "Conference Files"),
+                               metadata: nil, isDownloaded: true)
+        let label = unit.accessibilityLabel
+        #expect(label.contains("Conference Files"))
+        #expect(label.lowercased().contains("collection"), """
+            The label does not say tapping opens the collection record. On a canvas that is \
+            accessibilityHidden, this string is the whole affordance.
+            """)
+    }
 }

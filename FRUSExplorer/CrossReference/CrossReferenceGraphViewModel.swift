@@ -25,6 +25,21 @@ struct DisplayNode: Identifiable, Sendable {
         /// narrow x-window (Session 162): `label` is the period ("Jun 1967"),
         /// `memberKeys` the hidden document node keys. Tap expands in place.
         case dateCluster(label: String, count: Int, memberKeys: [String])
+        /// An archival unit a document's footnotes point at, which FRUS did not print (#837).
+        ///
+        /// It is not a document: there is nothing behind it to open or recentre on, so it
+        /// **terminates the walk** and routes to the collection record instead. Carries the
+        /// name so the canvas needs no second lookup to label it.
+        case unit(collectionId: String, name: String)
+    }
+
+    /// Whether this node stands for an archival unit rather than a printed document (#837).
+    var isUnit: Bool { if case .unit = kind { true } else { false } }
+
+    /// The collection-authority id behind a unit node, or `nil` for every document node.
+    var unitCollectionId: String? {
+        if case .unit(let id, _) = kind { return id }
+        return nil
     }
 
     let id: String   // nodeKey ("volId/docId") or cluster key ("cluster/inbound/volId")
@@ -110,6 +125,14 @@ struct DisplayNode: Identifiable, Sendable {
                 format: String(localized: "graph.a11y.clusterOutbound %lld %@",
                                defaultValue: "%lld outbound documents to volume %@"),
                 Int64(count), vol
+            )
+        case .unit(_, let name):
+            // Says what it is AND what it does, because the canvas is accessibilityHidden and
+            // this label is the only description a VoiceOver reader gets of the node.
+            String(
+                format: String(localized: "graph.a11y.unit %@",
+                               defaultValue: "Unprinted archival material: %@. Opens the collection record."),
+                name
             )
         case .dateCluster(let label, let count, _):
             String(
@@ -305,6 +328,17 @@ final class CrossReferenceGraphViewModel {
     /// after the graph itself so the layout appears immediately and node sizes
     /// refine when the counts arrive. Drives `nodeRadius(for:)`.
     private(set) var nodeConnectionCounts: [String: Int] = [:]
+
+    /// Unprinted archival units the graph's documents point at (#837), by document node key.
+    ///
+    /// Fetched AFTER the layout is on screen, like `nodeConnectionCounts` beside it: the join
+    /// decodes a ~2 MB authority, and a graph that waited for it would be blank for that long.
+    /// Nodes appear when it lands; nothing already drawn moves, because unit nodes attach to
+    /// positions the layout has already assigned.
+    /// Settable rather than `private(set)` for the same reason `graph` is: the display build
+    /// that consumes it is the part with the logic, and a test that cannot seed the input
+    /// cannot drive it.
+    var unitsByDocument: [String: [DisplayNode]] = [:]
 
     /// Pre-formatted short date label per node key ("Mar 4, 1962", "Mar 1962", or
     /// "1962"), derived from `CrossReferenceNodeMetadata.dateISO` once per rebuild
@@ -540,6 +574,10 @@ final class CrossReferenceGraphViewModel {
     // MARK: - Private
 
     private let crossReferenceStore: CrossReferenceStore?
+    /// The pipeline, for the unprinted-pointer fetch only (#837). Optional and separate from
+    /// `crossReferenceStore` because the testing init has neither, and because the graph is
+    /// fully usable without it — a missing pipeline means no unit nodes, not a broken graph.
+    private let indexingPipeline: IndexingPipeline?
     private let downloadedVolumeIds: Set<String>
     private var canvasSize: CGSize = .zero
     private var layoutTask: Task<Void, Never>?
@@ -551,11 +589,13 @@ final class CrossReferenceGraphViewModel {
         centralDocumentId: String,
         centralVolumeId: String,
         crossReferenceStore: CrossReferenceStore,
+        indexingPipeline: IndexingPipeline? = nil,
         downloadedVolumeIds: Set<String>
     ) {
         self.centralDocumentId = centralDocumentId
         self.centralVolumeId = centralVolumeId
         self.crossReferenceStore = crossReferenceStore
+        self.indexingPipeline = indexingPipeline
         self.downloadedVolumeIds = downloadedVolumeIds
     }
 
@@ -568,6 +608,7 @@ final class CrossReferenceGraphViewModel {
         self.centralDocumentId = centralDocumentId
         self.centralVolumeId = centralVolumeId
         self.crossReferenceStore = nil
+        self.indexingPipeline = nil
         self.downloadedVolumeIds = downloadedVolumeIds
     }
 
@@ -637,7 +678,66 @@ final class CrossReferenceGraphViewModel {
                 (volumeId: $0.volumeId, documentId: $0.documentId)
             }
             nodeConnectionCounts = (try? await store.connectionCounts(forKeys: keys)) ?? [:]
+            await loadUnprintedUnits(keys: keys)
         }
+    }
+
+    /// Fetches every graph document's unprinted pointers and turns them into unit nodes (#837).
+    ///
+    /// ## Why this covers "expanded nodes too" without a per-node mechanic
+    /// `graph.nodeMetadata` already holds the central document, its direct neighbours, and the
+    /// degree-2/3 endpoints, and a degree change is a full `loadGraph()` rather than an
+    /// incremental fetch. So one pass over that key set is the whole requirement; cluster
+    /// expansion is display-only and needs nothing.
+    ///
+    /// ## What is deliberately dropped
+    /// A citation that does not join to an authority record becomes NO node. #837 is explicit —
+    /// unmatched citations stay off the graph rather than being drawn as guesses — and the
+    /// corpus generator joins 96% at aggregate grain, so misses are certain at this one. A node
+    /// the reader cannot open, standing for a match the app did not make, would be a guess drawn
+    /// as a finding.
+    ///
+    /// Several documents citing the same unit produce several nodes, one per citing document:
+    /// the edge is what carries meaning here, and a shared node would imply the two documents
+    /// are related to each other rather than to the same archive.
+    private func loadUnprintedUnits(keys: [(volumeId: String, documentId: String)]) async {
+        guard let pipeline = indexingPipeline else { unitsByDocument = [:]; return }
+        var rowsByDocument: [String: [ExternalCitation]] = [:]
+        for key in keys {
+            let rows = (try? await pipeline.externalCitations(volumeId: key.volumeId,
+                                                              documentId: key.documentId)) ?? []
+            guard !rows.isEmpty else { continue }
+            rowsByDocument["\(key.volumeId)/\(key.documentId)"] = rows
+        }
+        guard !rowsByDocument.isEmpty else { unitsByDocument = [:]; return }
+        let snapshot = rowsByDocument
+        unitsByDocument = await Task.detached(priority: .userInitiated) {
+            guard let authority = CollectionAuthorityStore.shared else { return [:] }
+            var out: [String: [DisplayNode]] = [:]
+            for (documentKey, rows) in snapshot {
+                var seen = Set<String>()
+                var nodes: [DisplayNode] = []
+                for row in rows {
+                    guard let record = ExternalCitationAuthorityJoin.record(
+                        lotFileNorm: row.lotFileNorm, collectionName: row.collection,
+                        repository: row.repository, authority: authority) else { continue }
+                    guard seen.insert(record.id).inserted else { continue }
+                    nodes.append(DisplayNode(
+                        id: "unit/\(documentKey)/\(record.id)",
+                        kind: .unit(collectionId: record.id, name: record.name),
+                        metadata: nil,
+                        // A unit has no volume, so "downloaded" is meaningless. `true` keeps it
+                        // off every not-downloaded path — the dashed ring, the icloud.slash
+                        // glyph, and the two context-menu items disabled by `!isDownloaded` —
+                        // none of which could tell the truth about a node with no volume.
+                        isDownloaded: true,
+                        degree: 1))
+                }
+                if !nodes.isEmpty { out[documentKey] = nodes }
+            }
+            return out
+        }.value
+        rebuildDisplay()
     }
 
     // MARK: - Node sizing
@@ -929,12 +1029,28 @@ final class CrossReferenceGraphViewModel {
             nodeDateLabels = [:]
             return
         }
-        let (nodes, edges) = Self.buildDisplayNodesAndEdges(
+        var (nodes, edges) = Self.buildDisplayNodesAndEdges(
             graph: graph,
             centralKey: centralKey,
             expandedClusterKeys: expandedClusterKeys,
             downloadedVolumeIds: downloadedVolumeIds
         )
+        // #837: unit nodes hang off whichever document nodes survived the display build, so a
+        // clustered-away document contributes none — the canvas never carries a unit whose
+        // citing document is not on it.
+        if !unitsByDocument.isEmpty {
+            let onCanvas = Set(nodes.map(\.id))
+            for (documentKey, units) in unitsByDocument where onCanvas.contains(documentKey) {
+                for unit in units {
+                    nodes.append(unit)
+                    // `.footnote`: every external citation this reads comes from a body
+                    // footnote — that is what the harvest collects — so the type is a fact
+                    // about the data rather than a default.
+                    edges.append(DisplayEdge(source: documentKey, target: unit.id,
+                                             referenceType: .footnote, context: nil))
+                }
+            }
+        }
         baseDisplayNodes = nodes
         baseDisplayEdges = edges
         displayNodes = nodes
