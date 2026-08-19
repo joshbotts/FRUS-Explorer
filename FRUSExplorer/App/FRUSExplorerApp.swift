@@ -604,6 +604,47 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 900, height: 640)
 
+        // MARK: - Word Cloud Window (iPadOS Stage Manager, #752 / M-31)
+        //
+        // The word cloud was the ONLY Research-rail tool with no scene of its own. Its four
+        // siblings — graph, Source Explorer, semantic map, related documents — all resolve
+        // `supportsMultipleWindows ? openAuxWindow : sheet` locally in `DocumentView`, so they open
+        // where they were launched from. The cloud instead rode the app-level `pendingWordCloud`
+        // hand-off, presented by `MainTabView` — a view a STANDALONE DOCUMENT WINDOW does not host.
+        // From such a window the tile addressed the launcher's `sceneID` and the cloud appeared in
+        // the launching window, which iPadOS does not raise; if that window sat offscreen the tap
+        // looked like it did nothing. #769 fixed only the other half of M-31 (the launcher having
+        // since CLOSED, which black-holed the hand-off).
+        //
+        // The hand-off itself is kept: every other producer — Browser, Search, Collections, the
+        // volume and subseries clouds — still routes through `openWordCloud`, and for those the
+        // launching window IS the right destination.
+        WindowGroup(for: WordCloudScope.self) { $scope in
+            Group {
+                if let scope {
+                    WordCloudView(scope: scope)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "wordCloudWindow.empty.title",
+                               defaultValue: "No Scope Selected"),
+                        systemImage: WordCloudGlyph.symbol,
+                        description: Text(
+                            String(localized: "wordCloudWindow.empty.detail",
+                                   defaultValue: "Open a document, then tap Word Cloud in the Research rail.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
+            // Republish the launching window's scene, so the cloud's own Analyze / Chronology
+            // producers address that window rather than fanning out — the same reason the sheet
+            // presentation publishes `\.sceneID` into `WordCloudView`.
+            .auxWindowOrigin(appState)
+        }
+        .defaultSize(width: 820, height: 700)
+
         // MARK: - Archival Neighbors Window (iPadOS Stage Manager, #241)
         //
         // The first macOS aux window ported to iPad (#241 Session R). Shares the exact

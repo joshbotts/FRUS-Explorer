@@ -65,6 +65,73 @@ struct WindowTargetingTests {
         return String(source[start.lowerBound...].prefix(limit))
     }
 
+    // MARK: - The word cloud opens where it was launched (#752 / M-31, second half)
+
+    /// M-31's title is "opens in another window — **or** nowhere at all if the launcher closed."
+    /// #769 fixed the second clause: `consumePendingWordCloud` accepts `.anyWindow`, so a closed
+    /// launcher no longer black-holes the tap. The **first** clause survived it.
+    ///
+    /// With the launcher alive — the ordinary Stage Manager case — a standalone document window
+    /// republishes the launcher's scene as its own `\.sceneID` (`.auxWindowOrigin`), so the rail's
+    /// hand-off addressed that scene and the cloud presented in the *launching* window, which
+    /// iPadOS does not raise. Offscreen, the tap looked like it did nothing.
+    ///
+    /// The cause was structural rather than an OS gap, and that is what these tests pin. Four rail
+    /// tools resolve `supportsMultipleWindows ? openAuxWindow : sheet` **locally**, so they open
+    /// where they were launched. The word cloud was the only one riding the app-level hand-off,
+    /// because it was the only one with no scene of its own.
+    @Test("The document rail's word cloud resolves locally, like its four siblings")
+    func wordCloudResolvesInTheLaunchingView() throws {
+        let source = try Self.source("DocumentView/DocumentView.swift")
+        let body = try Self.functionBody("private func openWordCloud()", in: source, limit: 700)
+
+        #expect(body.contains("supportsMultipleWindows"),
+                "the word cloud must branch on multi-window like graph/sources/map/related")
+        #expect(body.contains("openAuxWindow"), "the multi-window branch must open its own scene")
+        #expect(body.contains("activeSheet = .wordCloud"),
+                "the single-window branch must present in THIS view, not an ancestor's sheet")
+
+        // The rail tile must route here rather than back to the app-level hand-off. Asserted over
+        // CODE ONLY: `functionBody` returns raw text, and the explanatory comment on that case is
+        // long enough to fill any sensible character window — the first draft of this test failed
+        // because the call it was looking for sat past the end of the slice, behind the prose.
+        let tileCode = Self.codeLines(source)
+            .drop { !$0.text.hasPrefix("case .wordCloud:") }
+            .prefix { !$0.text.hasPrefix("case .sources:") }
+            .map(\.text)
+            .joined(separator: "\n")
+        #expect(tileCode.contains("openWordCloud()"),
+                "the rail tile must call the local opener; got: \(tileCode)")
+        #expect(!tileCode.contains("appState.openWordCloud"),
+                "the document rail must not use the cross-window hand-off — that is the M-31 bug")
+    }
+
+    /// The local branch needs somewhere to go. Without an iOS scene, `openAuxWindow` opens nothing
+    /// at all — which is why the cloud rode the hand-off in the first place.
+    @Test("iOS declares a word-cloud scene for the multi-window branch to open")
+    func iOSHasAWordCloudScene() throws {
+        let app = try Self.source("App/FRUSExplorerApp.swift")
+        let scene = try #require(app.range(of: "WindowGroup(for: WordCloudScope.self)"),
+                                 "no iOS word-cloud scene — openAuxWindow would open nothing")
+        // It must sit on the iOS side: `frus.wordcloud` is a macOS singleton and serves macOS only.
+        let preceding = String(app[..<scene.lowerBound])
+        let opens = preceding.components(separatedBy: "#if os(iOS)").count - 1
+        let closes = preceding.components(separatedBy: "#if os(macOS)").count - 1
+        #expect(opens > closes, "the word-cloud WindowGroup must be declared on the iOS side")
+    }
+
+    /// Every other producer — Browser, Search, Collections, Chronology, the volume and subseries
+    /// clouds — still routes through the hand-off, and for those the launching window IS the right
+    /// destination. Removing it would be a different bug, so the channel must survive this fix.
+    @Test("The app-level hand-off survives for the producers that still need it")
+    func handOffSurvivesForOtherProducers() throws {
+        let appState = try Self.source("App/AppState.swift")
+        #expect(appState.contains("func openWordCloud("))
+        let mainTab = try Self.source("App/MainTabView.swift")
+        #expect(mainTab.contains("consumePendingWordCloud"),
+                "MainTabView still presents the hand-off for scene-less and non-document producers")
+    }
+
     // MARK: - The helper earns its trust
 
     @Test("codeLines keeps code and drops prose")
