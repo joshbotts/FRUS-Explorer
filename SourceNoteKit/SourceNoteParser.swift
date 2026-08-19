@@ -305,9 +305,39 @@ public struct SourceNoteParser {
 
     // MARK: - Public API
 
+    /// OCR corruptions of the collection keyword `Files`, folded before any strategy runs
+    /// (#353).
+    ///
+    /// The scanned volumes misread `Files` as `Flies` and `Piles` — `Defense Flies`,
+    /// `Department of the Army Piles` — and the series grammar's keyword alternation
+    /// (`[Ff]iles?|[Pp]apers|Records|Collection`) cannot see them, so the whole note fell to
+    /// `unrecognized`.
+    ///
+    /// **A fold, not a widened regex, on purpose.** Widening the alternation would match the
+    /// note but store `Defense Flies` as the series name — and `AuthorityLookup` joins on
+    /// names, so the corrupt spelling would never join the real `Defense Files` cluster and
+    /// would surface verbatim in the UI. Folding first means every consumer sees the name the
+    /// archive actually uses; the OCR error belongs to the transcription, not the archive.
+    ///
+    /// The guard is the keyword POSITION, not the token alone: only a token immediately after
+    /// a capitalized word folds, which is the series-name shape. Neither `Flies` nor `Piles`
+    /// names any real archival series, but the position check keeps the fold from ever touching
+    /// prose.
+    private static let ocrFilesFoldRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?<=[A-Za-z] )(?:Flies|Piles)\b"#, options: []
+    )
+
+    static func foldOCRKeywords(_ text: String) -> String {
+        guard let regex = ocrFilesFoldRegex else { return text }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard regex.firstMatch(in: text, range: ns) != nil else { return text }
+        return regex.stringByReplacingMatches(in: text, range: ns, withTemplate: "Files")
+    }
+
     /// Parses `sourceNote` and returns the best-matched `ParsedSourceNote`.
     public func parse(_ sourceNote: String) -> ParsedSourceNote {
-        let trimmed = sourceNote.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = Self.foldOCRKeywords(
+            sourceNote.trimmingCharacters(in: .whitespacesAndNewlines))
         guard !trimmed.isEmpty else { return .unrecognized(rawText: sourceNote) }
 
         // Era 1 — "File No." variants (bare inline file number)
