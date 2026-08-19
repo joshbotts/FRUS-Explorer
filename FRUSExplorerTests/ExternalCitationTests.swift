@@ -549,4 +549,54 @@ struct RealTEIFootnoteParityTests {
         }
         return result
     }
+
+
+    // MARK: - #837: the shared row→authority join
+
+    /// The rule shipped TWICE, identically and independently — `SourceExplorerView` for a
+    /// document's unprinted pointers and `ArchivalLibraryProfile` for the library profile's
+    /// citation groups — and #837 would have added a third for the graph's unit nodes. Three
+    /// copies of a matching rule is three places for a resolution to drift, and the drift is
+    /// invisible: each surface resolves a slightly different set and nothing compares them.
+    ///
+    /// Driven against the REAL bundled authority rather than a synthetic index: the lookup it
+    /// calls carries alias bridging and two uniqueness guards, and a fixture simple enough to
+    /// hand-write would exercise none of them.
+    @Test("A lot number wins outright, before any name matching")
+    func lotKeyWinsFirst() throws {
+        let authority = try #require(CollectionAuthorityStore.shared)
+        let record = ExternalCitationAuthorityJoin.record(
+            lotFileNorm: "60D627", collectionName: "Something Else Entirely",
+            repository: "Department of State", authority: authority)
+        #expect(record?.id == "lot:60D627", """
+            The name was matched ahead of the lot key. lot_file_norm is the canonical compact key \
+            both sides of the corpus write, so an exact hit needs no disambiguation — and a \
+            deliberately non-matching name must not be able to beat it.
+            """)
+    }
+
+    /// The level-1 key is the LEADING comma segment: `Conference Files, Lot 60 D 627` clusters
+    /// under `Conference Files`. Pure, so it needs no authority.
+    @Test("The leading comma segment is the name key")
+    func leadingSegmentIsTheKey() {
+        #expect(ExternalCitationAuthorityJoin.leadingSegment(of: "Conference Files, Lot 60 D 627")
+                == "Conference Files")
+        #expect(ExternalCitationAuthorityJoin.leadingSegment(of: "  Padded Name  ") == "Padded Name")
+        #expect(ExternalCitationAuthorityJoin.leadingSegment(of: "   ") == nil)
+    }
+
+    /// The #351 guard — the one step that REFUSES rather than resolves. A presidential library's
+    /// series and a State lot file can carry the same words; answering the first with the second
+    /// sends a reader to College Park for boxes that are in Boston.
+    @Test("A library citation is never answered with a State lot record")
+    func libraryOverLotGuardHolds() throws {
+        let authority = try #require(CollectionAuthorityStore.shared)
+        let refused = ExternalCitationAuthorityJoin.record(
+            lotFileNorm: nil, collectionName: "Conference Files, Lot 60 D 627",
+            repository: "Kennedy Library", authority: authority)
+        #expect(refused?.id.hasPrefix("lot:") != true, """
+            A Kennedy Library citation resolved to a State lot record — the #351 defect the guard \
+            exists to prevent.
+            """)
+    }
 }

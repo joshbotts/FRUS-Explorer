@@ -215,24 +215,10 @@ struct ArchivalLibraryProfile: Sendable, Equatable {
     private static func resolve(_ group: IndexingPipeline.ArchivalLibraryCollectionGroup,
                                 authority: CollectionAuthorityIndex)
         -> AuthorityCollectionRecord? {
-        if let lot = group.lotFileNorm, !lot.isEmpty {
-            return authority.record(forLotNorm: lot)
-        }
-        guard let series = group.seriesName,
-              let segment = leadingSegment(of: series) else { return nil }
-        let match = authority.record(repository: group.repository, leadingSegment: segment)
-        if match?.id.hasPrefix("lot:") == true, let repository = group.repository,
-           CollectionKeying.isLibraryRepositoryName(repository) {
-            return nil
-        }
-        return match
+        ExternalCitationAuthorityJoin.record(lotFileNorm: group.lotFileNorm,
+                                             collectionName: group.seriesName,
+                                             repository: group.repository,
+                                             authority: authority)
     }
 
-    /// The first comma-separated segment of a stored series name — the level-1 key the
-    /// authority clusters on.
-    private static func leadingSegment(of series: String) -> String? {
-        let head = series.split(separator: ",", maxSplits: 1).first.map(String.init) ?? series
-        let trimmed = head.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
 }
