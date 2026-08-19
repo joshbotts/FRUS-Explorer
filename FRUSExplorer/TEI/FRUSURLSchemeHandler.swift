@@ -18,8 +18,12 @@ import WebKit
 /// `#d80` · `frus1964-68v20#d104` · `#d100fn2` (footnote of another document) ·
 /// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `http://…`.
 enum CrossRefDestination: Equatable {
-    /// A FRUS document (footnote-suffixed ids are normalised to the base doc).
+    /// A FRUS document.
     case document(volumeId: String?, documentId: String)
+    /// A specific footnote inside a FRUS document (#988). `anchor` is the note's TEI `xml:id`
+    /// (`d748fn3`); `documentId` is the document containing it. Navigate to the document, then
+    /// reveal the note — see `DocumentBrowserEntry.footnoteAnchor`.
+    case footnote(volumeId: String?, documentId: String, anchor: String)
     /// A printed page in a volume; resolve to its containing document via
     /// `PageRangeStore.document(forPage:inVolume:)`.
     case page(volumeId: String?, page: Int)
@@ -217,8 +221,23 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             || lower.hasPrefix("fig") || lower.hasPrefix("tbl") {
             return .unresolved
         }
-        if let match = anchor.wholeMatch(of: /(d\d+[A-Za-z]?)fn\d+/) {
-            return .document(volumeId: vol, documentId: String(match.1))
+        // #988: a footnote anchor names the note, not just its document. 16,921 corpus references
+        // target a note's xml:id and 90.8% of them point into a DIFFERENT document, so dropping
+        // the suffix landed the reader at the head of a document they had not been reading with no
+        // indication which note was meant.
+        //
+        // The prefix is widened from the old `d\d+[A-Za-z]?` to `.*d\d+[A-Za-z]?`, and the suffix
+        // from `fn\d+` to `fn[\w-]*`, because 33 corpus references carry a section-prefixed or
+        // symbol-suffixed note id — `cr_d6fn4`, `es_d2fn1`, `ni_d4fn4`, `d705fn-sym1`. Those missed
+        // the old pattern, fell through to the bare `.document(documentId: anchor)` below, and made
+        // the app try to open a document named after a footnote. Measured: the widened rule routes
+        // all 33 to a document id that exists in the same volume (`cr_d6`, `d705`, …).
+        //
+        // Anchored on `d\d+` rather than on any `fn` so a document id that merely contains "fn"
+        // cannot be split — measured over every document `xml:id` in the shippable corpus, this
+        // pattern captures 0 of 314,483.
+        if let match = anchor.wholeMatch(of: /(.*d\d+[A-Za-z]?)fn[\w-]*/) {
+            return .footnote(volumeId: vol, documentId: String(match.1), anchor: anchor)
         }
         return .document(volumeId: vol, documentId: anchor)
     }

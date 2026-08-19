@@ -202,6 +202,20 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
     /// Set to `true` for entries whose `document_cache.is_editorial_note` value is 1.
     public let isEditorialNote: Bool
 
+    /// A footnote within this document to reveal on arrival — the note's TEI `xml:id`
+    /// (`d748fn3`), or `nil` for an ordinary open (#988).
+    ///
+    /// It rides on the navigation value rather than on the web view's coordinator because
+    /// **90.8% of the corpus's 16,921 footnote references point into a different document**, and
+    /// crossing a document boundary mounts a fresh `DocumentView`/`MacDocumentView`, hence a fresh
+    /// representable, coordinator and `WKWebView`. State parked on the coordinator would serve
+    /// only the 8.5% that stay put.
+    ///
+    /// Deliberately **not** part of `id`, which stays `volumeId/documentId`: two references to
+    /// different notes in one document are the same destination, and letting the anchor split the
+    /// identity would push a duplicate level onto every navigation stack keyed by it.
+    public let footnoteAnchor: String?
+
     public var id: String { "\(volumeId)/\(documentId)" }
 
     public init(
@@ -211,7 +225,8 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
         header: String,
         dateline: String? = nil,
         sourceNote: String? = nil,
-        isEditorialNote: Bool = false
+        isEditorialNote: Bool = false,
+        footnoteAnchor: String? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -220,6 +235,7 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
         self.dateline = dateline
         self.sourceNote = sourceNote
         self.isEditorialNote = isEditorialNote
+        self.footnoteAnchor = footnoteAnchor
     }
 }
 

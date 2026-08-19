@@ -147,6 +147,12 @@ public struct FRUSDocumentWebView: View {
     /// The document to render.
     public let model: FRUSDocumentRenderModel
 
+    /// A footnote to reveal on arrival (#988) — the note's TEI `xml:id` — or `nil`.
+    ///
+    /// Applied after a load for a reference that crossed into this document, and without a reload
+    /// when it changes for one naming a note already on screen.
+    public var footnoteAnchor: String? = nil
+
     // MARK: Callbacks
 
     /// Called with the resolved `PersonEntry` (or `nil`) when a persName link is tapped.
@@ -211,6 +217,7 @@ public struct FRUSDocumentWebView: View {
         #if os(macOS)
         _FRUSDocumentWebViewMac(
             model:              model,
+            footnoteAnchor:     footnoteAnchor,
             colorScheme:        colorScheme,
             textSize:           textSize,
             highlights:         highlights,
@@ -227,6 +234,7 @@ public struct FRUSDocumentWebView: View {
         #else
         _FRUSDocumentWebViewiOS(
             model:              model,
+            footnoteAnchor:     footnoteAnchor,
             colorScheme:        colorScheme,
             textSize:           textSize,
             highlights:         highlights,
@@ -337,6 +345,20 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
     /// direct update when only highlights changed (no full HTML reload needed).
     var pendingHighlights: [DocumentHighlight] = []
 
+    // MARK: Footnote reveal state (#988)
+
+    /// The footnote to reveal — a note's TEI `xml:id` — or `nil`.
+    ///
+    /// Applied on the same two occasions as `pendingHighlights`, and for the same reason: after a
+    /// page load, for a reference that crossed into this document (90.8% of the corpus's 16,921
+    /// footnote references), and on a direct update with no reload, for one that named a note in
+    /// the document already on screen (8.5%).
+    var pendingFootnoteAnchor: String?
+
+    /// The anchor most recently revealed, so a re-render does not scroll the reader back to a
+    /// footnote they have since navigated away from within the page.
+    var lastRevealedFootnoteAnchor: String?
+
     /// The `renderingVersion` for the currently loaded document; used to compute
     /// `HighlightDTO.isStale`.
     var currentRenderingVersion: String = ""
@@ -425,12 +447,86 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         #endif
     }
 
+    /// Scrolls the pending footnote's endnote entry into view and flashes it (#988).
+    ///
+    /// **The endnote `<li>` is the target, not the popover `<aside>`.** The aside carries a bare
+    /// `popover` attribute, so the UA stylesheet gives it `display: none` until it is shown; an
+    /// element generating no boxes cannot be scrolled to, and once shown a popover is in the top
+    /// layer and already on screen. The `<li>` is ordinary in-flow content carrying the same note
+    /// text, and it lives in the footnotes section, which is emitted outside `.frus-document` —
+    /// the offset engine's DFS root — so nothing here can perturb a highlight coordinate.
+    ///
+    /// The reveal is a scroll and a class toggle: no DOM node is created, split, or removed, so the
+    /// live `Text` references in `window.FRUSOffsets.charToNode` stay valid.
+    ///
+    /// Returns `true` when the anchor existed in this document. A `false` means the note is not
+    /// here — distinct from the call failing, which returns `false` too but is logged separately.
+    @discardableResult
+    func revealFootnote(on webView: WKWebView) async -> Bool {
+        guard let anchor = pendingFootnoteAnchor, anchor != lastRevealedFootnoteAnchor else {
+            return false
+        }
+        // The DOM key is the `x-` branch of `FRUSRenderNode.footnoteDOMKey`; the reading view
+        // builds its serializer with no `idScope`, so there is no prefix to compose here.
+        // JSON-encode rather than interpolate — the same discipline `renderHighlights` uses, and
+        // the corpus contains at least one non-ASCII note id (`d89fnǁ`).
+        guard let keyData = try? JSONEncoder().encode("x-" + anchor),
+              let keyLiteral = String(data: keyData, encoding: .utf8) else { return false }
+
+        // TWO THINGS HERE ARE LOAD-BEARING, and both were found by running this script against the
+        // emitted markup in a hidden page rather than by reasoning about it.
+        //
+        // The scroll is SYNCHRONOUS. Deferring it inside a double `requestAnimationFrame` — the
+        // obvious way to wait for layout to settle — does nothing at all while `document.hidden`
+        // is true, because rAF callbacks do not fire then: a background macOS window, an unfronted
+        // iPad scene, a reveal arriving before the view is on screen. Measured, the rAF form left
+        // `scrollY` at 0.
+        //
+        // And the scroll falls back to `auto` when the document is hidden, because a `smooth`
+        // scroll is ANIMATED and its animation does not progress either — measured, the sync-but-
+        // smooth form also left `scrollY` at 0, which is the same failure wearing a different hat.
+        //
+        // Both would have been invisible and permanent: `lastRevealedFootnoteAnchor` is recorded
+        // whatever happens, so the reveal is never retried.
+        //
+        // Nothing here needs to wait for layout: the page is a `loadHTMLString` document with no
+        // `@font-face` and no images, and `didFinish` runs after it is parsed and laid out. The
+        // `scroll-margin-block` on `.fn-list-item` absorbs any late reflow.
+        let script = """
+        (() => {
+          const li = document.getElementById("fnote-" + \(keyLiteral));
+          if (!li) { return false; }
+          const instant = document.hidden
+            || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          li.scrollIntoView({ block: "center", behavior: instant ? "auto" : "smooth" });
+          li.classList.remove("fn-arrived");
+          void li.offsetWidth;
+          li.classList.add("fn-arrived");
+          setTimeout(() => li.classList.remove("fn-arrived"), 2400);
+          return true;
+        })()
+        """
+        let found = (try? await webView.evaluateJavaScript(script)) as? Bool ?? false
+        // Recorded even when the anchor was absent, so a failed reveal is not retried on every
+        // subsequent update for as long as the reader stays on the document.
+        lastRevealedFootnoteAnchor = anchor
+        #if DEBUG
+        if !found {
+            print("[FRUSDocumentWebView] revealFootnote: \(anchor) not present in this document")
+        }
+        #endif
+        return found
+    }
+
     // MARK: WKNavigationDelegate
 
-    /// After each successful page load, paint any pending highlights.
+    /// After each successful page load, paint any pending highlights and reveal any pending
+    /// footnote (#988) — this is the path a reference that crossed into another document takes,
+    /// since crossing one mounts a fresh web view.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         Task { @MainActor in
             await renderHighlights(on: webView)
+            await revealFootnote(on: webView)
         }
     }
 
@@ -481,6 +577,8 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 struct _FRUSDocumentWebViewMac: NSViewRepresentable {
 
     let model:          FRUSDocumentRenderModel
+    /// The footnote to reveal on arrival (#988), or `nil`. See `FRUSDocumentWebView.footnoteAnchor`.
+    let footnoteAnchor: String?
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     let highlights:     [DocumentHighlight]
@@ -528,6 +626,12 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
         context.coordinator.pendingHighlights        = highlights
         context.coordinator.currentRenderingVersion  = renderingVersion
         context.coordinator.lastHighlightIds         = newHighlightIds
+        // #988. `anchorChanged` is computed against the coordinator's own record rather than a
+        // separate `last…` property set here, so a reveal is attempted exactly once per (document,
+        // anchor) pair however many times SwiftUI re-runs this update.
+        let anchorChanged = footnoteAnchor != nil
+            && footnoteAnchor != context.coordinator.lastRevealedFootnoteAnchor
+        context.coordinator.pendingFootnoteAnchor    = footnoteAnchor
 
         let sig = WebViewSignature(
             documentId:  model.documentId,
@@ -548,10 +652,20 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
             context.coordinator.schemeHandler?.onBrokenRefTap = onBrokenRefTap
             let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
+            // A new page: whatever was revealed belonged to the outgoing document, so clear the
+            // record and let `didFinish` apply the pending anchor against the incoming one.
+            context.coordinator.lastRevealedFootnoteAnchor = nil
             webView.loadHTMLString(html, baseURL: nil)
-        } else if highlightsChanged {
+        } else if highlightsChanged || anchorChanged {
             Task { @MainActor in
-                await context.coordinator.renderHighlights(on: webView)
+                if highlightsChanged {
+                    await context.coordinator.renderHighlights(on: webView)
+                }
+                // No reload happened, so `didFinish` will not fire — this is the only path that
+                // serves a reference to a note in the document already on screen.
+                if anchorChanged {
+                    await context.coordinator.revealFootnote(on: webView)
+                }
             }
         }
     }
@@ -567,6 +681,8 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
 struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
 
     let model:          FRUSDocumentRenderModel
+    /// The footnote to reveal on arrival (#988), or `nil`. See `FRUSDocumentWebView.footnoteAnchor`.
+    let footnoteAnchor: String?
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     let highlights:     [DocumentHighlight]
@@ -620,6 +736,12 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         context.coordinator.pendingHighlights        = highlights
         context.coordinator.currentRenderingVersion  = renderingVersion
         context.coordinator.lastHighlightIds         = newHighlightIds
+        // #988. `anchorChanged` is computed against the coordinator's own record rather than a
+        // separate `last…` property set here, so a reveal is attempted exactly once per (document,
+        // anchor) pair however many times SwiftUI re-runs this update.
+        let anchorChanged = footnoteAnchor != nil
+            && footnoteAnchor != context.coordinator.lastRevealedFootnoteAnchor
+        context.coordinator.pendingFootnoteAnchor    = footnoteAnchor
 
         let sig = WebViewSignature(
             documentId:  model.documentId,
@@ -639,10 +761,20 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
             context.coordinator.schemeHandler?.onBrokenRefTap = onBrokenRefTap
             let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
+            // A new page: whatever was revealed belonged to the outgoing document, so clear the
+            // record and let `didFinish` apply the pending anchor against the incoming one.
+            context.coordinator.lastRevealedFootnoteAnchor = nil
             webView.loadHTMLString(html, baseURL: nil)
-        } else if highlightsChanged {
+        } else if highlightsChanged || anchorChanged {
             Task { @MainActor in
-                await context.coordinator.renderHighlights(on: webView)
+                if highlightsChanged {
+                    await context.coordinator.renderHighlights(on: webView)
+                }
+                // No reload happened, so `didFinish` will not fire — this is the only path that
+                // serves a reference to a note in the document already on screen.
+                if anchorChanged {
+                    await context.coordinator.revealFootnote(on: webView)
+                }
             }
         }
     }

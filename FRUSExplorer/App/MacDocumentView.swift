@@ -103,6 +103,10 @@ struct MacDocumentView: View {
     /// Set when a cross-reference targets a document in an undownloaded volume; drives
     /// a prompt offering to download it instead of pushing into a guaranteed load failure.
     @State private var crossRefDownloadVolumeId: String? = nil
+
+    /// The footnote to reveal in the rendered document (#988) — seeded from `entry.footnoteAnchor`
+    /// on load, and re-set in place for a reference naming a note in this same document.
+    @State private var revealedFootnoteAnchor: String? = nil
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     /// Visibility + anchor for the floating selection bar (Research-rail Phase B2). Driven straight
@@ -217,6 +221,9 @@ struct MacDocumentView: View {
             case .rememberLast: break
             }
             await loadDocument()
+            // #988: the note this navigation was aimed at, if any. macOS mounts a fresh
+            // MacDocumentView per push, so this runs once per document.
+            revealedFootnoteAnchor = entry.footnoteAnchor
             highlightCoordinator.createWebKitHighlightAction = createWebKitHighlight(color:)
             // Excerpt captures (Authoring Phase 5) are built here — this view owns
             // vm.renderModel, so the passage is re-extracted from the flat text with
@@ -474,6 +481,7 @@ struct MacDocumentView: View {
             // Document body — WKWebView handles scrolling, tables, footnotes, and highlights.
             FRUSDocumentWebView(
                 model: renderModel,
+                footnoteAnchor: revealedFootnoteAnchor,
                 onPersonTap: { person in
                     vm.selectedPerson = person
                     if let person {
@@ -1082,6 +1090,11 @@ struct MacDocumentView: View {
             navigateToCrossRef(documentId: documentId,
                                volumeId: targetVolumeId ?? entry.volumeId)
 
+        case .footnote(let targetVolumeId, let documentId, let anchor):
+            navigateToCrossRef(documentId: documentId,
+                               volumeId: targetVolumeId ?? entry.volumeId,
+                               footnoteAnchor: anchor)
+
         case .page(let targetVolumeId, let page):
             resolvePageReference(page: page,
                                  volumeId: targetVolumeId ?? entry.volumeId)
@@ -1099,8 +1112,15 @@ struct MacDocumentView: View {
     /// Pushes `documentId` in `volumeId` onto the navigation stack, or — when the
     /// target volume isn't downloaded — prompts to download it rather than pushing
     /// into a guaranteed load failure (mirrors the iOS cross-ref guard).
-    private func navigateToCrossRef(documentId: String, volumeId: String) {
+    private func navigateToCrossRef(documentId: String, volumeId: String,
+                                    footnoteAnchor: String? = nil) {
         guard !documentId.isEmpty else { return }
+        // #988: a note in the document already open is revealed in place. Pushing would stack a
+        // second copy of the document the reader is reading — the iOS twin makes the same call.
+        if let footnoteAnchor, documentId == entry.documentId, volumeId == entry.volumeId {
+            revealedFootnoteAnchor = footnoteAnchor
+            return
+        }
         if let dm = appState.downloadManager, !dm.isVolumeDownloaded(volumeId) {
             crossRefDownloadVolumeId = volumeId
             #if DEBUG
@@ -1113,7 +1133,8 @@ struct MacDocumentView: View {
             volumeId: volumeId,
             // Use the ID as placeholder header — loadDocument() fills the real title
             // after parsing, matching the breadcrumb approach.
-            header: documentId
+            header: documentId,
+            footnoteAnchor: footnoteAnchor
         )
         navigationPath.append(dest)
 
