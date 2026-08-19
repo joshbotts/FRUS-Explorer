@@ -404,6 +404,11 @@ public struct SourceNoteParser {
             return .previouslyPublished(citation: trimmed)
         }
 
+        // Tail-only by design — see matchesPublishedReprintPhrase.
+        if matchesPublishedReprintPhrase(trimmed) {
+            return .previouslyPublished(citation: trimmed)
+        }
+
         return .unrecognized(rawText: trimmed)
     }
 
@@ -1361,6 +1366,11 @@ public struct SourceNoteParser {
         // encodes no RG, so those WNRC citations fell through everything. After the agency
         // pass for the same reason it is after everything: it can only claim declined notes.
         if let wnrcResult = tryWNRCAgencySeries(body) { return wnrcResult }
+
+        // Tail-only by design — see matchesPublishedReprintPhrase.
+        if matchesPublishedReprintPhrase(body) {
+            return .previouslyPublished(citation: body)
+        }
 
         return nil
     }
@@ -2340,11 +2350,65 @@ public struct SourceNoteParser {
         "Documents on Disarmament",
         "The Official Bulletin",
         "Issued by the White House as a press release",
+        // Congressional document prints — `S. Doc. No. 515, 60th Cong., 1st sess.`, and the
+        // OCR-bent variants a prefix still holds (`Senate Doc. N. 36`, `Senate Doc. 157, God
+        // Cong.` for "62d Cong.").
+        "S. Doc.", "H. Doc.", "Senate Doc", "House Doc",
+        // Statutes are publications (Statutes at Large / slip laws).
+        "Public Law",
+        // The DDRS research collection ("Source: Declassified Documents, 1976, 33H").
+        "Declassified Documents",
+        // ASCII-hyphen variant: the list already carries the en-dash form, and
+        // `frus1961-63` prints "United States-Vietnam Relations" with a plain hyphen, so the
+        // prefix silently missed it.
+        "United States-Vietnam Relations",
         "Ibid", "ibid",
     ]
 
+    /// Head shapes that cannot be plain prefixes: a bare Statutes-at-Large cite
+    /// (`42 Stat. 122–141.`) and the one congressional print behind a `Printed from` lead.
+    /// `Printed from` ALONE is measured-wrong as a lead — of its six distinct notes, three
+    /// are archival (`…draft copy obtained from the Library of Congress…`, `…copy in the
+    /// records of the FEA Administrator`), so only the S. Doc. continuation is taken.
+    private static let publishedHeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:\d+ Stat\. |Printed from S\.? ?Doc)"#, options: []
+    )
+
+    /// Mid-note publication statements, allowed ONLY as the exact reprint phrase (#353).
+    ///
+    /// The Bulletin reprints head with a release clause — `Released to the press by the
+    /// White House May 18, 1945; reprinted from Department of State Bulletin…` — so a
+    /// prefix cannot see them. A contains-anywhere rule is refuted by two measured traps in
+    /// the same residue: long editorial notes whose Bulletin mention is a parenthetical
+    /// see-reference (`(Department of State Bulletin, April 25, 1977, p. 401)`) or a "for
+    /// text… see". Neither carries `printed/reprinted from|in`, which is what makes the
+    /// phrase safe where the name alone is not. This matcher runs only after every archival
+    /// strategy has declined the note, so it can never take a classified citation.
+    private static let publishedPhraseRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?:[Rr]eprinted|[Pp]rinted) (?:from|in) (?:the )?(?:Department of State Bulletin|Congressional Record)"#,
+        options: []
+    )
+
     private func matchesPreviouslyPublished(_ body: String) -> Bool {
-        Self.previouslyPublishedLeads.contains { body.hasPrefix($0) }
+        if Self.previouslyPublishedLeads.contains(where: { body.hasPrefix($0) }) { return true }
+        let ns = NSRange(body.startIndex..., in: body)
+        if let head = Self.publishedHeadRegex, head.firstMatch(in: body, range: ns) != nil {
+            return true
+        }
+        return false
+    }
+
+    /// The reprint-phrase check, SEPARATE from `matchesPreviouslyPublished` because position
+    /// is its entire safety argument. `matchesPreviouslyPublished` runs EARLY in the
+    /// narrative dispatch, and the first cut of this rule lived inside it: measured, that
+    /// stole 46 archival citations whose notes merely REMARK on a Bulletin reprint —
+    /// `Central Files, 674.84A/2–1157 … reprinted in the Department of State Bulletin`,
+    /// lot files, presidential-library notes. The phrase is decisive only for a note every
+    /// archival strategy has already declined, so it may run ONLY at the two dispatch tails.
+    private func matchesPublishedReprintPhrase(_ body: String) -> Bool {
+        guard let phrase = Self.publishedPhraseRegex else { return false }
+        let ns = NSRange(body.startIndex..., in: body)
+        return phrase.firstMatch(in: body, range: ns) != nil
     }
 
     // MARK: - Utility
