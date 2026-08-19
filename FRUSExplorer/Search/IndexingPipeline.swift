@@ -712,7 +712,15 @@ public actor IndexingPipeline {
     ///   delete-then-insert emptied it: 33,764 rows across 258 volumes → 0. The guard is fixed;
     ///   this bump is what makes the repair actually repopulate, because a device that already ran
     ///   the v39 reindex has `installed == 39` and would otherwise never reindex again.
-    public static let currentDateIndexVersion: Int = 40
+    /// - v41 — the #353 source-note recovery wave (PRs #966–#970): five parser rules recovered
+    ///   **502 notes** corpus-wide (eval residue 5,974 → 5,472) — vulgar-fraction decimal
+    ///   classes, OCR-corrupted `Files` keywords folded before parsing, the suffix-bearing
+    ///   decimal forms (269), FRC accession series (158), and published-source leads (41). Every
+    ///   rule shipped behind a positional per-note diff over all 267,663 eval notes showing
+    ///   **zero steals**. Parse outputs changed, so `document_sources` rows on an existing index
+    ///   describe the OLD grammar until re-parse; this bump is what carries the recoveries to
+    ///   already-downloaded corpora (owner-approved reindex, 2026-08-18).
+    public static let currentDateIndexVersion: Int = 41
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
