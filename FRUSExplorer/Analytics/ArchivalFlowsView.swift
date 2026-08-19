@@ -669,6 +669,18 @@ struct ArchivalFlowsView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            // #831: the measured answer to "what about citations that cross the two filing
+            // systems?" — the question the two parallel axes make natural to ask. They exist
+            // (1,886 references), and they are concentrated rather than distributed: the five
+            // largest pairs are 30% of them and reduce to two editorial situations, so a
+            // diagram would draw two moments and call them a pattern. Stated as a sentence
+            // instead, which is what the measurement supports. Numbers are literal because the
+            // artifact does not carry this axis — deliberately; see the issue.
+            Text(String(localized: "archival.flows.caveats.mixed",
+                        defaultValue: "Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram above."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Text(String(localized: "archival.flows.caveats.browse",
                         defaultValue: "You cannot browse the individual citations here. The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why."))
                 .font(.footnote)

@@ -224,7 +224,7 @@ public enum ProvenanceFlowIndexRunner {
     }
 
     /// The manifest's shippable volume-id set.
-    static func shippableVolumeIds(manifestPath: String) throws -> Set<String> {
+    public static func shippableVolumeIds(manifestPath: String) throws -> Set<String> {
         struct ManifestVolume: Decodable { let volumeId: String }
         let url = URL(fileURLWithPath: manifestPath)
         return Set(try JSONDecoder().decode([ManifestVolume].self,
