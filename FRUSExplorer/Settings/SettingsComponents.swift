@@ -54,11 +54,17 @@ struct StorageUsageBreakdown: Equatable, Sendable {
     ///   - summaryBytes: Stored AI summaries.
     /// - Returns: The breakdown, with zero-byte segments omitted and shares summing to 1 (or all
     ///   zero when nothing is stored).
-    static func make(volumeBytes: Int, indexBytes: Int, summaryBytes: Int) -> StorageUsageBreakdown {
+    static func make(volumeBytes: Int, indexBytes: Int, summaryBytes: Int,
+                     vectorBytes: Int = 0) -> StorageUsageBreakdown {
+        // The vectors segment exists only since the walk stopped double-counting
+        // (#926 item 2): #925 deliberately declined to add it while the index figure
+        // silently contained the same bytes, because a segment then would have drawn
+        // the same storage twice. Count once, draw once.
         let raw: [(id: String, label: String, bytes: Int)] = [
             ("xml", String(localized: "settings.storage.segment.xml", defaultValue: "XML"), max(0, volumeBytes)),
             ("index", String(localized: "settings.storage.segment.index", defaultValue: "Index"), max(0, indexBytes)),
             ("summaries", String(localized: "settings.storage.segment.summaries", defaultValue: "Summaries"), max(0, summaryBytes)),
+            ("vectors", String(localized: "settings.storage.segment.vectors", defaultValue: "Vectors"), max(0, vectorBytes)),
         ]
         let total = raw.reduce(0) { $0 + $1.bytes }
         let segments = raw.filter { $0.bytes > 0 }.map { entry in

@@ -837,7 +837,8 @@ struct VolumesStorageHubView: View {
         }
         return StorageUsageBreakdown.make(volumeBytes: report.totalVolumesBytes,
                                           indexBytes: report.totalIndexBytes,
-                                          summaryBytes: report.totalSummariesBytes)
+                                          summaryBytes: report.totalSummariesBytes,
+                                          vectorBytes: report.totalVectorBytes)
     }
 
     /// The hero's one-line state of the library.

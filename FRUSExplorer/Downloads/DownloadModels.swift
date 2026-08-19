@@ -80,11 +80,20 @@ public struct StorageReport: Sendable {
     /// Size of stored AI-generated summaries. Populated in Session 19.
     public let totalSummariesBytes: Int
 
+    /// Size of the downloaded semantic-vector shards (#926 item 2). Zero when the
+    /// feature has fetched nothing. Counted HERE and nowhere else: the index walk
+    /// explicitly excludes the shard directory, because before this field existed the
+    /// recursive walk silently folded shard bytes (and the volume XML) into "Index" and
+    /// the hero figure double-counted.
+    public let totalVectorBytes: Int
+
     /// Per-volume breakdown of XML file sizes.
     public let perVolume: [VolumeStorageEntry]
 
     /// Combined total of all managed storage.
-    public var grandTotalBytes: Int { totalVolumesBytes + totalIndexBytes + totalSummariesBytes }
+    public var grandTotalBytes: Int {
+        totalVolumesBytes + totalIndexBytes + totalSummariesBytes + totalVectorBytes
+    }
 
     // MARK: - Index size estimation
 
