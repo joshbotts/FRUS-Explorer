@@ -5061,3 +5061,60 @@ struct CitationDocNumberRegressionTests {
         }
     }
 }
+
+// MARK: - CIA Job Neighbors (#808)
+
+/// The CIA neighbour join, end to end through the real pipeline: fixture volumes are
+/// indexed with `.ciaCollection` source notes in DIFFERENT dash spellings of one job, and
+/// the join must land on `document_sources.job_number_norm` — the corpus spells `79R01012A`
+/// four ways, so a raw-spelling join returns a fraction of each collection.
+@Suite("IndexingPipeline — CIA job neighbors")
+struct CIAJobNeighborTests {
+
+    @Test("Documents citing one job in different spellings are neighbors; other jobs are not")
+    func jobJoinCrossesSpellings() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(to: volDir.appendingPathComponent("frusTESTcia.xml"),
+                               volumeId: "frusTESTcia", documents: [
+                (id: "d01", xml: "<note type=\"source\">Source: Central Intelligence Agency, "
+                    + "Job 79\u{2013}R01012A, Box 1. Secret.</note><head>One</head><p>A.</p>"),
+                (id: "d02", xml: "<note type=\"source\">Source: Central Intelligence Agency, "
+                    + "Job 79R01012A, Box 2. Secret.</note><head>Two</head><p>B.</p>"),
+                (id: "d03", xml: "<note type=\"source\">Source: Central Intelligence Agency, "
+                    + "Job 80B01285A, Box 7. Secret.</note><head>Three</head><p>C.</p>"),
+            ])
+            try await pipeline.indexVolume("frusTESTcia")
+
+            // Document side: a `.ciaCollection` note reaches its job-keyed siblings.
+            let related = try await pipeline.relatedDocuments(
+                for: .ciaCollection(jobNumber: "79-R01012A", box: nil, description: ""))
+            #expect(related.totalCount == 2, """
+                The dash-variant spellings of Job 79R01012A did not join. The query must \
+                land on job_number_norm, not the raw lot_file spelling.
+                """)
+            #expect(Set(related.documents.map(\.documentId)) == ["d01", "d02"],
+                    "the other job's document must not ride the join")
+
+            // Volume-source side: the count-key derivation and the batched counts agree.
+            let key = try #require(IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: nil, series: nil,
+                repository: nil, decimalClass: nil, jobNumber: "79\u{2013}R01012A"))
+            guard case .jobNumber(let norm) = key else {
+                Issue.record("a job entry derived \(key), not .jobNumber")
+                return
+            }
+            #expect(norm == "79R01012A")
+            let counts = try await pipeline.archivalNeighborCounts(forKeys: [key])
+            #expect(counts[key] == 2, "the batched badge count must equal the per-tap total")
+
+            // The per-tap path: basis names the job, and NOTHING implies a catalog lookup.
+            let neighbors = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil,
+                repository: nil, decimalClass: nil, jobNumber: "79R01012A")
+            #expect(neighbors.totalCount == 2)
+            #expect(neighbors.basis?.contains("CIA Job") == true)
+        }
+    }
+}

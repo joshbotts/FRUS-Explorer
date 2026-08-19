@@ -500,7 +500,8 @@ struct VolumeSourcesView: View {
               let key = IndexingPipeline.neighborCountKey(
                   forLotFile: target.lotFile, recordGroup: target.recordGroup,
                   series: target.series, repository: target.repository,
-                  decimalClass: target.decimalClass) else { return nil }
+                  decimalClass: target.decimalClass,
+                  jobNumber: target.jobNumber) else { return nil }
         return counts[key] ?? 0
     }
 
@@ -599,6 +600,7 @@ struct VolumeSourcesView: View {
         }
         let lot  = trimmed(entry.lotFile)
         let cls  = trimmed(entry.decimalClass)
+        let job  = trimmed(entry.jobNumber)
         let rg   = trimmed(entry.recordGroup)
         let repo = trimmed(entry.repository)
         var series = trimmed(entry.seriesName)
@@ -611,7 +613,10 @@ struct VolumeSourcesView: View {
             }
             if series != nil { libraryRepo = repo }
         }
-        let hasKey = lot != nil || cls != nil || libraryRepo != nil
+        // #808: a CIA Job number is a key. It joins `document_sources.job_number_norm`, and
+        // its affordance is the neighbour count ONLY — no catalog link exists or is implied,
+        // because CIA records are not described in the NARA catalog.
+        let hasKey = lot != nil || cls != nil || libraryRepo != nil || job != nil
             || (rg != nil && series != nil)
         guard hasKey else { return nil }
         return VolumeSourceNeighborsTarget(
@@ -620,6 +625,7 @@ struct VolumeSourcesView: View {
             series:       series,
             repository:   libraryRepo,
             decimalClass: cls,
+            jobNumber:    job,
             volumeId:     volumeId
         )
     }
@@ -674,7 +680,8 @@ struct VolumeSourcesView: View {
             return IndexingPipeline.neighborCountKey(
                 forLotFile: target.lotFile, recordGroup: target.recordGroup,
                 series: target.series, repository: target.repository,
-                decimalClass: target.decimalClass)
+                decimalClass: target.decimalClass,
+                jobNumber: target.jobNumber)
         }
         neighborCounts = keys.isEmpty
             ? [:]
@@ -700,6 +707,9 @@ struct VolumeSourceNeighborsTarget: Identifiable {
     let repository: String?
     /// The decimal / subject-numeric class-leaf key, when the entry is a class leaf.
     let decimalClass: String?
+    /// The CIA Job number, when the entry is job-keyed (#808). Joins
+    /// `document_sources.job_number_norm`; carries no catalog affordance by design.
+    var jobNumber: String? = nil
     /// The volume this front-matter source entry belongs to — seeds the "This volume"
     /// default scope of the Archival Neighbors picker (#217).
     let volumeId: String

@@ -725,7 +725,12 @@ public actor IndexingPipeline {
     ///   lot numbers, 4 mangled-RG notes now naraCollection, 2 NSC institutional files to
     ///   their documented class). Classification changes, so stored rows are wrong until
     ///   re-parse. Ships in the same reindex as v41 for any device still at ≤40.
-    public static let currentDateIndexVersion: Int = 42
+    /// - v42→43 — #808: `document_sources.job_number_norm`, populated for `.ciaCollection`
+    ///   rows via `SourceNoteParser.jobNumberNorm` (the column the CIA neighbour join lands
+    ///   on — `lot_file` holds the raw spelling, and one job is spelled up to four dash-split
+    ///   ways). Column added to the CREATE **and** the drop-and-recreate guard together, the
+    ///   v40 REPAIR lesson. Rides the same ≤40 combined reindex.
+    public static let currentDateIndexVersion: Int = 43
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -5240,7 +5245,8 @@ public actor IndexingPipeline {
         // the absent newest column) is dropped and recreated — the established
         // volume_sources migration pattern; the version-19 reindex repopulates it.
         if tableExists("document_sources") && (!columnExists("lot_file_norm", inTable: "document_sources")
-                                               || !columnExists("decimal_class", inTable: "document_sources")) {
+                                               || !columnExists("decimal_class", inTable: "document_sources")
+                                               || !columnExists("job_number_norm", inTable: "document_sources")) {
             try? exec("DROP TABLE document_sources")
         }
         try exec("""
@@ -5256,6 +5262,7 @@ public actor IndexingPipeline {
                 raw_text       TEXT NOT NULL,
                 classification TEXT,
                 decimal_class  TEXT,
+                job_number_norm TEXT,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
@@ -5263,6 +5270,8 @@ public actor IndexingPipeline {
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_repo ON document_sources(repository)")
         // Session 152: indexes for same-collection discovery queries
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot ON document_sources(lot_file)")
+        // #808: the CIA neighbour join — an indexed equality on the normalised Job number.
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_job ON document_sources(job_number_norm)")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_era_series ON document_sources(citation_era, series_name)")
         // Source Explorer Phase 2: normalized-lot equality lookups (Phase 3 matcher)
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot_norm ON document_sources(lot_file_norm)")
@@ -5663,8 +5672,8 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_sources
-            (volume_id, document_id, repository, record_group, lot_file, lot_file_norm, series_name, citation_era, raw_text, classification, decimal_class)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (volume_id, document_id, repository, record_group, lot_file, lot_file_norm, series_name, citation_era, raw_text, classification, decimal_class, job_number_norm)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -5681,6 +5690,7 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 9, row.rawText,     -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 10, row.classification)
                 auxBindOptional(stmt, 11, row.decimalClass)
+                auxBindOptional(stmt, 12, row.jobNumberNorm)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -5906,7 +5916,8 @@ public actor IndexingPipeline {
         case .ciaCollection(let job, _, _):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "Central Intelligence Agency", recordGroup: nil,
-                lotFile: job, seriesName: nil, citationEra: "structured", rawText: rawText)
+                lotFile: job, seriesName: nil, citationEra: "structured", rawText: rawText,
+                jobNumberNorm: job.map { SourceNoteParser.jobNumberNorm($0) })
         case .foreignGovernmentArchive(let desc):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
@@ -6619,6 +6630,14 @@ public actor IndexingPipeline {
                                                    limit: fetchLimit, excluding: exclude,
                                                    ordering: ordering)
 
+        // #808: both sides of the CIA gap. A `.ciaCollection` document note now reaches its
+        // job-keyed siblings; before this, it fell to the default and the issue's measured
+        // position was that BOTH sides were unserved — one feature to build, not an
+        // asymmetry to correct.
+        case .ciaCollection(let job?, _, _):
+            raw = try relatedByJobNumber(job, limit: fetchLimit, excluding: exclude,
+                                         ordering: ordering)
+
         default:
             raw = ([], 0)
         }
@@ -6799,6 +6818,7 @@ public actor IndexingPipeline {
         series: String?,
         repository: String? = nil,
         decimalClass: String? = nil,
+        jobNumber: String? = nil,
         aliasFallback: CollectionAliasFallback? = nil,
         limit: Int = 30,
         scopeVolumeIds: Set<String>? = nil
@@ -6815,7 +6835,8 @@ public actor IndexingPipeline {
         }
         let direct = try directArchivalNeighbors(
             forLotFile: lotFile, recordGroup: recordGroup, series: series,
-            repository: repository, decimalClass: decimalClass, limit: fetchLimit)
+            repository: repository, decimalClass: decimalClass, jobNumber: jobNumber,
+            limit: fetchLimit)
         if direct.totalCount > 0 { return scoped(direct) }
         guard let aliasFallback else { return scoped(direct) }
         // `.alphabetical`, stated rather than defaulted: this entry point is keyed on a
@@ -6843,14 +6864,23 @@ public actor IndexingPipeline {
         series: String?,
         repository: String?,
         decimalClass: String?,
+        jobNumber: String? = nil,
         limit: Int
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
         guard let key = Self.neighborCountKey(
             forLotFile: lotFile, recordGroup: recordGroup, series: series,
-            repository: repository, decimalClass: decimalClass) else {
+            repository: repository, decimalClass: decimalClass, jobNumber: jobNumber) else {
             return ([], 0, nil)
         }
         switch key {
+        case .jobNumber:
+            let job = (jobNumber ?? "").trimmingCharacters(in: .whitespaces)
+            let r = try relatedByJobNumber(job, limit: limit)
+            // The basis names the job and nothing else: no catalog affordance may ride
+            // this path — CIA records are not described in the NARA catalog.
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.ciaJob",
+                           defaultValue: "CIA Job \(job)"))
         case .lotFile:
             // Raw (untrimmed-of-designators) lot for the basis string; key selection
             // guarantees the field is present and non-empty.
@@ -6962,6 +6992,10 @@ public actor IndexingPipeline {
         case presidentialLibrary(repository: String, collection: String)
         /// Record group + series path: trimmed RG (either stored form) + series name.
         case collection(recordGroup: String, series: String)
+        /// CIA Job path (#808): the canonical job key (`SourceNoteParser.jobNumberNorm`).
+        /// No catalog affordance ever attaches to this key — CIA records are not described
+        /// in the NARA catalog, and the surface must not imply a lookup exists.
+        case jobNumber(norm: String)
     }
 
     /// Derives the `ArchivalNeighborCountKey` for a volume-source entry's match keys,
@@ -6977,11 +7011,17 @@ public actor IndexingPipeline {
         recordGroup: String?,
         series: String?,
         repository: String? = nil,
-        decimalClass: String? = nil
+        decimalClass: String? = nil,
+        jobNumber: String? = nil
     ) -> ArchivalNeighborCountKey? {
         func trimmed(_ s: String?) -> String? {
             guard let t = s?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return nil }
             return t
+        }
+        // #808: the job path first — a job-keyed entry carries no lot, and nothing else in
+        // the derivation can claim it.
+        if let job = trimmed(jobNumber) {
+            return .jobNumber(norm: SourceNoteParser.jobNumberNorm(job))
         }
         if let lot = trimmed(lotFile) {
             // Accept a "Lot "-prefixed form from any caller (as `relatedByLotFile` does).
@@ -7046,6 +7086,37 @@ public actor IndexingPipeline {
         // written through while a `keys` view is being iterated.
         let uniqueKeys = Array(counts.keys)
 
+        // ── Family 0 (#808): job norms — same grouped IN-seek shape as the lot family. ──
+        let jobNorms = uniqueKeys.compactMap { key -> String? in
+            guard case .jobNumber(let norm) = key, !norm.isEmpty else { return nil }
+            return norm
+        }
+        if !jobNorms.isEmpty {
+            var jobCounts: [String: Int] = [:]
+            for chunk in Self.chunked(jobNorms, size: 400) {
+                let placeholders = Array(repeating: "?", count: chunk.count).joined(separator: ",")
+                let sql = """
+                    SELECT job_number_norm, COUNT(*)
+                    FROM document_sources
+                    WHERE job_number_norm IN (\(placeholders))
+                    GROUP BY job_number_norm
+                    """
+                let stmt = try auxPrepare(sql)
+                defer { sqlite3_finalize(stmt) }
+                for (i, norm) in chunk.enumerated() {
+                    sqlite3_bind_text(stmt, Int32(i + 1), norm, -1, SQLITE_TRANSIENT_IP)
+                }
+                while sqlite3_step(stmt) == SQLITE_ROW {
+                    if let c = sqlite3_column_text(stmt, 0) {
+                        jobCounts[String(cString: c)] = Int(sqlite3_column_int(stmt, 1))
+                    }
+                }
+            }
+            for key in uniqueKeys {
+                if case .jobNumber(let norm) = key { counts[key] = jobCounts[norm] ?? 0 }
+            }
+        }
+
         // ── Family 1: lot norms — one grouped IN-seek per ≤400-key chunk. ──
         let lotNorms = uniqueKeys.compactMap { key -> String? in
             guard case .lotFile(let norm) = key, !norm.isEmpty else { return nil }
@@ -7080,7 +7151,7 @@ public actor IndexingPipeline {
         var branches: [(key: ArchivalNeighborCountKey, clause: String, params: [String])] = []
         for key in uniqueKeys {
             switch key {
-            case .lotFile:
+            case .lotFile, .jobNumber:
                 continue
             case .decimalClass(let canonical):
                 guard let patterns = Self.classLeafPatterns(forCanonicalKey: canonical) else { continue }
@@ -7219,6 +7290,38 @@ public actor IndexingPipeline {
     /// reindex. (`.ciaCollection` rows reuse the `lot_file` column for CIA job
     /// numbers and deliberately carry no norm — job numbers are not lot keys and
     /// never route through this path.)
+    /// #808: the CIA neighbour query — `relatedByLotFile`'s mirror over `job_number_norm`.
+    /// The join key is the NORMALISED job (`SourceNoteParser.jobNumberNorm`): one job is
+    /// spelled up to four dash-split ways in the corpus, so a raw-spelling join returns a
+    /// fraction of each collection.
+    private func relatedByJobNumber(
+        _ rawJob: String,
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let norm = SourceNoteParser.jobNumberNorm(rawJob)
+        guard !norm.isEmpty else { return ([], 0) }
+        let ex = exclusion(excluding)
+        let whereClause = "ds.job_number_norm = ?\(ex.clause)"
+        let params = [norm] + ex.params
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: params, selectParams: params,
+            limit: limit, ordering: ordering)
+    }
+
     private func relatedByLotFile(
         _ rawLot: String,
         limit: Int,
@@ -8549,6 +8652,11 @@ private struct DocumentSourceRow: Sendable {
     /// `volume_sources.decimal_class` stores, so front-matter class leaves resolve
     /// neighbors with an indexed lookup (Source Explorer Phase 3 verification).
     var decimalClass: String? = nil
+    /// Canonical CIA Job key (`SourceNoteParser.jobNumberNorm`, e.g. `"79R01012A"`), set for
+    /// `.ciaCollection` rows only (#808). The corpus spells one job up to four dash-split
+    /// ways; this is the column the neighbour join lands on, because `lot_file` holds the
+    /// RAW spelling by design and a raw join returns a fraction of each collection.
+    var jobNumberNorm: String? = nil
 }
 
 private struct VolumeSourceRow: Sendable {

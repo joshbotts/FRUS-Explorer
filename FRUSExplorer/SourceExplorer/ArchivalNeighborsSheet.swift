@@ -81,10 +81,13 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
     /// The Phase-4 alias fallback is flattened into `aliasLotFileNorm` + `aliasNames`
     /// so the case stays `Codable`; `load(appState:)` reconstructs it. `anchorVolumeId`
     /// is the source entry's own volume, which seeds the "This volume" default scope (#217).
+    /// `jobNumber` (#808) is optional-and-last so payloads persisted before it decode as
+    /// `nil` — synthesized Codable uses `decodeIfPresent` for optional associated values,
+    /// which is what keeps restored macOS windows from failing after the update.
     case volumeSource(lotFile: String?, recordGroup: String?, series: String?,
                       repository: String?, decimalClass: String?,
                       aliasLotFileNorm: String?, aliasNames: [String],
-                      anchorVolumeId: String?)
+                      anchorVolumeId: String?, jobNumber: String? = nil)
     /// Record-level neighbors of a bundled collection-authority record
     /// (`IndexingPipeline.collectionNeighbors` — the same OR-union clause as the S5
     /// counts, so the window total equals the "N documents in M volumes" line).
@@ -112,7 +115,8 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
             decimalClass:     target.decimalClass,
             aliasLotFileNorm: target.aliasFallback?.lotFileNorm,
             aliasNames:       target.aliasFallback?.names ?? [],
-            anchorVolumeId:   target.volumeId
+            anchorVolumeId:   target.volumeId,
+            jobNumber:        target.jobNumber
         )
     }
 
@@ -131,7 +135,7 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
     /// key and no name forms can never match — semantically "no fallback attached").
     /// Factored out of `load(appState:)` so the round-trip is unit-testable.
     var reconstructedAliasFallback: IndexingPipeline.CollectionAliasFallback? {
-        guard case .volumeSource(_, _, _, _, _, let aliasLot, let aliasNames, _) = self else {
+        guard case .volumeSource(_, _, _, _, _, let aliasLot, let aliasNames, _, _) = self else {
             return nil
         }
         guard aliasLot != nil || !aliasNames.isEmpty else { return nil }
@@ -146,7 +150,7 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
         switch self {
         case .document(let volumeId, _, _):
             return volumeId
-        case .volumeSource(_, _, _, _, _, _, _, let anchor):
+        case .volumeSource(_, _, _, _, _, _, _, let anchor, _):
             return anchor
         case .collection, .decimalClass:
             return nil
@@ -180,13 +184,14 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
                 scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
         case .volumeSource(let lotFile, let recordGroup, let series,
-                           let repository, let decimalClass, _, _, _):
+                           let repository, let decimalClass, _, _, _, let jobNumber):
             return (try? await pipeline.archivalNeighbors(
                 forLotFile:    lotFile,
                 recordGroup:   recordGroup,
                 series:        series,
                 repository:    repository,
                 decimalClass:  decimalClass,
+                jobNumber:     jobNumber,
                 aliasFallback: reconstructedAliasFallback,
                 scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
