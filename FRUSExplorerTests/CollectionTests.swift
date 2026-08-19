@@ -5077,3 +5077,183 @@ private struct FixtureBlockDataSource: CollectionGeneratedBlockDataSource {
 
     func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { tags }
 }
+
+// MARK: - Export Parity (#960)
+
+/// The three exporters against ONE fixture, pinned to the same block inventory.
+///
+/// ## Why this suite exists
+/// The in-app preview **is** the HTML renderer (`CollectionPreviewView` assembles with
+/// `CollectionItemHTMLRenderer.pageHTML`), so HTML matches the preview by construction —
+/// and PDF and DOCX are independent re-implementations with nothing pinning them to it.
+/// #960 measured the drift on a real export: DOCX silently dropped the word cloud (the
+/// option was never read) and shipped an unpopulated TOC field; the PDF wasted a blank
+/// page; and all three doubled the `Source:` label on post-1969 notes, the preview
+/// included. Every rule here is one of those measured defects, generalized.
+@Suite("Collection export parity — #960")
+@MainActor
+struct CollectionExportParityTests {
+
+    // ── The fixture: every block the composer can ask for, in every format. ──
+
+    private static func fixtureDocuments() -> [CollectionExportDocument] {
+        // Body long enough to paginate in PDF, ending in trailing newlines — the shape
+        // that produced the blank page: an overflow opens a fresh page and a
+        // whitespace-only remainder draws nothing on it.
+        let longBody = Array(repeating: "The negotiations proceeded through the autumn, "
+            + "and each session returned to the question of the islands. ", count: 260)
+            .joined() + "\n\n\n"
+        return [
+            CollectionExportDocument(
+                documentId: "d1", volumeId: "frus1952-54v03", sortOrder: 0,
+                title: "Memorandum by the Director",
+                bodyText: longBody,
+                citation: "Foreign Relations of the United States, 1952\u{2013}1954, "
+                    + "United Nations Affairs, Volume III, Document 931.",
+                historyStateGovURL: "https://history.state.gov/historicaldocuments/frus1952-54v03/d931",
+                header: "Memorandum by the Director",
+                sourceNoteText: "ODA files, lot 62 D 225, \u{201C}Trust Territory\u{201D}"),
+            CollectionExportDocument(
+                documentId: "d2", volumeId: "frus1977-80v22", sortOrder: 1,
+                title: "Telegram From the Embassy in Australia",
+                bodyText: "The Embassy reported on regional reactions.",
+                citation: "Foreign Relations of the United States, 1977\u{2013}1980, "
+                    + "Volume XXII, Document 288.",
+                historyStateGovURL: "https://history.state.gov/historicaldocuments/frus1977-80v22/d288",
+                header: "Telegram From the Embassy in Australia",
+                // The post-1969 shape: the stored note ALREADY leads with the label.
+                sourceNoteText: "Source: Washington National Records Center, RG 330, "
+                    + "OSD Files: FRC 330\u{2013}86\u{2013}0054. Confidential."),
+        ]
+    }
+
+    private static var options: CollectionExportOptions {
+        var o = CollectionExportOptions()
+        o.includeSourceNote = true
+        o.includeWordCloud = true
+        return o
+    }
+
+    private static let metadata = CollectionExportMetadata(
+        name: "Parity Fixture", note: "Two documents, every shared block.")
+
+    // ── 1. The block inventory: what one format carries, all three carry. ──
+
+    @Test("Citation, URL, body, and source note reach every format")
+    func sharedBlocksReachEveryFormat() async throws {
+        let docs = Self.fixtureDocuments()
+        let html = try String(contentsOf: try await HTMLCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options), encoding: .utf8)
+        let docxData = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options))
+        let pdfText = try Self.pdfFullText(try await PDFCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options))
+
+        let probes = ["Document 931", "Document 288",
+                      "history.state.gov/historicaldocuments/frus1952-54v03/d931",
+                      "regional reactions",
+                      "ODA files, lot 62 D 225"]
+        for probe in probes {
+            #expect(html.contains(probe), "HTML lacks: \(probe)")
+            #expect(docxData.range(of: Data(probe.utf8)) != nil, "DOCX lacks: \(probe)")
+        }
+        // PDF text extraction normalizes some punctuation; probe on stable substrings.
+        for probe in ["Document 931", "Document 288", "regional reactions", "lot 62 D 225"] {
+            #expect(pdfText.contains(probe), "PDF lacks: \(probe)")
+        }
+    }
+
+    // ── 2. The word cloud: the option honoured by every format that was asked. ──
+
+    @Test("includeWordCloud produces an image in every format")
+    func wordCloudReachesEveryFormat() async throws {
+        let docs = Self.fixtureDocuments()
+        let html = try String(contentsOf: try await HTMLCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options), encoding: .utf8)
+        #expect(html.contains("data:image/png;base64,"), "HTML cloud missing")
+
+        let pdfData = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options))
+        #expect(pdfData.range(of: Data("/Subtype /Image".utf8)) != nil
+                || pdfData.range(of: Data("/Subtype/Image".utf8)) != nil,
+                "PDF cloud missing")
+
+        let docxURL = try await DocxCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options)
+        let docx = try Data(contentsOf: docxURL)
+        #expect(docx.range(of: Data("word/media/".utf8)) != nil, """
+            The DOCX carries no image at all: `includeWordCloud` is silently ignored \
+            (DocxCollectionExporter never reads the option — #960 item 1). The user ticked \
+            a box and nothing says it did nothing.
+            """)
+    }
+
+    // ── 3. The label rule: `Source:` appears once, in every format and the preview. ──
+
+    @Test("A stored note already leading with Source: is not double-labelled")
+    func sourceLabelIsNeverDoubled() async throws {
+        let docs = Self.fixtureDocuments()
+        let html = try String(contentsOf: try await HTMLCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options), encoding: .utf8)
+        // The HTML label carries markup, so the doubled form is `Source:</strong> Source:` —
+        // the exact shape that hid this from #960's first scan.
+        #expect(!html.contains("Source:</strong> Source:"), """
+            The preview double-labels post-1969 source notes (the stored note already \
+            leads with `Source:` and the renderer prepends its own).
+            """)
+        let docxData = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options))
+        #expect(docxData.range(of: Data("Source: Source:".utf8)) == nil, "DOCX double-labels")
+        let pdfText = try Self.pdfFullText(try await PDFCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options))
+        #expect(!pdfText.contains("Source: Source:"), "PDF double-labels")
+    }
+
+    // ── 4. PDF: no page may be blank. ──
+
+    @Test("No PDF page is empty of both text and images")
+    func noBlankPDFPages() async throws {
+        let docs = Self.fixtureDocuments()
+        let url = try await PDFCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options)
+        let pdf = try #require(PDFDocument(url: url))
+        #expect(pdf.pageCount >= 3, "the fixture should paginate; got \(pdf.pageCount) pages")
+        for i in 0..<pdf.pageCount {
+            let text = (pdf.page(at: i)?.string ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // A page whose only text is its folio is the #960 blank page. The word-cloud
+            // page is exempt: its content is an image (folio-only text is correct there),
+            // and it is page 2 by construction.
+            if i == 1 { continue }
+            #expect(text.count > 4, """
+                Page \(i + 1) is blank except its folio. The known mechanism: an overflow \
+                opens a fresh page and a whitespace-only remainder draws nothing on it \
+                (trailing newlines in the composed body).
+                """)
+        }
+    }
+
+    // ── 5. DOCX: the TOC field ships with populated cached content. ──
+
+    @Test("The DOCX TOC shows the contents without requiring a refresh")
+    func docxTOCIsPopulated() async throws {
+        let docs = Self.fixtureDocuments()
+        let docxData = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: Self.metadata, documents: docs, options: Self.options))
+        #expect(docxData.range(of: Data("Right-click to update".utf8)) == nil, """
+            The TOC field's cached content is a placeholder sentence, so every viewer \
+            that does not auto-refresh fields (Pages, Quick Look, Word before update) \
+            shows an empty contents where the preview shows the citation list. The field \
+            may stay (Word still refreshes page numbers); its cached content should be \
+            the real entries.
+            """)
+        #expect(docxData.range(of: Data("Document 931".utf8)) != nil)
+    }
+
+    // ── PDF text helper ──
+
+    private static func pdfFullText(_ url: URL) throws -> String {
+        let pdf = try #require(PDFDocument(url: url))
+        return (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+    }
+}

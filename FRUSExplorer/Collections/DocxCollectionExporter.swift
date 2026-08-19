@@ -148,7 +148,17 @@ final class DocxCollectionExporter: CollectionExporter {
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let data = buildDocx(collection: metadata, items: items, options: options)
+        let cloud: (png: Data, widthPx: Int, heightPx: Int)? = {
+            // #960: the word cloud, from the SAME call HTML and PDF make — computed here
+            // because the renderer is main-actor. Before this the option was silently
+            // ignored: a user who ticked the box got no cloud and nothing said so.
+            guard options.includeWordCloud,
+                  let rendered = WordCloudExporter.collectionCloudImage(
+                      texts: items.documents.map(\.bodyText), title: metadata.name),
+                  let png = Data(base64Encoded: rendered.pngBase64) else { return nil }
+            return (png, rendered.cgImage.width, rendered.cgImage.height)
+        }()
+        let data = buildDocx(collection: metadata, items: items, options: options, cloud: cloud)
         let filename = sanitized(metadata.name) + ".docx"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -164,29 +174,32 @@ final class DocxCollectionExporter: CollectionExporter {
     private func buildDocx(
         collection: CollectionExportMetadata,
         items: [CollectionExportItem],
-        options: CollectionExportOptions
+        options: CollectionExportOptions,
+        cloud: (png: Data, widthPx: Int, heightPx: Int)? = nil
     ) -> Data {
         let ctx = DocxRenderContext()
         let decl = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 
         let bodyXML = documentBodyXML(collection: collection, items: items,
-                                       ctx: ctx, options: options)
+                                       ctx: ctx, options: options,
+                                       wordCloudXML: cloud.map { Self.cloudDrawingXML(widthPx: $0.widthPx, heightPx: $0.heightPx) })
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        // The relationships namespace is declared ONLY when a hyperlink run exists
-        // (Phase 6 generated-block rows), so hyperlink-free document.xml bytes are
+        // The relationships namespace is declared ONLY when something references one — a
+        // hyperlink run or the word-cloud image — so a plain export's document.xml bytes are
         // unchanged from prior builds.
-        let rNSAttr = ctx.hyperlinkURLs.isEmpty
+        let rNSAttr = (ctx.hyperlinkURLs.isEmpty && cloud == nil)
             ? ""
             : " xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\""
         let docXML = "<w:document xmlns:w=\"\(wNS)\"\(rNSAttr)>\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
 
-        let entries: [ZipEntry] = [
+        var entries: [ZipEntry] = [
             ZipEntry(path: "[Content_Types].xml",
-                     data: Data((decl + contentTypesXML()).utf8)),
+                     data: Data((decl + contentTypesXML(hasWordCloud: cloud != nil)).utf8)),
             ZipEntry(path: "_rels/.rels",
                      data: Data((decl + rootRelsXML()).utf8)),
             ZipEntry(path: "word/_rels/document.xml.rels",
-                     data: Data((decl + documentRelsXML(hyperlinkURLs: ctx.hyperlinkURLs)).utf8)),
+                     data: Data((decl + documentRelsXML(hyperlinkURLs: ctx.hyperlinkURLs,
+                                                        hasWordCloud: cloud != nil)).utf8)),
             ZipEntry(path: "word/styles.xml",
                      data: Data((decl + stylesXML()).utf8)),
             ZipEntry(path: "word/document.xml",
@@ -194,18 +207,23 @@ final class DocxCollectionExporter: CollectionExporter {
             ZipEntry(path: "word/footnotes.xml",
                      data: Data((decl + footnotesPartXML(ctx.footnoteXMLs)).utf8)),
         ]
+        if let cloud {
+            entries.append(ZipEntry(path: "word/media/wordcloud.png", data: cloud.png))
+        }
         return buildZip(entries)
     }
 
     // MARK: - Open XML Parts
 
-    private func contentTypesXML() -> String {
+    private func contentTypesXML(hasWordCloud: Bool = false) -> String {
         let pfx = "http://schemas.openxmlformats.org/package/2006"
         let oxml = "application/vnd.openxmlformats-officedocument.wordprocessingml"
+        let png = hasWordCloud
+            ? "\n  <Default Extension=\"png\" ContentType=\"image/png\"/>" : ""
         return """
         <Types xmlns="\(pfx)/content-types">
           <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-          <Default Extension="xml" ContentType="application/xml"/>
+          <Default Extension="xml" ContentType="application/xml"/>\(png)
           <Override PartName="/word/document.xml"
             ContentType="\(oxml).document.main+xml"/>
           <Override PartName="/word/styles.xml"
@@ -231,7 +249,8 @@ final class DocxCollectionExporter: CollectionExporter {
     /// context (Phase 6 generated-block rows), ids `rId3`+ in first-use order — matching
     /// the ids `DocxRenderContext.hyperlinkRelId(for:)` handed out during body rendering.
     /// With no hyperlinks the output is byte-identical to the pre-Phase-6 part.
-    private func documentRelsXML(hyperlinkURLs: [String] = []) -> String {
+    private func documentRelsXML(hyperlinkURLs: [String] = [],
+                                 hasWordCloud: Bool = false) -> String {
         let pfx  = "http://schemas.openxmlformats.org/package/2006/relationships"
         let oxml = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
         var rels = """
@@ -242,6 +261,13 @@ final class DocxCollectionExporter: CollectionExporter {
         for (index, url) in hyperlinkURLs.enumerated() {
             rels += "\n  <Relationship Id=\"rId\(3 + index)\" Type=\"\(oxml)/hyperlink\" "
                 + "Target=\"\(xmlEscaped(url))\" TargetMode=\"External\"/>"
+        }
+        if hasWordCloud {
+            // A non-numeric id on purpose: hyperlink ids are handed out as rId3+ in
+            // first-use order during body rendering, so any numeric choice here could
+            // collide with a collection that has one more link than the id assumed.
+            rels += "\n  <Relationship Id=\"rIdCloud\" Type=\"\(oxml)/image\" "
+                + "Target=\"media/wordcloud.png\"/>"
         }
         rels += "\n</Relationships>"
         return rels
@@ -425,7 +451,8 @@ final class DocxCollectionExporter: CollectionExporter {
         collection: CollectionExportMetadata,
         items: [CollectionExportItem],
         ctx: DocxRenderContext,
-        options: CollectionExportOptions
+        options: CollectionExportOptions,
+        wordCloudXML: String? = nil
     ) -> String {
         var body = ""
         let documents = items.documents
@@ -478,7 +505,15 @@ final class DocxCollectionExporter: CollectionExporter {
             }
         }
         body += styledPara("Contents", styleId: "Heading2")
-        body += tocFieldXML(maxHeadingLevel: maxHeadingLevel)
+        body += tocFieldXML(maxHeadingLevel: maxHeadingLevel,
+                            cachedEntries: Self.tocCachedEntries(for: items))
+
+        // Word-cloud overview on its own page after the contents — the position the PDF
+        // gives it (page 2) and the HTML gives its figure (#960).
+        if let wordCloudXML {
+            body += "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
+            body += wordCloudXML
+        }
 
         // Page break before the composed body
         body += "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
@@ -601,7 +636,7 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
-            body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
+            body += styledPara("Source: \(escaped(SourceNoteDisplay.withoutLeadingLabel(sourceNote)))", styleId: "DocURL")
         }
 
         // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
@@ -1107,16 +1142,85 @@ final class DocxCollectionExporter: CollectionExporter {
     ///
     /// - Parameter maxHeadingLevel: The deepest clamped authored heading level in the
     ///   export (1 when the collection has no headings).
-    private func tocFieldXML(maxHeadingLevel: Int) -> String {
+    private func tocFieldXML(maxHeadingLevel: Int, cachedEntries: [String] = []) -> String {
         let range = maxHeadingLevel >= 3 ? "1-3" : "1-2"
-        return "    <w:p>\n"
+        var xml = "    <w:p>\n"
         + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"begin\" w:dirty=\"true\"/></w:r>\n"
         + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"\(range)\" \\h \\z \\u </w:instrText></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>\n"
-        + "      <w:r><w:t>Right-click to update the table of contents.</w:t></w:r>\n"
-        + "      <w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n"
+        if let first = cachedEntries.first {
+            // #960: the field's CACHED RESULT is the real contents, one paragraph per entry,
+            // so Pages, Quick Look, and Word-before-refresh show the list the preview shows.
+            // The old cached result was the sentence "Right-click to update the table of
+            // contents." — an instruction where the preview has content. `w:dirty` stays, so
+            // Word still rebuilds with page numbers on first update.
+            xml += "      <w:r><w:t xml:space=\"preserve\">\(xmlEscaped(first))</w:t></w:r>\n"
+            for entry in cachedEntries.dropFirst() {
+                xml += "    </w:p>\n    <w:p>\n"
+                + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
+                + "      <w:r><w:t xml:space=\"preserve\">\(xmlEscaped(entry))</w:t></w:r>\n"
+            }
+        } else {
+            xml += "      <w:r><w:t>This collection has no entries.</w:t></w:r>\n"
+        }
+        xml += "      <w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n"
         + "    </w:p>\n"
+        return xml
+    }
+
+    /// The cached TOC lines: numbered citations for documents (the citation-style contents
+    /// the cover and the preview both use), authored headings verbatim.
+    static func tocCachedEntries(for items: [CollectionExportItem]) -> [String] {
+        var n = 0
+        var out: [String] = []
+        for item in items {
+            switch item {
+            case .document(let doc):
+                n += 1
+                let cite = doc.citation.isEmpty ? (doc.titleOverride ?? doc.title) : doc.citation
+                out.append("\(n). \(cite)")
+            case .heading(let text, _):
+                out.append(text)
+            default:
+                break
+            }
+        }
+        return out
+    }
+
+    /// The inline-image paragraph for the word cloud, sized to the content width.
+    ///
+    /// EMUs: 914,400 per inch; the renderer draws at scale 2 over a 96-dpi logical size, so
+    /// one pixel is 9,525/2 EMU. Width is capped at 6.5" (5,943,600 EMU) preserving aspect —
+    /// the letter-page content width the styles assume.
+    static func cloudDrawingXML(widthPx: Int, heightPx: Int) -> String {
+        var cx = widthPx * 9525 / 2
+        var cy = heightPx * 9525 / 2
+        let maxCX = 5_943_600
+        if cx > maxCX {
+            cy = cy * maxCX / cx
+            cx = maxCX
+        }
+        let wp = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+        let a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+        let pic = "http://schemas.openxmlformats.org/drawingml/2006/picture"
+        return "    <w:p><w:r><w:drawing>\n"
+        + "      <wp:inline xmlns:wp=\"\(wp)\" distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\">\n"
+        + "        <wp:extent cx=\"\(cx)\" cy=\"\(cy)\"/>\n"
+        + "        <wp:docPr id=\"1001\" name=\"Word cloud\" descr=\"Word cloud of the most frequent terms in this collection\"/>\n"
+        + "        <a:graphic xmlns:a=\"\(a)\">\n"
+        + "          <a:graphicData uri=\"\(pic)\">\n"
+        + "            <pic:pic xmlns:pic=\"\(pic)\">\n"
+        + "              <pic:nvPicPr><pic:cNvPr id=\"1001\" name=\"wordcloud.png\"/><pic:cNvPicPr/></pic:nvPicPr>\n"
+        + "              <pic:blipFill><a:blip r:embed=\"rIdCloud\"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>\n"
+        + "              <pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"\(cx)\" cy=\"\(cy)\"/></a:xfrm>\n"
+        + "                <a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr>\n"
+        + "            </pic:pic>\n"
+        + "          </a:graphicData>\n"
+        + "        </a:graphic>\n"
+        + "      </wp:inline>\n"
+        + "    </w:drawing></w:r></w:p>\n"
     }
 
     // MARK: - XML Element Helpers

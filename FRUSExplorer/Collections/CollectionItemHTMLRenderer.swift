@@ -316,7 +316,8 @@ struct CollectionItemHTMLRenderer {
 
         // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
-            body += "  <p class=\"source-note\"><strong>Source:</strong> \(escaped(sourceNote))</p>\n"
+            body += "  <p class=\"source-note\"><strong>Source:</strong> "
+                + "\(escaped(SourceNoteDisplay.withoutLeadingLabel(sourceNote)))</p>\n"
         }
 
         // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
