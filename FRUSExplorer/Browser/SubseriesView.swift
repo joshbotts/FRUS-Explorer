@@ -128,6 +128,13 @@ private struct SubseriesStatsView: View {
                         label: String(localized: "browser.subseries.partial", defaultValue: "Partial")
                     )
                 }
+                if group.sideloadedCount > 0 {
+                    StatPill(
+                        value: "\(group.sideloadedCount)",
+                        label: String(localized: "browser.subseries.sideloaded",
+                                      defaultValue: "Side-loaded")
+                    )
+                }
                 if group.plannedCount > 0 {
                     StatPill(
                         value: "\(group.plannedCount)",
@@ -357,6 +364,16 @@ struct VolumeRowLabel: View {
                 if volume.status == .partiallyPublished {
                     Text(String(localized: "browser.volume.partial", defaultValue: "Partial"))
                         .foregroundStyle(.orange)
+                }
+                // #777: the row says on-screen what only the remove dialog said before. The
+                // reader who added the file knows; the reader on the SAME iCloud account who
+                // opens Browse a week later does not.
+                if volume.provenance == .sideloaded {
+                    Text(String(localized: "browser.volume.sideloaded",
+                                defaultValue: "Side-loaded"))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 5)
+                        .background(.quaternary, in: Capsule())
                 }
                 if volume.status == .planned {
                     Text(String(localized: "browser.volume.planned", defaultValue: "Planned"))
