@@ -2992,11 +2992,11 @@ No archival units resolved in this era under the current unit and weight.
 
 #### The caveat block — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1486 | key: archival.caveats.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1486 | key: archival.caveats.measured -->
 
-About these figures
+Measured here
 
-<!-- END SOURCE: archival.caveats.title -->
+<!-- END SOURCE: archival.caveats.measured -->
 
 ---
 
@@ -3316,21 +3316,21 @@ No cross-reference runs between %1$@ and another collection in this direction. T
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 665 | key: archival.flows.caveats.body.v2 %lld %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 665 | key: archival.flows.caveats.body.v3 %lld %lld %lld %lld -->
 
 Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld volumes in the series contribute a single reference. The cross-reference style these come from postdates 1945. The figures cover the whole series whatever you have downloaded, but they carry no dates. The stored data is a pair of archival units and a count, with no volume or year attached. So you cannot narrow this mode to a period. Central-file classes are left out on purpose. Across the whole series they carry %3$lld references over %4$lld pairs, which is under two per pair. That is too thin to rank, and there are no labels to rank it with.
 
-<!-- END SOURCE: archival.flows.caveats.body.v2 %lld %lld %lld %lld -->
+<!-- END SOURCE: archival.flows.caveats.body.v3 %lld %lld %lld %lld -->
 
 ---
 
 #### The caveat block — why you cannot browse the citations
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 684–685 | key: archival.flows.caveats.browse -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.browse.detail -->
 
 You cannot browse the individual citations here. The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.
 
-<!-- END SOURCE: archival.flows.caveats.browse -->
+<!-- END SOURCE: archival.info.flows.browse.detail -->
 
 ---
 
@@ -3442,11 +3442,11 @@ Which collections' footnotes send you here
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 620 | key: archival.flows.caveats.unprinted.scope %lld %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 620 | key: archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld -->
 
 This layer reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so the earlier volumes are almost absent here even though their footnotes are full of archival citations. Those earlier citations give a file number in the central files, which this measure does not yet read. %1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series.
 
-<!-- END SOURCE: archival.flows.caveats.unprinted.scope %lld %lld %lld %lld -->
+<!-- END SOURCE: archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld -->
 
 ---
 
@@ -3466,21 +3466,21 @@ The volumes contributing here cover %1$lld to %2$lld.
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 637 | key: archival.flows.caveats.unprinted.ibid %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 637 | key: archival.flows.caveats.unprinted.ibid.v2 %@ -->
 
 %@ of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation.
 
-<!-- END SOURCE: archival.flows.caveats.unprinted.ibid %@ -->
+<!-- END SOURCE: archival.flows.caveats.unprinted.ibid.v2 %@ -->
 
 ---
 
 #### Unprinted material — what a ribbon claims
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 643–644 | key: archival.flows.caveats.unprinted.claim -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.scope.detail -->
 
 A ribbon says the editors, working on material from one collection, told the reader that something they did not print is in another. It does not say the two archives refer to each other, and it is not a count of documents held anywhere.
 
-<!-- END SOURCE: archival.flows.caveats.unprinted.claim -->
+<!-- END SOURCE: archival.info.flows.scope.detail -->
 
 ---
 
@@ -5321,11 +5321,11 @@ Digitized Scans
 <!-- Added by #831's measurement. The numbers are literal because the artifact does not carry this
      axis: the measurement found it too concentrated to draw. If it is ever regenerated with a
      mixed axis, these figures must be re-measured or removed — they are not read from data. -->
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | key: archival.flows.caveats.mixed -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.mixed.detail -->
 
 Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram above.
 
-<!-- END SOURCE: archival.flows.caveats.mixed -->
+<!-- END SOURCE: archival.info.flows.mixed.detail -->
 
 
 ### Cross-Reference Graph — unprinted archival material (#837)

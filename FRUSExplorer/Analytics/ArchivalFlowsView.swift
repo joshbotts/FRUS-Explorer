@@ -613,12 +613,15 @@ struct ArchivalFlowsView: View {
     private func unprintedCaveats(_ data: ArchivalFlowsData,
                                   facts: ArchivalFlowsData.ExternalFacts) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
+            // #838(1): the rules moved to the ⓘ popover; what stays is measured, so the heading
+            // says so. A section headed "About these figures" over three numbers reads like the
+            // method is here when the method is one tap away.
+            Text(String(localized: "archival.caveats.measured", defaultValue: "Measured here"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(String(format: String(
-                localized: "archival.flows.caveats.unprinted.scope %lld %lld %lld %lld",
-                defaultValue: "This layer reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so the earlier volumes are almost absent here even though their footnotes are full of archival citations. Those earlier citations give a file number in the central files, which this measure does not yet read. %1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series."),
+                localized: "archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld",
+                defaultValue: "%1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series. What this layer reads, and why the earlier volumes are nearly absent, is in the ⓘ."),
                 Int64(facts.referencesFound), Int64(facts.referencesJoined),
                 Int64(data.volumesWithEdges), Int64(data.volumesScanned)))
                 .font(.footnote.weight(.medium))
@@ -634,14 +637,12 @@ struct ArchivalFlowsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(format: String(
-                localized: "archival.flows.caveats.unprinted.ibid %@",
-                defaultValue: "%@ of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation."),
+                localized: "archival.flows.caveats.unprinted.ibid.v2 %@",
+                defaultValue: "%@ of these citations come from an “Ibid.”, which the app follows back — a reading rather than a quotation, explained in the ⓘ."),
                 facts.inheritedShare.formatted(.percent.precision(.fractionLength(1)))))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(String(localized: "archival.flows.caveats.unprinted.claim",
-                        defaultValue: "A ribbon says the editors, working on material from one collection, told the reader that something they did not print is in another. It does not say the two archives refer to each other, and it is not a count of documents held anywhere."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -651,7 +652,10 @@ struct ArchivalFlowsView: View {
 
     private func printedCaveats(_ data: ArchivalFlowsData) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
+            // #838(1): the rules moved to the ⓘ popover; what stays is measured, so the heading
+            // says so. A section headed "About these figures" over three numbers reads like the
+            // method is here when the method is one tap away.
+            Text(String(localized: "archival.caveats.measured", defaultValue: "Measured here"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(String(format: String(
@@ -662,8 +666,8 @@ struct ArchivalFlowsView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
-                localized: "archival.flows.caveats.body.v2 %lld %lld %lld %lld",
-                defaultValue: "Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld volumes in the series contribute a single reference. The cross-reference style these come from postdates 1945. The figures cover the whole series whatever you have downloaded, but they carry no dates. The stored data is a pair of archival units and a count, with no volume or year attached. So you cannot narrow this mode to a period. Central-file classes are left out on purpose. Across the whole series they carry %3$lld references over %4$lld pairs, which is under two per pair. That is too thin to rank, and there are no labels to rank it with."),
+                localized: "archival.flows.caveats.body.v3 %lld %lld %lld %lld",
+                defaultValue: "Only %1$lld of the %2$lld volumes in the series contribute a single reference — the gap is itself a finding. The central-file classes left out of the diagrams carry %3$lld references over %4$lld pairs. These figures cover the whole series whatever you have downloaded, and carry no dates, so this mode cannot be narrowed to a period."),
                 Int64(data.volumesWithEdges), Int64(data.volumesScanned),
                 Int64(data.classBetweenReferences), Int64(data.classBetweenPairs)))
                 .font(.footnote)
@@ -676,13 +680,9 @@ struct ArchivalFlowsView: View {
             // diagram would draw two moments and call them a pattern. Stated as a sentence
             // instead, which is what the measurement supports. Numbers are literal because the
             // artifact does not carry this axis — deliberately; see the issue.
-            Text(String(localized: "archival.flows.caveats.mixed",
-                        defaultValue: "Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram above."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(String(localized: "archival.flows.caveats.browse",
-                        defaultValue: "You cannot browse the individual citations here. The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

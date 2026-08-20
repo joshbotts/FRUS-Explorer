@@ -47,6 +47,11 @@ struct ArchivalCopyRulesTests {
         // artboard-derived strings wherever they ship.
         "SourceExplorer/SourceExplorerView.swift",
         "SourceExplorer/MacSourceExplorerView.swift",
+        // #838 item 4: the archival popover copy lives here, not in the Analytics family, and the
+        // rule is about artboard-derived strings wherever they ship. Its absence is why `centre`
+        // shipped in `archival.info.method.title` while this suite stayed green — the guard was
+        // reading every file the copy came from EXCEPT the one the consolidation moved it into.
+        "Theme/FRUSTheme.swift",
     ]
 
     private static func source(_ relative: String) throws -> String {
@@ -123,8 +128,12 @@ struct ArchivalCopyRulesTests {
         // `defaultValue: "Digitised Scans"` strings walked past it, and adding the files that
         // hold them to `sources` would STILL have left the suite green. A guard whose coverage
         // depends on which capitalisations someone remembered is not a guard.
+        // "neighbour" singular was missing while "neighbours" was present, so
+        // `ArchivalNetworkView`'s "neighbourhood" walked past — the same
+        // which-variant-did-someone-remember failure the paragraph above describes, one word later.
+        // Matching the stem covers the plural, the possessive and the compound at once.
         let banned = ["coloured", "recognises", "recognise", "digitised", "digitise",
-                      "organise", "organised", "neighbours", "behaviour", "centre",
+                      "organise", "organised", "neighbour", "behaviour", "centre",
                       "colour"]
         for relative in Self.sources {
             for text in Self.shippedStrings(in: try Self.source(relative)) {

@@ -431,6 +431,7 @@ struct ArchivalAnalyticsView: View {
     @ViewBuilder
     private var networkMode: some View {
         if let collections = CollectionAuthorityStore.shared?.collections, !collections.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
             ArchivalNetworkView(
                 collections: collections,
                 indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
@@ -440,6 +441,9 @@ struct ArchivalAnalyticsView: View {
                 initialFocusId: initialFocusId,
                 onOpenClassNeighbors: { openClassNeighbors($0) },
                 onExport: { deliver($0) })
+            // #838(3): the one bottom line naming where the method lives, per mode.
+            methodPointer
+            }
         } else {
             unavailableState(String(localized: "archival.network.unavailable",
                                     defaultValue: "The bundled collection authority is unavailable in this build, so the network cannot be drawn."))
@@ -452,6 +456,7 @@ struct ArchivalAnalyticsView: View {
     private var flowsMode: some View {
         if let index = ProvenanceFlowIndexStore.shared,
            let authority = CollectionAuthorityStore.shared {
+            VStack(alignment: .leading, spacing: 12) {
             ArchivalFlowsView(index: index,
                               externalIndex: ExternalCitationIndexStore.shared,
                               entriesById: manifestEntriesById,
@@ -460,6 +465,9 @@ struct ArchivalAnalyticsView: View {
                               onOpenNeighbors: { openNeighbors(for: $0) },
                               indexedVolumeCount: appState?.indexedVolumeIds.count ?? 0,
                               onExport: { deliver($0) })
+            // #838(3): as above — the mode ends by pointing at the ⓘ.
+            methodPointer
+            }
         } else {
             unavailableState(String(localized: "archival.flows.unavailable",
                                     defaultValue: "The bundled reference-flow index is unavailable in this build, so hand-offs cannot be shown. This is not the same as the series having none."))
@@ -701,8 +709,11 @@ struct ArchivalAnalyticsView: View {
                 hidesUmbrella.toggle()
             } label: {
                 chipLabel(systemImage: hidesUmbrella ? "eye.slash" : "eye",
+                          // #838(4): "Central Files", not "Central Files umbrella" — the chip's
+                          // VALUE already reads Hidden/Shown, so "umbrella" named an internal
+                          // concept (the aggregate record) rather than anything on screen.
                           caption: String(localized: "archival.filter.umbrella",
-                                          defaultValue: "Central Files umbrella"),
+                                          defaultValue: "Central Files"),
                           value: hidesUmbrella
                               ? String(localized: "archival.filter.umbrella.hidden", defaultValue: "Hidden")
                               : String(localized: "archival.filter.umbrella.shown", defaultValue: "Shown"),
@@ -943,6 +954,14 @@ struct ArchivalAnalyticsView: View {
                                 HStack(alignment: .firstTextBaseline) {
                                     Text(leaf.key)
                                         .font(.caption.monospaced())
+                                    // #838(6): a leaf is one file, and the row is otherwise a bare
+                                    // designator that reads like another grouping. The family
+                                    // header above already counts "N in family", so this says what
+                                    // the row itself IS rather than repeating the count.
+                                    Text(String(localized: "archival.families.leaf",
+                                                defaultValue: "single file"))
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
                                     Spacer(minLength: 12)
                                     // The weight's own unit. Under Documents the leaves sum to
                                     // the bar; under Volumes they do NOT, and must not be added:
@@ -1244,6 +1263,8 @@ struct ArchivalAnalyticsView: View {
                 libraryBandsCard(profile)
                 libraryCollectionsCard(profile)
                 libraryFooter(profile)
+                // #838(3): every mode ends with the one line that says where the method is.
+                methodPointer
             }
         } else {
             loadingState(String(localized: "archival.library.loading",
@@ -1483,19 +1504,19 @@ struct ArchivalAnalyticsView: View {
         let indexed = appState?.indexedVolumeIds.count ?? profile.volumeCount
         let total = corpusVolumeCount
         return VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "archival.caveats.title", defaultValue: "About these figures"))
+            Text(String(localized: "archival.caveats.measured", defaultValue: "Measured here"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(String(format: String(
                 localized: "archival.library.footer %lld %lld",
-                defaultValue: "Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series. Index more and these charts change with you. The Collections mode is different: it does not depend on what you have downloaded."),
+                defaultValue: "Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series."),
                 Int64(indexed), Int64(max(total - indexed, 0))))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.library.footer.detail %lld %lld",
-                defaultValue: "A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognize."),
+                defaultValue: "%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app's authority list does not recognize."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)))
                 .font(.footnote)

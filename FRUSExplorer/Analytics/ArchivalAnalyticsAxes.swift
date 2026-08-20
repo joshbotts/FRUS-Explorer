@@ -154,8 +154,10 @@ enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
             return String(localized: "archival.umbrella.decimal",
                           defaultValue: "Decimal classes")
         case .subjectNumeric:
+            // #838(5): "families", matching the rows themselves ("Inside these families",
+            // "%lld in family"). The control named one thing and the content another.
             return String(localized: "archival.umbrella.subjectNumeric",
-                          defaultValue: "Subject-numeric groups")
+                          defaultValue: "Subject-numeric families")
         }
     }
 }
