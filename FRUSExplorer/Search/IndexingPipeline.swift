@@ -735,7 +735,15 @@ public actor IndexingPipeline {
     ///   mangled series/file fragment (`foldered material]`) that reached the Sources &
     ///   Archives block of every export format. Field-only: zero classification moves by
     ///   positional diff; the stored `series_name`/file fragments for those six change.
-    public static let currentDateIndexVersion: Int = 44
+    /// - v44→45 — #965: `document_cache.despatch_serial`, the pre-1906 despatch/instruction
+    ///   serial a post gave its own outgoing correspondence, read from the
+    ///   `<seg rendition="#left">No. 74.]</seg>` FRUS prints above the text. Additive: the column
+    ///   is `ALTER TABLE ADD COLUMN` (not the drop-and-recreate `volume_sources` uses — this table
+    ///   holds USER content in `summary_text`/`note_text`, which a drop would destroy), and no
+    ///   existing column's value changes. Populated for **3,838 of 38,363 pre-1906 documents**,
+    ///   which is 10.0% of that era and 1.2% of the corpus; every one of them displays no archival
+    ///   attribution at all today. Empty on an existing index until each volume is re-parsed.
+    public static let currentDateIndexVersion: Int = 45
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -2149,6 +2157,29 @@ public actor IndexingPipeline {
     /// if the volume has not been indexed (or was indexed before the
     /// `volume_structures` table existed — the Browser then falls back to parsing
     /// the volume XML on demand, exactly as before).
+    /// The pre-1906 despatch/instruction serial stored for a document, or `nil` (#965).
+    ///
+    /// The number the sending post gave its own outgoing correspondence, printed by FRUS above the
+    /// document. Source Explorer shows it beside the digitised rolls it resolves for pre-1906
+    /// documents, because the rolls are browsed by eye and this is the mark a reader looks for on
+    /// the images — a second handle alongside the date, and often a sharper one.
+    ///
+    /// **Not an archival identifier.** A serial resolves to no NAID and no catalogue record; it
+    /// locates a document *within* a post's series. Everything that renders it has to say so.
+    ///
+    /// Returns `nil` for the overwhelming majority of the corpus — the serial is a pre-decimal-file
+    /// convention — and also on an index built before v45, where the column exists but is empty
+    /// until each volume is re-parsed.
+    public func despatchSerial(volumeId: String, documentId: String) throws -> String? {
+        let stmt = try auxPrepare(
+            "SELECT despatch_serial FROM document_cache WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return auxColumnString(stmt, 0)
+    }
+
     public func cachedVolumeStructure(forVolumeId volumeId: String) throws -> VolumeStructure? {
         let stmt = try auxPrepare(
             "SELECT structure_json FROM volume_structures WHERE volume_id = ?")
@@ -3804,6 +3835,10 @@ public actor IndexingPipeline {
             let header     = Self.extractHeader(from: astDoc.nodes)
             let dateline   = Self.extractDateline(from: astDoc.nodes)
             let sourceNote = Self.extractSourceNote(from: astDoc.nodes)
+            // #965: pre-1906 only in practice — the serial is a pre-decimal-file convention, so
+            // this returns nil for the overwhelming majority of the corpus at the cost of one
+            // traversal that stops at the first accepted segment.
+            let despatchSerial = Self.extractDespatchSerial(from: astDoc.nodes)
             let bodyText   = Self.extractBodyText(from: astDoc.nodes)
             // Prefer the canonical history.state.gov document number — the div's `@n`,
             // present for every document including early-volume ones unnumbered in print —
@@ -3869,7 +3904,8 @@ public actor IndexingPipeline {
                 bodyText: bodyText, subjectTagIds: nil,
                 userTagIds: nil, summaryText: nil, noteText: nil,
                 isEditorialNote: isEditorialNote,
-                isFrontMatter: astDoc.isFrontMatter
+                isFrontMatter: astDoc.isFrontMatter,
+                despatchSerial: despatchSerial
             ))
         }
 
@@ -4321,6 +4357,37 @@ public actor IndexingPipeline {
     /// where the *source-note* chain looks, this searches the whole subtree: a note carrying a
     /// source segment at any depth is provenance, not an editorial annotation, and the generator's
     /// XML pass sees it wherever it sits.
+    /// The document's own pre-1906 despatch/instruction serial, or `nil` (#965).
+    ///
+    /// FRUS prints it in a `<seg rendition="#left">No. 74.]</seg>` above the text — the number the
+    /// sending post gave its outgoing correspondence. **No TEI parser change was needed**: `<seg>`
+    /// is already preserved as `.unknown("seg", …)`, the same route `segSourceText` takes, so this
+    /// mirrors that traversal rather than adding a typed case.
+    ///
+    /// Takes the FIRST segment the grammar accepts, in document order, because the printed serial
+    /// sits above the body while a document's enclosures carry their own markers further down.
+    /// Those markers are refused by `DespatchSerialGrammar` rather than by position — 17,078 of
+    /// them corpus-wide name a serial belonging to the despatch the enclosure travelled in, and
+    /// attributing one to the carrying document would be wrong every time.
+    nonisolated static func extractDespatchSerial(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            if case .unknown(let name, _, let children) = node, name == "seg" {
+                let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                if let serial = DespatchSerialGrammar.serial(inSegment: text) {
+                    // Stored as the reader would quote it: the number with its half-step and
+                    // letter, and the series qualifier when the post kept more than one sequence
+                    // (a bare "4" is ambiguous across a Greek and a Diplomatic series).
+                    if let qualifier = serial.qualifier {
+                        return "\(serial.displayNumber) (\(qualifier))"
+                    }
+                    return serial.displayNumber
+                }
+            }
+            if let found = extractDespatchSerial(from: node.children) { return found }
+        }
+        return nil
+    }
+
     nonisolated static func segSourceText(inAnyDescendantOf nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             if case .unknown(let name, let attrs, let children) = node,
@@ -5108,6 +5175,7 @@ public actor IndexingPipeline {
                 note_text TEXT,
                 is_editorial_note INTEGER NOT NULL DEFAULT 0,
                 is_front_matter   INTEGER NOT NULL DEFAULT 0,
+                despatch_serial   TEXT,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
@@ -5115,6 +5183,12 @@ public actor IndexingPipeline {
         try? exec("ALTER TABLE document_cache ADD COLUMN is_editorial_note INTEGER NOT NULL DEFAULT 0")
         // Idempotent migration for databases that predate Session 2026-06-08 (front matter scope).
         try? exec("ALTER TABLE document_cache ADD COLUMN is_front_matter INTEGER NOT NULL DEFAULT 0")
+        // #965: the pre-1906 despatch serial. `ADD COLUMN` and NOT the drop-and-recreate guard
+        // `volume_sources` uses — this table is keyed (volume_id, document_id) and needs no key
+        // change, so the additive migration works on an existing database. It is also the safer
+        // shape here: `document_cache` rows carry USER content (summary_text, note_text) that a
+        // drop would destroy, which is why this table never took that pattern.
+        try? exec("ALTER TABLE document_cache ADD COLUMN despatch_serial TEXT")
         try exec("""
             CREATE TABLE IF NOT EXISTS person_mentions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -5511,8 +5585,8 @@ public actor IndexingPipeline {
         INSERT INTO document_cache
         (volume_id, document_id, document_number, header, dateline, source_note, body_text,
          subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
-         is_front_matter)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         is_front_matter, despatch_serial)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(volume_id, document_id) DO UPDATE SET
           document_number   = excluded.document_number,
           header            = excluded.header,
@@ -5521,7 +5595,8 @@ public actor IndexingPipeline {
           body_text         = excluded.body_text,
           subject_tag_ids   = excluded.subject_tag_ids,
           is_editorial_note = excluded.is_editorial_note,
-          is_front_matter   = excluded.is_front_matter
+          is_front_matter   = excluded.is_front_matter,
+          despatch_serial   = excluded.despatch_serial
         """
 
     private func auxInsertDocumentCache(_ rows: [DocumentCacheRow]) throws {
@@ -5561,6 +5636,7 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 11, row.noteText)
                 sqlite3_bind_int(stmt, 12, row.isEditorialNote ? 1 : 0)
                 sqlite3_bind_int(stmt, 13, row.isFrontMatter  ? 1 : 0)
+                auxBindOptional(stmt, 14, row.despatchSerial)
                 try auxStep(stmt)
             }
         }
@@ -8270,7 +8346,7 @@ public actor IndexingPipeline {
         let sql = """
             SELECT document_number, header, dateline, source_note, body_text,
                    subject_tag_ids, user_tag_ids, summary_text, note_text,
-                   is_editorial_note, is_front_matter
+                   is_editorial_note, is_front_matter, despatch_serial
             FROM document_cache WHERE volume_id = ? AND document_id = ?
             """
         let stmt = try auxPrepare(sql)
@@ -8290,7 +8366,8 @@ public actor IndexingPipeline {
             summaryText: auxColumnString(stmt, 7),
             noteText: auxColumnString(stmt, 8),
             isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
-            isFrontMatter:   sqlite3_column_int(stmt, 10) != 0
+            isFrontMatter:   sqlite3_column_int(stmt, 10) != 0,
+            despatchSerial:  auxColumnString(stmt, 11)
         )
     }
 
@@ -9077,6 +9154,10 @@ struct DocumentCacheRow: Sendable {
     /// `true` when the document was promoted from a prose-only front-matter structural
     /// section (preface, introduction, prefatoryNote, terms, etc.).
     let isFrontMatter: Bool
+    /// The pre-1906 despatch/instruction serial printed above the document (#965), as the post
+    /// numbered it — `74`, `25½`, `4 (Greek Series)`. `nil` for every document that prints none,
+    /// which is the overwhelming majority: the serial is a pre-decimal-file convention.
+    let despatchSerial: String?
 }
 
 // MARK: - FRUSASTNode Extensions

@@ -120,6 +120,9 @@ struct SourceExplorerView: View {
     /// True while the related-documents query is running.
     @State private var relatedLoading: Bool = false
 
+    /// The document's own despatch serial (#965), shown with the rolls it helps browse.
+    @State private var despatchSerial: String? = nil
+
     /// Pre-1906 country-series classifications + the rolls each resolves to (Phase 2).
     @State private var countryResolutions: [CountrySeriesResolution] = []
 
@@ -858,6 +861,13 @@ struct SourceExplorerView: View {
     /// bundled index. Populates `countryResolutions`; a no-op when inputs are missing or
     /// the document is 1906 or later (handled by the Numerical File / decimal paths).
     private func resolveCountrySeries() async {
+        // Cleared BEFORE the guards, not after them. Every `return` below is an early exit for a
+        // document this section does not describe — post-1906, no dateline, no structure — and
+        // assigning only on success leaves the PREVIOUS document's rolls and serial on screen in
+        // any host that keeps this view alive. That is the latent bug the `.task(id:)` keying was
+        // chosen to avoid; clearing here closes it at the source rather than relying on the host.
+        countryResolutions = []
+        despatchSerial = nil
         guard let dateline = documentDateline,
               let year = documentYear, year < 1906,
               let index = CentralFilesIndexStore.shared else { return }
@@ -887,6 +897,11 @@ struct SourceExplorerView: View {
             }
         }
         countryResolutions = resolutions
+        // Fetched here rather than threaded through the snapshot types: this method already runs
+        // only for pre-1906 documents and already holds the pipeline, volume id and document id.
+        if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId {
+            despatchSerial = try? await pipeline.despatchSerial(volumeId: volumeId, documentId: docId)
+        }
     }
 
     @ViewBuilder
@@ -896,6 +911,27 @@ struct SourceExplorerView: View {
                         defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document's date."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                if let serial = despatchSerial {
+                    // #965. Placed INSIDE the roll section deliberately: the serial is not an
+                    // archival identifier and resolves to no catalogue record, so shown beside the
+                    // resolved NARA rows above it would read as a resolution it cannot make. Here
+                    // it is what it actually is — the mark to look for while browsing the images.
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label {
+                            Text(String(format: String(
+                                localized: "source.explorer.countrySeries.serial %@",
+                                defaultValue: "Despatch No. %@"), serial))
+                                .font(.callout.weight(.semibold))
+                        } icon: {
+                            Image(systemName: "number").foregroundStyle(.secondary)
+                        }
+                        Text(String(localized: "source.explorer.countrySeries.serial.caption",
+                                    defaultValue: "FRUS prints this number above the document — the post's own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
             ForEach(countryResolutions) { resolution in
                 let c = resolution.classification
                 VStack(alignment: .leading, spacing: 4) {
