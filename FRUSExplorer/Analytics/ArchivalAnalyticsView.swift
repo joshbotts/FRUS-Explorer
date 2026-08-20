@@ -647,6 +647,29 @@ struct ArchivalAnalyticsView: View {
     }
 
     /// The era / units / weight controls, wrapped so they stack on a narrow window.
+    ///
+    /// **#838 item 4, RATIFIED: Menu chips, not a segmented control.** The handoff drew
+    /// `Documents | Volumes | Unprinted pointers` as a three-segment control at iPad width and
+    /// asked for the iPhone fallback to be decided once rather than per session. It is decided
+    /// here, and the implementation already embodies it: every filter is a `Menu` chip showing
+    /// caption + current value, and `ViewThatFits` drops them from a row to a stack when the width
+    /// runs out. So the third segment's long label never has to fit a segment — it is a menu row,
+    /// where it can be as long as it needs to be.
+    ///
+    /// The two alternatives were worse in ways specific to this control. Shortened labels would
+    /// have to shorten "Unprinted pointers", and every shortening tested reads as something else
+    /// ("Pointers" loses that they are unprinted; "Unprinted" loses that they are pointers, which
+    /// is the whole distinction #784 exists to draw). A `ViewThatFits` between a segmented control
+    /// and a Menu would ship two different controls for one setting, so a reader moving between
+    /// iPhone and iPad would learn the surface twice.
+    ///
+    /// There is precedent in this very view, found while ratifying: the four-segment MODE picker
+    /// is already `.segmented` on a regular width and `.menu` on a compact one (`:395-401`). So
+    /// "a menu when the width runs out" is the surface's established answer, and the filter row
+    /// reaches it by a different route — chips that restack — rather than by a second rule.
+    ///
+    /// Pinned by `ArchivalCopyRulesTests.countByIsAMenuChipNotASegmentedControl`, which permits
+    /// the mode picker's segmented style by name and forbids any other.
     private func filterRow(data: ArchivalCollectionsData) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 8) { scopeControls; filterChips(data: data); Spacer(minLength: 0) }

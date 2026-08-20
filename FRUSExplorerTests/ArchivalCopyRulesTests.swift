@@ -193,4 +193,75 @@ struct ArchivalCopyRulesTests {
             Removing it from the page without it landing in the popover would delete it.
             """)
     }
+
+    // MARK: - The two ratified exceptions (#838 items 2 and 4)
+
+    /// Flows keeps a two-sentence on-page intro, against the handoff's one-line rule.
+    ///
+    /// Ratified rather than conformed, because the misreading it prevents — that a ribbon shows a
+    /// relationship between archives, when it shows where an editor sent a reader — happens before
+    /// a reader has any reason to open a popover. This test exists so that a later "make every mode
+    /// conform" pass has to change the decision rather than quietly delete the sentences: without
+    /// it, the intro is exactly the kind of on-page prose such a pass is meant to remove.
+    @Test("Flows keeps its ratified two-sentence intro")
+    func flowsKeepsItsRatifiedTwoSentenceIntro() throws {
+        let flows = try Self.source("Analytics/ArchivalFlowsView.swift")
+        #expect(flows.contains("archival.flows.intro"),
+                "the printed-layer intro is the ratified exception; it may not be dropped silently")
+        #expect(flows.contains("archival.flows.intro.unprinted"),
+                "the unprinted layer needs its own intro — \"unprinted material\" is undefined without it")
+        // Two sentences, not one: the count IS the exception, so a quiet trim to one line must fail.
+        for key in ["archival.flows.intro", "archival.flows.intro.unprinted"] {
+            let value = try #require(Self.defaultValue(forKey: key, in: flows),
+                                     "\(key) has no defaultValue to read")
+            #expect(value.filter { $0 == "." }.count >= 2, """
+                \(key) is down to one sentence. The ratified exception is TWO — one saying what \
+                the editors did, one saying what the totals therefore mean. If this was a \
+                deliberate change, change the ratification in `ArchivalFlowsView.intro` too.
+                """)
+        }
+    }
+
+    /// `Count by` is a Menu chip, never a segmented control.
+    ///
+    /// The handoff drew three segments at iPad width; the third label ("Unprinted pointers") does
+    /// not fit an iPhone segment, and every shortening of it loses half the distinction #784 draws.
+    /// A `Picker` with `.segmented` style anywhere in the filter row would reintroduce that.
+    @Test("Count by is a Menu chip, not a segmented control")
+    func countByIsAMenuChipNotASegmentedControl() throws {
+        let view = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        #expect(view.contains("archival.filter.weight"), "fixture guard: the control must exist")
+        // The weight control is a Menu chip: its label is `chipLabel`, the same as every sibling
+        // filter. A first version of this test forbade `.pickerStyle(.segmented)` ANYWHERE in the
+        // file and failed — correctly, because the four-segment MODE picker is segmented and is
+        // meant to be. Scoping matters: the claim is about this control, not about the file.
+        // Matched as a CALL, not through a character window. A 700-character window failed here
+        // because a long explanatory comment sits between the `Picker` and its `chipLabel` — the
+        // documented hazard of raw-text windows: they measure prose, not code.
+        #expect(view.contains(#"caption: String(localized: "archival.filter.weight""#),
+                "Count by must render through chipLabel — i.e. as a Menu chip, not a segment")
+        // The only segmented picker permitted here is the mode picker, and even that falls back to
+        // `.menu` on a compact width — which is the app's own precedent for the ratified decision.
+        let segmented = view.components(separatedBy: ".pickerStyle(.segmented)").count - 1
+        let modeSegmented = view.components(separatedBy: "modePicker.pickerStyle(.segmented)").count - 1
+        #expect(segmented == modeSegmented, """
+            A segmented picker other than the mode picker is back in the archival filters. \
+            "Unprinted pointers" does not fit an iPhone-width segment, and #838 item 4 ratified \
+            Menu chips + ViewThatFits precisely so the long label never has to.
+            """)
+        #expect(view.contains("modePicker.pickerStyle(.menu)"),
+                "the mode picker's own compact fallback is the precedent this decision rests on")
+        #expect(view.contains("ViewThatFits(in: .horizontal)"),
+                "the row must still fall back to a stack rather than truncating on a narrow width")
+    }
+
+    /// The `defaultValue:` of a `String(localized:)` whose key is `key`, or `nil`.
+    private static func defaultValue(forKey key: String, in source: String) -> String? {
+        guard let keyRange = source.range(of: "\"\(key)\"") else { return nil }
+        let rest = source[keyRange.upperBound...]
+        guard let marker = rest.range(of: "defaultValue: \"") else { return nil }
+        let after = rest[marker.upperBound...]
+        guard let close = after.firstIndex(of: "\"") else { return nil }
+        return String(after[..<close])
+    }
 }
