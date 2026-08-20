@@ -7835,3 +7835,67 @@ with a NAID **931 → 1,018** (exactly +87); `lot-claimants-index.json` divided 
 a creator **622 → 695**. `collection-usage-index.json` came out **byte-identical**, which is the
 right answer and worth stating: the supplement adds resolutions, not coverage — those documents
 were always attributed to their lots, they simply had no NARA record to point at.
+
+## Session 2026-08-20 — #235: the NARA lookup answers before it asks for a key
+
+Selecting `Lot 60 D 224` in a document body used to open a sheet defaulted to `.keywordRG59`, with
+an empty candidate list and a "NARA Catalog API Key Required" prompt — for a lot the app has
+shipped a NARA record for since #352, and could have answered instantly from its own bundle.
+
+**Three deliverables, and the one that was mis-scoped.** The audit's plan was: widen the selection
+context, characterise it, resolve offline, pre-select the strategy. The characterisation half was
+scoped around `SourceNoteParser.extractCitations` — and that is **anchored on a repository phrase**
+(`National Archives, RG 59, …`, or a presidential library), so it returns *nothing* for
+`Department of State, Conference Files: Lot 60 D 224`, the commonest shape in the corpus and
+precisely what a reader selects. The audit's suggested alternative, `FootnoteCitationScanner`, does
+not fix it either: its anchors are `lotFile` and `presidentialLibrary` *in footnote prose*. The
+entry point that works on arbitrary text is `SourceNoteParser.firstLotReference`, whose own doc
+calls it "the single lot-recognition entry point for both citation sides" — which is the property
+that matters, because a lot keyed through it reduces to the same `lotFileNorm` key the bundled
+indexes are keyed by. **I only found this because the tests failed.** Reading the audit and the
+type signatures left me confident and wrong.
+
+`NARALookupAnalyzer` therefore runs three readers: `decimalClassLocation` for a decimal file number
+(routing to `.centralURL`, the one strategy needing no API key — the case `applyCitation`'s `else`
+branch used to abandon, since `ArchiveCitation` carries no decimal field), `firstLotReference`
+walked to exhaustion for lots (a source note routinely names several), and `extractCitations` for
+the repository-anchored series names a lot scan cannot see.
+
+**Ranking is an argument, not extraction order:** an answer already in hand, then a route that
+needs no key, then discovery order as a stable tiebreak. It began as THREE keys — the third
+ranked the selection above the surrounding context — and mutation testing showed that key was
+**unfalsifiable**: `candidates(selection:context:)` reads the selection first, so a selection
+candidate already holds a lower discovery index and wins the tiebreak regardless. Deleting it
+changed no outcome in any test, so it is deleted rather than kept as decoration; a rank key that
+cannot fail advertises a decision the code is not making. The `.centralURL` key survived the same
+scrutiny only because a case exists where read order and rank OPPOSE — a decimal in the context
+against a lot in the selection — and that case is now the test that kills its mutant.
+
+**Context is widened in Swift, not JavaScript.** `flatTextExcerpt` already does block-aware
+extraction with out-of-range clamping, and the selection JS lives in two files pinned byte-identical
+by `FRUSOffsetEngineTests`. `frus-selection.js:99-100` has documented Swift as supplying this
+context all along; it did not.
+
+**Resolution delegates to `ArchivalResolver`** — the same path Source Explorer and the Collections
+export use — so a lot answers identically everywhere, and a test pins that agreement rather than
+trusting it.
+
+**Two things the process caught that reading would not have.**
+
+*A clean build proved nothing.* XcodeGen expands source globs at generate time, so the new analyzer
+was not in `project.pbxproj` and the build simply ignored it. A green build is not evidence a new
+file compiles.
+
+*Mutation testing killed 3 of 5, and both survivors were my own vacuous guards.* I had written
+`guard out.count >= 2 else { return }` in two ranking tests — so when a mutation dropped the
+keyless-route rank or the selection-over-context rank, the tests returned early and passed. A test
+that excuses itself when its fixture underdelivers is the exact failure this codebase keeps
+producing, and I wrote two into the suite meant to prevent it. Both are now fixture assertions;
+the second additionally pins that neither lot resolves, so if a future harvest learns `99 D 999`
+the test fails loudly instead of silently testing nothing.
+
+**Verification:** 14 analyzer tests green against real bundled NAIDs (one lot from the original
+keyed harvest, one from #372 item 1b's supplement, so both halves of the bundle are proven
+reachable); macOS builds; full iOS suite 3,715 tests / 485 suites with **two failures that are
+pre-existing on v2** — `AnalyticsKeyboardTests`, verified failing identically at `7a48ba7f` in a
+separate worktree and filed separately.

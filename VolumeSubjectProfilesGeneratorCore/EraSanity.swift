@@ -23,10 +23,13 @@ import Foundation
 /// treaties); "Terrorism" was excluded for the same reason (interwar assassinations, 1940s
 /// Palestine, 1950s decolonization insurgencies all predate the modern 1968 subject heading).
 ///
-/// Owner-reviewed 2026-07-16 (#308 Phase 1, review F2). Measured impact on the current drop:
-/// 14 entries removed across 14 volumes (World War I 7, European Economic Community 3,
-/// Refugees 2, Nuclear weapons 1, AIDS 1); the remaining rows are 0-impact future-guards that
-/// catch drift on any re-harvest.
+/// Owner-reviewed 2026-07-16 (#308 Phase 1, review F2). Measured impact **against the export the
+/// generator now defaults to** (`frus-subject-taxonomy/exports`, source generated 2026-07-16,
+/// md5 39a008d0…): **92 entries dropped**, plus 5 by the genericity floor, over 238,302 tagged
+/// documents. The 14 this comment used to state was measured against the SUPERSEDED
+/// `frus-subjects/data` drop, and survived the move — the same stale-number failure the
+/// semantic suite's `shippingDims` had. Re-measure by reading the generator's own
+/// `era-sanity tags dropped` line rather than trusting this sentence.
 public enum EraSanity {
 
     /// Earliest plausible year keyed by exact subject name (the frus-subjects display name).

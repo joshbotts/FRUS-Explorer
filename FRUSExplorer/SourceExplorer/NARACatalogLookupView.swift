@@ -47,7 +47,8 @@ struct NARACatalogLookupView: View {
 
     /// Archival citations detected in `blockContext` (empty when there is none). Computed once
     /// at init via SourceNoteKit's body-text `extractCitations`.
-    private let detectedCitations: [ArchiveCitation]
+    /// Ranked, routed, offline-resolved readings of the selection (#235).
+    private let candidates: [NARALookupCandidate]
 
     // MARK: - Dependencies
 
@@ -56,7 +57,8 @@ struct NARACatalogLookupView: View {
     // MARK: - State
 
     @State private var queryText: String
-    @State private var strategy: LookupStrategy = .keywordRG59
+    /// Set from the top candidate at open (#235), not hardcoded — see `init`.
+    @State private var strategy: LookupStrategy
     @State private var isSearching = false
     @State private var results: [NARACatalogResult] = []
     @State private var hasAPIKey = false
@@ -73,26 +75,16 @@ struct NARACatalogLookupView: View {
         self.initialText = initialText
         self.blockContext = blockContext
         _queryText = State(initialValue: initialText.trimmingCharacters(in: .whitespacesAndNewlines))
-        if let block = blockContext,
-           !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            detectedCitations = NARACatalogLookupView.dedupedCitations(
-                SourceNoteParser().extractCitations(from: block))
-        } else {
-            detectedCitations = []
-        }
-    }
-
-    /// De-duplicates detected citations by their normalised raw text, preserving order.
-    private static func dedupedCitations(_ citations: [ArchiveCitation]) -> [ArchiveCitation] {
-        var seen = Set<String>()
-        var out: [ArchiveCitation] = []
-        for citation in citations {
-            let key = citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if key.isEmpty || seen.contains(key) { continue }
-            seen.insert(key)
-            out.append(citation)
-        }
-        return out
+        // #235: the selection ITSELF is read, not only a block context the in-document path never
+        // supplied. Deduplication, routing and offline resolution all live in the analyzer, which
+        // is testable; this init used to hold that logic and therefore could not be.
+        let found = NARALookupAnalyzer.candidates(selection: initialText, context: blockContext)
+        candidates = found
+        // Open on the route the text implies. The old `.keywordRG59` default was wrong for every
+        // F-designator lot (RG 84), every presidential-library collection (no record group at all)
+        // and every decimal file number (`.centralURL`, the one route needing no API key) — and it
+        // was applied to every selection, including the ones the app could already answer.
+        _strategy = State(initialValue: found.first?.strategy ?? .keywordRG59)
     }
 
     // MARK: - Body
@@ -259,24 +251,26 @@ struct NARACatalogLookupView: View {
         }
     }
 
-    /// Candidate archival citations detected in the enclosing footnote body (#269). Each is a
-    /// one-tap quick-fill that populates the query field and pre-selects a matching strategy;
-    /// the manual field + picker remain the fallback. Shown only when the lookup was opened
-    /// from a footnote selection whose block context yielded recognisable citations.
+    /// Candidate readings of the reader's selection (#269, widened by #235).
+    ///
+    /// Each row is a one-tap quick-fill that populates the query and pre-selects its route. Where
+    /// the bundled indexes already hold the answer the row **shows that answer** — NAID and series
+    /// title — so a reader with no API key gets what they came for without a network call. The
+    /// manual field and picker below remain the fallback the issue asks to keep.
     @ViewBuilder
     private var candidateCitationsSection: some View {
-        if !detectedCitations.isEmpty {
-            Section(String(localized: "nara.lookup.detected.header",
-                           defaultValue: "Detected in This Footnote")) {
-                Text(String(localized: "nara.lookup.detected.hint",
-                            defaultValue: "Archival citations found in the footnote text — tap one to fill the search."))
+        if !candidates.isEmpty {
+            Section(String(localized: "nara.lookup.detected.header.v2",
+                           defaultValue: "Detected in This Passage")) {
+                Text(String(localized: "nara.lookup.detected.hint.v2",
+                            defaultValue: "Archival citations found in the selected text and around it — tap one to fill the search."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                ForEach(Array(detectedCitations.enumerated()), id: \.offset) { _, citation in
+                ForEach(candidates) { candidate in
                     Button {
-                        applyCitation(citation)
+                        apply(candidate)
                     } label: {
-                        candidateLabel(citation)
+                        candidateLabel(candidate)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(String(localized: "nara.lookup.detected.tapHint",
@@ -286,21 +280,33 @@ struct NARACatalogLookupView: View {
         }
     }
 
-    /// The display label for a detected citation: the most specific identifier on top, with the
-    /// repository (when known) beneath.
+    /// The display label for a candidate: the citation as printed, then the bundled resolution
+    /// when there is one.
     @ViewBuilder
-    private func candidateLabel(_ citation: ArchiveCitation) -> some View {
+    private func candidateLabel(_ candidate: NARALookupCandidate) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .foregroundStyle(.secondary)
+            // A resolved candidate gets the archival glyph the rest of the app uses for a real
+            // NARA record; an unresolved one keeps the search glyph, because it is still a query.
+            Image(systemName: candidate.resolution == nil
+                  ? "doc.text.magnifyingglass" : "building.columns")
+                .foregroundStyle(candidate.resolution == nil ? .secondary : Color.accentColor)
             VStack(alignment: .leading, spacing: 2) {
-                Text(citationTitle(citation))
+                Text(candidate.label)
                     .font(.callout)
                     .multilineTextAlignment(.leading)
-                if let repository = citation.repository, !repository.isEmpty,
-                   repository != citationTitle(citation) {
-                    Text(repository)
+                if let resolution = candidate.resolution {
+                    Text(resolution.title)
                         .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                    // The claim this caption makes is deliberately narrow: the record came from
+                    // the shipped index, which is why it needs no key. It does NOT claim the
+                    // series is the only one holding the lot — where NARA divided one,
+                    // `lot-claimants-index.json` is what discloses the rest.
+                    Text(String(format: String(localized: "nara.lookup.detected.resolved %@",
+                                               defaultValue: "NAID %@ — from the bundled index; no API key needed"),
+                                resolution.naId))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -309,34 +315,14 @@ struct NARACatalogLookupView: View {
         .contentShape(Rectangle())
     }
 
-    /// The most specific human label for a citation (lot file › series › record group › raw).
-    private func citationTitle(_ citation: ArchiveCitation) -> String {
-        if let lot = citation.lotFile, !lot.isEmpty {
-            return String(format: String(localized: "nara.lookup.detected.lot %@",
-                                          defaultValue: "Lot File %@"), lot)
-        }
-        if let series = citation.seriesName, !series.isEmpty { return series }
-        if let rg = citation.recordGroup, !rg.isEmpty {
-            return String(format: String(localized: "nara.lookup.detected.rg %@",
-                                          defaultValue: "RG %@"), rg)
-        }
-        return citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// Fills the query field from a detected citation and pre-selects a matching strategy —
-    /// routed by the citation's own record group, not a hardcoded RG 59 (a diplomatic-post
-    /// lot is RG 84, and a presidential-library collection has no record group at all).
-    private func applyCitation(_ citation: ArchiveCitation) {
-        if let lot = citation.lotFile, !lot.isEmpty {
-            queryText = lot
-            strategy = Self.lotStrategy(recordGroup: citation.recordGroup, lotFile: lot)
-        } else if let series = citation.seriesName, !series.isEmpty {
-            queryText = series
-            strategy = Self.keywordStrategy(recordGroup: citation.recordGroup)
-        } else {
-            queryText = citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-            // Unstructured match — leave the current strategy for the user to choose.
-        }
+    /// Fills the query field from a candidate and adopts its route.
+    ///
+    /// Every candidate carries a strategy, so the `else` branch that used to leave the reader on
+    /// the picker — the one a decimal file number always fell into, because `ArchiveCitation`
+    /// carries no decimal field — no longer exists.
+    private func apply(_ candidate: NARALookupCandidate) {
+        queryText = candidate.query
+        strategy = candidate.strategy
         // Reset any prior results so the next Search reflects the new query.
         results = []
         searchError = nil

@@ -338,4 +338,48 @@ struct HandoffVisibilityTests {
         #expect(source.contains(".onChange(of: appState.pendingChronology) { _, _ in consumePendingChronology() }"),
                 "the chronology observer must delegate to the same consumer .onAppear uses")
     }
+
+    // MARK: - A navigation the reader did not ask for
+
+    /// The two sheets whose reading stack is `@State` on the **presenter**, and must therefore be
+    /// cleared when the sheet goes away.
+    ///
+    /// Every other sheet in the app that owns a `NavigationStack(path:)` declares that path inside
+    /// the PRESENTED view — Chronology, Citation Lookup, Related Documents, Archival Neighbours all
+    /// do — so SwiftUI recreates it per presentation and it resets for free. These two are
+    /// different: #553 gave Project Home a stack owned by the presenting view, so the path outlives
+    /// the presentation. Closing the sheet two documents deep and reopening it put the reader back
+    /// inside the second document, with nothing on screen to say why; reached through the project
+    /// picker, which is how you SWITCH projects, it showed a document from the project just left.
+    ///
+    /// This is the same family as the rest of this suite — a navigation the reader cannot account
+    /// for — arriving from the other direction: not a hand-off they could not see, but one they
+    /// never asked for.
+    ///
+    /// `onDismiss` is the required hook, not the Done button: a swipe-down never runs that button's
+    /// action, and swiping is how a sheet is usually closed.
+    static let presenterOwnedSheetPaths = [
+        ("Research/ResearchView.swift", "projectHomePath"),
+        ("ProjectContext/ProjectPickerMenu.swift", "homeSheetPath"),
+    ]
+
+    @Test("A sheet whose stack lives on the presenter clears it on dismiss")
+    func presenterOwnedSheetPathsResetOnDismiss() throws {
+        for (file, path) in Self.presenterOwnedSheetPaths {
+            let source = try Self.source(file)
+            let code = Self.codeLines(source).map(\.text).joined(separator: "\n")
+            // Fixture guard: if the path stopped being presenter-owned, this test is measuring
+            // nothing and should be deleted rather than left passing.
+            #expect(code.contains("@State private var \(path)"),
+                    "\(file) no longer declares \(path) on the presenter — re-scope this test")
+            #expect(code.contains("NavigationStack(path: $\(path))"),
+                    "\(file) no longer binds \(path) to a NavigationStack")
+            #expect(code.contains("onDismiss: { \(path) = [] }"), """
+                \(file) presents a sheet over \(path) without clearing it on dismiss. The path is \
+                @State on the PRESENTER, so it survives the presentation and the next open lands \
+                inside the last document read — after a project switch, a document from the \
+                previous project.
+                """)
+        }
+    }
 }

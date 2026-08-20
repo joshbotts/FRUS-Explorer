@@ -1628,6 +1628,34 @@ struct DocumentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+
+    // MARK: - NARA look-up context (#235)
+
+    /// The passage around the reader's selection, for the lookup sheet's citation detection.
+    ///
+    /// A footnote selection already carries its enclosing body (`webKitSelectedBlockText`, #269)
+    /// and that is the better context — it is bounded by the footnote rather than by a character
+    /// count. Everything else — the large majority, an ordinary selection in the document body —
+    /// used to arrive with **no context at all**, so the lookup detected nothing and opened on a
+    /// hardcoded keyword strategy. `frus-selection.js:99-100` even documents Swift as supplying
+    /// this; it did not.
+    ///
+    /// Widened Swift-side rather than in JavaScript on purpose: the JS lives in two files pinned
+    /// byte-identical by `FRUSOffsetEngineTests`, and `flatTextExcerpt` already does block-aware
+    /// extraction with out-of-range clamping, which is exactly what a ± window needs.
+    @MainActor
+    private func lookupContext(vm: DocumentViewModel) -> String? {
+        if let block = webKitSelectedBlockText,
+           !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return block
+        }
+        guard let range = webKitSelectionRange ?? lastValidSelectionRange,
+              let model = vm.renderModel else { return nil }
+        return flatTextExcerpt(from: model,
+                               start: max(0, range.0 - NARALookupAnalyzer.contextBefore),
+                               end: range.1 + NARALookupAnalyzer.contextAfter)
+    }
+
     // MARK: - Floating Selection Bar (Research-rail Phase B)
 
     /// The floating selection bar overlay: a debounced, rect-anchored ``FloatingSelectionBar``
@@ -1655,7 +1683,7 @@ struct DocumentView: View {
                     },
                     onLookUp: {
                         let text = webKitSelectedText ?? ""
-                        let blockContext = webKitSelectedBlockText
+                        let blockContext = lookupContext(vm: vm)
                         webKitSelectedText = nil
                         webKitSelectedBlockText = nil
                         activeSheet = .naraLookup(text: text, blockContext: blockContext)

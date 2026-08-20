@@ -622,7 +622,7 @@ struct MacDocumentView: View {
         // while the bar was still visible) — don't open the Source Explorer with a blank lookup.
         guard let text = highlightCoordinator.webKitSelectedText, !text.isEmpty else { return }
         appState.pendingNARALookup = NARALookupRequest(
-            text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
+            text: text, blockContext: lookupContext())
         highlightCoordinator.webKitSelectedText = nil
         highlightCoordinator.webKitSelectedBlockText = nil
         // #369 BUG-8: this NARA lookup ALSO opens the shared Source Explorer window (the other of
@@ -790,6 +790,25 @@ struct MacDocumentView: View {
         #if DEBUG
         print("[MacDocumentView] Deleted highlight [\(startOffset)–\(endOffset)] from \(did)")
         #endif
+    }
+
+    /// The passage around the reader's selection, for the lookup's citation detection (#235).
+    ///
+    /// The hand-maintained twin of `DocumentView.lookupContext(vm:)` — see that one for why the
+    /// widening happens in Swift rather than in the shared selection JavaScript. A footnote
+    /// selection keeps its enclosing body; an ordinary body selection, which used to arrive with
+    /// no context at all, gets a ± window out of the flat text.
+    @MainActor
+    private func lookupContext() -> String? {
+        if let block = highlightCoordinator.webKitSelectedBlockText,
+           !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return block
+        }
+        guard let range = highlightCoordinator.webKitSelectionRange,
+              let model = vm.renderModel else { return nil }
+        return flatTextExcerpt(from: model,
+                               start: max(0, range.0 - NARALookupAnalyzer.contextBefore),
+                               end: range.1 + NARALookupAnalyzer.contextAfter)
     }
 
     // MARK: - Highlight Actions (WebKit path)
