@@ -55,6 +55,16 @@ struct ProjectHomeView: View {
     /// leave it `nil` and stay put. (#377 Phase 1 iOS follow-up.)
     var onNavigateAway: (() -> Void)? = nil
 
+    /// Opens a document **inside the presenting sheet's own stack** instead of handing it to Browse
+    /// (#553 / O-3). `nil` keeps the hand-off, which is what macOS and the Settings push use.
+    ///
+    /// Project Home was the last of the three sheet origins still dismissing to Browse; Related
+    /// Documents and Archival Neighbours moved to in-sheet reading in #757, so a reader could not
+    /// predict which sheets kept their place. Only `openDocument` is routed this way —
+    /// `openSurface` still hands off through `onNavigateAway`, because switching to the Collections
+    /// or Search tab genuinely is leaving.
+    var onOpenInSheet: ((DocumentBrowserEntry) -> Void)? = nil
+
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     /// The presenting window's scene id (#377 follow-up / #338): document and tab hand-offs from
@@ -871,6 +881,13 @@ struct ProjectHomeView: View {
             volumeId: volumeId,
             header: title ?? "\(volumeId) · \(documentId)"
         )
+        // #553: read inside the sheet when the presenter offers a stack. Dropping the dismiss
+        // WITHOUT pushing here would be #750's H-5 defect — the document lands invisibly beneath a
+        // still-presented sheet — which is why this is an explicit push rather than a removal.
+        if let onOpenInSheet {
+            onOpenInSheet(entry)
+            return
+        }
         performNavigation {
             #if os(macOS)
             // Route through the provenance model, which MINTS a standalone window when no document

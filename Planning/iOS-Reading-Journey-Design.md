@@ -66,6 +66,43 @@ of the current reading position, not a descent into it.
 
 ---
 
+## 3b. O-3, SETTLED — 2026-08-19
+
+**The options below were written on 2026-08-08 and their framing is now inverted.** Recorded here
+rather than edited away, because the reasoning in §4 is what the decision was taken against.
+
+By the time O-3 was settled, **nine hosts already passed a reading router**: Search, Browser,
+Chronology, Citation Lookup, the cross-reference graph, the semantic map, the standalone document
+window, and — via #757 — **Related Documents and Archival Neighbours**. `browseHostsAreUnchanged`,
+the guard §2 calls "the record of the current choice", has been superseded, and its stated reason (a
+cross-ref would push twice) is recorded in its replacement as having been **wrong**.
+
+So Option B was substantially delivered, and **Option C's premise is false**: it assumes "the three
+sheet origins continue to dismiss and hand off to Browse", when two of the three had stopped doing
+so. The sheets were nearly finished; the *tabs* were what remained.
+
+### The decision
+
+**1. Project Home reads in-sheet** (#553). It was the last of the three sheet origins still
+dismissing, so a reader could not predict which sheets kept their place. It uses the shape
+`RelatedDocumentsSheet` ships, on **the sheet's own path** — never `researchNavigationPath`, since
+Project Home is a sheet precisely to stay clear of that projection. `openSurface` still hands off
+through `onNavigateAway`: switching to another tab genuinely is leaving.
+
+**2. Research and History keep handing off to Browse, and that is the settled rule** (#751) — not a
+deferral. They are list surfaces that hand documents to the reader; the journeys that matter
+(Search, and all three sheets) keep their place. Adopting them would mean replacing the
+`[ResearchSidebarItem]` projection at `ResearchView.swift:329` and giving `HistoryView` a stack it
+has never had — the exact code #238 Fix B and #272 fixed, where a regression is an iPadOS
+sidebar-layout bug that tests have historically missed. The cost is real and the remaining benefit
+is the smallest of the set.
+
+**Anyone reopening point 2 should have new evidence that readers actually lose their place in
+Research or History specifically** — not merely that the app now applies two rules. The two rules
+are the decision.
+
+---
+
 ## 4. Options
 
 ### Option A — Keep the current design (do nothing but M-17a)
