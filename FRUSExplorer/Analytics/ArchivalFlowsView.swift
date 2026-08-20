@@ -135,6 +135,27 @@ struct ArchivalFlowsView: View {
 
     // MARK: - Intro and filters
 
+    /// Flows keeps a **two-sentence** on-page intro. #838 item 2, RATIFIED — not an oversight.
+    ///
+    /// The handoff's interaction rule is "on-page text stays to one plain line + the denominator
+    /// line", and every other archival mode obeys it. This one does not, and the exception is the
+    /// handoff's own: the diagram is unreadable until the reader knows what it is counting.
+    /// Collections shows collections and Network shows collections; a reader can name those before
+    /// the chart loads. A *flow* here is neither a relationship between archives nor a citation
+    /// count — it is where an editor sent a reader while annotating, which no label on the diagram
+    /// can convey and which a reader will otherwise mis-read as the archives being connected. The
+    /// unprinted layer is worse: "unprinted material" means a document FRUS declined to print but
+    /// pointed at, and nothing on screen says so.
+    ///
+    /// There is also **no denominator line**, because the denominators are inside the measured
+    /// sentence — `unprintedCaveats` states citations found, citations joined, and volumes
+    /// contributing out of volumes scanned, all read off the artifact. A separate denominator line
+    /// would repeat them.
+    ///
+    /// The alternative — conform, and move both sentences into the ⓘ — was rejected because the
+    /// misreading it prevents happens *before* a reader has any reason to open a popover. Pinned
+    /// by `ArchivalCopyRulesTests.flowsKeepsItsRatifiedTwoSentenceIntro` so a later "make every
+    /// mode conform" pass has to change the decision rather than the code.
     private func intro(_ data: ArchivalFlowsData) -> some View {
         Text(data.layer == .toUnprinted
              ? String(localized: "archival.flows.intro.unprinted",
