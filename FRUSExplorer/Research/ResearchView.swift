@@ -217,10 +217,7 @@ struct ResearchView: View {
                             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                                 DocumentView(entry: entry,
                                              onNavigateToDocument: { next, jump in
-                                                 if jump == .replace, !projectHomePath.isEmpty {
-                                                     projectHomePath.removeLast()
-                                                 }
-                                                 projectHomePath.append(next)
+                                                 jump.apply(to: &projectHomePath, appending: next)
                                              })
                             }
                             .toolbar {

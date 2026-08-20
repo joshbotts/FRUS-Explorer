@@ -939,10 +939,7 @@ struct BrowserView: View {
     /// through `AppState`, and no window-targeting question, because the reader is already here.
     private func pushInBrowseStack(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
         guard let vm = viewModel else { return }
-        if jump == .replace, !vm.navigationPath.isEmpty {
-            vm.navigationPath.removeLast()
-        }
-        vm.navigationPath.append(.document(entry))
+        jump.apply(to: &vm.navigationPath, appending: .document(entry))
     }
 
     private func consumePendingBrowseDocument() {

@@ -223,10 +223,14 @@ struct WindowTargetingTests {
         let navigate = try Self.functionBody(
             "private func navigate(_ entry: DocumentBrowserEntry, _ jump: DocumentJump)",
             in: source, limit: 400)
-        #expect(navigate.contains("jump == .replace"),
-                "a page-turn must replace the reading position in the standalone window too (#751)")
-        #expect(navigate.contains("navigationPath.append(entry)"),
-                "and every jump must land somewhere")
+        // Matches the CALL, not the literal `jump == .replace`. The rule now lives in ONE place
+        // (DocumentJump.apply) that a real test drives; a scan for the old literal was satisfied by
+        // an `if` whose body had been deleted, which is measured — see DocumentJumpPathTests.
+        #expect(navigate.contains("jump.apply(to: &navigationPath, appending: entry)"), """
+            the standalone window must route its jump through DocumentJump.apply — a page-turn \
+            replaces the reading position, and this is the one window with no breadcrumb at all \
+            (#751 / M-17a).
+            """)
     }
 
     // MARK: - 2. The word-cloud channel (H-9, M-31, M-33)

@@ -100,8 +100,10 @@ struct NavigationAuditLowSeverityTests {
         for relative in ["RelatedDocuments/RelatedDocumentsView.swift",
                          "SourceExplorer/ArchivalNeighborsSheet.swift"] {
             let source = try Self.source(relative)
-            #expect(source.contains("jump == .replace"),
-                    "\(relative)'s in-sheet reader must honour DocumentJump.replace (#751)")
+            // Matches the CALL: the pop-before-append rule lives in DocumentJump.apply, and a scan
+            // for the old `jump == .replace` literal passed with the rule's body deleted.
+            #expect(source.contains("jump.apply(to:"),
+                    "\(relative)'s in-sheet reader must route its jump through DocumentJump.apply (#751)")
         }
     }
 
