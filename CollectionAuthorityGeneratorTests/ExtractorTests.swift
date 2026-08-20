@@ -255,3 +255,92 @@ import Testing
         #expect(DocumentNoteExtractor.extract(fromXML: Data(xml.utf8)).isEmpty)
     }
 }
+
+// MARK: - Child-join boundary (#832a)
+
+/// The front-matter extractor must contribute an element-boundary space, like its sibling.
+///
+/// A source entry whose text is interrupted by a child element ran the two halves together,
+/// because `FrontMatterSourcesExtractor` accumulated `foundCharacters` into the open item and
+/// nothing marked the seam. `DocumentNoteExtractor.appendBoundarySpace()` — over the same corpus,
+/// for the document-side notes — has always called it on element start *and* end.
+///
+/// Measured over the shipped `collection-authority.json` before the fix: **35 concatenated names
+/// and 38 aliases across 37 records**, detected as a digit immediately followed by an uppercase
+/// letter beginning a word (`70Pakistan`), a shape a legitimate lot designator like `00D471`
+/// cannot produce.
+struct FrontMatterSourcesBoundaryTests {
+
+    /// The type case, transcribed from `frus1969-76ve07.xml`.
+    @Test("A child element inside an item does not fuse the text on either side of it")
+    func childJoinDoesNotFuseText() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+        <div type="sources">
+          <list>
+            <item><hi rend="strong">Department of State</hi>
+              <list>
+                <item>NEA/PAF Files: Lot 72 D 70<p>Pakistan political files for 1969</p></item>
+              </list>
+            </item>
+          </list>
+        </div>
+        </body></text></TEI>
+        """
+        let rows = FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8))
+        let row = rows.first { $0.lotFileNorm == "72D70" }
+        let text = try! #require(row?.text)
+        #expect(!text.contains("70Pakistan"), "the child join fused two phrases: \(text)")
+        #expect(text.contains("70 Pakistan") || text.contains("70  Pakistan"),
+                "expected a separator at the child boundary; got: \(text)")
+    }
+
+    /// The closing edge matters on its own: text that RESUMES after a child must not fuse either.
+    /// A start-only hook would leave `</p>Text` run together, which is why the sibling extractor
+    /// calls the helper twice.
+    @Test("Text resuming after a child element is separated too")
+    func closingEdgeSeparates() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+        <div type="sources">
+          <list>
+            <item><hi rend="strong">Department of State</hi>
+              <list>
+                <item>Lot 72 D 70<hi rend="italic">Pakistan</hi>Political files</item>
+              </list>
+            </item>
+          </list>
+        </div>
+        </body></text></TEI>
+        """
+        let rows = FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8))
+        let text = try! #require(rows.first { $0.lotFileNorm == "72D70" }?.text)
+        #expect(!text.contains("PakistanPolitical"), "the closing edge fused two phrases: \(text)")
+    }
+
+    /// The separator must not break the parses that already work — a lot number split across the
+    /// element boundary by nothing but whitespace still normalises to one key.
+    @Test("Adding the boundary space does not disturb lot normalisation")
+    func lotNormalisationUnchanged() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+        <div type="sources">
+          <list>
+            <item><hi rend="strong">Department of State</hi>
+              <list>
+                <item>Lot 64 D 199, Records of the Policy Planning Staff</item>
+                <item>Lot 71–D 440, Records of the Executive Secretariat</item>
+              </list>
+            </item>
+          </list>
+        </div>
+        </body></text></TEI>
+        """
+        let rows = FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(rows.contains { $0.lotFileNorm == "64D199" })
+        #expect(rows.contains { $0.lotFileNorm == "71D440" })
+    }
+}

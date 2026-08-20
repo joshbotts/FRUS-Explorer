@@ -143,6 +143,8 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
             }
         }
         guard inSourcesSection else { return }
+        // Opening edge of the child-join boundary — see `appendBoundarySpace()`.
+        appendBoundarySpace()
         switch elementName {
         case "list":
             listDepth += 1
@@ -170,6 +172,30 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         }
     }
 
+    /// Contributes the element-boundary space that a child join implies (#832a).
+    ///
+    /// The app's `plainText` joins every AST child with a single space, and the sibling extractor
+    /// over the same corpus does the same — `DocumentNoteExtractor.appendBoundarySpace()`, called on
+    /// element start **and** end. This one did neither, so a source entry whose text is interrupted
+    /// by any child element ran the two halves together: `frus1969-76ve07`'s
+    /// `…Lot 72 D 70<p>Pakistan political files for 1969…` became `Lot 72 D 70Pakistan political
+    /// files`. Measured over the shipped authority, that is **35 concatenated names and 38 aliases
+    /// across 37 records**.
+    ///
+    /// Called on both edges rather than only on start, because the join is between the text before
+    /// a child and the text after it — a start-only hook still runs `</p>Text` together. Whitespace
+    /// runs are collapsed downstream by `collapseWhitespace`, so an extra space is free.
+    private func appendBoundarySpace() {
+        guard inSourcesSection else { return }
+        if !itemStack.isEmpty {
+            itemStack[itemStack.count - 1].text += " "
+        } else if inSectionHead {
+            sectionHeadBuffer += " "
+        } else if inProse {
+            proseBuffer += " "
+        }
+    }
+
     /// Routes character data to the innermost open item, the section head, or prose.
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard inSourcesSection else { return }
@@ -189,6 +215,8 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
                        qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
         guard inSourcesSection else { return }
+        // Closing edge of the child-join boundary — see `appendBoundarySpace()`.
+        appendBoundarySpace()
 
         switch elementName {
         case "list":
