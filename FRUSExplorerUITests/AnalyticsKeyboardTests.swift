@@ -49,9 +49,9 @@ final class AnalyticsKeyboardTests: XCTestCase {
 
     /// The reported bug: Return commits the term and the keyboard stays up forever.
     func testKeyboardDismissesAfterCommittingTerm() throws {
-        let field = try focusedTermField()
-
-        field.typeText("Berlin\n")
+        // This one passed all along — it types once and never re-taps, so it never met the
+        // renaming. Written through the same accessor so the suite has one way to reach the field.
+        try focusedTermField().typeText("Berlin\n")
 
         XCTAssertTrue(app.staticTexts["Berlin"].waitForExistence(timeout: 10),
                       "The term should commit — otherwise this is not testing the dismissal path")
@@ -66,33 +66,57 @@ final class AnalyticsKeyboardTests: XCTestCase {
     /// The keyboard must come back when the user asks for it — the fix resigns focus, it does not
     /// make the field unusable.
     func testFieldIsRefocusableAfterDismissal() throws {
-        let field = try focusedTermField()
-        field.typeText("Berlin\n")
+        try focusedTermField().typeText("Berlin\n")
         XCTAssertTrue(waitForKeyboard(toBePresent: false), "precondition: the keyboard dismissed")
 
-        field.tap()
+        // Re-resolved, not reused — the placeholder has changed by now (see `termField`).
+        termField.tap()
         XCTAssertTrue(waitForKeyboard(toBePresent: true),
                       "tapping the field again must bring the keyboard back")
     }
 
     /// A second term must be enterable, which is the regression a too-eager resign would cause.
     func testSecondTermStillCommits() throws {
-        let field = try focusedTermField()
-        field.typeText("Berlin\n")
+        try focusedTermField().typeText("Berlin\n")
         XCTAssertTrue(app.staticTexts["Berlin"].waitForExistence(timeout: 10))
 
-        field.tap()
-        field.typeText("Vienna\n")
+        // Re-resolved for the same reason, and this test is where it matters most: committing the
+        // first term is precisely what renames the field.
+        termField.tap()
+        termField.typeText("Vienna\n")
         XCTAssertTrue(app.staticTexts["Vienna"].waitForExistence(timeout: 10),
                       "resigning focus must not block entering a comparison term")
     }
 
     // MARK: - Helpers
 
+    /// The term field, resolved fresh each time.
+    ///
+    /// **Never cache this element.** The field's placeholder changes from "Term…" to "Add a term…"
+    /// the moment a term commits (`AnalyticsView`'s D1 behaviour), and XCUITest resolves a
+    /// `TextField` by its placeholder when no identifier is set — so an element captured before
+    /// the commit silently stops matching after it. That is exactly how
+    /// `testFieldIsRefocusableAfterDismissal` and `testSecondTermStillCommits` failed on their
+    /// SECOND tap while the app was behaving correctly. The app now carries
+    /// `AnalyticsView.termFieldIdentifier`, which does not move; this re-resolves through it
+    /// anyway, so the tests cannot re-acquire the caching habit.
+    private var termField: XCUIElement { app.textFields["analytics.termField"].firstMatch }
+
+    /// ## Why the sibling suite still keys on the placeholder, and should
+    /// `AnalyticsRotationTests` queries `app.textFields["Term…"]` and `["Add a term…"]` in ten
+    /// places, and that is CORRECT there rather than the same latent bug. It uses the rename as an
+    /// observable: `…["Add a term…"].waitForExistence()` is how it proves a term committed when the
+    /// chip itself may be elided by the layout bisect (see its own note at :128). Converting those
+    /// to a stable identifier would delete the evidence those assertions rest on.
+    ///
+    /// So the two conventions are deliberate. Use the identifier when you need to REACH the field;
+    /// use the placeholder when the placeholder is the thing you are asserting.
+    ///
     /// Opens Corpus Analytics, focuses the term field, and skips if no software keyboard appears.
+    @discardableResult
     private func focusedTermField() throws -> XCUIElement {
         try openCorpusAnalytics()
-        let field = app.textFields["Term…"]
+        let field = termField
         XCTAssertTrue(field.waitForExistence(timeout: 10), "Term field should exist")
         field.tap()
 
