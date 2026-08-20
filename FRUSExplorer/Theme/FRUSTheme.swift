@@ -445,6 +445,26 @@ enum FRUSTheme {
     /// Narrow enough to sit outside the primary reading column — which begins
     /// at `documentHorizontalPadding` from each edge — so it rarely overlaps
     /// inline `<persName>`/`<gloss>`/cross-reference links in the document body.
+    ///
+    /// ## 56pt is a RATIFIED value, and the overlap it does NOT address is named here
+    /// The audit finding #751/M-17b observed that the LEADING zone occupies the same region where
+    /// the system back-swipe begins, so an imprecise swipe-back could open the previous document
+    /// instead of going back. **This width does not address that and was never tuned for it** — the
+    /// rationale above is about the reading COLUMN and WKWebView hit-testing, a different overlap
+    /// entirely. Anyone reading that paragraph as a mitigation for the back-swipe is misreading it.
+    ///
+    /// #751 was closed on 2026-08-20 with M-17b **accepted rather than fixed**, by owner decision,
+    /// on this evidence: a device check that day found a deliberate back-swipe still returns to the
+    /// volume, so the tap zone does not steal a real swipe. That is one trial by someone who knew
+    /// where the zones were, and it does NOT cover the imprecise swipe the finding describes —
+    /// stated plainly so the decision is not mistaken for a measurement.
+    ///
+    /// **Do not narrow this on intuition.** Narrowing trades a measured benefit (the zones sit
+    /// outside the reading column, which is why in-column links still receive taps) for an
+    /// unmeasured one. Two things must exist first: a reproduction, and a reader who did not know
+    /// the zone was there. The escape hatch already shipped —
+    /// `SettingsKeys.edgeTapNavigationEnabled`, added in Session 154 because a touch zone at the
+    /// screen edge was observed to misfire while scrolling.
     static let documentEdgeTapZoneWidth: CGFloat = 56
 
     // MARK: Tag Chips
