@@ -20,8 +20,8 @@ import Foundation
 ///
 /// | | lot keys resolved | how it is built |
 /// |---|---|---|
-/// | `central-files-index.json` | **971** | keyed NARA Catalog harvest, `variantControlNumber` |
-/// | `volume-sources-index.json` `lots` | 758 | front-matter Sources pass, resolved offline |
+/// | `central-files-index.json` | **978** | keyed NARA Catalog harvest, `variantControlNumber` |
+/// | `volume-sources-index.json` `lots` | 0 | front-matter Sources pass, resolved offline |
 ///
 /// Source Explorer already read central-files; these two surfaces read volume-sources, so the
 /// same lot could carry a catalogue link in one place and none in another. Measured over the
@@ -32,9 +32,13 @@ import Foundation
 /// Central-files first, volume-sources second. It is a *fallback*, not a swap, for two
 /// measured reasons:
 ///
-/// 1. **Seven lots exist only in volume-sources** — `64D171`, `67D317`, `67D333`, `68D393`,
+/// 1. **Seven lots existed only in volume-sources** — `64D171`, `67D317`, `67D333`, `68D393`,
 ///    `70D449` (RG 306, USIA), `74D267`, `78D26` (RG 59). Replacing rather than layering
-///    would lose 2 documents and 7 front-matter nodes to gain 733 and 98.
+///    would have lost 2 documents and 7 front-matter nodes to gain 733 and 98. #372 item 1
+///    then folded all seven into central-files with `FOLD_VOLUME_SOURCES`, so today the
+///    fallback answers **nothing in the shipped bundle** and the `lots` map is `{}`. It stays
+///    because it is one line and a re-harvest can mint new orphans — `lotsToWrite`'s
+///    carry-forward exists for exactly that — but nothing on screen depends on it now.
 /// 2. **Central-files has no record-group map at all.** `VolumeSourcesIndex.resolution`'s
 ///    second branch answers every *lot-less* node from volume-sources' 31 record-group
 ///    headers, and that branch carries **14,187 document rows and 6,373 front-matter nodes**
@@ -57,12 +61,15 @@ import Foundation
 /// The `#321` (`ancestryLacksRecordGroup`) and `#351` (`fileUnit`-level) refusals ride along
 /// unchanged: they live inside `CentralFilesIndex.lotFile(forRawLot:)` and
 /// `VolumeSourcesIndex.resolution`, and this type calls both rather than reimplementing
-/// either. Measured on the shipped bundles both guards currently refuse **nothing** (all 971
-/// central-files entries are `series`-level and unflagged; all 758 volume-sources lots are
-/// `series` or unlevelled) — they are dormant, not dead, and a re-harvest can re-arm them.
+/// either. Measured on the shipped bundles both guards currently refuse **nothing** (all 978
+/// central-files entries are `series`-level and unflagged, the seven folded in included; the
+/// volume-sources lot map is now empty) — they are dormant, not dead, and a re-harvest can
+/// re-arm them. The fold itself applies the same two refusals before admitting a row, so a
+/// flagged orphan stays in volume-sources rather than crossing over.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #372 / N-5 PR 1 (the repoint)
+///   1.1 — Session 2026-08-19: #372 item 1 — the seven orphans folded into central-files
 enum ArchivalResolver {
 
     /// The resolution for a **volume front-matter Sources node**: its lot, else its

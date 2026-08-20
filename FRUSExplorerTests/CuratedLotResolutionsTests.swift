@@ -130,12 +130,22 @@ struct CuratedLotResolutionsTests {
         }
     }
 
+    /// ## Why this one no longer carries a vacuity guard (#372 item 1)
+    /// Every other containment test here asserts its haystack is non-empty first, because a rule
+    /// about what must *not* be in a collection proves nothing over an empty one. This map **is**
+    /// empty now: `FOLD_VOLUME_SOURCES` admitted its last seven entries into central-files, so the
+    /// same assertion would fail on a bundle that is correct.
+    ///
+    /// The check stays rather than being deleted, for a reason the emptiness does not remove:
+    /// `lotsToWrite`'s carry-forward exists precisely to refill this map from a future harvest,
+    /// and `VolumeSourcesView` still renders whatever lands in it as a bare `building.columns`
+    /// link that cannot state a caveat. What covers the seven today is
+    /// ``curatedLotsAreNotInCentralFilesIndex``, whose own guard is live — 978 lots and counting.
     @Test("No curated lot reaches volume-sources-index, whose render surface is an icon-only link")
     func curatedLotsAreNotInVolumeSourcesIndex() throws {
         let curated = try loadCurated()
         let index = try loadJSONObject("volume-sources-index")
         let lots = (index["lots"] as? [String: Any]) ?? [:]
-        #expect(!lots.isEmpty, "guard is vacuous if the bundle has no lots")
         for lot in curated.lots {
             #expect(lots[lot.lotNumber] == nil,
                     "\(lot.lotNumber) is curated as non-deterministic AND resolvable through volume-sources-index.json. VolumeSourcesView renders that as a bare building.columns icon link and CollectionGeneratedBlocks flattens it into a two-field export row — neither can state a caveat.")

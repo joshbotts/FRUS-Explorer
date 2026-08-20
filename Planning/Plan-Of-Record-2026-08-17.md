@@ -124,15 +124,18 @@ The session's first deliverable is the parity harness, which turns the rest into
 
 ## 4. The combination clusters — where one session serves several needs
 
-### 4.1 S-5 · The source-note grammar cluster — #353, #809, #372, #733 + #808, #681
+### 4.1 S-5 · The source-note grammar cluster — #353, #809, ~~#372~~, #733 + #808, #681
 All five live in `SourceNoteKit`/the lot pipeline, and three separately touch
 `central-files-index.json`'s consumers:
 - **#353** — recover ~1,850 unrecognized notes + the three strategy-steal classes (the parser
   session, long-planned).
 - **#809** — the 4-digit lot prefix (B-4). Fixing it *inside* #353's session costs nearly nothing;
   alone it still pays the full parity-test toll.
-- **#372 PR 1** — the measured 728-document repoint (executable now, no harvest); PR 2 fold is
-  2 documents + hygiene; the 13-lot cross-RG supplement waits on O-7.
+- ~~**#372**~~ — **DONE 2026-08-19.** PRs 1 and 2 had already shipped when this plan was written
+  (the repoint and the 758 → 7 lot fold); O-7's cross-RG supplement landed as a table in
+  951512a6. Item 1 closed the loop on 2026-08-19: `FOLD_VOLUME_SOURCES` moved the last 7 orphans
+  into `central-files-index.json` (971 → 978), volume-sources regenerated to `lots: {}`, and
+  Source Explorer's two direct `lotFile(forRawLot:)` call sites now answer them with no repoint.
 - **#733 + #808** — CIA Job numbers: front-matter key recognition shipped partially; the
   archival-neighbour path exists on neither side.
 - **#681** — acceptance-test coverage for the presidential-library and NARA-collection routes
@@ -197,7 +200,7 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 | O-2 · #626 design decision | what "wider than headnotes" means | backlog |
 | O-4 · #279 design | reversible per-document override; schema field → 4.5 batch | B-2 rider |
 | O-5 · #266 design | freshness anchor that survives reindex; schema field → 4.5 batch | backlog |
-| O-7 · #372 record-group guard | admit the 13 cross-RG lots or keep the guard | 4.1's supplement |
+| ~~O-7 · #372 record-group guard~~ | **SETTLED** — the 13 cross-RG lots admitted as a table, not a rule (951512a6) | — |
 | #838 (2) + (4) | two one-sentence ratifications (the 1d exception; the iPhone layout answer) | 3.1 |
 | #830 T-0 fact table | confirm the repository-fact table item by item before T-0 builds | trip packet |
 | R-2b deploy | Dashboard promotion, 19 → 17 | 3.4 |
@@ -234,7 +237,7 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 | S-2 | Index-content batch | #888, rider: #279 index half | O-4 design optional; else #888 alone |
 | S-3 | iOS input finish | #861, #862 residuals | none |
 | S-4 | Archival narrow set | #825(1,2), #832(a), #838(1,3), #829 rider | #838(2,4) sentences help, don't block |
-| S-5 | Source-note grammar cluster | #353, #809, #372 PR1, #733/#808, #681 tests | O-1/O-7 for the tail items |
+| S-5 | Source-note grammar cluster | #353, #809, ~~#372~~ (done), #733/#808, #681 tests | O-1 for the tail items |
 | S-5b | Collection export parity | #960: harness first, then DOCX cloud/TOC, PDF pagination, shared Source: fix | #960 item 6 rides S-5; RIS/BibTeX titles ride #888 |
 | S-6 | Storage + content loose ends | #926 items 2–3, EditableContent §13 gap, #777 residuals | none |
 | S-7 | Infra debt | #270 ×4, #268 ×4, #312 | none |

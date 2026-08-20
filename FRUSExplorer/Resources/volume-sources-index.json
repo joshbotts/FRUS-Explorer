@@ -1,55 +1,7 @@
 {
-  "generated" : "2026-08-10",
+  "generated" : "2026-08-19",
   "lots" : {
-    "64D171" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967113",
-      "matchType" : "control",
-      "naId" : "40967113",
-      "recordGroup" : "306",
-      "title" : "Chronological Files"
-    },
-    "67D317" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967285",
-      "matchType" : "control",
-      "naId" : "40967285",
-      "recordGroup" : "306",
-      "title" : "Subject Files of the Director"
-    },
-    "67D333" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967285",
-      "matchType" : "control",
-      "naId" : "40967285",
-      "recordGroup" : "306",
-      "title" : "Subject Files of the Director"
-    },
-    "68D393" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/5634081",
-      "matchType" : "control",
-      "naId" : "5634081",
-      "recordGroup" : "306",
-      "title" : "Staff Meeting Notes"
-    },
-    "70D449" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967285",
-      "matchType" : "control",
-      "naId" : "40967285",
-      "recordGroup" : "306",
-      "title" : "Subject Files of the Director"
-    },
-    "74D267" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1257163",
-      "matchType" : "control",
-      "naId" : "1257163",
-      "recordGroup" : "59",
-      "title" : "Subject Files"
-    },
-    "78D26" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/824653",
-      "matchType" : "control",
-      "naId" : "824653",
-      "recordGroup" : "59",
-      "title" : "Records Relating to Paraguay"
-    }
+
   },
   "majorCollections" : [
     {
@@ -16790,6 +16742,26 @@
       "text" : "Lot 16D0355, James Timbie Files",
       "volumeIds" : [
         "frus1981-88v11"
+      ]
+    },
+    {
+      "isHeading" : false,
+      "key" : "lot:2015D608",
+      "lotFile" : "2015D608",
+      "occurrences" : 1,
+      "text" : "Lot 2015D608: Executive Secretariat, Papers of L. Paul Bremer II as Ambassador to The Hague and Director of the Office of Counter-Terrorism",
+      "volumeIds" : [
+        "frus1981-88v24"
+      ]
+    },
+    {
+      "isHeading" : false,
+      "key" : "lot:2016F0003",
+      "lotFile" : "2016F0003",
+      "occurrences" : 1,
+      "text" : "Lot 2016F0003: Ambassador Arthur Hartman Files",
+      "volumeIds" : [
+        "frus1981-88v05"
       ]
     },
     {

@@ -74905,7 +74905,7 @@
       "seriesNaId" : "302031"
     }
   ],
-  "generated" : "2026-07-17",
+  "generated" : "2026-08-19",
   "lotFiles" : [
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124668",
@@ -78033,6 +78033,14 @@
       "title" : "Records Relating to Guatemala"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967113",
+      "lotNumber" : "64D171",
+      "matchType" : "control",
+      "naId" : "40967113",
+      "recordGroup" : "306",
+      "title" : "Chronological Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/16845871",
       "hmsMlrEntryNumbers" : [
         "A1 1594"
@@ -79772,6 +79780,14 @@
       "title" : "Records Relating to Bulgaria and Romania"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967285",
+      "lotNumber" : "67D317",
+      "matchType" : "control",
+      "naId" : "40967285",
+      "recordGroup" : "306",
+      "title" : "Subject Files of the Director"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631362",
       "hmsMlrEntryNumbers" : [
         "A1 5294"
@@ -79794,6 +79810,14 @@
       "naId" : "631569",
       "recordGroup" : "59",
       "title" : "Records Relating to Thailand"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967285",
+      "lotNumber" : "67D333",
+      "matchType" : "control",
+      "naId" : "40967285",
+      "recordGroup" : "306",
+      "title" : "Subject Files of the Director"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/622810",
@@ -80231,6 +80255,14 @@
       "naId" : "1074073",
       "recordGroup" : "59",
       "title" : "Subject and Country Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/5634081",
+      "lotNumber" : "68D393",
+      "matchType" : "control",
+      "naId" : "5634081",
+      "recordGroup" : "306",
+      "title" : "Staff Meeting Notes"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631383",
@@ -81577,6 +81609,14 @@
       "naId" : "4705650",
       "recordGroup" : "59",
       "title" : "Records Relating to Bolivia"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40967285",
+      "lotNumber" : "70D449",
+      "matchType" : "control",
+      "naId" : "40967285",
+      "recordGroup" : "306",
+      "title" : "Subject Files of the Director"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2173131",
@@ -83521,6 +83561,14 @@
       "title" : "Records Relating to Guatemala"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1257163",
+      "lotNumber" : "74D267",
+      "matchType" : "control",
+      "naId" : "1257163",
+      "recordGroup" : "59",
+      "title" : "Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3325466",
       "hmsMlrEntryNumbers" : [
         "P 219"
@@ -85078,6 +85126,14 @@
       "naId" : "26309419",
       "recordGroup" : "59",
       "title" : "General Records"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/824653",
+      "lotNumber" : "78D26",
+      "matchType" : "control",
+      "naId" : "824653",
+      "recordGroup" : "59",
+      "title" : "Records Relating to Paraguay"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1074073",

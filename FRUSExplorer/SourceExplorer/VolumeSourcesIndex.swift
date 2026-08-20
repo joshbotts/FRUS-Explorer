@@ -38,6 +38,12 @@ struct VolumeSourcesIndex: Decodable, Sendable {
     /// `OfflineNAIDResolver` in the authority generator, `applyResolution` in the volume-sources
     /// generator itself — the duplicates were pure weight. This map is now the *difference*, and
     /// the two are disjoint by construction (pinned by `VolumeSourcesIndexTests`).
+    ///
+    /// **Empty on the shipped artifact** since #372 item 1: `FOLD_VOLUME_SOURCES` admitted the
+    /// last seven orphans into central-files, so the difference is nothing. The map and its
+    /// readers stay — a re-harvest can mint a new orphan, and `lotsToWrite`'s carry-forward is
+    /// what keeps one alive through a keyless run — but no lot on screen resolves through here
+    /// today.
     let lots: [String: ArchivalResolution]
     /// The cross-volume authority, keyed by each collection's dedup key for O(1) lookup.
     let authorityByKey: [String: MajorCollectionRecord]

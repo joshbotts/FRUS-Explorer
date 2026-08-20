@@ -7684,3 +7684,63 @@ strings from the same plain-language pass that it does not yet carry.
 commits that never opened a PR — is preserved as **`archive/f2-two-pane-wip`** under the convention
 `archive/377-project-home-switcher-pr458` established. F-2 shipped later and differently via
 #911–#921, so it is superseded rather than lost.
+
+## Session 2026-08-19 — #372 item 1: the two lot maps become one
+
+`central-files-index.json` and `volume-sources-index.json` both mapped a State Department lot
+number to a NARA record. PR 2 of #372 had already cut the duplication from the volume-sources side
+— `lotsToWrite` keeps only what central-files cannot answer, 758 lots down to 7 — but those seven
+were orphans in the wrong artifact, and the consequence was visible: `SourceExplorerView` and
+`MacSourceExplorerView` call `CentralFilesIndexStore.shared?.lotFile(forRawLot:)` with **no**
+fallback, so a lot that resolved in the Browser Sources outline and in a Collections export showed
+nothing in Source Explorer, the primary NARA surface.
+
+**The fold.** `FOLD_VOLUME_SOURCES=1 swift run CentralFilesIndexGenerator` — offline, keyless, and
+checked before the API-key guard, on the `PRUNE_FLAGGED_LOTS` pattern it sits beside. It admitted
+all seven (971 → 978); re-running the volume-sources generator then emitted `lots: {}` (853
+resolved, 0 written) exactly as `lotsToWrite` was designed to. Both artifacts are same-name
+refreshes, so no `xcodegen`; no index-version bump and no CloudKit change.
+
+**Why a merge and not a re-harvest**, which is what makes this safe without a key: the two
+generators reach NARA by different routes. Five of the seven are **RG 306** (USIA), a record group
+the central-files harvest structurally never enumerates. The other two are RG 59 — the group *is*
+harvested, so what the keyed `variantControlNumber_is` pass missed, the front-matter pass resolved.
+Either way the resolutions already existed and already shipped. A first draft of this note said all
+seven were RG 306; the generator's own log is what corrected it.
+
+**Three guards, and one that had to be added.** The fold applies the same #351 (`fileUnit`) and
+#321 (`ancestryLacksRecordGroup`) refusals as the sibling prune — a fold is precisely the shape of
+change that re-adds what a prune removed, since it admits rows from a different resolver under a
+different acceptance policy. The third is new: `LotFileEntry.matchType` is `control` or `phrase`, a
+claim about *how* a lot resolved, and the first draft defaulted an absent one to `control`. That
+manufactures confidence the source never asserted, on a field nothing currently renders — so a row
+without it is refused as incomplete instead. All seven real rows carry `control`, so the stricter
+rule costs nothing today, which is the point at which it is cheap to adopt.
+
+**Test re-pinning, deliberate rather than red-to-green.** Two suites pinned the pre-fold state.
+`ArchivalResolverTests` asserted `!vs.lots.isEmpty` — written because an empty map *then* meant the
+carry-forward had silently dropped the orphans. The fold removes that reading, but emptiness cannot
+simply be asserted in its place: it is also satisfied by deleting the seven from both bundles. So
+the pin moved to where the data went — all seven are named with their NAIDs and must still resolve.
+`CuratedLotResolutionsTests` failed on its own vacuity guard (`!lots.isEmpty`, "guard is vacuous if
+the bundle has no lots"), which was correct and is now unsatisfiable; that one containment check is
+documented as vacuous-but-retained, since `lotsToWrite`'s carry-forward can refill the map at any
+time. `LotFoldTests` needed no behavioural change — every case injects its predicate — but its
+header now says why `74D267` and `78D26` still stand in as orphans when central-files answers both.
+
+**What was NOT done, and why.** The audit's item 3 asked to delete the export diagnostic's
+`.resolvedVolumeSources` arm as a duplicate. After the fold the two halves have opposite standing:
+the record-group half is the live one (31 headers central-files has no map for at all) and the lot
+half is now a **tripwire** — it resolves nothing today, and it is what would report a future orphan
+instead of silently filing it as `resolvedAuthorityOnly`. Both halves are pinned by injected
+fixtures, so neither depends on artifact contents. Kept and re-scoped, with the reasoning in the
+code. The audit's optional item — repointing Source Explorer through `ArchivalResolver` — is moot:
+the fold makes those two call sites correct where they stand.
+
+**Incidental repair.** Three doc comments in `CentralFilesIndexGeneratorRunner` had run together
+into one block above `pruneFlaggedLots`, leaving `run()` and `enrichLotFiles()` undocumented — a
+pre-existing defect that the insertion point for the fold made unavoidable to notice. Each block is
+now above its own function.
+
+`foldDecision` is factored out as the pure half (the seam `lotsToWrite` has on the other side) and
+pinned by 13 tests; the four refusals were mutation-tested individually.

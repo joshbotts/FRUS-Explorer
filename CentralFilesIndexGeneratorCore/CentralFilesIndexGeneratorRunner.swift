@@ -49,6 +49,11 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   CACHE_DIR   — raw-page cache directory (default `.cache/central-files`)
 ///   PAGE_SIZE   — rows per request (default 25; try 100 on the first survey run)
 ///   REFRESH     — `1`/`true` to ignore the page cache and re-fetch
+///   FOLD_VOLUME_SOURCES — `1`/`true`: offline mode (NO API key) — absorb the orphan lots from
+///                 `volume-sources-index.json` (env `VOLUME_SOURCES_INDEX`) into this index and
+///                 rewrite it, then exit. Closes #372 item 1 from the central-files side; the
+///                 volume-sources runner's `lotsToWrite` then emits an empty `lots` map on its
+///                 next run. fileUnit and null-record-group rows are refused, per #351/#321.
 ///   PRUNE_FLAGGED_LOTS — `1`/`true`: offline mode (NO API key) — drop lot files flagged
 ///                 `ancestryLacksRecordGroup` from an already-harvested index and rewrite it,
 ///                 then exit. Applies the #321 policy (drop the candidate mis-resolutions the
@@ -60,6 +65,7 @@ public struct GoldenCheck: Sendable, Equatable {
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 1 — Numerical File
 ///   1.1 — #321: PRUNE_FLAGGED_LOTS offline mode
+///   1.2 — Session 2026-08-19: #372 item 1 — FOLD_VOLUME_SOURCES offline mode
 public struct CentralFilesIndexGeneratorRunner {
 
     /// NARA series NAID for the 1906–1910 Numerical File.
@@ -97,25 +103,136 @@ public struct CentralFilesIndexGeneratorRunner {
 
     private init() {}
 
-    /// Runs the Phase 1 harvest. Calls `exit(1)` on a fatal error or golden-check failure.
-    /// Attaches HMS/MLR entry numbers + `levelOfDescription` to the already-resolved lot
-    /// files in the bundled index, in place (#315).
+    /// Absorbs `volume-sources-index.json`'s orphan lots into the central-files index (#372 item 1).
     ///
-    /// Reads the existing index rather than re-harvesting: the NAIDs are already there and
-    /// are the stable key (the control-number index has drifted since the June harvest — see
-    /// `NARACatalogHarvestClient.fetchRecord(naId:)`). Every other section of the index is
-    /// round-tripped untouched.
+    /// Offline and keyless, on the `PRUNE_FLAGGED_LOTS` pattern and checked before the key guard
+    /// for the same reason: the rows already exist, resolved, in a shipped artifact — no catalogue
+    /// call can tell us anything new about them.
     ///
-    /// **Queries are keyed by distinct NAID, not by lot.** One catalog series is indexed
-    /// under many lot numbers — the verifying spike's record carried four — so grouping cuts
-    /// the request count well below the entry count and makes the reverse mapping explicit:
-    /// every lot sharing a NAID gets that record's entry numbers, by construction rather
-    /// than by a second lookup.
+    /// **Why they were orphans, and why the fold is not a re-harvest.** The two generators reach
+    /// NARA by different routes, so each finds lots the other cannot. Five of the seven —
+    /// `64D171`, `67D317`, `67D333`, `68D393`, `70D449` — are **RG 306** (USIA), a record group
+    /// the central-files harvest structurally never enumerates. The other two, `74D267` and
+    /// `78D26`, are RG 59: the group *is* harvested, so what the keyed
+    /// `variantControlNumber_is` pass missed on them, the volume-sources front-matter pass
+    /// resolved. Both facts point the same way — the resolutions already exist and are already
+    /// shipped, so admitting them is a merge and not a network call. `lotsToWrite` in the
+    /// volume-sources runner already keeps only what central-files cannot answer, which is what
+    /// cut that map from 758 to 7; this closes it from the other side, taking it to 0.
     ///
-    /// Failures are per-NAID and non-fatal: a miss leaves that record's entries `nil`
-    /// (indistinguishable from "genuinely has none", which is what the UI wants anyway) and
-    /// the pass continues. Re-running is safe and cheap — it is idempotent, and the client's
-    /// throttle/backoff already governs the request rate.
+    /// **fileUnit rows are refused**, the #351 rule the sibling prune applies: a file-unit title is
+    /// not the series title `#315` asks the UI to present. `ancestryLacksRecordGroup` cannot appear
+    /// here — the volume-sources resolver records a record group for every row it keeps — but the
+    /// same guard runs anyway, so a future input shape cannot smuggle one in.
+    ///
+    /// Deterministic and idempotent: a second run finds every orphan already present and admits
+    /// nothing. Rows are appended and the whole array re-sorted, so output does not depend on
+    /// arrival order.
+    static func foldVolumeSourceLots(outputPath: String, volumeSourcesPath: String,
+                                     generated: String) {
+        guard var index = try? CentralFilesIndexWriter.read(from: outputPath) else {
+            print("[CentralFilesIndexGenerator] ✗ FOLD_VOLUME_SOURCES: cannot read \(outputPath)")
+            exit(1)
+        }
+        guard let data = FileManager.default.contents(atPath: volumeSourcesPath),
+              let root = try? JSONDecoder().decode(VolumeSourceLots.self, from: data) else {
+            print("[CentralFilesIndexGenerator] ✗ FOLD_VOLUME_SOURCES: cannot read \(volumeSourcesPath)")
+            exit(1)
+        }
+        let decision = foldDecision(rows: root.lots ?? [:],
+                                    known: Set(index.lotFiles.map(\.lotNumber)))
+
+        let before = index.lotFiles.count
+        index.lotFiles = (index.lotFiles + decision.admitted).sorted { $0.lotNumber < $1.lotNumber }
+        index.generated = generated
+        do {
+            try CentralFilesIndexWriter.write(index, to: outputPath)
+            print("[CentralFilesIndexGenerator] ✓ FOLD_VOLUME_SOURCES: admitted "
+                  + "\(decision.admitted.count) lot(s), \(before) → \(index.lotFiles.count), "
+                  + "wrote \(outputPath)")
+            for lf in decision.admitted {
+                print("    + RG \(lf.recordGroup) \(lf.lotNumber) → naId \(lf.naId) “\(lf.title.prefix(40))”")
+            }
+            for row in decision.refused { print("    - \(row.lot) refused: \(row.reason)") }
+        } catch {
+            print("[CentralFilesIndexGenerator] ✗ FOLD_VOLUME_SOURCES: failed to write: \(error)")
+            exit(1)
+        }
+    }
+
+    /// One `lots` row of `volume-sources-index.json`, in the shape the fold reads.
+    ///
+    /// Declared here rather than importing `VolumeSourcesIndexGeneratorCore`'s `ResolvedNAID`:
+    /// this generator depends on `GeneratorKit` alone, and a dependency edge added to read four
+    /// strings would pull the whole front-matter pass into the harvester's build. Every field is
+    /// optional because the fold's job is to *judge* a row, and a required field is a decode
+    /// failure that would take the whole pass down over one malformed entry.
+    struct VolumeSourceLotRow: Decodable, Sendable {
+        let naId: String?
+        let catalogURL: String?
+        let title: String?
+        let recordGroup: String?
+        let matchType: String?
+        let hmsMlrEntryNumbers: [String]?
+        let levelOfDescription: String?
+        let ancestryLacksRecordGroup: Bool?
+    }
+
+    /// The `lots` map of `volume-sources-index.json`; every other key is ignored.
+    struct VolumeSourceLots: Decodable, Sendable {
+        let lots: [String: VolumeSourceLotRow]?
+    }
+
+    /// Which volume-sources rows may cross into central-files, and why the rest may not.
+    ///
+    /// The pure half of ``foldVolumeSourceLots(outputPath:volumeSourcesPath:generated:)`` —
+    /// the same seam `lotsToWrite` gives the fold's other side — so the admission rule can be
+    /// driven directly instead of through a file round trip.
+    ///
+    /// Four refusals, in the order a row meets them:
+    ///   - **already in central-files** — the fold never overwrites a harvested resolution with
+    ///     a front-matter one; this is also what makes a second run a no-op.
+    ///   - **`fileUnit`** (#351) and **`ancestryLacksRecordGroup`** (#321) — the two classes the
+    ///     sibling prune drops. Admitting one here would re-add what that pass exists to remove.
+    ///   - **incomplete** — a row missing any field `LotFileEntry` requires. `matchType` counts:
+    ///     it is `control` or `phrase`, a claim about *how* the lot resolved, and defaulting an
+    ///     absent one to `control` would manufacture confidence the source never asserted.
+    ///
+    /// Iterates the keys in sorted order so the log and the admitted array are stable.
+    static func foldDecision(rows: [String: VolumeSourceLotRow], known: Set<String>)
+        -> (admitted: [LotFileEntry], refused: [(lot: String, reason: String)]) {
+        var known = known
+        var admitted: [LotFileEntry] = []
+        var refused: [(lot: String, reason: String)] = []
+        for key in rows.keys.sorted() {
+            guard let row = rows[key] else { continue }
+            if known.contains(key) { refused.append((key, "already in central-files")); continue }
+            if row.levelOfDescription == "fileUnit" {
+                refused.append((key, "fileUnit (#351)")); continue
+            }
+            if row.ancestryLacksRecordGroup == true {
+                refused.append((key, "null record group (#321)")); continue
+            }
+            guard let naId = row.naId, let recordGroup = row.recordGroup,
+                  let title = row.title, let catalogURL = row.catalogURL,
+                  let matchType = row.matchType else {
+                refused.append((key, "incomplete row")); continue
+            }
+            admitted.append(LotFileEntry(
+                lotNumber: key,
+                recordGroup: recordGroup,
+                naId: naId,
+                title: title,
+                catalogURL: catalogURL,
+                matchType: matchType,
+                hmsMlrEntryNumbers: row.hmsMlrEntryNumbers,
+                levelOfDescription: row.levelOfDescription,
+                ancestryLacksRecordGroup: nil))
+            known.insert(key)
+        }
+        return (admitted, refused)
+    }
+
     /// Offline prune (#321 + #351): drops the two classes of candidate mis-resolution from an
     /// already-harvested index, then rewrites it through the same writer so the diff stays clean.
     ///   - `ancestryLacksRecordGroup` (#321): the null-record-group `firstAccepted` fallback let
@@ -229,6 +346,24 @@ public struct CentralFilesIndexGeneratorRunner {
         }
     }
 
+    /// Attaches HMS/MLR entry numbers + `levelOfDescription` to the already-resolved lot
+    /// files in the bundled index, in place (#315).
+    ///
+    /// Reads the existing index rather than re-harvesting: the NAIDs are already there and
+    /// are the stable key (the control-number index has drifted since the June harvest — see
+    /// `NARACatalogHarvestClient.fetchRecord(naId:)`). Every other section of the index is
+    /// round-tripped untouched.
+    ///
+    /// **Queries are keyed by distinct NAID, not by lot.** One catalog series is indexed
+    /// under many lot numbers — the verifying spike's record carried four — so grouping cuts
+    /// the request count well below the entry count and makes the reverse mapping explicit:
+    /// every lot sharing a NAID gets that record's entry numbers, by construction rather
+    /// than by a second lookup.
+    ///
+    /// Failures are per-NAID and non-fatal: a miss leaves that record's entries `nil`
+    /// (indistinguishable from "genuinely has none", which is what the UI wants anyway) and
+    /// the pass continues. Re-running is safe and cheap — it is idempotent, and the client's
+    /// throttle/backoff already governs the request rate.
     static func enrichLotFiles(outputPath: String, client: NARACatalogHarvestClient) async {
         guard let existing = try? CentralFilesIndexWriter.read(from: outputPath) else {
             print("[CentralFilesIndexGenerator] ✗ ENRICH_LOTS: cannot read \(outputPath) — "
@@ -380,6 +515,11 @@ public struct CentralFilesIndexGeneratorRunner {
         }
     }
 
+    /// Runs the Phase 1 harvest. Calls `exit(1)` on a fatal error or golden-check failure.
+    ///
+    /// Also the entry point for the three offline, keyless modes the type header
+    /// lists — `FOLD_VOLUME_SOURCES`, `PRUNE_FLAGGED_LOTS`, `ENRICH_LOTS` — each of
+    /// which rewrites the existing index and returns before the API-key guard.
     public static func run() async {
         let env = ProcessInfo.processInfo.environment
 
@@ -390,6 +530,17 @@ public struct CentralFilesIndexGeneratorRunner {
         if ["1", "true", "yes"].contains((env["PRUNE_FLAGGED_LOTS"] ?? "").lowercased()) {
             pruneFlaggedLots(outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
                              generated: generatorDateStamp(override: ProcessInfo.processInfo.environment["GENERATED_DATE"]))
+            return
+        }
+
+        // #372 item 1: fold the volume-sources orphans in. Keyless and checked here for the same
+        // reason as the prune above — the rows are already resolved in a shipped artifact.
+        if ["1", "true", "yes"].contains((env["FOLD_VOLUME_SOURCES"] ?? "").lowercased()) {
+            foldVolumeSourceLots(
+                outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
+                volumeSourcesPath: env["VOLUME_SOURCES_INDEX"]
+                    ?? "FRUSExplorer/Resources/volume-sources-index.json",
+                generated: generatorDateStamp(override: env["GENERATED_DATE"]))
             return
         }
 

@@ -19,8 +19,21 @@ import Foundation
 /// bytes (−36.8%, with the `majorCollections[].resolved` removal). No reader resolves anything
 /// differently, because every one of them consults central-files first.
 ///
+/// ## The map is now empty, and these tests are what keep that legible (#372 item 1)
+/// `CentralFilesIndexGenerator`'s `FOLD_VOLUME_SOURCES` pass admitted the last seven orphans into
+/// central-files, so the next run of this generator emitted `lots: {}` — 853 lots resolved, 0
+/// written. ``emptyIsAllowed`` was written for that day and is no longer hypothetical.
+///
+/// Nothing below is relaxed to suit it. Every case here injects `isAnsweredByCentralFiles` and a
+/// `prior` map, so they pin the *function*, not the artifact: `74D267` and `78D26` still stand in
+/// as the type-case orphans even though central-files answers both today, because the question
+/// they ask — what happens to a lot the bundle cannot answer — is the one a re-harvest can make
+/// live again at any time. Deleting the carry-forward on the grounds that the map is empty would
+/// mean a future orphan resolves once and then vanishes on the next keyless run.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #372 / N-5 PR 2
+///   1.1 — Session 2026-08-19: #372 item 1 — the fold reached zero; scope of these tests restated
 @Suite("VolumeSourcesIndexRunner — the lot fold")
 struct LotFoldTests {
 

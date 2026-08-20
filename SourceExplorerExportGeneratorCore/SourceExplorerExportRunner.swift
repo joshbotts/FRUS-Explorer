@@ -210,7 +210,18 @@ public enum SourceExplorerExportRunner {
         // precedence mirrors the app's VolumeSourcesIndex.resolution(recordGroup:lotFile:)
         // (VolumeSourcesIndex.swift:57): a lot-carrying parse resolves ONLY through its lot.
         // (In the app this index backs the front-matter surface; the export applies it at
-        // document grain as a diagnostic — its lot map is the largest resolved-lot set.)
+        // document grain as a diagnostic.)
+        //
+        // #372 item 3 proposed deleting this whole arm as a duplicate of central-files. After
+        // item 1's fold the two halves have opposite standing, so it is kept and re-scoped:
+        //   • the RECORD-GROUP half is the live one — 31 headers central-files has no map for
+        //     at all, and the only offline answer a lot-less citation gets here;
+        //   • the LOT half resolves nothing today, because the fold emptied `lots`. It stays as
+        //     a TRIPWIRE, not as redundancy: `lotsToWrite`'s carry-forward can refill that map
+        //     from any future harvest, and this arm is what would report the new orphan instead
+        //     of silently classifying it `resolvedAuthorityOnly`. Both halves are pinned by
+        //     injected fixtures (`volumeSourcesLot`, `centralFilesRG`), so neither depends on
+        //     what the shipped artifact happens to contain.
         var vsResolution: ResolvedNAID?
         var vsKey: String?
         if let rawLot = ExportClassification.rawLot(of: parsed) {
