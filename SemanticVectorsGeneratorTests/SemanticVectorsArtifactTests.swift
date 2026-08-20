@@ -29,8 +29,22 @@ import SemanticVectorsKit
 /// The identity checks are the load-bearing ones. A vector artifact whose keys drift does not fail
 /// — it silently shows the wrong documents, at plausible-looking scores, forever.
 ///
+/// ## One literal went stale, and the rest of the suite did not
+/// `provenanceIsComplete` pinned `shippingDims == 256` and survived the program's move to 512
+/// unnoticed, because every OTHER dimension assertion here reads the width out of the artifact
+/// and compares things to each other — binary size, shard size, the width-keyed recall table,
+/// the manifest's own `shippingDims`. All of those stayed correct at 512; the one hard-coded
+/// number did not. That is the same failure `SemanticCopyAccuracyTests` was written for after
+/// "256-bit signatures" survived the same move in user-facing copy, and it is worth the space to
+/// say so: prefer a relation between two artifacts over a number typed into a test.
+///
+/// The literal is kept rather than replaced by a relation, for one reason: it is the only thing
+/// that fails if a bare `swift run SemanticVectorsGenerator` re-packs at the resolver's 256
+/// default. Every relational check would pass on a wholly-256 artifact.
+///
 /// Version history:
 ///   1.0 — V-1: initial implementation
+///   1.1 — Session 2026-08-19: shippingDims re-pinned to the shipped 512
 @Suite("SemanticVectors — committed artifacts")
 struct SemanticVectorsArtifactTests {
 
@@ -127,7 +141,12 @@ struct SemanticVectorsArtifactTests {
         #expect(provenance.modelFileSHA256.count == 64)
         #expect(provenance.modelFileSHA256.allSatisfy { $0.isHexDigit })
         #expect(provenance.nativeDims == 768)
-        #expect(provenance.shippingDims == 256)
+        // 512, NOT the 256 `resolveShippingDims` returns for an unset `DIMS`. The program shipped
+        // the priced lever (recall 0.851 against 0.745), so the shipped artifact and the
+        // generator's default disagree BY DESIGN — and this literal is the only thing standing
+        // between that and a bare re-run silently halving the width. Do not "correct" it back to
+        // 256 to match the default; regenerate with `DIMS=512`, which is what produced these bytes.
+        #expect(provenance.shippingDims == 512)
         #expect(provenance.chunkChars == 3200)
         #expect(provenance.overlapChars == 480)
         // The trailing space is part of EmbeddingGemma's document prompt and part of the contract.
