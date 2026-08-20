@@ -786,9 +786,14 @@ extension RichTextPlatformEditor: UIViewRepresentable {
             // trailing" indistinguishable from "distribute six items evenly".
             let doneSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace,
                                             target: nil, action: nil)
+            //
+            // `.prominent`, which is what `.done` was renamed to in iOS 26 — a rename, not a
+            // behaviour change, and unconditional because the deployment target is 26.0. It is
+            // the emphasised style, which is the point: Done is this bar's confirming action and
+            // reads heavier than the five formatting controls beside it.
             let done = UIBarButtonItem(
                 title: String(localized: "common.keyboard.done", defaultValue: "Done"),
-                style: .done, target: self, action: #selector(dismissKeyboard))
+                style: .prominent, target: self, action: #selector(dismissKeyboard))
             toolbar.items = [bold, space, italic, space, underline, space, color, space, link,
                              doneSpace, done]
             toolbar.sizeToFit()

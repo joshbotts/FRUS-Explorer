@@ -167,7 +167,7 @@ enum NARALookupAnalyzer {
                 label: String(format: String(localized: "nara.lookup.candidate.lot %@",
                                              defaultValue: "Lot %@"), lot),
                 query: lot,
-                strategy: NARACatalogLookupView.lotStrategy(recordGroup: bareRG, lotFile: lot),
+                strategy: LookupStrategy.lotStrategy(recordGroup: bareRG, lotFile: lot),
                 origin: origin,
                 // The bundled answer, if there is one. `documentResolution` is the document route
                 // — a lot resolves only through its own number, never through the citation's
@@ -191,7 +191,7 @@ enum NARALookupAnalyzer {
             out.append(NARALookupCandidate(
                 label: citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines),
                 query: series,
-                strategy: NARACatalogLookupView.keywordStrategy(recordGroup: citation.recordGroup),
+                strategy: LookupStrategy.keywordStrategy(recordGroup: citation.recordGroup),
                 origin: origin, resolution: nil))
         }
         return out
