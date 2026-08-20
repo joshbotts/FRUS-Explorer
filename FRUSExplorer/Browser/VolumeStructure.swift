@@ -7,6 +7,10 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+// For the `NavigationPath` overload of `DocumentJump.apply` below: one reader host
+// (CitationLookupView) keeps a NavigationPath rather than an array, and leaving it as the single
+// hand-written copy of the rule is what let the rule go untested in the first place.
+import SwiftUI
 
 // MARK: - VolumeSection
 
@@ -177,6 +181,52 @@ public enum DocumentJump: Sendable {
     /// Appending instead is what made paging through twenty documents cost twenty Back taps, with
     /// no breadcrumb escape at document level and none at all on regular-width iPad (audit M-17a).
     case replace
+}
+
+// MARK: - Applying a jump to a host's path
+
+extension DocumentJump {
+
+    /// Applies this jump to a reader host's navigation path, appending `entry`.
+    ///
+    /// ## Why this is a function and not three lines in each host
+    /// Ten reader hosts route document-to-document jumps, and every one of them carried the same
+    /// copy-pasted `if jump == .replace { removeLast() }; append(...)`. That is ten places for the
+    /// rule to drift, and — more to the point — ten places where it could NOT be tested: each copy
+    /// sat in a `private func` inside a `View` struct, reachable only by a source scan.
+    ///
+    /// **The source scan was vacuous, and this was measured rather than suspected.** The guard
+    /// asserted that the literal `jump == .replace` appeared in each host's file, over RAW source
+    /// (`HandoffVisibilityTests.hostsImplementReplace`). Deleting `vm.navigationPath.removeLast()`
+    /// from `BrowserView` leaves that literal untouched, so the mutant reinstated M-17a in full —
+    /// twenty page-turns costing twenty Back taps — and the suite stayed GREEN. Verified by running
+    /// it 2026-08-20. Extracting the rule is what lets a real test observe the depth.
+    ///
+    /// - Parameters:
+    ///   - path: The host's stack. `.replace` pops its top entry first; `.push` leaves it.
+    ///   - entry: The document level to append.
+    public func apply<Entry>(to path: inout [Entry], appending entry: Entry) {
+        // The empty check is not defensive noise: `.replace` fires on a page-turn, and a host
+        // whose path is empty is showing the document as its own root (the macOS document window,
+        // and a sheet opened directly onto a document). Popping there would empty the stack and
+        // leave the host with nothing to show.
+        if self == .replace, !path.isEmpty {
+            path.removeLast()
+        }
+        path.append(entry)
+    }
+
+    /// The `NavigationPath` overload, for a host that keeps an opaque path rather than an array.
+    ///
+    /// `DocumentBrowserEntry` is `Hashable` and NOT `Codable`, so this resolves to the same
+    /// `append` overload the hand-written call did — a path that was never codable stays
+    /// non-codable, and no state-restoration behaviour changes.
+    public func apply(to path: inout NavigationPath, appending entry: some Hashable) {
+        if self == .replace, !path.isEmpty {
+            path.removeLast()
+        }
+        path.append(entry)
+    }
 }
 
 public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {

@@ -769,10 +769,7 @@ struct SearchView: View {
     /// — and waits for the user to type a query that will be scoped to it.
     /// Follows a cross-reference or page-turn inside the Search tab's own stack (#751).
     private func pushInSearchStack(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
-        if jump == .replace, !vm.navigationPath.isEmpty {
-            vm.navigationPath.removeLast()   // a page-turn moves, not descends (audit M-17a)
-        }
-        vm.navigationPath.append(entry)
+        jump.apply(to: &vm.navigationPath, appending: entry)
     }
 
     private func consumePendingSearch() {

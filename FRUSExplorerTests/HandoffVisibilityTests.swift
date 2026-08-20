@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import SwiftUI   // NavigationPath, for the tenth host's overload
 @testable import FRUSExplorer
 
 /// An iOS hand-off must land somewhere the user can see (#750).
@@ -241,16 +242,35 @@ struct HandoffVisibilityTests {
                 "a page-turn must REPLACE — appending is what made 20 pages cost 20 Back taps (M-17a)")
     }
 
-    @Test("Every router host honours .replace rather than always appending")
+    /// Every router host routes its jump through the ONE shared rule.
+    ///
+    /// ## This assertion replaces a vacuous one, and the vacuity was measured
+    /// The previous guard asserted that the literal `jump == .replace` appeared in each host's
+    /// file, scanning RAW source. It never referenced `removeLast()` — the line that does the
+    /// work. Deleting `vm.navigationPath.removeLast()` from `BrowserView` left that literal in
+    /// place, reinstating M-17a in full (twenty page-turns costing twenty Back taps), and this
+    /// suite stayed GREEN. Verified by running the mutant on 2026-08-20.
+    ///
+    /// Two things changed so that cannot recur. The rule now lives in ONE function that a real
+    /// test drives (`DocumentJumpPathTests` below, which observes the resulting depth). And this
+    /// scan matches the CALL rather than a literal that a comment could satisfy — a host that
+    /// stops calling `jump.apply` has stopped honouring the jump, which is exactly the claim.
+    @Test("Every router host routes its jump through the one shared rule")
     func hostsImplementReplace() throws {
         // A host that ignores the jump kind silently reinstates M-17a for its own readers.
         for relative in ["Search/SearchView.swift", "Browser/BrowserView.swift",
                          "Chronology/ChronologyView.swift", "Citation/CitationLookupView.swift",
-                         "CrossReference/CrossReferenceGraphView.swift"] {
-            let source = try Self.source(relative)
-            #expect(source.contains("jump == .replace"), """
-                \(relative) must act on DocumentJump.replace — removing the current entry before \
-                appending — or page-turns stack a level each in that host (#751 / M-17a).
+                         "CrossReference/CrossReferenceGraphView.swift",
+                         "Research/ResearchView.swift", "ProjectContext/ProjectPickerMenu.swift",
+                         "RelatedDocuments/RelatedDocumentsView.swift",
+                         "SourceExplorer/ArchivalNeighborsSheet.swift"] {
+            // codeLines, NOT raw source: these files discuss the old behaviour in comments
+            // constantly, which is precisely how the previous guard came to assert nothing.
+            let code = Self.codeLines(try Self.source(relative))
+            #expect(code.contains { $0.text.contains("jump.apply(to:") }, """
+                \(relative) must route its DocumentJump through DocumentJump.apply(to:appending:) \
+                — the one place the pop-before-append rule lives — or page-turns stack a level \
+                each in that host (#751 / M-17a).
                 """)
         }
     }
@@ -381,5 +401,88 @@ struct HandoffVisibilityTests {
                 previous project.
                 """)
         }
+    }
+}
+
+// MARK: - DocumentJumpPathTests
+
+/// Drives `DocumentJump.apply(to:appending:)` — the one rule every reader host now routes through.
+///
+/// ## Why this suite exists
+/// #751's M-17a fix (a page-turn *replaces* the current document rather than deepening the stack)
+/// shipped across ten hosts as ten copies of the same three lines, each buried in a `private func`
+/// inside a `View`. Nothing could observe it, so the only guard was a source scan — and that scan
+/// asserted a literal (`jump == .replace`) which a surviving `if` statement satisfies with its body
+/// deleted. **Measured 2026-08-20: removing `removeLast()` from `BrowserView` reinstated M-17a in
+/// full and the whole suite stayed green.**
+///
+/// Extracting the rule is what makes it observable. These tests assert the resulting **depth**,
+/// which is the property the reader actually experiences: how many Back taps it costs to leave.
+///
+/// Version history:
+///   1.0 — Session 2026-08-20: #751, replacing the vacuous source-scan guard
+@Suite("Document jump path arithmetic")
+struct DocumentJumpPathTests {
+
+    /// A cross-reference is a descent, so Back must return to the document that cited it (H-3).
+    @Test("push deepens the stack")
+    func pushAppends() {
+        var path = ["volume", "d1"]
+        DocumentJump.push.apply(to: &path, appending: "d2")
+        #expect(path == ["volume", "d1", "d2"], "a cross-reference must remain reachable by Back")
+    }
+
+    /// **The M-17a scenario, at the size the audit complained about.** Twenty page-turns must cost
+    /// ONE Back tap, not twenty. Deleting the `removeLast()` inside `apply` makes this 21.
+    @Test("twenty page-turns leave the stack exactly as deep as one")
+    func replaceKeepsDepthConstant() {
+        var path = ["volume", "d1"]
+        for n in 2...21 {
+            DocumentJump.replace.apply(to: &path, appending: "d\(n)")
+        }
+        #expect(path.count == 2, """
+            Paging through twenty documents left a stack \(path.count) deep, so leaving the volume \
+            costs \(path.count - 1) Back taps. That is audit M-17a exactly, and there is no \
+            breadcrumb escape at document level — none at all on regular-width iPad.
+            """)
+        #expect(path == ["volume", "d21"], "the reader's position must be the LAST document paged to")
+    }
+
+    /// The owner's 2026-08-20 device observation, pinned: after paging, Back lands on the volume.
+    /// Everything beneath the replaced entry must survive — `.replace` pops one level, never more.
+    @Test("replace pops exactly one level, so the entry beneath survives")
+    func replacePreservesEverythingBeneath() {
+        var path = ["corpus", "subseries", "volume", "d4"]
+        DocumentJump.replace.apply(to: &path, appending: "d5")
+        #expect(path == ["corpus", "subseries", "volume", "d5"], """
+            A page-turn must replace only the document. Back after paging lands on the volume, \
+            which is what a device check confirmed on 2026-08-20.
+            """)
+    }
+
+    /// A host showing a document as its own root has an empty path — the macOS document window, and
+    /// a sheet opened straight onto a document. Popping there would leave it with nothing to show.
+    @Test("replace on an empty path appends rather than emptying the host")
+    func replaceOnEmptyPathAppends() {
+        var path: [String] = []
+        DocumentJump.replace.apply(to: &path, appending: "d1")
+        #expect(path == ["d1"], "a document-rooted host must still show the document it paged to")
+    }
+
+    /// The tenth host (CitationLookupView) keeps an opaque `NavigationPath`. Its contents cannot be
+    /// read back, but its DEPTH can — which is the property under test.
+    @Test("the NavigationPath overload keeps depth constant too")
+    func navigationPathOverloadKeepsDepth() {
+        var path = NavigationPath()
+        path.append("d1")
+        for n in 2...10 {
+            DocumentJump.replace.apply(to: &path, appending: "d\(n)")
+        }
+        #expect(path.count == 1, """
+            The citation-lookup sheet stacked \(path.count) levels over ten page-turns. It was the \
+            one host still carrying a hand-written copy of this rule.
+            """)
+        DocumentJump.push.apply(to: &path, appending: "cross-ref")
+        #expect(path.count == 2, "a cross-reference inside the sheet must still be a descent")
     }
 }

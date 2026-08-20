@@ -359,10 +359,7 @@ struct SecondProjectNudgeModifier: ViewModifier {
                             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                                 DocumentView(entry: entry,
                                              onNavigateToDocument: { next, jump in
-                                                 if jump == .replace, !homeSheetPath.isEmpty {
-                                                     homeSheetPath.removeLast()
-                                                 }
-                                                 homeSheetPath.append(next)
+                                                 jump.apply(to: &homeSheetPath, appending: next)
                                              })
                             }
                     }

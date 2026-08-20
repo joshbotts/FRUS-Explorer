@@ -616,10 +616,7 @@ struct ArchivalNeighborsSheet: View {
 
     /// Follows a cross-reference or page-turn inside this sheet, honouring #751's push/replace.
     private func pushInSheet(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
-        if jump == .replace, !navigationPath.isEmpty {
-            navigationPath.removeLast()
-        }
-        navigationPath.append(entry)
+        jump.apply(to: &navigationPath, appending: entry)
     }
 
     var body: some View {

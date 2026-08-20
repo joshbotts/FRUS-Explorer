@@ -117,10 +117,7 @@ struct ChronologyView: View {
                 // read as dead, and the user later found documents on a stack they never navigated.
                 DocumentView(entry: entry,
                              onNavigateToDocument: { entry, jump in
-                                 if jump == .replace, !navigationPath.isEmpty {
-                                     navigationPath.removeLast()   // a page-turn moves, not descends (#751)
-                                 }
-                                 navigationPath.append(entry)
+                                 jump.apply(to: &navigationPath, appending: entry)
                              })
             }
             #endif

@@ -179,10 +179,7 @@ struct CrossReferenceGraphView: View {
     /// "extra argument 'onNavigateToDocument' in call".
     #if os(iOS)
     private func pushInGraphStack(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
-        if jump == .replace, !vm.navigationPath.isEmpty {
-            vm.navigationPath.removeLast()   // a page-turn moves, not descends (#751)
-        }
-        vm.navigationPath.append(entry)
+        jump.apply(to: &vm.navigationPath, appending: entry)
     }
     #endif
 

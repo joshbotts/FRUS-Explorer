@@ -3806,10 +3806,7 @@ private struct StandaloneDocumentWindowContent: View {
 
     /// Follows a jump inside this window (#752), honouring #751's push/replace distinction.
     private func navigate(_ entry: DocumentBrowserEntry, _ jump: DocumentJump) {
-        if jump == .replace, !navigationPath.isEmpty {
-            navigationPath.removeLast()   // a page-turn moves, not descends
-        }
-        navigationPath.append(entry)
+        jump.apply(to: &navigationPath, appending: entry)
     }
 }
 
