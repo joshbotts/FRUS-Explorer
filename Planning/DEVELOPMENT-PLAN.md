@@ -7899,3 +7899,62 @@ keyed harvest, one from #372 item 1b's supplement, so both halves of the bundle 
 reachable); macOS builds; full iOS suite 3,715 tests / 485 suites with **two failures that are
 pre-existing on v2** — `AnalyticsKeyboardTests`, verified failing identically at `7a48ba7f` in a
 separate worktree and filed separately.
+
+## Session 2026-08-20 — #965: the pre-1906 serial, and an issue whose title was wrong
+
+**The premise was false and the issue was retitled before any code.** #965 asked for "file numbers
+embedded in document bodies". There are no file numbers in pre-1906 bodies — the decimal file did
+not open until 1910. Measured: `frus1895p1` 508 serials / **0** file-number shapes, `frus1876`
+355 / 0, `frus1863p1` 341 / 0. What is there is the **despatch/instruction serial**, the number the
+sending post gave its own outgoing correspondence, which identifies a document *within a post's
+series* rather than a folder in a central file. Built under the old title, the artifact would have
+been joined to central-file keys by its next consumer and been wrong every time.
+
+**Chosen over #834 on measured grounds.** #834's pre-war reach — the thing it is named for —
+survives its own-class exclusion at 471 references, 2.7% of the channel; and 77.3% of that channel
+sits in the 1950s–60s where `decimal-class-labels.json` ships no schedule, so it would arrive as
+bare numbers. That schedule work is untracked by any issue. #965 lands on 3,838 of 38,363 pre-1906
+documents (10.0% of the era) that display **no archival attribution at all** today.
+
+**The vocabulary was a tail, not a list.** The issue named six forms; a census of every `<seg>` in
+all 69 pre-1906 volumes found 119 shapes over 28,139 occurrences. The omitted ones mattered most —
+series qualifiers (`Greek Series`, `Servian series`, `Dip. Ser.`) mark posts that kept several
+sequences each numbered from 1, so a bare serial is ambiguous without them.
+
+**The defect the grammar exists to prevent, measured:** `<seg>` is FRUS's general
+bracketed-editorial marker, and **17,078** of its contents are enclosure markers naming the serial
+of the despatch an enclosure travelled *in*. A substring scan would have mis-attributed more than a
+third of everything serial-shaped. The grammar therefore requires the WHOLE segment to be a serial.
+
+**Three things the process caught that reading would not.**
+
+*Swift counts `½` as `Character.isNumber`*, so the digit prefix consumed "25½" and `Int` returned
+nil — every half-step serial silently dropped. Same family as #966, new location.
+
+*A mutation deleting the enclosure guard SURVIVED*, because the anchoring already refuses all
+17,495 markers (segments starting with `No` that also name an inclosure: **0**). The doc comment had
+credited the guard with the anchoring's work. Kept as a second lock against one likely edit —
+relaxing the prefix rule "for robustness" — but now exercised by an explicitly synthetic fixture
+that says so.
+
+*Two mutations on the storage wiring survived* the first extraction suite, because every test called
+the extractor directly and none exercised the row construction or the UPSERT. An end-to-end test now
+indexes a fixture volume and reads the value back out of SQLite. Without it this would have shipped
+a column that costs every tester a rebuild and was always NULL.
+
+**Two wrong diagnoses of my own, both recorded in the code.** The round trip appeared to store one
+of three documents; I blamed the fixture XML and reshaped it, changing nothing. The real cause was
+`stored[key] = nil` on a `[String: String?]`, which REMOVES the key — the two documents correctly
+written with NULL were being deleted by the assertion meant to check them.
+
+**Presentation, per the owner's direction:** a captioned identifier inside the roll section, reading
+"Despatch No. 74" over a caption explaining it is the mark to look for while browsing the roll
+images, and that it is not a NARA identifier. Placement is the honesty mechanism — beside the
+resolved NARA rows it would imply a resolution it cannot make.
+
+**Two planned items did not apply**, both downstream of the false premise: `ProvenanceCategory`
+classifies source notes, and a serial is not one; the three artifact regenerations are likewise
+source-note-derived. And a latent bug was closed rather than doubled — `resolveCountrySeries()`
+assigned only on success, leaving a previous document's rolls on screen in any persistent host.
+
+v44 → v45, owner-authorised re-index. 20 tests across two suites, 12 mutants killed.
