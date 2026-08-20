@@ -31,8 +31,18 @@ import Foundation
 /// go dark, because central-files has no record-group map at all. Both failure modes are held
 /// by tests below, so neither can be "simplified" away silently.
 ///
+/// ## After the fold (#372 item 1)
+/// Those seven lots are now *in* central-files, and the shipped `lots` map is `{}`. The
+/// volume-sources **lot** arm therefore has no witness in the bundle and is exercised by
+/// injection instead; the **record-group** branch, which is twenty times larger, is untouched
+/// and still measured against the real artifact. The arm is kept rather than deleted because a
+/// re-harvest can mint new orphans at any time — `lotsToWrite` exists to carry exactly those —
+/// and because the tests that pin it are the only thing standing between a future orphan and
+/// silence. What is no longer true is that any *shipped* lot depends on it.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #372 / N-5 PR 1
+///   1.1 — Session 2026-08-19: #372 item 1 — the orphans folded into central-files
 @Suite("ArchivalResolver — central-files first, volume-sources second")
 struct ArchivalResolverTests {
 
@@ -103,19 +113,25 @@ struct ArchivalResolverTests {
         #expect(try resolve(lot: "65A987")?.naId == "2945755")
     }
 
-    /// The reason this is a fallback and not a swap. All seven, by name — a replacement would
-    /// take each of them to `nil`.
-    @Test("All seven volume-sources-only lots still resolve")
+    /// The seven lots that used to exist only in volume-sources, by name and NAID.
+    ///
+    /// `FOLD_VOLUME_SOURCES` (#372 item 1) moved them into central-files, so what this pins is
+    /// no longer *which* bundle answers but that the same seven answers survived the move. The
+    /// fixture guard is therefore inverted from what PR 1 shipped — it now requires central-files
+    /// to know each one, which is what fails if the fold's rows are ever dropped or re-harvested
+    /// away, and the resolver assertion below is unchanged.
+    static let foldedOrphans = ["64 D 171": "40967113", "67 D 317": "40967285",
+                                "67 D 333": "40967285", "68 D 393": "5634081",
+                                "70 D 449": "40967285", "74 D 267": "1257163",
+                                "78 D 26": "824653"]
+
+    @Test("All seven folded lots still resolve, now through central-files")
     func volumeSourcesOnlyLotsSurvive() throws {
-        let expected = ["64 D 171": "40967113", "67 D 317": "40967285",
-                        "67 D 333": "40967285", "68 D 393": "5634081",
-                        "70 D 449": "40967285", "74 D 267": "1257163",
-                        "78 D 26": "824653"]
-        for (lot, naId) in expected {
-            #expect(try central().lotFile(forRawLot: lot) == nil,
-                    "fixture guard: central-files must NOT know \(lot)")
+        for (lot, naId) in Self.foldedOrphans {
+            #expect(try central().lotFile(forRawLot: lot)?.naId == naId,
+                    "central-files must carry \(lot) — the fold is what put it there")
             #expect(try resolve(lot: lot)?.naId == naId,
-                    "\(lot) must still resolve through the volume-sources fallback")
+                    "\(lot) must still resolve, whichever bundle answers")
         }
     }
 
@@ -131,8 +147,16 @@ struct ArchivalResolverTests {
         #expect(try resolve(rg: "59", lot: "60–D 224")?.naId == "592873")
         #expect(try resolve(rg: "RG-59", lot: "60–D 224")?.naId == "592873",
                 "the stored record_group form must not change the lot answer either")
-        // Volume-sources fallback arm, likewise. 70 D 449 is an RG 306 lot.
-        #expect(try resolve(rg: "306", lot: "70 D 449")?.naId == "40967285")
+        // Volume-sources fallback arm, likewise — against an INJECTED index, because after the
+        // fold (#372 item 1) the shipped `lots` map is empty and no real lot witnesses this arm.
+        // `70 D 449` was the witness until then; it is an RG 306 lot and central-files now
+        // answers it, which is why the injected rival claims a different key.
+        let orphan = try Self.syntheticVolumeSources(lot: "99D999", naId: "40967285")
+        #expect(ArchivalResolver.frontMatterResolution(
+            recordGroup: "306", lotFile: "99 D 999",
+            entryText: "Record Group 306, Records of the U.S. Information Agency",
+            centralFiles: try central(), volumeSources: orphan)?.naId == "40967285",
+                "the fallback arm must answer with a record group present, not only without one")
         // And the shared-key precedence still prefers central-files.
         #expect(try resolve(rg: "59", lot: "53 D 413")?.matchType == "control")
     }
@@ -173,19 +197,37 @@ struct ArchivalResolverTests {
     ///
     /// What replaces it is the invariant that makes the duplicate unnecessary: the two maps are
     /// **disjoint**, and what volume-sources keeps is exactly what central-files cannot answer.
+    ///
+    /// ## Why the emptiness assertion inverted (#372 item 1)
+    /// PR 2 asserted `!vs.lots.isEmpty`, because an empty map then meant `lotsToWrite`'s
+    /// carry-forward had silently dropped the seven orphans — the one way disjointness could be
+    /// achieved by losing data. `FOLD_VOLUME_SOURCES` removed that reading: the seven were
+    /// admitted into central-files, so an empty map is now the fold's endpoint rather than a gap,
+    /// and the map went to `{}` on the next volume-sources run exactly as designed.
+    ///
+    /// Emptiness cannot be asserted on its own either — it is satisfied by deleting the seven
+    /// from both bundles. So the pin moved to where the data went: every lot the map used to
+    /// carry must resolve, through whichever bundle now answers it. That is
+    /// ``volumeSourcesOnlyLotsSurvive``, and the loop below keeps this test honest for any
+    /// entry a future harvest re-adds.
     @Test("The two lot maps are disjoint, and volume-sources keeps exactly the orphans")
     func lotMapsAreDisjoint() throws {
         let cf = try central(), vs = try volumes()
         let overlap = vs.lots.keys.filter { cf.lotFile(forRawLot: $0) != nil }
         #expect(overlap.isEmpty,
                 "volume-sources still duplicates \(overlap.count) lots central-files answers: \(overlap.sorted().prefix(10))")
-        // …and it is not disjoint by being empty: every entry must be a real orphan that resolves.
-        #expect(!vs.lots.isEmpty, "the orphan map must not be empty — see lotsToWrite's carry-forward")
         for key in vs.lots.keys {
             #expect(cf.lotFile(forRawLot: key) == nil)
             #expect(ArchivalResolver.documentResolution(lotFile: key, centralFiles: cf,
                                                         volumeSources: vs) != nil,
                     "\(key) is carried but does not resolve")
+        }
+        // …and disjointness is not being bought by losing lots: the seven the map used to hold
+        // are all still answerable. Their new home is pinned by name in `foldedOrphans`.
+        for (lot, naId) in Self.foldedOrphans {
+            #expect(ArchivalResolver.documentResolution(lotFile: lot, centralFiles: cf,
+                                                        volumeSources: vs)?.naId == naId,
+                    "\(lot) went dark in the fold — it is in neither bundle now")
         }
     }
 
@@ -367,7 +409,7 @@ struct ArchivalResolverTests {
 
     /// `#321` (`ancestryLacksRecordGroup`) and `#351` (`fileUnit`) are enforced inside
     /// `CentralFilesIndex.lotFile(forRawLot:)`. They currently refuse nothing on the shipped
-    /// bundle — all 971 entries are unflagged and `series`-level — so a synthetic index is the
+    /// bundle — all 978 entries are unflagged and `series`-level — so a synthetic index is the
     /// only way to prove the resolver honours them rather than reading `lotFiles` directly.
     @Test("A refused central-files entry does not become a resolution")
     func refusedEntriesAreNotSurfaced() throws {
