@@ -101,6 +101,8 @@ struct MacSourceExplorerView: View {
     @State private var relatedLoading: Bool = false
     /// Pre-1906 country-series classifications + resolved rolls (Phase 2).
     @State private var countryResolutions: [CountrySeriesResolution] = []
+    /// The document's own despatch serial (#965), shown with the rolls it helps browse.
+    @State private var despatchSerial: String? = nil
     /// Where the rows in `catalogResults` came from (#680).
     ///
     /// The manual field is a free-text query against a different endpoint with no record-group
@@ -1301,6 +1303,13 @@ struct MacSourceExplorerView: View {
     /// Classifies a pre-1906 document (no source note) from its dateline, heading, and
     /// FRUS chapter, and resolves each candidate series to its roll(s) in the bundled index.
     private func resolveCountrySeries() async {
+        // Cleared BEFORE the guards, not after them. Every `return` below is an early exit for a
+        // document this section does not describe — post-1906, no dateline, no structure — and
+        // assigning only on success leaves the PREVIOUS document's rolls and serial on screen in
+        // any host that keeps this view alive. That is the latent bug the `.task(id:)` keying was
+        // chosen to avoid; clearing here closes it at the source rather than relying on the host.
+        countryResolutions = []
+        despatchSerial = nil
         guard let dateline = documentDateline,
               let year = documentYear, year < 1906,
               let index = CentralFilesIndexStore.shared else { return }
@@ -1330,6 +1339,9 @@ struct MacSourceExplorerView: View {
             }
         }
         countryResolutions = resolutions
+        if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId {
+            despatchSerial = try? await pipeline.despatchSerial(volumeId: volumeId, documentId: docId)
+        }
     }
 
     @ViewBuilder
@@ -1341,6 +1353,25 @@ struct MacSourceExplorerView: View {
                             defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document's date."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let serial = despatchSerial {
+                    // #965 — the hand-maintained twin of the iOS placement. Inside the roll box on
+                    // purpose: a serial resolves to no catalogue record, so beside the resolved
+                    // NARA rows it would read as a resolution it cannot make.
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label {
+                            Text(String(format: String(
+                                localized: "source.explorer.countrySeries.serial %@",
+                                defaultValue: "Despatch No. %@"), serial))
+                                .font(.callout.weight(.semibold))
+                        } icon: {
+                            Image(systemName: "number").foregroundStyle(.secondary)
+                        }
+                        Text(String(localized: "source.explorer.countrySeries.serial.caption",
+                                    defaultValue: "FRUS prints this number above the document — the post's own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 ForEach(countryResolutions) { resolution in
                     let c = resolution.classification
                     VStack(alignment: .leading, spacing: 4) {
@@ -1431,6 +1462,7 @@ struct MacSourceExplorerView: View {
         catalogResults = []
         authorityRecord = nil
         countryResolutions = []
+        despatchSerial = nil
         relatedDocs = []
         relatedTotalCount = 0
         loadError = nil

@@ -2157,6 +2157,29 @@ public actor IndexingPipeline {
     /// if the volume has not been indexed (or was indexed before the
     /// `volume_structures` table existed — the Browser then falls back to parsing
     /// the volume XML on demand, exactly as before).
+    /// The pre-1906 despatch/instruction serial stored for a document, or `nil` (#965).
+    ///
+    /// The number the sending post gave its own outgoing correspondence, printed by FRUS above the
+    /// document. Source Explorer shows it beside the digitised rolls it resolves for pre-1906
+    /// documents, because the rolls are browsed by eye and this is the mark a reader looks for on
+    /// the images — a second handle alongside the date, and often a sharper one.
+    ///
+    /// **Not an archival identifier.** A serial resolves to no NAID and no catalogue record; it
+    /// locates a document *within* a post's series. Everything that renders it has to say so.
+    ///
+    /// Returns `nil` for the overwhelming majority of the corpus — the serial is a pre-decimal-file
+    /// convention — and also on an index built before v45, where the column exists but is empty
+    /// until each volume is re-parsed.
+    public func despatchSerial(volumeId: String, documentId: String) throws -> String? {
+        let stmt = try auxPrepare(
+            "SELECT despatch_serial FROM document_cache WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return auxColumnString(stmt, 0)
+    }
+
     public func cachedVolumeStructure(forVolumeId volumeId: String) throws -> VolumeStructure? {
         let stmt = try auxPrepare(
             "SELECT structure_json FROM volume_structures WHERE volume_id = ?")
