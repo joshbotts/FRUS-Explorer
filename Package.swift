@@ -147,9 +147,21 @@ let package = Package(
         /// it enumerates the digitized rolls in the NARA Catalog and builds a bundled
         /// case-number → roll index so the app can resolve a State Dept. "File No." to the
         /// exact roll for page-by-page review without any runtime API calls.
+        /// The two edges below are #372 item 1b. `SourceNoteKit` supplies
+        /// `LotResolutionAcceptance`, so the harvester stops carrying a private copy of the
+        /// acceptance rule the app applies at render time; `LotClaimantsIndexGeneratorCore`
+        /// supplies `HarvestShardReader`, for the reason its own header and
+        /// `SeriesFactsIndexGeneratorCore` both give — a second decoder over the same shards is
+        /// a second thing that can drift. Both are acyclic: `SourceNoteKit` declares no
+        /// dependencies at all, and `LotClaimantsIndexGeneratorCore` depends only on
+        /// `GeneratorKit` + `SourceNoteKit`, neither of which reaches back here.
         .target(
             name: "CentralFilesIndexGeneratorCore",
-            dependencies: [.target(name: "GeneratorKit")],
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "SourceNoteKit"),
+                .target(name: "LotClaimantsIndexGeneratorCore"),
+            ],
             path: "CentralFilesIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -248,6 +260,15 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Unit tests for LotClaimantsIndexGeneratorCore — chiefly `HarvestShardReader`'s
+        /// streaming walk (#372 item 1b), pinned against its own whole-array `read(_:)`.
+        .testTarget(
+            name: "LotClaimantsIndexGeneratorTests",
+            dependencies: [.target(name: "LotClaimantsIndexGeneratorCore")],
+            path: "LotClaimantsIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Thin entry point — calls LotClaimantsIndexRunner.run() and exits.
         .executableTarget(
             name: "LotClaimantsIndexGenerator",
@@ -293,7 +314,10 @@ let package = Package(
         /// Unit tests for CentralFilesIndexGeneratorCore logic.
         .testTarget(
             name: "CentralFilesIndexGeneratorTests",
-            dependencies: [.target(name: "CentralFilesIndexGeneratorCore")],
+            dependencies: [
+                .target(name: "CentralFilesIndexGeneratorCore"),
+                .target(name: "SourceNoteKit"),
+            ],
             path: "CentralFilesIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

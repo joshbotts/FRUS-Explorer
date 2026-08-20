@@ -228,6 +228,39 @@ struct LotAcceptanceWiringAuditTests {
         #expect(!src.contains("func isAcceptableLotResolution"),
                 "NARACatalogClient declares its own copy of the acceptance rule")
     }
+
+    /// The **generator** side of the same rule, added by #372 item 1b.
+    ///
+    /// This test existed above for the app's client only, and the omission was not academic:
+    /// `NARACatalogHarvestClient` carried its own three-conjunct rule and its own
+    /// `foldControlNumber` for months, and the copy fell behind. The shared fold gained #679's
+    /// spelling expansions; the private one did not; **53 lot files NARA holds were unreachable
+    /// from the harvester** as a direct result, including `80D135`, which NARA indexes only as
+    /// `1980D0135`.
+    ///
+    /// A source scan proves the call is in the file rather than that it runs — the same
+    /// limitation the suite header states — but it is what stops the copy coming back, and
+    /// coming back is precisely what happened once.
+    @Test("The generator's harvest client uses the shared rule, with no private fold")
+    func generatorUsesTheSharedRule() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(
+            contentsOf: root.appending(path: "CentralFilesIndexGeneratorCore/NARACatalogHarvestClient.swift"),
+            encoding: .utf8)
+        #expect(text.count > 5_000, "NARACatalogHarvestClient.swift is implausibly small")
+        let src = Self.code(text)
+        #expect(src.contains("LotResolutionAcceptance.evidence"),
+                "the harvest client does not call the shared acceptance rule")
+        #expect(src.contains("LotResolutionAcceptance.carriesLotControlNumber"),
+                "the harvest client does not use the shared control-number test")
+        // The two declarations the swap deleted. Either one reappearing means a second copy of a
+        // rule the app applies at render time.
+        #expect(!src.contains("static func foldControlNumber"),
+                "the harvest client has re-declared a private fold — this is the drift that cost 53 lots")
+        #expect(!src.contains("recordGroupNumber == recordGroup\n"),
+                "the harvest client has re-inlined the record-group conjunct instead of delegating")
+    }
 }
 
 // MARK: - CatalogResultDecodingTests

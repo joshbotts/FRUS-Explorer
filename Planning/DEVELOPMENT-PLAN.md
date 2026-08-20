@@ -7744,3 +7744,94 @@ now above its own function.
 
 `foldDecision` is factored out as the pure half (the seam `lotsToWrite` has on the other side) and
 pinned by 13 tests; the four refusals were mutation-tested individually.
+
+## Session 2026-08-19 — #372 item 1b: the offline harvest answers 87 more lots
+
+The last open deliverable of #372, and the issue's own prescription for it does not work.
+
+**What 1b says to do, and why it cannot deliver.** "Make `CentralFilesIndexGeneratorCore` call
+`LotResolutionAcceptance.evidence` instead of its private `isAcceptableLotResolution`, then
+re-harvest." The acceptance rule was never the binding constraint — the *query* is. The keyed route
+builds its search spellings in `NARACatalogHarvestClient.lotVariants` by tokenising the **cited**
+key, so `80D135` is asked for as `80D135`, `80 D 135`, `80 D135`. NARA indexes that series (NAID
+236748619, Vance's Secretary files, 10 volumes) only as `1980D0135`; `grep "80D135" rg_59.json`
+returns nothing at all. An exact-match filter on spellings NARA never used returns no record,
+whichever rule runs downstream. `searchVariant` also sends `recordGroupNumber` = the **cited**
+group, filtering a cross-record-group record out upstream of acceptance — so even the O-7 lots the
+table exists to admit may not survive a keyed re-harvest. The offline harvest is subject to
+neither constraint because it reads every record and asks the question locally.
+
+**What shipped.** `SUPPLEMENT_FROM_HARVEST=1` — offline, keyless, checked before the API-key guard
+beside `FOLD_VOLUME_SOURCES` and `PRUNE_FLAGGED_LOTS`. Measured: 1,716 distinct cited lot keys, 931
+already answered, 20 curated → 765 wanted → **87 admitted (62 same-record-group, 25 through O-7's
+`crossRecordGroupLots`), 978 → 1,065**, reaching 92 distinct volumes of 552. 678 refused as "no
+candidate in the harvest", which is a property of the catalogue and not of the rule: `61D385` (OCB
+Files, 46 volumes) returns zero hits in every fold-expanded spelling.
+
+**The attribution matters more than the headline, and the adversarial pass is what surfaced it.**
+Only **9** of the 87 come from the harvest holding a series the keyed API missed. **53** come from
+the shared fold's #679 spelling expansions, which the private copy this generator carried did not
+apply, and **25** from the O-7 table. So the rule swap is the larger half of 1b's value — and the
+53 are unreachable by "then re-harvest" for the query reason above. A scope verifier refuted the
+first framing of this ("87 lots from the offline source") and was right to.
+
+**Streaming the shard read was a prerequisite, not an optimisation.** `HarvestShardReader.read`
+decodes a shard's whole `records` array in one `JSONDecoder` call and peaks at 7.01 GB resident on
+`rg_59.json` — fatal on a 16 GB machine. `forEachRecord` walks the array at the byte level and
+decodes one record at a time: the shipped pass runs in 48 s at **42 MB peak allocation**. The walk
+is JSON-aware (brace depth, string literals, `\` escapes) because a scan for the next `}` dies on
+any NARA title containing a brace, and the failure is a decode error at an uninterpretable offset.
+`HarvestShardStreamingTests` pins it against `read(_:)` over fixtures built from exactly those
+shapes.
+
+**Divided lots ship, and this reverses my own earlier recommendation.** Five lots (57D284, 61D233,
+71D483, 76F44, 77F53) have 2–6 acceptable series. I had proposed refusing them, on the memo's claim
+that `lot-claimants-index.json` could not hold a lot central-files lacks. True — but that artifact
+takes its lot list *from* central-files and is step 3 of the mandated regeneration order anyway. So
+#675's design already handles this: central-files stores one naId (the numerically lowest, a stated
+rule rather than shard-scan order), the claimants index discloses all of them, and Source Explorer
+prefers the divided rendering over the single card. Skipping that regeneration is the one ordering
+mistake that is both silent and user-visible.
+
+**Three refusals, each closing a specific failure.** Already-resolved is deduped against
+central-files itself, never against `collection-authority.json`'s `naId` field — that join is stale
+relative to the bundle it was built from (`83D66` is listed there as unresolved while central-files
+has answered it since the keyed harvest). The 20 curated lots are refused **by name**, not by
+trusting the rule to miss them: it does miss all 20 against this snapshot, and that is a property
+of the snapshot, since curation exists precisely because NARA carries no matching control number. A
+run that admits nothing exits 1 rather than writing.
+
+**The cross-record-group policy is now enforced at artifact level.**
+`CentralFilesIndexTests.crossRecordGroupRowsAreSanctioned` drives every bundled row whose record
+group differs from its designator's through the shared rule. 30 such rows, all sanctioned — which
+reconciles exactly against O-7's 37: 25 admitted here, 5 already present from item 1, and 7 that
+are cited only in footnotes or front matter and so were never in the supplement's denominator. The
+harvest is gitignored and on one machine, so the generator prints every admitted row and every
+divided lot: the artifact diff is the review surface.
+
+Also extended `LotAcceptanceWiringAuditTests` to scan `NARACatalogHarvestClient` for a private copy
+of the rule. That suite covered the app's client only, and the omission was not academic — the
+generator's copy is what fell 53 lots behind.
+
+**Two defects the test run found, not the reading.** The first is the same drift in another field:
+the keyed route sorts HMS/MLR entry numbers through `CatalogRecord.sortedNaturally`,
+`HarvestShardReader` returns NARA's arbitrary order, and the supplement took it raw — one row
+shipped `UD-14D 10, UD-14D 11, UD-14D 4` until `CentralFilesIndexTests`'s natural-sort assertion
+caught it. The second was my own empty-result guard: it refused when nothing was **admitted**,
+which is the correct outcome of a second run, and it failed exactly that way on the idempotency
+check. `candidates.isEmpty` is no better, since the scan is pre-filtered by `wanted`. The guard now
+tests the INPUT — how many records were read — and a clean no-op returns without writing, so
+`generated` is not bumped for a run that changed nothing.
+
+The claimants index turns out to carry the same unsorted-entries defect on three rows
+(83D135, 83D290, 83D305), verified **pre-existing** at `2b403279` and left alone: fixing it needs
+`sortedNaturally` moved somewhere shared, because the edge added here means
+`LotClaimantsIndexGeneratorCore` can no longer depend back on `CentralFilesIndexGeneratorCore`
+without a cycle. Filed separately.
+
+**Downstream regeneration, in the mandated order.** `collection-authority.json` lot collections
+with a NAID **931 → 1,018** (exactly +87); `lot-claimants-index.json` divided lots **118 → 123**
+(the five, each with the bundle's choice among its claimants); `series-facts-index.json` series with
+a creator **622 → 695**. `collection-usage-index.json` came out **byte-identical**, which is the
+right answer and worth stating: the supplement adds resolutions, not coverage — those documents
+were always attributed to their lots, they simply had no NARA record to point at.

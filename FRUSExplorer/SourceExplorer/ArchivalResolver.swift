@@ -20,13 +20,17 @@ import Foundation
 ///
 /// | | lot keys resolved | how it is built |
 /// |---|---|---|
-/// | `central-files-index.json` | **978** | keyed NARA Catalog harvest, `variantControlNumber` |
+/// | `central-files-index.json` | **1,065** | keyed harvest + the #372 1b offline supplement |
 /// | `volume-sources-index.json` `lots` | 0 | front-matter Sources pass, resolved offline |
 ///
 /// Source Explorer already read central-files; these two surfaces read volume-sources, so the
 /// same lot could carry a catalogue link in one place and none in another. Measured over the
 /// owner's 501-volume index: **220 lot keys resolve only in central-files** and **7 only in
 /// volume-sources**, worth **733 documents** and **98 front-matter nodes** gained.
+///
+/// Both figures are now historical. #372 item 1 folded the 7 into central-files and item 1b
+/// supplemented **87 more** from the offline record-group harvest, so central-files answers
+/// every lot either bundle can — 1,065 keys against the volume-sources map's zero.
 ///
 /// ## Precedence, and why it is not a replacement
 /// Central-files first, volume-sources second. It is a *fallback*, not a swap, for two
@@ -61,15 +65,17 @@ import Foundation
 /// The `#321` (`ancestryLacksRecordGroup`) and `#351` (`fileUnit`-level) refusals ride along
 /// unchanged: they live inside `CentralFilesIndex.lotFile(forRawLot:)` and
 /// `VolumeSourcesIndex.resolution`, and this type calls both rather than reimplementing
-/// either. Measured on the shipped bundles both guards currently refuse **nothing** (all 978
-/// central-files entries are `series`-level and unflagged, the seven folded in included; the
-/// volume-sources lot map is now empty) — they are dormant, not dead, and a re-harvest can
+/// either. Measured on the shipped bundles both guards currently refuse **nothing** (1,058 of
+/// 1,065 central-files entries are `series`-level and none is flagged — the 7 with no level at
+/// all are the item-1 fold's, which the #321/#351 guards pass and `evidence` would not; the
+/// volume-sources lot map is empty) — they are dormant, not dead, and a re-harvest can
 /// re-arm them. The fold itself applies the same two refusals before admitting a row, so a
 /// flagged orphan stays in volume-sources rather than crossing over.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #372 / N-5 PR 1 (the repoint)
 ///   1.1 — Session 2026-08-19: #372 item 1 — the seven orphans folded into central-files
+///   1.2 — Session 2026-08-19: #372 item 1b — +87 lots from the offline harvest supplement
 enum ArchivalResolver {
 
     /// The resolution for a **volume front-matter Sources node**: its lot, else its

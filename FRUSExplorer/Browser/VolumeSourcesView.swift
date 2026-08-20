@@ -338,9 +338,11 @@ struct VolumeSourcesView: View {
     /// collection cited by more than one volume — a cross-volume provenance affordance.
     private func sourceNodeRow(_ entry: VolumeSourceEntry) -> some View {
         // O(1) lookups into the bundled indexes (decoded once, warmed off-main).
-        // #372/N-5: central-files first, volume-sources second — 220 lot keys resolve only in
-        // central-files (98 nodes here), 7 only in volume-sources, so the precedence is a
-        // fallback rather than a swap. `ArchivalResolver` owns the rule for both surfaces.
+        // #372/N-5: central-files first, volume-sources second. The precedence was a fallback
+        // rather than a swap because 7 lots resolved ONLY in volume-sources; item 1 folded those
+        // into central-files and item 1b supplemented 87 more from the offline harvest, so the
+        // volume-sources lot map is now empty and this arm answers everything.
+        // `ArchivalResolver` owns the rule for both surfaces.
         let resolution = ArchivalResolver.frontMatterResolution(
             recordGroup: entry.recordGroup, lotFile: entry.lotFile, entryText: entry.rawText,
             repository: entry.repository)

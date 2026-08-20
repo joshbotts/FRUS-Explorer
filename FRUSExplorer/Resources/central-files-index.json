@@ -74908,6 +74908,30 @@
   "generated" : "2026-08-19",
   "lotFiles" : [
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124670",
+      "hmsMlrEntryNumbers" : [
+        "A1 1457"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "428",
+      "matchType" : "control",
+      "naId" : "2124670",
+      "recordGroup" : "59",
+      "title" : "Subject Files Relating to Palestine, Political, Security, and Trusteeship Matters"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2521109",
+      "hmsMlrEntryNumbers" : [
+        "A1 1473"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "5226",
+      "matchType" : "control",
+      "naId" : "2521109",
+      "recordGroup" : "59",
+      "title" : "Subject Files Relating to Program Management"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124668",
       "hmsMlrEntryNumbers" : [
         "A1 1454"
@@ -75002,6 +75026,18 @@
       "naId" : "2127212",
       "recordGroup" : "59",
       "title" : "Military Telegrams Relating to Korea"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124665",
+      "hmsMlrEntryNumbers" : [
+        "P 1"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "53D443",
+      "matchType" : "control",
+      "naId" : "2124665",
+      "recordGroup" : "353",
+      "title" : "Records of the International Security Affairs Committee (ISAC)"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2168520",
@@ -75292,6 +75328,18 @@
       "title" : "Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/25777867",
+      "hmsMlrEntryNumbers" : [
+        "UD-10D 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "56D581",
+      "matchType" : "control",
+      "naId" : "25777867",
+      "recordGroup" : "306",
+      "title" : "Files Related to the McCarthy Committee Hearings on Book Censorship"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2092759",
       "hmsMlrEntryNumbers" : [
         "A1 1207"
@@ -75378,6 +75426,18 @@
       "naId" : "2143674",
       "recordGroup" : "59",
       "title" : "Records Relating to the North Atlantic Treaty Organization"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1422076",
+      "hmsMlrEntryNumbers" : [
+        "A1 713"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "57D284",
+      "matchType" : "control",
+      "naId" : "1422076",
+      "recordGroup" : "43",
+      "title" : "Records of the Fifth Session at Torquay"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/624723",
@@ -75986,6 +76046,40 @@
       "title" : "Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/7542975",
+      "hmsMlrEntryNumbers" : [
+        "P 482"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "59D242",
+      "matchType" : "control",
+      "naId" : "7542975",
+      "recordGroup" : "306",
+      "title" : "Records Relating to the Voice of America (VOA)"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1257679",
+      "hmsMlrEntryNumbers" : [
+        "UD-WW 151",
+        "UD-WW 197",
+        "UD-WW 234",
+        "UD-WW 264",
+        "UD-WW 287",
+        "UD-WW 288",
+        "UD-WW 365",
+        "UD-WW 366",
+        "UD-WW 372",
+        "UD-WW 379",
+        "UD-WW 382"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "59D260",
+      "matchType" : "control",
+      "naId" : "1257679",
+      "recordGroup" : "306",
+      "title" : "Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2212186",
       "hmsMlrEntryNumbers" : [
         "A1 1268"
@@ -76359,6 +76453,20 @@
       "title" : "Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1254251",
+      "hmsMlrEntryNumbers" : [
+        "UD-WW 138",
+        "UD-WW 337",
+        "UD-WW 392"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "60D147",
+      "matchType" : "control",
+      "naId" : "1254251",
+      "recordGroup" : "306",
+      "title" : "Program Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2561240",
       "hmsMlrEntryNumbers" : [
         "P 225"
@@ -76514,6 +76622,19 @@
       "naId" : "634099",
       "recordGroup" : "59",
       "title" : "Verbatim Transcripts of Conferences, Meetings, Hearings, Talks, and Briefings"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/44264049",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 3",
+        "UD-WW 343"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "60D439",
+      "matchType" : "control",
+      "naId" : "44264049",
+      "recordGroup" : "306",
+      "title" : "Country, Programs, and Operations Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2255069",
@@ -76830,6 +76951,18 @@
       "title" : "Subject Files Relating to Iraq and Jordan"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/6106829",
+      "hmsMlrEntryNumbers" : [
+        "P 256"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "61D233",
+      "matchType" : "control",
+      "naId" : "6106829",
+      "recordGroup" : "306",
+      "title" : "Travel Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2123606",
       "hmsMlrEntryNumbers" : [
         "A1 1170"
@@ -76900,6 +77033,18 @@
       "naId" : "2108779",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2662889",
+      "hmsMlrEntryNumbers" : [
+        "P 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "61D282A",
+      "matchType" : "control",
+      "naId" : "2662889",
+      "recordGroup" : "353",
+      "title" : "Records Relating to the Council on Foreign Economic Policy"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2505037",
@@ -77032,6 +77177,28 @@
       "naId" : "2124204",
       "recordGroup" : "59",
       "title" : "Office Files Relating to Middle Eastern Affairs"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1257679",
+      "hmsMlrEntryNumbers" : [
+        "UD-WW 151",
+        "UD-WW 197",
+        "UD-WW 234",
+        "UD-WW 264",
+        "UD-WW 287",
+        "UD-WW 288",
+        "UD-WW 365",
+        "UD-WW 366",
+        "UD-WW 372",
+        "UD-WW 379",
+        "UD-WW 382"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "61D445",
+      "matchType" : "control",
+      "naId" : "1257679",
+      "recordGroup" : "306",
+      "title" : "Subject Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2113328",
@@ -77997,6 +78164,18 @@
       "title" : "Records Relating to Colombia"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1160760",
+      "hmsMlrEntryNumbers" : [
+        "A1 5536"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "64D149",
+      "matchType" : "control",
+      "naId" : "1160760",
+      "recordGroup" : "43",
+      "title" : "Administrative Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1750062",
       "hmsMlrEntryNumbers" : [
         "A1 3159"
@@ -78258,6 +78437,18 @@
       "title" : "Records Relating to the General Agreement on Tariffs and Trade (GATT)"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1254428",
+      "hmsMlrEntryNumbers" : [
+        "P 259"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "64D423",
+      "matchType" : "control",
+      "naId" : "1254428",
+      "recordGroup" : "306",
+      "title" : "Records Relating to Bacteriological Warfare Charges and the Korean War"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1964680",
       "hmsMlrEntryNumbers" : [
         "A1 3096"
@@ -78280,6 +78471,18 @@
       "naId" : "2211746",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1254209",
+      "hmsMlrEntryNumbers" : [
+        "P 223"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "64D484",
+      "matchType" : "control",
+      "naId" : "1254209",
+      "recordGroup" : "306",
+      "title" : "Latin American Program Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068464",
@@ -78305,6 +78508,18 @@
       "naId" : "2363846",
       "recordGroup" : "59",
       "title" : "Economic Affairs Files Relating to Indonesia, Malaya, and Singapore"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40910228",
+      "hmsMlrEntryNumbers" : [
+        "P 310"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "64D535",
+      "matchType" : "control",
+      "naId" : "40910228",
+      "recordGroup" : "306",
+      "title" : "Policy Guidances"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1136548",
@@ -78922,6 +79137,18 @@
       "naId" : "1965953",
       "recordGroup" : "59",
       "title" : "Subject, Personal Name, and Country Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2602931",
+      "hmsMlrEntryNumbers" : [
+        "P 3"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "65D68",
+      "matchType" : "control",
+      "naId" : "2602931",
+      "recordGroup" : "353",
+      "title" : "Meeting Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2363845",
@@ -79586,6 +79813,18 @@
       "naId" : "2839192",
       "recordGroup" : "59",
       "title" : "Records Relating to National Security Council Policy Papers"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/5051990",
+      "hmsMlrEntryNumbers" : [
+        "P 840"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "66F89",
+      "matchType" : "control",
+      "naId" : "5051990",
+      "recordGroup" : "84",
+      "title" : "Top Secret Subject Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/624719",
@@ -80455,6 +80694,18 @@
       "naId" : "3931111",
       "recordGroup" : "84",
       "title" : "Unclassified Central Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/5956202",
+      "hmsMlrEntryNumbers" : [
+        "P 793"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "68F32",
+      "matchType" : "control",
+      "naId" : "5956202",
+      "recordGroup" : "84",
+      "title" : "Classified Mission Coordinator's Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/632019",
@@ -81551,6 +81802,18 @@
       "title" : "Conference Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40943515",
+      "hmsMlrEntryNumbers" : [
+        "P 311"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "70D398",
+      "matchType" : "control",
+      "naId" : "40943515",
+      "recordGroup" : "306",
+      "title" : "Alphabetical Subject Files Containing Policy Guidance Records"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/16909877",
       "hmsMlrEntryNumbers" : [
         "P 473"
@@ -81868,6 +82131,18 @@
       "title" : "National Security Council Meeting Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/978210",
+      "hmsMlrEntryNumbers" : [
+        "A1-5757"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "71D18",
+      "matchType" : "control",
+      "naId" : "978210",
+      "recordGroup" : "59",
+      "title" : "Records Relating to Chile"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2143331",
       "hmsMlrEntryNumbers" : [
         "A1 5412"
@@ -81914,6 +82189,18 @@
       "naId" : "4719322",
       "recordGroup" : "59",
       "title" : "Records Relating to Political Affairs"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2581207",
+      "hmsMlrEntryNumbers" : [
+        "A1 5762"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "71D224",
+      "matchType" : "control",
+      "naId" : "2581207",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602875",
@@ -82168,6 +82455,18 @@
       "title" : "Subject Files of Ambassador at Large W. Averell Harriman"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/56190687",
+      "hmsMlrEntryNumbers" : [
+        "P 430"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "71D483",
+      "matchType" : "control",
+      "naId" : "56190687",
+      "recordGroup" : "306",
+      "title" : "Country Files for El Salvador"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2168587",
       "hmsMlrEntryNumbers" : [
         "A1 5641"
@@ -82318,6 +82617,18 @@
       "naId" : "2637638",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27023004",
+      "hmsMlrEntryNumbers" : [
+        "UD-WX 660"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "71F154",
+      "matchType" : "control",
+      "naId" : "27023004",
+      "recordGroup" : "59",
+      "title" : "Records Relating to Petroleum Issues in Lima, Peru"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2569074",
@@ -82562,6 +82873,18 @@
       "title" : "Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2570627",
+      "hmsMlrEntryNumbers" : [
+        "UD-WX 20"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "72D291",
+      "matchType" : "control",
+      "naId" : "2570627",
+      "recordGroup" : "43",
+      "title" : "Reports and Resolutions"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2103486",
       "hmsMlrEntryNumbers" : [
         "A1 5633"
@@ -82791,6 +83114,18 @@
       "title" : "Records Relating to Kinshasa, Democratic Republic of the Congo, and Brazzaville, Republic of the Congo"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/921299",
+      "hmsMlrEntryNumbers" : [
+        "A1 5764"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "72D464",
+      "matchType" : "control",
+      "naId" : "921299",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/580961",
       "hmsMlrEntryNumbers" : [
         "A1-5257"
@@ -82899,6 +83234,30 @@
       "title" : "Records Relating to Pakistan"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2581207",
+      "hmsMlrEntryNumbers" : [
+        "A1 5762"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "72D96",
+      "matchType" : "control",
+      "naId" : "2581207",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2945672",
+      "hmsMlrEntryNumbers" : [
+        "P 265"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "72F81",
+      "matchType" : "control",
+      "naId" : "2945672",
+      "recordGroup" : "84",
+      "title" : "Classified Subject Files of Ambassador Kenneth Rush"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2581468",
       "hmsMlrEntryNumbers" : [
         "A1 5765"
@@ -82945,6 +83304,18 @@
       "naId" : "2068469",
       "recordGroup" : "59",
       "title" : "Records Relating to Haiti"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309057",
+      "hmsMlrEntryNumbers" : [
+        "A1 5782"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "73D139",
+      "matchType" : "control",
+      "naId" : "26309057",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631403",
@@ -83273,6 +83644,18 @@
       "title" : "Subject and Country Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2619017",
+      "hmsMlrEntryNumbers" : [
+        "A1 5760"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "73D395",
+      "matchType" : "control",
+      "naId" : "2619017",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309337",
       "hmsMlrEntryNumbers" : [
         "A1 5743"
@@ -83307,6 +83690,18 @@
       "naId" : "2131137",
       "recordGroup" : "59",
       "title" : "Office Files of William P. Rogers"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1039947",
+      "hmsMlrEntryNumbers" : [
+        "P 79"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "73D46",
+      "matchType" : "control",
+      "naId" : "1039947",
+      "recordGroup" : "59",
+      "title" : "Records Relating to Jamaica"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/649148",
@@ -83549,6 +83944,18 @@
       "title" : "Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/7097719",
+      "hmsMlrEntryNumbers" : [
+        "P 1015"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "74D255",
+      "matchType" : "control",
+      "naId" : "7097719",
+      "recordGroup" : "84",
+      "title" : "Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2602541",
       "hmsMlrEntryNumbers" : [
         "A1 5730"
@@ -83603,6 +84010,18 @@
       "naId" : "2555878",
       "recordGroup" : "59",
       "title" : "Records Relating to Political and Military Affairs"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/921299",
+      "hmsMlrEntryNumbers" : [
+        "A1 5764"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "74D343",
+      "matchType" : "control",
+      "naId" : "921299",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2168541",
@@ -83688,6 +84107,18 @@
       "naId" : "604773",
       "recordGroup" : "59",
       "title" : "Briefing Books"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/588795",
+      "hmsMlrEntryNumbers" : [
+        "A1 3372"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "74D417",
+      "matchType" : "control",
+      "naId" : "588795",
+      "recordGroup" : "84",
+      "title" : "Files of Ambassador Ellsworth Bunker"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2529269",
@@ -83804,6 +84235,18 @@
       "title" : "North Asia Country Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/488747977",
+      "hmsMlrEntryNumbers" : [
+        "UD-25D 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "74D51",
+      "matchType" : "control",
+      "naId" : "488747977",
+      "recordGroup" : "59",
+      "title" : "Correspondence Relating to the Vietnam Air War"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2105083",
       "hmsMlrEntryNumbers" : [
         "A1 5637"
@@ -83898,6 +84341,18 @@
       "naId" : "26309235",
       "recordGroup" : "59",
       "title" : "Records of Ambassador Richard F. Pedersen"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2990432",
+      "hmsMlrEntryNumbers" : [
+        "A1 5761"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "75D277",
+      "matchType" : "control",
+      "naId" : "2990432",
+      "recordGroup" : "59",
+      "title" : "Records Relating to Brazil"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631403",
@@ -84679,6 +85134,18 @@
       "title" : "Unclassified Central Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2641456",
+      "hmsMlrEntryNumbers" : [
+        "P 2"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "76F44",
+      "matchType" : "control",
+      "naId" : "2641456",
+      "recordGroup" : "84",
+      "title" : "Classified Central Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4076550",
       "hmsMlrEntryNumbers" : [
         "P 44"
@@ -84773,6 +85240,18 @@
       "naId" : "1254407",
       "recordGroup" : "59",
       "title" : "Records Relating to Panama"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4490822",
+      "hmsMlrEntryNumbers" : [
+        "P 790"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "77D146",
+      "matchType" : "control",
+      "naId" : "4490822",
+      "recordGroup" : "84",
+      "title" : "Classified Subject Files of Ambassador Ellsworth Bunker"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/622619",
@@ -84943,6 +85422,30 @@
       "title" : "Records Relating to Kinshasa, Democratic Republic of the Congo, and Brazzaville, Republic of the Congo"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4722283",
+      "hmsMlrEntryNumbers" : [
+        "A1 5655"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "77D51",
+      "matchType" : "control",
+      "naId" : "4722283",
+      "recordGroup" : "59",
+      "title" : "Records of the Office Director"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27023199",
+      "hmsMlrEntryNumbers" : [
+        "UD-14D 75"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "77D57",
+      "matchType" : "control",
+      "naId" : "27023199",
+      "recordGroup" : "59",
+      "title" : "Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2602541",
       "hmsMlrEntryNumbers" : [
         "A1 5730"
@@ -85003,6 +85506,18 @@
       "title" : "Classified Central Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2641456",
+      "hmsMlrEntryNumbers" : [
+        "P 2"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "77F53",
+      "matchType" : "control",
+      "naId" : "2641456",
+      "recordGroup" : "84",
+      "title" : "Classified Central Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3931111",
       "hmsMlrEntryNumbers" : [
         "P 335 A"
@@ -85049,6 +85564,18 @@
       "naId" : "2143331",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/580103922",
+      "hmsMlrEntryNumbers" : [
+        "UD-25D 48"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "78D155",
+      "matchType" : "control",
+      "naId" : "580103922",
+      "recordGroup" : "59",
+      "title" : "Country and Subject Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/5038052",
@@ -85208,6 +85735,18 @@
       "title" : "Record Set of National Intelligence Estimates, Special Estimates, and Special National Intelligence Estimates"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/235900334",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 39"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "78D409",
+      "matchType" : "control",
+      "naId" : "235900334",
+      "recordGroup" : "59",
+      "title" : "Country and Subject Files Related to Economic Issues"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/619160",
       "hmsMlrEntryNumbers" : [
         "A1 5177"
@@ -85242,6 +85781,18 @@
       "naId" : "649856",
       "recordGroup" : "59",
       "title" : "Records Relating to Argentina"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4722283",
+      "hmsMlrEntryNumbers" : [
+        "A1 5655"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "78D60",
+      "matchType" : "control",
+      "naId" : "4722283",
+      "recordGroup" : "59",
+      "title" : "Records of the Office Director"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2103478",
@@ -85388,6 +85939,18 @@
       "title" : "Records Relating to Law of the Sea Negotiations"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/28794098",
+      "hmsMlrEntryNumbers" : [
+        "UD-15D 61"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "79D18",
+      "matchType" : "control",
+      "naId" : "28794098",
+      "recordGroup" : "59",
+      "title" : "Subject Files Related to Peru"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022911",
       "hmsMlrEntryNumbers" : [
         "UD-UP 264"
@@ -85434,6 +85997,25 @@
       "naId" : "27023201",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022994",
+      "hmsMlrEntryNumbers" : [
+        "UD-13D 13",
+        "UD-13D 38",
+        "UD-14D 106",
+        "UD-14D 108",
+        "UD-14D 111",
+        "UD-15D 15",
+        "UD-15D 32",
+        "UD-16D 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "79D31",
+      "matchType" : "control",
+      "naId" : "27022994",
+      "recordGroup" : "59",
+      "title" : "Principal Officer Memoranda Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/28794133",
@@ -85484,6 +86066,18 @@
       "title" : "Classified General Records"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/300885188",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 45"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "79F79",
+      "matchType" : "control",
+      "naId" : "300885188",
+      "recordGroup" : "84",
+      "title" : "Economic Program Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/603077",
       "hmsMlrEntryNumbers" : [
         "A1-5632"
@@ -85494,6 +86088,30 @@
       "naId" : "603077",
       "recordGroup" : "59",
       "title" : "Records Relating to Israel and Arab - Israel Affairs"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/236748619",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 47"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80D135",
+      "matchType" : "control",
+      "naId" : "236748619",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files of Secretary of State Cyrus Vance"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309185",
+      "hmsMlrEntryNumbers" : [
+        "UD-05D 92"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80D166",
+      "matchType" : "control",
+      "naId" : "26309185",
+      "recordGroup" : "59",
+      "title" : "Files of Ambassador at Large Alfred L. Atherton, Jr."
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/111879278",
@@ -85578,6 +86196,85 @@
       "naId" : "26309111",
       "recordGroup" : "59",
       "title" : "Records Relating to Law of the Sea Negotiations"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022656",
+      "hmsMlrEntryNumbers" : [
+        "UD-04D 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80D72",
+      "matchType" : "control",
+      "naId" : "27022656",
+      "recordGroup" : "59",
+      "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022994",
+      "hmsMlrEntryNumbers" : [
+        "UD-13D 13",
+        "UD-13D 38",
+        "UD-14D 106",
+        "UD-14D 108",
+        "UD-14D 111",
+        "UD-15D 15",
+        "UD-15D 32",
+        "UD-16D 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80D90",
+      "matchType" : "control",
+      "naId" : "27022994",
+      "recordGroup" : "59",
+      "title" : "Principal Officer Memoranda Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/297636345",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 68"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80F162",
+      "matchType" : "control",
+      "naId" : "297636345",
+      "recordGroup" : "84",
+      "title" : "Program Files of Ambassador William Jorden"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/102260314",
+      "hmsMlrEntryNumbers" : [
+        "UD-16W 3"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80F215",
+      "matchType" : "control",
+      "naId" : "102260314",
+      "recordGroup" : "84",
+      "title" : "Correspondence Files and Briefing Books of Ambassadors William Macomber, Robert Keeley, and Samuel Lewis"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/300885211",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 70"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80F29",
+      "matchType" : "control",
+      "naId" : "300885211",
+      "recordGroup" : "84",
+      "title" : "Political Program Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/205210261",
+      "hmsMlrEntryNumbers" : [
+        "UD-20D 1"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "80F64",
+      "matchType" : "control",
+      "naId" : "205210261",
+      "recordGroup" : "84",
+      "title" : "Program Files of Chiefs of Mission George H.W. Bush, Thomas Gates, Jr., and Leonard Woodcock"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27499797",
@@ -85873,6 +86570,18 @@
       "title" : "General Program Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/472494327",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 11"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "81D372",
+      "matchType" : "control",
+      "naId" : "472494327",
+      "recordGroup" : "59",
+      "title" : "Security Assistance Program Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309200",
       "hmsMlrEntryNumbers" : [
         "UD-07D 142"
@@ -85883,6 +86592,30 @@
       "naId" : "26309200",
       "recordGroup" : "59",
       "title" : "Policy and Procedural Files of Benjamin H. Read"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/6862866",
+      "hmsMlrEntryNumbers" : [
+        "UD-11D 1"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "81D5",
+      "matchType" : "control",
+      "naId" : "6862866",
+      "recordGroup" : "59",
+      "title" : "Records of Under Secretary of State Philip C. Habib"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27499857",
+      "hmsMlrEntryNumbers" : [
+        "UD-14D 61"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "81D64",
+      "matchType" : "control",
+      "naId" : "27499857",
+      "recordGroup" : "59",
+      "title" : "Assistant Secretary’s Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309184",
@@ -85897,6 +86630,18 @@
       "title" : "Matthew Nimetz's Chronological Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/297910144",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 59"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "81F1",
+      "matchType" : "control",
+      "naId" : "297910144",
+      "recordGroup" : "84",
+      "title" : "Political Program Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/6862117",
       "hmsMlrEntryNumbers" : [
         "UD-11W 18"
@@ -85907,6 +86652,30 @@
       "naId" : "6862117",
       "recordGroup" : "84",
       "title" : "Central Subject and Officially Decentralized Files of Foreign Service Posts"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/557744112",
+      "hmsMlrEntryNumbers" : [
+        "UD-25D 65"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "81F58",
+      "matchType" : "control",
+      "naId" : "557744112",
+      "recordGroup" : "84",
+      "title" : "Political Program Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/486502233",
+      "hmsMlrEntryNumbers" : [
+        "UD-24D 164"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "81F93",
+      "matchType" : "control",
+      "naId" : "486502233",
+      "recordGroup" : "84",
+      "title" : "Program Files of Ambassadors Raul Castro and John Davis Lodge"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309182",
@@ -86044,6 +86813,19 @@
       "naId" : "26309198",
       "recordGroup" : "59",
       "title" : "Files of Lucy W. Benson"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/482952549",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 57",
+        "UD-19D 5"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "82D208",
+      "matchType" : "control",
+      "naId" : "482952549",
+      "recordGroup" : "59",
+      "title" : "Transition Master Files and Visit Books"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022676",
@@ -86249,6 +87031,19 @@
       "title" : "Subject Files of Foreign Service Posts"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/326769439",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 142",
+        "UD-26D 1"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "82F94",
+      "matchType" : "control",
+      "naId" : "326769439",
+      "recordGroup" : "84",
+      "title" : "Political Program Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022993",
       "hmsMlrEntryNumbers" : [
         "UD-14D 63"
@@ -86287,6 +87082,18 @@
       "naId" : "26309222",
       "recordGroup" : "59",
       "title" : "Political Files of Under Secretary Lawrence Eagleburger"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/582185558",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 72"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "83D229",
+      "matchType" : "control",
+      "naId" : "582185558",
+      "recordGroup" : "59",
+      "title" : "Reports and Program Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309183",
@@ -86363,6 +87170,18 @@
       "title" : "National Security Council National Security Decision Memorandums"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/419501582",
+      "hmsMlrEntryNumbers" : [
+        "UD-24D 43"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "83D340",
+      "matchType" : "control",
+      "naId" : "419501582",
+      "recordGroup" : "59",
+      "title" : "Assistant Secretary Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022701",
       "hmsMlrEntryNumbers" : [
         "UD-05D 112",
@@ -86428,6 +87247,18 @@
       "title" : "Briefing Books of Cyrus R. Vance"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/361621794",
+      "hmsMlrEntryNumbers" : [
+        "UD-24D 10"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "84D247",
+      "matchType" : "control",
+      "naId" : "361621794",
+      "recordGroup" : "59",
+      "title" : "General Commodity Subject and Country Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/28794112",
       "hmsMlrEntryNumbers" : [
         "UD-14W 110"
@@ -86450,6 +87281,20 @@
       "naId" : "2131132",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/470633955",
+      "hmsMlrEntryNumbers" : [
+        "UD-18D 18",
+        "UD-18D 18-A",
+        "UD-18D 18-B"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "85D308",
+      "matchType" : "control",
+      "naId" : "470633955",
+      "recordGroup" : "59",
+      "title" : "Records of Deputy Secretary of State Kenneth W. Dam"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309077",
@@ -86500,6 +87345,59 @@
       "title" : "Records Relating to the Hungarian Holy Crown of St. Stephen"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/488743828",
+      "hmsMlrEntryNumbers" : [
+        "UD-14D 4",
+        "UD-14D 6",
+        "UD-14D 8",
+        "UD-14D 9",
+        "UD-14D 10",
+        "UD-14D 11"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "85D427",
+      "matchType" : "control",
+      "naId" : "488743828",
+      "recordGroup" : "84",
+      "title" : "Subject and Country Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/348512318",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 37"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "86D189",
+      "matchType" : "control",
+      "naId" : "348512318",
+      "recordGroup" : "59",
+      "title" : "Research Project Files Relating to U.S. Relations with Iran"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/485327404",
+      "hmsMlrEntryNumbers" : [
+        "UD-14D 12"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "86D339",
+      "matchType" : "control",
+      "naId" : "485327404",
+      "recordGroup" : "84",
+      "title" : "Political Program Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/446397010",
+      "hmsMlrEntryNumbers" : [
+        "UD-16W 15"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "86D362",
+      "matchType" : "control",
+      "naId" : "446397010",
+      "recordGroup" : "59",
+      "title" : "Chronological Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/6862086",
       "hmsMlrEntryNumbers" : [
         "UD-11W 4"
@@ -86534,6 +87432,30 @@
       "naId" : "27499867",
       "recordGroup" : "59",
       "title" : "Chronological Files Related to United States Strategic Defense Programs"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/291735618",
+      "hmsMlrEntryNumbers" : [
+        "UD-20D 3"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "87D37",
+      "matchType" : "control",
+      "naId" : "291735618",
+      "recordGroup" : "59",
+      "title" : "Organization and Conference Files Relating to the United Nations and Other International Groups"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/301978216",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 6"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "87D73",
+      "matchType" : "control",
+      "naId" : "301978216",
+      "recordGroup" : "59",
+      "title" : "Deputy Assistant Secretary's Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/6862086",
@@ -86573,6 +87495,37 @@
       "title" : "Berlin Task Force Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/204375620",
+      "hmsMlrEntryNumbers" : [
+        "UD-19W 7"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "88D345",
+      "matchType" : "control",
+      "naId" : "204375620",
+      "recordGroup" : "59",
+      "title" : "United Nations Conference on Trade and Development Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022994",
+      "hmsMlrEntryNumbers" : [
+        "UD-13D 13",
+        "UD-13D 38",
+        "UD-14D 106",
+        "UD-14D 108",
+        "UD-14D 111",
+        "UD-15D 15",
+        "UD-15D 32",
+        "UD-16D 4"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "88D99",
+      "matchType" : "control",
+      "naId" : "27022994",
+      "recordGroup" : "59",
+      "title" : "Principal Officer Memoranda Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022504",
       "hmsMlrEntryNumbers" : [
         "UD-14W 8"
@@ -86597,6 +87550,18 @@
       "title" : "National Security Council (NSC) Directives"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/580705331",
+      "hmsMlrEntryNumbers" : [
+        "UD-25D 52"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "89D184",
+      "matchType" : "control",
+      "naId" : "580705331",
+      "recordGroup" : "59",
+      "title" : "Files of Assistant Secretary Elliott Abrams"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27499846",
       "hmsMlrEntryNumbers" : [
         "UD-13W 21"
@@ -86607,6 +87572,18 @@
       "naId" : "27499846",
       "recordGroup" : "59",
       "title" : "Human Rights Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309219",
+      "hmsMlrEntryNumbers" : [
+        "UD-14D 110"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "89D213",
+      "matchType" : "control",
+      "naId" : "26309219",
+      "recordGroup" : "59",
+      "title" : "Speech and Trip Files of Ambassador at Large Vernon A. Walters"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1629833",
@@ -86633,6 +87610,42 @@
       "title" : "Records of the Deputy Assistant Secretary Relating to China"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022500",
+      "hmsMlrEntryNumbers" : [
+        "UD-14W 3"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "89D95",
+      "matchType" : "control",
+      "naId" : "27022500",
+      "recordGroup" : "59",
+      "title" : "Records Relating to Hungary"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022480",
+      "hmsMlrEntryNumbers" : [
+        "UD-13W 32"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "90D14",
+      "matchType" : "control",
+      "naId" : "27022480",
+      "recordGroup" : "59",
+      "title" : "Records Relating to the German Democratic Republic"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/311080725",
+      "hmsMlrEntryNumbers" : [
+        "UD-23D 24"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "90D234",
+      "matchType" : "control",
+      "naId" : "311080725",
+      "recordGroup" : "59",
+      "title" : "Subject and Country Files Relating to the Antarctic"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/28794074",
       "hmsMlrEntryNumbers" : [
         "UD-WX 645"
@@ -86655,6 +87668,18 @@
       "naId" : "4243806",
       "recordGroup" : "59",
       "title" : "Program Files for Soviet - Asia Relations"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/518256075",
+      "hmsMlrEntryNumbers" : [
+        "UD-24D 82"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "90D327",
+      "matchType" : "control",
+      "naId" : "518256075",
+      "recordGroup" : "59",
+      "title" : "Conference Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022468",
@@ -86729,6 +87754,18 @@
       "title" : "Records Relating to the Four Power Talks and Quadripartite Agreement"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/580599478",
+      "hmsMlrEntryNumbers" : [
+        "UD-25D 63"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "91D371",
+      "matchType" : "control",
+      "naId" : "580599478",
+      "recordGroup" : "59",
+      "title" : "Security Assistance Program Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2131131",
       "hmsMlrEntryNumbers" : [
         "A1 5403"
@@ -86751,6 +87788,18 @@
       "naId" : "3859203",
       "recordGroup" : "59",
       "title" : "Law of the Sea Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/588515",
+      "hmsMlrEntryNumbers" : [
+        "A1 3372A"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "92D306",
+      "matchType" : "control",
+      "naId" : "588515",
+      "recordGroup" : "84",
+      "title" : "Messages from U.S. Ambassador to South Vietnam Ellsworth Bunker to the President of the United States"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/28794135",
@@ -86777,6 +87826,42 @@
       "title" : "Office Subject Files"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/431966115",
+      "hmsMlrEntryNumbers" : [
+        "UD-24D 42"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "93D188",
+      "matchType" : "control",
+      "naId" : "431966115",
+      "recordGroup" : "59",
+      "title" : "Memoranda of Conversations Files for Alexander Haig, George Shultz, and James Baker"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/580596852",
+      "hmsMlrEntryNumbers" : [
+        "UD-16D 37"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "93D389",
+      "matchType" : "control",
+      "naId" : "580596852",
+      "recordGroup" : "59",
+      "title" : "Historical Files Related to United States-Philippine Military Base Agreements and Negotiations"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/226245311",
+      "hmsMlrEntryNumbers" : [
+        "UD-18W 2"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "93D592",
+      "matchType" : "control",
+      "naId" : "226245311",
+      "recordGroup" : "59",
+      "title" : "Program Files Relating to Negotiations on Nuclear and Space Arms"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2225592",
       "hmsMlrEntryNumbers" : [
         "P 38"
@@ -86799,6 +87884,18 @@
       "naId" : "1229820",
       "recordGroup" : "59",
       "title" : "Records of U. Alexis Johnson"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/580005921",
+      "hmsMlrEntryNumbers" : [
+        "UD-25D 61"
+      ],
+      "levelOfDescription" : "series",
+      "lotNumber" : "96F335",
+      "matchType" : "control",
+      "naId" : "580005921",
+      "recordGroup" : "84",
+      "title" : "Political Program Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068454",

@@ -45,7 +45,7 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// `lotFiles` keyed by its already-normalized `lotNumber`, built once at decode.
     ///
-    /// `lotFile(forRawLot:)` used to scan all 978 entries. That was fine while Source Explorer
+    /// `lotFile(forRawLot:)` used to scan all 1,065 entries. That was fine while Source Explorer
     /// was the only caller — once per opened document — but the #372/N-5 repoint put it on the
     /// corpus browser's Sources outline, which calls it **once per row**, and a volume like
     /// `frus1964-68v06` has 755. Not part of the encoded shape: `CodingKeys` omits it, so a

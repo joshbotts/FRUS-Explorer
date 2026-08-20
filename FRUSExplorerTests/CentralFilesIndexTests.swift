@@ -232,7 +232,7 @@ struct CentralFilesIndexTests {
     func bundledLotFilesAreEnriched() throws {
         let index = try #require(CentralFilesIndexStore.shared)
         let lots = index.lotFiles
-        #expect(lots.count > 900, "expected ~979 lot entries")
+        #expect(lots.count > 1_000, "expected ~1,065 lot entries (978 + the #372 1b supplement's 87)")
 
         let withEntries = lots.filter { !($0.hmsMlrEntryNumbers ?? []).isEmpty }
         // 946/979 at the verified run; the floor guards against an un-enriched or
@@ -296,6 +296,59 @@ struct CentralFilesIndexTests {
         #expect(known.isSeriesLevel)
         #expect(known.naId == "602231")
         #expect(!(known.hmsMlrEntryNumbers ?? []).isEmpty, "an enriched series lot carries an entry number")
+    }
+
+    /// The artifact-level enforcement of the O-7 decision, added with #372 item 1b.
+    ///
+    /// ## What could go wrong that nothing else catches
+    /// A lot's record group is *derived* from its designator — a `D` lot is RG 59, an `F` lot is
+    /// RG 84 — so a bundled row whose `recordGroup` is anything else is a claim that NARA holds
+    /// this lot somewhere FRUS did not say. The owner settled how that claim may be made: a
+    /// **measured table** (`LotResolutionAcceptance.crossRecordGroupLots`, 37 lots), never a
+    /// blanket rule, because a bare control number can collide by coincidence — the harvest
+    /// offers RG 76 "Maps … Northeastern Boundary" for a key of `20` that came out of the
+    /// citation grammar mis-reading "Lot 64 199".
+    ///
+    /// Item 1b's supplement pass admits rows from a 4.5 GB harvest that cannot be re-run in CI,
+    /// so the generator's own refusal is unverifiable here. This checks the *result* instead:
+    /// every cross-record-group row in the shipped bundle must be one the shared rule would
+    /// accept today. A future pass that widened the policy — or a hand-edit — fails this.
+    ///
+    /// Measured on the shipped bundle: **30** of 1,065 rows sit outside the group their
+    /// designator implies — RG 306 ×17, RG 84 ×6 (D-lots NARA holds with the posts), RG 353 ×3,
+    /// RG 43 ×3, and RG 59 ×1 (`84F53`, an F-lot NARA holds centrally) — and every one is
+    /// sanctioned. That is exactly the 30 of the table's 37 rows that have reached the bundle;
+    /// the other 7 are cited only in footnotes or front matter, so the supplement's cited-lot
+    /// denominator never contained them. Note most RG 84 rows are NOT crossings: an F-lot cited
+    /// as RG 84 and held in RG 84 agrees, which is why the count is 30 and not 57.
+    @Test("Every cross-record-group row is one the shared acceptance rule sanctions")
+    func crossRecordGroupRowsAreSanctioned() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        var crossed = 0
+        for lot in index.lotFiles {
+            // `lotFileRecordGroup` returns the PREFIXED form ("RG-59"), and `LotFileEntry`
+            // stores the bare one ("59") — the two-form split `ArchivalResolver`'s own doc
+            // comment warns about. Without `bareRG` every row reads as a crossing and this
+            // test fires 1,035 times against a correct artifact; it did, on the first run.
+            let cited = CollectionKeying.bareRG(
+                SourceNoteParser.lotFileRecordGroup(lot.lotNumber)) ?? "59"
+            guard lot.recordGroup != cited else { continue }
+            crossed += 1
+            // Driven through the shared rule rather than by reading the table, so this pins the
+            // POLICY and not a literal — a row admitted by some other route still fails.
+            #expect(LotResolutionAcceptance.isAcceptable(
+                recordGroup: cited,
+                normalizedLot: lot.lotNumber,
+                candidateRecordGroup: lot.recordGroup,
+                levelOfDescription: lot.levelOfDescription ?? "series",
+                variantControlNumbers: [lot.lotNumber]),
+                    """
+                    \(lot.lotNumber) is bundled under RG \(lot.recordGroup) but FRUS cites it as \
+                    RG \(cited), and the O-7 table does not sanction that crossing
+                    """)
+        }
+        #expect(crossed > 20,
+                "guard is vacuous — only \(crossed) cross-record-group rows found, expected 30")
     }
 
     /// The #321 app-side guard: entries whose resolved record has no record-group ancestry —
