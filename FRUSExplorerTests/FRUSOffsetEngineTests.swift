@@ -610,25 +610,25 @@ struct NARACitationStrategyTests {
 
     @Test("Lot strategy honours an explicit record group")
     func lotHonoursExplicitRG() {
-        #expect(NARACatalogLookupView.lotStrategy(recordGroup: "84", lotFile: "64 D 171") == .lotFileRG84)
-        #expect(NARACatalogLookupView.lotStrategy(recordGroup: "59", lotFile: "55 F 44") == .lotFileRG59)
+        #expect(LookupStrategy.lotStrategy(recordGroup: "84", lotFile: "64 D 171") == .lotFileRG84)
+        #expect(LookupStrategy.lotStrategy(recordGroup: "59", lotFile: "55 F 44") == .lotFileRG59)
     }
 
     @Test("Lot strategy infers RG 84 from an F-designator when the RG is absent")
     func lotInfersFDesignator() {
-        #expect(NARACatalogLookupView.lotStrategy(recordGroup: nil, lotFile: "55 F 44") == .lotFileRG84)
-        #expect(NARACatalogLookupView.lotStrategy(recordGroup: nil, lotFile: "57–F103") == .lotFileRG84)
+        #expect(LookupStrategy.lotStrategy(recordGroup: nil, lotFile: "55 F 44") == .lotFileRG84)
+        #expect(LookupStrategy.lotStrategy(recordGroup: nil, lotFile: "57–F103") == .lotFileRG84)
         // A D-designator (or any non-F) lot without an explicit RG stays RG 59 (the default).
-        #expect(NARACatalogLookupView.lotStrategy(recordGroup: nil, lotFile: "64 D 171") == .lotFileRG59)
+        #expect(LookupStrategy.lotStrategy(recordGroup: nil, lotFile: "64 D 171") == .lotFileRG59)
     }
 
     @Test("Keyword strategy scopes to the named RG, else general")
     func keywordStrategyRouting() {
-        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "59") == .keywordRG59)
-        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "84") == .keywordRG84)
+        #expect(LookupStrategy.keywordStrategy(recordGroup: "59") == .keywordRG59)
+        #expect(LookupStrategy.keywordStrategy(recordGroup: "84") == .keywordRG84)
         // A presidential-library collection (no record group) gets a general keyword search.
-        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: nil) == .keyword)
-        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "256") == .keyword)
+        #expect(LookupStrategy.keywordStrategy(recordGroup: nil) == .keyword)
+        #expect(LookupStrategy.keywordStrategy(recordGroup: "256") == .keyword)
     }
 }
 

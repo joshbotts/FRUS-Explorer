@@ -329,29 +329,6 @@ struct NARACatalogLookupView: View {
         hasSearched = false
     }
 
-    /// The lot-file strategy for a detected citation: RG 84 when the note names RG 84 or the lot
-    /// carries an F-designator (State Dept. diplomatic-post records), else RG 59 — mirroring
-    /// SourceNoteKit's own lot→record-group heuristic (`lotFileRecordGroup`).
-    static func lotStrategy(recordGroup: String?, lotFile: String) -> LookupStrategy {
-        if recordGroup == "84" { return .lotFileRG84 }
-        if recordGroup == "59" { return .lotFileRG59 }
-        // No explicit RG in the note: an F-designator lot ("55 F 44", "57–F103") is RG 84.
-        let fPattern = #"(?:\d|^)\s*[–—\-]?\s*[Ff]\s*[–—\-]?\s*\d"#
-        if lotFile.range(of: fPattern, options: .regularExpression) != nil { return .lotFileRG84 }
-        return .lotFileRG59
-    }
-
-    /// The keyword strategy for a series/collection citation: scoped to RG 59/84 when the note
-    /// names one, else a general keyword search (e.g. a presidential-library collection, which
-    /// has no record group).
-    static func keywordStrategy(recordGroup: String?) -> LookupStrategy {
-        switch recordGroup {
-        case "59": return .keywordRG59
-        case "84": return .keywordRG84
-        default:   return .keyword
-        }
-    }
-
     /// Strategy picker — maps to the collection-type logic in NARACatalogClient.
     @ViewBuilder
     private var strategySection: some View {
@@ -530,6 +507,36 @@ enum LookupStrategy: String, CaseIterable, Identifiable, Sendable {
     case keyword
 
     var id: String { rawValue }
+
+    // MARK: - Routing a detected citation to a strategy
+
+    /// The lot-file strategy for a detected citation: RG 84 when the note names RG 84 or the lot
+    /// carries an F-designator (State Dept. diplomatic-post records), else RG 59 — mirroring
+    /// SourceNoteKit's own lot→record-group heuristic (`lotFileRecordGroup`).
+    ///
+    /// Lives on the strategy rather than on `NARACatalogLookupView` because it is a routing rule,
+    /// not a view concern, and because a `View` is implicitly `@MainActor` under Swift 6 — which
+    /// made every call from the nonisolated `NARALookupAnalyzer` a concurrency warning. The analyzer
+    /// is deliberately isolation-free so it can be driven off the main actor by its tests.
+    static func lotStrategy(recordGroup: String?, lotFile: String) -> LookupStrategy {
+        if recordGroup == "84" { return .lotFileRG84 }
+        if recordGroup == "59" { return .lotFileRG59 }
+        // No explicit RG in the note: an F-designator lot ("55 F 44", "57–F103") is RG 84.
+        let fPattern = #"(?:\d|^)\s*[–—\-]?\s*[Ff]\s*[–—\-]?\s*\d"#
+        if lotFile.range(of: fPattern, options: .regularExpression) != nil { return .lotFileRG84 }
+        return .lotFileRG59
+    }
+
+    /// The keyword strategy for a series/collection citation: scoped to RG 59/84 when the note
+    /// names one, else a general keyword search (e.g. a presidential-library collection, which
+    /// has no record group).
+    static func keywordStrategy(recordGroup: String?) -> LookupStrategy {
+        switch recordGroup {
+        case "59": return .keywordRG59
+        case "84": return .keywordRG84
+        default:   return .keyword
+        }
+    }
 
     var displayName: String {
         switch self {
