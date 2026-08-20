@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SourceNoteKit
 @testable import CentralFilesIndexGeneratorCore
 
 /// Tests the #352 lot post-validation — the guard that closes the two mis-resolution classes the
@@ -26,24 +27,49 @@ struct LotPostValidationTests {
 
     // MARK: - foldControlNumber
 
+    /// Re-pointed at the shared rule by #372 item 1b — `CatalogRecord` no longer has a fold of
+    /// its own. **Every assertion below is unchanged**, which is the point: the swap had to be
+    /// shown not to move any behaviour this suite already pinned before the behaviour it *does*
+    /// move could be trusted.
     @Test("Folds a raw control number to the compact lot key, stripping a Lot/Lot File prefix")
     func foldsControlNumber() {
-        #expect(CatalogRecord.foldControlNumber("60D627") == "60D627")
-        #expect(CatalogRecord.foldControlNumber("60 D 627") == "60D627")
-        #expect(CatalogRecord.foldControlNumber("60-D-627") == "60D627")
-        #expect(CatalogRecord.foldControlNumber("60–D 627") == "60D627")   // en-dash
-        #expect(CatalogRecord.foldControlNumber("Lot 60 D 627") == "60D627")
-        #expect(CatalogRecord.foldControlNumber("Lot File 74D471") == "74D471")
-        #expect(CatalogRecord.foldControlNumber("lot 60d627") == "60D627")
+        #expect(LotResolutionAcceptance.foldControlNumber("60D627") == "60D627")
+        #expect(LotResolutionAcceptance.foldControlNumber("60 D 627") == "60D627")
+        #expect(LotResolutionAcceptance.foldControlNumber("60-D-627") == "60D627")
+        #expect(LotResolutionAcceptance.foldControlNumber("60–D 627") == "60D627")   // en-dash
+        #expect(LotResolutionAcceptance.foldControlNumber("Lot 60 D 627") == "60D627")
+        #expect(LotResolutionAcceptance.foldControlNumber("Lot File 74D471") == "74D471")
+        #expect(LotResolutionAcceptance.foldControlNumber("lot 60d627") == "60D627")
         // An F-designator lot (RG 84) folds the same way.
-        #expect(CatalogRecord.foldControlNumber("F 96") == "F96")
+        #expect(LotResolutionAcceptance.foldControlNumber("F 96") == "F96")
+    }
+
+    /// The behaviour the swap *adds*, and the measured reason it was worth doing.
+    ///
+    /// The deleted private fold stopped after stripping spaces, dashes and a `LOT` prefix. The
+    /// shared one also applies #679's two spelling expansions, and NARA indexes a great many
+    /// State lots only in the expanded form: measured over the offline record-group harvest,
+    /// **53 lot files the corpus cites were unreachable from this generator** for want of these
+    /// four lines — `80D135` (Vance's Secretary files, 10 volumes) is indexed solely as
+    /// `1980D0135`, and `grep "80D135" rg_59.json` returns nothing at all.
+    @Test("The shared fold reaches NARA's expanded spellings, which the private copy could not")
+    func foldReachesExpandedSpellings() {
+        // 19xx century prefix.
+        #expect(LotResolutionAcceptance.foldControlNumber("1980D0135") == "80D135")
+        #expect(LotResolutionAcceptance.foldControlNumber("1993D0188") == "93D188")
+        // Zero-padded sequence.
+        #expect(LotResolutionAcceptance.foldControlNumber("81D005") == "81D5")
+        #expect(LotResolutionAcceptance.foldControlNumber("66F089") == "66F89")
+        // 20xx is deliberately NOT stripped — `2015D0755` is a real 2015 lot, and folding it to
+        // `15D755` would invent a 1915 one.
+        #expect(LotResolutionAcceptance.foldControlNumber("2015D0755") == "2015D0755")
     }
 
     @Test("Folding does not spuriously equate a superstring with the lot (equality, not substring)")
     func foldIsEqualityNotSubstring() {
         // "160D6270" contains the substring "60D627", but folds to itself — never equal to 60D627.
-        #expect(CatalogRecord.foldControlNumber("160D6270") == "160D6270")
-        #expect(CatalogRecord.foldControlNumber("160D6270") != "60D627")
+        #expect(LotResolutionAcceptance.foldControlNumber("160D6270") == "160D6270")
+        #expect(LotResolutionAcceptance.foldControlNumber("160D6270") != "60D627")
     }
 
     // MARK: - carriesLotControlNumber

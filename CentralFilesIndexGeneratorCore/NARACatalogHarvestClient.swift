@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SourceNoteKit
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -123,38 +124,43 @@ public struct CatalogRecord: Sendable, Equatable {
     /// `"State Department Lot File Number"` control number (verified live for NAID 40967113,
     /// which carries `64D171`, `66D102`, `67D147`, `69D299` — see `HMSMLREntryNumberTests`).
     public func carriesLotControlNumber(_ normalizedLot: String) -> Bool {
-        // Fold both sides so a raw or spaced lot key (a future non-normalized caller, e.g. the
-        // deferred volume-sources fold) still matches; for an already-compact key this is a no-op.
-        let target = CatalogRecord.foldControlNumber(normalizedLot)
-        return variantControlNumbers.contains { CatalogRecord.foldControlNumber($0) == target }
+        LotResolutionAcceptance.carriesLotControlNumber(
+            normalizedLot, variantControlNumbers: variantControlNumbers)
     }
 
-    /// Whether this record is an acceptable **bundled** lot resolution for `normalizedLot` in
-    /// `recordGroup` (#352). Three conjuncts, each closing a mis-resolution class the #335 audit
-    /// found: (1) the record's own record group matches (the pre-existing check — never a
-    /// coincidental free-text hit in another RG); (2) it is not a file unit — a State Department
-    /// lot file is catalogued as a *series* (#335/#351); (3) it actually carries the queried lot
-    /// in its `variantControlNumbers` (the empty-list guard, #335 headline). Factored out so the
-    /// full acceptance decision is unit-testable without a network round trip.
+    /// The evidence establishing this record as the resolution of `normalizedLot` in
+    /// `recordGroup`, or `nil` when there is none (#352, and #372 item 1b).
+    ///
+    /// ## This delegates; it used to duplicate
+    /// Until #372 item 1b this file carried its own three-conjunct rule and its own
+    /// `foldControlNumber`, written before `SourceNoteKit.LotResolutionAcceptance` existed. Two
+    /// implementations of one rule is the drift `#674/N-8` factored out, and here the drift was
+    /// real and measurable rather than theoretical — the shared fold gained the #679 spelling
+    /// expansions (`1980D0135` → `80D135`, `81D005` → `81D5`) and the private copy did not, so
+    /// **53 lot files NARA holds were unreachable from this generator** while the app's own
+    /// resolver would have matched them.
+    ///
+    /// Two behavioural consequences of the swap, both deliberate:
+    ///   - **Cross-record-group acceptance** becomes possible, for the 37 lots O-7 measured into
+    ///     `crossRecordGroupLots` and for no others.
+    ///   - **A `nil` `levelOfDescription` is now refused** where the private rule accepted it
+    ///     (it excluded only `fileUnit`). #321's reasoning applies — absence of evidence is not
+    ///     evidence. NOTE the 7 rows folded in by #372 item 1 carry a null level, so a full
+    ///     re-harvest under this rule would drop them; re-run `FOLD_VOLUME_SOURCES` afterwards.
+    public func lotResolutionEvidence(recordGroup: String,
+                                      normalizedLot: String) -> LotResolutionAcceptance.Evidence? {
+        LotResolutionAcceptance.evidence(
+            recordGroup: recordGroup,
+            normalizedLot: normalizedLot,
+            candidateRecordGroup: recordGroupNumber,
+            levelOfDescription: levelOfDescription,
+            variantControlNumbers: variantControlNumbers)
+    }
+
+    /// ``lotResolutionEvidence(recordGroup:normalizedLot:)`` as a yes/no, for the harvest's own
+    /// filter and for the tests that pin it.
     public func isAcceptableLotResolution(recordGroup: String, normalizedLot: String) -> Bool {
-        recordGroupNumber == recordGroup
-            && levelOfDescription != CatalogRecord.fileUnitLevel
-            && carriesLotControlNumber(normalizedLot)
-    }
-
-    /// Folds a raw control-number string to the compact lot key form for `carriesLotControlNumber`:
-    /// uppercase, drop spaces/dashes, then strip a single leading `LOT` or `LOTFILE` token.
-    static func foldControlNumber(_ raw: String) -> String {
-        var s = raw.uppercased()
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "-", with: "")
-            .replacingOccurrences(of: "–", with: "")
-            .replacingOccurrences(of: "—", with: "")
-        for prefix in ["LOTFILE", "LOT"] where s.hasPrefix(prefix) {
-            s.removeFirst(prefix.count)
-            break
-        }
-        return s
+        lotResolutionEvidence(recordGroup: recordGroup, normalizedLot: normalizedLot) != nil
     }
 
     /// Extracts the current HMS/MLR entry numbers from a decoded `variantControlNumbers`

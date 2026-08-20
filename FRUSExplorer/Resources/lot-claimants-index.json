@@ -1,5 +1,5 @@
 {
-  "generated" : "2026-08-05",
+  "generated" : "2026-08-19",
   "harvestGenerated" : "2026-07-30",
   "lots" : [
     {
@@ -471,6 +471,31 @@
         }
       ],
       "lotNumber" : "56D625"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1950",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 713"
+          ],
+          "naId" : "1422076",
+          "recordGroup" : "43",
+          "title" : "Records of the Fifth Session at Torquay"
+        },
+        {
+          "dateRange" : "1951",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "A1 714"
+          ],
+          "naId" : "1422086",
+          "recordGroup" : "43",
+          "title" : "Records of the Special Session"
+        }
+      ],
+      "lotNumber" : "57D284"
     },
     {
       "claimants" : [
@@ -1271,6 +1296,31 @@
         }
       ],
       "lotNumber" : "61D146"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1953–1960",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 256"
+          ],
+          "naId" : "6106829",
+          "recordGroup" : "306",
+          "title" : "Travel Files"
+        },
+        {
+          "dateRange" : "1953–1959",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 257"
+          ],
+          "naId" : "6116673",
+          "recordGroup" : "306",
+          "title" : "Public Affairs Correspondence"
+        }
+      ],
+      "lotNumber" : "61D233"
     },
     {
       "claimants" : [
@@ -3290,6 +3340,61 @@
     {
       "claimants" : [
         {
+          "dateRange" : "1953–1970",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 430"
+          ],
+          "naId" : "56190687",
+          "recordGroup" : "306",
+          "title" : "Country Files for El Salvador"
+        },
+        {
+          "dateRange" : "1953–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 434"
+          ],
+          "naId" : "56918933",
+          "recordGroup" : "306",
+          "title" : "Country Files for Guatemala"
+        },
+        {
+          "dateRange" : "1953–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 461"
+          ],
+          "naId" : "59414121",
+          "recordGroup" : "306",
+          "title" : "Country Files for Honduras"
+        },
+        {
+          "dateRange" : "1953–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 464"
+          ],
+          "naId" : "59728260",
+          "recordGroup" : "306",
+          "title" : "Country Files for Costa Rica"
+        },
+        {
+          "dateRange" : "1953–1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 470"
+          ],
+          "naId" : "63531142",
+          "recordGroup" : "306",
+          "title" : "Country Files for Nicaragua"
+        }
+      ],
+      "lotNumber" : "71D483"
+    },
+    {
+      "claimants" : [
+        {
           "dateRange" : "1957–1974",
           "evidence" : "controlNumber",
           "hmsMlrEntryNumbers" : [
@@ -4028,6 +4133,72 @@
     {
       "claimants" : [
         {
+          "dateRange" : "1964–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 2"
+          ],
+          "naId" : "2641456",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 246"
+          ],
+          "naId" : "364680357",
+          "recordGroup" : "84",
+          "title" : "U.S. Mission to the Organization for Economic Cooperation and Development (USOECD) Subject Files"
+        },
+        {
+          "dateRange" : "1962–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 794"
+          ],
+          "naId" : "4706948",
+          "recordGroup" : "84",
+          "title" : "Classified Political-Military Files Relating to Herbicide"
+        },
+        {
+          "dateRange" : "1953–1979",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 442",
+            "P 442-D"
+          ],
+          "naId" : "4708079",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1968–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 848"
+          ],
+          "naId" : "6210317",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1966–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 303"
+          ],
+          "naId" : "86029759",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "76F44"
+    },
+    {
+      "claimants" : [
+        {
           "dateRange" : "1971–1975",
           "evidence" : "controlNumber",
           "hmsMlrEntryNumbers" : [
@@ -4094,6 +4265,72 @@
         }
       ],
       "lotNumber" : "77D30"
+    },
+    {
+      "claimants" : [
+        {
+          "dateRange" : "1964–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 2"
+          ],
+          "naId" : "2641456",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1971",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 246"
+          ],
+          "naId" : "364680357",
+          "recordGroup" : "84",
+          "title" : "U.S. Mission to the Organization for Economic Cooperation and Development (USOECD) Subject Files"
+        },
+        {
+          "dateRange" : "1962–1974",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 794"
+          ],
+          "naId" : "4706948",
+          "recordGroup" : "84",
+          "title" : "Classified Political-Military Files Relating to Herbicide"
+        },
+        {
+          "dateRange" : "1953–1979",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 442",
+            "P 442-D"
+          ],
+          "naId" : "4708079",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1968–1975",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 848"
+          ],
+          "naId" : "6210317",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        },
+        {
+          "dateRange" : "1966–1977",
+          "evidence" : "controlNumber",
+          "hmsMlrEntryNumbers" : [
+            "P 303"
+          ],
+          "naId" : "86029759",
+          "recordGroup" : "84",
+          "title" : "Classified Central Subject Files"
+        }
+      ],
+      "lotNumber" : "77F53"
     },
     {
       "claimants" : [

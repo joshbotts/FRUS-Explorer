@@ -7,6 +7,8 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import LotClaimantsIndexGeneratorCore
+import SourceNoteKit
 import GeneratorKit
 
 // MARK: - GoldenCheck
@@ -49,6 +51,10 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   CACHE_DIR   — raw-page cache directory (default `.cache/central-files`)
 ///   PAGE_SIZE   — rows per request (default 25; try 100 on the first survey run)
 ///   REFRESH     — `1`/`true` to ignore the page cache and re-fetch
+///   SUPPLEMENT_FROM_HARVEST — `1`/`true`: offline mode (NO API key) — resolve the lot files the
+///                 corpus cites and this index cannot answer, against the 4.5 GB record-group
+///                 harvest at `HARVEST_DIR`, then exit. Closes #372 item 1b. Env also:
+///                 `COLLECTION_AUTHORITY` (the cited-lot list), `CURATED_LOTS` (the refuse list).
 ///   FOLD_VOLUME_SOURCES — `1`/`true`: offline mode (NO API key) — absorb the orphan lots from
 ///                 `volume-sources-index.json` (env `VOLUME_SOURCES_INDEX`) into this index and
 ///                 rewrite it, then exit. Closes #372 item 1 from the central-files side; the
@@ -66,6 +72,7 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   1.0 — Session 2026-06-15: Phase 1 — Numerical File
 ///   1.1 — #321: PRUNE_FLAGGED_LOTS offline mode
 ///   1.2 — Session 2026-08-19: #372 item 1 — FOLD_VOLUME_SOURCES offline mode
+///   1.3 — Session 2026-08-19: #372 item 1b — SUPPLEMENT_FROM_HARVEST offline mode
 public struct CentralFilesIndexGeneratorRunner {
 
     /// NARA series NAID for the 1906–1910 Numerical File.
@@ -102,6 +109,335 @@ public struct CentralFilesIndexGeneratorRunner {
     ]
 
     private init() {}
+
+    // MARK: - SUPPLEMENT_FROM_HARVEST (#372 item 1b)
+
+    /// Resolves the lot files the corpus cites and this index cannot answer, from the **offline**
+    /// record-group harvest (#372 item 1b). Keyless; checked before the API-key guard.
+    ///
+    /// ## Why the offline harvest and not the re-harvest the issue names
+    /// #372 item 1b asks for the acceptance-rule swap "then re-harvest". Measured, that cannot
+    /// deliver most of its own value, for a reason upstream of any acceptance rule: the keyed
+    /// route asks NARA for the *cited* spelling of a lot (`lotVariants` emits `80D135`,
+    /// `80 D 135`, `80 D135`) and NARA indexes many State lots only in an expanded form —
+    /// `80D135` is held solely as `1980D0135`, and `grep "80D135" rg_59.json` returns nothing.
+    /// An exact-match filter on spellings NARA never used returns no record, whichever rule runs
+    /// downstream. The keyed route also sends `recordGroupNumber` = the *cited* group, which
+    /// filters a cross-record-group record out before acceptance is ever consulted. The offline
+    /// harvest is subject to neither constraint, because it reads every record and asks the
+    /// question locally.
+    ///
+    /// ## Measured, 2026-08-19
+    /// 1,716 distinct cited lot keys; 931 already answered; **785 wanted**. This pass admits
+    /// **87** — 62 same-record-group, 25 through O-7's `crossRecordGroupLots` — reaching 92
+    /// distinct volumes of 552. 698 resolve to nothing and that is a property of the catalogue,
+    /// not of the rule. Of the 87, only 9 come from the harvest holding a series the keyed API
+    /// missed; **53 come from the shared fold's #679 spelling expansions**, which the private
+    /// rule this generator used to carry did not apply. The rule swap is the larger half.
+    ///
+    /// ## Not reproducible from a clone, and the artifact diff is therefore the review surface
+    /// `HARVEST_DIR` is 4.5 GB, gitignored, and present on one machine — the same standing as
+    /// `LotClaimantsIndexGenerator` and `SeriesFactsIndexGenerator`, which read it too. So this
+    /// prints **every admitted row and every divided lot**: a reviewer who cannot re-run the
+    /// pass can still read what it decided.
+    ///
+    /// ## The scan is control-number-only, by construction
+    /// It visits a record for a lot only when one of that record's `variantControlNumbers` folds
+    /// to a wanted key, which means `evidence`'s **`consolidationNote` branch can never fire
+    /// here** — that branch exists for a record that names the lot in prose while not indexing
+    /// it. Reaching it would mean testing every wanted lot against every record: 765 × 751,880
+    /// is 575 million calls, against the ~40,000 this does. The narrowing is free rather than
+    /// merely cheap: measured over the whole harvest, the note channel admits **zero** lots that
+    /// the control-number channel does not already admit, and the three notes it can reach
+    /// (`58D776`, `61D67`, `62D42`) are lots central-files already carries.
+    ///
+    /// ## Re-running is a clean no-op, and the health check is on the input
+    /// A second run finds every lot it would admit already in the index, so it admits nothing,
+    /// prints why, and **returns without writing** — the artifact stays byte-identical and
+    /// `generated` is not bumped for a run that changed nothing. The refusal that guards a broken
+    /// `HARVEST_DIR` therefore tests how many RECORDS were read (the harvest holds ~751,880), not
+    /// how many lots were admitted. Guarding on the outcome is the obvious version and it is
+    /// wrong twice over: it fails the clean re-run, and `candidates.isEmpty` fails it too, since
+    /// the scan is pre-filtered by `wanted`.
+    ///
+    /// ## Run order
+    /// After this: `PRUNE_FLAGGED_LOTS` (a live test asserts the shipped bundle trips neither
+    /// guard — this pass cannot admit a flagged row, but the interlock is cheap), then
+    /// `CollectionAuthorityGenerator` → `CollectionUsageIndexGenerator` →
+    /// `LotClaimantsIndexGenerator` → `SeriesFactsIndexGenerator`. The claimants step is the one
+    /// that is both silent and user-visible if skipped: the five divided lots would render as a
+    /// confident single answer.
+    static func supplementFromHarvest(outputPath: String, authorityPath: String,
+                                      curatedPath: String, harvestDir: String,
+                                      generated: String) {
+        guard var index = try? CentralFilesIndexWriter.read(from: outputPath) else {
+            print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: cannot read \(outputPath)")
+            exit(1)
+        }
+        let known = Set(index.lotFiles.map(\.lotNumber))
+        guard let cited = citedLotKeys(authorityPath: authorityPath), !cited.isEmpty else {
+            print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: no cited lots in \(authorityPath)")
+            exit(1)
+        }
+        let curated = curatedLotKeys(curatedPath: curatedPath)
+        if curated.isEmpty {
+            // A silent empty refuse-list is how a guard stops guarding. The curated file ships
+            // with 20 rows; zero means the path is wrong, not that curation was retired.
+            print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: no curated lots read "
+                  + "from \(curatedPath) — refusing to run without the exclusion list")
+            exit(1)
+        }
+        let wanted = cited.subtracting(known).subtracting(curated)
+        print("[CentralFilesIndexGenerator] SUPPLEMENT_FROM_HARVEST: cited \(cited.count), "
+              + "known \(known.count), curated \(curated.count) → wanted \(wanted.count)")
+
+        let shardDir = URL(fileURLWithPath: harvestDir).appending(path: "series")
+        guard let shards = try? FileManager.default
+            .contentsOfDirectory(at: shardDir, includingPropertiesForKeys: nil)
+            .filter({ $0.lastPathComponent.hasPrefix("rg_") && $0.pathExtension == "json" })
+            .sorted(by: { $0.lastPathComponent < $1.lastPathComponent }), !shards.isEmpty else {
+            print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: no shards under \(shardDir.path)")
+            exit(1)
+        }
+
+        var candidates: [String: [SupplementCandidate]] = [:]
+        var harvestGenerated: String?
+        var scannedRecords = 0
+        for shard in shards {
+            do {
+                let stamp = try HarvestShardReader.forEachRecord(shard) { record in
+                    scannedRecords += 1
+                    // Only records carrying a control number that folds to a wanted lot are
+                    // considered, so the accumulator stays a few hundred rows rather than the
+                    // 751,880-record harvest. Membership is checked on the FOLDED value, the
+                    // same key `evidence` compares — a raw-string check here would miss every
+                    // expanded spelling and quietly undo the point of the rule swap.
+                    for control in record.variantControlNumbers {
+                        let key = LotResolutionAcceptance.foldControlNumber(control)
+                        guard wanted.contains(key) else { continue }
+                        guard let evidence = LotResolutionAcceptance.evidence(
+                            recordGroup: LotFileCitationExtractor.recordGroup(forNormalized: key),
+                            normalizedLot: key,
+                            candidateRecordGroup: record.recordGroupNumber,
+                            levelOfDescription: record.levelOfDescription,
+                            variantControlNumbers: record.variantControlNumbers,
+                            controlNumberNotes: record.controlNumberNotes)
+                        else { continue }
+                        let candidate = SupplementCandidate(
+                            naId: record.naId,
+                            title: record.title,
+                            recordGroup: record.recordGroupNumber ?? "",
+                            // NATURALLY sorted, the way `CatalogRecord.hmsMlrEntries` sorts the
+                            // keyed route's. `HarvestShardReader` returns NARA's own arbitrary
+                            // order, so taking it raw puts "UD-14D 10" before "UD-14D 4" — which
+                            // is precisely the keyed/offline drift this whole item exists to
+                            // remove, reintroduced in a different field. Caught by
+                            // `CentralFilesIndexTests.bundledEntryNumbersAreNaturallySorted`.
+                            hmsMlrEntryNumbers: CatalogRecord.sortedNaturally(record.hmsMlrEntryNumbers),
+                            levelOfDescription: record.levelOfDescription,
+                            evidence: evidence == .controlNumber ? "controlNumber" : "consolidationNote",
+                            crossRecordGroup: record.recordGroupNumber
+                                != LotFileCitationExtractor.recordGroup(forNormalized: key))
+                        if !(candidates[key] ?? []).contains(where: { $0.naId == candidate.naId }) {
+                            candidates[key, default: []].append(candidate)
+                        }
+                    }
+                }
+                harvestGenerated = harvestGenerated ?? stamp
+                print("    \(shard.lastPathComponent): \(candidates.count) lot(s) with a candidate so far")
+            } catch {
+                print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: \(shard.lastPathComponent): \(error)")
+                exit(1)
+            }
+        }
+
+        // The health check is on the INPUT, not the outcome. A first draft guarded on "admitted
+        // nothing", which is the wrong test in both directions: a second run legitimately admits
+        // nothing because every lot it would admit is now in `known`, and it failed exactly that
+        // way when the idempotency check was run. `candidates.isEmpty` is no better — the scan is
+        // pre-filtered by `wanted`, so it is empty on that same clean re-run. What actually
+        // distinguishes an unreadable or truncated HARVEST_DIR is that no RECORDS were read.
+        guard scannedRecords > 100_000 else {
+            print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: scanned only "
+                  + "\(scannedRecords) records across \(shards.count) shard(s). The harvest holds "
+                  + "~751,880 — check HARVEST_DIR (\(harvestDir)). Refusing to write.")
+            exit(1)
+        }
+
+        let decision = supplementDecision(wanted: wanted, known: known,
+                                          curated: curated, candidates: candidates)
+        if decision.admitted.isEmpty {
+            // A clean no-op: the input was read in full and had nothing new to offer. Returning
+            // WITHOUT writing is deliberate — rewriting would bump `generated` and produce an
+            // artifact diff for a run that changed nothing, which is how a no-op re-run ends up
+            // looking like a data change in review.
+            print("[CentralFilesIndexGenerator] ✓ SUPPLEMENT_FROM_HARVEST: nothing to admit — "
+                  + "\(scannedRecords) records scanned, every wanted lot already answered or "
+                  + "unresolvable. Artifact left untouched.")
+            let byReason = Dictionary(grouping: decision.refused, by: \.reason)
+                .mapValues(\.count).sorted { $0.key < $1.key }
+            print("    refused: " + byReason.map { "\($0.key) \($0.value)" }.joined(separator: ", "))
+            return
+        }
+
+        let before = index.lotFiles.count
+        index.lotFiles = (index.lotFiles + decision.admitted).sorted { $0.lotNumber < $1.lotNumber }
+        index.generated = generated
+        do {
+            try CentralFilesIndexWriter.write(index, to: outputPath)
+        } catch {
+            print("[CentralFilesIndexGenerator] ✗ SUPPLEMENT_FROM_HARVEST: failed to write: \(error)")
+            exit(1)
+        }
+
+        let crossRG = decision.admitted.filter {
+            $0.recordGroup != LotFileCitationExtractor.recordGroup(forNormalized: $0.lotNumber)
+        }
+        print("[CentralFilesIndexGenerator] ✓ SUPPLEMENT_FROM_HARVEST: admitted "
+              + "\(decision.admitted.count) lot(s) — \(decision.admitted.count - crossRG.count) "
+              + "same-record-group, \(crossRG.count) cross-record-group (O-7 table); "
+              + "\(before) → \(index.lotFiles.count). Harvest stamp \(harvestGenerated ?? "unknown").")
+        for lf in decision.admitted {
+            let cited = LotFileCitationExtractor.recordGroup(forNormalized: lf.lotNumber)
+            let mark = lf.recordGroup == cited ? " " : "*"
+            print("    +\(mark) \(lf.lotNumber) → naId \(lf.naId) RG \(lf.recordGroup)"
+                  + (lf.recordGroup == cited ? "" : " (cited RG \(cited))")
+                  + " “\(lf.title.prefix(46))”")
+        }
+        if !decision.divided.isEmpty {
+            print("    \(decision.divided.count) DIVIDED lot(s) — the bundle names the lowest NAID; "
+                  + "re-run LotClaimantsIndexGenerator so the app discloses the rest:")
+            for row in decision.divided {
+                print("      \(row.lot): \(row.claimants.map(\.naId).joined(separator: ", "))")
+            }
+        }
+        let byReason = Dictionary(grouping: decision.refused, by: \.reason)
+            .mapValues(\.count).sorted { $0.key < $1.key }
+        print("    refused: " + byReason.map { "\($0.key) \($0.value)" }.joined(separator: ", "))
+    }
+
+    /// Every lot key the corpus cites, from `collection-authority.json`'s `lot:` collections.
+    ///
+    /// Folded through the shared rule so the wanted set and the harvest's control numbers are in
+    /// one key space; two authority ids can fold together (`89D56` is reached by two spellings),
+    /// which a `Set` absorbs and a dictionary keyed on the raw id would have crashed on.
+    static func citedLotKeys(authorityPath: String) -> Set<String>? {
+        guard let data = FileManager.default.contents(atPath: authorityPath),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let collections = root["collections"] as? [[String: Any]] else { return nil }
+        var keys: Set<String> = []
+        for record in collections {
+            guard let id = record["id"] as? String, id.hasPrefix("lot:") else { continue }
+            let key = LotResolutionAcceptance.foldControlNumber(String(id.dropFirst(4)))
+            if !key.isEmpty { keys.insert(key) }
+        }
+        return keys
+    }
+
+    /// The lots `curated-lot-resolutions.json` deliberately leaves unresolved.
+    static func curatedLotKeys(curatedPath: String) -> Set<String> {
+        guard let data = FileManager.default.contents(atPath: curatedPath),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let lots = root["lots"] as? [[String: Any]] else { return [] }
+        return Set(lots.compactMap { $0["lotNumber"] as? String }
+            .map(LotResolutionAcceptance.foldControlNumber)
+            .filter { !$0.isEmpty })
+    }
+
+    /// One accepted (lot → record) pairing, before the artifact decides what to do with it.
+    struct SupplementCandidate: Sendable, Equatable {
+        let naId: String
+        let title: String
+        let recordGroup: String
+        let hmsMlrEntryNumbers: [String]
+        let levelOfDescription: String?
+        /// `controlNumber` or `consolidationNote` — which branch of the shared rule accepted it.
+        let evidence: String
+        /// `true` when the record sits in a record group other than the one FRUS's citation
+        /// implies, i.e. it was admitted through O-7's `crossRecordGroupLots` table.
+        let crossRecordGroup: Bool
+    }
+
+    /// What a supplement run would do, given the lots wanted and the candidates the harvest offers.
+    ///
+    /// The pure half of ``supplementFromHarvest(outputPath:authorityPath:curatedPath:harvestDir:generated:)``
+    /// — the seam `foldDecision` has for the item-1 fold and `lotsToWrite` has on the
+    /// volume-sources side — so the admission rule is driven directly rather than through a
+    /// 4.5 GB scan and a file round trip.
+    ///
+    /// ## Divided lots are admitted, not refused
+    /// Five of the 87 have more than one acceptable series, because NARA divides a lot across
+    /// series as readily as it consolidates several into one. `LotFileEntry` stores one `naId`,
+    /// so this picks the **numerically lowest** — a stated, reproducible rule rather than
+    /// shard-scan order — and returns the full claimant list so the caller can log it. The
+    /// disclosure lives where #675 put it: `lot-claimants-index.json`, which takes its lot list
+    /// from central-files and therefore only sees these lots once this pass has run. **That
+    /// artifact must be regenerated after this one**, or Source Explorer renders the single
+    /// bundled card and asserts one series where NARA names several.
+    ///
+    /// ## The three refusals
+    ///   - **already resolved** — deduped against `central-files-index.json` itself, never
+    ///     against `collection-authority.json`'s `naId` field. The authority's join is stale
+    ///     relative to the bundle it was built from (`83D66` is listed there as unresolved while
+    ///     central-files has answered it since the keyed harvest), so trusting it would re-admit
+    ///     a row that already exists and silently change its NAID.
+    ///   - **curated** — the 20 lots in `curated-lot-resolutions.json`, refused BY NAME rather
+    ///     than by trusting the rule to miss them. It does miss all 20 against this snapshot, and
+    ///     that is a property of the snapshot: curation exists because NARA carries no matching
+    ///     control number, and a re-harvest could produce one. `CuratedLotResolutionsTests`
+    ///     forbids a curated lot from reaching this artifact, which cannot express doubt.
+    ///   - **no candidate** — the overwhelming majority. 698 of 785 wanted lots resolve to
+    ///     nothing in the harvest, and no amount of rule-loosening changes that: the records are
+    ///     genuinely absent (`61D385`, 46 volumes, returns zero hits in `rg_59.json` in every
+    ///     fold-expanded spelling).
+    ///
+    /// - Parameters:
+    ///   - wanted: Normalized lot keys the corpus cites, in any order.
+    ///   - known: Lot keys `central-files-index.json` already answers.
+    ///   - curated: Lot keys deliberately left unresolved.
+    ///   - candidates: Accepted (lot → records) pairings from the harvest scan.
+    /// - Returns: The rows to append, the divided lots for the log, and each refusal with a reason.
+    static func supplementDecision(
+        wanted: Set<String>,
+        known: Set<String>,
+        curated: Set<String>,
+        candidates: [String: [SupplementCandidate]]
+    ) -> (admitted: [LotFileEntry],
+          divided: [(lot: String, claimants: [SupplementCandidate])],
+          refused: [(lot: String, reason: String)]) {
+        var admitted: [LotFileEntry] = []
+        var divided: [(lot: String, claimants: [SupplementCandidate])] = []
+        var refused: [(lot: String, reason: String)] = []
+
+        for lot in wanted.sorted() {
+            if known.contains(lot) { refused.append((lot, "already in central-files")); continue }
+            if curated.contains(lot) { refused.append((lot, "curated as non-deterministic")); continue }
+            let accepted = candidates[lot] ?? []
+            guard !accepted.isEmpty else { refused.append((lot, "no candidate in the harvest")); continue }
+
+            // Numerically lowest NAID, falling back to lexicographic so a non-numeric id (there
+            // are none today) still yields a total order rather than an arbitrary one.
+            let ordered = accepted.sorted {
+                switch (Int($0.naId), Int($1.naId)) {
+                case let (a?, b?): return a == b ? $0.naId < $1.naId : a < b
+                default: return $0.naId < $1.naId
+                }
+            }
+            if ordered.count > 1 { divided.append((lot, ordered)) }
+            let pick = ordered[0]
+            admitted.append(LotFileEntry(
+                lotNumber: lot,
+                recordGroup: pick.recordGroup,
+                naId: pick.naId,
+                title: pick.title,
+                catalogURL: "https://catalog.archives.gov/id/\(pick.naId)",
+                matchType: "control",
+                hmsMlrEntryNumbers: pick.hmsMlrEntryNumbers.isEmpty ? nil : pick.hmsMlrEntryNumbers,
+                levelOfDescription: pick.levelOfDescription,
+                ancestryLacksRecordGroup: nil))
+        }
+        return (admitted, divided, refused)
+    }
 
     /// Absorbs `volume-sources-index.json`'s orphan lots into the central-files index (#372 item 1).
     ///
@@ -535,6 +871,19 @@ public struct CentralFilesIndexGeneratorRunner {
 
         // #372 item 1: fold the volume-sources orphans in. Keyless and checked here for the same
         // reason as the prune above — the rows are already resolved in a shipped artifact.
+        if ["1", "true", "yes"].contains((env["SUPPLEMENT_FROM_HARVEST"] ?? "").lowercased()) {
+            supplementFromHarvest(
+                outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
+                authorityPath: env["COLLECTION_AUTHORITY"]
+                    ?? "FRUSExplorer/Resources/collection-authority.json",
+                curatedPath: env["CURATED_LOTS"]
+                    ?? "FRUSExplorer/Resources/curated-lot-resolutions.json",
+                harvestDir: env["HARVEST_DIR"]
+                    ?? "/Users/jbotts/Development/nara-record-group-catalog",
+                generated: generatorDateStamp(override: env["GENERATED_DATE"]))
+            return
+        }
+
         if ["1", "true", "yes"].contains((env["FOLD_VOLUME_SOURCES"] ?? "").lowercased()) {
             foldVolumeSourceLots(
                 outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
