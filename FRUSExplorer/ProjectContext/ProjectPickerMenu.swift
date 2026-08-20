@@ -341,10 +341,15 @@ struct SecondProjectNudgeModifier: ViewModifier {
                             defaultValue: "Projects keep separate research threads — each with its own collections, notes, and suggestions. Project Home is where you steer one; switch between them from the project menu."))
             }
             #if os(iOS)
+            // `onDismiss` clears the stack for the reason its twin in `ResearchView` does: the
+            // path is `@State` that outlives the presentation, so reopening lands inside the last
+            // document read. It matters more here than there — this presenter is reached BY
+            // SWITCHING PROJECTS, so a stale path shows a document from the project the reader
+            // just left.
             .sheet(isPresented: Binding(
                 get: { homeSheetProjectId != nil },
                 set: { if !$0 { homeSheetProjectId = nil } }
-            )) {
+            ), onDismiss: { homeSheetPath = [] }) {
                 if let id = homeSheetProjectId {
                     // #553 / O-3: read inside the sheet — the twin of the Research-tab presenter.
                     NavigationStack(path: $homeSheetPath) {

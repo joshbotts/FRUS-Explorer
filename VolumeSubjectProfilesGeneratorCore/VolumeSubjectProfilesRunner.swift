@@ -38,8 +38,12 @@ public enum VolumeSubjectProfilesRunner {
     ///   file/decoding error.
     public static func run() throws {
         let env = ProcessInfo.processInfo.environment
+        // The CORRECTED export, not the original drop. `frus-subjects/data/` is the 2026-07-09
+        // file whose anachronistic tags PR #994 removed; `frus-subject-taxonomy/exports/` is the
+        // 2026-08-19 replacement. Leaving the old path as the default meant a bare re-run
+        // silently reverted that fix and re-shipped, among others, AIDS in an 1863 volume.
         let inputPath = env["DOCUMENT_SUBJECTS"]
-            ?? "/Users/jbotts/Development/frus-subjects/data/document_subjects.json"
+            ?? "/Users/jbotts/Development/frus-subject-taxonomy/exports/document_subjects.json"
         let outputPath = env["OUTPUT"]
             ?? "FRUSExplorer/Resources/volume-subject-profiles-index.json"
         let generated = env["GENERATED_DATE"] ?? today()

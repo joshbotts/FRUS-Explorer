@@ -196,7 +196,13 @@ struct ResearchView: View {
             // reactive natively — no explicit reload needed.
             #if os(iOS)
             // #377 Phase 1 iOS follow-up: Project Home as a sheet (decoupled from the typed nav path).
-            .sheet(isPresented: $showProjectHome) {
+            // `onDismiss` clears the sheet's own stack. Without it the path is `@State` that
+            // outlives the presentation, so closing Project Home two documents deep and reopening
+            // it lands the reader back INSIDE the second document with no way to tell why — and
+            // after switching projects, inside a document belonging to the previous one. The
+            // hook is `onDismiss` rather than the Done button because a swipe-down dismissal
+            // never runs that button's action, and swiping is how a sheet is usually closed.
+            .sheet(isPresented: $showProjectHome, onDismiss: { projectHomePath = [] }) {
                 if let pid = appState.activeProjectId {
                     // #553 / O-3: the sheet owns a path so a lead, recent visit or note opens
                     // INSIDE it, the way Related Documents and Archival Neighbours have since #757.
