@@ -137,6 +137,9 @@ struct ResearchView: View {
     /// the `frus.projectHome` window (Research ▸ Project Home / ⌘P), so this is iOS-only. Presenting
     /// via a sheet keeps it decoupled from the typed `researchNavigationPath` (#272/#238).
     @State private var showProjectHome = false
+    /// The Project Home sheet's own reading stack (#553). Separate from `researchNavigationPath`
+    /// by design — see the sheet presenter below.
+    @State private var projectHomePath: [DocumentBrowserEntry] = []
     /// Whether the Research Guide sheet is up (UI review F-14).
     @State private var showResearchGuide = false
     #endif
@@ -195,10 +198,25 @@ struct ResearchView: View {
             // #377 Phase 1 iOS follow-up: Project Home as a sheet (decoupled from the typed nav path).
             .sheet(isPresented: $showProjectHome) {
                 if let pid = appState.activeProjectId {
-                    NavigationStack {
-                        // Dismiss the sheet when Project Home hands off (open a doc / switch tab),
-                        // otherwise the navigation happens invisibly behind the modal.
-                        ProjectHomeView(projectId: pid, onNavigateAway: { showProjectHome = false })
+                    // #553 / O-3: the sheet owns a path so a lead, recent visit or note opens
+                    // INSIDE it, the way Related Documents and Archival Neighbours have since #757.
+                    // `onNavigateAway` stays for `openSurface`'s tab hand-offs, which really are
+                    // leaving. Deliberately this sheet's OWN stack, never the Research tab's typed
+                    // `researchNavigationPath` — Project Home is a sheet precisely to stay clear of
+                    // that projection (#272/#238), and O-3 settled that Research keeps handing off.
+                    NavigationStack(path: $projectHomePath) {
+                        ProjectHomeView(projectId: pid,
+                                        onNavigateAway: { showProjectHome = false },
+                                        onOpenInSheet: { projectHomePath.append($0) })
+                            .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                                DocumentView(entry: entry,
+                                             onNavigateToDocument: { next, jump in
+                                                 if jump == .replace, !projectHomePath.isEmpty {
+                                                     projectHomePath.removeLast()
+                                                 }
+                                                 projectHomePath.append(next)
+                                             })
+                            }
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
                                     Button(String(localized: "research.projectHome.done", defaultValue: "Done")) {

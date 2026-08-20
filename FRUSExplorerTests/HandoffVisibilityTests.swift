@@ -66,9 +66,25 @@ struct HandoffVisibilityTests {
     }
 
     /// The body of `name`, up to `limit` characters — enough to assert what a function does.
+    ///
+    /// Callers pass the declaration up to the OPENING PAREN only — `"private func foo("` — never a
+    /// frozen parameter list. #988 added a `footnoteAnchor:` parameter to `navigateToCrossRef` and
+    /// the full-signature literals here stopped matching, so `#require` failed on the lookup rather
+    /// than on the behaviour: the guard was unrunnable, and it shipped that way because the PR that
+    /// changed the signature did not run this suite.
     private static func functionBody(_ name: String, in source: String, limit: Int = 1_200) throws -> String {
-        let start = try #require(source.range(of: name), "\(name) not found — did it move or get renamed?")
-        return String(source[start.lowerBound...].prefix(limit))
+        _ = try #require(source.range(of: name), "\(name) not found — did it move or get renamed?")
+        // Slice CODE, not raw text. The character window is meant to bound how much of a function
+        // an assertion sees; measured against raw source it bounds how much PROSE precedes the
+        // code instead, so a long explanatory comment silently pushes the statements out of range
+        // and the assertion fails on something the author never changed. That is what happened to
+        // both guards here after #988 documented its branch at length.
+        let code = codeLines(source).map(\.text)
+        guard let startLine = code.firstIndex(where: { $0.contains(name) }) else {
+            Issue.record("\(name) not found among code lines — did it move or get renamed?")
+            return ""
+        }
+        return code[startLine...].joined(separator: "\n").prefix(limit).description
     }
 
     // MARK: - The helper earns its trust
@@ -158,8 +174,8 @@ struct HandoffVisibilityTests {
 
         // Both jump paths must consult it, and must RETURN rather than falling through to the
         // Browse hand-off as well — a double navigation would be worse than the original bug.
-        for function in ["private func navigateToCrossRef(documentId: String, volumeId: String)",
-                         "private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry)"] {
+        for function in ["private func navigateToCrossRef(",
+                         "private func navigateToAdjacentDocument("] {
             let body = try Self.functionBody(function, in: source, limit: 2_000)
             #expect(body.contains("if let onNavigateToDocument"),
                     "\(function) must route through the host when one is supplied (#750 / H-10)")
@@ -215,12 +231,12 @@ struct HandoffVisibilityTests {
         // replaced, Back would no longer return to the document a cross-reference came from.
         let source = try Self.source("DocumentView/DocumentView.swift")
         let crossRef = try Self.functionBody(
-            "private func navigateToCrossRef(documentId: String, volumeId: String)", in: source, limit: 2_000)
+            "private func navigateToCrossRef(", in: source, limit: 2_000)
         #expect(crossRef.contains("onNavigateToDocument(crossEntry, .push)"),
                 "a cross-reference must PUSH, so Back returns to the document it was in")
 
         let pageTurn = try Self.functionBody(
-            "private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry)", in: source, limit: 2_000)
+            "private func navigateToAdjacentDocument(", in: source, limit: 2_000)
         #expect(pageTurn.contains("onNavigateToDocument(adjacent, .replace)"),
                 "a page-turn must REPLACE — appending is what made 20 pages cost 20 Back taps (M-17a)")
     }

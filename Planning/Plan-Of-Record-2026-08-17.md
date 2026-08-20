@@ -143,8 +143,11 @@ B-2 batch discipline (bundle refreshes are cheap; index bumps are not).
 ### 4.2 The scene/window cluster — #950, #657, #752, #824, and #751's decision
 B-1 is the bug half. **#824** (macOS Window-menu cleanup: 17 entries, two of which are not
 windows) is the same mental model on the other platform — cheap to ride along once someone is in
-the scene plumbing. **#751** needs O-3 first; its shipped half is done, and the remainder is a
-restructure whose design is written (`iOS-Reading-Journey-Design.md`).
+the scene plumbing. **#824 shipped** 2026-08-19 (PR #993). **O-3 is settled** (2026-08-19,
+recorded in `iOS-Reading-Journey-Design.md` §3b): Project Home reads in-sheet, and **Research and
+History keep handing off to Browse as the settled rule** — so #751's remaining restructure is
+closed as decided-against rather than deferred, and the `[ResearchSidebarItem]` projection that
+#238/#272 protect is left alone.
 
 ### 4.3 The subjects cluster — #308, #261, and the V-5 instrument
 Three consumers of one upstream decision. `308-Subject-Integration-Design.md` is written and
@@ -188,7 +191,7 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 |---|---|---|
 | #950 repro + crash log | resize context, Stage Manager or split view, Analytics log | B-1 |
 | #657 backtrace (if it recurs on 42) | device backtrace | B-1 |
-| O-3 · #751/#553 leads-list decision | the one design decision, written in `iOS-Reading-Journey-Design.md` §6 + M-16 | 4.2's restructure |
+| ~~O-3 · #751/#553 leads-list decision~~ | **SETTLED 2026-08-19** — Project Home reads in-sheet (#553); Research/History keep handing off (#751). See `iOS-Reading-Journey-Design.md` §3b | — |
 | O-6 · #261 upstream ask | send the email; the ask text is drafted in the issue | 4.3 |
 | O-1 · #681 keyed v2 call | one API call to confirm `collectionIdentifier` on v2 | 4.1's test coverage |
 | O-2 · #626 design decision | what "wider than headnotes" means | backlog |

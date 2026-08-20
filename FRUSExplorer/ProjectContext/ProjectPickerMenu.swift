@@ -298,6 +298,8 @@ struct SecondProjectNudgeModifier: ViewModifier {
     @State private var nudgeProjectId: UUID?
     #if os(iOS)
     @State private var homeSheetProjectId: UUID?
+    /// The Project Home sheet's own reading stack (#553).
+    @State private var homeSheetPath: [DocumentBrowserEntry] = []
     #endif
 
     func body(content: Content) -> some View {
@@ -344,8 +346,20 @@ struct SecondProjectNudgeModifier: ViewModifier {
                 set: { if !$0 { homeSheetProjectId = nil } }
             )) {
                 if let id = homeSheetProjectId {
-                    NavigationStack {
-                        ProjectHomeView(projectId: id, onNavigateAway: { homeSheetProjectId = nil })
+                    // #553 / O-3: read inside the sheet — the twin of the Research-tab presenter.
+                    NavigationStack(path: $homeSheetPath) {
+                        ProjectHomeView(projectId: id,
+                                        onNavigateAway: { homeSheetProjectId = nil },
+                                        onOpenInSheet: { homeSheetPath.append($0) })
+                            .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                                DocumentView(entry: entry,
+                                             onNavigateToDocument: { next, jump in
+                                                 if jump == .replace, !homeSheetPath.isEmpty {
+                                                     homeSheetPath.removeLast()
+                                                 }
+                                                 homeSheetPath.append(next)
+                                             })
+                            }
                     }
                     // A sheet doesn't reliably inherit `\.sceneID`; re-inject so Project Home's
                     // hand-offs target this window on iPad multi-window (#338).
