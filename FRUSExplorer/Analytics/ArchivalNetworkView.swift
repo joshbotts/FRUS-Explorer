@@ -844,7 +844,7 @@ struct ArchivalNetworkView: View {
         if graph.isCapped {
             text += " " + String(format: String(
                 localized: "archival.network.dock.capped.v2 %lld",
-                defaultValue: "%lld more are held back so each custodian's quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighbourhood rather than to see more of it."),
+                defaultValue: "%lld more are held back so each custodian's quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it."),
                 Int64(graph.withheldCount))
         }
         if graph.classNodeCount > 0 {

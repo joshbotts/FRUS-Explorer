@@ -236,7 +236,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "archival.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "archival.info.shows.detail.v2",
-                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era's volumes drew on. Network puts one collection at the centre and groups everything cited alongside it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
+                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era's volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.method.title",
                                   defaultValue: "Where the figures come from"),
@@ -254,6 +254,39 @@ struct FeatureInfoButton: View {
                     title: String(localized: "archival.info.flows.title", defaultValue: "A flow is an editor's footnote, not an archive's"),
                     detail: String(localized: "archival.info.flows.detail",
                                    defaultValue: "About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding. Only 254 of the 552 volumes carry any of these references, because the cross-reference style they come from postdates 1945.")),
+                // #838(1): the STATIC half of the Flows caveats, moved off the page. The
+                // sentences that carry live values — the citation counts, the era span, the Ibid.
+                // and footnote shares, the coverage counts — stay on the chart as conditional
+                // disclosures, because a `FeatureInfoItem` is a static string and cannot hold
+                // them. That split is the Collections precedent from this same issue, not a new
+                // rule: the intro and footer moved, the computed lines stayed.
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.flows.scope.title",
+                                  defaultValue: "What Flows reads, and what it does not"),
+                    detail: String(localized: "archival.info.flows.scope.detail",
+                                   defaultValue: "This layer reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so the earlier volumes are almost absent here even though their footnotes are full of archival citations. Those earlier citations give a file number in the central files, which this measure does not yet read. Central-file classes are left out of the diagrams on purpose: across the whole series they carry under two references per pair, which is too thin to rank and has no labels to rank it with.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.flows.ibid.title",
+                                  defaultValue: "An “Ibid.” is followed, which is a reading"),
+                    detail: String(localized: "archival.info.flows.ibid.detail",
+                                   defaultValue: "Some of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation. The share it accounts for is stated on the chart.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.flows.mixed.title",
+                                  defaultValue: "Citations that cross filing systems are counted in neither diagram"),
+                    detail: String(localized: "archival.info.flows.mixed.detail",
+                                   defaultValue: "Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram.")),
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.flows.browse.title",
+                                  defaultValue: "You cannot browse these citations"),
+                    detail: String(localized: "archival.info.flows.browse.detail",
+                                   defaultValue: "The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.")),
+                // #838(2): Your Library's rule, moved off the page. The two counts it used to
+                // carry stay on the chart — they are measurements of the reader's own library.
+                FeatureInfoItem(
+                    title: String(localized: "archival.info.library.title",
+                                  defaultValue: "A source note is not a document"),
+                    detail: String(localized: "archival.info.library.detail",
+                                   defaultValue: "Only documents whose editors recorded where the original was found appear in Your Library. So its total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records; notes citing the central files are a filing system rather than a collection and are counted in the composition instead. Your Library counts only what you have indexed — Collections does not, and does not change with your downloads.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.units.title", defaultValue: "Collections and classes are different things"),
                     detail: String(localized: "archival.info.units.detail",
