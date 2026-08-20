@@ -92,6 +92,34 @@ struct ExternalCitationTests {
 
     // MARK: - The render-time join (#829a)
 
+    /// Every unit endpoint must exist in the shipped authority (#832a).
+    ///
+    /// Its two sibling artifacts have carried this guard since #763 —
+    /// `CollectionUsageIndexTests.collectionIdsJoinToTheAuthority` and
+    /// `ProvenanceFlowIndexTests.endpointsJoinToTheAuthority` — and this index, which keys on the
+    /// same authority ids, had none. The gap was not theoretical: the #832a separator fix
+    /// re-clustered the authority and stranded **2 of this index's 1,236 ids**
+    /// (`txt:central intelligence agency|dci (mccone) file`, `lot:68D323`) while the whole suite
+    /// stayed green. The #832a audit had reasoned this artifact was "likely safe" because none of
+    /// its ids carried a seam — true, and beside the point, since re-clustering moves ids that
+    /// never carried one.
+    @MainActor
+    @Test("Every unit endpoint exists in the shipped authority")
+    func endpointsJoinToTheAuthority() throws {
+        let index = try #require(ExternalCitationIndexStore.shared,
+                                 "the bundled external-citation index failed to load")
+        let authority = try #require(CollectionAuthorityStore.shared,
+                                     "the bundled collection authority failed to load")
+        let known = Set(authority.collections.map(\.id))
+        let orphans = (index.sourceIds + index.targetIds).filter { !known.contains($0) }
+        #expect(orphans.isEmpty, """
+            \(orphans.count) external-citation endpoints are absent from \
+            collection-authority.json — the two artifacts were built against different \
+            clusterings. Regenerate the external-citation index. First few: \
+            \(orphans.prefix(5).joined(separator: ", "))
+            """)
+    }
+
     /// The stored rows carry **no authority id**, so the document section joins them at render time.
     /// Two things can go wrong and both are silent: a lot citation matching nothing when the
     /// authority holds it, and a presidential-library citation matching a *lot* record that happens
