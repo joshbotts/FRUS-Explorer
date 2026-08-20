@@ -1290,7 +1290,18 @@ struct AnalyticsView: View {
             .submitLabel(.search)
             .onSubmit { addTerm() }
             .disabled(atCompareCap)
+            // A STABLE identity for UI tests, because this field's own placeholder is not one.
+            // `termFieldPlaceholder` deliberately changes from "Term…" to "Add a term…" once a
+            // term commits (D1, above), and XCUITest resolves a `TextField` by its placeholder
+            // when nothing else is set — so `app.textFields["Term…"]` stopped matching the moment
+            // the feature worked as designed, and two #559 regression tests failed on their SECOND
+            // tap while the app was entirely correct. Identity that changes with copy is also
+            // identity that changes with localization.
+            .accessibilityIdentifier(Self.termFieldIdentifier)
     }
+
+    /// The term field's stable test identity — deliberately not a localized string.
+    static let termFieldIdentifier = "analytics.termField"
 
     private var termFieldPlaceholder: String {
         committedTerms.isEmpty
