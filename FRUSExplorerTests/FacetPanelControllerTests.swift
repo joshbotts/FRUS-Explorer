@@ -343,14 +343,14 @@ struct FacetPanelControllerTests {
             years: [FacetBucket(key: "1948", label: "1948", count: 4)], undatedCount: 1,
             volumes: [], people: [], documentTypes: [], provenance: [],
             provenanceCoverage: ProvenanceCoverage(parsed: 0, withRecordGroup: 0, matchCount: 10),
-            bounds: [.years: FacetBound(shown: 1, total: 3)])
+            subjects: [], subjectCoverage: 0, subjectsPrepared: true, bounds: [.years: FacetBound(shown: 1, total: 3)])
         let second = ResultSetFacets(
             matchCount: 10,
             years: [], undatedCount: 0,
             volumes: [FacetBucket(key: "v1", label: "v1", count: 10)], people: [],
             documentTypes: [], provenance: [],
             provenanceCoverage: ProvenanceCoverage(parsed: 0, withRecordGroup: 0, matchCount: 10),
-            bounds: [.volumes: FacetBound(shown: 1, total: 1)])
+            subjects: [], subjectCoverage: 0, subjectsPrepared: true, bounds: [.volumes: FacetBound(shown: 1, total: 1)])
 
         let merged = FacetPanelController.merge(second, into: first, section: .volumes)
         #expect(merged.years.count == 1, "the earlier section must survive")

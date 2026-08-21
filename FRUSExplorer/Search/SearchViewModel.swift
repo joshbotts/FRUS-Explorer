@@ -170,6 +170,14 @@ final class SearchViewModel {
     /// results to documents mentioning any member of the clustered identity. `nil` means no filter.
     var personRollupId: Int?
 
+    /// Active subject bucket from the results facet (#308) — a position in
+    /// ``SubjectBucketVocabulary``. `nil` means no subject filter.
+    var subjectBucket: Int?
+
+    /// The durable `category`/`subcategory` identity of ``subjectBucket``. See
+    /// `SearchParameters.subjectBucketKey`.
+    var subjectBucketKey: String?
+
     /// Display name for the active `personRollupId`/`personRef` filter, shown in the filter chip.
     var personLabel: String?
 
@@ -712,6 +720,10 @@ final class SearchViewModel {
         personRollupId = nil
         personLabel = nil
         personAnchor = nil
+        // #308. Clear Filters must reach a facet-panel narrowing too — it is set by a single tap
+        // and is exactly the kind a reader would expect this button to undo.
+        subjectBucket = nil
+        subjectBucketKey = nil
         // Reset the project scope selection + Focus "only new" toggle (keep the loaded
         // engaged-key/focus-volume sets — they are context, not user filters, and
         // re-populate only when the project changes).
@@ -857,7 +869,9 @@ final class SearchViewModel {
             personRollupId: personRollupId,
             personLabel: personLabel,
             personAnchor: personAnchor,
-            includeFrontMatter: includeFrontMatter
+            includeFrontMatter: includeFrontMatter,
+            subjectBucket: subjectBucket,
+            subjectBucketKey: subjectBucketKey
         )
     }
 
@@ -987,6 +1001,11 @@ final class SearchViewModel {
             personRefText = ""
         case .documentType(let filter):
             documentTypeFilter = filter
+        case .subject(let bucket):
+            // Replace rather than union, for the reason `.volume` gives: the row's count is for
+            // that bucket alone.
+            subjectBucket = bucket
+            subjectBucketKey = DocumentSubjectStore.shared?.bucketVocabulary.key(at: bucket)
         }
         // No version bump: unlike macOS, this view model has no `parametersVersion` and iOS
         // re-runs the search explicitly. The caller owns that — see `SearchView`.
@@ -1009,7 +1028,7 @@ final class SearchViewModel {
             // back out — the same reason the single-tap path clears it.
             selectedVolumeIds = parameters.volumeIds ?? []
             selectedSubseriesIds = []
-        case .people, .documentType, .provenance:
+        case .people, .documentType, .provenance, .subjects:
             break
         }
     }
@@ -1126,6 +1145,18 @@ final class SearchViewModel {
                     ? String(localized: "search.narrowing.notes", defaultValue: "Editorial notes")
                     : String(localized: "search.narrowing.documents", defaultValue: "Documents")))
         }
+        if let bucket = subjectBucketKey
+            .flatMap({ DocumentSubjectStore.shared?.bucketVocabulary.id(forKey: $0) }) ?? subjectBucket {
+            // Named from the vocabulary, not from the tap: this list is derived from live fields
+            // precisely so it cannot describe a filter that is no longer the one applied. A bucket
+            // the vocabulary cannot name still gets a chip — a filter with no way back is the one
+            // failure this whole list exists to prevent.
+            out.append(ActiveNarrowing(
+                id: "subject",
+                label: DocumentSubjectStore.shared?.bucketVocabulary.label(at: bucket)
+                    ?? String(localized: "search.narrowing.subject.unknown",
+                              defaultValue: "Subject filter")))
+        }
         return out
     }
 
@@ -1139,6 +1170,7 @@ final class SearchViewModel {
         case "person": personRollupId = nil; personRefText = ""; personAnchor = nil
         case "type": documentTypeFilter = .all
         case "tag": selectedUserTagIds = []
+        case "subject": subjectBucket = nil; subjectBucketKey = nil
         default: return
         }
         // Caller re-runs the search, matching this view model's existing convention.
@@ -1152,6 +1184,9 @@ final class SearchViewModel {
         // `nil` is no filter; an EMPTY array is a real filter that matches nothing, so this tests
         // for presence rather than for non-emptiness.
         if facetYearKeys != nil { return true }
+        // #308's facet-panel narrowing. Like `facetYearKeys` it is set by a tap rather than in the
+        // sheet, which is precisely why it has to be reported: nothing else on screen would.
+        if subjectBucket != nil { return true }
         if !selectedVolumeIds.isEmpty { return true }
         if !selectedSubseriesIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
@@ -1223,6 +1258,11 @@ final class SearchViewModel {
         includeNotes          = params.includeNotes
         includeFrontMatter    = params.includeFrontMatter
         documentTypeFilter    = params.documentTypeFilter
+        // ASSIGNED UNCONDITIONALLY, never `if let`. A recalled search that omits it must CLEAR any
+        // bucket the previous search left in force — this view model's fields outlive one search,
+        // so a conditional assignment would leak a stale subject filter into every hand-off.
+        subjectBucket         = params.subjectBucket
+        subjectBucketKey      = params.subjectBucketKey
         // Project History scope is a live, manual choice — never inherited from a restored
         // snapshot or a pending-search hand-off (Analytics drill-in, "Find all mentions",
         // indexing banners). Without this reset a History scope selected earlier in the

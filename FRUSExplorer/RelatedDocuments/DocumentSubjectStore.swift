@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import CryptoKit
 
 // MARK: - DocumentSubjectCategoryGroup
 
@@ -99,6 +100,15 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     /// subject".
     private let volumesByRef: [String: [String]]
 
+    /// The artifact's generation date. Read so the facet table's done-markers can be stamped with
+    /// the DATA's identity and not only the vocabulary's order — see `applyDocumentSubjectsIfNeeded`.
+    let generated: String
+
+    /// The `(category, subcategory)` facet vocabulary, built once at decode.
+    let bucketVocabulary: SubjectBucketVocabulary
+    /// Vocab index → facet bucket id, so mapping a document's subjects to buckets is an array read.
+    private let bucketByVocabIndex: [Int]
+
     /// Subject ref → vocab index.
     ///
     /// **Stored, not computed.** As a computed property this rebuilt a 491-entry dictionary on
@@ -125,6 +135,7 @@ struct DocumentSubjectIndex: Decodable, Sendable {
             pairs[Int64(co.lower[i]) << 32 | Int64(co.higher[i])] = co.counts[i]
         }
         pairCounts = pairs
+        generated = (try? c.decode(String.self, forKey: .generated)) ?? ""
         indexByRef = Dictionary(uniqueKeysWithValues: vocab.enumerated().map { ($1.ref, $0) })
         // Invert to complete subject → volumes membership. 76,574 pairs over 491 subjects; the
         // walk is over volumes, not documents, so it is cheap relative to the decode itself.
@@ -141,13 +152,40 @@ struct DocumentSubjectIndex: Decodable, Sendable {
         idfByIndex = vocab.map { entry in
             entry.documentFrequency > 0 ? log(n / Double(entry.documentFrequency)) : 0
         }
+
+        let vocabulary = SubjectBucketVocabulary(
+            pairs: vocab.map { (category: $0.category, subcategory: $0.subcategory) })
+        bucketVocabulary = vocabulary
+        bucketByVocabIndex = vocab.map { vocabulary.id(category: $0.category, subcategory: $0.subcategory) ?? -1 }
     }
 
     enum CodingKeys: String, CodingKey {
-        case vocab, documents, documentCount, coOccurrence
+        case vocab, documents, documentCount, coOccurrence, generated
     }
 
     // MARK: - Lookups
+
+    /// Every `(documentId, facet buckets)` row for one volume — the unit the `document_subjects`
+    /// table is populated in.
+    ///
+    /// Buckets are de-duplicated per document: a document tagged with three subjects that share a
+    /// subcategory contributes **one** row, so the facet counts documents rather than tags. That is
+    /// what makes a bucket count comparable with the years and volumes sections, which count
+    /// documents too.
+    func bucketRows(forVolume volumeId: String) -> [(documentId: String, buckets: [Int])] {
+        guard let byDocument = documents[volumeId] else { return [] }
+        return byDocument.compactMap { documentId, indices in
+            var seen = Set<Int>()
+            for index in indices where bucketByVocabIndex.indices.contains(index) {
+                let bucket = bucketByVocabIndex[index]
+                if bucket >= 0 { seen.insert(bucket) }
+            }
+            return seen.isEmpty ? nil : (documentId, seen.sorted())
+        }
+    }
+
+    /// Volume ids the index carries subjects for — the population work-list.
+    var taggedVolumeIds: [String] { documents.keys.sorted() }
 
     /// The detected subjects for a document, **most distinctive first**; `[]` when it has none.
     ///
@@ -294,5 +332,111 @@ enum DocumentSubjectStore {
             #endif
             return nil
         }
+    }
+}
+
+// MARK: - SubjectBucketVocabulary
+
+/// The facet vocabulary: the distinct `(category, subcategory)` pairs in the subject index, in a
+/// fixed order, so a bucket can be stored in SQLite as one integer.
+///
+/// ## Why the pair, and not the subcategory
+/// Exactly one subcategory name is reused — `General`, under **all 13** categories — and it is not a
+/// small case: keyed on the bare name it fuses *Warfare / General* (65,958 documents) with
+/// *Bilateral Relations / General* (62,013) and eleven more into a single 181,517-document row
+/// covering 76.2% of the tagged corpus. That row is the facet's largest and means nothing. Keying on
+/// the pair gives 106 buckets whose median is 1,593 documents.
+///
+/// ## Why an integer, and what protects it
+/// `document_subjects` stores 744,054 rows; a text key costs ~19 MB more than an index. The cost of
+/// the integer is that it is positional — regenerate the artifact with a new subcategory and every
+/// stored row silently means something else. So the order is fixed (sorted by category then
+/// subcategory), and ``digest`` pins it: the backfill records the digest it populated under and
+/// **rebuilds from scratch** when it changes, rather than trusting indices across a data drop.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #308 subject results facet
+struct SubjectBucketVocabulary: Sendable, Equatable {
+
+    /// One facet bucket.
+    struct Bucket: Sendable, Equatable {
+        /// Top-level category.
+        let category: String
+        /// Second-level subcategory.
+        let subcategory: String
+        /// What the facet row shows — see ``SubjectBucketVocabulary/label(at:)``.
+        let label: String
+    }
+
+    /// The buckets, sorted by category then subcategory. A bucket's position **is** its stored id.
+    let buckets: [Bucket]
+
+    /// A stable fingerprint of the vocabulary and its order. Changes whenever a bucket is added,
+    /// removed or reordered, which is exactly when stored bucket ids stop meaning what they meant.
+    let digest: String
+
+    /// `"category\u{1F}subcategory"` → bucket id.
+    private let idByPair: [String: Int]
+
+    /// Builds the vocabulary from the subject index's entries.
+    ///
+    /// The label rule is derived from the data rather than special-casing `General`: a subcategory
+    /// whose name belongs to exactly one category is shown alone (*Covert Action*), and one shared
+    /// by several is qualified (*Warfare · General*). If a future drop reuses a second name, it is
+    /// disambiguated automatically instead of shipping two identical rows.
+    init(pairs: [(category: String, subcategory: String)]) {
+        var categoriesPerName: [String: Set<String>] = [:]
+        for pair in pairs { categoriesPerName[pair.subcategory, default: []].insert(pair.category) }
+
+        let distinct = Set(pairs.map { Self.key($0.category, $0.subcategory) })
+        let ordered = distinct.sorted()
+        buckets = ordered.map { key in
+            let parts = key.split(separator: "\u{1F}", maxSplits: 1, omittingEmptySubsequences: false)
+            let category = String(parts.first ?? "")
+            let subcategory = parts.count > 1 ? String(parts[1]) : ""
+            let shared = (categoriesPerName[subcategory]?.count ?? 0) > 1
+            return Bucket(category: category, subcategory: subcategory,
+                          label: shared ? "\(category) · \(subcategory)" : subcategory)
+        }
+        idByPair = Dictionary(uniqueKeysWithValues: ordered.enumerated().map { ($1, $0) })
+        digest = Self.digest(of: ordered)
+    }
+
+    /// The bucket id for a pair, or `nil` when the pair is not in the vocabulary.
+    func id(category: String, subcategory: String) -> Int? {
+        idByPair[Self.key(category, subcategory)]
+    }
+
+    /// The DURABLE identity of a bucket — the `category`/`subcategory` pair itself, not its
+    /// position. `nil` when the id is out of range.
+    ///
+    /// Anything that OUTLIVES a data drop must persist this and never the integer. The integer is
+    /// a position, so a regenerated artifact that adds one subcategory shifts every id after it
+    /// and a stored `4` silently becomes a different subject. That is fine inside
+    /// `document_subjects`, which is rebuilt whenever the stamp moves, and not fine at all in a
+    /// saved search, which is archived to iCloud and read back months later.
+    func key(at id: Int) -> String? {
+        guard buckets.indices.contains(id) else { return nil }
+        return Self.key(buckets[id].category, buckets[id].subcategory)
+    }
+
+    /// Resolves a durable key back to the CURRENT bucket id; `nil` when the pair no longer exists.
+    func id(forKey key: String) -> Int? { idByPair[key] }
+
+    /// The display label for a stored bucket id, or `nil` when the id is out of range — which is
+    /// what a row populated under an older ``digest`` looks like.
+    func label(at id: Int) -> String? {
+        buckets.indices.contains(id) ? buckets[id].label : nil
+    }
+
+    private static func key(_ category: String, _ subcategory: String) -> String {
+        "\(category)\u{1F}\(subcategory)"
+    }
+
+    /// Order-sensitive, so a reordering that preserved the set would still invalidate stored ids.
+    private static func digest(of orderedKeys: [String]) -> String {
+        let joined = orderedKeys.joined(separator: "\u{1E}")
+        let hash = SHA256.hash(data: Data(joined.utf8))
+        return hash.prefix(8).map { String(format: "%02hhx", $0) }.joined()
     }
 }

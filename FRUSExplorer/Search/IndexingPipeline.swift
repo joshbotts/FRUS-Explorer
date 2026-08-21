@@ -1633,10 +1633,14 @@ public actor IndexingPipeline {
 
         try auxExec("INSERT INTO frus_documents(frus_documents) VALUES('delete-all')")
         try auxExec("INSERT INTO user_content(user_content) VALUES('delete-all')")
+        // `document_subject_volumes` is in this list and it MUST be: it holds per-volume
+        // done-markers, so wiping the rows without wiping the markers would leave every volume
+        // recorded as populated against an empty table, and the Subjects facet would read zero
+        // for the rest of the install (#308).
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "terms",
                       "document_sources", "external_citations", "volume_sources",
-                      "volume_structures"] {
+                      "volume_structures", "document_subjects", "document_subject_volumes"] {
             let stmt = try auxPrepare("DELETE FROM \(table)")
             defer { sqlite3_finalize(stmt) }
             try auxStep(stmt)
@@ -2729,10 +2733,58 @@ public actor IndexingPipeline {
                 matchCount: matchCount)
         }
 
+        // Subjects (#308). `document_subjects` already holds one row per (document, bucket) — the
+        // de-duplication happens at population — so `COUNT(*)` counts DOCUMENTS here, the same unit
+        // every other section counts. Joined on (volume_id, document_id) rather than the rowid for
+        // the reason the schema comment gives: VACUUM renumbers `document_cache.rowid`.
+        // Touched only when the section was asked for: `DocumentSubjectStore.shared` forces a 6 MB
+        // JSON decode on first access, and a facet computation for Years must not pay it.
+        let subjectVocabulary = request.sections.contains(.subjects)
+            ? DocumentSubjectStore.shared?.bucketVocabulary : nil
+        let subjects = try section(
+            .subjects,
+            sql: """
+                SELECT CAST(dsu.bucket AS TEXT) AS k, COUNT(*) AS c
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_subjects dsu
+                    ON dsu.volume_id = dc.volume_id AND dsu.document_id = dc.document_id
+                GROUP BY k ORDER BY c DESC, dsu.bucket ASC
+                """,
+            distinctSQL: """
+                SELECT COUNT(DISTINCT dsu.bucket)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_subjects dsu
+                    ON dsu.volume_id = dc.volume_id AND dsu.document_id = dc.document_id
+                """,
+            // Degrades to the bare id rather than dropping the row: a bucket the vocabulary cannot
+            // name is a digest mismatch, which is a thing to SEE, not to hide.
+            label: { key in
+                guard let id = Int(key), let label = subjectVocabulary?.label(at: id) else { return key }
+                return label
+            })
+        // "Has the table been written at all", asked separately from "how many matches carry a
+        // subject" — a zero coverage means one thing when the table is populated and something
+        // completely different when it is not.
+        let subjectsPrepared = try !request.sections.contains(.subjects)
+            || scalar("SELECT COUNT(*) FROM document_subject_volumes LIMIT 1") > 0
+        let subjectCoverage = request.sections.contains(.subjects)
+            ? try scalar("""
+                SELECT COUNT(DISTINCT dc.rowid)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_subjects dsu
+                    ON dsu.volume_id = dc.volume_id AND dsu.document_id = dc.document_id
+                """)
+            : 0
+
         return ResultSetFacets(
             matchCount: matchCount, years: years, undatedCount: undated,
             volumes: volumes, people: people, documentTypes: documentTypes,
-            provenance: provenance, provenanceCoverage: coverage, bounds: bounds)
+            provenance: provenance, provenanceCoverage: coverage,
+            subjects: subjects, subjectCoverage: subjectCoverage,
+            subjectsPrepared: subjectsPrepared, bounds: bounds)
     }
 
     /// Counts how many documents in the current match carry each of `tagIds`.
@@ -3016,6 +3068,15 @@ public actor IndexingPipeline {
                         ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
                     GROUP BY k ORDER BY c DESC, k ASC
                     """
+            case .subjects:
+                sql = """
+                    SELECT CAST(dsu.bucket AS TEXT) AS k, COUNT(*) AS c
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    CROSS JOIN document_subjects dsu
+                        ON dsu.volume_id = dc.volume_id AND dsu.document_id = dc.document_id
+                    GROUP BY k ORDER BY c DESC, dsu.bucket ASC
+                    """
             }
             plans[kind] = try queryPlanForTesting(sql)
         }
@@ -3254,6 +3315,17 @@ public actor IndexingPipeline {
         // is a no-op, not "match nothing").
         if let excludeIds = filters.excludeDocumentIds, !excludeIds.isEmpty {
             appendChunkedKeyCondition(excludeIds, op: "NOT IN", chunkJoin: " AND ")
+        }
+
+        // #308 subject results facet. Interpolated rather than bound because `binds` is a
+        // `[String]` and this is an Int from our own bucket vocabulary, never user text.
+        if let bucket = filters.subjectBucket {
+            conditions.append("""
+                EXISTS (SELECT 1 FROM document_subjects dsu
+                        WHERE dsu.volume_id = dc.volume_id
+                          AND dsu.document_id = dc.document_id
+                          AND dsu.bucket = \(bucket))
+                """)
         }
 
         // #775: a set of start years, from the Years facet. Deliberately NOT the interval-overlap
@@ -4196,6 +4268,14 @@ public actor IndexingPipeline {
         try auxDeleteVolumeSources(forVolumeId: data.volumeId)
         try auxInsertVolumeSources(data.volumeSources)
         try auxInsertVolumeStructure(volumeId: data.volumeId, structureJSON: data.structureJSON)
+        // #308: this volume's subject rows, now that its `document_cache` rows exist. Placed HERE
+        // rather than in `indexVolume` because there are two store paths — the single-volume index
+        // and the batch `TaskGroup` one — and a hook added to one of them is the twin-drift this
+        // file keeps warning about. Non-fatal: a missing breakdown must never fail an index.
+        do { try refreshDocumentSubjects(forVolume: data.volumeId) }
+        catch {
+            logger.error("storeIndexData: subject rows failed for \(data.volumeId, privacy: .public): \(String(describing: error), privacy: .public)")
+        }
     }
 
     // MARK: - Progress
@@ -5495,6 +5575,50 @@ public actor IndexingPipeline {
         // #668 adds `note` — the description paragraph belonging to a collection whose
         // encoding separates name from description. Same drop-and-recreate, keyed on the
         // absent newest column; the version-34 reindex repopulates.
+        // #308 subject results facet: which `(category, subcategory)` buckets each document falls
+        // in. 744,054 rows for the full corpus.
+        //
+        // **Keyed on (volume_id, document_id), not on `document_cache.rowid`.** The facet sections
+        // all join `document_cache dc ON dc.rowid = ms.docrowid`, so keying on the rowid would make
+        // this table's join one integer compare instead of two string compares — but the rowid is
+        // not stable. `document_cache` declares `PRIMARY KEY (volume_id, document_id)`, so it is not
+        // an INTEGER PRIMARY KEY alias, and VACUUM renumbers it; `MacVolumesStorageHub` runs VACUUM
+        // after a bulk volume removal. Every row here would then point at a different document, at
+        // plausible counts, with nothing to notice it. This is the same key `document_dates` uses.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS document_subjects (
+                volume_id   TEXT    NOT NULL,
+                document_id TEXT    NOT NULL,
+                bucket      INTEGER NOT NULL,
+                PRIMARY KEY (volume_id, document_id, bucket)
+            ) WITHOUT ROWID
+            """)
+        // `WITHOUT ROWID` because the primary key IS the row: with an implicit rowid, SQLite keeps
+        // the table AND a full duplicate of it in the PK's index. Measured over the whole corpus's
+        // 744,054 rows: 53.2 MB with a rowid against 41.4 MB without, identical insert and probe
+        // times. Nothing joins `document_subjects` by rowid, which is what makes it safe.
+        //
+        // **There is deliberately NO index on `bucket`.** The obvious reading is that the narrowing
+        // predicate looks up by bucket and the PK cannot serve it — that reading is wrong, and
+        // measurably so. The predicate constrains `volume_id` and `document_id` as well (it is an
+        // EXISTS correlated to `document_cache`), so `EXPLAIN QUERY PLAN` reports
+        // `SEARCH dsu USING PRIMARY KEY (volume_id=? AND document_id=? AND bucket=?)`; the
+        // aggregate likewise joins on the PK's first two columns. Neither query ever chose the
+        // index, and it cost **20.5 MB — half the table again — and nearly doubled the backfill**
+        // (1.5 s against 0.8 s). Whole table with the index: 41.4 MB. Without: 20.9 MB.
+        try? exec("DROP INDEX IF EXISTS idx_document_subjects_bucket")
+        // Per-volume done-markers for the backfill. A table rather than one UserDefaults stamp
+        // (the `applyBrokenRefsIndexIfNeeded` pattern) because population is per-volume and
+        // open-ended: volumes arrive by download long after the first run, and a volume whose
+        // documents carry NO subjects must be recorded as done or it is rescanned every launch.
+        // `digest` is the bucket vocabulary's fingerprint — see `SubjectBucketVocabulary`.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS document_subject_volumes (
+                volume_id TEXT PRIMARY KEY,
+                digest    TEXT NOT NULL
+            )
+            """)
+
         // #733 adds `job_number` / `job_number_norm`. THIS GUARD IS THE MIGRATION — adding columns
         // to the CREATE below without adding them here does nothing to an existing database, and
         // it is not a silent no-op: `auxInsertVolumeSources` then names columns the table does not
@@ -6341,6 +6465,139 @@ public actor IndexingPipeline {
     ///
     /// Volumes indexed after the marker is current are covered by the per-volume `markBrokenCrossReferences`
     /// on their next (re)index; this covers everything already on disk.
+    /// Populates `document_subjects` for every indexed volume that does not already have it
+    /// (#308 subject results facet). Idempotent, incremental, and safe to call on every launch.
+    ///
+    /// ## Why this is not a one-shot migration
+    /// Volumes arrive by download indefinitely, so "backfill once" would leave every volume added
+    /// after the first run absent from the facet — present in the results, missing from the
+    /// breakdown, which reads as a wrong count rather than as missing data. The per-volume marker
+    /// table makes the pass incremental: it does the work for volumes that need it and nothing for
+    /// the rest.
+    ///
+    /// ## The digest gate
+    /// Bucket ids are positions in ``SubjectBucketVocabulary``. If the artifact is regenerated with
+    /// a new subcategory, every stored id shifts by one from that point on and the facet mislabels
+    /// silently. So a digest mismatch triggers a **full rebuild**, not a merge.
+    public func applyDocumentSubjectsIfNeeded() throws {
+        guard let index = DocumentSubjectStore.shared else { return }
+        // Rows are produced PER VOLUME, on demand. Materialising every volume's rows up front
+        // costs 744,054 tuples on a launch where nothing needs populating — which is every launch
+        // after the first.
+        // The stamp pairs the vocabulary's ORDER with the artifact's own generation date. The
+        // order alone is not enough: a re-dropped artifact that adds no subcategory keeps the same
+        // 106 buckets in the same order while every document's tags may have changed, and a
+        // digest that did not move would leave the table describing the previous drop forever.
+        let stamp = "\(index.bucketVocabulary.digest)@\(index.generated)"
+        let populated = try applyDocumentSubjects(
+            rows: { index.bucketRows(forVolume: $0) }, digest: stamp,
+            volumeIds: try allIndexedVolumeIds())
+        #if DEBUG
+        if populated > 0 {
+            print("[IndexingPipeline] applyDocumentSubjectsIfNeeded: populated \(populated) volumes "
+                  + "at stamp \(stamp)")
+        }
+        #endif
+    }
+
+    /// Brings ONE volume's `document_subjects` rows up to date, immediately after it is stored
+    /// (#308).
+    ///
+    /// ## Why the launch backfill is not enough
+    /// Without this the table is only ever written at app launch, so a volume downloaded during a
+    /// session is searchable but absent from the Subjects breakdown — the section under-counts it
+    /// and a subject row narrows to a set that excludes it. Both are silent: the numbers look
+    /// entirely plausible, they are just describing a smaller library than the one being searched.
+    ///
+    /// The done-marker is cleared first, because the shared populator deliberately skips anything
+    /// already marked and a RE-indexed volume may carry different document ids.
+    func refreshDocumentSubjects(forVolume volumeId: String) throws {
+        guard let index = DocumentSubjectStore.shared else { return }
+        let clear = try auxPrepare("DELETE FROM document_subject_volumes WHERE volume_id = ?")
+        defer { sqlite3_finalize(clear) }
+        sqlite3_bind_text(clear, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(clear)
+        try applyDocumentSubjects(
+            rows: { index.bucketRows(forVolume: $0) },
+            digest: "\(index.bucketVocabulary.digest)@\(index.generated)",
+            volumeIds: [volumeId])
+    }
+
+    /// The store-independent core (internal so tests can drive it over synthetic rows).
+    ///
+    /// - Parameters:
+    ///   - rows: called once per volume that needs populating, for the `(documentId, buckets)`
+    ///     rows the artifact asserts. A closure rather than a prepared dictionary so a launch with
+    ///     nothing to do does no work at all.
+    ///   - digest: the bucket vocabulary's fingerprint.
+    ///   - volumeIds: the volumes actually present in `document_cache`.
+    /// - Returns: how many volumes were populated this call.
+    @discardableResult
+    func applyDocumentSubjects(rows: (String) -> [(documentId: String, buckets: [Int])],
+                               digest: String, volumeIds: Set<String>) throws -> Int {
+        // A digest change invalidates every stored id, so rebuild rather than merge.
+        var staleDigest = false
+        let probe = try auxPrepare("SELECT digest FROM document_subject_volumes LIMIT 1")
+        if sqlite3_step(probe) == SQLITE_ROW, let raw = sqlite3_column_text(probe, 0) {
+            staleDigest = String(cString: raw) != digest
+        }
+        sqlite3_finalize(probe)
+        if staleDigest {
+            try auxExec("DELETE FROM document_subjects")
+            try auxExec("DELETE FROM document_subject_volumes")
+        }
+
+        var done = Set<String>()
+        let marked = try auxPrepare("SELECT volume_id FROM document_subject_volumes")
+        while sqlite3_step(marked) == SQLITE_ROW {
+            if let raw = sqlite3_column_text(marked, 0) { done.insert(String(cString: raw)) }
+        }
+        sqlite3_finalize(marked)
+
+        // Only volumes that are actually indexed: the artifact covers all 552, and inserting rows
+        // for a volume the reader has never downloaded would put documents in the facet that no
+        // search can return.
+        let wanted = volumeIds.subtracting(done).sorted()
+        guard !wanted.isEmpty else { return 0 }
+
+        let insert = try auxPrepare("""
+            INSERT OR IGNORE INTO document_subjects (volume_id, document_id, bucket) VALUES (?, ?, ?)
+            """)
+        defer { sqlite3_finalize(insert) }
+        let mark = try auxPrepare("""
+            INSERT OR REPLACE INTO document_subject_volumes (volume_id, digest) VALUES (?, ?)
+            """)
+        defer { sqlite3_finalize(mark) }
+        let purge = try auxPrepare("DELETE FROM document_subjects WHERE volume_id = ?")
+        defer { sqlite3_finalize(purge) }
+
+        try inTransaction {
+            for volumeId in wanted {
+                // Purge first: a volume re-indexed after a partial run would otherwise keep rows
+                // for documents the new index no longer has.
+                sqlite3_reset(purge)
+                sqlite3_bind_text(purge, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(purge)
+
+                for row in rows(volumeId) {
+                    for bucket in row.buckets {
+                        sqlite3_reset(insert)
+                        sqlite3_bind_text(insert, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+                        sqlite3_bind_text(insert, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                        sqlite3_bind_int(insert, 3, Int32(bucket))
+                        try auxStep(insert)
+                    }
+                }
+                // Marked even when the volume contributed no rows — see the schema comment.
+                sqlite3_reset(mark)
+                sqlite3_bind_text(mark, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(mark, 2, digest, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(mark)
+            }
+        }
+        return wanted.count
+    }
+
     public func applyBrokenRefsIndexIfNeeded() throws {
         guard let index = BrokenRefsIndexStore.shared else { return }
         let applied = UserDefaults.standard.string(forKey: Self.brokenRefsIndexAppliedKey)
@@ -6411,6 +6668,11 @@ public actor IndexingPipeline {
             ("external_citations", "volume_id"),
             ("volume_sources",    "volume_id"),
             ("volume_structures", "volume_id"),
+            // #308. BOTH tables, and the marker is the one that matters: drop the rows and keep
+            // the marker and the volume is permanently absent from the Subjects facet, because the
+            // backfill would see it as already done. Re-adding the volume would not repair it.
+            ("document_subjects", "volume_id"),
+            ("document_subject_volumes", "volume_id"),
         ] {
             let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
             defer { sqlite3_finalize(stmt) }
@@ -8706,6 +8968,19 @@ public struct SearchSQLFilters: Sendable {
     /// Restrict results to this explicit set of `"volumeId/documentId"` keys (Project History
     /// scope, #377 Phase 2). `nil` (or empty) = no document-set restriction.
     public var documentIds: [String]?
+
+    /// Restrict results to documents carrying this subject bucket — a position in
+    /// ``SubjectBucketVocabulary`` (#308 subject results facet).
+    ///
+    /// ## Why this is a filter field and not a `documentIds` list
+    /// Every other facet narrows through a field that already existed, and this one deliberately
+    /// does not. Resolving a bucket to its documents and passing them as `documentIds` would work
+    /// on paper and has a hard cliff: the largest bucket holds 65,958 documents, `documentIds`
+    /// binds one SQL parameter per id, and SQLite's `SQLITE_MAX_VARIABLE_NUMBER` is 32,766. The
+    /// failure would appear only on broad searches over big buckets — the exact case the facet is
+    /// for. As a predicate it is one integer, whatever the bucket's size.
+    public var subjectBucket: Int?
+
     /// **Exclude** this explicit set of `"volumeId/documentId"` keys (Project Focus "only new"
     /// option, #377 Phase 2b). `nil` (or empty) = exclude nothing.
     public var excludeDocumentIds: [String]?
@@ -8751,6 +9026,7 @@ public struct SearchSQLFilters: Sendable {
     public init(
         volumeIds: [String]? = nil,
         documentIds: [String]? = nil,
+        subjectBucket: Int? = nil,
         excludeDocumentIds: [String]? = nil,
         dateRange: DateRange? = nil,
         yearKeys: [String]? = nil,
@@ -8765,6 +9041,7 @@ public struct SearchSQLFilters: Sendable {
     ) {
         self.volumeIds = volumeIds
         self.documentIds = documentIds
+        self.subjectBucket = subjectBucket
         self.excludeDocumentIds = excludeDocumentIds
         self.dateRange = dateRange
         self.yearKeys = yearKeys

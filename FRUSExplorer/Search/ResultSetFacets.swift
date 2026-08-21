@@ -27,6 +27,8 @@ enum FacetSection: String, Sendable, Equatable, CaseIterable {
     case documentType
     /// Archival provenance era, from the parsed source notes.
     case provenance
+    /// Detected subject, at `(category, subcategory)` grain, from `document_subjects` (#308).
+    case subjects
 
     /// Whether the section's domain is bounded and small enough to show whole (#586).
     ///
@@ -35,11 +37,14 @@ enum FacetSection: String, Sendable, Equatable, CaseIterable {
     /// nine parsed citation eras. None of these can reach a length that needs triage, so none
     /// of them should open onto a page-1-of-9.
     ///
+    /// Subjects is bounded by construction: the vocabulary holds **106** `(category,
+    /// subcategory)` buckets and a match set cannot produce a bucket that is not in it.
+    ///
     /// Volumes (552) and people (**16,385** distinct rollups on a whole-corpus match) are the
     /// two that genuinely need it.
     var hasBoundedDomain: Bool {
         switch self {
-        case .years, .documentType, .provenance: return true
+        case .years, .documentType, .provenance, .subjects: return true
         case .volumes, .people: return false
         }
     }
@@ -96,10 +101,13 @@ enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
     /// The orderings worth offering for `section`, or empty when the choice is meaningless.
     ///
     /// Document type has two rows and provenance nine eras whose keys carry a chronological
-    /// sense that alphabetising would scramble; neither gets a picker.
+    /// sense that alphabetising would scramble; neither gets a picker. Subjects does get one:
+    /// 106 rows is more than a reader scans by eye, and unlike provenance its labels are names
+    /// with no inherent order, so A–Z is a real way to find one.
     static func choices(for section: FacetSection) -> [FacetSort] {
         switch section {
-        case .years, .volumes, .people: return [.count, .labelAscending, .labelDescending]
+        case .years, .volumes, .people, .subjects:
+            return [.count, .labelAscending, .labelDescending]
         case .documentType, .provenance: return []
         }
     }
@@ -395,7 +403,7 @@ struct ProvenanceCoverage: Sendable, Equatable {
 
 // MARK: - ResultSetFacets
 
-/// A result set broken down five ways, with every bound and coverage gap stated.
+/// A result set broken down six ways, with every bound and coverage gap stated.
 ///
 /// ## Computed over the match, never over the page
 /// Decision R-1-2: facets describe the **whole match**, not the fetched page and not the
@@ -434,6 +442,32 @@ struct ResultSetFacets: Sendable, Equatable {
     /// How much of the match the provenance facet speaks for.
     let provenanceCoverage: ProvenanceCoverage
 
+    /// Subject buckets at `(category, subcategory)` grain, descending by count.
+    ///
+    /// Unlike the other five, this section's data is not derived from the volume's own TEI: it
+    /// comes from the Office of the Historian's detected-topic drop, which is case-insensitive
+    /// string matching over subject names and variants rather than semantic analysis. A document
+    /// carrying no bucket is not evidence it has no subject. Any surface showing these owes the
+    /// reader that distinction — see `FacetPanelView`.
+    let subjects: [FacetBucket]
+
+    /// How many documents in the match carry **any** subject bucket.
+    ///
+    /// The same job `provenanceCoverage` does, and needed for the same reason: subjects reach
+    /// 238,302 of the corpus's 316,839 documents, so a match can be 25% untagged and the section
+    /// would not say so. Without this the largest bucket reads as a share of the match when it is
+    /// a share of the tagged part of the match.
+    let subjectCoverage: Int
+
+    /// Whether `document_subjects` has been populated at all.
+    ///
+    /// The backfill runs at launch and after each volume is indexed, so there is a window — a
+    /// library indexed by an older build, on its first launch under this one — where the table is
+    /// empty. Without this flag the section would report "detected for 0 of 1,234 matches", which
+    /// is a claim about the corpus; what is actually true is that the answer is not ready yet.
+    /// Those are different statements and only one of them is honest.
+    let subjectsPrepared: Bool
+
     /// Per-section display bounds. A section absent from this map was not truncated.
     let bounds: [FacetSection: FacetBound]
 
@@ -456,7 +490,7 @@ struct ResultSetFacets: Sendable, Equatable {
             documentTypes: [], provenance: [],
             provenanceCoverage: ProvenanceCoverage(parsed: 0, withRecordGroup: 0,
                                                    matchCount: matchCount),
-            bounds: [:])
+            subjects: [], subjectCoverage: 0, subjectsPrepared: true, bounds: [:])
     }
 }
 

@@ -341,9 +341,11 @@ Active filters appear as chips above the results; click a chip to remove it. The
 
 ### 7.5 Facets
 
-Click **Facets** in the sort bar for a panel that describes your **whole result set** rather than one row at a time — by year, volume, person, document type, and archival provenance. Sections compute when you open them, not when you search, so the panel never slows a query you weren't going to inspect.
+Click **Facets** in the sort bar for a panel that describes your **whole result set** rather than one row at a time — by year, volume, person, document type, archival provenance, and subject. Sections compute when you open them, not when you search, so the panel never slows a query you weren't going to inspect.
 
-**Facet rows are also controls.** Clicking a year, volume, person, or document-type row narrows the search through the same filters the Filters panel uses — the two can never disagree — and the narrowing appears as a clearable chip above the results. Three behaviors worth knowing:
+**Subjects are different from the other five, and the panel says so on the row.** They are detected topics from the Office of the Historian, matched by subject name and variants rather than read from the volume's own markup, and they reach about three-quarters of the corpus — so the section states how many of your matches carry a subject at all. A document with no subject row is not evidence it is not about that subject.
+
+**Facet rows are also controls.** Clicking a year, volume, person, document-type, or subject row narrows the search through the same filters the Filters panel uses — the two can never disagree — and the narrowing appears as a clearable chip above the results. Three behaviors worth knowing:
 
 - **Choosing more than one.** Years and Volumes build a selection: click a row once to **include**, again to **exclude**, a third time to clear (check mark, minus, nothing). The search doesn't re-run while you choose; click **Apply** and the whole selection runs as one search. Excluding without including anything means *everything else in this result set*; excluding every row you included leaves you with nothing, and the app does exactly that rather than quietly widening back out.
 - **Years count starts.** The Years section counts a document under the year it *starts* in, and filters the same way — "1948 · 7,392" gives you exactly those 7,392 documents. The **Date Range** filter asks a different question — it keeps any document whose span *touches* your dates. If you use both, both apply.

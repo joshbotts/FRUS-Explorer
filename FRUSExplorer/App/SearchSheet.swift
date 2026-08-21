@@ -1121,7 +1121,7 @@ struct MacSearchWindowView: View {
         .fixedSize()
         .disabled(addable.isEmpty)
         .help(String(localized: "search.token.add.help",
-                     defaultValue: "Add a filter — date, years, volume, person, tags, type or front matter"))
+                     defaultValue: "Add a filter — date, years, volume, person, tags, type, front matter or subject"))
         .accessibilityLabel(String(localized: "search.token.add.a11y", defaultValue: "Add a filter"))
     }
 
@@ -1202,7 +1202,13 @@ struct MacSearchWindowView: View {
             // slate the Apply button would then undo" — and it had **zero callers** repo-wide
             // until this line. Without it, a Years token's chevron opens a panel with no years
             // checked, and the reader's first Apply clears the filter they came to change.
-            facetController.seedSelection(searchVM.parameters.yearKeys, in: .years)
+            //
+            // Seeding is per-field: `.subjects` is not a staged section (single-tap, no Apply),
+            // so it has nothing to seed, and seeding YEARS while the reader opened a SUBJECT token
+            // would stage a year selection they never made.
+            if field == .years {
+                facetController.seedSelection(searchVM.parameters.yearKeys, in: .years)
+            }
             showFacetPanel = true
         }
     }
@@ -1217,8 +1223,13 @@ struct MacSearchWindowView: View {
             return String(localized: "search.token.editor.advanced.help",
                           defaultValue: "Edit this filter in Advanced filters")
         case .facetPanel:
-            return String(localized: "search.token.editor.facets.help",
-                          defaultValue: "Years are chosen in the facet panel")
+            // Named per field: two fields route here now, and "Years are chosen in the facet
+            // panel" is simply false hovering over a Subject token.
+            return field == .subject
+                ? String(localized: "search.token.editor.facets.subject.help",
+                         defaultValue: "Subjects are chosen in the facet panel")
+                : String(localized: "search.token.editor.facets.help",
+                         defaultValue: "Years are chosen in the facet panel")
         }
     }
 
@@ -1232,6 +1243,7 @@ struct MacSearchWindowView: View {
         case .tags:        searchVM.clearTagFilter()
         case .type:        searchVM.setDocumentTypeFilter(.all)
         case .frontMatter: searchVM.setIncludeFrontMatter(true)
+        case .subject:     searchVM.clearSubjectFilter()
         }
     }
 

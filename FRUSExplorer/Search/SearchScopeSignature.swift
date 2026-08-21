@@ -66,6 +66,12 @@ enum SearchScopeSignature {
         parts.append("vols=\(idComponent(parameters.volumeIds))")
         parts.append("docs=\(idComponent(parameters.documentIds))")
         parts.append("exdocs=\(idComponent(parameters.excludeDocumentIds))")
+        // #308: the subject results facet's bucket. Same reason as `years=` above — two searches
+        // differing only in their subject scope must sign differently.
+        // Signed by the DURABLE key where there is one. Signing the position would make two
+        // identical scopes sign differently either side of a data drop, and — worse — two
+        // different scopes sign the SAME across one.
+        parts.append("subj=\(parameters.subjectBucketKey ?? parameters.subjectBucket.map(String.init) ?? "any")")
         parts.append("stags=\(idComponent(parameters.subjectTagIds))")
         parts.append("utags=\(idComponent(parameters.userTagIds))")
         parts.append("type=\(parameters.documentTypeFilter.signatureToken)")
@@ -190,6 +196,19 @@ enum SearchScopeSignature {
                 phrases.append(String(localized: "appendix.scope.years %@",
                                       defaultValue: "years \(years.replacingOccurrences(of: ",", with: ", "))"))
             }
+        }
+        // #308: the subject narrowing, NAMED rather than numbered. The signature stores a bucket
+        // id because that is what makes two scopes comparable, but an appendix exists to let
+        // someone REPRODUCE the search, and a positional index into an artifact they do not have
+        // is not reproducible. Falls back to the id only when the vocabulary cannot name it.
+        if let subject = pairs["subj"], subject != "any" {
+            let vocabulary = DocumentSubjectStore.shared?.bucketVocabulary
+            // The component is a durable pair key on anything recent, and a bare position only on
+            // a signature written before this shipped.
+            let named = (vocabulary?.id(forKey: subject) ?? Int(subject))
+                .flatMap { vocabulary?.label(at: $0) }
+            phrases.append(String(localized: "appendix.scope.subject %@",
+                                  defaultValue: "subject \(named ?? subject)"))
         }
         phrases += countPhrase(pairs["vols"],
                                some: { String(localized: "appendix.scope.volumes %lld",
