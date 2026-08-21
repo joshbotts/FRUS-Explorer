@@ -1,7 +1,10 @@
 # Research Trip Packet — scope against NARA's own pre-visit guidance
 
-**Date:** 2026-08-04 · **Version:** 1.1 · **Status:** scoping for owner review — no code
-rides this document. Follows from `Planning/Feature-Priorities-Review-2026-08.md` §5a.2.
+**Date:** 2026-08-04 · **Version:** 1.2 · **Status:** scoping for owner review — no code
+rides this document. **The T-0 gate is under way in
+`Planning/Research-Trip-Packet-T0-Prereqs.md` (2026-08-21)**, which carries the offline data
+audit and settles four decisions this document did not anticipate; where the two disagree, the
+prereqs memo is later and wins. Follows from `Planning/Feature-Priorities-Review-2026-08.md` §5a.2.
 
 **Primary source, deposited in-repo:** NARA's research-visit FAQ, "How can I make my visit more
 successful?" (https://www.archives.gov/research/start/research-visit-faqs), captured verbatim
@@ -164,6 +167,17 @@ program); History Hub posting integration (link only).
 
 ## 5. Open decisions for the owner
 
+**Status, 2026-08-21** (see `Research-Trip-Packet-T0-Prereqs.md` §4): decisions **3, 4, 5 below
+remain open**; decision 1 is open with the recommendation standing. Four decisions the audit
+forced and this document did not anticipate were settled the same day — curate Central Decimal
+File date-block series identities (the worksheet's grain for 73% of notes); derive the NARA
+facility from `series-facts-index`'s reference unit and hand-curate only the presidential
+libraries and the non-NARA tail; map *Department of State* / *Central Intelligence Agency* /
+*Washington National Records Center* to a serving facility rather than heading a chapter with
+them; and **promote restriction triage from T-3 into the first shipping cut** (138 of 695 series
+are Restricted — Fully). `numberingNote` is dropped from T-3: it reaches 1 of 622 app-reachable
+series.
+
 1. **Visit-date input**: required (enables the countdown) or optional (relative lead times)?
    Recommend optional with relative fallback.
 2. ~~Inquiry drafts: one per repository or combined?~~ **Resolved from source (v1.1):** one
@@ -181,6 +195,12 @@ program); History Hub posting integration (link only).
 
 ## Version history
 
+- **1.2 (2026-08-21)** — Status pointer to `Research-Trip-Packet-T0-Prereqs.md`: the T-0 audit
+  ran offline against the shipped artifacts, four unanticipated decisions were settled (worksheet
+  grain, repository-table scope, non-visitable repository strings, restriction-triage placement),
+  and §2's rider table is stale in both directions — `accessRestriction`, digitised ranges and
+  inclusive series dates all shipped, while `numberingNote` was measured out. No scope text was
+  rewritten; the memo is the current record.
 - **1.1 (2026-08-04)** — Rebuilt against the verbatim FAQ text (deposited at
   `Planning/reference/nara-research-visit-faqs-2026-08-04.md`): added the effective-inquiry
   spec (A3), the extra-lead-time flag engine (A4), the not-well-described/ad-hoc advisory

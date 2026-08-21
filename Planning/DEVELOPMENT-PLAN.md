@@ -7958,3 +7958,65 @@ source-note-derived. And a latent bug was closed rather than doubled — `resolv
 assigned only on success, leaving a previous document's rolls on screen in any persistent host.
 
 v44 → v45, owner-authorised re-index. 20 tests across two suites, 12 mutants killed.
+
+---
+
+## Session 2026-08-21 — #830 T-0: the gate walked, and four decisions the plan did not anticipate
+
+**Documentation only. No code, no artifact, no schema change.** The gate's own instruction is
+that the first act of T-0 is to bring facts to the owner rather than to draft and proceed, so
+this session measured, sorted, and asked. Output:
+`Planning/Research-Trip-Packet-T0-Prereqs.md` (v1.0), plus a v1.2 status pointer on
+`Research-Trip-Packet-Scope.md` so the two cannot silently disagree.
+
+**The audit was run corpus-wide because a container holds no user library**, against the
+committed export summary and the shipped bundles. Three measurements moved the plan.
+
+*`document_sources.repository` stores the creating agency, not a visitable facility.*
+`IndexingPipeline.swift:6166-6218` writes the literal `"Department of State"` for both a lot
+file and a decimal file, and `"Central Intelligence Agency"` for a CIA job. The plan's "one
+repository per chapter" has no field to key on; facility is derived. Against that, NARA's own
+catalogue answers the question the table was going to be curated for: `series-facts-index.json`
+carries a reference unit on every series, and it is **694 of 695 College Park**. So the NARA side
+of the ~16-row table is data, and hand-curation shrinks to the eleven presidential libraries and
+a non-NARA tail whose last eight rows carry 45 documents between them.
+
+*Three-quarters of the corpus cannot reach NARA's four-field inquiry line.* Measured by route,
+only **3.1%** of the 264,464 source notes reach RG + entry + series + NAID — the resolved-lot
+path, where HMS/MLR coverage is 99.2%. Another **71.6%** are decimal-file notes that resolve to
+a *record group* and stop, which is the "everything you have" shape the FAQ calls useless. The
+gap is a missing series identity for the 1910–1963 Central Decimal File and the CFPF, and the
+tree already records why a resolver cannot close it: the live "Central Decimal Files" series
+carries **23 entry numbers** (`CentralFilesIndex.swift:169`), so the series is nameable and *the*
+entry number is not. Owner decision: curate ~10 date-block rows, on
+`curated-lot-resolutions.json`'s no-generator-writes-this footing.
+
+*Restriction triage is the packet's most valuable page and it was scoped as a trailing rider.*
+Of 695 series, **481 (69.2%) are restricted to some degree and 138 (19.9%) are Restricted —
+Fully**; 399 carry a FOIA (b)(1) exemption. The data shipped with #663/F-7 months ago. Promoted
+into the first cut.
+
+**Two other things the plan says are stale in opposite directions.** Its §2 rider table marks
+`accessRestriction`, digitised ranges and inclusive series dates "Pending N-7" — all three
+shipped — while `numberingNote` is listed as a 385-series feature and reaches **1** of the 622
+series the app can name (`HarvestShardReader.swift:47-49`). Dropped from T-3, which is now
+nearly empty; what remains is assembly.
+
+**The A4 flag engine was priced and one criterion does not discriminate.** The sensitive-agency
+rule fires on **81.4%** of notes, because FRUS *is* State Department records; the date rule fires
+on 21.3% and the unresolved-lot rule on 43% of lot notes. Recommended (not yet settled) as a
+stated constant plus two live flags — a chip lit on every row carries no information, while the
+criterion stays true and stays NARA's.
+
+**The fact inventory was split rather than answered.** Of the ~40 institutional claims the gate
+enumerates, roughly half are verbatim in the deposited FAQ and checkable without leaving the
+repository; the other half — pull times, the 5:15 cutoff, the consultation area, the Wednesday
+specialist, room rules, eleven library addresses — are search-verified only and cannot be
+confirmed from this container at all. The proposed mechanism makes that split enforceable: a
+**per-fact nullable `verifiedDate`**, with an unverified fact **omitted** rather than printed
+undated. That is also the gate's own correction to artboard 1k (which draws one aggregate stamp
+per card), and it means T-1 and T-2 can build against an empty table without ever printing an
+unconfirmed sentence.
+
+Settled: D1–D4. Open with recommendations standing: visit-date input, presidential libraries in
+v1, table maintenance policy, research-question reuse, A4 calibration.
