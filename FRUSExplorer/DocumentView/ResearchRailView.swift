@@ -112,7 +112,7 @@ struct ResearchRailView: View {
     @AppStorage("frus.document.researchPanel.tags")        private var tagsExpanded        = false
     /// New in C1: the Collections membership accordion's expansion state.
     @AppStorage("frus.document.researchPanel.collections") private var collectionsExpanded = false
-    @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
+    @AppStorage(SettingsKeys.relatedAxisWeights) private var relatedWeights = AxisWeights.default
 
     // MARK: Data (re-declared from `entry`)
 

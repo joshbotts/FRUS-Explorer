@@ -1852,6 +1852,18 @@ func formattedBytes(_ bytes: Int) -> String {
 // MARK: - SettingsKeys
 
 enum SettingsKeys {
+    /// The global find-related axis tuning, as an `AxisWeights` raw string.
+    ///
+    /// Device-local by nature and NOT on `SyncedPreferences`: a ranking tuning is edited in the
+    /// feature and re-ranks what is on screen, and a stored property on a mirrored `@Model` would
+    /// need a Production deploy before shipping (the #488 gate).
+    ///
+    /// **Absent means "unconfigured", and that is load-bearing** — `ProjectLeadsService`
+    /// .effectiveWeights overlays the current defaults onto whatever is stored, so an axis missing
+    /// from the string inherits its default rather than an implicit 0. Reset therefore REMOVES this
+    /// key rather than writing defaults into it (#1021, #1029).
+    static let relatedAxisWeights = "frus.related.weights"
+
     /// UserDefaults key for the maximum simultaneous volume downloads.
     /// Written by the Downloads settings (both platforms), read at boot by
     /// `FRUSExplorerApp` and applied live via `DownloadManager.setConcurrencyLimit`.

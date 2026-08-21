@@ -342,7 +342,7 @@ struct DocumentView: View {
     /// Read-mode edge-tap zones. The per-accordion expansion keys are owned by ``ResearchRailView``.
     @AppStorage("frus.document.researchPanel.visible")  private var panelVisible    = true
     /// The user's persisted find-related weight tuning (#308), captured into the request on open.
-    @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
+    @AppStorage(SettingsKeys.relatedAxisWeights) private var relatedWeights = AxisWeights.default
     /// Whether the Read-mode edge-tap "page-turn" zones are active (Session 154).
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
