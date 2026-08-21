@@ -823,3 +823,110 @@ struct SubjectOnlySearchTests {
         #expect(results.isEmpty, "an untagged bucket returned \(results.count) documents")
     }
 }
+
+
+// MARK: - FilterOnlyCompletionTests
+
+/// The sites #1022's first pass missed, found by adversarial review of PR #1035.
+///
+/// #1022 extracted `supportsFilterOnlySearch` and claimed "one rule, not four". It was **five**:
+/// `SearchView.consumePendingSearch` has its own enumeration, so a subject-only hand-off applied
+/// its parameters and then never ran — the exact twin-drift failure the extraction existed to
+/// prevent, committed by the extraction itself. Two more in the same family: the macOS empty-scope
+/// guard rejected filter-only queries iOS would run, and a query with real text but every content
+/// scope off fell down the filter-only path and had its text silently discarded.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: from the #1035 review
+@Suite("Filter-only completion (#1022 review)")
+struct FilterOnlyCompletionTests {
+
+    /// Text plus no scope is a SCOPE error, not a filter-only search. This is the one with teeth:
+    /// the old behaviour returned the whole bucket and never said the keyword had been dropped.
+    @Test("A keyword with every scope off is refused, not silently dropped")
+    func textWithNoScopeIsRefused() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSFilterOnlyText-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("t.sqlite")
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: dir, concurrencyLimit: 1)
+        let service = SearchService(fts5Store: fts5, pipeline: pipeline)
+
+        var params = SearchParameters(keywords: "berlin")
+        params.subjectBucket = 2
+        params.includeDocumentText = false
+        params.includeSummaries = false
+        params.includeNotes = false
+
+        await #expect(throws: (any Error).self, """
+            A reader who typed "berlin" inside a topic, with every content scope off, must be told \
+            something is wrong. Returning the whole bucket answers a question they did not ask and \
+            gives no sign their word was dropped.
+            """) {
+            _ = try await service.matchExpressions(for: params)
+        }
+
+        // The same parameters WITHOUT text are a legitimate filter-only search.
+        var browse = params
+        browse.keywords = nil
+        let expressions = try await service.matchExpressions(for: browse)
+        #expect(expressions.corpus == nil && expressions.userContent == nil)
+    }
+
+    /// An exclusion is worse than a keyword when dropped: it WIDENS the result set.
+    @Test("Excluded terms with every scope off are refused too")
+    func exclusionsWithNoScopeAreRefused() {
+        var params = SearchParameters()
+        params.subjectBucket = 2
+        params.excludedTerms = ["berlin"]
+        #expect(params.hasTextTerms, """
+            An exclusion is text the MATCH would have carried. Dropping it silently returns MORE \
+            than the reader asked for, under a query that says it returns less.
+            """)
+        #expect(params.supportsFilterOnlySearch, "the subject filter still qualifies on its own")
+    }
+
+    /// Whitespace is not a term — otherwise a stray space in the field would turn a legitimate
+    /// browse into a scope error.
+    @Test("Whitespace-only text does not count as a term")
+    func whitespaceIsNotAText() {
+        var params = SearchParameters(keywords: "   ")
+        params.subjectBucket = 2
+        #expect(!params.hasTextTerms)
+    }
+
+    /// The fifth site, pinned by source scan because the gate lives in a View's private method and
+    /// its whole failure mode is enumerating the rule again instead of asking for it.
+    @Test("Every gate asks the shared rule rather than re-listing the filters")
+    func noGateReEnumeratesTheRule() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["FRUSExplorer/Search/SearchView.swift",
+                     "FRUSExplorer/Search/SearchViewModel.swift",
+                     "FRUSExplorer/App/MacSearchViewModel.swift",
+                     "FRUSExplorer/Search/SearchService.swift",
+                     "FRUSExplorer/Search/QueryInspection.swift"] {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            #expect(source.contains("supportsFilterOnlySearch"), """
+                \(path) decides whether a query can run and does not consult the shared rule.
+                """)
+        }
+
+        // The specific enumerations that were wrong, named so a revert is caught rather than
+        // merely a missing symbol.
+        let searchView = try String(
+            contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SearchView.swift"),
+            encoding: .utf8)
+        #expect(!searchView.contains("|| params.personRollupId != nil\n        if canRun {"), """
+            consumePendingSearch is enumerating person filters again. A subject-only hand-off \
+            applies its parameters and then never runs.
+            """)
+        #expect(!searchView.contains("|| vm.personRollupId != nil\n        if vm.hasSearched"), """
+            clearVolumeScope is enumerating person filters again, so clearing the scope on a \
+            subject-only search leaves the narrowed results on screen.
+            """)
+    }
+}

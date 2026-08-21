@@ -911,7 +911,12 @@ final class MacSearchViewModel {
         // Empty scope guard: at least one of the three scope flags must be enabled.
         // Without this, SearchService throws `emptyQuery`, which surfaces as an unhelpful
         // technical error string.
-        guard params.includeDocumentText || params.includeSummaries || params.includeNotes else {
+        //
+        // Skipped for a filter-only query, which has no MATCH and therefore nothing to scope.
+        // Applying it there rejected a perfectly runnable subject- or person-only search on macOS
+        // while iOS ran it — the twin divergence #1022 set out to remove (#1022 review).
+        guard params.includeDocumentText || params.includeSummaries || params.includeNotes
+                || (params.supportsFilterOnlySearch && !params.hasTextTerms) else {
             results = []
             totalMatchCount = nil
             lastRenderedExpression = nil

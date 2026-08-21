@@ -271,7 +271,10 @@ public actor SearchService {
             // filter-only query (no FTS MATCH) instead of erroring. The pipeline's filter-only path
             // applies it SQL-side. `supportsFilterOnlySearch` is the single rule — see its
             // documentation for why this is not an enumeration repeated at four sites (#1022).
-            if parameters.supportsFilterOnlySearch {
+            // ...but only when there is genuinely no text to run. Reaching here WITH text means
+            // every content scope is off, which is a scope error; running the bare filter would
+            // silently discard what the reader typed (#1022 review).
+            if parameters.supportsFilterOnlySearch, !parameters.hasTextTerms {
                 return (nil, nil)
             }
             throw FTS5Error.emptyQuery
