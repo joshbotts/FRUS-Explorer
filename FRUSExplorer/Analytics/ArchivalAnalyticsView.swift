@@ -1249,9 +1249,14 @@ struct ArchivalAnalyticsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if unitLens == .centralFileClasses {
-                Text(String(localized: "archival.caveats.noClassPointers",
-                            defaultValue: "Unprinted pointers are not offered for filing-system classes: the footnote harvest reads lot files and presidential libraries, and never a decimal class."))
+            if unitLens == .centralFileClasses, weight == .unprintedPointers {
+                // #834 turned this from "the weight is not offered here" into the disclosure the
+                // weight needs. Most central-file citations point at the citing document's OWN
+                // file, so the count is roughly three times the number of pointers that lead
+                // somewhere else — a reader comparing this lens to the collections lens is
+                // otherwise comparing two different things.
+                Text(String(localized: "archival.caveats.classPointersSelfCitation",
+                            defaultValue: "Most central-file citations name the file the citing document itself came from — about three in five, and closer to three in four before 1946. They are counted here, because the file was still cited, but they are not movement between archives."))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
