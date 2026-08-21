@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import OSLog
 import SwiftData
 
 // MARK: - ProjectLeadsService
@@ -151,6 +152,68 @@ enum ProjectLeadsService {
     /// actor calls, so the loop yields. Honors `Task` cancellation between seeds and before the
     /// upsert, so a superseding recompute (the debounce fired again) doesn't run to completion and
     /// race the fresher pass's writes.
+    // MARK: - Cost
+
+    /// The signposter every recompute reports through, so the cost of this loop is visible in
+    /// Instruments without a build flag (#1025).
+    ///
+    /// **Why a signposter and not a `#if DEBUG` timing print.** The thing being priced is not a
+    /// one-off number: `recompute` runs the whole multi-axis related-documents rank once per seed,
+    /// up to `seedCap` times, on the main actor, on every debounced change to a project's
+    /// collections or notes — and the axis set has grown three times since the loop was written.
+    /// A measurement that only exists while someone is holding a stopwatch prices the version they
+    /// happened to measure. `OSSignposter` costs nothing when no tool is attached, so the next
+    /// person to ask "why is Project Home slow" can attach Instruments and see it.
+    ///
+    /// Intervals emitted: `recompute` (the whole pass, with the seed count and the resolved weight
+    /// vector) and `rank-seed` (one per seed). The weight vector is on the interval deliberately —
+    /// the question #1025 asks is what an axis costs, and a trace that does not say which axes were
+    /// live cannot answer it.
+    private static let signposter = OSSignposter(
+        subsystem: "bottsywattsy.FRUS-Explorer", category: "ProjectLeads")
+
+    /// The most recent recompute's measured cost, for the in-app report and for tests.
+    ///
+    /// Held as a static rather than returned, because `recompute` is fire-and-forget from three
+    /// call sites and none of them wants a return value. Overwritten each pass; a reader takes the
+    /// last one.
+    private(set) static var lastCost: RecomputeCost?
+
+    /// What one recompute cost, in the terms #1025 asks about.
+    struct RecomputeCost: Sendable, Equatable {
+        /// Seeds actually ranked (`min(seed.count, seedCap)`).
+        let seedsRanked: Int
+        /// Wall time for the whole pass, including the off-main seed gather.
+        let total: Duration
+        /// Wall time inside the per-seed `RelatedDocumentsEngine.rank` calls.
+        let ranking: Duration
+        /// The slowest single seed — the tail that a p50 hides.
+        let slowestSeed: Duration
+        /// The axes that were live (weight > 0) for this pass, so a measurement can be attributed.
+        let liveAxes: [SimilarityAxis]
+        /// Σ of each seed's rankable candidate count — the scale the scorers actually ran at.
+        ///
+        /// A LOWER BOUND on the candidate universe, not the universe itself: it counts what still
+        /// scored above zero after ranking. It is recorded because the scorer cost measured in CI
+        /// is a cost PER CANDIDATE (#1025 measured 22.6 µs), and per-candidate × scale is the only
+        /// way to turn that into a recompute figure. Without it a trace says a pass was slow and
+        /// cannot say whether that is many candidates or an expensive axis.
+        let candidatesRanked: Int
+
+        /// Mean time per ranked seed, or zero when nothing was ranked.
+        var perSeed: Duration { seedsRanked > 0 ? ranking / seedsRanked : .zero }
+
+        /// The share of the pass spent inside the ranking loop, `0...1`.
+        ///
+        /// The complement is the off-main seed gather plus the SwiftData upsert, so a slow
+        /// recompute whose ranking share is low is not an axis-cost problem however many axes are
+        /// live — which is the misattribution this figure exists to prevent.
+        var rankingShare: Double {
+            let totalMs = total.milliseconds
+            return totalMs > 0 ? ranking.milliseconds / totalMs : 0
+        }
+    }
+
     static func recompute(forProject projectId: UUID, appState: AppState, in context: ModelContext) async {
         // Flush pending main-context edits before reading the seed on a *separate* background
         // context: a document just added to (or removed from) a collection is only in the main
@@ -160,11 +223,19 @@ enum ProjectLeadsService {
         // until some later save *and* another recompute trigger). Cheap for a small changeset,
         // a no-op when clean.
         try? context.save()
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+        let recomputeState = signposter.beginInterval("recompute", id: signposter.makeSignpostID())
         let (seedKeys, projectWeightsRaw) = await gatherSeed(
             forProject: projectId, container: context.container)
-        if Task.isCancelled { return }
+        if Task.isCancelled {
+            signposter.endInterval("recompute", recomputeState, "cancelled")
+            return
+        }
         let weights = effectiveWeights(projectRaw: projectWeightsRaw)
+        let liveAxes = SimilarityAxis.allCases.filter { weights[$0] > 0 }
         guard !seedKeys.isEmpty else {
+            signposter.endInterval("recompute", recomputeState, "no seed")
             // No seed → no basis to rank, so there are no visible suggestions. Clear the visible
             // (non-dismissed) leads but KEEP the researcher's dismissed markers: an empty seed is a
             // degenerate/transient state (a reorg, or a remove-then-re-add of the last collection
@@ -177,21 +248,39 @@ enum ProjectLeadsService {
         let seedSet = Set(seedKeys)
         var perSeed: [(seed: String, related: [(key: String, score: Double)])] = []
         var recordByKey: [String: CandidateRecord] = [:]   // display fields for the shown leads
+        var rankingTime = Duration.zero
+        var slowestSeed = Duration.zero
+        var seedsRanked = 0
+        var candidatesRanked = 0
         for seedKey in seedKeys.prefix(seedCap) {
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                signposter.endInterval("recompute", recomputeState, "cancelled")
+                return
+            }
             guard let anchor = DocumentKey(compositeString: seedKey) else { continue }
             // Leads never render the snippet, so skip the batched snippet extraction (× up to seedCap).
+            let seedState = signposter.beginInterval("rank-seed", id: signposter.makeSignpostID())
+            let seedStartedAt = clock.now
             let result = await RelatedDocumentsEngine.rank(
                 anchor: anchor, anchorYear: nil, weights: weights,
                 scopeVolumeIds: nil, limit: perSeedRelatedLimit,
                 includeSnippets: false, appState: appState)
+            let seedElapsed = clock.now - seedStartedAt
+            signposter.endInterval("rank-seed", seedState)
+            rankingTime += seedElapsed
+            slowestSeed = max(slowestSeed, seedElapsed)
+            seedsRanked += 1
+            candidatesRanked += result.totalBeforeLimit
             perSeed.append((seed: seedKey,
                             related: result.rows.map { ($0.key.compositeString, $0.totalScore) }))
             for row in result.rows where recordByKey[row.key.compositeString] == nil {
                 recordByKey[row.key.compositeString] = row.record
             }
         }
-        if Task.isCancelled { return }
+        if Task.isCancelled {
+            signposter.endInterval("recompute", recomputeState, "cancelled")
+            return
+        }
         // The keys the researcher has dismissed from Suggested Next — so the aggregator can backfill
         // their display slots with the next-best leads while keeping the dismissed ones hidden. A
         // small scoped fetch on the main context (it sees the just-dismissed state, saved above).
@@ -203,6 +292,22 @@ enum ProjectLeadsService {
         let candidates = ProjectLeadsAggregator.aggregate(
             perSeedRelated: perSeed, seedKeys: seedSet, dismissedKeys: dismissedKeys, limit: leadLimit)
         applyLeads(candidates, records: recordByKey, forProject: projectId, in: context)
+
+        let cost = RecomputeCost(seedsRanked: seedsRanked, total: clock.now - startedAt,
+                                 ranking: rankingTime, slowestSeed: slowestSeed, liveAxes: liveAxes,
+                                 candidatesRanked: candidatesRanked)
+        lastCost = cost
+        signposter.endInterval("recompute", recomputeState,
+                               "seeds=\(seedsRanked) candidates=\(candidatesRanked) axes=\(liveAxes.count)")
+        #if DEBUG
+        print("""
+            [ProjectLeadsService] recompute: \(seedsRanked) seeds, \
+            total \(cost.total.milliseconds)ms, ranking \(cost.ranking.milliseconds)ms \
+            (mean \(cost.perSeed.milliseconds)ms, slowest \(cost.slowestSeed.milliseconds)ms), \
+            \(candidatesRanked) candidates, \
+            live axes: \(liveAxes.map(\.rawValue).sorted().joined(separator: ","))
+            """)
+        #endif
     }
 
     /// Deletes a project's **visible** (non-dismissed) `ProjectLeadEntry` records, leaving its
@@ -261,5 +366,19 @@ enum ProjectLeadsService {
         for entry in existing where !candidateKeys.contains(entry.documentKey) {
             context.delete(entry)
         }
+    }
+}
+
+// MARK: - Duration reporting
+
+extension Duration {
+
+    /// This duration in milliseconds, for logging and for the cost report.
+    ///
+    /// `components` is (seconds, attoseconds); 1 ms is 1e15 attoseconds. Computed rather than
+    /// stored so the report keeps full precision until something formats it.
+    var milliseconds: Double {
+        let (seconds, attoseconds) = components
+        return Double(seconds) * 1_000 + Double(attoseconds) / 1_000_000_000_000_000
     }
 }
