@@ -13,12 +13,23 @@ import TipKit
 
 /// How a facet row narrows the search — and, for one section, that it cannot.
 ///
-/// ## Four of five narrow through fields that already exist
+/// ## Four of six narrow through fields that already exist
 /// The design's requirement is that a facet click applies through the **existing**
 /// `SearchSQLFilters` fields, so facets and the filter sheet can never disagree. That holds
 /// for years (`dateRange`), volumes (`volumeIds`), people (`personRollupId`) and document
 /// type (`documentTypeFilter`) — and two of those already read back in the macOS filter row
 /// for free, because that row is driven from the same parameters.
+
+/// ## Subjects adds a field, deliberately, and the reason is a hard limit
+/// #308's section is the one exception, and it is not a relaxation of the rule so much as a case
+/// the rule did not anticipate. The obvious existing-field route is `documentIds`: resolve the
+/// bucket to its documents and pass them in. That works up to a point and then stops working —
+/// `documentIds` binds one SQL parameter per id, SQLite's `SQLITE_MAX_VARIABLE_NUMBER` is 32,766,
+/// and the largest bucket (*Warfare · General*) holds 65,958 documents. The break would show up
+/// only on broad searches over big buckets, which is precisely what a facet is for. So
+/// `subjectBucket` is a real predicate: one integer, constant cost at any bucket size. The
+/// no-disagreement property the rule protects is preserved the same way the others get it — the
+/// field lives on `SearchParameters`, so any surface that reads scope reads this too.
 ///
 /// ## Provenance cannot, and pretending otherwise would be the wrong fix
 /// `SearchSQLFilters` has no repository, record-group or citation-era field, and the design
@@ -39,6 +50,8 @@ enum FacetNarrowing: Sendable, Equatable {
     case person(Int)
     /// Restrict to primary documents or editorial notes.
     case documentType(DocumentTypeFilter)
+    /// Restrict to documents carrying one `(category, subcategory)` subject bucket (#308).
+    case subject(Int)
 
     /// The narrowing a bucket in `section` represents, or `nil` when that section is
     /// descriptive only.
@@ -53,6 +66,8 @@ enum FacetNarrowing: Sendable, Equatable {
         case .documentType:
             // The aggregate keys on `is_editorial_note`, so "1" is the notes bucket.
             return .documentType(bucket.key == "1" ? .editorialNotesOnly : .documentsOnly)
+        case .subjects:
+            return Int(bucket.key).map { .subject($0) }
         case .provenance:
             return nil
         }
@@ -87,6 +102,8 @@ enum FacetNarrowing: Sendable, Equatable {
             parameters.personAnchor = nil
         case .documentType(let filter):
             parameters.documentTypeFilter = filter
+        case .subject(let bucket):
+            parameters.subjectBucket = bucket
         }
     }
 }
@@ -386,13 +403,16 @@ final class FacetPanelController {
             provenance: section == .provenance ? new.provenance : base.provenance,
             provenanceCoverage: section == .provenance
                 ? new.provenanceCoverage : base.provenanceCoverage,
+            subjects: section == .subjects ? new.subjects : base.subjects,
+            subjectCoverage: section == .subjects ? new.subjectCoverage : base.subjectCoverage,
+            subjectsPrepared: section == .subjects ? new.subjectsPrepared : base.subjectsPrepared,
             bounds: bounds)
     }
 }
 
 // MARK: - FacetPanelView
 
-/// The facet panel: what the result set contains, broken down five ways.
+/// The facet panel: what the result set contains, broken down six ways.
 ///
 /// Shared so R-1c's iOS sheet renders the identical content; only the container differs.
 ///
@@ -466,6 +486,8 @@ struct FacetPanelView: View {
                         title: String(localized: "facets.documentType", defaultValue: "Document type"))
                 section(.provenance,
                         title: String(localized: "facets.provenance", defaultValue: "Archival provenance"))
+                section(.subjects,
+                        title: String(localized: "facets.subjects", defaultValue: "Subjects"))
             }
             .padding(.vertical, 12)
         }
@@ -759,6 +781,9 @@ struct FacetPanelView: View {
                     if kind == .provenance {
                         provenanceCaveat(facets.provenanceCoverage)
                     }
+                    if kind == .subjects {
+                        subjectsCaveat(facets)
+                    }
                     // Suppressed outright when the evidence is partial. "The top three hold
                     // 60%" over a BM25-selected subset is partly a statement about the ranking
                     // that selected it, and unlike a count there is no caveat that repairs a
@@ -849,6 +874,7 @@ struct FacetPanelView: View {
                         count: $0.count)
         }
         case .provenance: return facets.provenance
+        case .subjects: return facets.subjects
         }
     }
 
@@ -984,6 +1010,33 @@ struct FacetPanelView: View {
                                 Int64(selection.excluded.count)))
         }
         return parts.joined(separator: " · ")
+    }
+
+    /// What the subjects section is, and is not (#308).
+    ///
+    /// Two sentences, and both are load-bearing. The **coverage** line exists because subjects
+    /// reach 238,302 of the corpus's 316,839 documents: without it the largest bucket reads as a
+    /// share of the match when it is a share of the tagged part of the match. The **provenance**
+    /// line exists because these tags are not the volume's own markup — they are the Office of the
+    /// Historian's detected topics, from case-insensitive matching of subject names and variants,
+    /// which is recall-oriented. A document with no bucket may still be about the subject.
+    @ViewBuilder
+    private func subjectsCaveat(_ facets: ResultSetFacets) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if facets.subjectsPrepared {
+                Text(String(localized: "facets.subjects.coverage",
+                            defaultValue: "Subjects detected for \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches."))
+            } else {
+                // NOT "0 of 1,234" — that would state as a fact about the corpus what is really
+                // the backfill not having finished.
+                Text(String(localized: "facets.subjects.preparing",
+                            defaultValue: "Subjects are still being prepared for your library — this breakdown is not complete yet."))
+            }
+            Text(String(localized: "facets.subjects.provenance",
+                        defaultValue: "Detected topics from the Office of the Historian, matched by name — not the volumes' own markup."))
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
     }
 
     private func provenanceCaveat(_ coverage: ProvenanceCoverage) -> some View {

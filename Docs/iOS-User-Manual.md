@@ -366,9 +366,11 @@ The open-ended sections start collapsed so the panel opens at its top — but a 
 
 ### 7.5 Facets
 
-Choose **Facets** from the binoculars menu for a panel that describes your **whole result set** rather than one row at a time — by year, volume, person, document type, and archival provenance. Sections compute when you open them, not when you search, so the panel never slows a query you weren't going to inspect.
+Choose **Facets** from the binoculars menu for a panel that describes your **whole result set** rather than one row at a time — by year, volume, person, document type, archival provenance, and subject. Sections compute when you open them, not when you search, so the panel never slows a query you weren't going to inspect.
 
-**Facet rows are also controls.** Tapping a year, volume, person, or document-type row narrows the search, and the narrowing appears as a clearable chip above the results. Three behaviors worth knowing:
+**Subjects are different from the other five, and the panel says so on the row.** They are detected topics from the Office of the Historian, matched by subject name and variants rather than read from the volume's own markup, and they reach about three-quarters of the corpus — so the section states how many of your matches carry a subject at all. A document with no subject row is not evidence it is not about that subject.
+
+**Facet rows are also controls.** Tapping a year, volume, person, document-type, or subject row narrows the search, and the narrowing appears as a clearable chip above the results. Three behaviors worth knowing:
 
 - **Choosing more than one.** Years and Volumes build a selection: tap a row once to **include** it, again to **exclude** it, a third time to clear (check mark, minus, nothing). The search doesn't re-run while you choose — tap **Apply** and the whole selection runs as one search. Excluding without including anything means *everything else in this result set*; excluding every row you included leaves you with nothing, and the app does exactly that rather than quietly widening back to the whole corpus.
 - **Years count starts.** The Years section counts a document under the year it *starts* in, and filters the same way — a row reading "1948 · 7,392" gives you exactly those 7,392 documents. The **Limit by date** filter asks a different question: it keeps any document whose span *touches* your dates, so a document running December 1948 into January 1949 answers to both years there. If you use both, both apply.

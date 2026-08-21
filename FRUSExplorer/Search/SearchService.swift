@@ -314,6 +314,7 @@ public actor SearchService {
         SearchSQLFilters(
             volumeIds: parameters.volumeIds,
             documentIds: parameters.documentIds,
+            subjectBucket: parameters.subjectBucket,
             excludeDocumentIds: parameters.excludeDocumentIds,
             dateRange: parameters.dateRange,
             yearKeys: parameters.yearKeys,

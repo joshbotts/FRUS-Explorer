@@ -599,6 +599,14 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    /// Clears the #308 subject-bucket narrowing. No `filterVM` counterpart: the Advanced popover
+    /// has no subject control, because the bucket is chosen from a breakdown of the current result
+    /// set rather than from a standing list.
+    func clearSubjectFilter() {
+        parameters.subjectBucket = nil
+        parametersVersion += 1
+    }
+
     func clearVolumeFilter() {
         // Clear the manual volume/subseries selection, then re-derive the scope so the
         // executed gate matches: in Focus this falls back to the subject-derived volumes

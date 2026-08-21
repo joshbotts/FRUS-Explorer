@@ -26,6 +26,7 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
     case tags
     case type
     case frontMatter
+    case subject
 
     var id: String { rawValue }
 
@@ -40,6 +41,8 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
         case .type:        return String(localized: "search.token.field.type", defaultValue: "Type")
         case .frontMatter: return String(localized: "search.token.field.frontMatter",
                                          defaultValue: "Front matter")
+        case .subject:     return String(localized: "search.token.field.subject",
+                                         defaultValue: "Subject")
         }
     }
 
@@ -57,7 +60,10 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
     var editor: Editor {
         switch self {
         case .type, .frontMatter: return .inlineMenu
-        case .years:              return .facetPanel
+        // Subjects joins Years as facet-panel-only: the Advanced popover has no subject control,
+        // and #308 deliberately did not add one — the bucket is chosen from a breakdown of THIS
+        // result set, which a standing filter list cannot show.
+        case .years, .subject:    return .facetPanel
         case .date, .volume, .person, .tags: return .advancedPopover
         }
     }
@@ -195,6 +201,13 @@ enum SearchFilterTokens {
         case .frontMatter:
             guard !parameters.includeFrontMatter else { return nil }
             return String(localized: "search.token.frontMatter.excluded", defaultValue: "excluded")
+        case .subject:
+            guard let bucket = parameters.subjectBucket else { return nil }
+            // A bucket the vocabulary cannot name still produces a token. The whole point of this
+            // row is that no filter is in force without something on screen saying so, and an
+            // unnameable bucket is the case where that matters most.
+            return DocumentSubjectStore.shared?.bucketVocabulary.label(at: bucket)
+                ?? String(localized: "search.token.subject.unknown", defaultValue: "filtered")
         }
     }
 

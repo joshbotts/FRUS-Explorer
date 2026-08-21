@@ -64,13 +64,16 @@ struct SearchFilterTokensTests {
         var params = defaults()
         params.documentTypeFilter = .editorialNotesOnly
         params.includeFrontMatter = false
+        // #308's subject bucket. Its value is resolved from the bundled vocabulary rather than
+        // from a `Labels` field, so it is set here and not there.
+        params.subjectBucket = 0
 
         let tokens = SearchFilterTokens.tokens(
             parameters: params,
             labels: SearchFilterTokens.Labels(date: "1961 – 1963", years: "1962",
                                               volume: "frus1961-63v06", person: "Rusk",
                                               tags: "To read"))
-        #expect(tokens.count == 7, "expected all seven, got \(tokens.map(\.field.rawValue))")
+        #expect(tokens.count == 8, "expected all eight, got \(tokens.map(\.field.rawValue))")
         #expect(SearchFilterTokens.addableFields(parameters: params, labels:
             SearchFilterTokens.Labels(date: "1961 – 1963", years: "1962",
                                       volume: "frus1961-63v06", person: "Rusk",

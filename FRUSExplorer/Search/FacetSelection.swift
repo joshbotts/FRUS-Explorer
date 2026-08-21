@@ -177,7 +177,7 @@ enum FacetSelectionApplier {
             // resolution from a non-empty selection anyway: excluding every listed volume is
             // "show me none of the volumes in this match", which the panel expresses as clearing.
             parameters.volumeIds = (keys?.isEmpty ?? true) ? nil : keys?.sorted()
-        case .people, .documentType, .provenance:
+        case .people, .documentType, .provenance, .subjects:
             // Not staged — see `FacetPanelController.stagedSections`. Reaching here would mean a
             // section was added to that set without an applier, which is a programming error and
             // silently doing nothing is the safe failure.

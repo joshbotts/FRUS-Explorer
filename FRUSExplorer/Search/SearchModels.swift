@@ -179,6 +179,19 @@ public struct SearchParameters: Codable, Sendable, Equatable {
     /// visited + tagged). Applied as an SQL `IN (…)`, so keep the set to a sane size.
     public var documentIds: [String]?
 
+    /// Restrict results to documents carrying this subject bucket — a position in
+    /// ``SubjectBucketVocabulary`` (#308 subject results facet).
+    ///
+    /// ## Why this is a filter field and not a `documentIds` list
+    /// Every other facet narrows through a field that already existed, and this one deliberately
+    /// does not. Resolving a bucket to its documents and passing them as `documentIds` would work
+    /// on paper and has a hard cliff: the largest bucket holds 65,958 documents, `documentIds`
+    /// binds one SQL parameter per id, and SQLite's `SQLITE_MAX_VARIABLE_NUMBER` is 32,766. The
+    /// failure would appear only on broad searches over big buckets — the exact case the facet is
+    /// for. As a predicate it is one integer, whatever the bucket's size.
+    public var subjectBucket: Int?
+
+
     /// **Exclude** this explicit set of documents, each keyed `"volumeId/documentId"`.
     /// `nil` or empty = exclude nothing. Powers the **Project Focus** search scope's "only
     /// new to this project" option (#377 Phase 2b): the caller supplies the engaged set, and
@@ -289,7 +302,8 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         personRollupId: Int? = nil,
         personLabel: String? = nil,
         personAnchor: PersonRollupAnchor? = nil,
-        includeFrontMatter: Bool = true
+        includeFrontMatter: Bool = true,
+        subjectBucket: Int? = nil
     ) {
         self.keywords = keywords
         self.phrase = phrase
@@ -302,6 +316,7 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         self.userTagIds = userTagIds
         self.volumeIds = volumeIds
         self.documentIds = documentIds
+        self.subjectBucket = subjectBucket
         self.excludeDocumentIds = excludeDocumentIds
         self.includeDocumentText = includeDocumentText
         self.includeSummaries = includeSummaries
