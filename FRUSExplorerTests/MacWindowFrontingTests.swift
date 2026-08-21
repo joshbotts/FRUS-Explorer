@@ -227,8 +227,12 @@ struct MacWindowFrontingTests {
         #expect(try Self.source("App/HistoryWindowView.swift")
             .contains("openWindow.fronting(id: \"frus.history\")"),
                 "Complete History… must front the History window (#749 / L-34)")
+        // Matches the CALL, not a closing paren. The About window still fronts; #824 gave it a
+        // `value:` (`fronting(id:value:)`, MainWindowView.swift:569, a real fronting overload) and
+        // this literal stopped matching a working call. That is the failure mode of asserting a
+        // spelling instead of a behaviour, and it left v2 red rather than catching anything.
         #expect(try Self.source("App/FRUSExplorerApp.swift")
-            .contains("openWindow.fronting(id: \"about\")"),
+            .contains("openWindow.fronting(id: \"about\""),
                 "About FRUS Explorer must front the About window (#749 / L-34)")
     }
 
