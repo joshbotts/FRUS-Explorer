@@ -829,3 +829,82 @@ struct CrossReferenceGraphTests {
             """)
     }
 }
+
+// MARK: - CentralFileClassNodeTests
+
+/// Pins the central-file class node the cross-reference graph gained in #834.
+///
+/// ## Why this node exists
+/// Until #834 the graph dropped any footnote citation without a collection-authority record, and a
+/// central-file class has none — the authority holds classes only as id-less display children. So a
+/// document whose editors cited by decimal number showed NO teal nodes however many archival
+/// footnotes it carried, and the help text had to apologise for it. Citing by number is the usual
+/// practice before 1946 and still the majority channel through the 1950s.
+///
+/// Version history:
+///   1.0 — Session 2026-08-20: #834
+@Suite("Central-file class graph nodes (#834)")
+struct CentralFileClassNodeTests {
+
+    private func classNode(_ key: String, gloss: String? = nil) -> DisplayNode {
+        DisplayNode(id: "class/vol1/d1/\(key)",
+                    kind: .centralFileClass(key: key, gloss: gloss),
+                    metadata: nil, isDownloaded: true)
+    }
+
+    /// **A class is not a unit, and the distinction is load-bearing.** `unitCollectionId` feeds an
+    /// authority lookup that cannot answer for a class; if a class ever reported itself as a unit,
+    /// every existing unit path would try to resolve it and quietly get nothing.
+    @Test("A class node is archival but is not an authority-backed unit")
+    func classIsNotAUnit() {
+        let node = classNode("763.72")
+        #expect(!node.isUnit, """
+            A central-file class reported itself as a unit. `unitCollectionId` feeds the collection \
+            authority, which holds no class records — every unit path would resolve it to nothing.
+            """)
+        #expect(node.unitCollectionId == nil)
+        #expect(node.centralFileClassKey == "763.72")
+        #expect(node.terminatesWalk, """
+            The walk must stop at a class: there is no document behind a file number, exactly as \
+            there is none behind a lot.
+            """)
+    }
+
+    /// The canvas is `accessibilityHidden`, so this label is the ONLY description a VoiceOver
+    /// reader gets. A bare key is a string of digits read aloud.
+    @Test("The accessibility label speaks the class, with its gloss when there is one")
+    func accessibilityLabelSpeaks() {
+        let bare = classNode("763.72").accessibilityLabel
+        #expect(bare.contains("763.72"))
+        #expect(!bare.isEmpty)
+        let glossed = classNode("763.72", gloss: "China and Japan").accessibilityLabel
+        #expect(glossed.contains("763.72") && glossed.contains("China and Japan"), """
+            The gloss must reach the label when present: "central file 763.72, China and Japan" is \
+            speech; the key alone is digits.
+            """)
+    }
+
+    /// A document citing several classes in one footnote must yield several nodes. They share a
+    /// repository and carry no collection, so an id built from anything but the key collides.
+    @Test("Two classes on one document are distinct nodes")
+    func twoClassesAreDistinct() {
+        let a = classNode("763.72")
+        let b = classNode("811.24546")
+        #expect(a.id != b.id, """
+            Two class nodes collided on id. `Identifiable` collisions render as one node, so the \
+            reader silently loses a citation — the same defect the external_citations row id had.
+            """)
+    }
+
+    /// The gloss is `nil` by decision, not by omission (#828): the classification was renumbered in
+    /// 1950 and only the 1910-49 schedule ships, so glossing a post-1949 key against it would
+    /// confidently mislabel it. This pins that a MISSING gloss still produces a usable label.
+    @Test("A node with no gloss still labels itself")
+    func noGlossStillLabels() {
+        let node = classNode("611.93")
+        #expect(!node.accessibilityLabel.isEmpty, """
+            Where the label table cannot place a key the app says nothing rather than something \
+            wrong — but the node must still describe itself, or it is unreachable by VoiceOver.
+            """)
+    }
+}

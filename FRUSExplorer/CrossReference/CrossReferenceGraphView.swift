@@ -1261,6 +1261,9 @@ struct CrossReferenceGraphView: View {
         case .unit:
             return String(localized: "graph.context.unprinted",
                           defaultValue: "Not printed")
+        case .centralFileClass:
+            return String(localized: "graph.context.centralFile",
+                          defaultValue: "Central file, not printed")
         default:
             return String(localized: "graph.context.context",
                           defaultValue: "Context")
@@ -1752,6 +1755,10 @@ struct CrossReferenceGraphView: View {
         // decision, 2026-08-19). The `building.columns` glyph below carries the distinction
         // redundantly, so colour is not the only signal.
         case .unit:                        fillColor = isSelected ? .teal.opacity(0.7) : .teal.opacity(0.3)
+        // The same teal as a unit: both are archival material FRUS did not print, and the legend
+        // and help describe them together. A second colour would imply a distinction the reader has
+        // no use for — the difference is which catalogue can name the thing, not what it is.
+        case .centralFileClass:            fillColor = isSelected ? .teal.opacity(0.7) : .teal.opacity(0.3)
         }
         ctx.fill(Path(ellipseIn: rect), with: .color(fillColor))
 
