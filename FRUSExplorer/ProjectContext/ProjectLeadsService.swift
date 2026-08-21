@@ -39,7 +39,9 @@ enum ProjectLeadsService {
 
     /// The `@AppStorage` key of the global related-documents weight preference (shared with
     /// the document-view Related panel).
-    static let globalWeightsKey = "frus.related.weights"
+    /// The global tuning's key. Aliases ``SettingsKeys/relatedAxisWeights`` rather than
+    /// respelling it — the literal was written out in four places before #1029.
+    static let globalWeightsKey = SettingsKeys.relatedAxisWeights
 
     /// The effective lead axis weights for a project (#377 Phase 3): its own per-project
     /// tuning if set, else the researcher's global related-documents preference, else the app

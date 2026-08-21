@@ -87,7 +87,7 @@ struct RelatedDocumentsContent: View {
     /// The user's persisted default tuning, updated whenever a slider settles so the *next* fresh
     /// open inherits it. The live per-view tuning is `@State` (seeded from `request.weights`), so a
     /// restored macOS window keeps its own tuning independent of this global default.
-    @AppStorage("frus.related.weights") private var persistedWeights = AxisWeights.default
+    @AppStorage(SettingsKeys.relatedAxisWeights) private var persistedWeights = AxisWeights.default
 
     #if os(macOS)
     /// Mint tail for `AppState.openDocument` — when no document host is live, a row tap
@@ -369,8 +369,17 @@ struct RelatedDocumentsContent: View {
             DisclosureGroup(String(localized: "related.weights.label", defaultValue: "Adjust weights")) {
                 VStack(spacing: 6) {
                     ForEach(SimilarityAxis.allCases) { axis in
-                        weightRow(axis)
+                        AxisWeightRow(
+                            axis: axis,
+                            value: Binding(get: { weights[axis] }, set: { weights[axis] = $0 }),
+                            // Only this surface explains the semantic axis — see AxisWeightRow.caption.
+                            caption: axis == .semanticSimilarity ? semanticAxisCaption : nil,
+                            onCommit: {
+                                persistedWeights = weights   // one write per drag, not per tick
+                                weightReloadToken += 1       // re-rank once the drag settles
+                            })
                     }
+                    resetRow
                 }
                 .padding(.top, 4)
             }
@@ -380,46 +389,31 @@ struct RelatedDocumentsContent: View {
         .padding(.vertical, 8)
     }
 
-    /// One axis's weight slider, with the shared-subjects axis disabled + annotated while its data is
-    /// gated (design Q4 — the detected-topic axis ships opt-in and inert until Phase 3).
+    /// "Reset to app defaults" — the global tier of the same affordance the per-project panel has
+    /// carried since #377 (#1029).
+    ///
+    /// ## It CLEARS the key, it does not write defaults into it
+    /// Writing `AxisWeights.default` would pin today's numbers as an explicit tuning and re-create
+    /// #1021 for the next axis anyone adds: `rawValue` spells out every axis, and
+    /// `effectiveWeights` only falls back to a default when the axis is ABSENT, so a written-out
+    /// value is indistinguishable from a deliberate one. Removing the key makes the reader genuinely
+    /// unconfigured, which is the state every future default change can reach.
+    ///
+    /// Reset returns EVERY axis, `semanticSimilarity` included — back to its deliberate
+    /// experimental 0.0 (owner decision 2026-08-12). One meaning of "default"; the sliders visibly
+    /// moving is the disclosure that the opt-in was switched off.
     @ViewBuilder
-    private func weightRow(_ axis: SimilarityAxis) -> some View {
-        let subjectsInert = axis == .sharedSubjects && DocumentSubjectStore.shared == nil
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 6) {
-                Label(axis.displayName, systemImage: axis.systemImage)
-                    .font(.caption)
-                    .labelStyle(.titleAndIcon)
-                Spacer()
-                Text(weights[axis], format: .number.precision(.fractionLength(1)))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+    private var resetRow: some View {
+        HStack {
+            Spacer()
+            Button(String(localized: "related.weights.reset", defaultValue: "Reset to app defaults")) {
+                UserDefaults.standard.removeObject(forKey: SettingsKeys.relatedAxisWeights)
+                weights = .default          // re-seed the live sliders
+                weightReloadToken += 1      // and re-rank against them
             }
-            Slider(
-                value: Binding(
-                    get: { weights[axis] },
-                    set: { weights[axis] = $0 }),   // live @State only; persist + re-rank on release
-                in: 0...1,
-                onEditingChanged: { editing in
-                    if !editing {
-                        persistedWeights = weights   // one UserDefaults write per drag, not per tick
-                        weightReloadToken += 1       // re-rank once the drag settles
-                    }
-                })
-            .disabled(subjectsInert)
-            if subjectsInert {
-                // NOT "available when the data ships" — it shipped. Reaching here means the
-                // bundled index is missing or failed to decode on THIS device, which is a state to
-                // report, not a roadmap promise to repeat (#1020).
-                Text(String(localized: "related.weights.subjects.unavailable",
-                            defaultValue: "Detected-topic data is unavailable on this device."))
-                    .font(.caption2).foregroundStyle(.tertiary)
-            }
-            if axis == .semanticSimilarity {
-                Text(semanticAxisCaption)
-                    .font(.caption2).foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            .buttonStyle(.borderless)
+            .font(.caption)
+            .disabled(UserDefaults.standard.object(forKey: SettingsKeys.relatedAxisWeights) == nil)
         }
     }
 

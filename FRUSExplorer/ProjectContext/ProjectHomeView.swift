@@ -694,7 +694,12 @@ struct ProjectHomeView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(SimilarityAxis.allCases) { axis in
-                weightRow(axis, project)
+                // No caption here: the semantic axis's explanation belongs where the reader meets
+                // the axis itself, in the Related panel (#1029).
+                AxisWeightRow(
+                    axis: axis,
+                    value: Binding(get: { draftWeights[axis] }, set: { draftWeights[axis] = $0 }),
+                    onCommit: { commitWeights(project) })
             }
             HStack {
                 Spacer()
@@ -708,46 +713,6 @@ struct ProjectHomeView: View {
         }
         .padding(12)
         .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    /// One axis's weight slider. The value updates live for feedback; the persist + re-rank happens
-    /// only when the drag settles (`onEditingChanged` false), so a drag is one recompute, not one per
-    /// tick. The shared-subjects axis is disabled + annotated only when the bundled
-    /// detected-topic index is absent on this device.
-    @ViewBuilder
-    private func weightRow(_ axis: SimilarityAxis, _ project: Project) -> some View {
-        let subjectsInert = axis == .sharedSubjects && DocumentSubjectStore.shared == nil
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 6) {
-                Label(axis.displayName, systemImage: axis.systemImage)
-                    .font(.caption)
-                    .labelStyle(.titleAndIcon)
-                Spacer()
-                Text(draftWeights[axis], format: .number.precision(.fractionLength(1)))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            Slider(
-                value: Binding(
-                    get: { draftWeights[axis] },
-                    set: { draftWeights[axis] = $0 }),   // live @State only; persist + re-rank on release
-                in: 0...1,
-                onEditingChanged: { editing in
-                    if !editing { commitWeights(project) }
-                })
-            .disabled(subjectsInert)
-            if subjectsInert {
-                // NOT "available when the data ships" — it shipped. Reaching here means the
-                // bundled index is missing or failed to decode on THIS device (#1020). Its own key
-                // namespace, deliberately: the twin in RelatedDocumentsView carries the same
-                // sentence under `related.weights.*`, and sharing one key across two views is the
-                // collision this codebase has been bitten by before.
-                Text(String(localized: "project.home.leads.tune.subjects.unavailable",
-                            defaultValue: "Detected-topic data is unavailable on this device."))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-        }
     }
 
     /// Persists the drafted weights to the project (its per-project override) and re-ranks the leads.
