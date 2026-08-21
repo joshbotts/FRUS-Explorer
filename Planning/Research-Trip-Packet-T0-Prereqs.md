@@ -1,6 +1,6 @@
 # Research Trip Packet — T-0 prereqs and decisions (#830)
 
-**Date:** 2026-08-21 · **Version:** 1.1 · **Status:** owner gate — **decisions settled
+**Date:** 2026-08-21 · **Version:** 1.2 · **Status:** owner gate — **decisions settled
 2026-08-21; the fact confirmation (§3.2) remains owner-only and is now incremental by D7**. No
 code rides this document. Companion to `Planning/Research-Trip-Packet-Scope.md` (v1.3) and the owner gate
 recorded at [#830 comment 5248318037](https://github.com/joshbotts/FRUS-Explorer/issues/830#issuecomment-5248318037).
@@ -184,31 +184,108 @@ faithful, not the fact.
   unavailable; may need review before release.
 - Record Group / Presidential Library / Donated Collections Explorers; **History Hub**.
 
-### 3.2 Search-verified only — no in-repo source; owner must confirm before T-2 prints them
+### 3.2 Search-verified only — resolved 2026-08-21 by scoping, not by verifying
 
-Every item below is a hard claim about a real institution that a researcher will act on, and
-none can be checked from here.
+The gate lists these as facts the owner must confirm before T-2 prints them. Walking each one
+against the chapter that consumes it showed that **most of them are consumed by a sentence the
+packet chose to assert**, and assertion is a design choice. D7 already settled that an unverified
+fact is *omitted* rather than printed undated, so declining to verify is not a gap — it is a
+packet that prints a link where a sentence would have been.
 
-- **−2 business days** advance notice for off-site records.
-- College Park **pull times** (M–F 9:30 / 10:30 / 11:30 / 1:00 / 2:00 / 3:00) and **nothing
-  signed out after 5:15**.
-- **Day-0 registration** for a researcher ID card.
-- The literal **NACP address** (8601 Adelphi Road) and the **one inquiry address**
-  (`archives2reference@nara.gov`).
-- The **3rd-floor consultation area**, 9–4 M–F.
-- The **senior foreign-affairs specialist, Wednesdays 9:30–10:30**, mornings by request.
-- **Room rules**: lockers; flatbed and overhead scanners allowed; no auto-feed or hand-held
-  scanners, no personal copiers; one box and one folder at a time; airport-style screening.
-- **Withdrawal notices route to FOIA/MDR**; declassification stamping on copies.
-- The **NACP citation format** (GIL 17 and the two State-records citation PDFs).
-- **Eventbrite** for DC-area research appointments; College Park's reservation page.
-- Presidential libraries: **write, phone, or email ahead**, *and* the separate **"confirm the
-  materials are at this location"** claim — the mock's source mark sits after the second, leaving
-  the first uncovered.
-- **Per-library** address, inquiry email, and appointment policy — eleven rows.
-- **Library of Congress Manuscript Division** as a non-NARA pointer row with its own guidance.
+The test applied to each: **is the packet meaningfully worse with a link in place of the
+sentence?** A fact survives only when the packet *computes* on it (a wrong value yields a wrong
+date the researcher acts on) or *needs it to function* (a generated letter must have a
+recipient). The residue is four institutional claims and a set of URLs.
 
-### 3.3 The correction the gate already recorded
+**The reduction is not only smaller, it is a different kind of burden.** A URL is mechanically
+checkable; "pull times are 9:30, 10:30, 11:30" is not. Moving chapter 1 and chapter 7 from
+asserted prose to linked guidance converts an unverifiable obligation into a verifiable one
+(§3.4).
+
+| Fact | Chapter | Verdict, 2026-08-21 |
+|---|---|---|
+| College Park **pull times** + the **5:15 cutoff** | 7 | **Negated.** The most volatile fact in the set — NARA changed these in 2017, which is why §3.3's snapshot rule exists at all. A stale schedule is worse than none, because the researcher plans their last pull around it. The card says pulls run on a fixed schedule and links the page |
+| **3rd-floor consultation area**, 9–4 M–F | 7 | **Split.** The *routing* claim survives (there is a consultation desk, and it is A5's day-of fallback for unresolved citations); the floor and the hours are negated |
+| **Senior foreign-affairs specialist**, Weds 9:30–10:30 | 7 | **Split.** One person's calendar is the fastest-rotting claim available, and a researcher who books a trip around a slot that no longer exists has lost the reason they came. The *existence* of dedicated foreign-affairs reference staff is structural, valuable, and what A11 is really about — assert that, link the schedule |
+| **Room rules** — lockers · scanners · one box and one folder · screening | 7 | **Two of four negated by A14's own scoping rule** ("condensed to what changes packing or planning"). The scanner rule changes what you pack; lockers change what you carry in. One-box-one-folder and airport screening change nothing the researcher would do differently |
+| **−2 business days** for off-site records | 1 | **Negated — the context is invalid.** Per A6 the app *cannot determine off-site status*; it is one of the questions the inquiry asks. The packet could never attach this countdown to a specific record, and generically it is dominated by the −4 week inquiry row. A countdown the app cannot key to anything is decoration wearing a computation's clothes |
+| **Eventbrite** for DC-area appointments | 1 | **Negated.** A vendor choice, not an institutional fact; it will change without notice. Link NARA's own visiting page and let it route |
+| **Day-0 registration** for a researcher ID card | 1 | **Kept.** Structurally stable, one line, and a researcher who does not know loses an hour on arrival |
+| **Appointment policy** per repository (encouraged vs required) | 1 | **Kept.** It decides whether the researcher can walk in at all — load-bearing, and it is a column of the table being curated anyway |
+| **NACP address** (8601 Adelphi Road) + **`archives2reference@nara.gov`** | 2 | **Kept — must verify.** A2's one-address rule is the inquiry mechanic, and a generated draft must have a recipient. Two facts, both stable. This is the highest-value verification in the whole gate |
+| **Per-library address / email / appointment policy** (11 rows × 3) | 2 | **Reduced, 33 facts → 11 URLs.** See below |
+| Libraries: **"write, phone, or email ahead"** | 2 | **Negated as prose**; subsumed by the confirm-prompt's own instruction |
+| Libraries: **"confirm the materials are at this location"** | 2 | **Kept.** This is precisely why D6 put libraries in v1 |
+| **Library of Congress** Manuscript Division | 2 | **Reduced to a link.** Already scoped as "a row, not a program" |
+| **Withdrawal notices → FOIA/MDR**; declassification stamping | 5 | **Kept.** Explanatory rather than procedural — it names a remedy, not a time or a place, so it rots slowly and a small error is recoverable. With 138 series Restricted — Fully, the researcher needs to know the remedy exists *before* deciding the trip is worth taking |
+| **NACP citation format** (GIL 17 + the two State-records PDFs) | 6 | **Reclassified, not negated.** See §3.5 — it moves out of this section entirely |
+
+**D11 — the library chapter is a confirm-before-you-travel prompt, not a drafted letter.** D6 put
+presidential libraries in v1 at *collection* grain, where the packet can name neither a series nor
+a NAID. A fully drafted letter would imply a precision the data does not have. The chapter instead
+prints A12's actual ask — *confirm these materials are at this location before you travel* — with
+the library's contact page and the curated finding-aid URL beside it. This delivers the value D6
+was admitted for, keeps `curated-library-resolutions.json`'s 185 URLs doing the work, and collapses
+the single largest verification burden in the gate from **33 institutional facts to 11 URLs**. It
+costs the weakest letter in the packet.
+
+**What survives as prose to be confirmed: four claims.** The NACP address, the NACP inquiry email,
+day-0 registration, and the appointment policy per row. Everything else in this section is now
+either a URL (§3.4) or an attributed quotation (§3.5).
+
+### 3.4 URL freshness is a release-checklist obligation, not a per-fact sitting
+
+The scoping above converts most of §3.2 into links, and links are the one class of fact that can
+be checked **mechanically**. That makes freshness a repeatable release step rather than a
+recurring act of research.
+
+**D12 — repository links carry a stamped `verifiedDate`, re-checked on a release checklist.**
+
+- The curated table stores links as `{ url, label, verifiedDate }`, the same nullable-per-fact
+  shape D7 settled for prose facts. An unstamped link does not print.
+- An owner-run checker (network required — archives.gov is unreachable from the development
+  container, so this can never be a CI test) fetches each URL, and with an explicit stamp flag
+  writes today's date onto the rows that pass.
+- **Following redirects is the load-bearing detail.** NARA reorganises its site, and a dead deep
+  link characteristically 301s to a section index that answers 200. A checker that greps for a
+  status code calls that a pass. The rule is: follow redirects, record the *final* URL, and treat
+  `final != declared` as **needs review** rather than as success.
+- Staleness **degrades the sentence, never the build**: past a threshold the packet appends
+  "— last checked ⟨date⟩; confirm current guidance" instead of dropping the row. A build that
+  failed on the calendar would punish a release for NARA's site staying still.
+- An offline test pins the structural half — every printed link has a non-nil `verifiedDate` —
+  which is checkable in CI precisely because it asks nothing of the network.
+
+**The honest limit, which the scoping decisions above are what mitigate it:** a 200 proves the URL
+resolves, not that the page still says what the packet claims about it. That is an argument for
+keeping the claim attached to each link *minimal* — "visiting information" rather than "pull times
+are 9:30, 10:30, 11:30" — which is exactly what negating chapters 1 and 7 accomplishes. The two
+decisions reinforce each other: the less the packet asserts about a page, the less a link check
+has to prove.
+
+### 3.5 The citation crib reports a recommendation; it does not ratify one
+
+**D13 — archival citation guidance is quoted and attributed, never prescribed.** Citation form is
+governed by the researcher's publisher, journal, or style guide, and those disagree. An app that
+prints "the NACP citation format" is ratifying one product's requirements as universal, and a
+researcher who follows it into a footnote discovers the mismatch at proof stage.
+
+The crib therefore prints NARA's own published guidance **as NARA's**: *"NARA's ‘Citing Foreign
+Affairs Records' gives this form: ⟨worked example, filled from the researcher's own documents⟩"*,
+followed by the standing note that the publisher's requirements govern. The app reports what NARA
+recommends; the researcher decides.
+
+**This is already the house posture.** `CitationStyle` (`CitationFormatter.swift:30`) ships three
+styles and labels History at State "**(Recommended)**" rather than correct — the app has never
+ratified a single citation form, and the crib inherits that rather than inventing it.
+
+**The verification consequence is the point.** The claim being checked stops being "this is the
+correct citation format" — unfalsifiable, and publisher-dependent — and becomes "NARA's PDF says
+this", which is a **transcription check against a deposited document**: §3.1's category, not
+§3.2's. Deposit GIL 17 and the two State-records PDFs beside the FAQ at `Planning/reference/`, and
+chapter 6 leaves the unverifiable tier permanently.
+
+### 3.6 The correction the gate already recorded
 
 The honesty rule is a stamp **per volatile fact** ("as of ⟨date⟩" with its archives.gov link).
 Artboard 1k draws a single aggregate stamp per card. **The per-fact form is the one to
@@ -310,9 +387,15 @@ the app-reachable count is **1 of 622** (`HarvestShardReader.swift:47-49`, pinne
 the ordering instruction a researcher needs is the RG/entry/series/box line the pull worksheet
 already prints.
 
-With D1–D10 settled, **the T-0 gate's engineering half is unblocked**. What remains owner-only is
-the fact confirmation itself (§3.2), and D7 is what lets that proceed fact by fact instead of all
-at once.
+**D11–D13** (§§3.2, 3.4, 3.5) were settled the same day in the fact walkthrough: the library
+chapter is a confirm-prompt rather than a drafted letter; repository links carry a stamped
+`verifiedDate` re-checked on a release checklist; and archival citation guidance is quoted and
+attributed rather than prescribed.
+
+With D1–D13 settled, **the T-0 gate's engineering half is unblocked**. What remains owner-only is
+**four institutional claims** (§3.2) — the NACP address, the NACP inquiry email, day-0
+registration, and the appointment policy per row — plus one pass of the URL checker (§3.4) and
+depositing three citation PDFs (§3.5). D7 is what lets even that proceed fact by fact.
 
 ## 5. What T-1 may start on
 
@@ -329,6 +412,12 @@ With the decisions settled, the whole platform-neutral half is open:
 - The repository table's **schema** — nullable per-fact `verifiedDate` per D7 — which can be
   written, enrolled, and tested with zero confirmed rows in it.
 - The checklist's two lead-time forms (absolute and relative), per D5.
+- The link record `{ url, label, verifiedDate }` and the staleness-degradation rule, per D12 —
+  the checker itself is a separate owner-run tool and needs no app code.
+- The library confirm-prompt chapter, per D11, which needs only the contact URL and the curated
+  finding-aid URL.
+- The citation crib's attributed-quotation frame, per D13, which is copy structure and needs no
+  new data.
 - The editable topic-sentence field seeded from `Project.researchQuestion`, per D8 — the edited
   value, not the stored one, is what the exporter reads.
 
@@ -340,6 +429,19 @@ enforceable rather than aspirational.
 
 ## Version history
 
+- **1.2 (2026-08-21)** — The §3.2 fact walkthrough, conducted chapter by chapter against the
+  question *is the packet worse with a link than with the sentence?* Ten of the fifteen entries
+  were negated, split, or reduced rather than verified; the residue is **four institutional
+  claims plus a set of URLs**. Three further decisions settled: **D11** the library chapter is a
+  confirm-before-you-travel prompt rather than a drafted letter (33 facts → 11 URLs, the largest
+  single reduction in the gate); **D12** repository links carry a stamped `verifiedDate`
+  re-checked on a release checklist, with redirect-following as the load-bearing rule and
+  staleness degrading the sentence rather than the build; **D13** archival citation guidance is
+  quoted and attributed rather than prescribed, which moves chapter 6 out of the unverifiable
+  tier once the three PDFs are deposited. Two negations rest on the plan's own text rather than
+  on taste: the −2 business-day countdown is uncomputable because A6 says the app cannot know
+  off-site status, and two of A14's four room rules fail A14's own "changes packing or planning"
+  test.
 - **1.1 (2026-08-21)** — Owner settled the remaining six decisions (§4.2): visit date optional
   with relative fallback; presidential libraries in v1 at collection grain; per-fact nullable
   `verifiedDate` with unverified facts omitted; the inquiry topic sentence seeded from the

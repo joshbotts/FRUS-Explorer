@@ -1,6 +1,6 @@
 # Research Trip Packet — scope against NARA's own pre-visit guidance
 
-**Date:** 2026-08-04 · **Version:** 1.3 · **Status:** scoping for owner review — no code
+**Date:** 2026-08-04 · **Version:** 1.4 · **Status:** scoping for owner review — no code
 rides this document. **The T-0 gate is under way in
 `Planning/Research-Trip-Packet-T0-Prereqs.md` (2026-08-21)**, which carries the offline data
 audit and settles four decisions this document did not anticipate; where the two disagree, the
@@ -57,13 +57,13 @@ Sources: **[FAQ]** = the deposited research-visit-faqs text; others cited per ro
 | A5 | **Not everything is well described**, and resolving poorly-described records "**cannot be done effectively on an ad hoc basis while researchers wait in a research room**" — it may involve transfer documentation, preliminary finding aids, classified indexes, even the agency of origin; "by writing in advance, some of the problems may be overcome." [FAQ] | The **unresolved-citations section** routes into the *advance inquiry*, not the consultation desk: every unresolved source note appears verbatim (with its FRUS citation) inside the relevant inquiry draft as a "help me locate" item. The in-room consultation desk (A11) is the day-of fallback, and the packet says so in that order. |
 | A6 | **Advance contact also surfaces**: facility hours/holidays; procedures; **records available online or on Microfilm Publications — "Researchers must use microfilm and online resources when those options are available"**; records never transferred (destroyed under schedules) or not yet transferred (agency of origin); records temporarily unavailable (preservation/digitisation); records **moved to a Presidential Library or field facility**; off-site storage; pending declassification/restriction review. [FAQ] | Three packet consequences: (i) the **"already digitised — you must use these anyway"** section is strengthened from convenience to NARA policy — series with digital objects or microfilm publications (M820 etc.) lead the packet, framed as *mandatory substitutes* for pulls; (ii) inquiry drafts ask the availability/off-site/moved questions the app cannot answer; (iii) the packet never promises a record is pullable — availability language is always "confirm with staff." |
 | A7 | **Do your homework in the Catalog first**; the Record Group / Presidential Library / Donated Collections Explorers are the entry points; **History Hub** is NARA's hosted Q&A community. [FAQ] | Every series row links its NAID in the Catalog; each RG chapter links its Record Group Explorer page; the packet's help footer offers History Hub as the public-question venue alongside the one-address inquiry rule. |
-| A8 | **Off-site records need two business days' advance pull notice**; pull times at College Park are scheduled (M–F 9:30/10:30/11:30/1:00/2:00/3:00, nothing signed out after 5:15). *(research/start/plan-your-visit; college-park/researcher-info — search-verified; spot-check)* | Checklist row (−2 business days) + visit-day card, both stamped "as of ⟨generation date⟩ — confirm at ⟨link⟩". |
+| A8 | **Off-site records need two business days' advance pull notice**; pull times at College Park are scheduled (M–F 9:30/10:30/11:30/1:00/2:00/3:00, nothing signed out after 5:15). *(research/start/plan-your-visit; college-park/researcher-info — search-verified; spot-check)* | **Rescoped 2026-08-21 (T-0 §3.2).** Both halves are negated as printed facts. The −2 business-day countdown is *uncomputable*: per A6 the app cannot know which records are off-site, so it could never key the row to anything, and generically it is dominated by A2’s −4 weeks. Pull times are the most volatile fact in the set (changed 2017). The card says pulls run on a fixed schedule and **links** the page, stamped per D12. |
 | A9 | **Register on arrival** for a researcher ID card. *(plan-your-visit — search-verified)* | Visit-day card line item. |
 | A10 | **Restrictions**: classified/withdrawn material; declassification stamping on copies; withdrawal notices → FOIA/MDR. *(research-room rules/regulations; self-service-copying — search-verified)* | **Restriction triage** per series from `accessRestriction` (N-7 rider; the consolidated plan already calls it "exactly what a researcher planning a College Park trip needs *before* booking"), plus a withdrawal-notice/MDR explainer. Feeds the future declassification-gap explorer; does not depend on it. |
-| A11 | **Foreign-affairs researchers get dedicated help**: RDT2 (`archives2reference@nara.gov`, 8601 Adelphi Road), 3rd-floor consultation area 9–4 M–F, **senior foreign-affairs specialist Wednesdays 9:30–10:30** and mornings by request; RG 59 has its own FAQ PDF and finding aids. *(research/foreign-policy/assistance — search-verified)* | College Park visit-day card names the consultation area and the Wednesday slot; packet links the RG 59 FAQ PDF the app already links. Day-of fallback for A5's unresolved items. |
+| A11 | **Foreign-affairs researchers get dedicated help**: RDT2 (`archives2reference@nara.gov`, 8601 Adelphi Road), 3rd-floor consultation area 9–4 M–F, **senior foreign-affairs specialist Wednesdays 9:30–10:30** and mornings by request; RG 59 has its own FAQ PDF and finding aids. *(research/foreign-policy/assistance — search-verified)* | **Split 2026-08-21 (T-0 §3.2).** The address and inquiry email are **kept and verified** — A2’s one-address rule is the inquiry mechanic. The *existence* of dedicated foreign-affairs reference staff and the consultation desk is asserted (it is A5’s day-of fallback). The floor, the hours, and the Wednesday window are negated and linked: one person’s calendar is the fastest-rotting claim available, and a trip booked around a slot that no longer exists is a trip lost. |
 | A12 | **Presidential libraries**: write/phone/email ahead to confirm materials are at that location; include postal address and phone; the inquiry is part of appointment scheduling outside DC. *(presidential-libraries/visit — search-verified; consistent with [FAQ] on non-DC units)* | Each library chapter gets its own inquiry draft (A2/A3 template, that library's address, required-appointment wording) — doubly valuable while resolutions are collection-grain (N-4). |
-| A13 | **Citation practice**: GIL 17; NARA's "Citing Foreign Affairs Records" — first citation carries full series title + RG + entry; lot citations name bureau/office and folder title; box numbers when the series is large. *(17-citing-records.html; state-dept citations.pdf + guidance PDF — search-verified)* | The **citation crib**: one worked example per series type present in the packet, pre-filled from the project's own documents, linking both PDFs. |
-| A14 | **Room rules**: lockers; laptops/cameras/flatbed+overhead scanners allowed, no auto-feed or hand-held scanners or personal copiers; locking bags; one box and one folder at a time; airport-style screening. *(research-room-rules; nara-regulations; building-access-security-requirements — search-verified)* | Visit-day card, condensed to what changes packing or planning. Dated + linked like A8. |
+| A13 | **Citation practice**: GIL 17; NARA's "Citing Foreign Affairs Records" — first citation carries full series title + RG + entry; lot citations name bureau/office and folder title; box numbers when the series is large. *(17-citing-records.html; state-dept citations.pdf + guidance PDF — search-verified)* | The **citation crib**: one worked example per series type present in the packet, pre-filled from the project’s own documents, linking both PDFs — **quoted and attributed to NARA, never prescribed** (D13). Publishers and style guides disagree on archival form, and the app already declines to ratify one (`CitationStyle` ships three, marking History at State "Recommended"). Deposit the PDFs and this row becomes a transcription check. |
+| A14 | **Room rules**: lockers; laptops/cameras/flatbed+overhead scanners allowed, no auto-feed or hand-held scanners or personal copiers; locking bags; one box and one folder at a time; airport-style screening. *(research-room-rules; nara-regulations; building-access-security-requirements — search-verified)* | Visit-day card, condensed to what changes packing or planning — and **that rule negates two of these four** (T-0 §3.2). The scanner rule changes what you pack; lockers change what you carry in. One-box-one-folder and airport screening change nothing the researcher would do differently, so they are linked rather than printed. |
 
 ---
 
@@ -101,14 +101,28 @@ trip. Five rules:
 2. **Unresolved lots are NARA's predicted case, not an app defect.** Copy quotes the FAQ: lot
    numbers "do not always carry over into use by the National Archives." The remedy is A5's —
    into the advance inquiry, verbatim, with the FRUS citation.
-3. **Date and link every volatile fact** (pull times, hours, appointment policy): packet
-   generation date + the repository row's `verifiedDate` + the archives.gov link. NARA changed
-   pull times in 2017 and visit procedures after 2020; the packet is a snapshot and says so.
+3. **Date and link every volatile fact** — and prefer *not printing it at all*. The stamp is
+   **per fact**, never per card (the gate's correction to artboard 1k), and an unverified fact is
+   **omitted** rather than printed undated (D7). The 2026-08-21 walkthrough took this further:
+   where a link serves as well as a sentence, the packet links. NARA changed pull times in 2017
+   and visit procedures after 2020, and a stale schedule is worse than none — the researcher
+   plans around it. What the packet asserts is what it **computes from the researcher's own
+   documents**; what any reader can take off archives.gov in ten seconds, it links.
 4. **Range-grain for scans** (inherited from N-7 verbatim): "scanned microfilm for file range
    763.72/1476–1635" — a range, never a document.
 5. **Availability is never promised.** Per A6, records can be off-site, in preservation, under
    review, moved to a library, or not yet transferred — all packet availability language is
    "confirm with staff," and the inquiry drafts ask.
+6. **Report a recommendation; never ratify one.** Archival citation form is governed by the
+   researcher's publisher, journal, or style guide, and those disagree. The crib prints NARA's
+   guidance *as NARA's*, attributed and quoted, with the note that the publisher's requirements
+   govern (D13). The app already holds this line elsewhere: `CitationStyle` ships three styles and
+   marks History at State "Recommended", not correct.
+7. **A link is a claim too, and a weaker one than it looks.** A 200 proves a URL resolves, not
+   that the page still says what the packet says about it — NARA reorganises, and a dead deep link
+   characteristically redirects to a section index that answers 200. So the checker follows
+   redirects and treats a changed final URL as *needs review* (D12), and the text attached to each
+   link stays minimal: "visiting information", not "pull times are 9:30, 10:30, 11:30".
 
 ---
 
@@ -125,16 +139,25 @@ repository/RG/series rollup.
    material — NARA's own extra-notice criteria"), appointment + registration rows (A1/A9).
 2. **Advance inquiry draft(s)** — per repository, split per record-group cluster (A3); NARA's
    six-element structure; unresolved citations embedded as locate-requests (A5); plain-text
-   export.
+   export. The topic sentence is **seeded from the project's research question and editable**,
+   and the exporter reads the edited value (D8). **Presidential libraries get a
+   confirm-before-you-travel prompt instead of a drafted letter** (D11) — at collection grain the
+   packet can name neither series nor NAID, so it prints A12's actual ask beside the library's
+   contact page and the curated finding-aid URL.
 3. **Pull worksheet** — RG → series (title · entry · NAID → Catalog link · dates ·
    `numberingNote`) → document roster (FRUS citation · file/folder designation) · blank Box
    column.
 4. **Mandatory substitutes** — digitised series and microfilm publications first, framed per
    A6's "must use" rule, range-grain.
 5. **Restriction triage** — per-series `accessRestriction`, withdrawal/MDR explainer (A10).
-6. **Citation crib** — per series type, worked from this packet's documents (A13).
-7. **Visit-day card** — pull times, consultation area + Wednesday foreign-affairs specialist
-   (College Park), room rules, screening (A8/A11/A14).
+6. **Citation crib** — per series type, worked from this packet's documents (A13), printed as
+   an **attributed quotation of NARA's guidance** with the publisher-governs note (D13).
+7. **Visit-day card** — **rescoped 2026-08-21 to what does not rot** (T-0 §3.2): day-0
+   registration, the scanner and locker rules, the existence of the consultation desk and of
+   dedicated foreign-affairs reference staff, and stamped links out for the rest. Pull times, the
+   5:15 cutoff, the consultation area's floor and hours, the Wednesday specialist window, and two
+   of A14's four room rules are **negated** — the last two by A14's own "changes packing or
+   planning" test.
 
 **Sessions:**
 
@@ -150,6 +173,12 @@ repository/RG/series rollup.
 - **T-3 (S): the N-7 riders** — chapters 4–5 plus `numberingNote` and series date-checks, the
   day the N-7 bundle lands. T-3 is the standing reason the N-7 bundle should carry
   `accessRestriction`, `numberingNote`, and the inclusive dates from its first cut.
+
+**Release-checklist obligation (D12).** Repository links carry a stamped `verifiedDate`; an
+owner-run checker re-fetches them before a release, follows redirects, and flags a changed final
+URL as *needs review* rather than as a pass. Staleness degrades the sentence ("last checked ⟨date⟩;
+confirm current guidance"), never the build. The structural half — every printed link carries a
+date — is an offline test, and is checkable in CI precisely because it asks nothing of the network.
 
 **Verification oracle:** build the packet for a fixture project spanning a decimal-file
 citation, a lot file (one resolved, one unresolved), a presidential-library collection, and a
@@ -206,6 +235,14 @@ reaching 1 of 622 app-reachable series.
 
 ## Version history
 
+- **1.4 (2026-08-21)** — The fact walkthrough (T-0 §§3.2–3.5), which rescopes chapters rather
+  than verifying facts: A8, A11 and A14 rewritten in the traceability table; chapter 7 reduced to
+  what does not rot; the library half of chapter 2 downgraded from a drafted letter to a
+  confirm-before-you-travel prompt (D11); chapter 6 reframed as an attributed quotation of NARA's
+  guidance rather than a ratified format (D13), on the precedent that `CitationStyle` already
+  marks its default "Recommended"; honesty rule 3 rewritten around *prefer not printing it*, and
+  rules 6 and 7 added. A release-checklist link obligation replaces per-fact re-verification for
+  URLs (D12). Net: ~40 owner-confirmable facts → four claims plus a set of URLs.
 - **1.3 (2026-08-21)** — §5 closed: all five open decisions settled by the owner at the T-0 gate
   (visit date optional; libraries in v1 at collection grain; per-fact nullable `verifiedDate`
   with unverified facts omitted; the topic sentence seeded from the project's research question

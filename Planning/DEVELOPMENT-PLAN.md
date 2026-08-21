@@ -8050,7 +8050,58 @@ now unblocked.** Recorded in `Research-Trip-Packet-T0-Prereqs.md` v1.1 §4.2 and
   proposed, because the ordering line a researcher needs is the RG/entry/series/box the pull
   worksheet already prints.
 
-What is still owner-only is the §3.2 fact confirmation itself. T-1 may now start on the whole
+**Second addendum — the fact walkthrough, and ~40 facts become four.** The owner asked what each
+§3.2 fact is actually *for* before agreeing to verify any of it, reserving the right to negate the
+context. Walking each against the chapter that consumes it turned the gate from a research
+obligation into a scoping decision, on one test: **D7 already omits an unverified fact, so
+declining to verify is not a gap — it is a packet that links where it would have asserted.** A fact
+survives only if the packet computes on it or cannot function without it.
+
+- **Chapter 7 (visit-day card) loses most of its content.** Pull times and the 5:15 cutoff, the
+  consultation area's floor and hours, and the Wednesday foreign-affairs specialist window are all
+  negated and linked. They are the fastest-rotting claims in the packet — NARA changed pull times
+  in 2017, and one staff member's weekly slot is a calendar, not an institution — and a trip booked
+  around a slot that no longer exists is the exact harm the honesty rules exist to prevent. Two of
+  A14's four room rules are negated **by A14's own scoping rule**: "condensed to what changes
+  packing or planning" keeps the scanner and locker rules and kills one-box-one-folder and airport
+  screening, which change nothing a researcher would do differently.
+- **Chapter 1 loses the −2 business-day countdown as uncomputable.** A6 says the app cannot know
+  which records are off-site — it is one of the questions the inquiry asks — so the row could never
+  be keyed to anything, and generically it is dominated by A2's −4 weeks. The Eventbrite row goes
+  too: a vendor choice is not an institutional fact. Day-0 registration and per-row appointment
+  policy are kept.
+- **D11 — the library chapter is a confirm-before-you-travel prompt, not a drafted letter.** The
+  largest single reduction in the gate, **33 institutional facts → 11 URLs**. D6 admitted libraries
+  at *collection* grain, where the packet can name neither series nor NAID, so a fully drafted
+  letter implied a precision the data does not have. The prompt prints A12's real ask beside the
+  contact page and the curated finding-aid URL, and `curated-library-resolutions.json`'s 185 URLs
+  keep doing the work.
+- **D12 — URL freshness moves to a release checklist.** The scoping converts most of §3.2 into
+  links, and a link is the one fact class that is *mechanically* checkable, so this stops being
+  recurring research and becomes a repeatable release step. The load-bearing detail is redirects:
+  NARA reorganises, and a dead deep link characteristically 301s to a section index answering 200,
+  so a status-code grep calls it a pass. The rule is follow redirects, record the final URL, treat
+  `final != declared` as **needs review**. Staleness degrades the sentence, never the build; the
+  structural half (every printed link carries a date) is an offline CI test. Honest limit, now
+  written into the scope doc as honesty rule 7: a 200 proves the URL resolves, not that the page
+  still says what we claim — which is itself an argument for the chapter 1 and 7 downgrades, since
+  the less the packet asserts about a page, the less a link check has to prove.
+- **D13 — the citation crib reports a recommendation and does not ratify one.** The owner's
+  objection is that citation form is governed by the publisher, and publishers disagree; an app
+  printing "the NACP citation format" ratifies one product's requirements as universal, and the
+  researcher discovers the mismatch at proof stage. So the crib quotes NARA's guidance *as NARA's*,
+  attributed, with the publisher-governs note. **This is already the house posture** —
+  `CitationStyle` (`CitationFormatter.swift:30`) ships three styles and marks History at State
+  "Recommended" rather than correct. The verification consequence is the real gain: the claim
+  stops being "this is the correct format" (unfalsifiable, publisher-dependent) and becomes "NARA's
+  PDF says this" — a transcription check against a deposited document, which is §3.1's category.
+  Deposit GIL 17 and the two State-records PDFs and chapter 6 leaves the unverifiable tier for good.
+
+Net: the owner-only residue falls from ~40 institutional facts to **four** — the NACP address, the
+NACP inquiry email, day-0 registration, and per-row appointment policy — plus one checker pass and
+three PDFs to deposit.
+
+What is still owner-only is those four claims. T-1 may now start on the whole
 platform-neutral half — facility derivation, `TripPacketModel`, the A4 tests and their settled
 presentation, the restriction-triage read, the repository-table schema with zero rows in it, both
 checklist lead-time forms, and the seeded-editable topic sentence.
