@@ -346,6 +346,48 @@ public struct SearchParameters: Codable, Sendable, Equatable {
     }
 }
 
+/// The one rule for whether a parameter set can run with **no FTS5 MATCH expression at all**.
+///
+/// ## Why this is one property and not four `if` statements
+/// It used to be four. A filter-only search has to be admitted independently by
+/// `SearchViewModel.search()`, `MacSearchViewModel.performSearch(service:)`,
+/// `SearchService.makeMatchExpressions(from:)` and `QueryInspection.isFilterOnly` — three
+/// execution guards on two platforms plus the Query Inspector's explanation — and each one
+/// enumerated the admissible filters itself. Adding a second filter kind therefore meant finding
+/// all four, and the app's own history says that does not happen: the iOS and macOS view models
+/// are hand-maintained twins, and the fourth site is in a different file from the three that
+/// actually run the query, so a change that widened the guards correctly would still leave the
+/// inspector saying a subject-only query has no terms and no filters.
+///
+/// ## What qualifies
+/// A filter that the SQL side can apply on its own and that NARROWS rather than widens:
+/// - a **person** filter, in either form — a single `personRef`, or a `personRollupId` from the
+///   People browser's "Find all mentions" (Session 162);
+/// - a **subject** filter, in either form — a durable `subjectBucketKey` or a resolved
+///   `subjectBucket` position (#1022). `SearchService.makeFilters` re-resolves the key against the
+///   live vocabulary and substitutes a matches-nothing sentinel when the pair has gone, so a stale
+///   key returns nothing rather than everything.
+///
+/// Scope flags (`includeDocumentText` and friends) are deliberately NOT part of this: they select
+/// which columns a MATCH searches, and a filter-only query has no MATCH to scope. Each view model
+/// keeps its own empty-scope guard for the keyword case.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1022, extracted from four independent enumerations and widened
+///         to admit subject filters
+public extension SearchParameters {
+
+    /// `true` when this parameter set can run as a filter-only query — no keyword, phrase, or
+    /// prefix required — because at least one SQL-side filter constrains it on its own.
+    var supportsFilterOnlySearch: Bool {
+        personRef != nil
+            || personRollupId != nil
+            || subjectBucketKey != nil
+            || subjectBucket != nil
+    }
+}
+
+
 // MARK: - SearchResult
 
 /// A single full-text search result from `SearchService.search`.

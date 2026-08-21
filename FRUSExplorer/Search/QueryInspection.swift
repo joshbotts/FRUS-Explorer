@@ -221,8 +221,7 @@ struct QueryInspector: Sendable {
             expression: expression,
             operands: inspected,
             indexedVolumeCount: indexedVolumeCount,
-            isFilterOnly: expression == nil && (parameters.personRef != nil
-                                                || parameters.personRollupId != nil)
+            isFilterOnly: expression == nil && parameters.supportsFilterOnlySearch
         )
     }
 

@@ -2908,7 +2908,7 @@ public actor IndexingPipeline {
         let sql: String
         let binds: [String]
         if corpusMatch == nil, userContentMatch == nil {
-            // Filter-only search (a person filter with no terms). Mirrors
+            // Filter-only search (a person or subject filter with no terms). Mirrors
             // `searchDocuments`' filter-only path; an unfiltered filter-only query would be
             // the whole corpus, which is not a result set.
             guard !whereClause.isEmpty else { return nil }

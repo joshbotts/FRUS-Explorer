@@ -267,9 +267,11 @@ public actor SearchService {
 
         guard corpus != nil || userContent != nil else {
             // A person filter (a single ref, or a cross-corpus rollup from the People browser's
-            // "Find all mentions") is a valid standalone constraint: run a filter-only query (no FTS
-            // MATCH) instead of erroring. The pipeline's filter-only path applies the person filter.
-            if parameters.personRef != nil || parameters.personRollupId != nil {
+            // "Find all mentions") or a subject filter is a valid standalone constraint: run a
+            // filter-only query (no FTS MATCH) instead of erroring. The pipeline's filter-only path
+            // applies it SQL-side. `supportsFilterOnlySearch` is the single rule — see its
+            // documentation for why this is not an enumeration repeated at four sites (#1022).
+            if parameters.supportsFilterOnlySearch {
                 return (nil, nil)
             }
             throw FTS5Error.emptyQuery
