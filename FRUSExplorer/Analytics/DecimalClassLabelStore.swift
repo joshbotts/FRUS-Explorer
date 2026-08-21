@@ -102,6 +102,27 @@ struct DecimalClassLabelTable: Decodable, Sendable {
     ///   - key: A decimal class key as a source note wrote it (`"793.94"`).
     ///   - span: The coverage years the surface's figures describe.
     /// - Returns: `"China and Japan"`, `"Mexico — Petroleum"`, or `nil`.
+    /// Whether `key` composes under the 1910-1949 schedule — the **indexing** test, not the
+    /// display one (#834).
+    ///
+    /// ## This is deliberately NOT `gloss(for:coveringYears:) != nil`
+    /// `gloss` additionally requires the class to be country-ARRANGED (6, 7, 8) because it is
+    /// producing words for a reader. Indexing must admit every well-formed key, so reusing `gloss`
+    /// here would silently refuse classes 0-5 and 9 — and the bundled artifact, which uses the
+    /// shared rule, would then count citations the indexed table refused. The two surfaces would
+    /// disagree about the same footnote with nothing on screen to explain it.
+    ///
+    /// Delegates to `SourceNoteKit.DecimalScheduleComposition` so the app and the generator apply
+    /// one rule; the schedule is injected rather than re-read.
+    func composes(_ key: String) -> Bool {
+        guard let schedule = schedules.first(where: { $0.id == "1910-1949" }) ?? schedules.first
+        else { return false }
+        return DecimalScheduleComposition.composes(
+            key,
+            classes: Set(schedule.classes.keys),
+            countries: Set(schedule.countries.keys.map { $0.lowercased() }))
+    }
+
     func gloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
         guard let floor = schedules.map(\.startYear).min(),
               let schedule = schedules.first(where: { $0.governs(span, floor: floor) })

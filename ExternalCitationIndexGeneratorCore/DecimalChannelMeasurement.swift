@@ -424,13 +424,9 @@ public enum DecimalChannelMeasurement {
         /// longer match is tried first — otherwise `851R.00` would test `51` (France) and silently
         /// attribute an Algerian file to France.
         public func composes(_ key: String) -> Bool {
-            let stem = key.split(separator: ".").first.map(String.init) ?? key
-            guard let first = stem.first, classes.contains(String(first)) else { return false }
-            let rest = stem.dropFirst().lowercased()
-            for length in [3, 2] where rest.count >= length {
-                if countries.contains(String(rest.prefix(length))) { return true }
-            }
-            return false
+            // Delegates to the shared rule so the artifact and the indexed table cannot disagree
+            // about the same footnote — see `DecimalScheduleComposition`.
+            DecimalScheduleComposition.composes(key, classes: classes, countries: countries)
         }
     }
 

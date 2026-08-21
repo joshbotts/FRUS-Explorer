@@ -291,7 +291,12 @@ struct DecimalClassLabelTests {
         while let url = files?.nextObject() as? URL {
             guard url.pathExtension == "swift",
                   let text = try? String(contentsOf: url, encoding: .utf8),
-                  text.contains("DecimalClassLabelStore"),
+                  // The GLOSS specifically, not the store. #834 gave `IndexingPipeline` a second,
+                  // unrelated use — `composes(_:)`, the indexing-time schedule check — and this
+                  // test is about where the human-readable label is attached, not about who may
+                  // touch the table. Widening it to any mention would have let a view attach its
+                  // own gloss, which is the thing being prevented.
+                  text.contains(".gloss(for:"),
                   url.lastPathComponent != "DecimalClassLabelStore.swift"
             else { continue }
             callers.append(url.lastPathComponent)

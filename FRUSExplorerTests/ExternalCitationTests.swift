@@ -255,6 +255,85 @@ struct ExternalCitationTests {
         return try await body(dir)
     }
 
+    // MARK: - The decimal channel (#834 commit 3)
+
+    /// **The test that justifies the reindex.** The column costs every tester a full rebuild, and a
+    /// column that ships always-NULL while the build exits 0 is precisely what #965's suite exists
+    /// to catch. So this drives the real pipeline over real TEI and reads the value back out.
+    ///
+    /// **The fixture's shape is load-bearing.** `decimalClassLocation` scans a clause's COMMA
+    /// SEGMENTS and needs the class to LEAD one. A first version of this test wrote
+    /// `"… is in file 763.72/9732."`, burying the number behind prose inside its segment, and the
+    /// pipeline correctly found nothing — the test failed for a reason that was about the fixture,
+    /// not the feature. The corpus writes these as `Memorandum of conversation by Campbell,
+    /// February 6, 641.64/2-651`, which is the shape used here.
+    @Test("A footnote citing a central file by number is indexed with its class")
+    func indexesACentralFileClass() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: Department of State, Central Files, 611.61/5-1052.",
+                footnotes: [
+                    "Telegram 1345 from Moscow, March 5, 763.72/9732.",
+                ]), in: dir)
+
+            let citations = try await pipeline.externalCitations(volumeId: "frus1952-54v01",
+                                                                 documentId: "d1")
+            let classes = citations.filter { $0.anchor == "centralFileClass" }
+            #expect(classes.count == 1, """
+                The footnote names one central file and it must reach the table. Before #834 this \
+                row did not exist, so a document citing this way showed no archival footnotes at \
+                all — and citing by number is the usual practice before 1946.
+                """)
+            #expect(classes.first?.decimalClass == "763.72")
+            #expect(classes.first?.displayLabel == "763.72", """
+                A class row's repository is "Department of State", the same as every lot's, so a \
+                displayLabel falling through to the repository would label the citation with the \
+                department and lose the only identifying thing about it.
+                """)
+        }
+    }
+
+    /// The id must separate two classes in one footnote. They share a repository, carry no lot and
+    /// no collection, so every other component of the key is identical — duplicate `Identifiable`
+    /// ids, which a SwiftUI list silently renders as one row.
+    @Test("Two classes in one footnote get distinct ids")
+    func twoClassesInOneFootnoteAreDistinct() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: Department of State, Central Files, 611.61/5-1052.",
+                footnotes: [
+                    "Despatch 296, 763.72/9732; memorandum of conversation, 811.24546/1c.",
+                ]), in: dir)
+            let classes = try await pipeline
+                .externalCitations(volumeId: "frus1952-54v01", documentId: "d1")
+                .filter { $0.anchor == "centralFileClass" }
+            #expect(classes.count == 2, "fixture guard: both clauses must yield a class")
+            #expect(Set(classes.map(\.id)).count == 2, """
+                Two class citations in one footnote produced the same id. A SwiftUI ForEach shows \
+                one row and warns at runtime; the reader silently loses a citation.
+                """)
+        }
+    }
+
+    /// Subject-numeric stays out of the table exactly as it stays out of the artifact — one scope
+    /// decision applied in both places, or the two surfaces disagree about the same footnote.
+    @Test("A subject-numeric designator is not indexed as a class")
+    func subjectNumericIsNotIndexed() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: Department of State, Central Files, 611.61/5-1052.",
+                footnotes: ["See Department of State, Central Files, POL 27 VIET S/8-1256."]), in: dir)
+            let classes = try await pipeline
+                .externalCitations(volumeId: "frus1952-54v01", documentId: "d1")
+                .filter { $0.anchor == "centralFileClass" }
+            #expect(classes.isEmpty, """
+                Subject-numeric designators are out of scope by owner decision and #784 measured \
+                them 87.2% out of vocabulary. Indexing one would put a citation in the table that \
+                the bundled artifact refused.
+                """)
+        }
+    }
+
     // MARK: - What it writes
 
     @Test("Indexing writes one row per unit per footnote, in reading order")
