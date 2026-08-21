@@ -552,3 +552,101 @@ struct SubjectNarrowingLifecycleTests {
         }
     }
 }
+
+// MARK: - SharedSubjectEvidenceTests
+
+/// `sharedSubjectNames(anchor:candidates:)` — the evidence behind the `sharedSubjects` "why
+/// related" chip (#1020).
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1020
+@Suite("Shared-subject evidence (#1020)")
+struct SharedSubjectEvidenceTests {
+
+    private func decode(_ json: String) throws -> DocumentSubjectIndex {
+        try JSONDecoder().decode(DocumentSubjectIndex.self, from: Data(json.utf8))
+    }
+
+    /// `d0` = War + Peace, `d1` = War, `d2` = Trade, `d3` = War + Battle.
+    private func fixture() throws -> DocumentSubjectIndex {
+        try decode("""
+        {
+          "vocab": [
+            {"r": "s1", "n": "War",    "c": "Warfare",                 "s": "General", "df": 3},
+            {"r": "s2", "n": "Peace",  "c": "Global Issues",           "s": "General", "df": 1},
+            {"r": "s3", "n": "Trade",  "c": "Foreign Economic Policy", "s": "Trade",   "df": 1},
+            {"r": "s4", "n": "Battle", "c": "Warfare",                 "s": "General", "df": 1}
+          ],
+          "documents": {"vol1": {"d0": [0, 1], "d1": [0], "d2": [2], "d3": [0, 3]}},
+          "documentCount": 4,
+          "coOccurrence": {"a": [0], "b": [1], "n": [1]}
+        }
+        """)
+    }
+
+    private func key(_ d: String) -> DocumentKey { DocumentKey(volumeId: "vol1", documentId: d) }
+
+    @Test("A candidate sharing nothing is ABSENT, not present with an empty list")
+    func nonSharingCandidateIsAbsent() throws {
+        let shared = try fixture().sharedSubjectNames(
+            anchor: key("d0"), candidates: [key("d1"), key("d2"), key("d3")])
+        #expect(shared[key("d1")] == ["War"])
+        #expect(shared[key("d3")] == ["War"])
+        #expect(shared[key("d2")] == nil, """
+            d2 carries only Trade, which the anchor does not have. Returning `[]` for it would make \
+            every caller write two checks where one should do, and would render an empty chip.
+            """)
+    }
+
+    /// The chip shows at most a few names, so the ones that survive the cut have to be the ones
+    /// that discriminate. Sharing a corpus-wide subject is not evidence; sharing a rare one is.
+    @Test("Shared subjects come back most-distinctive-first")
+    func mostDistinctiveFirst() throws {
+        let index = try decode("""
+        {
+          "vocab": [
+            {"r": "common", "n": "Everywhere", "c": "C", "s": "S", "df": 90},
+            {"r": "rare",   "n": "Seldom",     "c": "C", "s": "S", "df": 2}
+          ],
+          "documents": {"vol1": {"d0": [0, 1], "d1": [0, 1]}},
+          "documentCount": 100,
+          "coOccurrence": {"a": [0], "b": [1], "n": [1]}
+        }
+        """)
+        #expect(index.sharedSubjectNames(anchor: key("d0"), candidates: [key("d1")])[key("d1")]
+                    == ["Seldom", "Everywhere"], """
+            Ordering is inherited from `subjects(forDocument:)`, which is IDF-descending. If that \
+            ever stops being true the chip silently starts showing the least informative topics.
+            """)
+    }
+
+    @Test("The limit caps the list and keeps the most distinctive")
+    func limitKeepsTheRarest() throws {
+        let index = try decode("""
+        {
+          "vocab": [
+            {"r": "a", "n": "Common",  "c": "C", "s": "S", "df": 90},
+            {"r": "b", "n": "Middling","c": "C", "s": "S", "df": 20},
+            {"r": "c", "n": "Rare",    "c": "C", "s": "S", "df": 2}
+          ],
+          "documents": {"vol1": {"d0": [0, 1, 2], "d1": [0, 1, 2]}},
+          "documentCount": 100,
+          "coOccurrence": {"a": [0], "b": [1], "n": [1]}
+        }
+        """)
+        #expect(index.sharedSubjectNames(anchor: key("d0"), candidates: [key("d1")], limit: 2)[key("d1")]
+                    == ["Rare", "Middling"])
+        #expect(index.sharedSubjectNames(anchor: key("d0"), candidates: [key("d1")], limit: 0).isEmpty)
+    }
+
+    @Test("An anchor with no subjects yields nothing rather than every candidate's own topics")
+    func untaggedAnchorSharesNothing() throws {
+        let shared = try fixture().sharedSubjectNames(
+            anchor: key("absent"), candidates: [key("d0"), key("d1")])
+        #expect(shared.isEmpty, """
+            A quarter of the corpus carries no subject at all. An untagged anchor must share \
+            nothing — not fall through to listing the candidate's own topics as if they were common \
+            ground.
+            """)
+    }
+}

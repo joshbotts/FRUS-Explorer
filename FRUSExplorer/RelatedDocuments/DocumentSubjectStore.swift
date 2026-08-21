@@ -203,6 +203,36 @@ struct DocumentSubjectIndex: Decodable, Sendable {
             .sorted { ($0.score, $1.name) > ($1.score, $0.name) }
     }
 
+    /// The subjects an anchor shares with each candidate, most distinctive first — the evidence
+    /// behind the `sharedSubjects` axis's "why related" chip (#1020).
+    ///
+    /// ## Why the anchor is resolved once and the shape mirrors the semantic pass
+    /// Signature deliberately matches `SemanticSharedTerms.sharedTerms(anchor:candidates:)`: that
+    /// is the working precedent for an axis naming its own evidence, and a second shape would be a
+    /// second thing to keep in step. Unlike that pass this one needs no `await` — the subject index
+    /// is an in-memory dictionary — so it is cheap enough to run over displayed rows synchronously.
+    ///
+    /// Ranking is inherited, not recomputed: ``subjects(forDocument:)`` already returns IDF-descending,
+    /// so the shared set arrives most-distinctive-first and `prefix(limit)` is the whole selection.
+    /// That matters for the chip — two documents sharing *Berlin blockade* is a finding, and sharing
+    /// *War* is not, so the rare one has to be the one that survives the cut.
+    ///
+    /// - Returns: candidate key → up to `limit` shared subject NAMES. A candidate sharing nothing is
+    ///   absent from the result rather than present with `[]`, so a caller can skip it in one check.
+    func sharedSubjectNames(anchor: DocumentKey, candidates: [DocumentKey],
+                            limit: Int = 3) -> [DocumentKey: [String]] {
+        let anchorRefs = Set(subjects(forDocument: anchor).map(\.ref))
+        guard !anchorRefs.isEmpty, limit > 0 else { return [:] }
+        var out: [DocumentKey: [String]] = [:]
+        out.reserveCapacity(candidates.count)
+        for candidate in candidates {
+            let shared = subjects(forDocument: candidate)
+                .lazy.filter { anchorRefs.contains($0.ref) }.prefix(limit).map(\.name)
+            if !shared.isEmpty { out[candidate] = Array(shared) }
+        }
+        return out
+    }
+
     /// The detected subjects for a document grouped by category; `[]` when it has none.
     ///
     /// Categories are ordered by their most distinctive member, so the grouping does not bury the

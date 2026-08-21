@@ -712,7 +712,8 @@ struct ProjectHomeView: View {
 
     /// One axis's weight slider. The value updates live for feedback; the persist + re-rank happens
     /// only when the drag settles (`onEditingChanged` false), so a drag is one recompute, not one per
-    /// tick. The shared-subjects axis stays disabled + annotated until its detected-topic data ships.
+    /// tick. The shared-subjects axis is disabled + annotated only when the bundled
+    /// detected-topic index is absent on this device.
     @ViewBuilder
     private func weightRow(_ axis: SimilarityAxis, _ project: Project) -> some View {
         let subjectsInert = axis == .sharedSubjects && DocumentSubjectStore.shared == nil
@@ -736,8 +737,13 @@ struct ProjectHomeView: View {
                 })
             .disabled(subjectsInert)
             if subjectsInert {
-                Text(String(localized: "project.home.leads.tune.subjects.gated",
-                            defaultValue: "Available when detected-topic data ships (experimental)."))
+                // NOT "available when the data ships" — it shipped. Reaching here means the
+                // bundled index is missing or failed to decode on THIS device (#1020). Its own key
+                // namespace, deliberately: the twin in RelatedDocumentsView carries the same
+                // sentence under `related.weights.*`, and sharing one key across two views is the
+                // collision this codebase has been bitten by before.
+                Text(String(localized: "project.home.leads.tune.subjects.unavailable",
+                            defaultValue: "Detected-topic data is unavailable on this device."))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

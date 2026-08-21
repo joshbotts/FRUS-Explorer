@@ -189,7 +189,12 @@ struct AxisWeights: Codable, Hashable, Sendable {
         self.weights = weights
     }
 
-    /// The default tuning — each axis's `defaultWeight` (shared subjects 0, design Q4).
+    /// The default tuning — each axis's `defaultWeight`.
+    ///
+    /// Shared subjects sits at 0.5, raised from the design's Q4 recommendation of 0 once the
+    /// document-grain index shipped. NOTE this default only reaches a reader who has never opened
+    /// "Adjust weights": a persisted tuning spells out every axis, and `subscript` reads a missing
+    /// one as 0 rather than as its default — see #1021.
     static let `default` = AxisWeights(
         weights: Dictionary(uniqueKeysWithValues: SimilarityAxis.allCases.map { ($0, $0.defaultWeight) }))
 
@@ -242,6 +247,14 @@ enum WhyRelatedChip: Hashable, Sendable {
     /// overlap survives, the axis states its percentage instead, which is honest about having found
     /// a resemblance it cannot put into words.
     case sharedTerms([String])
+    /// A subject axis, naming the detected topics the two documents share.
+    ///
+    /// The same argument as ``sharedTerms``, one axis over: a scorer that raised a row deserves to
+    /// say why it did. Names are ranked by corpus rarity, so the chip shows the topics that
+    /// actually discriminate — sharing *Berlin blockade* is evidence, sharing *War* is not. These
+    /// are DETECTED topics, matched by name against the text, not editorial subject headings; the
+    /// surrounding panel carries that caveat and the chip inherits it.
+    case sharedSubjects([String])
     /// A scorer axis, whose `[0, 1]` score is an absolute measure and rounds to a percent.
     case percent(Int)
 }
@@ -382,6 +395,16 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
                     if let joined = axisEvidenceLabel[axis], !joined.isEmpty {
                         let terms = joined.split(separator: "\u{1F}").map(String.init)
                         if !terms.isEmpty { return (axis, .sharedTerms(terms)) }
+                    }
+                    return (axis, .percent(Int((score * 100).rounded())))
+                case .sharedSubjects:
+                    // Filled by the view's evidence pass over displayed rows, exactly as the
+                    // semantic arm above is — so this is empty on first paint. A percentage is the
+                    // honest interim reading, and the permanent one where the shared subjects
+                    // resolve to no name (a vocabulary drop that renamed a ref).
+                    if let joined = axisEvidenceLabel[axis], !joined.isEmpty {
+                        let names = joined.split(separator: "\u{1F}").map(String.init)
+                        if !names.isEmpty { return (axis, .sharedSubjects(names)) }
                     }
                     return (axis, .percent(Int((score * 100).rounded())))
                 default:

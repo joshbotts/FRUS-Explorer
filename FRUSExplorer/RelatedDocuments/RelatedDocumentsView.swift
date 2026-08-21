@@ -224,6 +224,7 @@ struct RelatedDocumentsContent: View {
             // tokenise candidates the ranker then discarded, and would still miss rows another axis
             // promoted into view. The rows are already displayed with a percentage while this runs,
             // so a slow pass degrades to the interim chip rather than delaying the list.
+            attachSubjectEvidence()
             await attachSemanticEvidence(claimedKey: claimedKey)
         }
     }
@@ -285,6 +286,28 @@ struct RelatedDocumentsContent: View {
     /// `axisEvidenceLabel` is the `[SimilarityAxis: String]` the engine already carries — adding a
     /// parallel `[SimilarityAxis: [String]]` for one axis would be a second thing to keep in step.
     ///
+    /// Names the detected topics each row shares with the anchor, for the `sharedSubjects` chip
+    /// (#1020).
+    ///
+    /// Synchronous, unlike its semantic sibling below: the subject index is an in-memory dictionary,
+    /// so there is nothing to await and no cancellation window to guard. It therefore needs no
+    /// `claimedKey` — it cannot outlive the reload that scheduled it.
+    ///
+    /// Runs over the ROWS, not the candidate pool, for the same reason the semantic pass does: this
+    /// is display evidence, and a row nobody sees needs none.
+    private func attachSubjectEvidence() {
+        guard let store = DocumentSubjectStore.shared else { return }
+        let scored = rows.indices.filter { rows[$0].axisScores[.sharedSubjects] != nil }
+        guard !scored.isEmpty else { return }
+        let names = store.sharedSubjectNames(anchor: request.anchor,
+                                             candidates: scored.map { rows[$0].key })
+        guard !names.isEmpty else { return }
+        for index in scored {
+            guard let found = names[rows[index].key], !found.isEmpty else { continue }
+            rows[index].axisEvidenceLabel[.sharedSubjects] = found.joined(separator: "\u{1F}")
+        }
+    }
+
     /// - Parameter claimedKey: The reload identity this pass belongs to.
     private func attachSemanticEvidence(claimedKey: String) async {
         let semanticRows = rows.filter { $0.axisScores[.semanticSimilarity] != nil }
@@ -385,8 +408,11 @@ struct RelatedDocumentsContent: View {
                 })
             .disabled(subjectsInert)
             if subjectsInert {
-                Text(String(localized: "related.weights.subjects.gated",
-                            defaultValue: "Available when detected-topic data ships (experimental)."))
+                // NOT "available when the data ships" — it shipped. Reaching here means the
+                // bundled index is missing or failed to decode on THIS device, which is a state to
+                // report, not a roadmap promise to repeat (#1020).
+                Text(String(localized: "related.weights.subjects.unavailable",
+                            defaultValue: "Detected-topic data is unavailable on this device."))
                     .font(.caption2).foregroundStyle(.tertiary)
             }
             if axis == .semanticSimilarity {
@@ -518,6 +544,13 @@ struct RelatedDocumentsContent: View {
                             return String(format: String(localized: "related.why.sharedTerms %@",
                                                          defaultValue: "shares: %@"),
                                           terms.joined(separator: ", "))
+                        case .sharedSubjects(let names):
+                            // "topics", not "shares" — the semantic chip already owns that verb on
+                            // the same row, and these are detected topics rather than the
+                            // document's own words.
+                            return String(format: String(localized: "related.why.sharedSubjects %@",
+                                                         defaultValue: "topics: %@"),
+                                          names.joined(separator: ", "))
                         case .percent(let pct):
                             // A real but sub-1% contribution reads as "<1%", never "0%".
                             return pct == 0
