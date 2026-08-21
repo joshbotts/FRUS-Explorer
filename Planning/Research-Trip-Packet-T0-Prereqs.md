@@ -1,7 +1,8 @@
 # Research Trip Packet — T-0 prereqs and decisions (#830)
 
-**Date:** 2026-08-21 · **Version:** 1.0 · **Status:** owner gate — no code rides this
-document. Companion to `Planning/Research-Trip-Packet-Scope.md` (v1.1) and the owner gate
+**Date:** 2026-08-21 · **Version:** 1.1 · **Status:** owner gate — **decisions settled
+2026-08-21; the fact confirmation (§3.2) remains owner-only and is now incremental by D7**. No
+code rides this document. Companion to `Planning/Research-Trip-Packet-Scope.md` (v1.3) and the owner gate
 recorded at [#830 comment 5248318037](https://github.com/joshbotts/FRUS-Explorer/issues/830#issuecomment-5248318037).
 
 The gate's instruction is explicit: *"the first act of the T-0 session is to bring the
@@ -9,7 +10,8 @@ repository-fact table to the owner for confirmation, item by item — not to dra
 proceed."* This document is that first act. It contains (§1) the T-0 data audit, run offline
 against the shipped artifacts; (§2) what the audit changes about the plan; (§3) the fact
 inventory split by whether it can be verified inside this repository; (§4) the decisions put
-to the owner, with a recommendation for each; (§5) what T-1 may start on once they are settled.
+to the owner, with a recommendation for each — **all ten now settled**; (§5) what T-1 may start
+on.
 
 **Nothing here confirms a fact about a real institution.** archives.gov is unreachable from the
 development container, which is why the FAQ was deposited verbatim in the first place. §3 sorts
@@ -259,34 +261,76 @@ restricted to some degree and **138 (19.9%) are Restricted — Fully**. A resear
 College Park to pull a closed series has lost the trip, the data to warn them shipped months
 ago, and no other page in the packet answers a question that large.
 
-### 4.2 Still open — recommendations stand, not yet settled
+### 4.2 Settled by the owner, 2026-08-21
 
-| # | Decision | Standing recommendation |
-|---|---|---|
-| D5 | **Visit-date input** (scope §5.1) | Optional, with relative lead times as the fallback — a packet is often built before the trip is booked |
-| D6 | **Presidential libraries in v1** (§5.3) | Include at collection grain. 29,093 notes (11.0%), zero offline NAIDs — but A12's confirm-before-you-fly ask is *more* valuable when resolution is coarse, and `curated-library-resolutions.json` already carries 185 owner-fetched finding-aid URLs as the substitute |
-| D7 | **Repository-table maintenance** (§5.4) | Per-fact nullable `verifiedDate`; an unverified fact is **omitted**, never printed undated. This is also the gate's own correction to artboard 1k, and it lets T-1/T-2 build against a partly confirmed table (§3.3) |
-| D8 | **Research-question reuse** (§5.5) | Quote `Project.researchQuestion` as the draft's topic sentence — it is precisely NARA's "succinct description of your research interest" — falling back to a placeholder when the project has none |
-| D9 | **A4 flag calibration** (§1.3) | Sensitive-agency as a stated constant in the checklist; per-series chips reserved for the two criteria that discriminate between projects (documents ≥1960; unresolved lots) |
-| D10 | **`numberingNote`** | Drop from T-3 scope — 1 of 622 app-reachable series (`HarvestShardReader.swift:47-49`). No alternative proposed |
+The gate's remaining six, answered in the same sitting. Each is recorded with the reason the
+recommendation stood, so a later reader can tell a decision from a default.
 
-D5–D9 do not block the T-1 work named in §5; D6 and D7 shape T-0's curation and should settle
-before the repository table is authored.
+**D5 — Visit date is optional, with relative lead times as the fallback** (scope §5.1). A packet
+is most useful *before* the trip is booked, so requiring a date would gate the packet on the
+decision the packet exists to inform. With a date the checklist prints absolute rows ("write by
+12 September"); without one it prints the same rows relatively ("at least 4 weeks before you
+arrive"). Both forms carry the A4 escalation — the flag engine does not depend on the date.
 
-## 5. What T-1 may start on regardless
+**D6 — Presidential libraries ship in v1 at collection grain** (§5.3). 29,093 notes (11.0%) over
+ten libraries, and **zero** of them resolve to a NAID offline — the libraries sit outside every
+record group, so the catalogue harvest structurally cannot reach them. That coarseness is the
+argument *for* inclusion rather than against it: A12's ask is to confirm the materials are at
+that location before you travel, and a library trip is a flight rather than a Metro ride.
+`curated-library-resolutions.json`'s 185 owner-fetched finding-aid URLs stand in for the series
+identity the catalogue cannot supply, and the chapter says which of the two it is showing.
 
-None of the above blocks the platform-neutral half:
+**D7 — Per-fact nullable `verifiedDate`; an unverified fact is omitted, never printed undated**
+(§5.4). Snapshot semantics, not a re-verification gate on every release. This is also the gate's
+own correction to artboard 1k, which draws one aggregate stamp per card where the honesty rule
+asks for a stamp per volatile fact. The nullability is what makes the gate incremental: T-1 and
+T-2 build against a table with zero confirmed rows, and each fact the owner confirms lights up
+one line rather than the whole feature waiting on one sitting.
+
+**D8 — The topic sentence is SEEDED from `Project.researchQuestion` and remains EDITABLE.**
+Refines the standing recommendation, which said only "quote it". The project's research question
+is exactly NARA's "succinct description of your research interest", so it is the right default —
+but it is an internal note written for the researcher's own use, and the draft is an email to
+NARA reference staff. So T-2 owes an **editable** topic-sentence field pre-filled from the
+project, not a quoted string baked into the export: the researcher edits before sending, and a
+project with no research question gets the placeholder rather than an empty paragraph. This is a
+UI obligation on T-2, not only a copy rule — the export path must read the edited value.
+
+**D9 — The sensitive-agency criterion prints ONCE as a standing checklist sentence** (§1.3);
+per-series chips are reserved for the two criteria that discriminate between projects (documents
+dated ≥1960; unresolved lot citations). The measurement is the reason: the criterion fires on
+81.4% of source notes because FRUS *is* State Department records, and a chip lit on every row
+carries no information while costing the two informative chips their salience. A4's
+quote-which-criterion-fired requirement is still met — the standing sentence quotes the FAQ's
+own list, and the chips quote theirs.
+
+**D10 — `numberingNote` is dropped from T-3.** Confirmed. The plan's "385 series" is corpus-wide;
+the app-reachable count is **1 of 622** (`HarvestShardReader.swift:47-49`, pinned at
+`SeriesFactsIndexGeneratorTests/SeriesFactsIndexTests.swift:203`). No alternative is proposed:
+the ordering instruction a researcher needs is the RG/entry/series/box line the pull worksheet
+already prints.
+
+With D1–D10 settled, **the T-0 gate's engineering half is unblocked**. What remains owner-only is
+the fact confirmation itself (§3.2), and D7 is what lets that proceed fact by fact instead of all
+at once.
+
+## 5. What T-1 may start on
+
+With the decisions settled, the whole platform-neutral half is open:
 
 - The facility-derivation function and its fixtures — **now fully specified by D2 and D3**:
   reference unit for a NARA series, the curated row for a library or non-NARA repository, and
   the serving-facility mapping for the three strings that name no visitable place.
 - `TripPacketModel` over `CollectionGeneratedBlocks.archivalSourceRows` — the grouping key at
   `:492` already carries repository / RG / lot / series.
-- The A4 date and unresolved-lot tests, which are computable from data the app holds (D9 decides
-  only how they are *presented*, not how they are computed).
+- The A4 date and unresolved-lot tests, which are computable from data the app holds — and D9
+  now fixes their presentation too: two chips, plus one standing sentence for the third criterion.
 - The restriction-triage read over `series-facts-index`, which D4 moved into the first cut.
-- The repository table's **schema** — including nullable per-fact `verifiedDate` — which can be
+- The repository table's **schema** — nullable per-fact `verifiedDate` per D7 — which can be
   written, enrolled, and tested with zero confirmed rows in it.
+- The checklist's two lead-time forms (absolute and relative), per D5.
+- The editable topic-sentence field seeded from `Project.researchQuestion`, per D8 — the edited
+  value, not the stored one, is what the exporter reads.
 
 What T-1 may **not** do is print an institutional fact from §3.2 that the owner has not
 confirmed. The empty-table-that-still-builds shape in §3.3 is what makes that separation
@@ -295,6 +339,14 @@ enforceable rather than aspirational.
 ---
 
 ## Version history
+
+- **1.1 (2026-08-21)** — Owner settled the remaining six decisions (§4.2): visit date optional
+  with relative fallback; presidential libraries in v1 at collection grain; per-fact nullable
+  `verifiedDate` with unverified facts omitted; the inquiry topic sentence seeded from the
+  project's research question **and editable** (a refinement of the recommendation, and a T-2 UI
+  obligation); the sensitive-agency criterion as one standing sentence rather than a per-series
+  chip; `numberingNote` dropped from T-3. The engineering half of the T-0 gate is unblocked; the
+  owner-only fact confirmation (§3.2) remains, now incremental by D7.
 
 - **1.0 (2026-08-21)** — T-0 data audit run offline against the shipped artifacts; the
   repository-field finding (`repository` is the creating agency); the reference-unit measurement

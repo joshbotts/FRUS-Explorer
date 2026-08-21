@@ -8020,3 +8020,37 @@ unconfirmed sentence.
 
 Settled: D1–D4. Open with recommendations standing: visit-date input, presidential libraries in
 v1, table maintenance policy, research-question reuse, A4 calibration.
+
+**Addendum, same day — the owner settled the remaining six, and the gate's engineering half is
+now unblocked.** Recorded in `Research-Trip-Packet-T0-Prereqs.md` v1.1 §4.2 and closed out in
+`Research-Trip-Packet-Scope.md` v1.3 §5, which no longer carries an open-decisions list.
+
+- **D5 visit date — optional**, with relative lead times as the fallback. A packet is most useful
+  before the trip is booked; the A4 escalation does not depend on the date, so both the absolute
+  and relative checklist forms carry it.
+- **D6 presidential libraries — in v1, at collection grain.** Zero of the 29,093 library notes
+  resolve to a NAID offline, and that is the argument *for* shipping them: A12's
+  confirm-before-you-travel ask matters most where resolution is weakest, and a library trip is a
+  flight rather than a Metro ride. The 185 curated finding-aid URLs stand in for the missing
+  series identity, and the chapter says which of the two it is showing.
+- **D7 table maintenance — per-fact nullable `verifiedDate`, unverified facts omitted.** Snapshot
+  semantics, not a per-release re-verification gate. This is the mechanism that makes the
+  owner-only half of the gate *incremental*: each confirmed fact lights up one line, and nothing
+  waits on a single sitting.
+- **D8 research question — seeded and editable**, which refines the recommendation rather than
+  accepting it. The stored question is exactly NARA's "succinct description", so it is the right
+  default; but it is an internal note and the draft is an email to reference staff. **T-2 owes an
+  editable topic-sentence field, and the exporter must read the edited value** — a UI obligation,
+  not only a copy rule.
+- **D9 A4 calibration — the sensitive-agency criterion prints once** as a standing checklist
+  sentence; per-series chips are reserved for the two criteria that discriminate between projects
+  (documents ≥1960, unresolved lots). A4's quote-which-criterion-fired requirement survives: the
+  standing sentence quotes the FAQ's list, the chips quote theirs.
+- **D10 `numberingNote` — dropped**, confirmed. 1 of 622 app-reachable series; no alternative
+  proposed, because the ordering line a researcher needs is the RG/entry/series/box the pull
+  worksheet already prints.
+
+What is still owner-only is the §3.2 fact confirmation itself. T-1 may now start on the whole
+platform-neutral half — facility derivation, `TripPacketModel`, the A4 tests and their settled
+presentation, the restriction-triage read, the repository-table schema with zero rows in it, both
+checklist lead-time forms, and the seeded-editable topic sentence.

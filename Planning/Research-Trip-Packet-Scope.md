@@ -1,6 +1,6 @@
 # Research Trip Packet — scope against NARA's own pre-visit guidance
 
-**Date:** 2026-08-04 · **Version:** 1.2 · **Status:** scoping for owner review — no code
+**Date:** 2026-08-04 · **Version:** 1.3 · **Status:** scoping for owner review — no code
 rides this document. **The T-0 gate is under way in
 `Planning/Research-Trip-Packet-T0-Prereqs.md` (2026-08-21)**, which carries the offline data
 audit and settles four decisions this document did not anticipate; where the two disagree, the
@@ -165,36 +165,52 @@ program); History Hub posting integration (link only).
 
 ---
 
-## 5. Open decisions for the owner
+## 5. Open decisions — all settled
 
-**Status, 2026-08-21** (see `Research-Trip-Packet-T0-Prereqs.md` §4): decisions **3, 4, 5 below
-remain open**; decision 1 is open with the recommendation standing. Four decisions the audit
-forced and this document did not anticipate were settled the same day — curate Central Decimal
-File date-block series identities (the worksheet's grain for 73% of notes); derive the NARA
-facility from `series-facts-index`'s reference unit and hand-curate only the presidential
-libraries and the non-NARA tail; map *Department of State* / *Central Intelligence Agency* /
-*Washington National Records Center* to a serving facility rather than heading a chapter with
-them; and **promote restriction triage from T-3 into the first shipping cut** (138 of 695 series
-are Restricted — Fully). `numberingNote` is dropped from T-3: it reaches 1 of 622 app-reachable
-series.
+**Status, 2026-08-21** (full reasoning in `Research-Trip-Packet-T0-Prereqs.md` §4): **every
+decision in this section is now settled**, together with four the T-0 audit forced and this
+document did not anticipate.
 
-1. **Visit-date input**: required (enables the countdown) or optional (relative lead times)?
-   Recommend optional with relative fallback.
+Settled by the audit: curate Central Decimal File date-block series identities (the worksheet's
+grain for 73% of notes); derive the NARA facility from `series-facts-index`'s reference unit and
+hand-curate only the presidential libraries and the non-NARA tail; map *Department of State* /
+*Central Intelligence Agency* / *Washington National Records Center* to a serving facility rather
+than heading a chapter with them; and **promote restriction triage from T-3 into the first
+shipping cut** (138 of 695 series are Restricted — Fully).
+
+1. **Visit-date input** — **Optional**, with relative lead times as the fallback. A packet is
+   most useful before the trip is booked; the A4 escalation does not depend on the date.
 2. ~~Inquiry drafts: one per repository or combined?~~ **Resolved from source (v1.1):** one
    address per repository, split per agency cluster within it — the FAQ's one-address and
    one-agency rules dictate the shape.
-3. **Presidential libraries in v1**: include with collection-grain rows now (recommended — A12's
-   confirm-before-travel ask is *more* valuable when resolution is coarse), or hold for N-4?
-4. **Repository-table maintenance**: `verifiedDate`-stamped snapshot with links (recommended,
-   matches §3.3), or gate each release on re-verification?
-5. **Research-question reuse**: drafts quote the project's stored research question as the
-   topic sentence (recommended; it is exactly A3's "succinct description"), or leave a
-   placeholder?
+3. **Presidential libraries in v1** — **Include, at collection grain.** Zero of the 29,093
+   library notes resolve to a NAID offline, and that coarseness is the argument for inclusion:
+   A12's confirm-before-you-travel ask matters most when the resolution is weakest, and a library
+   trip is a flight. The 185 curated finding-aid URLs stand in for the missing series identity.
+4. **Repository-table maintenance** — **Per-fact nullable `verifiedDate`**; an unverified fact is
+   **omitted**, never printed undated. Snapshot semantics per §3.3, and the gate's correction to
+   artboard 1k's single aggregate stamp. Nullability makes the owner's fact confirmation
+   incremental: the packet builds with zero confirmed rows.
+5. **Research-question reuse** — **Seed and let the researcher edit.** `Project.researchQuestion`
+   pre-fills the draft's topic sentence (it is exactly A3's "succinct description"), but the field
+   is editable and the exporter reads the edited value: the stored question is an internal note
+   and the draft is an email to reference staff. No question stored → the placeholder.
+
+Two further calibrations settled the same day: the A4 **sensitive-agency criterion prints once as
+a standing checklist sentence** rather than as a per-series chip (it fires on 81.4% of notes,
+because FRUS *is* State Department records), leaving per-series chips to the two criteria that
+discriminate — documents ≥1960 and unresolved lots; and **`numberingNote` is dropped from T-3**,
+reaching 1 of 622 app-reachable series.
 
 ---
 
 ## Version history
 
+- **1.3 (2026-08-21)** — §5 closed: all five open decisions settled by the owner at the T-0 gate
+  (visit date optional; libraries in v1 at collection grain; per-fact nullable `verifiedDate`
+  with unverified facts omitted; the topic sentence seeded from the project's research question
+  and editable), plus the A4 flag calibration and the `numberingNote` drop. Cross-references the
+  T-0 audit's four forced decisions. No change to §§1–4.
 - **1.2 (2026-08-21)** — Status pointer to `Research-Trip-Packet-T0-Prereqs.md`: the T-0 audit
   ran offline against the shipped artifacts, four unanticipated decisions were settled (worksheet
   grain, repository-table scope, non-visitable repository strings, restriction-triage placement),
