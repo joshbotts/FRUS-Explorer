@@ -97,11 +97,23 @@ struct VolumeSubjectProfilesGeneratorTests {
             Set(index.profiles.first { $0.volumeId == volumeId }?
                 .entries.map { refByIndex[$0.vocabIndex] } ?? [])
         }
-        #expect(!refs("frus_old").contains("aids"))   // 1981 > 1969 → dropped
-        #expect(refs("frus_new").contains("aids"))     // 1981 ≤ 1985 → kept
-        #expect(refs("frus_old").contains("war"))      // untabled subject unaffected
-        #expect(stats.eraSanityDropped == 1)
-        // The fixture carries only "AIDS" from the table, so the other rows are reported unmatched.
+        // **The gate is RETIRED** (owner decision 2026-08-20), so this test asserts the opposite
+        // of what it used to: a subject whose heading postdates the volume is KEPT.
+        //
+        // It was retired because it tested the subject HEADING's year while tags come from match
+        // VARIANTS that deliberately predate the heading — measured, all 92 of its corpus-wide
+        // drops were wrong, including 74 legitimate `Refugees` entries in volumes like frus1875v02
+        // (a US minister sheltering 80 political refugees in his legation).
+        #expect(refs("frus_old").contains("aids"), """
+            The era gate is retired; a heading-vs-volume mismatch must no longer drop a tag. If \
+            this fails, the gate has been reinstated without the variant-level data that would \
+            make it correct.
+            """)
+        #expect(refs("frus_new").contains("aids"))
+        #expect(refs("frus_old").contains("war"))      // untabled subject unaffected, as before
+        #expect(stats.eraSanityDropped == 0, "the retired gate must drop nothing")
+        // The table is still resolved and still reports unmatched names, so the research survives
+        // for whoever gets variant-level data upstream and can build the sound test.
         #expect(stats.eraSanityUnmatched.contains("World War I"))
         #expect(!stats.eraSanityUnmatched.contains("AIDS"))
     }
