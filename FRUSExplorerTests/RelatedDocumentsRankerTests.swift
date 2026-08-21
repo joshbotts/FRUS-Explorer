@@ -66,10 +66,25 @@ struct SimilarityAxisTests {
         #expect(SimilarityAxis.semanticSimilarity.isGenerator)
     }
 
-    @Test("shared subjects defaults to weight 0 (gated, opt-in)")
-    func subjectDefaultOff() {
-        #expect(SimilarityAxis.sharedSubjects.defaultWeight == 0)
-        #expect(SimilarityAxis.archivalProvenance.defaultWeight > 0)
+    /// **Raised from 0 to 0.5** by owner decision 2026-08-21, and the ordering is the assertion
+    /// that matters: the axis now shapes results but must not outrank editorial metadata.
+    ///
+    /// It was 0 because `document-subject-index.json` was never bundled (#308 Phase 3 gated on
+    /// #261) and the scorer was plain Jaccard over subject sets — which counts a shared `War`
+    /// (58,480 documents) exactly as it counts a subject appearing on one, and over sets that small
+    /// produces outright ties. Phase 3 bundles the index and weights by IDF with a co-occurrence
+    /// term, so a shared subject now carries evidence proportional to how much it narrows.
+    @Test("shared subjects defaults to 0.5 — below editorial metadata, above nothing")
+    func subjectDefaultWeight() {
+        #expect(SimilarityAxis.sharedSubjects.defaultWeight == 0.5)
+        #expect(SimilarityAxis.sharedSubjects.defaultWeight
+                < SimilarityAxis.archivalProvenance.defaultWeight, """
+            Detected topics must not outrank archival provenance. These are machine string-matches, \
+            not editorial metadata — upstream's KNOWN-ISSUES calls them recall-oriented candidates.
+            """)
+        #expect(SimilarityAxis.sharedSubjects.defaultWeight
+                < SimilarityAxis.sharedPersons.defaultWeight,
+                "and must not outrank shared persons, which come from an authority file")
     }
 }
 
@@ -78,13 +93,16 @@ struct SimilarityAxisTests {
 /// Verifies the weight vector's defaults, subscript, and `Codable` round-trip.
 struct AxisWeightsTests {
 
-    @Test("default covers every axis; subject is 0")
+    @Test("default covers every axis; subject carries its 0.5")
     func defaults() {
         let weights = AxisWeights.default
         for axis in SimilarityAxis.allCases {
             #expect(weights[axis] == axis.defaultWeight)
         }
-        #expect(weights[.sharedSubjects] == 0)
+        #expect(weights[.sharedSubjects] == 0.5, """
+            The vector must carry the axis's own default rather than a separate copy of it — a \
+            second literal here is how the two drift after a weight decision.
+            """)
     }
 
     @Test("subscript reads 0 for an unset axis and updates on assignment")

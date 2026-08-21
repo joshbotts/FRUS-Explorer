@@ -527,6 +527,31 @@ let package = Package(
         /// document–subject mappings and aggregates a per-volume "top subjects" profile
         /// (TF-IDF-style ranking with a genericity floor) for the volume-level Subjects
         /// feature. Entirely offline & deterministic.
+        /// #308 Phase 3: `document-subject-index.json` — every document's detected subjects.
+        ///
+        /// Ships the COMPLETE mapping (491 subjects, 877,817 pairs) with no breadth filter and no
+        /// era gate, because three features read it and want different things: display wants
+        /// completeness, facets want membership truth (they currently reach 11.7% of it through
+        /// the top-15 volume profiles), and similarity wants distinctiveness amplified — which is
+        /// a scoring decision, not a bundling one.
+        .target(
+            name: "DocumentSubjectIndexGeneratorCore",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "DocumentSubjectIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "DocumentSubjectIndexGeneratorTests",
+            dependencies: [.target(name: "DocumentSubjectIndexGeneratorCore")],
+            path: "DocumentSubjectIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "DocumentSubjectIndexGenerator",
+            dependencies: [.target(name: "DocumentSubjectIndexGeneratorCore")],
+            path: "DocumentSubjectIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .target(
             name: "VolumeSubjectProfilesGeneratorCore",
             path: "VolumeSubjectProfilesGeneratorCore",

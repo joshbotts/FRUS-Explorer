@@ -269,6 +269,20 @@ struct SharedSubjectScorer: SimilarityScorer {
     /// Creates the scorer.
     init() {}
 
+    /// How much of the score the pair term may contribute. The rest is the IDF-weighted overlap.
+    ///
+    /// A blend rather than a product, so the result stays in `0...1` and remains comparable with
+    /// every other axis the model mixes. 0.35 leaves the single-subject evidence dominant — a
+    /// shared distinctive subject is the primary signal; an unusually distinctive *combination*
+    /// sharpens it rather than replacing it.
+    private static let pairShare = 0.35
+
+    /// Divisor for the positive-PMI sum before `tanh`. **Measured, not chosen**: over 11,405 real
+    /// candidate pairs the sum has median 0.72, p75 1.71, p90 2.85, p99 7.37. At 1.7 the median
+    /// pair lands around tanh(0.42) ≈ 0.40 and the p99 pair saturates — so the term discriminates
+    /// across the range that actually occurs instead of being flat at either end.
+    private static let pairScale = 1.7
+
     func scores(
         anchor: DocumentKey,
         candidates: [DocumentKey],
@@ -280,7 +294,37 @@ struct SharedSubjectScorer: SimilarityScorer {
         var scores: [DocumentKey: Double] = [:]
         for candidate in candidates {
             let candidateRefs = Set(index.subjects(forDocument: candidate).map(\.ref))
-            let score = ProximityMath.jaccard(anchorRefs, candidateRefs)
+            let shared = anchorRefs.intersection(candidateRefs)
+            guard !shared.isEmpty else { continue }
+
+            // 1. IDF-weighted overlap, replacing plain Jaccard. Plain Jaccard counts a shared
+            //    `War` (58,480 documents, idf 1.40) exactly as it counts a shared subject that
+            //    appears on one document (idf 12.38) — and over sets this small it produces
+            //    outright TIES that are then broken arbitrarily. Weighting breaks them on evidence.
+            let union = anchorRefs.union(candidateRefs)
+            let sharedWeight = shared.reduce(0.0) { $0 + index.idf($1) }
+            let unionWeight = union.reduce(0.0) { $0 + index.idf($1) }
+            guard unionWeight > 0 else { continue }
+            let overlap = sharedWeight / unionWeight
+
+            // 2. The pair term: how much more often the shared subjects co-occur than chance would
+            //    predict. Two documents sharing {Korean War, Economic sanctions} is stronger
+            //    evidence than those two subjects' separate rarities multiplied, because the
+            //    combination is itself unusual. Negative PMI is floored at zero — a pair that
+            //    co-occurs LESS than chance is weak evidence of nothing in particular, and letting
+            //    it subtract would mean one odd pairing could cancel a genuine overlap.
+            var pairEvidence = 0.0
+            if shared.count > 1 {
+                let ordered = shared.sorted()
+                for i in 0..<(ordered.count - 1) {
+                    for j in (i + 1)..<ordered.count {
+                        pairEvidence += max(0, index.pointwiseMutualInformation(ordered[i], ordered[j]))
+                    }
+                }
+            }
+            let pairTerm = tanh(pairEvidence / Self.pairScale)
+
+            let score = (1 - Self.pairShare) * overlap + Self.pairShare * pairTerm
             guard score > 0 else { continue }
             scores[candidate] = score
         }
