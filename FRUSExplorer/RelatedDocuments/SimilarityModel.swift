@@ -192,13 +192,21 @@ struct AxisWeights: Codable, Hashable, Sendable {
     /// The default tuning — each axis's `defaultWeight`.
     ///
     /// Shared subjects sits at 0.5, raised from the design's Q4 recommendation of 0 once the
-    /// document-grain index shipped. NOTE this default only reaches a reader who has never opened
-    /// "Adjust weights": a persisted tuning spells out every axis, and `subscript` reads a missing
-    /// one as 0 rather than as its default — see #1021.
+    /// document-grain index shipped. This default now reaches every reader, not only those who
+    /// never opened "Adjust weights": since #1021 a persisted tuning stores only its DEPARTURES
+    /// from the defaults, and `init?(rawValue:)` refills the rest — see the conformance in
+    /// `RelatedDocumentsView.swift`. Note this is the only place `subscript`'s missing-reads-0
+    /// rule is bypassed, and deliberately so; a programmatic `AxisWeights(weights:)` still reads
+    /// an absent axis as 0.
     static let `default` = AxisWeights(
         weights: Dictionary(uniqueKeysWithValues: SimilarityAxis.allCases.map { ($0, $0.defaultWeight) }))
 
-    /// The weight for `axis` (0 when unset). Assigning updates the vector.
+    /// The weight for `axis` (**0** when unset). Assigning updates the vector.
+    ///
+    /// Missing-reads-zero is the rule everywhere except the persistence boundary, where
+    /// `init?(rawValue:)` refills absent axes from `defaultWeight` (#1021). Keep them distinct: a
+    /// partial `AxisWeights(weights:)` built in engine code or a test means "these axes and
+    /// nothing else", while a partial STORED string means "these departures, defaults elsewhere".
     subscript(_ axis: SimilarityAxis) -> Double {
         get { weights[axis] ?? 0 }
         set { weights[axis] = newValue }

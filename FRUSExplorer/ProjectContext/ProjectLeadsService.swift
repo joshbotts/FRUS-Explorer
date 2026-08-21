@@ -46,8 +46,15 @@ enum ProjectLeadsService {
 
     /// The effective lead axis weights for a project (#377 Phase 3): its own per-project
     /// tuning if set, else the researcher's global related-documents preference, else the app
-    /// default — always overlaid onto the current defaults so a newly-added axis (e.g. a future
-    /// semantic-proximity axis) inherits its default weight rather than an implicit 0.
+    /// default — always overlaid onto the current defaults so a newly-added axis inherits its
+    /// default weight rather than an implicit 0.
+    ///
+    /// Since #1021 that overlay is **belt and braces**: `AxisWeights.init?(rawValue:)` already
+    /// refills absent axes at the persistence boundary, so `base.weights[axis]` is never nil here.
+    /// It is kept because this is also the path for a project string, and because the overlay
+    /// costs nothing and states the intent locally. Before #1021 it was the intent and never the
+    /// behaviour — the serializer wrote every axis, so the `??` could not fire, which is how a
+    /// stale `sharedSubjects:0.0` survived a default change that was supposed to reach everyone.
     static func effectiveWeights(for project: Project?) -> AxisWeights {
         effectiveWeights(projectRaw: project?.leadAxisWeights)
     }
