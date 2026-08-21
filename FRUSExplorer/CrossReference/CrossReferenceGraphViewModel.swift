@@ -11,6 +11,28 @@ import SwiftUI
 
 // MARK: - Supporting Types
 
+/// The reader-facing gloss for a central-file class on a graph node — **`nil` in this version, and
+/// that is a decision rather than an omission** (#834 / #828).
+///
+/// `DecimalClassLabelStore.gloss(for:coveringYears:)` needs the coverage span of the material being
+/// labelled, because the classification was RENUMBERED in 1950: class 7 is Political Relations of
+/// States before that date and Internal Political and National Defense Affairs after it, and Iran
+/// moves from 91 to 88. Only the 1910-1949 schedule ships. A node here knows its CITING document,
+/// not the span of the file it points at, so glossing against the one shipped schedule would
+/// confidently mislabel every post-1949 key — and #828's standard is that where the table cannot
+/// place something it says NOTHING, because a wrong gloss on an archival citation is worse than a
+/// bare number: the reader cannot tell it is wrong.
+///
+/// The `gloss` field stays on the case so a later version can fill it once a span is available (the
+/// citing volume's manifest coverage is the obvious source) rather than being retro-fitted through
+/// every construction site.
+///
+/// **File scope, not a method.** It is called from inside a `Task.detached`, and a method on the
+/// `@MainActor`-isolated view model cannot be — the same isolation trap #1005 fixed by moving a
+/// routing rule off a `View` rather than annotating it.
+private func classGloss(_ key: String) -> String? { nil }
+
+
 /// A node visible in the cross-reference graph canvas.
 struct DisplayNode: Identifiable, Sendable {
     enum Kind: Sendable {
@@ -31,10 +53,40 @@ struct DisplayNode: Identifiable, Sendable {
         /// **terminates the walk** and routes to the collection record instead. Carries the
         /// name so the canvas needs no second lookup to label it.
         case unit(collectionId: String, name: String)
+        /// A **central-file class** a document's footnotes point at (#834) — `763.72`, optionally
+        /// glossed *China and Japan*.
+        ///
+        /// A separate case from ``unit`` rather than a synthetic collection id, because
+        /// ``unitCollectionId`` feeds an authority lookup and the collection authority holds NO
+        /// class records — classes exist there only as id-less display children. Giving a class a
+        /// fake `collectionId` would make every existing unit path try to resolve it and quietly
+        /// get nothing, which is the same wrong-join shape the artifact's second axis exists to
+        /// avoid. Like a unit it **terminates the walk**: there is no document behind a file
+        /// number.
+        case centralFileClass(key: String, gloss: String?)
     }
 
     /// Whether this node stands for an archival unit rather than a printed document (#837).
+    ///
+    /// **A central-file class is NOT a unit**, deliberately: callers use this to reach
+    /// ``unitCollectionId`` and the authority, which cannot answer for a class. Use
+    /// ``terminatesWalk`` for the question "is there a document behind this node".
     var isUnit: Bool { if case .unit = kind { true } else { false } }
+
+    /// Whether the node is archival rather than a printed document, so the walk stops here — true
+    /// for both an authority-backed unit and a central-file class.
+    var terminatesWalk: Bool {
+        switch kind {
+        case .unit, .centralFileClass: return true
+        default: return false
+        }
+    }
+
+    /// The central-file class behind a class node, or `nil` for every other node.
+    var centralFileClassKey: String? {
+        if case .centralFileClass(let key, _) = kind { return key }
+        return nil
+    }
 
     /// The collection-authority id behind a unit node, or `nil` for every document node.
     var unitCollectionId: String? {
@@ -126,6 +178,19 @@ struct DisplayNode: Identifiable, Sendable {
                                defaultValue: "%lld outbound documents to volume %@"),
                 Int64(count), vol
             )
+        case .centralFileClass(let key, let gloss):
+            // The key alone is not speech. A VoiceOver reader gets "central file 763.72, China and
+            // Japan" rather than a string of digits, and the canvas is accessibilityHidden so this
+            // is the only description there is.
+            if let gloss, !gloss.isEmpty {
+                String(format: String(localized: "graph.a11y.centralFileClass %@ %@",
+                                      defaultValue: "Central file %1$@, %2$@. Not printed."),
+                       key, gloss)
+            } else {
+                String(format: String(localized: "graph.a11y.centralFileClassBare %@",
+                                      defaultValue: "Central file %@. Not printed."),
+                       key)
+            }
         case .unit(_, let name):
             // Says what it is AND what it does, because the canvas is accessibilityHidden and
             // this label is the only description a VoiceOver reader gets of the node.
@@ -700,6 +765,21 @@ final class CrossReferenceGraphViewModel {
     /// Several documents citing the same unit produce several nodes, one per citing document:
     /// the edge is what carries meaning here, and a shared node would imply the two documents
     /// are related to each other rather than to the same archive.
+    /// The reader-facing gloss for a class key on a graph node — **`nil` in this version, and
+    /// that is a decision rather than an omission** (#834 / #828).
+    ///
+    /// `DecimalClassLabelStore.gloss(for:coveringYears:)` needs the coverage span of the material
+    /// being labelled, because the classification was RENUMBERED in 1950: class 7 is Political
+    /// Relations of States before that date and Internal Political and National Defense Affairs
+    /// after it, and Iran moves from 91 to 88. Only the 1910-1949 schedule ships. A node here knows
+    /// its CITING document, not the span of the file it points at, so glossing against the one
+    /// shipped schedule would confidently mislabel every post-1949 key — and #828's standard is
+    /// that where the table cannot place something it says NOTHING, because a wrong gloss on an
+    /// archival citation is worse than a bare number: the reader cannot tell it is wrong.
+    ///
+    /// The `gloss` field stays on the case so a later version can fill it once a span is available
+    /// (the citing volume's manifest coverage is the obvious source), rather than being retro-fitted
+    /// through every construction site.
     private func loadUnprintedUnits(keys: [(volumeId: String, documentId: String)]) async {
         guard let pipeline = indexingPipeline else { unitsByDocument = [:]; return }
         var rowsByDocument: [String: [ExternalCitation]] = [:]
@@ -718,6 +798,23 @@ final class CrossReferenceGraphViewModel {
                 var seen = Set<String>()
                 var nodes: [DisplayNode] = []
                 for row in rows {
+                    // #834: a central-file class carries no authority record — the authority holds
+                    // none — so the `guard let record` below would DROP it, which is exactly what
+                    // the graph did until now: a document whose editors cited by decimal number
+                    // showed no teal nodes however many archival footnotes it carried, and the
+                    // help text had to apologise for it.
+                    if let classKey = row.decimalClass {
+                        guard seen.insert("class/\(classKey)").inserted else { continue }
+                        nodes.append(DisplayNode(
+                            id: "class/\(documentKey)/\(classKey)",
+                            kind: .centralFileClass(key: classKey, gloss: classGloss(classKey)),
+                            metadata: nil,
+                            // Same reasoning as a unit: a class has no volume, so "downloaded" is
+                            // meaningless and `true` keeps it off every not-downloaded path.
+                            isDownloaded: true,
+                            degree: 1))
+                        continue
+                    }
                     guard let record = ExternalCitationAuthorityJoin.record(
                         lotFileNorm: row.lotFileNorm, collectionName: row.collection,
                         repository: row.repository, authority: authority) else { continue }

@@ -260,6 +260,20 @@ struct DecimalClassLabelTests {
         }
     }
 
+    /// Source with comment LINES removed, so prose about a call is never counted as the call.
+    ///
+    /// Line-granular on purpose: a full comment parser would need to handle block comments and
+    /// string literals containing `//`, and all this scan needs is that a `///` or `//` line
+    /// explaining why something is NOT called does not register as calling it.
+    private static func codeOnly(_ source: String) -> String {
+        source.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { line in
+                let t = line.trimmingCharacters(in: .whitespaces)
+                return !t.hasPrefix("//") && !t.hasPrefix("*")
+            }
+            .joined(separator: "\n")
+    }
+
     @Test("The ranking hands every surface the same gloss, and nothing else looks the table up")
     func rankingCarriesTheGloss() throws {
         // The single injection point. Every surface that draws a class row — chart, uncapped
@@ -296,7 +310,13 @@ struct DecimalClassLabelTests {
                   // test is about where the human-readable label is attached, not about who may
                   // touch the table. Widening it to any mention would have let a view attach its
                   // own gloss, which is the thing being prevented.
-                  text.contains(".gloss(for:"),
+                  // CODE ONLY, comments stripped. #834's graph node carries a doc comment
+                  // explaining why it deliberately does NOT gloss — naming
+                  // `gloss(for:coveringYears:)` to say so — which a raw scan counted as a call.
+                  // A guard that reads an explanation of an absence as the thing being absent is
+                  // the defect this repo keeps re-finding; the sibling scan in
+                  // `HandoffVisibilityTests` strips comments for the same reason.
+                  Self.codeOnly(text).contains(".gloss(for:"),
                   url.lastPathComponent != "DecimalClassLabelStore.swift"
             else { continue }
             callers.append(url.lastPathComponent)
