@@ -387,3 +387,137 @@ struct ProximityMathTests {
         #expect(ProximityMath.logDampedMultiplicity(0) == 1.0)
     }
 }
+
+// MARK: - SharedSubjectScorerCostTests
+
+/// Prices the `sharedSubjects` axis against the **real bundled index** (#1025).
+///
+/// ## Why this measurement had to exist before #1021 lands
+/// `ProjectLeadsService.recompute` runs the whole multi-axis rank once per seed, up to `seedCap`
+/// (40) times, on the main actor. `RelatedDocumentsEngine` skips a scorer whose weight is 0, so
+/// today the shared-subject scorer costs existing users **nothing** — every stored tuning spells
+/// out `sharedSubjects:0.0`, which is the #1021 defect. Fixing #1021 turns that cost on for every
+/// existing user at once. Pricing it afterwards would be measuring a regression already shipped.
+///
+/// ## What this can and cannot answer
+/// It prices the SCORER, not a recompute: the engine's other cost is SQLite work behind `await`s,
+/// which needs a live index and a device library. So this is the reproducible half — an
+/// algorithmic guard that runs in CI — and the field half is the `OSSignposter` intervals
+/// `recompute` emits. The two together are what #1025 asked for.
+///
+/// Assertions are ratio-and-ceiling rather than tight wall-clock, deliberately: this suite runs in
+/// parallel with the rest, and a tight budget measures machine load rather than the scorer.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1025
+@Suite("Shared-subject scorer cost (#1025)")
+struct SharedSubjectScorerCostTests {
+
+    /// Real document keys from the bundled index, in artifact order — the same documents the
+    /// scorer meets in production, with production's subject cardinality.
+    @MainActor
+    private func realKeys(limit: Int) throws -> [DocumentKey] {
+        let index = try #require(DocumentSubjectStore.shared,
+                                 "document-subject-index.json must decode from the app bundle")
+        var keys: [DocumentKey] = []
+        for volumeId in index.taggedVolumeIds {
+            for row in index.bucketRows(forVolume: volumeId) {
+                keys.append(DocumentKey(volumeId: volumeId, documentId: row.documentId))
+                if keys.count >= limit { return keys }
+            }
+        }
+        return keys
+    }
+
+    /// An anchor with several subjects, so the `O(shared²)` pair loop actually runs — an anchor
+    /// with one subject would price the cheap path and call it the cost.
+    @MainActor
+    private func richAnchor() throws -> DocumentKey {
+        let index = try #require(DocumentSubjectStore.shared)
+        var best: (key: DocumentKey, count: Int)?
+        for volumeId in index.taggedVolumeIds.prefix(40) {
+            for row in index.bucketRows(forVolume: volumeId) {
+                let key = DocumentKey(volumeId: volumeId, documentId: row.documentId)
+                let count = index.subjects(forDocument: key).count
+                if count > (best?.count ?? 0) { best = (key, count) }
+            }
+        }
+        let found = try #require(best, "no tagged document found in the bundled index")
+        #expect(found.count > 1, """
+            The richest anchor in 40 volumes carries \(found.count) subject(s), so the pair term \
+            never runs and this suite is pricing the cheap path. The scorer's cost claim would be \
+            unmeasured.
+            """)
+        return found.key
+    }
+
+    /// The headline number, and an algorithmic ceiling around it.
+    ///
+    /// **The unit is cost PER CANDIDATE, and that is not a hedge — it is the only honest unit.**
+    /// `perSeedRelatedLimit` is 30, but the engine scores the whole candidate UNIVERSE before
+    /// limiting, and that universe is whatever the four generators return for a given anchor: it
+    /// has no fixed cap, so no single number here can be "the" recompute cost. 1,000 candidates is
+    /// a plausible order of magnitude and a stable basis for a regression guard. Turning it into a
+    /// recompute figure needs the universe size from a real library, which is what
+    /// `ProjectLeadsService.RecomputeCost.candidatesRanked` and the `rank-seed` signposts supply.
+    ///
+    /// Measured 2026-08-21 (iPhone 17 simulator): **22.6 µs per candidate** — 22.58 ms for 1,000,
+    /// 985 of which scored. At 40 seeds that is ~181 ms of added main-actor time for a
+    /// 200-candidate universe and ~900 ms for a 1,000-candidate one.
+    @MainActor
+    @Test("Scoring a realistic candidate set stays well inside a recompute budget")
+    func scorerCostAtRealisticScale() async throws {
+        let appState = AppState()
+        let anchor = try richAnchor()
+        let candidates = try realKeys(limit: 1_000)
+        #expect(candidates.count == 1_000, "the bundled index must supply 1,000 real keys")
+
+        let scorer = SharedSubjectScorer()
+        _ = try await scorer.scores(anchor: anchor, candidates: candidates, appState: appState)  // warm
+
+        let started = ContinuousClock.now
+        let scores = try await scorer.scores(anchor: anchor, candidates: candidates, appState: appState)
+        let elapsed = ContinuousClock.now - started
+
+        // A generous ceiling: 40 seeds × this must stay far under a second of main-actor time.
+        // It fails on an algorithmic regression, not on a loaded machine.
+        #expect(elapsed < .milliseconds(250), """
+            Scoring 1,000 real candidates took \(elapsed) — measured at 22.58 ms when this guard \
+            was written, so a failure here is roughly a 10x regression, not scheduler noise. At \
+            seedCap = \(ProjectLeadsService.seedCap) seeds that is \
+            \(elapsed * ProjectLeadsService.seedCap) of added main-actor time per recompute. \
+            \(scores.count) of 1,000 candidates scored.
+            """)
+    }
+
+    /// The shape guard: cost must be linear in candidates. The per-candidate work is bounded by
+    /// the anchor's own subject count, so nothing here should scale with the candidate set — an
+    /// accidental cross-product would show up as super-linear growth long before it showed up as a
+    /// slow app.
+    @MainActor
+    @Test("Cost grows linearly in the candidate count, not faster")
+    func costIsLinearInCandidates() async throws {
+        let appState = AppState()
+        let anchor = try richAnchor()
+        let small = try realKeys(limit: 500)
+        let large = try realKeys(limit: 2_000)
+        let scorer = SharedSubjectScorer()
+        _ = try await scorer.scores(anchor: anchor, candidates: large, appState: appState)  // warm
+
+        let smallStart = ContinuousClock.now
+        _ = try await scorer.scores(anchor: anchor, candidates: small, appState: appState)
+        let smallTime = ContinuousClock.now - smallStart
+
+        let largeStart = ContinuousClock.now
+        _ = try await scorer.scores(anchor: anchor, candidates: large, appState: appState)
+        let largeTime = ContinuousClock.now - largeStart
+
+        // 4x the candidates must cost well under 8x the time. Loose enough to survive scheduler
+        // noise on a loaded machine, tight enough that a quadratic term cannot hide.
+        #expect(largeTime < smallTime * 8, """
+            500 candidates took \(smallTime), 2,000 took \(largeTime) — a 4x input grew cost by \
+            more than 8x, which is superlinear. The per-candidate work is supposed to be bounded \
+            by the ANCHOR's subject count.
+            """)
+    }
+}
