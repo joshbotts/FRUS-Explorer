@@ -743,7 +743,29 @@ public actor IndexingPipeline {
     ///   existing column's value changes. Populated for **3,838 of 38,363 pre-1906 documents**,
     ///   which is 10.0% of that era and 1.2% of the corpus; every one of them displays no archival
     ///   attribution at all today. Empty on an existing index until each volume is re-parsed.
-    public static let currentDateIndexVersion: Int = 45
+    /// - v45→46 — #834 commit 3: `external_citations.decimal_class`, the central-file class a
+    ///   footnote points at (`763.72`). Until now this table read only lot files and presidential
+    ///   libraries, so a document whose editors cited by decimal number showed NO archival
+    ///   footnotes in the cross-reference graph or Source Explorer however many it carried — and
+    ///   citing by number is the usual practice before 1946 and still the majority channel through
+    ///   the 1950s. The bundled artifact gained this channel in commit 2 (28,721 references over
+    ///   440 volumes, against 19,800 lot/library ones); this brings the per-document surfaces into
+    ///   line with it.
+    ///
+    ///   Additive: `ALTER TABLE ADD COLUMN`, and it HAS to be — `CREATE TABLE IF NOT EXISTS` is a
+    ///   no-op on an existing database, so an insert naming a column the table lacks would throw,
+    ///   and `storeIndexData` DELETEs a volume's rows before inserting, so the table would EMPTY.
+    ///   That is the v40 defect exactly (33,764 rows across 258 volumes lost while the build
+    ///   exited 0). Viable only because the PRIMARY KEY is unchanged: a class citation takes the
+    ///   next `citation_index` within its note.
+    ///
+    ///   The admission rule is the artifact's, not a second one — serial-carrying, composing under
+    ///   the 1910-49 schedule via the shared `DecimalScheduleComposition`, in the shared class
+    ///   vocabulary, subject-numeric excluded. A table admitting what the artifact refused would
+    ///   make Archival Analytics and the graph disagree about the same footnote.
+    ///
+    ///   Empty on an existing index until each volume is re-parsed.
+    public static let currentDateIndexVersion: Int = 46
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3822,6 +3844,11 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var personMentionRows: [PersonMentionRow] = []
         var externalCitationRows: [ExternalCitationRow] = []
+        // Hoisted once per volume: `shared` is a lazily-initialised static and this scan runs over
+        // every body footnote in the volume. Nil (the artifact missing from the bundle) means no
+        // class citations are indexed — the same degradation #828 chose for labels, and the
+        // condition below reads `?? false` so absence refuses rather than admits.
+        let classSchedule = DecimalClassLabelStore.shared
 
         // #784: the document-ordered footnote pass. One scanner for the whole volume, reset at
         // each document, because `Ibid.` inherits from a preceding footnote and a per-note pass
@@ -3869,10 +3896,34 @@ public actor IndexingPipeline {
             if !astDoc.isFrontMatter {
                 footnoteScanner.beginDocument()
                 for (ordinal, note) in Self.collectBodyFootnoteTexts(from: astDoc.nodes).enumerated() {
-                    for (position, citation) in footnoteScanner.scan(note: note).enumerated() {
+                    var position = 0
+                    for citation in footnoteScanner.scan(note: note) {
                         externalCitationRows.append(Self.externalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
                             citationIndex: position, citation: citation))
+                        position += 1
+                    }
+                    // #834: central-file classes, continuing the same `citation_index` sequence so
+                    // the primary key still separates every citation in the note. The rule is the
+                    // one `ExternalCitationIndexRunner` ships — serial-carrying, composing under
+                    // the schedule, in the shared vocabulary, subject-numeric out — because a table
+                    // admitting what the artifact refused would make the graph and Archival
+                    // Analytics disagree about the same footnote.
+                    for candidate in FootnoteCitationScanner.classCandidates(inNote: note)
+                    where candidate.refusal == nil
+                        && !candidate.isSubjectNumeric
+                        && candidate.evidence.carriesSerial
+                        && SourceNoteParser.decimalClassKey(candidate.classKey) != nil
+                        && (classSchedule?.composes(candidate.classKey) ?? false) {
+                        externalCitationRows.append(ExternalCitationRow(
+                            volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
+                            citationIndex: position,
+                            anchor: "centralFileClass",
+                            repository: "Department of State",
+                            collection: nil, lotFile: nil, lotFileNorm: nil, fileId: nil,
+                            inherited: false, rawText: candidate.clause,
+                            decimalClass: candidate.classKey))
+                        position += 1
                     }
                 }
             }
@@ -4029,7 +4080,7 @@ public actor IndexingPipeline {
             lotFile: lotFile,
             lotFileNorm: lotFile.map { SourceNoteParser.lotFileNorm($0) },
             fileId: fileId, inherited: citation.inherited,
-            rawText: citation.citation)
+            rawText: citation.citation, decimalClass: nil)
     }
 
     // MARK: - Storage
@@ -5392,9 +5443,26 @@ public actor IndexingPipeline {
                 file_id       TEXT,
                 inherited     INTEGER NOT NULL DEFAULT 0,
                 raw_text      TEXT NOT NULL,
+                decimal_class TEXT,
                 PRIMARY KEY (volume_id, document_id, note_ordinal, citation_index)
             )
             """)
+        // #834 commit 3. **Additive, and it has to be**: `CREATE TABLE IF NOT EXISTS` above is a
+        // no-op on every database that already has this table, so without this line the inserts
+        // below would name a column the table lacks, every one would throw — and because
+        // `storeIndexData` DELETEs a volume's rows before inserting, the table would EMPTY. That
+        // is the v40 defect verbatim (33,764 rows across 258 volumes lost while the build stayed
+        // green), and it is why the column is added rather than the table recreated.
+        //
+        // `ALTER TABLE ADD COLUMN` is viable because the PRIMARY KEY is unchanged: a class
+        // citation is another citation within its note, so it takes the next `citation_index` and
+        // needs no new key column. SQLite cannot alter a primary key; a design admitting several
+        // class keys per (note_ordinal, citation_index) would have forced the drop-and-recreate
+        // guard instead.
+        try? exec("ALTER TABLE external_citations ADD COLUMN decimal_class TEXT")
+        // "Which documents point at this central-file class?" — the class-axis twin of the lot and
+        // repository indexes below.
+        try exec("CREATE INDEX IF NOT EXISTS idx_ext_cit_class ON external_citations(decimal_class)")
         // The document's own footnote citations — the per-document read.
         try exec("""
             CREATE INDEX IF NOT EXISTS idx_ext_cit_doc
@@ -5790,8 +5858,8 @@ public actor IndexingPipeline {
         let sql = """
             INSERT OR REPLACE INTO external_citations
             (volume_id, document_id, note_ordinal, citation_index, anchor, repository,
-             collection, lot_file, lot_file_norm, file_id, inherited, raw_text)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             collection, lot_file, lot_file_norm, file_id, inherited, raw_text, decimal_class)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -5809,6 +5877,7 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 10, row.fileId)
                 sqlite3_bind_int(stmt, 11, row.inherited ? 1 : 0)
                 sqlite3_bind_text(stmt, 12, row.rawText, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 13, row.decimalClass)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -5832,7 +5901,7 @@ public actor IndexingPipeline {
                                   documentId: String) throws -> [ExternalCitation] {
         let sql = """
             SELECT anchor, repository, collection, lot_file, lot_file_norm, file_id,
-                   inherited, raw_text, note_ordinal
+                   inherited, raw_text, note_ordinal, decimal_class
             FROM external_citations
             WHERE volume_id = ? AND document_id = ?
             ORDER BY note_ordinal, citation_index
@@ -5854,7 +5923,8 @@ public actor IndexingPipeline {
                 fileId: auxColumnString(stmt, 5),
                 inherited: sqlite3_column_int(stmt, 6) != 0,
                 rawText: rawText,
-                noteOrdinal: Int(sqlite3_column_int(stmt, 8))))
+                noteOrdinal: Int(sqlite3_column_int(stmt, 8)),
+                decimalClass: auxColumnString(stmt, 9)))
         }
         return results
     }
@@ -8791,7 +8861,7 @@ private struct VolumeIndexData: Sendable {
 /// moment that is added to a "documents from this collection" total the two claims are one wrong
 /// number — which is precisely what #783 removed.
 public struct ExternalCitation: Sendable, Equatable, Identifiable {
-    /// `"lotFile"` or `"presidentialLibrary"`.
+    /// `"lotFile"`, `"presidentialLibrary"`, or `"centralFileClass"` (#834).
     public let anchor: String
     /// The repository, when the citation names one.
     public let repository: String?
@@ -8809,12 +8879,25 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     public let rawText: String
     /// Which body footnote of the document carried it, from zero.
     public let noteOrdinal: Int
+    /// The central-file class named, for a `centralFileClass` citation (#834) — `763.72`.
+    public let decimalClass: String?
 
     /// Stable within one document's list.
-    public var id: String { "\(noteOrdinal)|\(lotFileNorm ?? "")|\(repository ?? "")|\(collection ?? "")" }
+    ///
+    /// **`decimalClass` is part of the key and has to be.** A class citation carries no lot, no
+    /// collection, and the same repository as every other one, so two classes named in the same
+    /// footnote would otherwise produce identical ids — duplicate `Identifiable` keys, which a
+    /// SwiftUI list renders as one row and a `ForEach` warns about at runtime.
+    public var id: String {
+        "\(noteOrdinal)|\(lotFileNorm ?? "")|\(repository ?? "")|\(collection ?? "")|\(decimalClass ?? "")"
+    }
 
     /// The unit's display label — the lot number, or the collection under its repository.
     public var displayLabel: String {
+        // The class first: a class row's `repository` is "Department of State" like every lot's, so
+        // falling through would label `763.72` as the department and lose the only identifying
+        // thing about it.
+        if let decimalClass, !decimalClass.isEmpty { return decimalClass }
         if let lotFile, !lotFile.isEmpty { return "Lot \(lotFile)" }
         let parts = [repository, collection].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? rawText : parts.joined(separator: ", ")
@@ -8823,7 +8906,7 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// Creates a citation.
     public init(anchor: String, repository: String?, collection: String?, lotFile: String?,
                 lotFileNorm: String?, fileId: String?, inherited: Bool, rawText: String,
-                noteOrdinal: Int) {
+                noteOrdinal: Int, decimalClass: String? = nil) {
         self.anchor = anchor
         self.repository = repository
         self.collection = collection
@@ -8833,6 +8916,7 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
         self.inherited = inherited
         self.rawText = rawText
         self.noteOrdinal = noteOrdinal
+        self.decimalClass = decimalClass
     }
 }
 
@@ -8862,6 +8946,10 @@ private struct ExternalCitationRow: Sendable {
     let inherited: Bool
     /// The clause the citation was read from — the sentence a reader wants to see.
     let rawText: String
+    /// The central-file class this citation names (#834), when it names one — `763.72`. Mutually
+    /// exclusive with the unit columns in practice: a row is either a lot/library citation or a
+    /// class one, distinguished by `anchor`.
+    let decimalClass: String?
 }
 
 private struct PersonMentionRow: Sendable {

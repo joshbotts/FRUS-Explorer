@@ -686,3 +686,55 @@ public enum CollectionKeying {
         }
     }
 }
+
+// MARK: - DecimalScheduleComposition
+
+/// Whether a central-file class key composes under a State Department classification schedule
+/// (#834) — class digit + country number, the filing system's own grammar.
+///
+/// ## Why this lives here and takes its vocabularies as arguments
+/// Two callers need the identical answer and neither can own it. The generator
+/// (`ExternalCitationIndexRunner`) reads the schedule out of `decimal-class-labels.json`; the app
+/// (`DecimalClassLabelStore`) already holds it decoded. If each implemented the rule the two would
+/// drift, and the failure would be silent in the worst way: the bundled artifact would count a
+/// citation the indexed table refused, so Archival Analytics and the cross-reference graph would
+/// disagree about the same footnote with nothing to show a reader why.
+///
+/// So the rule is here, in the module both compile against, and the **payload is injected** rather
+/// than read — the pattern `WordCloudKit` uses for its lexicons for the same reason: `SourceNoteKit`
+/// has no business loading a bundled JSON.
+///
+/// ## What it does NOT ask
+/// Only the class digit and the country number. The subject suffix is not required, because the
+/// shipped subject vocabulary covers classes 6 and 8 only and demanding one would reject every
+/// well-formed key in the other seven classes.
+///
+/// **It is also not `DecimalClassLabelStore.gloss(for:coveringYears:) != nil`**, which is a
+/// narrower test: `gloss` additionally requires the class to be country-ARRANGED (6, 7, 8), so
+/// using it here would silently refuse classes 0-5 and 9 — a mistake this comment exists to stop
+/// the next reader making.
+///
+/// Version history:
+///   1.0 — Session 2026-08-20: #834 commit 3
+public enum DecimalScheduleComposition {
+
+    /// Whether `key` opens with a schedule class digit followed by a schedule country number.
+    ///
+    /// - Parameters:
+    ///   - key: A class key as the shared grammar spells it (`763.72`, `851R.00`, `222`).
+    ///   - classes: The schedule's class digits (`"0"..."9"`).
+    ///   - countries: The schedule's country numbers, **lower-cased** by the caller.
+    public static func composes(_ key: String,
+                                classes: Set<String>, countries: Set<String>) -> Bool {
+        let stem = key.split(separator: ".").first.map(String.init) ?? key
+        guard let first = stem.first, classes.contains(String(first)) else { return false }
+        let rest = stem.dropFirst().lowercased()
+        // The longer match first: a country number may carry a letter suffix (`51r` is Algeria),
+        // and testing two characters first would read `851R.00` as `51` — France — and attribute
+        // an Algerian file to the wrong country.
+        for length in [3, 2] where rest.count >= length {
+            if countries.contains(String(rest.prefix(length))) { return true }
+        }
+        return false
+    }
+}

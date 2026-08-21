@@ -1117,23 +1117,34 @@ struct ArchivalCollectionsDataTests {
         #expect(!documentIds.subtracting(pointerIds).isEmpty)
     }
 
-    /// The class lens has no pointer vocabulary at all — #784's harvest reads lot files and
-    /// presidential libraries, never a decimal class — so the combination must yield nothing rather
-    /// than falling through to whichever table an inexhaustive switch would have reached.
-    @Test("The class lens ranks nothing under the pointer weight")
-    func classLensHasNoPointers() throws {
+    /// The class lens ranks the pointer weight, which it could not do before #834.
+    ///
+    /// **This test previously asserted the opposite** — that the combination yielded nothing —
+    /// because #784's harvest read lot files and presidential libraries and never a decimal class.
+    /// #834 gave the lens its own vocabulary, so the assertion is inverted rather than deleted: the
+    /// hole it guarded is now a feature, and something has to hold the feature in place.
+    @Test("The class lens ranks the pointer weight")
+    func classLensRanksPointers() throws {
         let data = try #require(Self.shipped)
+        var ranked = 0
         for band in ArchivalEraBand.all {
             let ranking = data.ranking(band: band, lens: .centralFileClasses,
                                        weight: .unprintedPointers, hidingUmbrella: false)
-            #expect(ranking.rows.isEmpty, "\(band.title) ranked classes by a weight they cannot have")
-            #expect(ranking.unitsReached == 0)
+            if !ranking.rows.isEmpty { ranked += 1 }
+            // Every row must be a class key, not an authority id that leaked across the axes.
+            for row in ranking.rows {
+                #expect(SourceNoteParser.decimalClassKey(row.id) != nil, """
+                    \(row.id) is ranked on the class lens but is not a class key. The two axes have \
+                    separate vocabularies and separate index spaces; a leak here means a collection \
+                    id is being ranked as a class.
+                    """)
+            }
         }
-        // …while the same lens under a weight it DOES have is not empty, or the assertion above
-        // would pass on a broken derivation.
-        let sanity = data.ranking(band: ArchivalEraBand.all[0], lens: .centralFileClasses,
-                                  weight: .volumes, hidingUmbrella: false)
-        #expect(!sanity.rows.isEmpty)
+        #expect(ranked > 0, """
+            No era band ranks anything under the class lens's pointer weight. Before #834 that was \
+            correct — the lens had no pointer vocabulary at all and the weight was withheld in the \
+            picker. If it is true again, the decimal channel has stopped reaching the artifact.
+            """)
     }
 
     /// The bands partition the corpus by citing volume, so a multi-band pointer ranking must be the
