@@ -483,3 +483,135 @@ public struct FootnoteCitationScanner: Sendable {
         pattern: #"\b\d{1,2}/\d{1,2}/\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}(?:\s*[–—\-]\s*\d{1,2})?(?:,\s*\d{4})?|\b(?:18|19|20)\d{2}\b"#,
         options: .caseInsensitive)
 }
+
+// MARK: - FootnoteClassCandidate (#834, measurement only)
+
+/// A central-file **class number** seen in a footnote clause — the decimal channel #784 deferred
+/// and #834 exists to price.
+///
+/// **This type is a measurement, not a harvest.** Nothing writes it to the bundled artifact and no
+/// app surface reads it. It exists so the gate #834 makes binding — "re-run the own-class
+/// measurement first" — can be cleared against the real corpus through the real clause splitter,
+/// before any grammar change is designed. See `FootnoteCitationScanner.classCandidates(inNote:)`.
+public struct FootnoteClassCandidate: Sendable, Equatable {
+
+    /// How self-identifying the clause was. A candidate carries all three verdicts rather than one
+    /// label, because the whole question is what each successive relaxation costs.
+    public struct Evidence: Sendable, Equatable {
+        /// The clause named the repository: `Central Files`, `Central Foreign Policy File`.
+        /// This is the rule #834 mandates ("anchor-first grammar only").
+        public let namesRepository: Bool
+        /// The clause carried an explicit file-number **label** — `file No. 711.684/11`. Not a
+        /// repository phrase, but self-identifying in the same way: the label says the number that
+        /// follows is a central-file number. **This is the era-appropriate anchor**, and whether it
+        /// is admissible is the measurement's central question (see the type's own note below).
+        public let namesFileNumber: Bool
+        /// The class is followed by a **document serial** — `793.94/9732`, `185.1521/69`. This is
+        /// how the filing system itself writes a complete citation: the class names the file, the
+        /// serial names the paper within it. Self-identifying without any label, and it is what
+        /// separates a real bare citation from a number in prose — measured, the shape-only rule
+        /// reads `771` out of "total, 771,967" and `500` out of "quota of 2,500,000", and neither
+        /// carries a serial.
+        public let carriesSerial: Bool
+        /// None of the above — the segment merely has the SHAPE of a class. The upper bound, and
+        /// the rule `decimalClassLocation`'s own contract warns against ("callers gate by
+        /// classification"). Measured to be heavily contaminated; never a proposal.
+        public var shapeOnly: Bool { !namesRepository && !namesFileNumber && !carriesSerial }
+    }
+
+    /// The canonical class key, via the shared `SourceNoteParser.decimalClassKey` vocabulary — the
+    /// same spelling `collection-usage-index.json` and `decimal-class-labels.json` use.
+    public let classKey: String
+    /// The clause it was read from, verbatim, for sample review.
+    public let clause: String
+    /// What made it recognisable.
+    public let evidence: Evidence
+    /// A subject-numeric designator (`POL 27 VIET S`) rather than a decimal file number (`763.72`).
+    /// #784 priced these at 87.2% out of vocabulary; #834 keeps them out of scope, so they are
+    /// counted separately rather than dropped.
+    public let isSubjectNumeric: Bool
+    /// Why the harvest would refuse this clause, if it would: an absence claim, or a publication
+    /// citation. Recorded rather than filtered, so the refusals' cost is disclosed.
+    public let refusal: String?
+
+    public init(classKey: String, clause: String, evidence: Evidence,
+                isSubjectNumeric: Bool, refusal: String?) {
+        self.classKey = classKey
+        self.clause = clause
+        self.evidence = evidence
+        self.isSubjectNumeric = isSubjectNumeric
+        self.refusal = refusal
+    }
+}
+
+extension FootnoteCitationScanner {
+
+    /// Every central-file class candidate in one footnote's prose (#834 measurement).
+    ///
+    /// ## Why this lives here and not in the generator
+    /// The clause splitter (``clauses(of:)``), the absence-claim guard and the publication test are
+    /// `internal` to `SourceNoteKit`. A measurement that re-implemented them in the generator
+    /// module would be a MIRROR of the harvest's walk — it would report a numerator the harvest
+    /// would never produce, and would drift silently the first time the splitter changed. Running
+    /// it here means the clauses measured are the clauses harvested, by construction.
+    ///
+    /// ## Three verdicts, because the constraint may not survive contact with the corpus
+    /// #834 mandates "anchor-first grammar only; never route through `decimalClassLocation`",
+    /// where the anchor is a repository phrase. But `CollectionKeying.centralFilesAnchorSegment`
+    /// matches only `central files` / `central foreign policy` — **post-war naming**. The pre-war
+    /// footnotes #834 exists to reach are spelled `file No. 711.684/11`, which carry no such
+    /// phrase. So the mandated rule may structurally miss the signal the issue is for, and the
+    /// measurement has to be able to say so: each candidate records whether the clause named the
+    /// repository, named a file number, or merely had the shape, and the report gives the yield of
+    /// each rule separately.
+    ///
+    /// `decimalClassLocation` IS called here, which the issue forbids for the harvest. That is the
+    /// point of a measurement: the forbidden rule is the upper bound the permitted ones are priced
+    /// against. Nothing in this function's output reaches a shipped artifact.
+    ///
+    /// ## What it deliberately does NOT do
+    /// No `Ibid.` inheritance. The lot/library channel inherits an `Ibid.` only when nothing but a
+    /// box/folder/date follows it, and whether a class can be inherited the same way is a design
+    /// question for the harvest, not something to prejudge in the measurement — inheriting here
+    /// would inflate the numerator with references no rule has yet been agreed for.
+    ///
+    /// - Parameter note: One footnote's text, as `DocumentFootnoteExtractor` yields it.
+    /// - Returns: One candidate per clause that yields a class key. A clause naming two classes
+    ///   contributes its first, matching `decimalClassLocation`'s own first-match contract.
+    public static func classCandidates(inNote note: String) -> [FootnoteClassCandidate] {
+        var found: [FootnoteClassCandidate] = []
+        for clause in clauses(of: note) {
+            guard let key = SourceNoteParser.decimalClassLocation(inCitation: clause) else {
+                continue
+            }
+            let lowered = clause.lowercased()
+            let evidence = FootnoteClassCandidate.Evidence(
+                namesRepository: CollectionKeying.centralFilesAnchorSegment(in: clause) != nil,
+                // The same label vocabulary `SourceNoteParser.strippingFileNumberLabel` strips —
+                // matched on the whole clause rather than a leading segment, because in footnote
+                // prose the label sits mid-sentence ("…transmitted in despatch 44, file No.
+                // 711.684/11, not printed").
+                namesFileNumber: lowered.contains("file no") || lowered.contains("file number"),
+                // The class immediately followed by its serial. Matched on the punctuation-collapsed
+                // clause with the SAME helper `decimalClassLocation` applies before it reads a key,
+                // so `501. BC Indonesia/1-2045` is tested in the spelling the key was derived from
+                // rather than the printed one. The key is regex-escaped: it contains dots.
+                carriesSerial: SourceNoteParser.collapsingClassPunctuation(clause).range(
+                    of: NSRegularExpression.escapedPattern(for: key) + #"\s*/"#,
+                    options: [.regularExpression]) != nil)
+            let refusal: String?
+            if isAbsenceClaim(clause) {
+                refusal = "absenceClaim"
+            } else if namesAPublication(clause) {
+                refusal = "publication"
+            } else {
+                refusal = nil
+            }
+            found.append(FootnoteClassCandidate(
+                classKey: key, clause: clause, evidence: evidence,
+                isSubjectNumeric: CollectionKeying.isSubjectNumericClass(key),
+                refusal: refusal))
+        }
+        return found
+    }
+}

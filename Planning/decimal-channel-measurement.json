@@ -1,0 +1,469 @@
+{
+  "bands" : [
+    {
+      "band" : "before 1910",
+      "byRule" : {
+        "anySelfIdentifying" : {
+          "candidates" : 11,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 2,
+          "distinctKeys" : 8,
+          "ownClass" : 9,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 2
+        },
+        "carriesSerial" : {
+          "candidates" : 10,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 1,
+          "distinctKeys" : 7,
+          "ownClass" : 9,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 2
+        },
+        "carriesSerialComposing" : {
+          "candidates" : 10,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 1,
+          "distinctKeys" : 7,
+          "ownClass" : 9,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 2
+        },
+        "carriesSerialDotted" : {
+          "candidates" : 10,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 1,
+          "distinctKeys" : 7,
+          "ownClass" : 9,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 2
+        },
+        "namesFileNumber" : {
+          "candidates" : 11,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 2,
+          "distinctKeys" : 8,
+          "ownClass" : 9,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 2
+        },
+        "namesRepository" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "shapeOnly" : {
+          "candidates" : 434,
+          "citingDocumentUnclassed" : 414,
+          "differentClass" : 11,
+          "distinctKeys" : 285,
+          "ownClass" : 9,
+          "refusedAbsence" : 1,
+          "refusedPublication" : 201,
+          "subjectNumeric" : 0,
+          "volumes" : 51
+        }
+      },
+      "documentsScanned" : 47718,
+      "footnotesScanned" : 9340,
+      "volumes" : 81
+    },
+    {
+      "band" : "1910-1945",
+      "byRule" : {
+        "anySelfIdentifying" : {
+          "candidates" : 4828,
+          "citingDocumentUnclassed" : 573,
+          "differentClass" : 1096,
+          "distinctKeys" : 1588,
+          "ownClass" : 3159,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 118,
+          "subjectNumeric" : 33,
+          "volumes" : 156
+        },
+        "carriesSerial" : {
+          "candidates" : 4718,
+          "citingDocumentUnclassed" : 566,
+          "differentClass" : 1059,
+          "distinctKeys" : 1543,
+          "ownClass" : 3093,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 118,
+          "subjectNumeric" : 33,
+          "volumes" : 156
+        },
+        "carriesSerialComposing" : {
+          "candidates" : 4276,
+          "citingDocumentUnclassed" : 393,
+          "differentClass" : 941,
+          "distinctKeys" : 1359,
+          "ownClass" : 2942,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 63,
+          "subjectNumeric" : 0,
+          "volumes" : 153
+        },
+        "carriesSerialDotted" : {
+          "candidates" : 4392,
+          "citingDocumentUnclassed" : 268,
+          "differentClass" : 1031,
+          "distinctKeys" : 1454,
+          "ownClass" : 3093,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 156
+        },
+        "namesFileNumber" : {
+          "candidates" : 672,
+          "citingDocumentUnclassed" : 38,
+          "differentClass" : 152,
+          "distinctKeys" : 310,
+          "ownClass" : 482,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 1,
+          "volumes" : 51
+        },
+        "namesRepository" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "shapeOnly" : {
+          "candidates" : 10293,
+          "citingDocumentUnclassed" : 1526,
+          "differentClass" : 4186,
+          "distinctKeys" : 2563,
+          "ownClass" : 4581,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 1433,
+          "subjectNumeric" : 60,
+          "volumes" : 159
+        }
+      },
+      "documentsScanned" : 130994,
+      "footnotesScanned" : 159371,
+      "volumes" : 159
+    },
+    {
+      "band" : "1946 and later",
+      "byRule" : {
+        "anySelfIdentifying" : {
+          "candidates" : 34632,
+          "citingDocumentUnclassed" : 5802,
+          "differentClass" : 9292,
+          "distinctKeys" : 5321,
+          "ownClass" : 19538,
+          "refusedAbsence" : 14,
+          "refusedPublication" : 15,
+          "subjectNumeric" : 3975,
+          "volumes" : 258
+        },
+        "carriesSerial" : {
+          "candidates" : 30165,
+          "citingDocumentUnclassed" : 3467,
+          "differentClass" : 8582,
+          "distinctKeys" : 4211,
+          "ownClass" : 18116,
+          "refusedAbsence" : 11,
+          "refusedPublication" : 10,
+          "subjectNumeric" : 362,
+          "volumes" : 233
+        },
+        "carriesSerialComposing" : {
+          "candidates" : 24847,
+          "citingDocumentUnclassed" : 2635,
+          "differentClass" : 7009,
+          "distinctKeys" : 3273,
+          "ownClass" : 15203,
+          "refusedAbsence" : 4,
+          "refusedPublication" : 1,
+          "subjectNumeric" : 0,
+          "volumes" : 170
+        },
+        "carriesSerialDotted" : {
+          "candidates" : 29019,
+          "citingDocumentUnclassed" : 3104,
+          "differentClass" : 8299,
+          "distinctKeys" : 4015,
+          "ownClass" : 17616,
+          "refusedAbsence" : 5,
+          "refusedPublication" : 3,
+          "subjectNumeric" : 0,
+          "volumes" : 167
+        },
+        "namesFileNumber" : {
+          "candidates" : 63,
+          "citingDocumentUnclassed" : 18,
+          "differentClass" : 18,
+          "distinctKeys" : 19,
+          "ownClass" : 27,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 8
+        },
+        "namesRepository" : {
+          "candidates" : 10885,
+          "citingDocumentUnclassed" : 4045,
+          "differentClass" : 2412,
+          "distinctKeys" : 2430,
+          "ownClass" : 4428,
+          "refusedAbsence" : 6,
+          "refusedPublication" : 8,
+          "subjectNumeric" : 3754,
+          "volumes" : 157
+        },
+        "shapeOnly" : {
+          "candidates" : 46892,
+          "citingDocumentUnclassed" : 9451,
+          "differentClass" : 14196,
+          "distinctKeys" : 7469,
+          "ownClass" : 23245,
+          "refusedAbsence" : 19,
+          "refusedPublication" : 579,
+          "subjectNumeric" : 6768,
+          "volumes" : 293
+        }
+      },
+      "documentsScanned" : 135767,
+      "footnotesScanned" : 302116,
+      "volumes" : 312
+    },
+    {
+      "band" : "no coverage dates",
+      "byRule" : {
+        "anySelfIdentifying" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "carriesSerial" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "carriesSerialComposing" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "carriesSerialDotted" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "namesFileNumber" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "namesRepository" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        },
+        "shapeOnly" : {
+          "candidates" : 0,
+          "citingDocumentUnclassed" : 0,
+          "differentClass" : 0,
+          "distinctKeys" : 0,
+          "ownClass" : 0,
+          "refusedAbsence" : 0,
+          "refusedPublication" : 0,
+          "subjectNumeric" : 0,
+          "volumes" : 0
+        }
+      },
+      "documentsScanned" : 0,
+      "footnotesScanned" : 0,
+      "volumes" : 0
+    }
+  ],
+  "documentsScanned" : 314479,
+  "footnotesScanned" : 470827,
+  "generated" : "2026-08-20",
+  "overall" : {
+    "anySelfIdentifying" : {
+      "candidates" : 39471,
+      "citingDocumentUnclassed" : 6375,
+      "differentClass" : 10390,
+      "distinctKeys" : 6557,
+      "ownClass" : 22706,
+      "refusedAbsence" : 14,
+      "refusedPublication" : 133,
+      "subjectNumeric" : 4008,
+      "volumes" : 416
+    },
+    "carriesSerial" : {
+      "candidates" : 34893,
+      "citingDocumentUnclassed" : 4033,
+      "differentClass" : 9642,
+      "distinctKeys" : 5404,
+      "ownClass" : 21218,
+      "refusedAbsence" : 11,
+      "refusedPublication" : 128,
+      "subjectNumeric" : 395,
+      "volumes" : 391
+    },
+    "carriesSerialComposing" : {
+      "candidates" : 29133,
+      "citingDocumentUnclassed" : 3028,
+      "differentClass" : 7951,
+      "distinctKeys" : 4307,
+      "ownClass" : 18154,
+      "refusedAbsence" : 4,
+      "refusedPublication" : 64,
+      "subjectNumeric" : 0,
+      "volumes" : 325
+    },
+    "carriesSerialDotted" : {
+      "candidates" : 33421,
+      "citingDocumentUnclassed" : 3372,
+      "differentClass" : 9331,
+      "distinctKeys" : 5131,
+      "ownClass" : 20718,
+      "refusedAbsence" : 5,
+      "refusedPublication" : 3,
+      "subjectNumeric" : 0,
+      "volumes" : 325
+    },
+    "namesFileNumber" : {
+      "candidates" : 746,
+      "citingDocumentUnclassed" : 56,
+      "differentClass" : 172,
+      "distinctKeys" : 326,
+      "ownClass" : 518,
+      "refusedAbsence" : 0,
+      "refusedPublication" : 0,
+      "subjectNumeric" : 1,
+      "volumes" : 61
+    },
+    "namesRepository" : {
+      "candidates" : 10885,
+      "citingDocumentUnclassed" : 4045,
+      "differentClass" : 2412,
+      "distinctKeys" : 2430,
+      "ownClass" : 4428,
+      "refusedAbsence" : 6,
+      "refusedPublication" : 8,
+      "subjectNumeric" : 3754,
+      "volumes" : 157
+    },
+    "shapeOnly" : {
+      "candidates" : 57619,
+      "citingDocumentUnclassed" : 11391,
+      "differentClass" : 18393,
+      "distinctKeys" : 9022,
+      "ownClass" : 27835,
+      "refusedAbsence" : 20,
+      "refusedPublication" : 2213,
+      "subjectNumeric" : 6828,
+      "volumes" : 503
+    }
+  },
+  "topClassKeys" : {
+    "000" : 658,
+    "320" : 367,
+    "396.1-GE" : 287,
+    "501" : 172,
+    "501.BB" : 717,
+    "611.93" : 385,
+    "641.74" : 146,
+    "663.001" : 173,
+    "674.84A" : 223,
+    "684A.86" : 221,
+    "689.90D" : 172,
+    "690B.9321" : 170,
+    "690D.91" : 151,
+    "694.001" : 191,
+    "737.00" : 151,
+    "740.0011" : 220,
+    "740.0011-EW" : 149,
+    "740.00119" : 1383,
+    "740.00119-EW" : 262,
+    "740.5" : 973,
+    "747C.00" : 303,
+    "750G.00" : 178,
+    "751G.00" : 639,
+    "751J.00" : 760,
+    "756D.00" : 180,
+    "762.00" : 325,
+    "762.0221" : 212,
+    "770G.00" : 457,
+    "780.5" : 221,
+    "790.5" : 213,
+    "793.00" : 244,
+    "794.5" : 157,
+    "795.00" : 529,
+    "867N.01" : 265,
+    "868.00" : 212,
+    "888.2553" : 393,
+    "974.7301" : 261,
+    "POL 27 ARAB-ISR" : 189,
+    "POL 27 VIET S" : 430,
+    "POL 27-14 VIET" : 173
+  },
+  "volumesScanned" : 552
+}

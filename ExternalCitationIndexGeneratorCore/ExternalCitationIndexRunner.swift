@@ -35,8 +35,28 @@ public enum ExternalCitationIndexRunner {
     public static let schemaVersion = 1
 
     /// Reads configuration from the environment and runs the build.
+    ///
+    /// `MEASURE_DECIMAL=1` diverts to #834's measurement pass instead, which writes a report to
+    /// `Planning/` and touches no bundled artifact. It is a separate mode rather than an extra
+    /// output of the build because the two have different denominators and different scopes, and
+    /// a run that quietly did both would invite the measurement's numbers into the artifact's
+    /// coverage block.
     public static func run() throws {
         let env = ProcessInfo.processInfo.environment
+        if env["MEASURE_DECIMAL"] == "1" {
+            try DecimalChannelMeasurement.run(
+                volumesDir: URL(fileURLWithPath: env["VOLUMES_DIR"]
+                    ?? "/Users/jbotts/Development/frus/volumes", isDirectory: true),
+                manifestPath: env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json",
+                labelsPath: env["DECIMAL_LABELS"]
+                    ?? "FRUSExplorer/Resources/decimal-class-labels.json",
+                reportPath: env["MEASURE_OUTPUT"]
+                    ?? "Planning/decimal-channel-measurement.json",
+                samplePath: env["SAMPLE_OUTPUT"],
+                sampleEvery: Int(env["SAMPLE_EVERY"] ?? "") ?? 200,
+                generated: generatorDateStamp(override: env["GENERATED_DATE"]))
+            return
+        }
         try run(
             volumesDir: URL(fileURLWithPath: env["VOLUMES_DIR"]
                 ?? "/Users/jbotts/Development/frus/volumes", isDirectory: true),
