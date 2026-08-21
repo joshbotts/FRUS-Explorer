@@ -7958,3 +7958,150 @@ source-note-derived. And a latent bug was closed rather than doubled — `resolv
 assigned only on success, leaving a previous document's rolls on screen in any persistent host.
 
 v44 → v45, owner-authorised re-index. 20 tests across two suites, 12 mutants killed.
+
+---
+
+## Session 2026-08-21 — #830 T-0: the gate walked, and four decisions the plan did not anticipate
+
+**Documentation only. No code, no artifact, no schema change.** The gate's own instruction is
+that the first act of T-0 is to bring facts to the owner rather than to draft and proceed, so
+this session measured, sorted, and asked. Output:
+`Planning/Research-Trip-Packet-T0-Prereqs.md` (v1.0), plus a v1.2 status pointer on
+`Research-Trip-Packet-Scope.md` so the two cannot silently disagree.
+
+**The audit was run corpus-wide because a container holds no user library**, against the
+committed export summary and the shipped bundles. Three measurements moved the plan.
+
+*`document_sources.repository` stores the creating agency, not a visitable facility.*
+`IndexingPipeline.swift:6166-6218` writes the literal `"Department of State"` for both a lot
+file and a decimal file, and `"Central Intelligence Agency"` for a CIA job. The plan's "one
+repository per chapter" has no field to key on; facility is derived. Against that, NARA's own
+catalogue answers the question the table was going to be curated for: `series-facts-index.json`
+carries a reference unit on every series, and it is **694 of 695 College Park**. So the NARA side
+of the ~16-row table is data, and hand-curation shrinks to the eleven presidential libraries and
+a non-NARA tail whose last eight rows carry 45 documents between them.
+
+*Three-quarters of the corpus cannot reach NARA's four-field inquiry line.* Measured by route,
+only **3.1%** of the 264,464 source notes reach RG + entry + series + NAID — the resolved-lot
+path, where HMS/MLR coverage is 99.2%. Another **71.6%** are decimal-file notes that resolve to
+a *record group* and stop, which is the "everything you have" shape the FAQ calls useless. The
+gap is a missing series identity for the 1910–1963 Central Decimal File and the CFPF, and the
+tree already records why a resolver cannot close it: the live "Central Decimal Files" series
+carries **23 entry numbers** (`CentralFilesIndex.swift:169`), so the series is nameable and *the*
+entry number is not. Owner decision: curate ~10 date-block rows, on
+`curated-lot-resolutions.json`'s no-generator-writes-this footing.
+
+*Restriction triage is the packet's most valuable page and it was scoped as a trailing rider.*
+Of 695 series, **481 (69.2%) are restricted to some degree and 138 (19.9%) are Restricted —
+Fully**; 399 carry a FOIA (b)(1) exemption. The data shipped with #663/F-7 months ago. Promoted
+into the first cut.
+
+**Two other things the plan says are stale in opposite directions.** Its §2 rider table marks
+`accessRestriction`, digitised ranges and inclusive series dates "Pending N-7" — all three
+shipped — while `numberingNote` is listed as a 385-series feature and reaches **1** of the 622
+series the app can name (`HarvestShardReader.swift:47-49`). Dropped from T-3, which is now
+nearly empty; what remains is assembly.
+
+**The A4 flag engine was priced and one criterion does not discriminate.** The sensitive-agency
+rule fires on **81.4%** of notes, because FRUS *is* State Department records; the date rule fires
+on 21.3% and the unresolved-lot rule on 43% of lot notes. Recommended (not yet settled) as a
+stated constant plus two live flags — a chip lit on every row carries no information, while the
+criterion stays true and stays NARA's.
+
+**The fact inventory was split rather than answered.** Of the ~40 institutional claims the gate
+enumerates, roughly half are verbatim in the deposited FAQ and checkable without leaving the
+repository; the other half — pull times, the 5:15 cutoff, the consultation area, the Wednesday
+specialist, room rules, eleven library addresses — are search-verified only and cannot be
+confirmed from this container at all. The proposed mechanism makes that split enforceable: a
+**per-fact nullable `verifiedDate`**, with an unverified fact **omitted** rather than printed
+undated. That is also the gate's own correction to artboard 1k (which draws one aggregate stamp
+per card), and it means T-1 and T-2 can build against an empty table without ever printing an
+unconfirmed sentence.
+
+Settled: D1–D4. Open with recommendations standing: visit-date input, presidential libraries in
+v1, table maintenance policy, research-question reuse, A4 calibration.
+
+**Addendum, same day — the owner settled the remaining six, and the gate's engineering half is
+now unblocked.** Recorded in `Research-Trip-Packet-T0-Prereqs.md` v1.1 §4.2 and closed out in
+`Research-Trip-Packet-Scope.md` v1.3 §5, which no longer carries an open-decisions list.
+
+- **D5 visit date — optional**, with relative lead times as the fallback. A packet is most useful
+  before the trip is booked; the A4 escalation does not depend on the date, so both the absolute
+  and relative checklist forms carry it.
+- **D6 presidential libraries — in v1, at collection grain.** Zero of the 29,093 library notes
+  resolve to a NAID offline, and that is the argument *for* shipping them: A12's
+  confirm-before-you-travel ask matters most where resolution is weakest, and a library trip is a
+  flight rather than a Metro ride. The 185 curated finding-aid URLs stand in for the missing
+  series identity, and the chapter says which of the two it is showing.
+- **D7 table maintenance — per-fact nullable `verifiedDate`, unverified facts omitted.** Snapshot
+  semantics, not a per-release re-verification gate. This is the mechanism that makes the
+  owner-only half of the gate *incremental*: each confirmed fact lights up one line, and nothing
+  waits on a single sitting.
+- **D8 research question — seeded and editable**, which refines the recommendation rather than
+  accepting it. The stored question is exactly NARA's "succinct description", so it is the right
+  default; but it is an internal note and the draft is an email to reference staff. **T-2 owes an
+  editable topic-sentence field, and the exporter must read the edited value** — a UI obligation,
+  not only a copy rule.
+- **D9 A4 calibration — the sensitive-agency criterion prints once** as a standing checklist
+  sentence; per-series chips are reserved for the two criteria that discriminate between projects
+  (documents ≥1960, unresolved lots). A4's quote-which-criterion-fired requirement survives: the
+  standing sentence quotes the FAQ's list, the chips quote theirs.
+- **D10 `numberingNote` — dropped**, confirmed. 1 of 622 app-reachable series; no alternative
+  proposed, because the ordering line a researcher needs is the RG/entry/series/box the pull
+  worksheet already prints.
+
+**Second addendum — the fact walkthrough, and ~40 facts become four.** The owner asked what each
+§3.2 fact is actually *for* before agreeing to verify any of it, reserving the right to negate the
+context. Walking each against the chapter that consumes it turned the gate from a research
+obligation into a scoping decision, on one test: **D7 already omits an unverified fact, so
+declining to verify is not a gap — it is a packet that links where it would have asserted.** A fact
+survives only if the packet computes on it or cannot function without it.
+
+- **Chapter 7 (visit-day card) loses most of its content.** Pull times and the 5:15 cutoff, the
+  consultation area's floor and hours, and the Wednesday foreign-affairs specialist window are all
+  negated and linked. They are the fastest-rotting claims in the packet — NARA changed pull times
+  in 2017, and one staff member's weekly slot is a calendar, not an institution — and a trip booked
+  around a slot that no longer exists is the exact harm the honesty rules exist to prevent. Two of
+  A14's four room rules are negated **by A14's own scoping rule**: "condensed to what changes
+  packing or planning" keeps the scanner and locker rules and kills one-box-one-folder and airport
+  screening, which change nothing a researcher would do differently.
+- **Chapter 1 loses the −2 business-day countdown as uncomputable.** A6 says the app cannot know
+  which records are off-site — it is one of the questions the inquiry asks — so the row could never
+  be keyed to anything, and generically it is dominated by A2's −4 weeks. The Eventbrite row goes
+  too: a vendor choice is not an institutional fact. Day-0 registration and per-row appointment
+  policy are kept.
+- **D11 — the library chapter is a confirm-before-you-travel prompt, not a drafted letter.** The
+  largest single reduction in the gate, **33 institutional facts → 11 URLs**. D6 admitted libraries
+  at *collection* grain, where the packet can name neither series nor NAID, so a fully drafted
+  letter implied a precision the data does not have. The prompt prints A12's real ask beside the
+  contact page and the curated finding-aid URL, and `curated-library-resolutions.json`'s 185 URLs
+  keep doing the work.
+- **D12 — URL freshness moves to a release checklist.** The scoping converts most of §3.2 into
+  links, and a link is the one fact class that is *mechanically* checkable, so this stops being
+  recurring research and becomes a repeatable release step. The load-bearing detail is redirects:
+  NARA reorganises, and a dead deep link characteristically 301s to a section index answering 200,
+  so a status-code grep calls it a pass. The rule is follow redirects, record the final URL, treat
+  `final != declared` as **needs review**. Staleness degrades the sentence, never the build; the
+  structural half (every printed link carries a date) is an offline CI test. Honest limit, now
+  written into the scope doc as honesty rule 7: a 200 proves the URL resolves, not that the page
+  still says what we claim — which is itself an argument for the chapter 1 and 7 downgrades, since
+  the less the packet asserts about a page, the less a link check has to prove.
+- **D13 — the citation crib reports a recommendation and does not ratify one.** The owner's
+  objection is that citation form is governed by the publisher, and publishers disagree; an app
+  printing "the NACP citation format" ratifies one product's requirements as universal, and the
+  researcher discovers the mismatch at proof stage. So the crib quotes NARA's guidance *as NARA's*,
+  attributed, with the publisher-governs note. **This is already the house posture** —
+  `CitationStyle` (`CitationFormatter.swift:30`) ships three styles and marks History at State
+  "Recommended" rather than correct. The verification consequence is the real gain: the claim
+  stops being "this is the correct format" (unfalsifiable, publisher-dependent) and becomes "NARA's
+  PDF says this" — a transcription check against a deposited document, which is §3.1's category.
+  Deposit GIL 17 and the two State-records PDFs and chapter 6 leaves the unverifiable tier for good.
+
+Net: the owner-only residue falls from ~40 institutional facts to **four** — the NACP address, the
+NACP inquiry email, day-0 registration, and per-row appointment policy — plus one checker pass and
+three PDFs to deposit.
+
+What is still owner-only is those four claims. T-1 may now start on the whole
+platform-neutral half — facility derivation, `TripPacketModel`, the A4 tests and their settled
+presentation, the restriction-triage read, the repository-table schema with zero rows in it, both
+checklist lead-time forms, and the seeded-editable topic sentence.
