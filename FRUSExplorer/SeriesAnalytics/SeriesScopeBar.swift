@@ -275,7 +275,7 @@ struct SeriesScopeBar: View {
                 // dashboards visibly empty).
                 // #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled,
                 // so a category scope covers every volume its subjects occur in rather than only
-                // those where one of them reaches the top-15 profile (11.7% of memberships).
+                // those where one of them reaches the top-15 profile (10.8% of memberships).
                 if let resolved = DocumentSubjectStore.shared?.subjectsByVolume
                     ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume,
                    !resolved.isEmpty {

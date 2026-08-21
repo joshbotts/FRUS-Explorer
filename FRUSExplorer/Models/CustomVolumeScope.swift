@@ -210,7 +210,7 @@ enum ScopeFacets {
     ///
     /// **What is passed in decides whether this answers the question asked.** Given the volume
     /// profiles' `volumesBySubjectRef` it returns the volumes whose TOP-15 carries the subject —
-    /// 11.7% of real memberships, so *Agriculture* resolves to 51 volumes of the 526 that contain
+    /// 10.8% of real memberships, so *Agriculture* resolves to 51 volumes of the 526 that contain
     /// it. Given `DocumentSubjectStore.shared?.volumesBySubjectRef` it returns all of them. The
     /// call sites pass the complete map when the document index is bundled (#308 Phase 3).
     static func volumeIds(forSubjectRef ref: String,
@@ -274,11 +274,22 @@ enum ScopeFacets {
     /// The **category catalog**: every category any volume profile touches, with its volume
     /// reach, sorted by reach (ties by label).
     ///
-    /// Semantics (#308 review F3): a volume is counted when the category appears among its
-    /// TOP-15 *characteristic* subjects — "characteristic," not "about." A broad category
-    /// (Foreign Economic Policy reaches ~90% of volumes) is therefore a coarse grouping, not
-    /// a discriminating filter; surface the reach so that is visible, and lean on the
-    /// sub-category drill-down (which discriminates) for real narrowing.
+    /// Semantics: a volume is counted when ANY document in it carries a subject in the category —
+    /// "contains," not "characteristic." That follows from what the call sites now pass: #1017
+    /// repointed them at the complete document-grain membership map, which is right for the
+    /// subject grain (*Agriculture* reaches 526 volumes, not the 51 whose top-15 ranked it) and
+    /// **saturating at this one**, because a category is a union over ~40 subjects.
+    ///
+    /// MEASURED 2026-08-21 over the shipped artifacts: seven of the thirteen categories reach
+    /// **552 of 552** volumes and the narrowest reaches 438. So a category is not a coarse filter
+    /// here, it is very nearly no filter at all. Two consequences the callers depend on: the
+    /// `volumeCount` this returns is the honest number and MUST stay on screen beside each row —
+    /// it is the only thing telling a reader that "Warfare" selects everything — and the
+    /// sub-category drill-down is where any narrowing happens.
+    ///
+    /// Whether category grain should instead count a volume only above some document-count
+    /// threshold is an open design question, not a defect in this function: see the follow-up
+    /// filed from the #1027/#1024 review.
     static func categoryCatalog(
         resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> [CategoryEntry] {
@@ -295,7 +306,10 @@ enum ScopeFacets {
 
     /// The **sub-category catalog** for one category (the drill-down), **excluding** the
     /// folded `"General"` bucket (#308 review F4), sorted by reach. Sub-category grain is
-    /// where the facet discriminates (median reach ~4% of volumes). A volume reachable only
+    /// where the facet discriminates — though far less than it did: median reach was ~4% of
+    /// volumes under the top-15 profiles and is **29.3% (162 of 552)** under the complete
+    /// membership the call sites now pass, with 12 sub-categories reaching 500 or more. Still a
+    /// filter; no longer a sharp one. A volume reachable only
     /// via a General subject is still covered by `volumeIds(forCategory:)`.
     static func subCategoryCatalog(
         forCategory category: String,

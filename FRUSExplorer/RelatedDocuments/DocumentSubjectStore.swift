@@ -91,7 +91,7 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     /// The subject facets resolve through `VolumeSubjectProfiles.volumesBySubjectRef`, documented
     /// as "the volumes whose PROFILE carries the subject" — accurate, and easy to read past,
     /// because a profile is the volume's TOP-15. Measured: of 76,574 (subject, volume) memberships
-    /// in the data, only **8,268 are selectable — 11.7%**. Scoping a search to *Agriculture* offers
+    /// in the data, only **8,268 are selectable — 10.8%**. Scoping a search to *Agriculture* offers
     /// 51 volumes when 526 contain it; *Water* offers 79 of 545. That is not a filter over the
     /// corpus, it is a filter over a TF-IDF-ranked sample of it.
     ///

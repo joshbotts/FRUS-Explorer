@@ -659,7 +659,7 @@ private struct SubjectFacetPicker: View {
     private var catalog: [ScopeFacets.SubjectEntry] {
         // #308 Phase 3: prefer the COMPLETE document-grain vocabulary. The profile-derived
         // catalogue lists only subjects reaching some volume's top-15 (380 of 491) and counts only
-        // the volumes where they rank (11.7% of memberships). Falls back to the profiles when the
+        // the volumes where they rank (10.8% of memberships). Falls back to the profiles when the
         // document index is not bundled, which is the pre-Phase-3 behaviour unchanged.
         if let index = DocumentSubjectStore.shared {
             let all = ScopeFacets.subjectCatalog(vocabulary: index.subjectVocabulary,
