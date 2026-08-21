@@ -216,3 +216,80 @@ struct PivotSheetMembershipTests {
         #expect(sheet.otherVolumeIds.count == fixture.complete)
     }
 }
+
+// MARK: - SubjectFacetCopyTests
+
+/// Pins the detected-topic picker's PROSE against the reach its resolver actually delivers.
+///
+/// ## What was wrong
+/// #1017 repointed every subject facet at complete document-grain membership. That is right for
+/// the subject grain — *Agriculture* reaches 526 volumes, not the 51 whose top-15 ranked it — and
+/// it **saturates** at the category grain, because a category is a union over ~40 subjects.
+/// Measured over the shipped artifacts, seven of thirteen categories reach 552 of 552 volumes.
+///
+/// The two footers, written for the old route, still told the reader *"A volume appears when a
+/// topic is among its most distinctive, not merely mentioned."* So the surface promised a
+/// distinctiveness filter and delivered the whole corpus. The reach column beside each row was
+/// honest the whole time; only the sentences were not.
+///
+/// These tests fail if either half moves: prose that re-asserts distinctiveness, or a resolver
+/// whose reach stops being saturating (which would mean the prose needs rewriting the other way).
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: from the #1027/#1024 adversarial review
+@Suite("Detected-topic facet copy matches its reach")
+struct SubjectFacetCopyTests {
+
+    /// The measurement the copy rests on. If categories ever stop saturating, the sentences
+    /// this suite protects become the wrong ones and should be revisited deliberately.
+    @MainActor
+    @Test("Category reach is saturating, which is what the copy must describe")
+    func categoryReachIsSaturating() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let catalog = ScopeFacets.categoryCatalog(resolvedByVolume: index.subjectsByVolume)
+        let corpusVolumes = index.taggedVolumeIds.count
+        #expect(catalog.count >= 13, "the taxonomy's categories must all be present")
+
+        let widest = try #require(catalog.map(\.volumeCount).max())
+        #expect(widest == corpusVolumes, """
+            The widest category reaches \(widest) of \(corpusVolumes) volumes. The picker's copy \
+            says a broad category "reaches most of the series"; if the widest no longer reaches \
+            ALL of it, re-read that sentence before changing this number.
+            """)
+        let saturating = catalog.filter { $0.volumeCount == corpusVolumes }.count
+        #expect(saturating >= 5, """
+            Only \(saturating) categories select the whole corpus. Measured at 7 of 13 when the \
+            copy was written — a filter that selects everything is the thing the reader has to be \
+            told about.
+            """)
+    }
+
+    /// The prose itself. A source scan, because the strings are the deliverable.
+    @MainActor
+    @Test("Neither footer claims the picker selects on distinctiveness")
+    func copyDoesNotPromiseDistinctiveness() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("FRUSExplorer/Search/SearchFilterView.swift"),
+            encoding: .utf8)
+
+        #expect(!source.contains("one of their most distinctive"), """
+            The section footer promised volumes "where that topic is one of their most \
+            distinctive". The resolver selects every volume containing the topic — measured, that \
+            is all 552 for seven of thirteen categories.
+            """)
+        #expect(!source.contains("among its most distinctive, not merely mentioned"), """
+            The picker footer promised the opposite of what it does: mentioned IS enough, and \
+            saying otherwise is the difference between a filter and no filter.
+            """)
+        #expect(source.contains("mentioned is enough"), """
+            The picker footer must say plainly that a mention is sufficient. Softening this puts \
+            the reader back where the review found them.
+            """)
+        #expect(source.contains("the count beside each"), """
+            The copy must point at the reach column. It is the only thing on screen that \
+            distinguishes a category selecting 438 volumes from one selecting 552.
+            """)
+    }
+}

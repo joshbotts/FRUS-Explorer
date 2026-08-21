@@ -108,7 +108,7 @@ struct VolumeSubjectsChips: View {
 
 // MARK: - VolumeSubjectVolumesSheet
 
-/// Lists the other FRUS volumes whose profile carries a subject — the cross-volume
+/// Lists the other FRUS volumes containing a subject — the cross-volume
 /// pivot from a "Top subjects" chip. Each row opens its volume in the browser via the
 /// same `AppState.pendingBrowseVolume` hand-off the cross-volume provenance list uses.
 ///
@@ -303,10 +303,12 @@ struct VolumeSubjectVolumesSheet: View {
                           systemImage: "archivebox")
                 }
             } footer: {
-                // The load-bearing sentence. The scope is WHOLE VOLUMES that rank this subject
-                // among their most characteristic, so the profile describes the archives those
-                // volumes draw on — not the archives behind the documents about this subject,
-                // which is what a reader will assume unless told otherwise.
+                // The load-bearing sentence. The scope is WHOLE VOLUMES containing this subject
+                // (complete membership since #1027, a ranked top-15 before it), so the profile
+                // describes the archives those volumes draw on — not the archives behind the
+                // documents about this subject, which is what a reader will assume unless told
+                // otherwise. Widening the membership made the caveat matter MORE, not less: the
+                // scope is now every volume that mentions the subject at all.
                 Text(String(format: String(
                     localized: "browser.volume.subjectVolumes.archival.footer %lld",
                     defaultValue: "Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them — and the subjects themselves are detected automatically, not editorial headings."),

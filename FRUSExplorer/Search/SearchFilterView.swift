@@ -923,7 +923,7 @@ struct SearchFilterView: View {
                 summary: subjectFacetLabel ?? selectionSummary(0),
                 forced: customScopes.isEmpty && scopeWarningName != nil,
                 footer: Text(String(localized: "search.subject.facet.footer",
-                                    defaultValue: "Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choosing a category finds volumes where that topic is one of their most distinctive. The volume picker then fills with the matches you have indexed."))
+                                    defaultValue: "Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choosing a category finds every volume containing that topic, so a broad category reaches most of the series — the volume count beside each one says how many. The volume picker then fills with the matches you have indexed."))
             ) {
                 Button {
                     showSubjectFacet = true
@@ -1351,7 +1351,7 @@ private struct SubjectCategoryFacetPicker: View {
     /// #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled.
     ///
     /// The profile map is top-15 per volume, so a category's volume set was the union of volumes
-    /// where one of its subjects happened to RANK — measured, 11.7% of real memberships. Falls back
+    /// where one of its subjects happened to RANK — measured, 10.8% of real memberships. Falls back
     /// to the profiles when the index is absent, which is the pre-Phase-3 behaviour unchanged.
     ///
     /// Computed per access and not cached: it is only read while the facet sheet is open, and a
@@ -1449,7 +1449,7 @@ private struct SubjectCategoryFacetPicker: View {
                 }
             } footer: {
                 Text(String(localized: "search.subject.facet.picker.footer",
-                            defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when a topic is among its most distinctive, not merely mentioned. Categories are broad. Open a sub-category to narrow the list."))
+                            defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are broad and several reach the whole series; check the count beside each and open a sub-category to narrow the list."))
                     // Let the long explanation wrap to its full height rather than truncating to
                     // one clipped line in the macOS inset list footer (#361).
                     .fixedSize(horizontal: false, vertical: true)
