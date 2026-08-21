@@ -99,6 +99,20 @@ public enum ExternalCitationIndexRunner {
                                sampleEvery: samplePath == nil ? 0 : max(1, sampleEvery),
                                generated: generated)
 
+        // The decimal channel resolving nothing is a broken rule, not an empty corpus: measured
+        // 2026-08-20, the shipped rule admits tens of thousands of candidates corpus-wide.
+        //
+        // **Checked here rather than in `build`**, which is where it first sat. `build` is the
+        // unit-testable half and is legitimately called over three-volume fixtures that contain no
+        // decimal citation at all; throwing there made a corpus-shaped guard fire on corpus-shaped
+        // absence and forced every fixture to carry a decimal footnote whether or not its test was
+        // about one. The guard exists to stop an EMPTY CHANNEL REACHING THE ARTIFACT — its own
+        // message says "refusing to write" — so it belongs beside the write.
+        guard !result.index.classTargetKeys.isEmpty else {
+            throw ExternalCitationError.brokenDecimalChannel(
+                candidates: result.index.coverage.decimalReferences, volumes: files.count)
+        }
+
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let data = try encoder.encode(result.index)
@@ -385,13 +399,6 @@ public enum ExternalCitationIndexRunner {
                 return ExternalCitationIndex.Pair(source: source, target: target, count: count)
             }
             .sorted { ($0.source, $0.target) < ($1.source, $1.target) }
-
-        // The decimal channel resolving nothing is a broken rule, not an empty corpus: measured
-        // 2026-08-20, the shipped rule admits tens of thousands of candidates corpus-wide.
-        guard !classTargetKeys.isEmpty else {
-            throw ExternalCitationError.brokenDecimalChannel(
-                candidates: decimalReferences, volumes: files.count)
-        }
 
         let index = ExternalCitationIndex(
             schemaVersion: schemaVersion, generated: generated,

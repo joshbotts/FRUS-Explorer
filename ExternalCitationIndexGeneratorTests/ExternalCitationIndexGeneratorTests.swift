@@ -455,6 +455,17 @@ struct ExternalCitationIndexRunnerTests {
                 (source: "Source: Johnson Library, National Security File, Country File, Vietnam.",
                  footnotes: [
                     "Another copy is in the Johnson Library, National Security File, Komer Files.",
+                    // #834's decimal channel. The corpus writes these with the class LEADING a
+                    // comma segment; buried behind prose in its own segment it is not found, which
+                    // is a property of `decimalClassLocation` and not of this fixture.
+                    //
+                    // It is here because `build` THROWS when the decimal channel resolves nothing
+                    // — a guard that is right for the 552-volume corpus and was wrong for a
+                    // fixture corpus with no decimal citation in it. Adding one keeps the guard
+                    // meaningful AND gives the generator suite its only class-axis coverage;
+                    // relaxing the guard would have removed a real protection to accommodate a
+                    // thin fixture.
+                    "Telegram 1345 from Moscow, March 5, 763.72/9732.",
                  ]),
             ], in: root),
             // A volume whose footnotes cite nothing — most of the corpus looks like this.
@@ -466,9 +477,26 @@ struct ExternalCitationIndexRunnerTests {
     }
 
     private func build(_ files: [URL]) throws -> ExternalCitationIndexRunner.BuildResult {
+        // #834 commit 2 gave `build` the classification schedule the decimal channel needs. The
+        // SHIPPED table is used rather than a fixture: the rule under test is "does this key
+        // compose under the State Department's real schedule", and a two-class stub would answer a
+        // different question while looking like the same test.
         try ExternalCitationIndexRunner.build(files: files, authority: fixtureAuthority(),
-                                              authorityCollectionCount: 3, sampleEvery: 0,
+                                              authorityCollectionCount: 3,
+                                              schedule: try DecimalChannelMeasurement
+                                                  .ScheduleValidator(labelsPath: labelsPath),
+                                              sampleEvery: 0,
                                               generated: "2026-08-10")
+    }
+
+    /// The bundled 1910-1949 schedule, from the repo rather than a bundle: this is an SPM test
+    /// target with no app bundle to read from.
+    private var labelsPath: String {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()      // ExternalCitationIndexGeneratorTests
+            .deletingLastPathComponent()      // repo root
+            .appendingPathComponent("FRUSExplorer/Resources/decimal-class-labels.json")
+            .path
     }
 
     @Test("References are counted per target unit and per volume")

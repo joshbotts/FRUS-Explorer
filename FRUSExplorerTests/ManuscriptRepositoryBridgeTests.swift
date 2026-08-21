@@ -66,14 +66,31 @@ struct ManuscriptRepositoryBridgeTests {
                 "an Eisenhower citation resolving to a Carter Library collection is a confidently-wrong archive attribution")
     }
 
-    @Test("A President's Daily Diary citation never crosses into the Library of Congress")
+    @Test("A President's Daily Diary citation never crosses into another library")
     func dailyDiaryDoesNotCrossRepository() throws {
         // Derived, not hardcoded: the id is a `CollectionKeying` merge key, and pinning its
         // literal spelling made this guard fail the moment the normalizer gained a fold.
-        let locDiary = "txt:library of congress|"
-            + CollectionKeying.segmentNorm("President\u{2019}s Daily Diary)")
-        #expect(try index().record(id: locDiary) != nil,
-                "fixture guard: the Library of Congress cluster must still exist")
+        //
+        // **The counterexample repository changed, and the guard is why that was noticed.** This
+        // test used to name the Library of Congress. The re-clustered authority holds no
+        // `library of congress|…daily diary` cluster at all — the diary clusters are the Carter,
+        // Ford, Johnson and Kennedy libraries and the National Archives — so the guard correctly
+        // reported that the test could no longer prove its claim: there was nothing left to cross
+        // INTO. Carter is used instead, exactly as the sibling Eisenhower test does, because the
+        // risk being tested is unchanged: one library's citation must never land on another
+        // library's collection of the same name (#353 §3.2).
+        // **No trailing paren.** The note text below ends in one (it is a cross-reference
+        // parenthetical) and the original derivation copied it in — but `segmentNorm` does not
+        // strip punctuation, so it yielded `presidential daily diary)` and matched no cluster at
+        // all. The guard then read as "the cluster vanished" when the real answer was "the id was
+        // never spelled that way". Probed, not guessed: segmentNorm("President's Daily Diary)")
+        // == "presidential daily diary)".
+        let otherLibraryDiary = "txt:carter library|"
+            + CollectionKeying.segmentNorm("President\u{2019}s Daily Diary")
+        #expect(try index().record(id: otherLibraryDiary) != nil, """
+            fixture guard: a DIFFERENT library's President's Daily Diary cluster must exist, or \
+            this test proves nothing — there would be no wrong answer available to resolve to.
+            """)
         #expect(try resolve("Johnson Library, President’s Daily Diary)") == nil)
         #expect(try resolve("Reagan Library, President’s Daily Diary)") == nil)
     }
