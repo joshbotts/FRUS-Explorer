@@ -174,6 +174,10 @@ final class SearchViewModel {
     /// ``SubjectBucketVocabulary``. `nil` means no subject filter.
     var subjectBucket: Int?
 
+    /// The durable `category`/`subcategory` identity of ``subjectBucket``. See
+    /// `SearchParameters.subjectBucketKey`.
+    var subjectBucketKey: String?
+
     /// Display name for the active `personRollupId`/`personRef` filter, shown in the filter chip.
     var personLabel: String?
 
@@ -719,6 +723,7 @@ final class SearchViewModel {
         // #308. Clear Filters must reach a facet-panel narrowing too — it is set by a single tap
         // and is exactly the kind a reader would expect this button to undo.
         subjectBucket = nil
+        subjectBucketKey = nil
         // Reset the project scope selection + Focus "only new" toggle (keep the loaded
         // engaged-key/focus-volume sets — they are context, not user filters, and
         // re-populate only when the project changes).
@@ -865,7 +870,8 @@ final class SearchViewModel {
             personLabel: personLabel,
             personAnchor: personAnchor,
             includeFrontMatter: includeFrontMatter,
-            subjectBucket: subjectBucket
+            subjectBucket: subjectBucket,
+            subjectBucketKey: subjectBucketKey
         )
     }
 
@@ -999,6 +1005,7 @@ final class SearchViewModel {
             // Replace rather than union, for the reason `.volume` gives: the row's count is for
             // that bucket alone.
             subjectBucket = bucket
+            subjectBucketKey = DocumentSubjectStore.shared?.bucketVocabulary.key(at: bucket)
         }
         // No version bump: unlike macOS, this view model has no `parametersVersion` and iOS
         // re-runs the search explicitly. The caller owns that — see `SearchView`.
@@ -1138,7 +1145,8 @@ final class SearchViewModel {
                     ? String(localized: "search.narrowing.notes", defaultValue: "Editorial notes")
                     : String(localized: "search.narrowing.documents", defaultValue: "Documents")))
         }
-        if let bucket = subjectBucket {
+        if let bucket = subjectBucketKey
+            .flatMap({ DocumentSubjectStore.shared?.bucketVocabulary.id(forKey: $0) }) ?? subjectBucket {
             // Named from the vocabulary, not from the tap: this list is derived from live fields
             // precisely so it cannot describe a filter that is no longer the one applied. A bucket
             // the vocabulary cannot name still gets a chip — a filter with no way back is the one
@@ -1162,7 +1170,7 @@ final class SearchViewModel {
         case "person": personRollupId = nil; personRefText = ""; personAnchor = nil
         case "type": documentTypeFilter = .all
         case "tag": selectedUserTagIds = []
-        case "subject": subjectBucket = nil
+        case "subject": subjectBucket = nil; subjectBucketKey = nil
         default: return
         }
         // Caller re-runs the search, matching this view model's existing convention.
@@ -1254,6 +1262,7 @@ final class SearchViewModel {
         // bucket the previous search left in force — this view model's fields outlive one search,
         // so a conditional assignment would leak a stale subject filter into every hand-off.
         subjectBucket         = params.subjectBucket
+        subjectBucketKey      = params.subjectBucketKey
         // Project History scope is a live, manual choice — never inherited from a restored
         // snapshot or a pending-search hand-off (Analytics drill-in, "Find all mentions",
         // indexing banners). Without this reset a History scope selected earlier in the

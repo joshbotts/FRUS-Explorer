@@ -310,11 +310,27 @@ public actor SearchService {
     }
 
     /// Maps `SearchParameters` to the SQL-side filter set.
+    ///
+    /// ## The subject bucket is re-resolved here, and only here
+    /// `subjectBucketKey` is the durable `category`/`subcategory` pair; `subjectBucket` is a
+    /// position in the vocabulary. Every path — a fresh facet tap, a recalled saved search, a
+    /// hand-off — funnels through this one function on its way to SQL, so re-resolving here fixes
+    /// all of them at once, where doing it at each recall site would be several places to forget.
+    ///
+    /// `-1` is the "matches nothing" sentinel: a key whose pair has been removed from the
+    /// vocabulary must NOT fall back to `nil`, which reads as "no subject filter" and would widen
+    /// a saved search to the whole corpus under a name promising the opposite.
     private func makeFilters(from parameters: SearchParameters) -> SearchSQLFilters {
-        SearchSQLFilters(
+        let resolvedBucket: Int?
+        if let key = parameters.subjectBucketKey {
+            resolvedBucket = DocumentSubjectStore.shared?.bucketVocabulary.id(forKey: key) ?? -1
+        } else {
+            resolvedBucket = parameters.subjectBucket
+        }
+        return SearchSQLFilters(
             volumeIds: parameters.volumeIds,
             documentIds: parameters.documentIds,
-            subjectBucket: parameters.subjectBucket,
+            subjectBucket: resolvedBucket,
             excludeDocumentIds: parameters.excludeDocumentIds,
             dateRange: parameters.dateRange,
             yearKeys: parameters.yearKeys,

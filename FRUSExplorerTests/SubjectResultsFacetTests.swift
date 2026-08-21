@@ -308,6 +308,26 @@ struct SubjectResultsFacetSQLTests {
             """)
     }
 
+    /// A pair the vocabulary no longer has must match NOTHING. Falling back to "no filter" would
+    /// widen a saved search to the whole corpus under a name promising the opposite.
+    @Test("A key whose pair is gone narrows to nothing, never to everything")
+    func retiredKeyMatchesNothing() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: { rows[$0] ?? [] }, digest: "d1", volumeIds: ["vol1", "vol2"])
+        var params = SearchParameters(keywords: "containment")
+        params.subjectBucketKey = "Nonexistent\u{1F}Retired"
+        let expressions = try await service.matchExpressions(for: params)
+        let breakdown = try await pipeline.resultSetFacets(
+            corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
+            filters: await service.filtersForTesting(params), request: .all)
+        #expect(breakdown.matchCount == 0, """
+            A retired subject must yield nothing. Degrading to "no subject filter" would return all \
+            8 matches under a saved search the reader named for one subject.
+            """)
+    }
+
     /// A helper matching what `applyDocumentSubjectsIfNeeded` stamps, so these tests exercise the
     /// same marker the shipping path writes rather than an arbitrary one.
     private func currentStamp() -> String {
@@ -473,6 +493,45 @@ struct SubjectNarrowingLifecycleTests {
         vm.clearFilters()
         #expect(vm.subjectBucket == nil)
         #expect(!vm.hasActiveFilters)
+    }
+
+    // MARK: - Surviving a data drop
+
+    /// The narrowing must carry a DURABLE identity, not a position. `subjectBucket` is an index
+    /// into the vocabulary, and `SavedSearch` archives the whole parameters value to disk and
+    /// iCloud — so without this a regenerated artifact with one extra subcategory would leave every
+    /// saved search pointing at a different subject, silently and for good.
+    @Test("A facet tap records the durable pair key, not only the position")
+    func narrowingCarriesTheDurableKey() {
+        guard let vocabulary = DocumentSubjectStore.shared?.bucketVocabulary else {
+            Issue.record("subject vocabulary unavailable in the test host"); return
+        }
+        var params = SearchParameters(keywords: "containment")
+        FacetNarrowing.subject(5).apply(to: &params)
+        #expect(params.subjectBucket == 5)
+        #expect(params.subjectBucketKey == vocabulary.key(at: 5), """
+            Only the position was stored. That is the identity error the subject artifact's own \
+            doc comment warns about — a wrong key here does not fail, it shows a different subject \
+            at entirely plausible counts.
+            """)
+    }
+
+    /// The key does not merely DETECT drift, it repairs it: the same pair resolves to whatever
+    /// position it occupies now.
+    @Test("The durable key re-resolves to the pair's current position")
+    func durableKeyResolvesAcrossRenumbering() {
+        let before = SubjectBucketVocabulary(pairs: [(category: "B", subcategory: "y"),
+                                                     (category: "C", subcategory: "z")])
+        let after = SubjectBucketVocabulary(pairs: [(category: "A", subcategory: "x"),
+                                                    (category: "B", subcategory: "y"),
+                                                    (category: "C", subcategory: "z")])
+        let key = before.key(at: 0)          // B / y, position 0 before the drop
+        #expect(before.label(at: 0) == "y")
+        #expect(after.id(forKey: key ?? "") == 1, """
+            Adding a subcategory that sorts first shifts every position by one. Resolved by key the \
+            filter still means B/y; read as the raw position 0 it would silently become A/x.
+            """)
+        #expect(after.label(at: after.id(forKey: key ?? "") ?? -1) == "y")
     }
 
     /// The appendix exists so someone can reproduce the search. A positional index into an

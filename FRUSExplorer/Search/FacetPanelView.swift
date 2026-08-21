@@ -104,6 +104,9 @@ enum FacetNarrowing: Sendable, Equatable {
             parameters.documentTypeFilter = filter
         case .subject(let bucket):
             parameters.subjectBucket = bucket
+            // The durable half. Without it the narrowing is a bare position and cannot survive a
+            // data drop — see `SearchParameters.subjectBucketKey`.
+            parameters.subjectBucketKey = DocumentSubjectStore.shared?.bucketVocabulary.key(at: bucket)
         }
     }
 }

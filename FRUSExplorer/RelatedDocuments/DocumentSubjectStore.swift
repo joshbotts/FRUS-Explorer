@@ -407,6 +407,22 @@ struct SubjectBucketVocabulary: Sendable, Equatable {
         idByPair[Self.key(category, subcategory)]
     }
 
+    /// The DURABLE identity of a bucket — the `category`/`subcategory` pair itself, not its
+    /// position. `nil` when the id is out of range.
+    ///
+    /// Anything that OUTLIVES a data drop must persist this and never the integer. The integer is
+    /// a position, so a regenerated artifact that adds one subcategory shifts every id after it
+    /// and a stored `4` silently becomes a different subject. That is fine inside
+    /// `document_subjects`, which is rebuilt whenever the stamp moves, and not fine at all in a
+    /// saved search, which is archived to iCloud and read back months later.
+    func key(at id: Int) -> String? {
+        guard buckets.indices.contains(id) else { return nil }
+        return Self.key(buckets[id].category, buckets[id].subcategory)
+    }
+
+    /// Resolves a durable key back to the CURRENT bucket id; `nil` when the pair no longer exists.
+    func id(forKey key: String) -> Int? { idByPair[key] }
+
     /// The display label for a stored bucket id, or `nil` when the id is out of range — which is
     /// what a row populated under an older ``digest`` looks like.
     func label(at id: Int) -> String? {

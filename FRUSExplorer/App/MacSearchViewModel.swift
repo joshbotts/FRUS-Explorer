@@ -604,6 +604,7 @@ final class MacSearchViewModel {
     /// set rather than from a standing list.
     func clearSubjectFilter() {
         parameters.subjectBucket = nil
+        parameters.subjectBucketKey = nil
         parametersVersion += 1
     }
 

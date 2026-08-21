@@ -191,6 +191,19 @@ public struct SearchParameters: Codable, Sendable, Equatable {
     /// for. As a predicate it is one integer, whatever the bucket's size.
     public var subjectBucket: Int?
 
+    /// The DURABLE identity of ``subjectBucket`` — the `category`/`subcategory` pair — carried so a
+    /// filter survives a data drop that renumbers the buckets (#308).
+    ///
+    /// `subjectBucket` is a position in the vocabulary, which is the right shape for SQL and the
+    /// wrong shape for anything archived: `SavedSearch` JSON-archives the whole parameters value to
+    /// disk and iCloud, so a regenerated artifact with one extra subcategory would leave every
+    /// saved search pointing at a different subject, silently and permanently. When this is
+    /// present it WINS — `SearchService.makeFilters` re-resolves it against the live vocabulary,
+    /// which repairs the filter rather than merely detecting the drift. A key whose pair no longer
+    /// exists matches nothing, rather than widening the search under a name that promises the
+    /// opposite.
+    public var subjectBucketKey: String?
+
 
     /// **Exclude** this explicit set of documents, each keyed `"volumeId/documentId"`.
     /// `nil` or empty = exclude nothing. Powers the **Project Focus** search scope's "only
@@ -303,7 +316,8 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         personLabel: String? = nil,
         personAnchor: PersonRollupAnchor? = nil,
         includeFrontMatter: Bool = true,
-        subjectBucket: Int? = nil
+        subjectBucket: Int? = nil,
+        subjectBucketKey: String? = nil
     ) {
         self.keywords = keywords
         self.phrase = phrase
@@ -317,6 +331,7 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         self.volumeIds = volumeIds
         self.documentIds = documentIds
         self.subjectBucket = subjectBucket
+        self.subjectBucketKey = subjectBucketKey
         self.excludeDocumentIds = excludeDocumentIds
         self.includeDocumentText = includeDocumentText
         self.includeSummaries = includeSummaries

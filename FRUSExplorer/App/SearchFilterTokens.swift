@@ -202,7 +202,11 @@ enum SearchFilterTokens {
             guard !parameters.includeFrontMatter else { return nil }
             return String(localized: "search.token.frontMatter.excluded", defaultValue: "excluded")
         case .subject:
-            guard let bucket = parameters.subjectBucket else { return nil }
+            // The durable key wins: after a data drop the stored position may name a different
+            // subject, and a token is a claim about what is filtering right now.
+            let live = parameters.subjectBucketKey
+                .flatMap { DocumentSubjectStore.shared?.bucketVocabulary.id(forKey: $0) }
+            guard let bucket = live ?? parameters.subjectBucket else { return nil }
             // A bucket the vocabulary cannot name still produces a token. The whole point of this
             // row is that no filter is in force without something on screen saying so, and an
             // unnameable bucket is the case where that matters most.
