@@ -229,7 +229,10 @@ struct ArchivalAnalyticsView: View {
         case .volumes: return true
         case .documents: return collectionsData?.supportsDocumentWeight ?? true
         case .unprintedPointers:
-            return lens == .namedCollections && (collectionsData?.supportsPointerWeight ?? false)
+            // #834 gave the class lens its own pointer vocabulary, so the weight is no longer
+            // withheld there. Both lenses still require the index itself.
+            return (lens == .namedCollections || lens == .centralFileClasses)
+                && (collectionsData?.supportsPointerWeight ?? false)
         }
     }
 

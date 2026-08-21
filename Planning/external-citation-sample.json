@@ -1,0 +1,891 @@
+[
+  {
+    "anchor" : "lotFile",
+    "citation" : "and Lot 57D284, Box 103",
+    "documentId" : "d150",
+    "inherited" : false,
+    "unitId" : "lot:57D284",
+    "unitName" : "International Trade Files, Lot 57 D 284",
+    "volumeId" : "frus1948v01p2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "S/S – NSC Files: Lot 63D361: NSC 68 Series",
+    "documentId" : "d219",
+    "inherited" : false,
+    "volumeId" : "frus1950v01"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Lot 54 D 423",
+    "documentId" : "d704",
+    "inherited" : false,
+    "unitId" : "lot:54D423",
+    "unitName" : "Dulles Files, Lot 54 D 423",
+    "volumeId" : "frus1950v06"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Excerpts from McCloy ’s discussion with members of the FDJ on August 17 are in the Frankfurt Mission files, lot 311, D",
+    "documentId" : "d351",
+    "inherited" : false,
+    "unitId" : "lot:311",
+    "unitName" : "Lot 311",
+    "volumeId" : "frus1951v03p2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Lot 55D128: Black Book, Tab 90",
+    "documentId" : "d454",
+    "inherited" : false,
+    "unitId" : "lot:55D128",
+    "unitName" : "FE Files, Lot 55 D 128",
+    "volumeId" : "frus1951v07p1"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "files, lot 66 D 95, “ NSC Records of Action”",
+    "documentId" : "d100",
+    "inherited" : false,
+    "unitId" : "lot:66D95",
+    "unitName" : "S/S – NSC (Miscellaneous) Files: Lot 66 D 95",
+    "volumeId" : "frus1952-54v02p1"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "CP D–3, June 26, 1952, lot 54 D 5",
+    "documentId" : "d791",
+    "inherited" : false,
+    "unitId" : "lot:54D5",
+    "unitName" : "Lot 54 D 5",
+    "volumeId" : "frus1952-54v03"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Conference files, lot 60 D 627, CF 372",
+    "documentId" : "d96",
+    "inherited" : false,
+    "unitId" : "lot:60D627",
+    "unitName" : "Conference Files, Lot 60 D 627",
+    "volumeId" : "frus1952-54v05p2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Conference files, lot 60 D 627, CF 211",
+    "documentId" : "d370",
+    "inherited" : false,
+    "unitId" : "lot:60D627",
+    "unitName" : "Conference Files, Lot 60 D 627",
+    "volumeId" : "frus1952-54v07p1"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "S/P – NSC files, lot 62 D 1, “ NSC Actions”",
+    "documentId" : "d112",
+    "inherited" : false,
+    "unitId" : "lot:62D1",
+    "unitName" : "S/P – NSC Files: Lot 62 D 1",
+    "volumeId" : "frus1952-54v10"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "FE files, lot 55 D 480, “Indonesia”",
+    "documentId" : "d301",
+    "inherited" : false,
+    "unitId" : "lot:55D480",
+    "unitName" : "FE Files, Lot 55 D 480",
+    "volumeId" : "frus1952-54v12p2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "S/S – NSC files, lot 63 D 351, NSC 152 Series",
+    "documentId" : "d147",
+    "inherited" : false,
+    "unitId" : "lot:63D351",
+    "unitName" : "S/S – NSC Files: Lot 63 D 351",
+    "volumeId" : "frus1952-54v14p1"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "For a text of this letter, see ibid",
+    "documentId" : "d422",
+    "inherited" : true,
+    "unitId" : "lot:55D128",
+    "unitName" : "FE Files, Lot 55 D 128",
+    "volumeId" : "frus1952-54v15p1"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Files: Lot 66 D 95",
+    "documentId" : "d28",
+    "inherited" : false,
+    "unitId" : "lot:66D95",
+    "unitName" : "S/S – NSC (Miscellaneous) Files: Lot 66 D 95",
+    "volumeId" : "frus1955-57v01"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Ibid ., Geneva Talks Files: Lot 72 D 415, Geneva—Correspondence Re US– PRC , 1955–1956",
+    "documentId" : "d19",
+    "inherited" : false,
+    "unitId" : "lot:72D415",
+    "unitName" : "Geneva Talks Files: Lot 72 D 415",
+    "volumeId" : "frus1955-57v03"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ibid",
+    "documentId" : "d184",
+    "inherited" : true,
+    "unitId" : "txt:eisenhower library|cfep record",
+    "unitName" : "CFEP Records",
+    "volumeId" : "frus1955-57v04"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : ", S/S – OCB Files: Lot 61 D 385, Latin America—1953–1958",
+    "documentId" : "d269",
+    "inherited" : false,
+    "unitId" : "lot:61D385",
+    "unitName" : "OCB Files: Lot 61 D 385",
+    "volumeId" : "frus1955-57v07"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Ibid., Presidential Correspondence: Lot 66 D 204, Dulles to Macmillan",
+    "documentId" : "d75",
+    "inherited" : false,
+    "unitId" : "lot:66D204",
+    "unitName" : "Presidential Correspondence: Lot 66 D 204",
+    "volumeId" : "frus1955-57v10"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, NEA /ARP Files: Lot 70 D 148, DAF Renewal 1957 Negotiations",
+    "documentId" : "d254",
+    "inherited" : false,
+    "unitId" : "lot:70D148",
+    "unitName" : "NEA /ARP Files: Lot 70 D 148",
+    "volumeId" : "frus1955-57v13"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Eisenhower Library, Dulles Papers, General Telephone Conversations",
+    "documentId" : "d340",
+    "inherited" : false,
+    "unitId" : "txt:eisenhower library|dulles paper",
+    "unitName" : "Dulles Papers",
+    "volumeId" : "frus1955-57v15"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Eisenhower Library, Dulles Papers, Meetings with the President",
+    "documentId" : "d661",
+    "inherited" : false,
+    "unitId" : "txt:eisenhower library|dulles paper",
+    "unitName" : "Dulles Papers",
+    "volumeId" : "frus1955-57v16"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Eisenhower Library, Project Clean Up, Technological Capabilities Panel",
+    "documentId" : "d30",
+    "inherited" : false,
+    "unitId" : "txt:eisenhower library|project clean up",
+    "unitName" : "Project Clean Up",
+    "volumeId" : "frus1955-57v19"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "and in a memorandum of conversation, dated April 8, between General Carlos P. Romulo, personal representative of President Ramón Magsaysay to the United States, and Secretary Dulles in Department of State, Secretary’s Memoranda of Conversation: Lot 64 D 199",
+    "documentId" : "d21",
+    "inherited" : false,
+    "unitId" : "lot:64D199",
+    "unitName" : "Secretary’s Memoranda of Conversation: Lot 64 D 199",
+    "volumeId" : "frus1955-57v20"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Eisenhower Library, Dulles Papers, General Memoranda of Conversation",
+    "documentId" : "d149",
+    "inherited" : false,
+    "unitId" : "txt:eisenhower library|dulles paper",
+    "unitName" : "Dulles Papers",
+    "volumeId" : "frus1955-57v21"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, FE Files: Lot 56 D 679, Korea",
+    "documentId" : "d90",
+    "inherited" : false,
+    "unitId" : "lot:56D679",
+    "unitName" : "FE Files: Lot 56 D 679",
+    "volumeId" : "frus1955-57v23p2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "A copy of Nehru’s letter to Dulles of October 31 is in Department of State, Presidential Correspondence: Lot 66 D 204, Prime Minister Nehru’s Correspondence with Eisenhower / Dulles 1953–1961",
+    "documentId" : "d168",
+    "inherited" : false,
+    "unitId" : "lot:66D204",
+    "unitName" : "Presidential Correspondence: Lot 66 D 204",
+    "volumeId" : "frus1955-57v25"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "A copy is ibid ., S/P – NSC Files: Lot 62 D 1.",
+    "documentId" : "d115",
+    "inherited" : false,
+    "unitId" : "lot:62D1",
+    "unitName" : "S/P – NSC Files: Lot 62 D 1",
+    "volumeId" : "frus1958-60v02"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Eisenhower Library, Dulles Papers, General Memoranda of Conversation",
+    "documentId" : "d165",
+    "inherited" : false,
+    "unitId" : "txt:eisenhower library|dulles paper",
+    "unitName" : "Dulles Papers",
+    "volumeId" : "frus1958-60v03"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "ibid ., ARA Deputy Assistant Secretary Files: Lot 61 D 411, N–Vice President Nixon ’s Trip to South America",
+    "documentId" : "d52",
+    "inherited" : false,
+    "unitId" : "lot:61D411",
+    "unitName" : "ARA Deputy Assistant Secretary Files: Lot 61 D 411",
+    "volumeId" : "frus1958-60v05"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Presidential correspondence, Lot 64 D 174",
+    "documentId" : "pa_d9",
+    "inherited" : false,
+    "unitId" : "lot:64D174",
+    "unitName" : "Presidential Correspondence: Lot 64 D 174",
+    "volumeId" : "frus1958-60v05mSupp"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "ibid .",
+    "documentId" : "d291",
+    "inherited" : true,
+    "unitId" : "lot:63D351",
+    "unitName" : "S/S – NSC Files: Lot 63 D 351",
+    "volumeId" : "frus1958-60v07p1"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Ibid",
+    "documentId" : "d312",
+    "inherited" : true,
+    "unitId" : "lot:64D327",
+    "unitName" : "Bruce Diaries: Lot 64 D 327",
+    "volumeId" : "frus1958-60v08"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Ibid .",
+    "documentId" : "d45",
+    "inherited" : true,
+    "unitId" : "lot:63D351",
+    "unitName" : "S/S – NSC Files: Lot 63 D 351",
+    "volumeId" : "frus1958-60v10p2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Files: Lot 66 D 95, Records of Action by the National Security Council",
+    "documentId" : "d284",
+    "inherited" : false,
+    "unitId" : "lot:66D95",
+    "unitName" : "S/S – NSC (Miscellaneous) Files: Lot 66 D 95",
+    "volumeId" : "frus1958-60v12"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Files: Lot 66 D 95, Records of Action by the National Security Council",
+    "documentId" : "d180",
+    "inherited" : false,
+    "unitId" : "lot:66D95",
+    "unitName" : "S/S – NSC (Miscellaneous) Files: Lot 66 D 95",
+    "volumeId" : "frus1958-60v14"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Eisenhower Library, Dulles Papers, General Telephone Conversations",
+    "documentId" : "d103",
+    "inherited" : false,
+    "unitId" : "txt:eisenhower library|dulles paper",
+    "unitName" : "Dulles Papers",
+    "volumeId" : "frus1958-60v17"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, Special Group Counterinsurgency Files: Lot 68 D 451, Special Group",
+    "documentId" : "d74",
+    "inherited" : false,
+    "unitId" : "lot:68D451",
+    "unitName" : "S/S Files: Lot 68 D 451",
+    "volumeId" : "frus1961-63v02"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Memoranda of his separate discussions of disarmament matters with Lord Home and Couve de Murville on April 7, and with President de Gaulle on April 8, are in Department of State, Secretary’s Memoranda of Conversation: Lot 65 D 330",
+    "documentId" : "d275",
+    "inherited" : false,
+    "unitId" : "lot:65D330",
+    "unitName" : "Secretary’s Memoranda of Conversation: Lot 65 D 330",
+    "volumeId" : "frus1961-63v07"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Kennedy Library, National Security Files, Meetings and Memoranda Series, Special Group",
+    "documentId" : "d423",
+    "inherited" : false,
+    "unitId" : "txt:kennedy library|national security file",
+    "unitName" : "National Security Files",
+    "volumeId" : "frus1961-63v10"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Kennedy Library, National Security Files, France",
+    "documentId" : "d237",
+    "inherited" : false,
+    "unitId" : "txt:kennedy library|national security file",
+    "unitName" : "National Security Files",
+    "volumeId" : "frus1961-63v13"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, Conference Files: Lot 66 D 110",
+    "documentId" : "d196",
+    "inherited" : false,
+    "unitId" : "lot:66D110",
+    "unitName" : "Conference Files: Lot 66 D 110",
+    "volumeId" : "frus1961-63v15"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, Presidential Correspondence: Lot 66 D 476, NEA Correspondence, Saudi Arabia",
+    "documentId" : "d265",
+    "inherited" : false,
+    "unitId" : "lot:66D476",
+    "unitName" : "Presidential Correspondence: Lot 66 D 476",
+    "volumeId" : "frus1961-63v18"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Kennedy Library, National Security Files, Meetings and Memoranda Series, NSC Standing Group Meetings, 5/1/62-5/17/62",
+    "documentId" : "d207",
+    "inherited" : false,
+    "unitId" : "txt:kennedy library|national security file",
+    "unitName" : "National Security Files",
+    "volumeId" : "frus1961-63v21"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Kennedy Library, President’s Appointment Book",
+    "documentId" : "d220",
+    "inherited" : false,
+    "unitId" : "txt:kennedy library|presidential appointment book",
+    "unitName" : "President’s Appointment Books",
+    "volumeId" : "frus1961-63v23"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, President’s Daily Diary",
+    "documentId" : "d33",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|presidential daily diary",
+    "unitName" : "President’s Daily Diary",
+    "volumeId" : "frus1964-68v01"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security File, Country File, Vietnam, Vol. XXXVII, Memos",
+    "documentId" : "d49",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v03"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, INR /REA/SA Files: Lot 75 D 378, POL -1 General Policy, Background SVN 1967",
+    "documentId" : "d45",
+    "inherited" : false,
+    "unitId" : "lot:75D378",
+    "unitName" : "INR /REA/SA Files: Lot 75 D 378",
+    "volumeId" : "frus1964-68v05"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, Transcripts of Meetings in the Cabinet Room",
+    "documentId" : "d177",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|transcripts of meetings in the cabinet room",
+    "unitName" : "Transcripts of Meetings in the Cabinet Room",
+    "volumeId" : "frus1964-68v06"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "National Archives and Records Administration, RG 59, Komer Files: Lot 69 D 303, Vietnam/Turkey",
+    "documentId" : "d44",
+    "inherited" : false,
+    "unitId" : "lot:69D303",
+    "unitName" : "Komer Files: Lot 69 D 303",
+    "volumeId" : "frus1964-68v07"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security File, NSC Histories, Kennedy Round Crisis, April–June, Tabs 17–24, Box 52",
+    "documentId" : "d234",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v08"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security File, Head of State Correspondence, Australia, Menzies",
+    "documentId" : "d250",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v12"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, President’s Daily Diary",
+    "documentId" : "d180",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|presidential daily diary",
+    "unitName" : "President’s Daily Diary",
+    "volumeId" : "frus1964-68v15"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Letters of condolence from Eban and Harman to President Johnson and Secretary Rusk , June 8, are in the Johnson Library, National Security File, NSC Histories, Middle East Crisis, Vol. 3, and the National Archives and Records Administration, RG 59, Central Files 1967–69, POL 27 ARAB–ISR",
+    "documentId" : "d229",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v19"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security Files, Country File, India, Cables, Vol. I, 12/63–11/64",
+    "documentId" : "d26",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v25"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ibid.",
+    "documentId" : "d279",
+    "inherited" : true,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v26"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security File, Name File, Vice President, Vol. I",
+    "documentId" : "d66",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v29p2"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security File, Files of Walt W. Rostow , Meetings with the President, April–December 1966",
+    "documentId" : "d322",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v31"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Johnson Library, National Security File, Country File, British Guiana, Vol. II Memos, 12/63–7/64",
+    "documentId" : "d392",
+    "inherited" : false,
+    "unitId" : "txt:johnson library|national security file",
+    "unitName" : "National Security File",
+    "volumeId" : "frus1964-68v32"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ibid.",
+    "documentId" : "d55",
+    "inherited" : true,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v02"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ford Library, Arthur Burns Papers, Box A18, Report to President Elect Nixon",
+    "documentId" : "d185",
+    "inherited" : false,
+    "unitId" : "txt:ford library|arthur burns paper",
+    "unitName" : "Arthur Burns Papers",
+    "volumeId" : "frus1969-76v04"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ibid., Nixon Presidential Materials, NSC Files, Box 94, Vietnam Subject Files, Vietnam—U.S",
+    "documentId" : "d199",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v06"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, Box 853, For the President’s Files— Lord , Vietnam Negotiations, Sensitive, Camp David, Vol. IX",
+    "documentId" : "d233",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v07"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "A record of that meeting and memorandum of major conclusions are in the National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files",
+    "documentId" : "d92",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v10"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, Box 713, Country Files, Europe, USSR , Vol. X",
+    "documentId" : "d73",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v13"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, Box 573, Indo-Pak War, South Asia, 12/14/71–12/16/71",
+    "documentId" : "d25",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v14"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "National Archives, RG 59, Lot 81 D 286, Records of the Office of the Counselor, 1955–1977, Box 8, Soviet Union—Secretary’s Trip, March 1974",
+    "documentId" : "d168",
+    "inherited" : false,
+    "unitId" : "lot:81D286",
+    "unitName" : "Lot File 81D286, Records of the Office of the Counselor",
+    "volumeId" : "frus1969-76v15"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, Kissinger Office Files, Box 86, Country Files—East Asia, U.S. China Policy, 1969–1972",
+    "documentId" : "d149",
+    "inherited" : false,
+    "unitId" : "txt:nixon|kissinger office file",
+    "unitName" : "Kissinger Office Files",
+    "volumeId" : "frus1969-76v17"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, Box 527, Country Files, Far East, People’s Republic of China, Vol. 7, May, 1973–Jul 9, 1973",
+    "documentId" : "d117",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v18"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "National Archives, RG 59, Ambassador Bunker ’s Correspondence, Lot 78D300, Box 1, Basic Policy Documents 70 – 73",
+    "documentId" : "d12",
+    "inherited" : false,
+    "unitId" : "lot:78D300",
+    "unitName" : "Lot 78D300, Ambassador Bunker’s Correspondence",
+    "volumeId" : "frus1969-76v22"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, Box 656, Country Files, Middle East, Middle East Nodis/Cedar/Plus, Vol. I",
+    "documentId" : "d213",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v23"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files",
+    "documentId" : "d307",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v24"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, NSC Files, Box 611, Country Files, Middle East, Israel, Vol. 13, Nov. 73–Dec",
+    "documentId" : "d368",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v25"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "A memorandum of conversation is in the National Archives, RG 59, Records of Henry Kissinger , 1973–1977, Lot 91D414, Classified External Memoranda of Conversations, September 1976",
+    "documentId" : "d206",
+    "inherited" : false,
+    "unitId" : "lot:91D414",
+    "unitName" : "Lot File 91D414, Records of Henry Kissinger, 1973–77",
+    "volumeId" : "frus1969-76v28"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "National Archives, Nixon Presidential Materials, White House Tapes, Oval Office, Conversation 853–12",
+    "documentId" : "d3",
+    "inherited" : false,
+    "unitId" : "txt:nixon|white house tape",
+    "unitName" : "White House Tapes",
+    "volumeId" : "frus1969-76v31"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Brzezinski Material, Subject File, Box 55, SALT : Chronology: 3/25/77–5/9/77",
+    "documentId" : "d160",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1969-76v33"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ibid.",
+    "documentId" : "d93",
+    "inherited" : true,
+    "unitId" : "txt:ford library|nsc institutional file",
+    "unitName" : "NSC Institutional Files",
+    "volumeId" : "frus1969-76v35"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Staff Material, International Economics File, Box 44, Rutherford Poats File, Chron, 9–11/78",
+    "documentId" : "d162",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1969-76v37"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Both ibid., Nixon Presidential Materials, NSC Files, Box 708, Country Files, Europe, Switzerland, Vol. II",
+    "documentId" : "d177",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v39"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "ibid.",
+    "documentId" : "d326",
+    "inherited" : true,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v40"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Heath ’s November 23 reply is in the National Archives, Nixon Presidential Materials, NSC Files, Box 727, Country Files—Europe, United Kingdom, Vol. IV",
+    "documentId" : "d331",
+    "inherited" : false,
+    "unitId" : "txt:nixon|nsc file",
+    "unitName" : "NSC Files",
+    "volumeId" : "frus1969-76v41"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, Presidential Materials, President’s Daily Diary",
+    "documentId" : "d268",
+    "inherited" : false,
+    "unitId" : "txt:carter library|presidential material",
+    "unitName" : "Presidential Materials",
+    "volumeId" : "frus1977-80v02"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, Staff Office Files, Council of Economic Advisers, Charles L. Schultze Subject Files, Box 51, Memos from President [1]",
+    "documentId" : "d246",
+    "inherited" : false,
+    "unitId" : "txt:carter library|staff office file",
+    "unitName" : "Staff Office Files",
+    "volumeId" : "frus1977-80v03"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, Presidential Materials, President’s Daily Diary",
+    "documentId" : "d114",
+    "inherited" : false,
+    "unitId" : "txt:carter library|presidential material",
+    "unitName" : "Presidential Materials",
+    "volumeId" : "frus1977-80v08"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "J.” is in the Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 36, Israel: 3/16–31/80",
+    "documentId" : "d353",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v09Ed2"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, Records of David D. Newsom , Under Secretary of State for Political Affairs, Subject Files, 1978–1981, Lot 81D154, Iran Claims/Assets Litigations",
+    "documentId" : "d210",
+    "inherited" : false,
+    "unitId" : "lot:81D154",
+    "unitName" : "Lot 81 D 154, Records of the Under Secretary of State for Political Affairs, 1978–1981",
+    "volumeId" : "frus1977-80v11p1"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Ibid.",
+    "documentId" : "d159",
+    "inherited" : true,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v13"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Staff Material, North/South, Pastor Files, Country Files, Box 36, Nicaragua: 7/15–17/79",
+    "documentId" : "d276",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v15"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 46, Latin America: 10/15–31/79",
+    "documentId" : "d487",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v15"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Staff Material, Middle East, Subject File, Box 92, Yemen: Arab Republic",
+    "documentId" : "d249",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v18"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Staff Material, Europe, USSR , and East/West, Box 29, Romania 6/77–10/80",
+    "documentId" : "d223",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v20"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 10, Cuba, 2–4/78",
+    "documentId" : "d84",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v23"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Ibid.",
+    "documentId" : "d111",
+    "inherited" : true,
+    "unitId" : "lot:85D366",
+    "unitName" : "Chron and Official Records of the Assistant Secretary for Human Rights and Humanitarian Affairs, Lot 85D366",
+    "volumeId" : "frus1977-80v24"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Carter Library, National Security Affairs, Staff Material, North/South, Pastor Country File, Box 1, Argentina: 8–12/79",
+    "documentId" : "d457",
+    "inherited" : false,
+    "unitId" : "txt:carter library|national security affair",
+    "unitName" : "National Security Affairs",
+    "volumeId" : "frus1977-80v26"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "The July 20 memorandum from Jorden to Linowitz and Bunker documenting this meeting is in the National Archives, RG 59, Official and Personal Files of Ambassador at Large Ellsworth Bunker , Lot 78D300, Box 4, Panama Key Documents, 1977",
+    "documentId" : "d67",
+    "inherited" : false,
+    "unitId" : "lot:78D300",
+    "unitName" : "Lot 78D300, Ambassador Bunker’s Correspondence",
+    "volumeId" : "frus1977-80v29"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Ibid.",
+    "documentId" : "d204",
+    "inherited" : true,
+    "unitId" : "lot:89D149",
+    "unitName" : "Lot 89D149: S/P , Memoranda/Correspondence from the Director of the Policy Planning Staff",
+    "volumeId" : "frus1981-88v01"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Department of State, Executive Secretariat, S/S , Top Secret/Secret Sensitive Memorandum, Lot 91D257, Eggplant II, September–December 1985 NP",
+    "documentId" : "d124",
+    "inherited" : false,
+    "unitId" : "lot:91D257",
+    "unitName" : "Lot 91D257: Executive Secretariat, S/S , Top Secret/Secret Sensitive Memorandum",
+    "volumeId" : "frus1981-88v05"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Reagan Library, Executive Secretariat, NSC Cable File, Falkland File 05/25/1982",
+    "documentId" : "d293",
+    "inherited" : false,
+    "unitId" : "txt:reagan library|executive secretariat",
+    "unitName" : "Executive Secretariat, National Security Council",
+    "volumeId" : "frus1981-88v13"
+  },
+  {
+    "anchor" : "presidentialLibrary",
+    "citation" : "Copies of both memoranda are in the Reagan Library, George Shultz Papers, Executive Secretariat Sensitive",
+    "documentId" : "d232",
+    "inherited" : false,
+    "unitId" : "txt:reagan library|george shultz paper",
+    "unitName" : "George Shultz Papers",
+    "volumeId" : "frus1981-88v38"
+  },
+  {
+    "anchor" : "lotFile",
+    "citation" : "Handwritten notes are in Department of State, Verification, Compliance and Implementation, Lot 06D436, Verification, Compliance and Implementation Subject Files, 1983–2005, JCIC-VII Sept. 90",
+    "documentId" : "d153",
+    "inherited" : false,
+    "unitId" : "lot:06D436",
+    "unitName" : "Lot 06D436, Verification, Compliance and Implementation, Subject Files, 1983–2005",
+    "volumeId" : "frus1989-92v31"
+  }
+]

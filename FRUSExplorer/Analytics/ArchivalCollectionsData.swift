@@ -273,6 +273,10 @@ struct ArchivalCollectionsData: Sendable {
     /// print. The two are never added — that addition is the defect #783 removed.
     let collectionPointers: [[String: Int]]
 
+    /// Per-band references naming each central-file CLASS — the class lens's pointer vocabulary
+    /// (#834). Empty before schema 2, which is why the weight was withheld on this lens.
+    let classPointers: [[String: Int]]
+
     /// Whether the pointer weight can be drawn — `false` when the external-citation index is
     /// missing, in which case the weight is disabled rather than ranking an empty table.
     let supportsPointerWeight: Bool
@@ -347,10 +351,17 @@ struct ArchivalCollectionsData: Sendable {
         // The pointer weight, banded by the CITING volume's coverage — the same rule the other two
         // use, so the bands still partition the corpus and a multi-band ranking can add them.
         var collectionPointers = [[String: Int]](repeating: [:], count: bandCount)
+        var classPointers = [[String: Int]](repeating: [:], count: bandCount)
         if let external {
             external.forEachReference { targetId, volumeId, count in
                 guard let band = bandByVolume[volumeId] else { return }
                 collectionPointers[band][targetId, default: 0] += count
+            }
+            // #834: the class lens gains the same weight, banded by the same rule, so a reader can
+            // switch lenses without the axis meaning something different.
+            external.forEachClassReference { classKey, volumeId, count in
+                guard let band = bandByVolume[volumeId] else { return }
+                classPointers[band][classKey, default: 0] += count
             }
         }
 
@@ -367,6 +378,7 @@ struct ArchivalCollectionsData: Sendable {
             records: records,
             supportsDocumentWeight: usage != nil,
             collectionPointers: collectionPointers,
+            classPointers: classPointers,
             supportsPointerWeight: external != nil,
             volumesPlaced: bandByVolume.count)
     }
@@ -532,12 +544,12 @@ struct ArchivalCollectionsData: Sendable {
             case (.namedCollections, .unprintedPointers): source = collectionPointers[index]
             case (.centralFileClasses, .documents): source = classDocuments[index]
             case (.centralFileClasses, .volumes): source = classVolumes[index]
-            // **The class lens has no pointer vocabulary at all.** #784's harvest covers lot files
-            // and presidential libraries; it never reads a decimal class, so there is nothing to
-            // rank. The weight is disabled on this lens in the UI (`supports(_:for:)`), and this
-            // case exists so the combination degrades to an empty ranking rather than to whichever
-            // table an inexhaustive switch would have fallen through to.
-            case (.centralFileClasses, .unprintedPointers): source = [:]
+            // #834 filled this. #784's harvest read lot files and presidential libraries only, so
+            // the class lens had no pointer vocabulary and the weight was withheld; schema 2 adds
+            // the decimal channel and this ranks it. **62% of those references are a document
+            // citing its own file** — the caveat says so, because the count alone reads as
+            // outward pointers and is roughly 3x the outward figure.
+            case (.centralFileClasses, .unprintedPointers): source = classPointers[index]
             }
             if table.isEmpty {
                 table = source

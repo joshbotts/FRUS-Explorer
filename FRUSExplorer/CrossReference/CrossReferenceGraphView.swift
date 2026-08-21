@@ -108,11 +108,17 @@ private enum CompactGraphContent {
 ///          citing the central files by decimal number (`681.8229/8–2950`) yields no node at all,
 ///          and the reader had no way to tell that case from a document whose editors cited
 ///          nothing. Measured over the shippable corpus, that is the majority channel well past
-///          the point the old wording implied: in `frus1950v05`, 446 of 2,623 body footnotes name
-///          a decimal file against 77 a lot and 2 a library; over a 20-volume 1950s sample,
-///          3,883 decimal against 880 lot and 92 library. `ArchivalFlowsView` already disclosed
-///          this ("which this measure does not yet read"); the graph, built on the same index,
-///          did not — so the two surfaces described the same limit differently.
+///          the point the old wording implied. The per-volume figures this comment used to quote
+///          came from a proxy regex over raw `<note>` elements whose own denominator (579,563
+///          footnotes) does not reproduce; #834 re-measured through `DocumentFootnoteExtractor`
+///          and counts 470,827, finding 28,721 central-file references corpus-wide against 19,800
+///          lot and library ones. `ArchivalFlowsView` already disclosed the limit; the graph,
+///          built on the same index, did not — so the two surfaces described it differently.
+///   2.3 — Session 2026-08-20: #834 ships the central-file channel in the ARTIFACT, so Archival
+///          Analytics reads it. This graph does not: its teal nodes come from the
+///          `external_citations` TABLE, which gains a class column only with the index-version
+///          bump #834's third commit carries. The copy now says which surface reads what, rather
+///          than claiming the app cannot read these citations at all.
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1488,7 +1494,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
                 body:  String(localized: "graph.info.interact.body",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead.\n\nOnly two kinds of citation are read: State Department lot files, and collections in the presidential libraries. A footnote that cites the central files by decimal number, such as 681.8229/8–2950, is not read at all — so a document whose editors cited that way shows no teal nodes however many archival footnotes it carries. Citing the central files by number is the usual practice in the earlier volumes and still accounts for most archival footnotes in the volumes covering the 1950s, so an empty graph is not evidence that the editors cited little. Separately, a citation that was read but could not be matched to a known collection is left off rather than drawn as a guess.")
+                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead.\n\nThis graph draws two kinds of citation: State Department lot files, and collections in the presidential libraries. A footnote that cites the central files by decimal number, such as 681.8229/8–2950, shows no teal node here — so a document whose editors cited that way can look bare however many archival footnotes it carries. Citing the central files by number is the usual practice in the earlier volumes and still accounts for most archival footnotes in the volumes covering the 1950s, so an empty graph is not evidence that the editors cited little. Those citations are counted in Archival Analytics, which reads them; only this per-document graph does not yet. Separately, a citation that was read but could not be matched to a known collection is left off rather than drawn as a guess.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",

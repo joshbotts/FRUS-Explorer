@@ -393,11 +393,11 @@ public enum DecimalChannelMeasurement {
     /// only the first two: does the key open with a real class digit followed by a real country
     /// number? The subject suffix is deliberately not required, because the shipped subject
     /// vocabulary covers classes 6 and 8 only.
-    struct ScheduleValidator {
+    public struct ScheduleValidator {
         private let classes: Set<String>
         private let countries: Set<String>
 
-        init(labelsPath: String) throws {
+        public init(labelsPath: String) throws {
             struct Payload: Decodable {
                 struct Schedule: Decodable {
                     let id: String
@@ -423,7 +423,7 @@ public enum DecimalChannelMeasurement {
         /// Country numbers are two digits with an optional letter suffix (`51r` is Algeria), so the
         /// longer match is tried first — otherwise `851R.00` would test `51` (France) and silently
         /// attribute an Algerian file to France.
-        func composes(_ key: String) -> Bool {
+        public func composes(_ key: String) -> Bool {
             let stem = key.split(separator: ".").first.map(String.init) ?? key
             guard let first = stem.first, classes.contains(String(first)) else { return false }
             let rest = stem.dropFirst().lowercased()
