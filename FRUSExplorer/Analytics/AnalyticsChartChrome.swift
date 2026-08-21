@@ -475,7 +475,10 @@ struct AnalyticsScopeBar: View {
         // every set reaching `setScope` is non-empty AND indexed — the empty→nil
         // "no filter" inversion cannot fire, and no dashboard is scoped to volumes it
         // has no data for. Content is built lazily when the sub-menu opens.
-        if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
+        // #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled — the
+        // profile map is top-15 per volume (10.8% of memberships). Falls back to profiles.
+        if let resolved = DocumentSubjectStore.shared?.subjectsByVolume
+            ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume,
            !resolved.isEmpty {
             Divider()
             subjectScopeMenu(resolved)

@@ -156,7 +156,11 @@ struct VolumeSubjectVolumesSheet: View {
     /// archives do volumes on this subject draw on", and dropping one of them would quietly
     /// under-count. The button's own count says which set it means.
     private var coveringVolumeIds: [String] {
-        VolumeSubjectProfilesStore.shared?.volumesBySubjectRef[subject.ref] ?? []
+        // #308 Phase 3: "other volumes covering this subject" must mean every volume that
+        // contains it, not only those whose top-15 profile ranks it — the pivot claimed the
+        // former and delivered the latter.
+        DocumentSubjectStore.shared.map { Array($0.volumeIds(forSubjectRef: subject.ref)).sorted() }
+            ?? VolumeSubjectProfilesStore.shared?.volumesBySubjectRef[subject.ref] ?? []
     }
 
     /// The pluralized section header. Two keys per context rather than a format inflection so

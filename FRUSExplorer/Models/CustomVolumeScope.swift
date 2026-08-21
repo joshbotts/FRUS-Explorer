@@ -206,10 +206,38 @@ enum ScopeFacets {
                                                    : $0.name < $1.name }
     }
 
-    /// The volumes whose profile carries a subject (the frus-subjects facet).
+    /// The volumes carrying a subject (the frus-subjects facet).
+    ///
+    /// **What is passed in decides whether this answers the question asked.** Given the volume
+    /// profiles' `volumesBySubjectRef` it returns the volumes whose TOP-15 carries the subject —
+    /// 11.7% of real memberships, so *Agriculture* resolves to 51 volumes of the 526 that contain
+    /// it. Given `DocumentSubjectStore.shared?.volumesBySubjectRef` it returns all of them. The
+    /// call sites pass the complete map when the document index is bundled (#308 Phase 3).
     static func volumeIds(forSubjectRef ref: String,
                           volumesBySubjectRef: [String: [String]]) -> Set<String> {
         Set(volumesBySubjectRef[ref] ?? [])
+    }
+
+    /// The searchable subject catalogue built from the **complete** document-grain vocabulary.
+    ///
+    /// The `resolvedByVolume` overload above derives its names from the volume profiles, so it can
+    /// only ever list subjects that reach some volume's top-15 — **380 of 491**. The other 111 are
+    /// not rare curiosities: they are subjects spread thinly enough across many volumes that they
+    /// never rank in any one, which is precisely the kind a reader would want a facet for.
+    static func subjectCatalog(
+        vocabulary: [(ref: String, name: String, category: String, subcategory: String)],
+        volumesBySubjectRef: [String: [String]]
+    ) -> [SubjectEntry] {
+        vocabulary
+            .map { entry in
+                SubjectEntry(ref: entry.ref, name: entry.name, category: entry.category,
+                             subcategory: entry.subcategory,
+                             volumeCount: volumesBySubjectRef[entry.ref]?.count ?? 0)
+            }
+            // Same order as the profile-derived catalogue: reach first, then name, so the two
+            // sources present identically and switching between them is invisible.
+            .sorted { $0.volumeCount != $1.volumeCount ? $0.volumeCount > $1.volumeCount
+                                                       : $0.name < $1.name }
     }
 
     // MARK: Subject category / sub-category facets (#308 Phase 1)

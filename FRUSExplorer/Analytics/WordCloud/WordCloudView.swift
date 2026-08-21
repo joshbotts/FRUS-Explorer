@@ -1516,7 +1516,10 @@ struct WordCloudView: View {
     /// returns a bare empty set — Analytics reads that as "no filter" (#258 invariant).
     private func subjectCategoryAnalyticsIds() -> [String]? {
         guard case let .subjectCategory(category, subcategory) = scope else { return nil }
-        let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+        // #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled — the
+        // profile map is top-15 per volume (10.8% of memberships). Falls back to profiles.
+        let resolved = DocumentSubjectStore.shared?.subjectsByVolume
+            ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
         let ids: Set<String>
         if let subcategory {
             ids = ScopeFacets.volumeIds(forCategory: category, subcategory: subcategory,
@@ -1791,7 +1794,10 @@ private struct WordCloudScopeBar: View {
     /// The bundled volume-subject profiles, `volumeId → [ResolvedSubject]`, or empty when
     /// the index isn't present in the bundle (the "By Detected Topic" menu then hides).
     private var resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
-        VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+        // #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled — the
+        // profile map is top-15 per volume (10.8% of memberships). Falls back to profiles.
+        DocumentSubjectStore.shared?.subjectsByVolume
+            ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
     }
 
     /// The "By Detected Topic" scope menu (#308 F6): a two-level drill-down over the bundled
