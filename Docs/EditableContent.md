@@ -3442,9 +3442,9 @@ Which collections' footnotes send you here
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 620 | key: archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 644 | key: archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld -->
 
-This layer reads two kinds of citation only: State Department lot files, and collections in the presidential libraries. Both are ways of filing that came in after 1945, so the earlier volumes are almost absent here even though their footnotes are full of archival citations. Those earlier citations give a file number in the central files, which this measure does not yet read. %1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series.
+%1$lld citations were found and %2$lld of them matched a known collection, across %3$lld of the %4$lld volumes in the series. What this layer reads, and why the earlier volumes are nearly absent, is in the ⓘ.
 
 <!-- END SOURCE: archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld -->
 
@@ -3920,9 +3920,9 @@ Read this first: every row is an editorial footnote naming archival material FRU
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 258 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 261 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
 
-Scope: State Department lot files and presidential-library collections only. Both are post-1945 ways of filing, so pre-war volumes are nearly absent even though their footnotes cite archives heavily — those citations give a central-file number, which this measure does not yet read. %1$lld of the %2$lld volumes in the series contribute a row.
+Scope: State Department lot files, presidential-library collections, and central-file numbers. The first two are post-1945 ways of filing; the third is how the earlier volumes cite, which is why they were nearly absent from this measure until it was added. Most central-file citations name the citing document’s own file rather than another — about three in five — so they are counted but are not movement between archives. %1$lld of the %2$lld volumes in the series contribute a row.
 
 <!-- END SOURCE: archival.export.caveat.flows.unprinted.scope %lld %lld -->
 

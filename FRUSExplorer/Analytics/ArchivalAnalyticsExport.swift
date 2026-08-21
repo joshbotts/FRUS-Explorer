@@ -258,7 +258,7 @@ enum ArchivalAnalyticsExport {
                     Int64(facts.referencesFound), Int64(facts.referencesJoined)),
                 String(format: String(
                     localized: "archival.export.caveat.flows.unprinted.scope %lld %lld",
-                    defaultValue: "Scope: State Department lot files and presidential-library collections only. Both are post-1945 ways of filing, so pre-war volumes are nearly absent even though their footnotes cite archives heavily — those citations give a central-file number, which this measure does not yet read. %1$lld of the %2$lld volumes in the series contribute a row."),
+                    defaultValue: "Scope: State Department lot files, presidential-library collections, and central-file numbers. The first two are post-1945 ways of filing; the third is how the earlier volumes cite, which is why they were nearly absent from this measure until it was added. Most central-file citations name the citing document\u{2019}s own file rather than another — about three in five — so they are counted but are not movement between archives. %1$lld of the %2$lld volumes in the series contribute a row."),
                     Int64(data.volumesWithEdges), Int64(data.volumesScanned)),
                 String(format: String(
                     localized: "archival.export.caveat.flows.unprinted.ibid %@",
