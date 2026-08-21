@@ -366,6 +366,17 @@ enum PersonSubjectAffinity {
     /// Ranks a person's subject affinities. `topSubjectsByVolume` returns a volume's profile
     /// subjects (`nil` when the volume has no bundled profile — that volume is skipped). Ties on
     /// weight break by subject name for determinism; the result is capped to `limit`.
+    ///
+    /// **`topSubjectsByVolume` must be the PROFILE producer, not the document-subject index**, and
+    /// the compiler cannot tell them apart: both vend `[ResolvedSubject]` per volume, and the app
+    /// swaps one for the other at six other call sites to widen their reach. Here the swap would
+    /// be wrong, because this is the one place that does arithmetic on
+    /// ``VolumeSubjectProfiles/ResolvedSubject/score`` rather than sorting by it. The profile score
+    /// varies per volume — how characteristic the subject is of that volume — so
+    /// `Σ documentCount × score` is a genuine affinity. The document index's score is corpus IDF,
+    /// a constant per subject, which factors out of the sum and leaves rarity × total mentions:
+    /// the same type, plausible output, and a different question answered. See the field's own
+    /// documentation (#1024).
     static func rank(
         mentionCounts: [(volumeId: String, documentCount: Int)],
         topSubjectsByVolume: (String) -> [VolumeSubjectProfiles.ResolvedSubject]?,

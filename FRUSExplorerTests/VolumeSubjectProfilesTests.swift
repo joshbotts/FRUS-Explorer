@@ -332,3 +332,99 @@ struct PersonSubjectAffinityTests {
         #expect(ranked.isEmpty)
     }
 }
+
+
+// MARK: - SubjectMeaningTests
+
+/// Pins #1024: `ResolvedSubject.score` carries two different quantities depending on which producer
+/// built the value, and the difference is arithmetic, not cosmetic.
+///
+/// The field was documented as "the TF-IDF-style distinctiveness weight; ranks within a volume
+/// only" — written when the volume profiles were the only producer. The document-subject index
+/// now fills the same field with corpus IDF. Every *ordering* use stays correct under either, which
+/// is why this went unnoticed; the one consumer that does arithmetic on it
+/// (`PersonIndexView.SubjectAffinity.rank`) would silently change question if it were handed the
+/// other producer.
+///
+/// These tests pin the two properties the field's warning rests on. If they ever fail, the warning
+/// is what needs rewriting — not the tests.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1024
+@Suite("Subject score means two things (#1024)")
+struct SubjectMeaningTests {
+
+    /// The document producer's score is a corpus constant: identical for a ref in every volume.
+    /// This is the property that makes it factor out of `Σ documentCount × score`.
+    @MainActor
+    @Test("The document-grain score is constant per subject across volumes")
+    func documentScoreIsCorpusConstant() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        var seen: [String: Double] = [:]
+        var varying: [String] = []
+        for (_, subjects) in index.subjectsByVolume {
+            for subject in subjects {
+                if let previous = seen[subject.ref] {
+                    if previous != subject.score { varying.append(subject.ref) }
+                } else {
+                    seen[subject.ref] = subject.score
+                }
+            }
+        }
+        #expect(varying.isEmpty, """
+            \(varying.count) subjects vary in score across volumes at the document grain. That \
+            score is documented as corpus IDF — a constant — and PersonIndexView's affinity \
+            warning depends on it being one.
+            """)
+    }
+
+    /// The profile producer's score is NOT constant — it is per-volume, which is what makes an
+    /// affinity sum meaningful there. Two producers, two quantities, one field.
+    @MainActor
+    @Test("The profile-grain score varies per volume for the same subject")
+    func profileScoreVariesByVolume() throws {
+        let profiles = try #require(VolumeSubjectProfilesStore.shared)
+        var seen: [String: Double] = [:]
+        var varying = 0
+        for (volumeId, _) in profiles.resolvedByVolume {
+            for subject in profiles.topSubjects(forVolumeId: volumeId) ?? [] {
+                if let previous = seen[subject.ref], previous != subject.score { varying += 1 }
+                seen[subject.ref] = subject.score
+            }
+        }
+        #expect(varying > 0, """
+            No subject's profile score varies across volumes. If the profiles have become a corpus \
+            constant too, the two producers now agree and #1024's warning — and the affinity \
+            ranking that depends on the variation — should be revisited.
+            """)
+    }
+
+    /// And the two disagree in fact, for subjects both carry. Without this the warning would be
+    /// theoretical: two producers that happened to agree could be swapped freely.
+    @MainActor
+    @Test("The two producers disagree on the same subject in the same volume")
+    func producersDisagree() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let profiles = try #require(VolumeSubjectProfilesStore.shared)
+        let documentScores = index.subjectsByVolume
+        var compared = 0
+        var disagreed = 0
+        for (volumeId, _) in profiles.resolvedByVolume {
+            guard let profileSubjects = profiles.topSubjects(forVolumeId: volumeId),
+                  let documentSubjects = documentScores[volumeId] else { continue }
+            let byRef = Dictionary(documentSubjects.map { ($0.ref, $0.score) },
+                                   uniquingKeysWith: { a, _ in a })
+            for subject in profileSubjects {
+                guard let documentScore = byRef[subject.ref] else { continue }
+                compared += 1
+                if abs(documentScore - subject.score) > 1e-9 { disagreed += 1 }
+            }
+        }
+        #expect(compared > 0, "no (subject, volume) pair is carried by both producers")
+        #expect(disagreed > compared / 2, """
+            Only \(disagreed) of \(compared) shared (subject, volume) pairs disagree. The field's \
+            warning claims the two producers store different quantities; near-agreement would mean \
+            they do not.
+            """)
+    }
+}

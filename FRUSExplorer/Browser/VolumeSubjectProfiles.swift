@@ -44,7 +44,39 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
         let category: String
         /// Second-level subcategory.
         let subcategory: String
-        /// The TF-IDF-style distinctiveness weight; ranks within a volume only.
+        /// An **ordering weight, whose arithmetic meaning depends on which producer built the
+        /// value** — never a displayed number, and never comparable across producers.
+        ///
+        /// Two producers fill this field, because `ResolvedSubject` is deliberately one shape that
+        /// both grains flow through (see ``DocumentSubjectIndex.subjectsByVolume``, whose whole
+        /// purpose is answering completely "with no change to their signatures"):
+        ///
+        /// - **`VolumeSubjectProfiles`** (`resolvedByVolume`, `topSubjects(forVolumeId:)`) stores
+        ///   the bundled per-volume TF-IDF weight: how characteristic this subject is *of this
+        ///   volume*. It varies by volume for the same subject, and that variation is the signal.
+        /// - **`DocumentSubjectIndex`** (`subjects(forDocument:)`, `hierarchy(forDocument:)`,
+        ///   `subjectsByVolume`) stores the corpus IDF `log(N/df)`: how much the subject narrows
+        ///   the corpus. It is a **constant per subject**, identical in every volume and document
+        ///   it appears in.
+        ///
+        /// Both are descending-distinctive, so every ordering use is correct under either — which
+        /// is why the field was documented as "ranks within a volume only" and read past for two
+        /// waves. Ordering is not the hazard.
+        ///
+        /// **The hazard is arithmetic, and there is exactly one such consumer.**
+        /// ``PersonIndexView.SubjectAffinity.rank(mentionCounts:topSubjectsByVolume:limit:)`` sums
+        /// `documentCount × score` across volumes. Under the profile producer that is an affinity:
+        /// a person weighted toward the subjects the volumes they appear in are *about*. Swap in
+        /// the document producer — which six sites in this app already do to their profile lookups,
+        /// in the form `DocumentSubjectStore.shared?.subjectsByVolume ?? profiles…`, and which
+        /// would read at that call site like an obvious completeness improvement — and the constant
+        /// IDF factors straight out of the sum, so it degenerates to `IDF × total mentions` and
+        /// ranks by corpus rarity rather than by affinity. Same field, same type, plausible
+        /// numbers, different question answered.
+        ///
+        /// So: **sort by it freely; sum, average, threshold, or display it only against a producer
+        /// you have named.** `SubjectMeaningTests` pins that the two producers really do disagree,
+        /// and that the document one is constant per ref — the properties this warning rests on.
         let score: Double
 
         var id: String { ref }
