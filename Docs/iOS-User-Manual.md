@@ -452,7 +452,7 @@ The app is deliberate about keeping your working context when you follow links; 
 
 ### 8.5 Related Documents
 
-A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Tap the **Related** tile in the Research rail for a ranked list of the indexed documents most related to the one you're reading, scored along five signals:
+A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Tap the **Related** tile in the Research rail for a ranked list of the indexed documents most related to the one you're reading, scored along seven signals:
 
 | Signal | What it connects |
 |--------|------------------|
@@ -461,11 +461,15 @@ A cross-reference tells you what a document *cites*; **Related Documents** tells
 | **Close in date** | Documents written around the same time |
 | **Corpus proximity** | How closely the FRUS editors placed the two — same chapter or compilation, printed side by side, or (across volumes) the same publication era |
 | **Shared people** | Documents mentioning the same reconciled identities |
+| **Shared topics** | Documents carrying the same detected topics, weighted so a rare topic counts for more than a common one |
+| **Semantic similarity** | *Experimental, and off until you move its slider.* Documents whose language reads alike, whether or not they share words |
 
-Each row shows the document's header, volume, and dateline, plus small **"why related" chips** naming the signals that contributed, strongest first. A chip states only what its signal can honestly report: **cited 3×** for cross-references; for archival provenance, the container and its size — **Lot 54 D 270 · 1 of 1,063** — because sharing a six-document lot file is a finding and sharing one of seven thousand is a filing-cabinet coincidence. (Those two signals *find* candidates rather than scoring them, so no percentage is shown for them; date, corpus proximity, and shared people report percentages, which for them are real measures.)
+Each row shows the document's header, volume, and dateline, plus small **"why related" chips** naming the signals that contributed, strongest first. A chip states only what its signal can honestly report: **cited 3×** for cross-references; for archival provenance, the container and its size — **Lot 54 D 270 · 1 of 1,063** — because sharing a six-document lot file is a finding and sharing one of seven thousand is a filing-cabinet coincidence. (Those two signals *find* candidates rather than scoring them, so no percentage is shown for them; date, corpus proximity, shared people, shared topics, and semantic similarity report percentages, which for them are real measures.) A shared-topics chip names the topics themselves — **topics: Berlin blockade, Economic sanctions** — most distinctive first, because two documents sharing *Berlin blockade* is a finding and two sharing *War* is not.
 
 - **Scope** narrows the candidate pool — **This volume**, **This subseries**, or **All volumes**; an empty scoped list invites widening back out.
-- **Adjust weights** exposes a slider per signal; release one and the list re-ranks immediately. Your tuning is remembered and seeds the next Related Documents you open. (A sixth slider, **Shared topics**, is visible but disabled until detected-topic document data ships.)
+- **Adjust weights** exposes a slider per signal; release one and the list re-ranks immediately. Your tuning is remembered and seeds the next Related Documents you open, and **Reset** returns every slider to its default. Your tuning records only the sliders you actually move, so a signal you leave alone follows the app's default even after that default changes — which is how the shared-topics default reached readers who had already tuned something else.
+
+  **Shared topics** is live and weighted below the editorial signals on purpose: detected topics are matched by name and variants, recall-oriented, and a few are wrong. **Semantic similarity** is experimental and starts at zero; drag it above zero to include it.
 - Footers are honest: one counts how many more documents qualify than the list shows; another appears when the candidate pool itself was cut on a very large archival container — *"Ranked from the first 120 of 1,063 documents that share this anchor's archival container"* — and narrowing the scope is what reaches the rest.
 
 On an iPad with Stage Manager the list opens as its own persistent window (Section 4.5); on iPhone, as a sheet with a Done button.

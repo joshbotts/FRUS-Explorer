@@ -55,7 +55,16 @@ struct ResearchGuideCoverageTests {
         "archival analytics": ["archival analytics"],
         // V-4: the semantic map shipped as an analytics window. Same shape as the row above — the
         // app's own Analysis Tools tooltip listed it while the guide did not.
-        "semantic analytics": ["semantic analytics"]
+        "semantic analytics": ["semantic analytics"],
+        // #1026: the guide taught the VOLUME grain only. The document-grain Subjects section in the
+        // results Facets panel narrows the result set and went unmentioned, while the sentence that
+        // did cover subjects claimed a distinctiveness filter the app had stopped applying.
+        //
+        // TERMS CHOSEN TO FAIL AGAINST THE OLD TEXT, which is the whole discipline here: "subjects"
+        // and "facet" were both already present, so a row using them would have passed on the day
+        // it was added and pinned nothing. Both of these were absent from the guide, the mirror and
+        // both manuals before the section was written.
+        "the subjects facet on search results": ["subjects facet", "topic area"]
     ]
 
     private static func source(_ path: String) throws -> String {
