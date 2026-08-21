@@ -647,9 +647,21 @@ struct ArchivalExportWiringTests {
         // The scope is the FULL covering set. The list above the button excludes the volume being
         // viewed, and reusing that array would drop one volume from every profile opened from a
         // volume page — a silent under-count no figure on the destination would reveal.
-        #expect(sheet.contains("volumesBySubjectRef[subject.ref]"), """
-            The scope must be every volume covering the subject. `otherVolumeIds` excludes the \
-            volume in hand, so scoping to it would under-count by one on every volume-page open.
+        //
+        // Pinned at the CALL SITE rather than by naming the membership expression. The previous
+        // form matched the literal `volumesBySubjectRef[subject.ref]`, which was the fallback
+        // branch's text and not the hand-off's argument — so #1027 refactoring the two resolvers
+        // into one broke this test while preserving everything it meant to protect. A source scan
+        // has to match the control it is about (#1027).
+        #expect(sheet.contains("volumeIds: coveringVolumeIds"), """
+            The archival hand-off must be scoped to the FULL covering set. `otherVolumeIds` \
+            excludes the volume in hand, so scoping to it would under-count by one on every \
+            volume-page open.
+            """)
+        #expect(sheet.contains("var coveringVolumeIds: [String] { coveringVolumes(excluding: \"\") }"), """
+            `coveringVolumeIds` must resolve through the shared membership resolver excluding \
+            NOTHING. If it grows an exclusion, the scope silently loses the volume being viewed \
+            while the button's own count still includes it.
             """)
         #expect(!sheet.contains("volumeIds: otherVolumeIds"), """
             Scoping to the displayed list drops the current volume from the profile while the \
