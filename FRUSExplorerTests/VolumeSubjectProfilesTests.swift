@@ -342,9 +342,9 @@ struct PersonSubjectAffinityTests {
 /// The field was documented as "the TF-IDF-style distinctiveness weight; ranks within a volume
 /// only" — written when the volume profiles were the only producer. The document-subject index
 /// now fills the same field with corpus IDF. Every *ordering* use stays correct under either, which
-/// is why this went unnoticed; the one consumer that does arithmetic on it
-/// (`PersonIndexView.SubjectAffinity.rank`) would silently change question if it were handed the
-/// other producer.
+/// is why this went unnoticed; the two consumers that do arithmetic on it
+/// (`PersonSubjectAffinity.rank`, whose producer is injected, and `ProjectFocusSuggestions`, whose
+/// is type-pinned) would silently change question if handed the other producer.
 ///
 /// These tests pin the two properties the field's warning rests on. If they ever fail, the warning
 /// is what needs rewriting — not the tests.
@@ -425,6 +425,56 @@ struct SubjectMeaningTests {
             Only \(disagreed) of \(compared) shared (subject, volume) pairs disagree. The field's \
             warning claims the two producers store different quantities; near-agreement would mean \
             they do not.
+            """)
+    }
+
+    /// The enumeration itself, pinned. A count in prose goes stale silently; this fails when a
+    /// third site starts doing arithmetic on the field.
+    ///
+    /// Scans for accumulation (`+=`) against a `ResolvedSubject`'s `score` across the app. The two
+    /// known sites are allowed by name; anything else is a new arithmetic consumer the field's
+    /// warning does not cover, which is precisely how "exactly one" became wrong.
+    ///
+    /// **What this scan can and cannot see.** It matches the binding both real sites use
+    /// (`subject.score`) on a non-comment line. It deliberately does NOT match bare `.score`,
+    /// because the first draft did and produced two false positives: this suite's own doc comment
+    /// quoting the code, and `ProjectLeadsAggregator`'s `candidate.score`, which is a lead's score
+    /// and an unrelated type. A false positive is worse than a narrow scan here — a source test
+    /// that cries wolf gets its `known` list padded until it means nothing. The cost is that a
+    /// consumer binding the value under another name escapes it, so this supplements the field's
+    /// documentation rather than replacing it.
+    @MainActor
+    @Test("Only the two documented sites do arithmetic on ResolvedSubject.score")
+    func arithmeticConsumersAreEnumerated() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let known: Set<String> = ["PersonIndexView.swift", "ProjectFocusSuggestions.swift"]
+
+        var found: [String] = []
+        let files = try #require(FileManager.default.enumerator(at: root,
+                                                                includingPropertiesForKeys: nil))
+        for case let url as URL in files {
+            guard url.pathExtension == "swift" else { continue }
+            guard let source = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            for line in source.split(separator: "\n") {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.hasPrefix("//") else { continue }   // prose, not code
+                guard trimmed.contains("+="), trimmed.contains("subject.score") else { continue }
+                found.append(url.lastPathComponent)
+                break
+            }
+        }
+        let unexpected = Set(found).subtracting(known)
+        #expect(unexpected.isEmpty, """
+            New arithmetic on ResolvedSubject.score in: \(unexpected.sorted().joined(separator: ", ")). \
+            The field's doc enumerates its arithmetic consumers and explains why a producer swap \
+            changes the question each answers — add the new site to that note and to `known` here, \
+            or the next author will trust a count that is wrong again.
+            """)
+        #expect(Set(found).isSuperset(of: known), """
+            One of the documented sites no longer accumulates .score — found \(found.sorted()). If \
+            it was removed, shrink the doc's enumeration in the same commit.
             """)
     }
 }
