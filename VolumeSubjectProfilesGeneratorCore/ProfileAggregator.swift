@@ -97,7 +97,10 @@ enum ProfileAggregator {
         // refs, so the per-(subject, volume) filter below is an O(1) lookup.
         let (emergenceByRef, eraSanityUnmatched) = EraSanity.refYearMap(
             namesByRef: input.subjectsIndex.mapValues(\.name))
-        var eraSanityDropped = 0
+        // Always 0: the gate is retired (see the note at its former application site). The field
+        // is KEPT rather than deleted so the runner can report "retired" explicitly — a stat that
+        // silently vanished would read, to anyone diffing two runs, as a gate that found nothing.
+        let eraSanityDropped = 0
 
         // Per-subject, per-volume distinct document ids.
         // subjectVolumeDocs[ref][volumeId] = Set<docId>
@@ -142,14 +145,45 @@ enum ProfileAggregator {
             for (ref, volMap) in subjectVolumeDocs {
                 if genericRefs.contains(ref) { continue }
                 guard let docs = volMap[volumeId], docs.count >= parameters.minDocCount else { continue }
-                // #308 era-sanity: drop an anachronistic (subject, volume) tag — the subject's
-                // earliest-plausible year is later than the volume's coverage end, so the whole
-                // volume predates the subject. Conservative (named events only; see EraSanity).
-                if let emergence = emergenceByRef[ref],
-                   let coverageEnd = volumeCoverageEndYear[volumeId], emergence > coverageEnd {
-                    eraSanityDropped += 1
-                    continue
-                }
+                // #308 era-sanity: RETIRED 2026-08-20, owner decision. The gate is not applied.
+                //
+                // It tested the SUBJECT HEADING's earliest-plausible year against the volume's
+                // coverage end — but a tag is produced by the subject's match VARIANTS, and those
+                // deliberately predate the heading. Measured over the whole corpus, that made
+                // every one of its 92 drops wrong:
+                //
+                //   Refugees (1921)  74 drops — matches `Refugees` itself; frus1875v02 is a US
+                //                              minister sheltering 80 political refugees in his
+                //                              legation, frus1891 refugees taken off by boat in
+                //                              the Chilean civil war. Also violates the table's
+                //                              OWN rule: perennial concepts are excluded on
+                //                              purpose (see EraSanity's note on Human rights).
+                //   Cold War (1947)   9 drops — matches `Atomic weapons`, `Berlin issue`,
+                //                              `Communist parties`, `Soviet bloc`.
+                //   EEC (1957)        6 drops — matches `Conference on European Economic
+                //                              Cooperation` (1947), `Schuman Plan` (1950),
+                //                              `European Coal and Steel Community` (1951).
+                //   NATO (1949)       3 drops — matches `North Atlantic Pact` and `North Atlantic
+                //                              defense arrangements, proposed`.
+                //
+                // The dormant entries share the flaw and were only waiting for a volume to line
+                // up: `United Nations` matches `Disputes, pacific settlement of`, `World War I`
+                // matches 34 variants including `Baltic countries`.
+                //
+                // Its motivating case is also gone: the comment cites HIV/AIDS surfacing in a
+                // 1964-68 volume, and in the corrected export AIDS drops ZERO — it appears in four
+                // 1981-88 volumes and all 45 assignments were read and verified as genuine.
+                //
+                // NOT FIXABLE BY EDITING THE TABLE. The sound test needs the earliest plausible
+                // year of the variant that ACTUALLY MATCHED, and `document_subjects.json` records
+                // only subject -> volume -> documents; it never says which variant fired. That is
+                // an upstream schema change. `EraSanity` is kept, unapplied, so the research and
+                // the measurements survive for whoever gets that data.
+                //
+                // The risk it guarded is real — TF-IDF can amplify a rare anachronism into a
+                // top-ranked volume subject, which is why volume grain differs from document
+                // grain — but there is no instance of it in this data, and the gate cost 92
+                // legitimate entries to guard against none.
                 let corpusFreq = subjectCorpusDocFreq[ref] ?? docs.count
                 guard corpusFreq > 0 else { continue }
                 let tf = Double(docs.count) / Double(distinctDocsInVolume)

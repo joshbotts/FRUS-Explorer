@@ -114,7 +114,7 @@ public enum VolumeSubjectProfilesRunner {
         volume-subject-profiles-index.json written to \(outputPath)
           corpus tagged documents:  \(stats.corpusDistinctDocs)
           generic subjects dropped: \(stats.genericSubjectCount)
-          era-sanity tags dropped:  \(stats.eraSanityDropped)
+          era-sanity:               RETIRED (owner decision 2026-08-20) — \(stats.eraSanityDropped) dropped
           vocabulary subjects used: \(stats.usedSubjectCount)
           volumes with a profile:   \(stats.volumeCount)
         """)
