@@ -541,7 +541,11 @@ Every volume shows a Top Subjects section — the subjects most characteristic o
 
 Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.
 
-These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, all narrow to the volumes where a topic is most characteristic. The same chips also appear on each volume's page, in its Top Subjects section.
+These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters, at two different grains, and the difference matters.
+
+At VOLUME grain: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, select every volume containing the topic — mentioned is enough. A whole category is broad enough that several reach nearly the entire series, so read the volume count beside each row and open a sub-category to narrow it.
+
+At DOCUMENT grain: after a search, the Facets panel has a Subjects section. Choosing a row there is a subjects facet on your results — it narrows to the documents in that topic area, not to whole volumes, and it counts only documents in the volumes you have indexed. The panel says how much of the result set carries a topic at all, since many documents carry none.
 
 <!-- section-id: chronology -->
 
@@ -575,11 +579,13 @@ Find it in the Search screen's overflow (More) menu (iOS) or under Find ▸ Cita
 
 **Related Documents**
 
-From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, corpus proximity, and shared people. Small icon chips on each result show why it matched, and each chip says only what its signal can support: a count of citations, or simply "same provenance", where a percentage would mean nothing.
+From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending seven signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, corpus proximity, shared people, shared topics, and — off until you turn it on — semantic similarity. Small icon chips on each result show why it matched, and each chip says only what its signal can support: a count of citations, or simply "same provenance", where a percentage would mean nothing.
 
 Corpus proximity reads the FRUS editors' own arrangement. Two documents printed side by side, or gathered into the same short chapter, score highest; the signal eases off as the container they share widens to a whole compilation and then the whole volume, and lower again for a different volume in the same subseries. It is a way of asking what the editors thought belonged together.
 
-A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until experimental detected-topic document data is ready to include in the app.
+A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. Your tuning stores only the sliders you actually move, so a signal you leave alone follows the app's default even after that default changes.
+
+Shared topics is live, and weighted below the editorial signals on purpose: these are topics detected automatically from the text, matched by name and variants, not editorial subject headings — recall-oriented, so a few are wrong. Semantic similarity is experimental and starts at zero; drag its slider above zero to include it.
 
 Find it in the Research rail's Related tile. On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results.
 
