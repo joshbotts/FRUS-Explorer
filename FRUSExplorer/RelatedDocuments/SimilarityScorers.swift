@@ -254,14 +254,18 @@ struct SharedPersonScorer: SimilarityScorer {
 
 /// Scores candidates by overlap of their detected subject topics against the anchor's.
 ///
-/// **Inert in Phases 1–2**: `DocumentSubjectStore.shared` is `nil` (the document-grain data is gated
-/// on #261, design §5), so this scorer returns no scores and contributes 0 to every candidate — the
-/// find-related feature ships fully functional on the live generators and scorers and gains this axis
-/// on the data drop with no view change. The overlap logic below is the Phase 3 behaviour, guarded so
-/// it lights up automatically once the index is bundled.
+/// **Live since #308 Phase 3.** This was written inert — `DocumentSubjectStore.shared` was `nil`
+/// while the document-grain data was gated on #261 — and the guard remains, so the scorer still
+/// contributes 0 on a device whose bundled index is missing. It is no longer the normal case.
+///
+/// It names its evidence: `RelatedDocumentsView.attachSubjectEvidence()` turns the shared refs into
+/// the topic names the row's chip shows (#1020), so a row this scorer raised can say which topics
+/// it was raised for rather than only how strongly.
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: seam scorer, inert until the Phase 3 document-subject index ships
+///   1.1 — #308 Phase 3: live at default weight 0.5
+///   1.2 — #1020: shared subjects surfaced as the axis's "why related" chip
 struct SharedSubjectScorer: SimilarityScorer {
 
     var axis: SimilarityAxis { .sharedSubjects }

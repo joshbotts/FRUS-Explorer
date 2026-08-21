@@ -108,6 +108,46 @@ struct WhyRelatedChipTests {
 
     /// Scorer axes are absolute `[0, 1]` measures, so a percentage is the right reading for them
     /// and must be left alone.
+    // MARK: - Shared subjects name their topics (#1020)
+
+    /// The subject axis could raise a row and tell the reader only "41%". Every other axis that
+    /// contributes evidence names it; this one fell through to `default:`.
+    @Test("Shared subjects name the topics, not a percentage")
+    func sharedSubjectsNameTheirTopics() {
+        let chips = row(axisScores: [.sharedSubjects: 0.41],
+                        labels: [.sharedSubjects: "Berlin blockade\u{1F}Economic sanctions"])
+            .whyRelatedChips
+        #expect(chips.count == 1)
+        #expect(chips[0].chip == .sharedSubjects(["Berlin blockade", "Economic sanctions"]))
+    }
+
+    /// The evidence pass runs after ranking, so the first paint has no labels. A percentage is the
+    /// honest interim reading — and the permanent one when nothing nameable is shared.
+    @Test("Without evidence the subject axis falls back to its percentage, not to silence")
+    func sharedSubjectsWithoutEvidenceStatePercent() {
+        let chips = row(axisScores: [.sharedSubjects: 0.41]).whyRelatedChips
+        #expect(chips[0].chip == .percent(41))
+    }
+
+    /// An empty label is not the same as an absent one, and must not render an empty chip.
+    @Test("An empty subject label degrades to the percentage rather than an empty list")
+    func emptySubjectLabelDegrades() {
+        let chips = row(axisScores: [.sharedSubjects: 0.41],
+                        labels: [.sharedSubjects: ""]).whyRelatedChips
+        #expect(chips[0].chip == .percent(41))
+    }
+
+    /// The separator is the unit separator, deliberately — a subject name can contain a comma
+    /// ("Trade and Commercial Policy/Agreements" already contains a slash), so splitting on
+    /// punctuation would tear real names in half.
+    @Test("A subject name containing punctuation survives the round trip")
+    func punctuatedSubjectNameSurvives() {
+        let chips = row(axisScores: [.sharedSubjects: 0.5],
+                        labels: [.sharedSubjects: "Trade and Commercial Policy/Agreements"])
+            .whyRelatedChips
+        #expect(chips[0].chip == .sharedSubjects(["Trade and Commercial Policy/Agreements"]))
+    }
+
     @Test("Scorer axes still state a percentage")
     func scorersStatePercent() {
         let chips = row(axisScores: [.dateProximity: 0.75, .subseries: 0.6,
