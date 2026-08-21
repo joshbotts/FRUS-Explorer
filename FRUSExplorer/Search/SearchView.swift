@@ -787,11 +787,13 @@ struct SearchView: View {
         // would leave the stack describing a search that no longer exists.
         vm.navigationPath.removeAll()
         vm.applyParameters(params)
+        // The FIFTH enumeration of the same rule, missed when #1022 extracted the other four —
+        // so a subject-only hand-off applied its parameters and then never ran. Anything the
+        // service will execute, this has to be willing to start.
         let canRun = !(params.keywords ?? "").isEmpty
             || !(params.phrase ?? "").isEmpty
             || !(params.prefixWildcard ?? "").isEmpty
-            || !(params.personRef ?? "").isEmpty
-            || params.personRollupId != nil
+            || params.supportsFilterOnlySearch
         if canRun {
             Task { await runSearch() }
         }
@@ -1273,9 +1275,12 @@ struct SearchView: View {
     private func clearVolumeScope() {
         vm.selectedVolumeIds = []
         vm.selectedSubseriesIds = []
+        // Same rule again: a subject-only search is a query, so clearing the scope must re-run it.
+        // Otherwise the banner disappears while the narrowed results stay on screen, which reads as
+        // the control having done nothing.
         let hasQuery = !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty
             || !vm.personRefText.trimmingCharacters(in: .whitespaces).isEmpty
-            || vm.personRollupId != nil
+            || vm.searchParameters.supportsFilterOnlySearch
         if vm.hasSearched && hasQuery {
             Task { await runSearch() }
         }

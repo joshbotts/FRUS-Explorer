@@ -369,8 +369,9 @@ public struct SearchParameters: Codable, Sendable, Equatable {
 ///   key returns nothing rather than everything.
 ///
 /// Scope flags (`includeDocumentText` and friends) are deliberately NOT part of this: they select
-/// which columns a MATCH searches, and a filter-only query has no MATCH to scope. Each view model
-/// keeps its own empty-scope guard for the keyword case.
+/// which columns a MATCH searches, and a filter-only query has no MATCH to scope. The keyword case
+/// is guarded separately — see ``SearchParameters/hasTextTerms``, which is what stops a query with
+/// text in it from silently falling down the filter-only path when every scope flag is off.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-21: #1022, extracted from four independent enumerations and widened
@@ -384,6 +385,27 @@ public extension SearchParameters {
             || personRollupId != nil
             || subjectBucketKey != nil
             || subjectBucket != nil
+    }
+
+    /// `true` when the reader supplied text that an FTS5 MATCH would carry — a keyword, a phrase,
+    /// a prefix, or an exclusion.
+    ///
+    /// ## Why the filter-only path has to ask
+    /// `makeMatchExpressions` renders no `corpus` expression unless `includeDocumentText`, and no
+    /// `userContent` unless summaries or notes are in scope. So "both expressions are nil" is NOT
+    /// the same question as "the reader typed nothing": turn every content scope off and a real
+    /// keyword renders nothing at all. Admitting that to the filter-only path would run the bare
+    /// filter and **discard the text in silence** — the reader searching *berlin* inside one topic
+    /// would get the whole topic back and no indication their word was dropped. Exclusions have the
+    /// same shape and are worse, because an exclusion silently dropped WIDENS the result set.
+    ///
+    /// So a query with text and no scope is a scope error, not a filter-only search, and the
+    /// service says so rather than quietly answering a different question.
+    var hasTextTerms: Bool {
+        !(keywords ?? "").trimmingCharacters(in: .whitespaces).isEmpty
+            || !(phrase ?? "").trimmingCharacters(in: .whitespaces).isEmpty
+            || !(prefixWildcard ?? "").trimmingCharacters(in: .whitespaces).isEmpty
+            || !excludedTerms.isEmpty
     }
 }
 

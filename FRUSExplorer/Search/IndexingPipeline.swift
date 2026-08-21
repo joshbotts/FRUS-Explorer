@@ -2293,10 +2293,11 @@ public actor IndexingPipeline {
         let sql: String
         let binds: [String]
         if corpusMatch == nil, userContentMatch == nil {
-            // Filter-only query (e.g. the People browser's "Find all mentions" — a person filter with
-            // no FTS terms). No MATCH/BM25; the WHERE clause (which always carries the person filter
-            // in this path) does the work, ordered by volume + document for a stable browse. Guard
-            // against an unbounded dump if somehow no filter is present.
+            // Filter-only query (the People browser's "Find all mentions", or a subject filter with
+            // no FTS terms since #1022). No MATCH/BM25; the WHERE clause — which carries whatever
+            // standalone filter admitted the query, person or subject — does the work, ordered by
+            // volume + document for a stable browse. Guard against an unbounded dump if somehow no
+            // filter is present.
             guard !whereClause.isEmpty else { return [] }
             sql = """
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
