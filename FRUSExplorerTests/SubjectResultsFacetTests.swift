@@ -650,3 +650,176 @@ struct SharedSubjectEvidenceTests {
             """)
     }
 }
+
+// MARK: - FilterOnlySearchTests
+
+/// Pins #1022's enabler: a subject filter is a **standalone** search constraint, admitted by one
+/// rule rather than four independent enumerations.
+///
+/// ## What was wrong
+/// A filter-only search — no keyword, phrase, or prefix — had to be admitted separately by
+/// `SearchViewModel.search()`, `MacSearchViewModel.performSearch(service:)`,
+/// `SearchService.makeMatchExpressions(from:)` and `QueryInspection.isFilterOnly`, and each site
+/// enumerated the admissible filters itself. All four listed only person filters, so a subject
+/// filter with no keyword threw `FTS5Error.emptyQuery` even though the SQL beneath it has applied
+/// the bucket predicate end-to-end since #1018. Four parallel edits across two hand-maintained
+/// platform twins is the shape this repo has been bitten by before; `supportsFilterOnlySearch` is
+/// the single rule they now share.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1022 enabler B
+@Suite("Filter-only search admits subject filters (#1022)")
+struct FilterOnlySearchTests {
+
+    // MARK: - The rule
+
+    @Test("Every standalone filter qualifies, and nothing else does")
+    func theRuleAdmitsWhatItShould() {
+        #expect(SearchParameters().supportsFilterOnlySearch == false,
+                "an empty parameter set is not a search")
+
+        var person = SearchParameters()
+        person.personRef = "p1"
+        #expect(person.supportsFilterOnlySearch)
+
+        var rollup = SearchParameters()
+        rollup.personRollupId = 7
+        #expect(rollup.supportsFilterOnlySearch)
+
+        var bucket = SearchParameters()
+        bucket.subjectBucket = 2
+        #expect(bucket.supportsFilterOnlySearch, "the resolved bucket position is a real predicate")
+
+        var key = SearchParameters()
+        key.subjectBucketKey = "Warfare\u{1F}General"
+        #expect(key.supportsFilterOnlySearch, "the durable key resolves to one in makeFilters")
+
+        // Scope flags are not filters: they choose which columns a MATCH searches, and a
+        // filter-only query has no MATCH to scope.
+        var scopeOnly = SearchParameters()
+        scopeOnly.includeSummaries = true
+        scopeOnly.includeNotes = true
+        #expect(scopeOnly.supportsFilterOnlySearch == false)
+    }
+
+    /// The regression this guards: a filter kind added to one site and not the others. Anything
+    /// the service will run filter-only, the inspector must also explain that way.
+    @Test("The service and the inspector agree on what runs without a MATCH")
+    func serviceAndInspectorAgree() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSFilterOnly-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let fts5 = try FTS5Store(databaseURL: dir.appendingPathComponent("t.sqlite"))
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dir.appendingPathComponent("t.sqlite"),
+            volumesDirectory: dir, concurrencyLimit: 1)
+        let service = SearchService(fts5Store: fts5, pipeline: pipeline)
+        let inspector = QueryInspector(searchService: service)
+
+        for (label, mutate) in [
+            ("personRef", { (p: inout SearchParameters) in p.personRef = "p1" }),
+            ("personRollupId", { (p: inout SearchParameters) in p.personRollupId = 7 }),
+            ("subjectBucket", { (p: inout SearchParameters) in p.subjectBucket = 2 }),
+            ("subjectBucketKey", { (p: inout SearchParameters) in p.subjectBucketKey = "A\u{1F}B" }),
+        ] {
+            var params = SearchParameters()
+            mutate(&params)
+            let expressions = try await service.matchExpressions(for: params)
+            #expect(expressions.corpus == nil,
+                    "\(label): a filter-only query must render no MATCH expression")
+            let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+            #expect(inspection.isFilterOnly, """
+                \(label): the service runs this without a MATCH but the Query Inspector does not \
+                call it filter-only, so the panel would say the query has no terms and no filters.
+                """)
+        }
+    }
+}
+
+// MARK: - SubjectOnlySearchTests
+
+/// The end-to-end half of #1022 enabler B, against a real index: a search carrying **only** a
+/// subject filter returns exactly that bucket's documents.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1022 enabler B
+@Suite("Subject-only search (#1022)")
+struct SubjectOnlySearchTests {
+
+    private func makeVolumeXML(ids: Range<Int>) -> String {
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in ids {
+            xml += """
+            <div type="document" xml:id="d\(index)">
+              <head>\(index + 1). Item \(index)</head>
+              <p>The doctrine of \(index < 8 ? "containment" : "rollback") shaped policy.</p>
+            </div>
+
+            """
+        }
+        return xml + "</body></text></TEI>"
+    }
+
+    private func makeFixture() async throws
+        -> (dir: URL, service: SearchService, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSubjOnly-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        try makeVolumeXML(ids: 0..<8).data(using: .utf8)!
+            .write(to: volDir.appendingPathComponent("vol1.xml"))
+        try makeVolumeXML(ids: 8..<12).data(using: .utf8)!
+            .write(to: volDir.appendingPathComponent("vol2.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        try await pipeline.indexVolume("vol2")
+        return (dir, SearchService(fts5Store: fts5, pipeline: pipeline), pipeline)
+    }
+
+    /// `vol1`: d0 and d1 in bucket 2, d2 in bucket 0. `vol2`: d8 in bucket 2.
+    private var rows: [String: [(documentId: String, buckets: [Int])]] {
+        ["vol1": [(documentId: "d0", buckets: [2]), (documentId: "d1", buckets: [2]),
+                  (documentId: "d2", buckets: [0])],
+         "vol2": [(documentId: "d8", buckets: [2])]]
+    }
+
+    /// The headline: no keyword at all, and the bucket's documents come back — across volumes,
+    /// and without the documents in the other bucket.
+    @Test("A bucket with no keyword returns exactly that bucket's documents")
+    func bucketOnlySearchReturnsTheBucket() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: { rows[$0] ?? [] }, digest: "d1", volumeIds: ["vol1", "vol2"])
+
+        var params = SearchParameters()
+        params.subjectBucket = 2
+        let results = try await service.search(parameters: params, limit: 100)
+        let keys = results.map { "\($0.volumeId)/\($0.documentId)" }.sorted()
+        #expect(keys == ["vol1/d0", "vol1/d1", "vol2/d8"], """
+            A subject-only search returned \(keys). Before #1022 this threw emptyQuery; if it now \
+            returns all 12 documents the bucket predicate is being dropped rather than applied, \
+            which is the failure mode that widens a filter under a name promising the opposite.
+            """)
+    }
+
+    /// The other half of the same guarantee: a bucket nothing is tagged with returns nothing,
+    /// rather than degrading to the whole corpus.
+    @Test("An empty bucket with no keyword returns nothing, not everything")
+    func emptyBucketReturnsNothing() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: { rows[$0] ?? [] }, digest: "d1", volumeIds: ["vol1", "vol2"])
+
+        var params = SearchParameters()
+        params.subjectBucket = 99
+        let results = try await service.search(parameters: params, limit: 100)
+        #expect(results.isEmpty, "an untagged bucket returned \(results.count) documents")
+    }
+}

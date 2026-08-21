@@ -895,10 +895,10 @@ final class MacSearchViewModel {
     /// flashing an empty list. `isSearching` is always reset via `defer`.
     func performSearch(service: SearchService?) async {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        // A person filter (single ref or a cross-corpus rollup) is a valid standalone term, so a
-        // keyword-less "Find all mentions" handoff runs on it alone.
-        let hasPersonFilter = parameters.personRef != nil || parameters.personRollupId != nil
-        guard (!query.isEmpty || hasPersonFilter), let service else {
+        // A person filter (single ref or a cross-corpus rollup) or a subject filter is a valid
+        // standalone term, so a keyword-less "Find all mentions" handoff runs on it alone.
+        let hasStandaloneFilter = parameters.supportsFilterOnlySearch
+        guard (!query.isEmpty || hasStandaloneFilter), let service else {
             results = []
             totalMatchCount = nil
             lastRenderedExpression = nil
