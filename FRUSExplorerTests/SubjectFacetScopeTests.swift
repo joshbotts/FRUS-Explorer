@@ -118,3 +118,101 @@ struct CompleteSubjectMembershipTests {
             """)
     }
 }
+
+
+// MARK: - PivotSheetMembershipTests
+
+/// Pins #1027: the subject pivot sheet's row list resolves through **complete membership**, the
+/// same set its archival-profile button below already used.
+///
+/// ## What was wrong
+/// One sheet, two resolvers. The rows came from `VolumeSubjectProfilesStore.otherVolumes`, whose
+/// reach is each volume's top-15 subjects, while `coveringVolumeIds` — feeding the "Archival
+/// profile of these volumes" button and its footer count — came from the complete document-subject
+/// index. So the header said "8 other volumes cover this subject" directly above a button offering
+/// the profile of 82, for one subject, in one sheet. The smaller number was the one wearing the
+/// word *cover*.
+///
+/// These tests drive `VolumeSubjectVolumesSheet`'s own resolver rather than re-deriving membership,
+/// because a test that re-derives it passes no matter what the sheet reads.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1027
+@Suite("Subject pivot sheet membership (#1027)")
+struct PivotSheetMembershipTests {
+
+    @MainActor
+    private func index() throws -> DocumentSubjectIndex {
+        try #require(DocumentSubjectStore.shared,
+                     "document-subject-index.json must decode from the app bundle")
+    }
+
+    /// The subject where the two routes disagreed most, with a volume that carries it — the
+    /// fixture is chosen from the data so it cannot go stale against a re-drop.
+    @MainActor
+    private func widestGapSubject() throws -> (ref: String, volumeId: String, complete: Int, profile: Int) {
+        let index = try index()
+        let profiles = try #require(VolumeSubjectProfilesStore.shared)
+        var best: (ref: String, volumeId: String, complete: Int, profile: Int)?
+        for (ref, profileVolumes) in profiles.volumesBySubjectRef {
+            let complete = index.volumeIds(forSubjectRef: ref)
+            guard let anchor = complete.sorted().first else { continue }
+            let gap = complete.count - profileVolumes.count
+            if gap > (best.map { $0.complete - $0.profile } ?? 0) {
+                best = (ref, anchor, complete.count, profileVolumes.count)
+            }
+        }
+        return try #require(best, "no subject is carried by both the profiles and the document index")
+    }
+
+    /// The headline: the rows are membership, not the top-15 ranking.
+    @MainActor
+    @Test("The row list resolves through complete membership, not the volume profiles")
+    func rowsUseCompleteMembership() throws {
+        let fixture = try widestGapSubject()
+        let sheet = VolumeSubjectVolumesSheet(
+            subject: .init(ref: fixture.ref, name: "fixture", category: "c", subcategory: "s", score: 1),
+            currentVolumeId: fixture.volumeId)
+
+        // Exactly membership minus the volume in hand.
+        #expect(sheet.otherVolumeIds.count == fixture.complete - 1, """
+            The sheet listed \(sheet.otherVolumeIds.count) volumes where complete membership for             \(fixture.ref) is \(fixture.complete) (minus the one being viewed). If this reads             \(max(0, fixture.profile - 1)) the rows have been pointed back at the top-15 profiles.
+            """)
+        #expect(!sheet.otherVolumeIds.contains(fixture.volumeId),
+                "the volume being viewed must not appear among the OTHER volumes")
+
+        // And strictly more than the pre-#1027 answer, so a silent regression to profiles fails
+        // here even if the counts above were somehow satisfied.
+        let profiles = try #require(VolumeSubjectProfilesStore.shared)
+        let profileRoute = profiles.otherVolumes(forSubjectRef: fixture.ref,
+                                                 excluding: fixture.volumeId)
+        #expect(sheet.otherVolumeIds.count > profileRoute.count, """
+            Membership (\(sheet.otherVolumeIds.count)) must exceed the profile route             (\(profileRoute.count)) for \(fixture.ref) — that gap is the whole of #1027.
+            """)
+    }
+
+    /// The bug's actual shape: one sheet must not state two counts for one subject.
+    @MainActor
+    @Test("The row list and the archival-profile button describe the same set")
+    func listAndButtonAgree() throws {
+        let fixture = try widestGapSubject()
+        let sheet = VolumeSubjectVolumesSheet(
+            subject: .init(ref: fixture.ref, name: "fixture", category: "c", subcategory: "s", score: 1),
+            currentVolumeId: fixture.volumeId)
+        #expect(Set(sheet.coveringVolumeIds) == Set(sheet.otherVolumeIds).union([fixture.volumeId]), """
+            The button's set (\(sheet.coveringVolumeIds.count)) is not the row list             (\(sheet.otherVolumeIds.count)) plus the volume being viewed. Two resolvers have grown             back, which is exactly what #1027 removed.
+            """)
+    }
+
+    /// The person-affinity context (#264) excludes nothing, so both sets are identical there.
+    @MainActor
+    @Test("With no current volume, nothing is excluded")
+    func personContextExcludesNothing() throws {
+        let fixture = try widestGapSubject()
+        let sheet = VolumeSubjectVolumesSheet(
+            subject: .init(ref: fixture.ref, name: "fixture", category: "c", subcategory: "s", score: 1),
+            currentVolumeId: "")
+        #expect(sheet.otherVolumeIds == sheet.coveringVolumeIds)
+        #expect(sheet.otherVolumeIds.count == fixture.complete)
+    }
+}

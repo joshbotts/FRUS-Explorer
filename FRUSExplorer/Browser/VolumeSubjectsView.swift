@@ -122,6 +122,9 @@ struct VolumeSubjectsChips: View {
 ///         behind the overlay)
 ///   1.2 — Session 2026-08-11: #833, the topic door — the covering volumes open as an
 ///         archival profile
+///   1.3 — Session 2026-08-21: #1027, one membership resolver behind the row list and the
+///         archival-profile button — the list was the top-15 profiles while the button was
+///         complete membership, so the sheet stated two counts for one subject
 struct VolumeSubjectVolumesSheet: View {
 
     /// The subject being pivoted on.
@@ -144,24 +147,49 @@ struct VolumeSubjectVolumesSheet: View {
     @Environment(\.openWindow) private var openWindow
     #endif
 
-    private var otherVolumeIds: [String] {
-        VolumeSubjectProfilesStore.shared?
-            .otherVolumes(forSubjectRef: subject.ref, excluding: currentVolumeId) ?? []
+    /// Every volume whose documents carry this subject, minus `excluded` — pass `""` to exclude
+    /// nothing. Sorted by volume id.
+    ///
+    /// **One resolver behind both of this sheet's volume sets, which is the whole point of it
+    /// (#1027).** They used to have two. The row list resolved through the volume PROFILES,
+    /// whose reach is each volume's top-15 subjects, while the archival-profile button below it
+    /// resolved through complete membership — so one sheet reported two counts for one subject,
+    /// and the smaller one wore the header "N other volumes cover this subject", which is the
+    /// claim only the larger set can answer. Measured over the shipped artifacts, the profile
+    /// route reaches 10.8% of (subject, volume) memberships: a chip for *Agriculture* listed 51
+    /// volumes where 526 contain it.
+    ///
+    /// Complete membership comes from the bundled document-subject index, which is
+    /// corpus-complete — including volumes the reader has not downloaded, like the profiles
+    /// before it. `VolumeSubjectProfilesStore` remains the fallback for a build whose document
+    /// index is absent, and it is the top-15 grain by construction; the empty-state and header
+    /// wording is written to stay true either way.
+    /// Internal rather than private **so its test can drive this resolver instead of a copy of
+    /// it** — a mirrored membership rule in a test file passes while the sheet reads whatever it
+    /// likes, which is precisely the failure #1027 records.
+    func coveringVolumes(excluding excluded: String) -> [String] {
+        if let index = DocumentSubjectStore.shared {
+            return index.volumeIds(forSubjectRef: subject.ref)
+                .filter { $0 != excluded }
+                .sorted()
+        }
+        guard let profiles = VolumeSubjectProfilesStore.shared else { return [] }
+        return profiles.otherVolumes(forSubjectRef: subject.ref, excluding: excluded).sorted()
     }
 
-    /// Every volume whose profile carries the subject, the volume being viewed INCLUDED.
+    /// The volumes listed as rows: complete membership, the volume being viewed excluded.
+    ///
+    /// `currentVolumeId` is `""` in the person-affinity context (#264), where nothing is excluded
+    /// and the header says so.
+    var otherVolumeIds: [String] { coveringVolumes(excluding: currentVolumeId) }
+
+    /// Every volume carrying the subject, the volume being viewed INCLUDED.
     ///
     /// Deliberately not `otherVolumeIds`: the list above answers "where else can I read about
     /// this", so excluding the volume in hand is right, while the archival profile answers "which
     /// archives do volumes on this subject draw on", and dropping one of them would quietly
     /// under-count. The button's own count says which set it means.
-    private var coveringVolumeIds: [String] {
-        // #308 Phase 3: "other volumes covering this subject" must mean every volume that
-        // contains it, not only those whose top-15 profile ranks it — the pivot claimed the
-        // former and delivered the latter.
-        DocumentSubjectStore.shared.map { Array($0.volumeIds(forSubjectRef: subject.ref)).sorted() }
-            ?? VolumeSubjectProfilesStore.shared?.volumesBySubjectRef[subject.ref] ?? []
-    }
+    var coveringVolumeIds: [String] { coveringVolumes(excluding: "") }
 
     /// The pluralized section header. Two keys per context rather than a format inflection so
     /// translators see every form. "Other" is only truthful when a current volume is excluded;
@@ -231,12 +259,24 @@ struct VolumeSubjectVolumesSheet: View {
             }
             .overlay {
                 if otherVolumeIds.isEmpty {
+                    // The message names MEMBERSHIP, not ranking. Its predecessor said "No other
+                    // volume's top subjects include this one" — true of the top-15 route this
+                    // sheet used to take, and false of the set it lists now, where an empty list
+                    // means no other volume carries the subject at all. New keys rather than new
+                    // default values, so the claim a translator already rendered is not silently
+                    // replaced by a different one (#1027).
                     ContentUnavailableView(
-                        String(localized: "browser.volume.subjectVolumes.empty.title",
-                               defaultValue: "Only this volume"),
+                        currentVolumeId.isEmpty
+                            ? String(localized: "browser.volume.subjectVolumes.empty.title.none",
+                                     defaultValue: "No volumes")
+                            : String(localized: "browser.volume.subjectVolumes.empty.title",
+                                     defaultValue: "Only this volume"),
                         systemImage: "books.vertical",
-                        description: Text(String(localized: "browser.volume.subjectVolumes.empty.message",
-                                                 defaultValue: "No other volume's top subjects include this one."))
+                        description: Text(currentVolumeId.isEmpty
+                            ? String(localized: "browser.volume.subjectVolumes.empty.message.none",
+                                     defaultValue: "No volume in the series carries documents on this subject.")
+                            : String(localized: "browser.volume.subjectVolumes.empty.message.membership",
+                                     defaultValue: "No other volume in the series carries documents on this subject."))
                     )
                 }
             }
