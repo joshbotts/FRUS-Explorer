@@ -32,7 +32,7 @@ import SourceNoteKit
 public enum ExternalCitationIndexRunner {
 
     /// The artifact schema version.
-    public static let schemaVersion = 1
+    public static let schemaVersion = 2
 
     /// Reads configuration from the environment and runs the build.
     ///
@@ -63,6 +63,8 @@ public enum ExternalCitationIndexRunner {
             manifestPath: env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json",
             collectionAuthorityPath: env["COLLECTION_AUTHORITY"]
                 ?? "FRUSExplorer/Resources/collection-authority.json",
+            labelsPath: env["DECIMAL_LABELS"]
+                ?? "FRUSExplorer/Resources/decimal-class-labels.json",
             outputPath: env["OUTPUT"] ?? "FRUSExplorer/Resources/external-citation-index.json",
             samplePath: env["SAMPLE_OUTPUT"],
             sampleEvery: Int(env["SAMPLE_EVERY"] ?? "") ?? 200,
@@ -76,7 +78,8 @@ public enum ExternalCitationIndexRunner {
     ///     JSON. This is the review artifact: #784's safety verdict rests on reading samples, and
     ///     a grammar whose output nobody can read is a grammar nobody can check.
     public static func run(volumesDir: URL, manifestPath: String,
-                           collectionAuthorityPath: String, outputPath: String,
+                           collectionAuthorityPath: String, labelsPath: String,
+                           outputPath: String,
                            samplePath: String?, sampleEvery: Int,
                            generated: String) throws {
         let authorityURL = URL(fileURLWithPath: collectionAuthorityPath)
@@ -91,6 +94,8 @@ public enum ExternalCitationIndexRunner {
 
         let result = try build(files: files, authority: authority,
                                authorityCollectionCount: authorityCount,
+                               schedule: try DecimalChannelMeasurement
+                                   .ScheduleValidator(labelsPath: labelsPath),
                                sampleEvery: samplePath == nil ? 0 : max(1, sampleEvery),
                                generated: generated)
 
@@ -156,7 +161,9 @@ public enum ExternalCitationIndexRunner {
 
     /// Scans `files` and aggregates. Pure apart from reading the volume bytes.
     public static func build(files: [URL], authority: AuthorityLookup,
-                             authorityCollectionCount: Int, sampleEvery: Int,
+                             authorityCollectionCount: Int,
+                             schedule: DecimalChannelMeasurement.ScheduleValidator,
+                             sampleEvery: Int,
                              generated: String) throws -> BuildResult {
         let parser = SourceNoteParser()
 
@@ -179,6 +186,17 @@ public enum ExternalCitationIndexRunner {
         var referencesJoined = 0
         var referencesWithBothEnds = 0
         var sameUnitReferences = 0
+        // The class axis (#834). Keyed by class key rather than authority id: the authority has no
+        // class records, so there is nothing to join to and the key IS the identity.
+        var byClassTarget: [String: [String: Int]] = [:]
+        var byClassPair: [ClassPairKey: Int] = [:]
+        var classSourceKeySet: Set<String> = []
+        var decimalReferences = 0
+        var decimalReferencesWithBothEnds = 0
+        var decimalSameClassReferences = 0
+        var decimalSubjectNumericRefused = 0
+        var decimalNotComposingRefused = 0
+        var decimalNotInSharedVocabularyRefused = 0
 
         for file in files {
             // An unreadable volume fails the run: a skipped one would shrink every count in the
@@ -189,10 +207,22 @@ public enum ExternalCitationIndexRunner {
             // The citing document's own archival unit — the source end of every pair. Keyed by
             // document id, exactly as the app's `document_sources` row is.
             var sourceUnit: [String: String] = [:]
+            // The citing document's own CLASS, for the #834 axis. The identical call
+            // `ProvenanceFlowIndexRunner` makes, so "own class" means here what it means there.
+            var sourceClass: [String: String] = [:]
             for note in DocumentNoteExtractor.extract(fromXML: data) where !note.documentId.isEmpty {
-                if let record = authority.record(forParsed: parser.parse(note.note),
-                                                 note: note.note) {
+                let parsed = parser.parse(note.note)
+                if let record = authority.record(forParsed: parsed, note: note.note) {
                     sourceUnit[note.documentId] = record.id
+                }
+                // The SAME shared-vocabulary rule the target end applies. The citing document's
+                // class arrives by a different route (`ExportClassification.derivedKeys` over its
+                // own source note) which also admits bare dotless numbers, so filtering only the
+                // target end left 16 unjoinable keys in `classSourceKeys` — caught by the artifact
+                // test, not by inspection. A pair is only as joinable as its worse end.
+                if let cls = ExportClassification.derivedKeys(for: parsed, note: note.note)
+                    .decimalClass, SourceNoteParser.decimalClassKey(cls) != nil {
+                    sourceClass[note.documentId] = cls
                 }
             }
 
@@ -214,6 +244,54 @@ public enum ExternalCitationIndexRunner {
                 let before = scanner.absenceBlockedCount
                 scanner.beginDocument()
                 for note in document.footnotes {
+                    // The decimal channel (#834). A separate pass over the same note rather than
+                    // a third `Anchor` case: an Anchor carries a `ParsedSourceNote` the authority
+                    // can answer, and a class has no authority record — folding it in would put a
+                    // value into `FootnoteArchivalCitation.parsed` that no `AuthorityLookup` call
+                    // can resolve, which is a shape that invites the wrong join later.
+                    for candidate in FootnoteCitationScanner.classCandidates(inNote: note) {
+                        // The SHIPPED RULE, owner-decided 2026-08-20 on the commit-1 measurement:
+                        // the class must carry its document serial AND compose under the 1910-1949
+                        // schedule; subject-numeric stays out; the harvest's own refusals apply.
+                        guard candidate.refusal == nil else { continue }
+                        guard !candidate.isSubjectNumeric else {
+                            decimalSubjectNumericRefused += 1
+                            continue
+                        }
+                        guard candidate.evidence.carriesSerial else { continue }
+                        guard schedule.composes(candidate.classKey) else {
+                            decimalNotComposingRefused += 1
+                            continue
+                        }
+                        // The key must round-trip through the SHARED class vocabulary. This is not
+                        // a claim that the refused keys are fake — measured, they are bare dotless
+                        // numbers like `222`, which composes as Extradition/Ecuador and which the
+                        // owner correctly identified as a real filing form. It is a JOINABILITY
+                        // rule: the class lens merges this weight with the documents and volumes
+                        // weights, and those are keyed by `collection-usage-index.json`'s
+                        // vocabulary, which is built through `decimalClassKey`. `decimalClassKey`
+                        // rejects bare dotless numbers while `decimalClassLocation` admits them via
+                        // its `bareClassCandidate` path — so a key admitted here but absent there
+                        // would rank with pointer counts against ZERO documents, an orphan row in a
+                        // merged table. Measured 2026-08-20: 63 keys, 344 of 29,065 references
+                        // (1.18%). Restoring them means giving them a home in the shared
+                        // vocabulary first, not relaxing this guard.
+                        guard SourceNoteParser.decimalClassKey(candidate.classKey) != nil else {
+                            decimalNotInSharedVocabularyRefused += 1
+                            continue
+                        }
+                        decimalReferences += 1
+                        volumesWithReferences.insert(volumeId)
+                        byClassTarget[candidate.classKey, default: [:]][volumeId, default: 0] += 1
+                        if let own = sourceClass[document.documentId] {
+                            decimalReferencesWithBothEnds += 1
+                            classSourceKeySet.insert(own)
+                            if own == candidate.classKey { decimalSameClassReferences += 1 }
+                            byClassPair[ClassPairKey(source: own, target: candidate.classKey),
+                                        default: 0] += 1
+                        }
+                    }
+
                     for citation in scanner.scan(note: note) {
                         referencesFound += 1
                         if citation.inherited { referencesInherited += 1 }
@@ -280,10 +358,47 @@ public enum ExternalCitationIndexRunner {
             }
             .sorted { ($0.source, $0.target) < ($1.source, $1.target) }
 
+        // The class axis. Its target vocabulary is independent of `targetIds` — a class key is not
+        // an authority id and must never be indexed into one.
+        let classTargetKeys = byClassTarget.keys.sorted()
+        let classTargetIndex = Dictionary(
+            uniqueKeysWithValues: classTargetKeys.enumerated().map { ($1, $0) })
+        let classSourceKeys = classSourceKeySet.sorted()
+        let classSourceIndex = Dictionary(
+            uniqueKeysWithValues: classSourceKeys.enumerated().map { ($1, $0) })
+
+        let classTargets: [ExternalCitationIndex.UnitRow] = classTargetKeys.enumerated()
+            .compactMap { i, key in
+                guard let perVolume = byClassTarget[key], !perVolume.isEmpty else { return nil }
+                let ordered = perVolume
+                    .compactMap { volumeId, count in volumeIndex[volumeId].map { ($0, count) } }
+                    .sorted { $0.0 < $1.0 }
+                guard !ordered.isEmpty else { return nil }
+                return ExternalCitationIndex.UnitRow(key: i, volumes: ordered.map(\.0),
+                                                     counts: ordered.map(\.1))
+            }
+
+        let classPairs: [ExternalCitationIndex.Pair] = byClassPair
+            .compactMap { key, count in
+                guard let source = classSourceIndex[key.source],
+                      let target = classTargetIndex[key.target] else { return nil }
+                return ExternalCitationIndex.Pair(source: source, target: target, count: count)
+            }
+            .sorted { ($0.source, $0.target) < ($1.source, $1.target) }
+
+        // The decimal channel resolving nothing is a broken rule, not an empty corpus: measured
+        // 2026-08-20, the shipped rule admits tens of thousands of candidates corpus-wide.
+        guard !classTargetKeys.isEmpty else {
+            throw ExternalCitationError.brokenDecimalChannel(
+                candidates: decimalReferences, volumes: files.count)
+        }
+
         let index = ExternalCitationIndex(
             schemaVersion: schemaVersion, generated: generated,
             volumes: volumes, targetIds: targetIds, sourceIds: sourceIds,
             targets: targets, pairs: pairs,
+            classTargetKeys: classTargetKeys, classSourceKeys: classSourceKeys,
+            classTargets: classTargets, classPairs: classPairs,
             coverage: ExternalCitationIndex.Coverage(
                 volumesScanned: files.count,
                 volumesWithReferences: volumes.count,
@@ -300,11 +415,25 @@ public enum ExternalCitationIndexRunner {
                 referencesJoined: referencesJoined,
                 referencesWithBothEnds: referencesWithBothEnds,
                 sameUnitReferences: sameUnitReferences,
-                authorityCollectionCount: authorityCollectionCount))
+                authorityCollectionCount: authorityCollectionCount,
+                decimalReferences: decimalReferences,
+                decimalReferencesWithBothEnds: decimalReferencesWithBothEnds,
+                decimalSameClassReferences: decimalSameClassReferences,
+                decimalSubjectNumericRefused: decimalSubjectNumericRefused,
+                decimalNotComposingRefused: decimalNotComposingRefused,
+                decimalNotInSharedVocabularyRefused: decimalNotInSharedVocabularyRefused))
         return BuildResult(index: index, samples: samples)
     }
 
     /// A (source, target) accumulator key.
+    /// A (citing class -> cited class) edge key. Separate from `PairKey` because the two axes
+    /// have different vocabularies — one is authority ids, the other class keys — and one struct
+    /// serving both would let a class key be indexed into `targetIds` without a compile error.
+    struct ClassPairKey: Hashable, Sendable {
+        let source: String
+        let target: String
+    }
+
     struct PairKey: Hashable, Sendable {
         let source: String
         let target: String
@@ -342,6 +471,8 @@ public enum ExternalCitationIndexRunner {
 public enum ExternalCitationError: Error, CustomStringConvertible {
     /// The scan finished with nothing joined — a broken lookup, not an empty corpus.
     case brokenJoin(targets: Int, pairs: Int, references: Int, volumes: Int)
+    /// The decimal channel resolved nothing — a broken rule, not an empty corpus (#834).
+    case brokenDecimalChannel(candidates: Int, volumes: Int)
 
     public var description: String {
         switch self {
@@ -350,6 +481,13 @@ public enum ExternalCitationError: Error, CustomStringConvertible {
             Refusing to write an empty index: \(references) references across \(volumes) volumes \
             produced \(targets) target units and \(pairs) pairs. An artifact of zeroes disables \
             the feature while the build exits 0 — check the authority path and the corpus first.
+            """
+        case .brokenDecimalChannel(let candidates, let volumes):
+            return """
+            Refusing to write an index whose decimal channel is empty: \(candidates) class \
+            references across \(volumes) volumes produced no target keys. Measured 2026-08-20 the \
+            shipped rule admits tens of thousands corpus-wide, so zero means the rule or the \
+            schedule path is broken — check DECIMAL_LABELS first.
             """
         }
     }

@@ -98,6 +98,41 @@ struct ExternalCitationIndex: Decodable, Sendable {
         let sameUnitReferences: Int
         let authorityCollectionCount: Int
 
+        // MARK: Decimal channel (#834, schema 2)
+
+        /// References naming a **central-file class**. Admitted by the shipped rule: the clause
+        /// carries a class followed by its document serial and the key composes under the
+        /// 1910-1949 schedule. Subject-numeric designators are out of scope by decision.
+        let decimalReferences: Int
+        /// Decimal references whose citing document also has a class, so a class pair exists.
+        let decimalReferencesWithBothEnds: Int
+        /// Decimal pairs whose two ends are the **same class** — the document restating its own
+        /// file rather than pointing outside itself. Stored and counted, never drawn.
+        let decimalSameClassReferences: Int
+        /// Candidates refused as subject-numeric (`POL 27 VIET S`).
+        let decimalSubjectNumericRefused: Int
+        /// Candidates whose key does not compose under the shipped schedule. The country table is
+        /// incomplete, so some are false negatives; the count says how many are at stake.
+        let decimalNotComposingRefused: Int
+        /// Candidates refused because the key does not round-trip through the shared class
+        /// vocabulary — a joinability rule, not an authenticity one. See the generator's note.
+        let decimalNotInSharedVocabularyRefused: Int
+
+        /// Decimal references a flow diagram can draw — both ends present and not the same class.
+        var betweenClassReferences: Int {
+            decimalReferencesWithBothEnds - decimalSameClassReferences
+        }
+
+        /// Share of the decimal channel that is a document citing its OWN file, `0...1`.
+        ///
+        /// **Any surface quoting the decimal channel owes this number.** Measured 74-76% pre-war:
+        /// most of what the channel finds is provenance restated, not a pointer outside the
+        /// document. Quoting `decimalReferences` alone overstates the layer by roughly 3x.
+        var decimalSameClassShare: Double {
+            guard decimalReferencesWithBothEnds > 0 else { return 0 }
+            return Double(decimalSameClassReferences) / Double(decimalReferencesWithBothEnds)
+        }
+
         /// References a flow diagram can actually draw.
         var betweenUnitReferences: Int { referencesWithBothEnds - sameUnitReferences }
 
@@ -123,10 +158,51 @@ struct ExternalCitationIndex: Decodable, Sendable {
     let targets: [UnitRow]
     /// (source → target) edges, including same-unit ones.
     let pairs: [Pair]
+
+    // MARK: The class axis (#834, schema 2)
+
+    /// Central-file class keys reached as a citation **target**, sorted.
+    ///
+    /// A second axis rather than more `targetIds`, because the authority has no class records —
+    /// classes exist there only as id-less display children, so a bare `(681.8229/8-2950, not
+    /// printed)` resolves to nothing. These keys share `collection-usage-index.json`'s vocabulary
+    /// and are **not namespaced**, so they are the keys `ArchivalCollectionsData` already ranks and
+    /// `decimal-class-labels.json` already glosses.
+    let classTargetKeys: [String]
+    /// Class keys reached as a citing document's **own** class, sorted.
+    ///
+    /// **This vocabulary holds BOTH filing systems, and the target one does not.** Subject-numeric
+    /// designators (`POL 1 CHICOM USSR`, `DEF 18`) are out of scope as harvest TARGETS by owner
+    /// decision — the footnote grammar refuses them — but a citing document filed under one is
+    /// simply a fact about that document, and dropping it would discard real pairs whose target is
+    /// a decimal file. So a pair may read `POL 1 CHICOM USSR -> 763.72`, meaning a
+    /// subject-numeric-filed document cited a decimal one. Branch on
+    /// `CollectionKeying.isSubjectNumericClass` before grouping or labelling.
+    let classSourceKeys: [String]
+    /// Per-target-class references by volume.
+    let classTargets: [UnitRow]
+    /// (source class → target class) edges. **Same-class edges are included** and are exactly
+    /// those where `classSourceKeys[source] == classTargetKeys[target]`.
+    let classPairs: [Pair]
+
     /// What the scan saw.
     let coverage: Coverage
 
     // MARK: - Lookups
+
+    /// Total decimal references naming each class key, across every volume — the vocabulary the
+    /// class lens ranks under the *unprinted pointers* weight.
+    ///
+    /// Same-class references are NOT excluded here: this counts references naming a class, which
+    /// is a fact about the class, and the caller decides what to do about self-citation. A caller
+    /// wanting only outward pointers should use ``classPairs`` and drop `source == target`.
+    func classReferenceTotals() -> [String: Int] {
+        var totals: [String: Int] = [:]
+        for row in classTargets where row.key < classTargetKeys.count {
+            totals[classTargetKeys[row.key]] = row.counts.reduce(0, +)
+        }
+        return totals
+    }
 
     /// References **out of** a collection — where the editors, annotating material drawn from it,
     /// pointed the reader. Heaviest first, same-unit edges excluded.
@@ -182,6 +258,23 @@ struct ExternalCitationIndex: Decodable, Sendable {
             guard targetIds.indices.contains(row.key) else { continue }
             let id = targetIds[row.key]
             for pair in pairs(in: row) { body(id, pair.volumeId, pair.count) }
+        }
+    }
+
+    /// Every decimal reference, as (class key, citing volume, count) — the class-axis twin of
+    /// ``forEachReference(_:)``.
+    ///
+    /// Counts **every** reference naming the class, same-class ones included, exactly as the
+    /// collection twin counts same-unit ones. That is a deliberate parity: both are per-TARGET
+    /// tallies, and a class that a document cited about itself was still cited. The self-citation
+    /// share is disclosed in the caveat (`Coverage.decimalSameClassShare`, 74-76% pre-war) rather
+    /// than silently netted out here, because a reader comparing the two lenses would otherwise be
+    /// comparing two different measures.
+    func forEachClassReference(_ body: (_ classKey: String, _ volumeId: String, _ count: Int) -> Void) {
+        for row in classTargets {
+            guard classTargetKeys.indices.contains(row.key) else { continue }
+            let key = classTargetKeys[row.key]
+            for pair in pairs(in: row) { body(key, pair.volumeId, pair.count) }
         }
     }
 

@@ -149,6 +149,33 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
         /// Records in the authority the scan was joined against.
         public let authorityCollectionCount: Int
 
+        // MARK: Decimal channel (#834, schema 2)
+
+        /// References naming a **central-file class** — the decimal channel. Admitted by the
+        /// shipped rule: the clause carries a class followed by its document serial
+        /// (`793.94/9732`) and the key composes under the 1910-1949 schedule.
+        public let decimalReferences: Int
+        /// Decimal references whose citing document also has a class, so a class pair exists.
+        public let decimalReferencesWithBothEnds: Int
+        /// Decimal pairs whose two ends are the **same class** — the document restating its own
+        /// file rather than pointing outside itself. Stored and counted, never drawn; measured at
+        /// 74-76% pre-war, which is the single most important number about this channel.
+        public let decimalSameClassReferences: Int
+        /// Candidates refused for being **subject-numeric** (`POL 27 VIET S`) rather than decimal.
+        /// Out of scope by decision, counted so the scope is a decision rather than a gap.
+        public let decimalSubjectNumericRefused: Int
+        /// Candidates carrying a serial whose key does **not** compose under the shipped schedule.
+        /// Refused — but the shipped country table is incomplete (~290 codes measured against 198
+        /// shipped), so some of these are false negatives and the count says how many are at stake.
+        public let decimalNotComposingRefused: Int
+        /// Candidates whose key composes but does **not** round-trip through the shared class
+        /// vocabulary (`decimalClassKey`) — bare dotless numbers, which `decimalClassLocation`
+        /// admits via `bareClassCandidate` and `decimalClassKey` rejects. Refused for
+        /// JOINABILITY, not authenticity: the class lens merges this weight with weights keyed by
+        /// `collection-usage-index.json`, and a key absent from that vocabulary would rank with
+        /// zero documents beside it.
+        public let decimalNotInSharedVocabularyRefused: Int
+
         /// Creates a coverage summary.
         public init(volumesScanned: Int, volumesWithReferences: Int, documentsScanned: Int,
                     footnotesScanned: Int, footnotesExcluded: Int,
@@ -156,7 +183,11 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
                     referencesFound: Int,
                     referencesInherited: Int, absenceClaimsRefused: Int, lotReferences: Int,
                     libraryReferences: Int, referencesJoined: Int, referencesWithBothEnds: Int,
-                    sameUnitReferences: Int, authorityCollectionCount: Int) {
+                    sameUnitReferences: Int, authorityCollectionCount: Int,
+                    decimalReferences: Int, decimalReferencesWithBothEnds: Int,
+                    decimalSameClassReferences: Int, decimalSubjectNumericRefused: Int,
+                    decimalNotComposingRefused: Int,
+                    decimalNotInSharedVocabularyRefused: Int) {
             self.volumesScanned = volumesScanned
             self.volumesWithReferences = volumesWithReferences
             self.documentsScanned = documentsScanned
@@ -173,6 +204,12 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
             self.referencesWithBothEnds = referencesWithBothEnds
             self.sameUnitReferences = sameUnitReferences
             self.authorityCollectionCount = authorityCollectionCount
+            self.decimalReferences = decimalReferences
+            self.decimalReferencesWithBothEnds = decimalReferencesWithBothEnds
+            self.decimalSameClassReferences = decimalSameClassReferences
+            self.decimalSubjectNumericRefused = decimalSubjectNumericRefused
+            self.decimalNotComposingRefused = decimalNotComposingRefused
+            self.decimalNotInSharedVocabularyRefused = decimalNotInSharedVocabularyRefused
         }
     }
 
@@ -190,12 +227,50 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
     public let targets: [UnitRow]
     /// (source → target) edges, sorted by `source` then `target`. Includes same-unit edges.
     public let pairs: [Pair]
+
+    // MARK: The class axis (#834, schema 2)
+
+    /// Central-file class keys reached as a citation **target**, sorted.
+    ///
+    /// ## Why a second axis rather than a third anchor
+    /// `targetIds` are collection-authority ids, and the authority has no class records — classes
+    /// exist there only as id-less display children. `AuthorityLookup.record(forParsed:)` keys on
+    /// a lot number or a leading segment, so a bare `(681.8229/8-2950, not printed)` resolves to
+    /// nothing however good its grammar. Even the *anchored* decimal notes that do resolve land on
+    /// one umbrella record (`department of state|central file`) that the analytics UI hides by
+    /// default. A class-keyed axis is the only shape that yields a rankable vocabulary — the same
+    /// two-axis shape `provenance-flow-index.json` and `collection-usage-index.json` already use.
+    ///
+    /// The vocabulary is `collection-usage-index.json`'s, **not namespaced**, so a key here is the
+    /// key `ArchivalCollectionsData` already ranks and `decimal-class-labels.json` already glosses.
+    public let classTargetKeys: [String]
+    /// Class keys reached as a citing document's **own** class, sorted.
+    ///
+    /// **This vocabulary holds BOTH filing systems, and the target one does not.** Subject-numeric
+    /// designators (`POL 1 CHICOM USSR`, `DEF 18`) are out of scope as harvest TARGETS by owner
+    /// decision — the footnote grammar refuses them — but a citing document filed under one is
+    /// simply a fact about that document, and dropping it would discard real pairs whose target is
+    /// a decimal file. So a pair may read `POL 1 CHICOM USSR -> 763.72`, meaning a
+    /// subject-numeric-filed document cited a decimal one. Branch on
+    /// `CollectionKeying.isSubjectNumericClass` before grouping or labelling.
+    public let classSourceKeys: [String]
+    /// Per-target-class references by volume, sorted by `key`.
+    public let classTargets: [UnitRow]
+    /// (source class → target class) edges, sorted. **Same-class edges are included**, and are
+    /// exactly those whose `source` and `target` name the same key — stored rather than dropped
+    /// for the reason the collection axis stores its own: an artifact that had already excluded
+    /// them could not disclose what the exclusion removed, and here they are 74-76% of the
+    /// pre-war channel.
+    public let classPairs: [Pair]
+
     /// What the scan saw.
     public let coverage: Coverage
 
     /// Creates an index.
     public init(schemaVersion: Int, generated: String, volumes: [String], targetIds: [String],
-                sourceIds: [String], targets: [UnitRow], pairs: [Pair], coverage: Coverage) {
+                sourceIds: [String], targets: [UnitRow], pairs: [Pair],
+                classTargetKeys: [String], classSourceKeys: [String],
+                classTargets: [UnitRow], classPairs: [Pair], coverage: Coverage) {
         self.schemaVersion = schemaVersion
         self.generated = generated
         self.volumes = volumes
@@ -203,6 +278,10 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
         self.sourceIds = sourceIds
         self.targets = targets
         self.pairs = pairs
+        self.classTargetKeys = classTargetKeys
+        self.classSourceKeys = classSourceKeys
+        self.classTargets = classTargets
+        self.classPairs = classPairs
         self.coverage = coverage
     }
 }

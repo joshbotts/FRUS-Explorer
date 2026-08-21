@@ -336,12 +336,27 @@ struct ArchivalFlowsUnprintedLayerTests {
                                targets: [(key: Int, volumes: [Int], counts: [Int])],
                                volumes: [String] = ["frus1955-57v19", "frus1958-60v03"],
                                referencesFound: Int = 120, referencesJoined: Int = 100,
-                               referencesInherited: Int = 12) throws -> ExternalCitationIndex {
+                               referencesInherited: Int = 12,
+                               classTargetKeys: [String] = [],
+                               classSourceKeys: [String] = [],
+                               classTargets: [(key: Int, volumes: [Int], counts: [Int])] = [],
+                               classPairs: [(Int, Int, Int)] = [],
+                               decimalReferences: Int = 0,
+                               decimalSameClassReferences: Int = 0) throws -> ExternalCitationIndex {
+        // Schema 2 (#834). The class axis is present but EMPTY in most fixtures on purpose: these
+        // suites test the collection axis, and a fixture carrying both would not distinguish a
+        // collection-axis defect from a class-axis one. `classTargetKeys` etc. are non-optional in
+        // the app struct, so omitting them throws `keyNotFound` and every consumer reads the nil
+        // as "unavailable" — which is exactly how these five tests failed when the field was added.
         let payload: [String: Any] = [
-            "schemaVersion": 1, "generated": "2026-08-10",
+            "schemaVersion": 2, "generated": "2026-08-20",
             "volumes": volumes, "targetIds": targetIds, "sourceIds": sourceIds,
             "targets": targets.map { ["k": $0.key, "v": $0.volumes, "n": $0.counts] },
             "pairs": pairs.map { ["f": $0.0, "t": $0.1, "n": $0.2] },
+            "classTargetKeys": classTargetKeys,
+            "classSourceKeys": classSourceKeys,
+            "classTargets": classTargets.map { ["k": $0.key, "v": $0.volumes, "n": $0.counts] },
+            "classPairs": classPairs.map { ["f": $0.0, "t": $0.1, "n": $0.2] },
             "coverage": [
                 "volumesScanned": 552, "volumesWithReferences": volumes.count,
                 "documentsScanned": 314_479, "footnotesScanned": 470_827,
@@ -351,6 +366,12 @@ struct ArchivalFlowsUnprintedLayerTests {
                 "absenceClaimsRefused": 140, "lotReferences": 60, "libraryReferences": 60,
                 "referencesJoined": referencesJoined, "referencesWithBothEnds": 90,
                 "sameUnitReferences": 30, "authorityCollectionCount": 4423,
+                "decimalReferences": decimalReferences,
+                "decimalReferencesWithBothEnds": decimalReferences,
+                "decimalSameClassReferences": decimalSameClassReferences,
+                "decimalSubjectNumericRefused": 0,
+                "decimalNotComposingRefused": 0,
+                "decimalNotInSharedVocabularyRefused": 0,
             ],
         ]
         return try JSONDecoder().decode(

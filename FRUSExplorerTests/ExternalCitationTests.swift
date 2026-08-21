@@ -628,3 +628,120 @@ struct RealTEIFootnoteParityTests {
             """)
     }
 }
+// MARK: - DecimalChannelArtifactTests
+
+/// Pins the decimal channel the shipped artifact carries at schema 2 (#834).
+///
+/// ## The coupling these guard
+/// `ExternalCitationIndex.Coverage` is decoded from non-optional `let`s with a synthesized
+/// `Decodable`. Adding a field to the struct without shipping the regenerated JSON throws
+/// `keyNotFound`, `load()` catches it and returns nil with only a `#if DEBUG` print, and `shared`
+/// is a `static let` evaluated once per process — never retried. Of the consumers only
+/// `ArchivalAnalyticsView` discloses the nil; the Flows layer and the collection section simply
+/// vanish. **Nothing fails loudly**, which is why the decode is asserted here.
+///
+/// Version history:
+///   1.0 — Session 2026-08-20: #834 commit 2
+@Suite("Decimal channel artifact (#834)")
+struct DecimalChannelArtifactTests {
+
+    @MainActor
+    @Test("The bundled artifact decodes at schema 2 with a populated class axis")
+    func artifactDecodesAtSchemaTwo() throws {
+        let index = try #require(ExternalCitationIndexStore.shared, """
+            The bundled external-citation index failed to load. A Coverage field added without \
+            shipping the regenerated JSON does exactly this, and every consumer reads nil as \
+            "footnote citations unavailable" without a build failure.
+            """)
+        #expect(index.schemaVersion >= 2, "the decimal channel ships at schema 2")
+        #expect(!index.classTargetKeys.isEmpty, "the class axis must carry a vocabulary")
+        #expect(!index.classTargets.isEmpty)
+        #expect(!index.classPairs.isEmpty)
+        #expect(index.coverage.decimalReferences > 0)
+    }
+
+    /// The class vocabulary must be keys the REST OF THE LENS can join to.
+    ///
+    /// This is a joinability guard, and it caught a real defect. The class lens merges the pointer
+    /// weight with the documents and volumes weights, which are keyed by
+    /// `collection-usage-index.json`'s vocabulary — built through `decimalClassKey`. But
+    /// `decimalClassLocation`, which finds the citations, admits bare dotless numbers via its
+    /// `bareClassCandidate` path that `decimalClassKey` rejects. The first run of this test found
+    /// **63 such keys carrying 344 of 29,065 references**, every one of which would have ranked
+    /// with pointer counts against zero documents.
+    ///
+    /// They are refused for that reason and not because they are fake: `222` composes as
+    /// *Extradition / Ecuador* and dotless file numbers are a real filing form. Restoring them
+    /// means giving them a home in the shared vocabulary, not relaxing this.
+    @MainActor
+    @Test("Every class key parses under the shared class grammar")
+    func classKeysParse() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        let unparsed = (index.classTargetKeys + index.classSourceKeys)
+            .filter { SourceNoteParser.decimalClassKey($0) == nil }
+        #expect(unparsed.isEmpty, """
+            \(unparsed.count) class keys do not parse as class keys. They would render bare and \
+            join to nothing. First few: \(unparsed.prefix(5).joined(separator: ", "))
+            """)
+    }
+
+    /// **The two axes are separate vocabularies and must stay so.** A class key is not an authority
+    /// id; if class keys ever reached `targetIds`, `endpointsJoinToTheAuthority` would fail — and
+    /// the reason that test still passes is that this separation holds.
+    @MainActor
+    @Test("Class keys never leak into the authority-id vocabulary")
+    func axesDoNotMix() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        let authorityIds = Set(index.sourceIds + index.targetIds)
+        let leaked = (index.classTargetKeys + index.classSourceKeys).filter { authorityIds.contains($0) }
+        #expect(leaked.isEmpty, """
+            \(leaked.count) class keys appear in the authority-id vocabulary. The axes have \
+            different meanings and different index spaces; mixing them would index a class key \
+            into targetIds. First few: \(leaked.prefix(5).joined(separator: ", "))
+            """)
+    }
+
+    /// **The number every surface quoting this channel owes.** Most of what the decimal channel
+    /// finds is a document citing its own file. If this ever reads near zero the harvest has
+    /// changed meaning, and copy quoting the raw count would be overstating the layer ~3x.
+    @MainActor
+    @Test("Self-citation is stored and is the dominant share")
+    func selfCitationIsStoredAndDisclosed() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        let coverage = index.coverage
+        #expect(coverage.decimalSameClassReferences > 0, """
+            Same-class references are stored rather than excluded, exactly as the collection axis \
+            stores same-unit ones — an artifact that had already dropped them could not disclose \
+            what the exclusion removed.
+            """)
+        #expect(coverage.decimalSameClassShare > 0.4, """
+            Self-citation is \(String(format: "%.1f%%", coverage.decimalSameClassShare * 100)) of \
+            the two-ended decimal channel; it was 62% when this shipped. A large drop means the \
+            own-class comparison broke, which would make the channel look far more outward-facing \
+            than it is.
+            """)
+        #expect(coverage.betweenClassReferences > 0, "there must be genuinely outward references too")
+    }
+
+    /// The feature this commit exists to ship: the class lens can rank the pointer weight.
+    @MainActor
+    @Test("The class lens has a pointer vocabulary to rank")
+    func classLensRanksPointers() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        var totals: [String: Int] = [:]
+        index.forEachClassReference { key, _, count in totals[key, default: 0] += count }
+        #expect(totals.count > 100, """
+            The class lens's pointer weight ranks \(totals.count) keys. Before #834 this was \
+            EMPTY and the weight was withheld in the picker — that hole is what this fills.
+            """)
+        // Broken into locals deliberately: a nested `reduce` inside the `#expect` macro blows the
+        // type checker ("unable to type-check this expression in reasonable time").
+        var walked = 0
+        for count in totals.values { walked += count }
+        var stored = 0
+        for row in index.classTargets {
+            for count in row.counts { stored += count }
+        }
+        #expect(walked == stored, "the walk must visit every stored count exactly once")
+    }
+}
