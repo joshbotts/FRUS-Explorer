@@ -145,9 +145,20 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     }
 
     /// The out-of-the-box weight for this axis. Generators and shared people start meaningful;
-    /// date and subseries are mild refinements; **shared subjects defaults to 0** — the data is
-    /// gated (#261) and, per design Q4, the detected-topic axis ships opt-in with an explicit
-    /// "experimental" framing rather than shaping results by default.
+    /// date and subseries are mild refinements; **shared subjects defaults to 0.5** — raised from
+    /// 0 by owner decision 2026-08-21, now that the axis has data and a scorer that discriminates.
+    ///
+    /// It was 0 because the index was never bundled (#308 Phase 3 gated on #261) and the scorer was
+    /// plain Jaccard over subject sets, which counts a shared `War` — 58,480 documents — exactly as
+    /// it counts a subject appearing on one. Phase 3 bundles the index and weights the overlap by
+    /// IDF with a co-occurrence (PMI) term, so a shared subject now carries evidence proportional
+    /// to how much it narrows the corpus.
+    ///
+    /// 0.5 is deliberately below `archivalProvenance` and `crossReference` (1.0) and below
+    /// `sharedPersons` (0.7): these are **machine-detected topics from string matching**, not
+    /// editorial metadata, and upstream's own KNOWN-ISSUES says to treat them as recall-oriented
+    /// candidates. The axis shapes results without dominating them, and the reader can still move
+    /// the slider either way.
     var defaultWeight: Double {
         switch self {
         case .archivalProvenance: return 1.0
@@ -155,7 +166,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .dateProximity:      return 0.5
         case .subseries:          return 0.3
         case .sharedPersons:      return 0.7
-        case .sharedSubjects:     return 0.0
+        case .sharedSubjects:     return 0.5
         case .semanticSimilarity: return 0.0
         }
     }
