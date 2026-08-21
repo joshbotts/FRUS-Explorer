@@ -273,7 +273,11 @@ struct SeriesScopeBar: View {
                 // volume set is intersected with THIS dashboard's entries, and empty
                 // intersections are dropped (the manifest idiom — an empty set would render the
                 // dashboards visibly empty).
-                if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
+                // #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled,
+                // so a category scope covers every volume its subjects occur in rather than only
+                // those where one of them reaches the top-15 profile (11.7% of memberships).
+                if let resolved = DocumentSubjectStore.shared?.subjectsByVolume
+                    ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume,
                    !resolved.isEmpty {
                     Divider()
                     subjectScopeMenu(resolved)

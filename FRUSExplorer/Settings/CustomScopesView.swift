@@ -657,6 +657,20 @@ private struct SubjectFacetPicker: View {
     @State private var addedThisSession: Set<String> = []
 
     private var catalog: [ScopeFacets.SubjectEntry] {
+        // #308 Phase 3: prefer the COMPLETE document-grain vocabulary. The profile-derived
+        // catalogue lists only subjects reaching some volume's top-15 (380 of 491) and counts only
+        // the volumes where they rank (11.7% of memberships). Falls back to the profiles when the
+        // document index is not bundled, which is the pre-Phase-3 behaviour unchanged.
+        if let index = DocumentSubjectStore.shared {
+            let all = ScopeFacets.subjectCatalog(vocabulary: index.subjectVocabulary,
+                                                 volumesBySubjectRef: index.volumesBySubjectRef)
+            guard !searchText.isEmpty else { return all }
+            return all.filter {
+                $0.name.localizedCaseInsensitiveContains(searchText)
+                    || $0.category.localizedCaseInsensitiveContains(searchText)
+                    || $0.subcategory.localizedCaseInsensitiveContains(searchText)
+            }
+        }
         guard let profiles = VolumeSubjectProfilesStore.shared else { return [] }
         let all = ScopeFacets.subjectCatalog(resolvedByVolume: profiles.resolvedByVolume,
                                              volumesBySubjectRef: profiles.volumesBySubjectRef)
@@ -737,10 +751,14 @@ private struct SubjectFacetPicker: View {
     /// The searchable catalog list, shared by both platform chromes.
     private var catalogList: some View {
         List(catalog) { entry in
-            let volumes = VolumeSubjectProfilesStore.shared.map {
-                ScopeFacets.volumeIds(forSubjectRef: entry.ref,
-                                      volumesBySubjectRef: $0.volumesBySubjectRef)
-            } ?? []
+            // The complete membership when the document index is bundled — otherwise the
+            // top-15 subset, as before. Adding a subject to a scope must add every volume that
+            // contains it, not only those where it happens to rank.
+            let volumes = DocumentSubjectStore.shared?.volumeIds(forSubjectRef: entry.ref)
+                ?? VolumeSubjectProfilesStore.shared.map {
+                    ScopeFacets.volumeIds(forSubjectRef: entry.ref,
+                                          volumesBySubjectRef: $0.volumesBySubjectRef)
+                } ?? []
             let fullyAdded = volumes.isSubset(of: currentSelection.union(addedThisSession))
             Button {
                 onAdd(volumes)

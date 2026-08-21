@@ -145,7 +145,10 @@ struct WordCloudScopeResolver {
             // volume set (category absent, e.g. the profiles index is unavailable) yields an
             // explicitly empty cloud, never a `.corpus` fallback; `keys(forVolume:)` per volume
             // IS the indexed-grain intersection.
-            let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+            // #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled — the
+        // profile map is top-15 per volume (10.8% of memberships). Falls back to profiles.
+            let resolved = DocumentSubjectStore.shared?.subjectsByVolume
+                ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
             let volumeIds: Set<String>
             if let subcategory {
                 volumeIds = ScopeFacets.volumeIds(forCategory: category, subcategory: subcategory,

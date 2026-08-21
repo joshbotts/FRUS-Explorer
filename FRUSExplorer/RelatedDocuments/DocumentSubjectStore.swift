@@ -84,6 +84,21 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     private let documentCount: Int
     /// Precomputed `log(N / df)` per vocab index, so scoring never recomputes a logarithm.
     private let idfByIndex: [Double]
+    /// Subject ref → **every** volume containing it, sorted.
+    ///
+    /// ## This is the fix for a 12% facet
+    /// The subject facets resolve through `VolumeSubjectProfiles.volumesBySubjectRef`, documented
+    /// as "the volumes whose PROFILE carries the subject" — accurate, and easy to read past,
+    /// because a profile is the volume's TOP-15. Measured: of 76,574 (subject, volume) memberships
+    /// in the data, only **8,268 are selectable — 11.7%**. Scoping a search to *Agriculture* offers
+    /// 51 volumes when 526 contain it; *Water* offers 79 of 545. That is not a filter over the
+    /// corpus, it is a filter over a TF-IDF-ranked sample of it.
+    ///
+    /// A ranking artifact was being used as a membership index. Those are different questions: the
+    /// top-15 cut is right for "what is this volume about" and wrong for "which volumes touch this
+    /// subject".
+    private let volumesByRef: [String: [String]]
+
     /// Subject ref → vocab index.
     ///
     /// **Stored, not computed.** As a computed property this rebuilt a 491-entry dictionary on
@@ -111,6 +126,17 @@ struct DocumentSubjectIndex: Decodable, Sendable {
         }
         pairCounts = pairs
         indexByRef = Dictionary(uniqueKeysWithValues: vocab.enumerated().map { ($1.ref, $0) })
+        // Invert to complete subject → volumes membership. 76,574 pairs over 491 subjects; the
+        // walk is over volumes, not documents, so it is cheap relative to the decode itself.
+        var byRef: [String: Set<String>] = [:]
+        for (volumeId, byDocument) in documents {
+            for (_, indices) in byDocument {
+                for index in indices where vocab.indices.contains(index) {
+                    byRef[vocab[index].ref, default: []].insert(volumeId)
+                }
+            }
+        }
+        volumesByRef = byRef.mapValues { $0.sorted() }
         let n = Double(max(documentCount, 1))
         idfByIndex = vocab.map { entry in
             entry.documentFrequency > 0 ? log(n / Double(entry.documentFrequency)) : 0
@@ -154,6 +180,50 @@ struct DocumentSubjectIndex: Decodable, Sendable {
                 let sa = a.subjects.first?.score ?? 0, sb = b.subjects.first?.score ?? 0
                 return sa == sb ? a.category < b.category : sa > sb
             }
+    }
+
+    // MARK: - Membership, for the facets
+
+    /// **Every** volume containing a subject — the complete map the facets should resolve through.
+    func volumeIds(forSubjectRef ref: String) -> Set<String> {
+        Set(volumesByRef[ref] ?? [])
+    }
+
+    /// The complete subject → volumes map, for building a facet catalogue in one pass.
+    var volumesBySubjectRef: [String: [String]] { volumesByRef }
+
+    /// `volumeId → [ResolvedSubject]` covering **every** subject appearing in any of the volume's
+    /// documents — the complete counterpart to `VolumeSubjectProfiles.resolvedByVolume`.
+    ///
+    /// The category and sub-category facets resolve through that profile map, so they inherit its
+    /// top-15 cut: a category's volume set is the union of volumes where one of its subjects
+    /// happens to RANK, not where its subjects occur. This is the same shape from the same data
+    /// without the cut, so `ScopeFacets.categoryCatalog` and `volumeIds(forCategory:)` answer
+    /// completely with no change to their signatures.
+    ///
+    /// `score` is the subject's IDF, as everywhere at this grain — the facets use it only for
+    /// ordering, and distinctiveness is the ordering a reader wants.
+    var subjectsByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
+        var out: [String: [VolumeSubjectProfiles.ResolvedSubject]] = [:]
+        out.reserveCapacity(volumesByRef.count)
+        for (ref, volumeIds) in volumesByRef {
+            guard let index = indexByRef[ref] else { continue }
+            let entry = vocab[index]
+            let resolved = VolumeSubjectProfiles.ResolvedSubject(
+                ref: entry.ref, name: entry.name, category: entry.category,
+                subcategory: entry.subcategory, score: idfByIndex[index])
+            for volumeId in volumeIds { out[volumeId, default: []].append(resolved) }
+        }
+        for volumeId in out.keys {
+            out[volumeId]!.sort { ($0.score, $1.name) > ($1.score, $0.name) }
+        }
+        return out
+    }
+
+    /// The full subject vocabulary — all 491, including the **111 that never reach any volume's
+    /// top-15** and are therefore invisible to a profile-derived catalogue.
+    var subjectVocabulary: [(ref: String, name: String, category: String, subcategory: String)] {
+        vocab.map { ($0.ref, $0.name, $0.category, $0.subcategory) }
     }
 
     // MARK: - Distinctiveness, for the similarity axis

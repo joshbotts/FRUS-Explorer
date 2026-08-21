@@ -1348,8 +1348,18 @@ private struct SubjectCategoryFacetPicker: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
 
+    /// #308 Phase 3: the COMPLETE volume-grain map when the document index is bundled.
+    ///
+    /// The profile map is top-15 per volume, so a category's volume set was the union of volumes
+    /// where one of its subjects happened to RANK — measured, 11.7% of real memberships. Falls back
+    /// to the profiles when the index is absent, which is the pre-Phase-3 behaviour unchanged.
+    ///
+    /// Computed per access and not cached: it is only read while the facet sheet is open, and a
+    /// cached copy would be a second thing to invalidate for a saving nobody would notice.
     private var resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
-        VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+        DocumentSubjectStore.shared?.subjectsByVolume
+            ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume
+            ?? [:]
     }
 
     /// Categories, filtered by the search text (matches the category or any of its sub-categories).
