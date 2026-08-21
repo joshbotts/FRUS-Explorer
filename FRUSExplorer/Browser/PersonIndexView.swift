@@ -371,7 +371,10 @@ enum PersonSubjectAffinity {
     /// the compiler cannot tell them apart: both vend `[ResolvedSubject]` per volume, and the app
     /// swaps one for the other at six other call sites to widen their reach. Here the swap would
     /// be wrong, because this is the one place that does arithmetic on
-    /// ``VolumeSubjectProfiles/ResolvedSubject/score`` rather than sorting by it. The profile score
+    /// ``VolumeSubjectProfiles/ResolvedSubject/score`` **through an injected producer** rather than
+    /// sorting by it. (`ProjectFocusSuggestions` sums the same field, but takes a concrete
+    /// `VolumeSubjectProfiles`, so the swap is not reachable there without a signature change.)
+    /// The profile score
     /// varies per volume — how characteristic the subject is of that volume — so
     /// `Σ documentCount × score` is a genuine affinity. The document index's score is corpus IDF,
     /// a constant per subject, which factors out of the sum and leaves rarity × total mentions:

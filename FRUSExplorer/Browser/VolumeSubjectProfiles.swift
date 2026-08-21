@@ -63,16 +63,32 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
         /// is why the field was documented as "ranks within a volume only" and read past for two
         /// waves. Ordering is not the hazard.
         ///
-        /// **The hazard is arithmetic, and there is exactly one such consumer.**
-        /// ``PersonIndexView.SubjectAffinity.rank(mentionCounts:topSubjectsByVolume:limit:)`` sums
+        /// **The hazard is arithmetic, and there are two such consumers — one of them reachable
+        /// by a one-line edit.**
+        ///
+        /// ``PersonSubjectAffinity/rank(mentionCounts:topSubjectsByVolume:limit:)`` sums
         /// `documentCount × score` across volumes. Under the profile producer that is an affinity:
         /// a person weighted toward the subjects the volumes they appear in are *about*. Swap in
-        /// the document producer — which six sites in this app already do to their profile lookups,
-        /// in the form `DocumentSubjectStore.shared?.subjectsByVolume ?? profiles…`, and which
-        /// would read at that call site like an obvious completeness improvement — and the constant
-        /// IDF factors straight out of the sum, so it degenerates to `IDF × total mentions` and
-        /// ranks by corpus rarity rather than by affinity. Same field, same type, plausible
-        /// numbers, different question answered.
+        /// the document producer and the constant IDF factors straight out of the sum, so it
+        /// degenerates to `IDF × total mentions` and ranks by corpus rarity rather than by
+        /// affinity. Same field, same type, plausible numbers, different question answered.
+        ///
+        /// **That one is the dangerous one because the producer is INJECTED**: it takes a
+        /// `(String) -> [ResolvedSubject]?` closure, so the swap is a single line at the call site
+        /// — and six sites in this app already write exactly that swap to widen a profile lookup,
+        /// in the form `DocumentSubjectStore.shared?.subjectsByVolume ?? profiles…`. At
+        /// `PersonIndexView`'s call site it would read like an obvious completeness improvement.
+        ///
+        /// ``ProjectFocusSuggestions/suggestions(engagedVolumeIds:profiles:excluding:limit:)``
+        /// also accumulates this field — `scoreSum[ref] += subject.score`, used as the rank
+        /// tiebreak after recurrence count. It is safe **today** for a structural reason rather
+        /// than a careful one: its parameter is typed `VolumeSubjectProfiles`, so the document
+        /// producer cannot be passed without changing the signature. If that type is ever loosened,
+        /// the sum becomes `IDF(ref) × count[ref]` — a monotone function of the primary sort key —
+        /// and the tiebreak silently stops breaking ties.
+        ///
+        /// The first version of this note said "exactly one". An enumeration that misses a site is
+        /// worse than none, because the next author trusts the count.
         ///
         /// So: **sort by it freely; sum, average, threshold, or display it only against a producer
         /// you have named.** `SubjectMeaningTests` pins that the two producers really do disagree,
