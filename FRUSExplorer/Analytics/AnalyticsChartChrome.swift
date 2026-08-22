@@ -272,6 +272,15 @@ struct AnalyticsViewModePicker: View {
 /// bucketing the charts use, so scope labels line up with the By-Subseries bars.
 struct AnalyticsScopeBar: View {
 
+    /// Shared app state — for the Topic-index door (#1040). `@Environment` is safe here for the
+    /// reasons `SeriesScopeBar` records: every host holds it, every scene provides it, no previews.
+    @Environment(AppState.self) private var appState
+    /// The scene this bar renders in, so the hand-off addresses the presenting window (#338).
+    @Environment(\.sceneID) private var sceneID
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
     /// The indexed volume IDs available to scope over (typically `AppState.indexedVolumeIds`).
     let indexedVolumeIds: Set<String>
     /// Resolves a volume ID to its display title (from the manifest).
@@ -362,15 +371,9 @@ struct AnalyticsScopeBar: View {
         Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Detected Topic")) {
           Section(String(localized: "analytics.scope.subject.experimental",
                          defaultValue: "Detected topics — experimental")) {
-            ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
+            // A category is a HEADING, not a scope (#1040) — see `narrowingCategories`.
+            ForEach(ScopeFacets.narrowingCategories(resolvedByVolume: resolved)) { category in
                 Menu(category.label) {
-                    subjectFacetItem(
-                        baseLabel: String(format: String(
-                            localized: "analytics.scope.subject.wholeCategory %@",
-                            defaultValue: "All of %@"), category.label),
-                        scopeLabel: category.label,
-                        profileVolumeIds: ScopeFacets.volumeIds(forCategory: category.label,
-                                                                resolvedByVolume: resolved))
                     ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
                                                           resolvedByVolume: resolved)) { sub in
                         subjectFacetItem(
@@ -381,6 +384,18 @@ struct AnalyticsScopeBar: View {
                                                                     resolvedByVolume: resolved))
                     }
                 }
+            }
+
+            // #1040: where a reader goes when no topic AREA narrows enough. Subject grain does, and
+            // since #1023 there is a surface for it. After the categories — the finer alternative,
+            // not the headline.
+            Divider()
+            Button(String(localized: "analytics.scope.subject.browseIndex",
+                          defaultValue: "Browse all topics…")) {
+                appState.openSubjectExplorer(.all, from: sceneID)
+                #if os(macOS)
+                openWindow.fronting(id: "frus.subjects")
+                #endif
             }
           }
         }

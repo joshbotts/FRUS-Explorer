@@ -287,9 +287,12 @@ struct SubjectFacetCopyTests {
             The picker footer must say plainly that a mention is sufficient. Softening this puts \
             the reader back where the review found them.
             """)
-        #expect(source.contains("the count beside each"), """
-            The copy must point at the reach column. It is the only thing on screen that \
-            distinguishes a category selecting 438 volumes from one selecting 552.
+        // "count beside each", not "the count beside each": #1040 rewrote this footer to say
+        // "the VOLUME count beside each", and the assertion is about pointing at the reach column
+        // rather than about one wording of it.
+        #expect(source.contains("count beside each"), """
+            The copy must point at the reach column. With categories no longer selectable it is \
+            what distinguishes a sub-category selecting 162 volumes from one selecting 550.
             """)
     }
 }
@@ -659,5 +662,126 @@ struct SubjectExplorerRequestTests {
             The name is part of identity, not decoration: it is the fallback half of the durable \
             key and what the filter chip shows.
             """)
+    }
+}
+
+
+// MARK: - NarrowingCategoryTests
+
+/// Pins #1040: a category is a heading, not a scope.
+///
+/// ## The measurements this rests on
+/// - 7 of 13 categories select **all 552** volumes; the narrowest selects 438.
+/// - No document-count threshold rescues them: at 20 documents per volume, seven still select
+///   476–548. The taxonomy's top level describes the series rather than partitioning it.
+/// - `General` sub-categories reach a **median 542 of 552** — so unfolding them, the obvious way to
+///   keep every category non-empty, would move a control that cannot narrow one level down.
+/// - Non-`General` sub-categories reach a median **162**. That is the grain that narrows, and it is
+///   what the menus now offer.
+///
+/// Version history:
+///   1.0 — Session 2026-08-22: #1040
+@Suite("Categories are headings, not scopes (#1040)")
+struct NarrowingCategoryTests {
+
+    @MainActor
+    private func resolved() throws -> [String: [VolumeSubjectProfiles.ResolvedSubject]] {
+        let index = try #require(DocumentSubjectStore.shared)
+        return index.subjectsByVolume
+    }
+
+    /// The premise. If categories ever stopped saturating, this whole change would want revisiting
+    /// rather than preserving.
+    @MainActor
+    @Test("Categories saturate, which is why they are not offered as scopes")
+    func categoriesSaturate() throws {
+        let map = try resolved()
+        let all = ScopeFacets.categoryCatalog(resolvedByVolume: map)
+        let corpus = map.count
+        let saturating = all.filter { $0.volumeCount == corpus }.count
+        #expect(saturating >= 5, """
+            Only \(saturating) of \(all.count) categories select the whole corpus. Measured at 7 of \
+            13 when this shipped; if categories have become discriminating, re-read #1040 before \
+            keeping them out of the menus.
+            """)
+    }
+
+    /// The rule itself: only categories with something under them that narrows.
+    @MainActor
+    @Test("Only categories with a non-General sub-category are offered")
+    func onlyNarrowingCategoriesAreOffered() throws {
+        let map = try resolved()
+        let offered = ScopeFacets.narrowingCategories(resolvedByVolume: map)
+        let all = ScopeFacets.categoryCatalog(resolvedByVolume: map)
+        #expect(offered.count < all.count, """
+            Every category is still offered (\(offered.count) of \(all.count)). Two of them — \
+            Information Programs and Uncategorized — have only a folded `General` bucket, so with \
+            no "All of X" row they would open onto an empty menu.
+            """)
+        for category in offered {
+            #expect(!ScopeFacets.subCategoryCatalog(forCategory: category.label,
+                                                    resolvedByVolume: map).isEmpty,
+                    "\(category.label) is offered but has nothing under it")
+        }
+        let withheld = Set(all.map(\.label)).subtracting(offered.map(\.label))
+        for label in withheld {
+            #expect(ScopeFacets.subCategoryCatalog(forCategory: label,
+                                                   resolvedByVolume: map).isEmpty,
+                    "\(label) was withheld but has sub-categories a reader could have used")
+        }
+    }
+
+    /// Why `General` was not unfolded instead — the alternative that would have kept every category
+    /// non-empty. It fails on the same measurement the categories fail on.
+    @MainActor
+    @Test("General sub-categories are as saturating as the categories, so unfolding would not help")
+    func generalWouldNotHelp() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        var generalReach: [Int] = []
+        var specificReach: [Int] = []
+        var byBucket: [String: Set<String>] = [:]
+        for (volumeId, subjects) in index.subjectsByVolume {
+            for subject in subjects {
+                byBucket["\(subject.category)\u{1F}\(subject.subcategory)", default: []].insert(volumeId)
+            }
+        }
+        for (key, volumes) in byBucket {
+            if key.hasSuffix("\u{1F}\(ScopeFacets.generalSubcategory)") {
+                generalReach.append(volumes.count)
+            } else {
+                specificReach.append(volumes.count)
+            }
+        }
+        let generalMedian = generalReach.sorted()[generalReach.count / 2]
+        let specificMedian = specificReach.sorted()[specificReach.count / 2]
+        #expect(generalMedian > specificMedian * 2, """
+            General rows reach a median \(generalMedian) against the specific rows' \
+            \(specificMedian). Unfolding General was rejected because it moves a control that \
+            cannot narrow one level down and renames it; if that gap has closed, the decision is \
+            worth re-opening.
+            """)
+    }
+
+    /// The menus must not offer a whole-category scope. A source scan, because the control is a
+    /// SwiftUI Button inside a Menu and its absence is the deliverable.
+    @Test("No scope surface offers an All-of-category row")
+    func noSurfaceOffersWholeCategory() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["FRUSExplorer/SeriesAnalytics/SeriesScopeBar.swift",
+                     "FRUSExplorer/Analytics/AnalyticsChartChrome.swift",
+                     "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
+                     "FRUSExplorer/Search/SearchFilterView.swift"] {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            #expect(!source.contains("wholeCategory"), """
+                \(path) still offers an "All of <category>" row. Measured, that selects 438–552 of \
+                552 volumes — a control that cannot narrow, under copy promising a filter.
+                """)
+            #expect(source.contains("narrowingCategories"), """
+                \(path) builds its category list from something other than the shared rule. That \
+                rule is one function precisely because the last per-site enumeration in this area \
+                was written five times and three disagreed (#1022).
+                """)
+        }
     }
 }
