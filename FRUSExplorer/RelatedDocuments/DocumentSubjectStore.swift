@@ -377,6 +377,39 @@ struct DocumentSubjectIndex: Decodable, Sendable {
         vocab.map { ($0.ref, $0.name, $0.category, $0.subcategory) }
     }
 
+    /// How many documents in the whole CORPUS carry a subject, from the artifact's own
+    /// `documentFrequency`; `nil` when the ref is not in this drop.
+    ///
+    /// **Corpus-wide, not device-wide, and every surface showing it owes that sentence.** The
+    /// bundled index covers all 552 volumes while the SQL tables carry only the volumes this reader
+    /// has indexed, so a browse can truthfully say a subject appears in 4,000 documents and then
+    /// return 60 — the same split the volume scope menus already face. This is the numerator the
+    /// IDF is computed from (`idf(_:)` is `log(N / documentFrequency)`), so the two cannot disagree.
+    func documentFrequency(forSubjectRef ref: String) -> Int? {
+        indexByRef[ref].map { vocab[$0].documentFrequency }
+    }
+
+    /// Every subject in the vocabulary with its corpus reach — the Subject Explorer's catalogue.
+    ///
+    /// Built from the vocabulary rather than from `volumesBySubjectRef`, so it includes the **111
+    /// subjects that reach no volume's top-15** and are invisible to any profile-derived list.
+    /// Those are not curiosities: a subject spread thinly across many volumes is precisely what a
+    /// reader wants an index for.
+    ///
+    /// Sorted by name. Reach is deliberately NOT the sort key here — the facet catalogues sort by
+    /// reach because a filter is chosen by how much it narrows, while an index is READ
+    /// alphabetically, and a 491-row list ordered by a number the reader did not ask about is
+    /// unnavigable.
+    var subjectCatalogue: [(ref: String, name: String, category: String, subcategory: String,
+                            documentCount: Int, volumeCount: Int)] {
+        vocab.map { entry in
+            (ref: entry.ref, name: entry.name, category: entry.category,
+             subcategory: entry.subcategory, documentCount: entry.documentFrequency,
+             volumeCount: volumesByRef[entry.ref]?.count ?? 0)
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
     // MARK: - Distinctiveness, for the similarity axis
 
 

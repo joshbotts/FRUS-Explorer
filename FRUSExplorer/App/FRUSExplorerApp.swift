@@ -806,6 +806,30 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 520, height: 640)
 
+        // MARK: - Subjects Window (#1023)
+        //
+        // Beside People, and a dedicated Window for the same reason: hosting the index as a level
+        // inside the Corpus Browser would mean topics stop being browsable beside an open document,
+        // which is the regression `PeopleWindowView` was created to fix.
+        //
+        // NO BOOT GUARD ON THE LIST, deliberately, and this differs from People. The subject
+        // vocabulary is a bundled artifact available on the first frame, so the index renders
+        // immediately; only the "Find documents" route needs `SearchService`, and `SubjectDetailSheet`
+        // guards that one alone. Wrapping the whole window in "Preparing your index…" would spin
+        // over a list that is genuinely ready to read.
+        //
+        // `.modelContainer` is required even though this subtree has no `@Query` today — the
+        // Cross-Reference Graph scene records why: a latent omission is what the About window
+        // looked like for two months.
+        Window(String(localized: "subjects.window.title", defaultValue: "Topics"),
+               id: "frus.subjects") {
+            SubjectExplorerWindowContent(appState: appState)
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 560, height: 680)
+
         // MARK: - Cross-Reference Graph Window (UI review M-2)
         //
         // **Value-based, so two documents' graphs can be open at once.** That is M-2's actual
@@ -3563,6 +3587,40 @@ struct ProjectSwitcherMenuContent: View {
 ///
 /// Version history:
 ///   1.0 — CW-7c (UI review F-28): Handoff continuation
+/// Hosts the Subject Explorer in its macOS window and drains the hand-off addressed to it (#1023).
+///
+/// A wrapper because a `Scene` body cannot hold `@State`, and the both-ways consumption contract
+/// needs one — the same reason `SemanticAnalyticsWindowContent` exists, and `appState` is passed in
+/// rather than read from the environment for the same reason it is there.
+///
+/// **Both `.task` and `.onChange`, not either alone.** `.onChange` never fires for a value set
+/// before the view attached, so a window opened cold — restored at launch, or opened by the very
+/// hand-off it is meant to receive — would drop the payload and show the whole index instead of the
+/// subject the reader tapped. That is #750 H-8/H-11 verbatim.
+private struct SubjectExplorerWindowContent: View {
+
+    /// Shared app state.
+    let appState: AppState
+
+    /// What this window was opened at; `.all` until a hand-off says otherwise.
+    @State private var request: SubjectExplorerRequest = .all
+
+    var body: some View {
+        NavigationStack {
+            SubjectIndexView(request: request)
+        }
+        .task { consume() }
+        .onChange(of: appState.pendingSubjectExplorer) { _, _ in consume() }
+    }
+
+    /// Drains the hand-off addressed to this window.
+    private func consume() {
+        guard let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
+                                                    for: .macSubjects) else { return }
+        request = payload
+    }
+}
+
 private struct SemanticAnalyticsWindowContent: View {
 
     /// Shared app state.

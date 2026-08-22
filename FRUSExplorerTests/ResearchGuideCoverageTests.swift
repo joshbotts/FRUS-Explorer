@@ -64,7 +64,11 @@ struct ResearchGuideCoverageTests {
         // and "facet" were both already present, so a row using them would have passed on the day
         // it was added and pinned nothing. Both of these were absent from the guide, the mirror and
         // both manuals before the section was written.
-        "the subjects facet on search results": ["subjects facet", "topic area"]
+        "the subjects facet on search results": ["subjects facet", "topic area"],
+        // #1023: the topic index. Terms checked against the guide, the mirror and BOTH manuals
+        // before the section was written — all four returned zero, which is the only way this row
+        // pins anything on the day it is added.
+        "the topic index": ["topic index"]
     ]
 
     private static func source(_ path: String) throws -> String {

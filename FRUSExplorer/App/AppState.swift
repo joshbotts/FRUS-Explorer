@@ -1015,6 +1015,13 @@ final class AppState {
     /// and the target scene is what makes a hand-off land in the window the reader was in.
     var pendingArchivalScope: Handoff<ArchivalScopeRequest>? = nil
 
+    /// A pending Subject Explorer open, addressed to the scene that should present it (#1023).
+    ///
+    /// Same `Handoff` shape and for the same reason as `pendingArchivalScope`: the destination is a
+    /// **window** on macOS and a pushed level on iOS, and the target scene is what makes the
+    /// hand-off land where the reader actually was.
+    var pendingSubjectExplorer: Handoff<SubjectExplorerRequest>? = nil
+
     /// One-shot hand-off for a continued semantic map (UI review F-28) — the scope and lens a
     /// Handoff activity arrived with.
     ///
@@ -2184,6 +2191,9 @@ struct SceneID: Hashable, Sendable {
     /// (`frus.archivalAnalytics`, #833) — where scoped topic and search hand-offs land.
     static let macArchivalAnalytics = SceneID("frus.archivalAnalytics")
 
+    /// Fixed identity of the macOS singleton **Subjects** window (`frus.subjects`, #1023).
+    static let macSubjects = SceneID("frus.subjects")
+
     /// Fixed identity of the macOS singleton **Corpus Analytics** window (`frus.analytics`, #338 step 3).
     static let macAnalytics = SceneID("frus.analytics")
 
@@ -2241,6 +2251,40 @@ struct ArchivalScopeRequest: Equatable, Sendable, Codable, Hashable {
     /// done. It goes through the hand-off rather than round a side door so that iOS has exactly
     /// one presenter of this surface (#833).
     static let unscoped = ArchivalScopeRequest(volumeIds: [], label: "")
+}
+
+/// What a Subject Explorer was opened *at* (#1023).
+///
+/// ## Why a sum type and not `(ref, name)`
+/// The three doors carry three different amounts of knowledge, and flattening them would make one
+/// of them lie.
+///
+/// - The **Browse** row knows nothing — it wants the index from the top.
+/// - The **results facet** knows a `(category, subcategory)` BUCKET, and cannot know a subject:
+///   the facet aggregates `document_subjects`, which stores the bucket a document's subjects fold
+///   to and never the subjects themselves. With a flat `(ref, name)` payload this door would have
+///   to invent a ref it does not possess — most plausibly the bucket's first subject — which is a
+///   fabricated claim about what the reader tapped, on a surface whose whole job is to say what a
+///   number means. The bucket hand-off is also *lossless*: both subject tables are written from one
+///   closure, and a document's buckets are literally `bucketByVocabIndex[subject]` for its own
+///   subjects, so "documents in bucket B" is exactly "documents carrying any subject in B".
+/// - The **subject pivot sheet** knows a single subject, ref and name both.
+///
+/// `Codable` because it rides a macOS window's restoration payload, `Hashable` because the window
+/// group is keyed on it.
+enum SubjectExplorerRequest: Equatable, Sendable, Codable, Hashable {
+
+    /// The whole index, no selection — the Browse-tab door, and the honest arrival state when a
+    /// more specific payload could not be resolved.
+    case all
+
+    /// A `(category, subcategory)` bucket, by its durable `SubjectBucketVocabulary` key — the
+    /// results-facet door. Lands on the group, never on a subject inside it.
+    case group(categoryKey: String)
+
+    /// One subject, carrying both halves of the durable key: the ref is exact, and the name
+    /// resolves it after a re-mint (see `SearchParameters.subjectRef`).
+    case subject(ref: String, name: String)
 }
 
 /// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
@@ -2375,6 +2419,26 @@ extension AppState {
         // `.anyWindow` is correct here rather than a fallback: the first main window to observe it
         // presents the map, which is what the reader expects when they tap the badge.
         pendingSemanticMap = Handoff(target: sceneID ?? .anyWindow, payload: request)
+        #endif
+    }
+
+    /// Opens the Subject Explorer at `request`, addressed to the scene the reader was in (#1023).
+    ///
+    /// Mirrors `openArchivalScope` exactly, including its DEBUG note when `\.sceneID` did not reach
+    /// the producer — on iOS an unaddressed hand-off cannot present, and a silent no-op is the
+    /// failure #338 exists to make visible.
+    func openSubjectExplorer(_ request: SubjectExplorerRequest, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingSubjectExplorer = Handoff(target: .macSubjects, payload: request)
+        #else
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openSubjectExplorer: \\.sceneID did not reach this producer (#338) — "
+                + "the subject index will not present from this surface.")
+        }
+        #endif
+        pendingSubjectExplorer = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"),
+                                         payload: request)
         #endif
     }
 

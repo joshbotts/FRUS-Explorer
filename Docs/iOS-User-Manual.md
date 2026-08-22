@@ -278,6 +278,18 @@ Tap a subseries — *1969–1976*, say — to see its volumes; tap a volume for 
 
 Every volume's page carries a **Top subjects** section — the subjects most characteristic of that volume, derived from experimental subject data and grouped by category. These are automatically detected topics, not editorial subject headings, so an occasional mistag is possible; but because the profiles ship with the app, they appear even for volumes you haven't downloaded — a fast way to size up an unfamiliar volume before committing 6 MB to it. Tap a subject to see every *other* FRUS volume covering it across the whole corpus, and navigate straight to any of them. That sheet also offers **Archival profile of these volumes**, which opens Archival Analytics (Section 15.5) on the collections those volumes draw on.
 
+### 6.2a The Topic Index
+
+Where Section 6.2 shows the topics *one volume* is most characteristic of, the **Topic index** lists every detected topic in the series — all 491, including the ones no volume ranks highly. Those are worth having: a topic spread thinly across two hundred volumes never reaches any single volume's top subjects, and is otherwise almost impossible to find.
+
+Each row shows the topic, its `Category · Sub-category`, and its reach — how many documents and volumes carry it.
+
+**Those figures describe the whole series, not your library.** A topic can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. So a topic's own page shows both numbers, labelled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device*. If the last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a topic your library may be full of.
+
+**Find documents on this topic** runs a search filtered to that one topic. That filter is finer than the topic-area rows in the Facets panel (Section 7.5): an area such as *Warfare · General* holds about five topics, and this narrows to one. Both can be active at once, and each gets its own chip so you can remove either.
+
+Reach it three ways: **Browse ▸ Topics** (beside People), the **Browse this topic in the index** button on any topic chip's pivot sheet, or **Browse all topics** in the Subjects section of a search's Facets panel.
+
 ### 6.3 The Project Picker
 
 A **project picker** in the Browse toolbar sets your active research context — **Global Context** (no project), any of your projects, or **Manage Projects**. Whatever is active follows you everywhere: new notes, tags, and highlights are filed under it automatically (Section 10).

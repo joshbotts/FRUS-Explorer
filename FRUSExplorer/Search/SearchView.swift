@@ -289,6 +289,7 @@ struct SearchView: View {
                 Task { await runSearch() }
             },
             onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
+            onBrowseTopics: { appState.openSubjectExplorer(.all, from: sceneID) },
             onDiscloseSection: { section in
                 Task {
                     await facetController.load(

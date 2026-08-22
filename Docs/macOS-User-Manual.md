@@ -283,6 +283,18 @@ Click a person for their detail panel:
 
 To study *how* these people are mentioned over time — rankings, trajectories, co-mention networks — open **Person Analytics** (Section 15.3).
 
+### 6.4 The Topic Index
+
+The **Topics** window (beside People in the Window menu) lists every detected topic in the series — all 491, including the ones no volume ranks highly. A topic spread thinly across two hundred volumes never reaches any single volume's top subjects, and is otherwise almost impossible to find.
+
+Each row shows the topic, its `Category · Sub-category`, and its reach in documents and volumes.
+
+**Those figures describe the whole series, not your library.** A topic can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. A topic's page shows both, labelled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device* — and if that last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a topic your library may be full of.
+
+**Find documents on this topic** opens Search filtered to that one topic — finer than the topic-area rows in the Facets panel (Section 7.5), where an area holds about five topics. Both filters can be active at once, and each carries its own token you can remove independently.
+
+It opens as its own window, so the index stays available beside whatever you are reading. Reach it from the Window menu, from **Browse this topic in the index** on any topic chip's pivot sheet, or from **Browse all topics** in a search's Subjects facet.
+
 ---
 
 ## 7. Searching

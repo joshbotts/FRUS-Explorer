@@ -140,6 +140,8 @@ enum ToolWindowID: Hashable {
     case chronology
     case research
     case people
+    /// The Subjects window (`frus.subjects`) — the detected-topic index (#1023).
+    case subjects
     case history
     case archivalNeighbors(ArchivalNeighborsRequest)
     case relatedDocuments(RelatedDocumentsRequest)

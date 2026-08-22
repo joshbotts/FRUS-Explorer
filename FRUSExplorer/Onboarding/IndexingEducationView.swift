@@ -938,6 +938,17 @@ private extension EducationPage {
                 ]
             ),
             EducationSection(
+                id: "subject-index",
+                heading: "The Topic Index",
+                systemImage: "tag",
+                paragraphs: [
+                    "The topic index lists every detected topic in the series — all 491, including the ones no single volume is characteristic of, which are exactly the topics spread thinly enough to be hard to find any other way. Each row shows how many documents and volumes carry it.",
+                    "Those figures describe the whole series, not your library. A topic can reach four thousand documents and return sixty here, because a search reaches only the volumes you have indexed — so each topic's page shows both numbers side by side, and says which is which.",
+                    "Open a topic to see its reach across the whole series and to find the documents on it you can actually read. The filter that applies is a topic filter, finer than the topic-area rows in search facets: an area holds about five topics, and this narrows to one of them.",
+                    "Find it in the Browse tab beside People, from any topic chip's pivot sheet, or from the Subjects section of a search's Facets panel. On the Mac it opens as its own window that stays open while you read."
+                ]
+            ),
+            EducationSection(
                 id: "chronology",
                 heading: "Chronology",
                 systemImage: "calendar.day.timeline.left",

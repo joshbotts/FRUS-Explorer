@@ -247,6 +247,7 @@ struct VolumeSubjectVolumesSheet: View {
                     }
                 }
                 archivalProfileSection
+                subjectExplorerSection
             }
             .navigationTitle(subject.name)
             #if os(iOS)
@@ -315,6 +316,47 @@ struct VolumeSubjectVolumesSheet: View {
                     Int64(coveringVolumeIds.count)))
             }
         }
+    }
+
+    /// The door into the Subject Explorer, at SUBJECT grain (#1023).
+    ///
+    /// Unconditional, unlike the archival-profile button above it: that one is withheld below two
+    /// volumes because a one-volume "profile of volumes on this subject" is that volume's own
+    /// profile wearing a topic's name. This surface has no such failure mode — a subject reaching
+    /// one volume is exactly the kind the index is worth opening for.
+    @ViewBuilder
+    private var subjectExplorerSection: some View {
+        Section {
+            Button {
+                openSubjectExplorer()
+            } label: {
+                Label(String(localized: "browser.volume.subjectVolumes.explore.button",
+                             defaultValue: "Browse this topic in the index"),
+                      systemImage: "tag")
+            }
+        } footer: {
+            Text(String(localized: "browser.volume.subjectVolumes.explore.footer",
+                        defaultValue: "Shows this topic's reach across the whole series, and finds the documents on it that you have indexed."))
+        }
+    }
+
+    /// Opens the Subject Explorer at this subject, mirroring the #833 archival door exactly —
+    /// including the iOS dismiss-then-hand-off ordering, which is not stylistic: dismissing one
+    /// sheet while presenting another in the same state change drops the second.
+    private func openSubjectExplorer() {
+        let request = SubjectExplorerRequest.subject(ref: subject.ref, name: subject.name)
+        #if os(macOS)
+        appState.openSubjectExplorer(request, from: sceneID)
+        openWindow.fronting(id: "frus.subjects")
+        dismiss()
+        onNavigate?()
+        #else
+        dismiss()
+        onNavigate?()
+        let appState = appState
+        let sceneID = sceneID
+        Task { @MainActor in appState.openSubjectExplorer(request, from: sceneID) }
+        #endif
     }
 
     /// Hands the covering volumes to Archival Analytics and closes up behind itself.

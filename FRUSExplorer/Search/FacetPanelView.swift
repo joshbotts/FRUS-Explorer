@@ -470,6 +470,14 @@ struct FacetPanelView: View {
     /// deliberately does not reach into the search parameters for display copy.
     var onOpenArchivalProfile: (([String], String) -> Void)?
 
+    /// Opens the Subject Explorer (#1023).
+    ///
+    /// Optional for the same reason as the door above — a host that cannot present it withholds
+    /// the button rather than showing it inert — and injected for the same reason: the panel does
+    /// not reach into `AppState` or `openWindow`, because it is hosted by two different views on
+    /// two platforms and each knows its own presentation.
+    var onBrowseTopics: (() -> Void)?
+
     /// Called when a section is first disclosed, so the controller can compute it.
     let onDiscloseSection: (FacetSection) -> Void
 
@@ -812,6 +820,12 @@ struct FacetPanelView: View {
                 if kind == .provenance {
                     archivalProfileButton(facets)
                 }
+                // Same placement rule, same reason (#833 review): OUTSIDE the empty/non-empty
+                // branch, because a Subjects breakdown with nothing in it is exactly when a reader
+                // most wants the index.
+                if kind == .subjects {
+                    topicIndexButton
+                }
             }
         }
         .padding(.horizontal)
@@ -1062,6 +1076,35 @@ struct FacetPanelView: View {
     /// filter (the search has no provenance index to narrow on), but the result set's VOLUMES
     /// are a scope the archival surface understands, so the dead end becomes a door.
     ///
+    /// The door into the Subject Explorer (#1023).
+    ///
+    /// ## Why it opens the whole index rather than this row's topic area
+    /// A Subjects facet row is a `(category, subcategory)` BUCKET, and it cannot name a subject:
+    /// the aggregate joins `document_subjects`, which stores the bucket a document's subjects fold
+    /// to and never the subjects themselves. So a per-row door could hand off a GROUP at best —
+    /// and this is one button for the whole section, not one per row, because the panel's own note
+    /// warns off per-row controls and `pageFooter` paginates the rows anyway.
+    ///
+    /// Rather than pick a row's group arbitrarily, it opens at `.all`. The alternative a flat
+    /// `(ref, name)` payload would have forced — inventing a subject from the bucket, most
+    /// plausibly its first — is a fabricated claim about what the reader tapped, on a panel whose
+    /// whole job is saying what a number means.
+    @ViewBuilder
+    private var topicIndexButton: some View {
+        if let onBrowseTopics {
+            Button {
+                onBrowseTopics()
+            } label: {
+                Label(String(localized: "facets.subjects.browseIndex",
+                             defaultValue: "Browse all topics"),
+                      systemImage: "tag")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 2)
+        }
+    }
+
     /// The distinction the copy has to keep: this is the archival profile of the volumes these
     /// matches sit in, not of the matches. A volume enters whole or not at all.
     @ViewBuilder

@@ -27,6 +27,14 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
     case type
     case frontMatter
     case subject
+    /// One detected TOPIC, from the Subject Explorer (#1023) — finer than `subject`, which is a
+    /// `(category, subcategory)` area holding ~4.6 of them.
+    ///
+    /// A sibling case rather than a second meaning for `subject`, because the two filters coexist:
+    /// a reader can narrow to an area from the results facet and to a topic from the explorer, and
+    /// a single two-valued token would show one of them while the other filtered silently. That is
+    /// the failure this whole row exists to prevent.
+    case topic
 
     var id: String { rawValue }
 
@@ -43,6 +51,8 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
                                          defaultValue: "Front matter")
         case .subject:     return String(localized: "search.token.field.subject",
                                          defaultValue: "Subject")
+        case .topic:       return String(localized: "search.token.field.topic",
+                                         defaultValue: "Topic")
         }
     }
 
@@ -64,6 +74,10 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
         // and #308 deliberately did not add one — the bucket is chosen from a breakdown of THIS
         // result set, which a standing filter list cannot show.
         case .years, .subject:    return .facetPanel
+        // The explorer is the only place a topic filter comes from, and it is a browse surface
+        // rather than a control on this query — so the token clears rather than reopens, which is
+        // what `.none` means here.
+        case .topic:              return .elsewhere
         case .date, .volume, .person, .tags: return .advancedPopover
         }
     }
@@ -76,6 +90,14 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
         case advancedPopover
         /// The facet panel, the only producer of this field's value.
         case facetPanel
+        /// No editor anywhere in the app: the value's only producer is a separate browse surface,
+        /// so the token can say what is filtering and clear it, but has nowhere to reopen.
+        ///
+        /// Deliberately explicit rather than reusing `facetPanel` and pointing somewhere the value
+        /// does not come from — the doc above records that "a token that promises an editor the app
+        /// does not have" is the defect class this review kept finding, and quietly mislabelling
+        /// this one would be that defect with a different label.
+        case elsewhere
     }
 }
 
@@ -161,7 +183,13 @@ enum SearchFilterTokens {
     /// The fields with no token, which are what the + Filter menu can still add.
     static func addableFields(parameters: SearchParameters, labels: Labels) -> [SearchFilterField] {
         let active = Set(tokens(parameters: parameters, labels: labels).map(\.field))
-        return SearchFilterField.allCases.filter { !active.contains($0) }
+        return SearchFilterField.allCases.filter { field in
+            // A field with no editor cannot be ADDED from here, only removed once something else
+            // set it. Listing it would put a permanently disabled row in the + Filter menu, which
+            // is the "promises an editor the app does not have" defect this file already names —
+            // the same defect, wearing a disabled state instead of a broken one.
+            field.editor != .elsewhere && !active.contains(field)
+        }
     }
 
     /// The displayed value for one field, or `nil` when that field is at its default.
@@ -212,6 +240,13 @@ enum SearchFilterTokens {
             // unnameable bucket is the case where that matters most.
             return DocumentSubjectStore.shared?.bucketVocabulary.label(at: bucket)
                 ?? String(localized: "search.token.subject.unknown", defaultValue: "filtered")
+        case .topic:
+            guard parameters.subjectRef != nil else { return nil }
+            // The STORED name, not a re-resolution. After an upstream re-mint the ref no longer
+            // resolves, and a token that disappeared at exactly that moment would leave a filter
+            // in force with nothing on screen naming it.
+            return parameters.subjectName
+                ?? String(localized: "search.token.topic.unknown", defaultValue: "filtered")
         }
     }
 

@@ -178,6 +178,16 @@ final class SearchViewModel {
     /// `SearchParameters.subjectBucketKey`.
     var subjectBucketKey: String?
 
+    /// Active SUBJECT filter from the Subject Explorer (#1023) — the durable ref. `nil` means no
+    /// subject filter. Finer than ``subjectBucket``: a bucket is a `(category, subcategory)` pair
+    /// and a subject is one of the ~4.6 subjects inside it.
+    var subjectRef: String?
+
+    /// Display name of ``subjectRef`` — the fallback half of the durable key AND what the filter
+    /// chip says. Both uses need it: a ref alone cannot be shown to a reader, and after an upstream
+    /// re-mint it is the only thing that still resolves.
+    var subjectName: String?
+
     /// Display name for the active `personRollupId`/`personRef` filter, shown in the filter chip.
     var personLabel: String?
 
@@ -902,7 +912,9 @@ final class SearchViewModel {
             personAnchor: personAnchor,
             includeFrontMatter: includeFrontMatter,
             subjectBucket: subjectBucket,
-            subjectBucketKey: subjectBucketKey
+            subjectBucketKey: subjectBucketKey,
+            subjectRef: subjectRef,
+            subjectName: subjectName
         )
     }
 
@@ -1192,6 +1204,17 @@ final class SearchViewModel {
                     ?? String(localized: "search.narrowing.subject.unknown",
                               defaultValue: "Subject filter")))
         }
+        // The subject chip, separate from the bucket one above: they are different grains and a
+        // reader can hold both at once (a bucket from the facet, a subject from the explorer).
+        // Named from the STORED name rather than re-resolved, because after an upstream re-mint the
+        // ref no longer resolves and a chip that vanished would be a filter with no way back — the
+        // one failure this list exists to prevent.
+        if subjectRef != nil {
+            out.append(ActiveNarrowing(
+                id: "subjectRef",
+                label: subjectName ?? String(localized: "search.narrowing.subjectRef.unknown",
+                                             defaultValue: "Topic filter")))
+        }
         return out
     }
 
@@ -1206,6 +1229,7 @@ final class SearchViewModel {
         case "type": documentTypeFilter = .all
         case "tag": selectedUserTagIds = []
         case "subject": subjectBucket = nil; subjectBucketKey = nil
+        case "subjectRef": subjectRef = nil; subjectName = nil
         default: return
         }
         // Caller re-runs the search, matching this view model's existing convention.
@@ -1222,6 +1246,7 @@ final class SearchViewModel {
         // #308's facet-panel narrowing. Like `facetYearKeys` it is set by a tap rather than in the
         // sheet, which is precisely why it has to be reported: nothing else on screen would.
         if subjectBucket != nil { return true }
+        if subjectRef != nil { return true }
         if !selectedVolumeIds.isEmpty { return true }
         if !selectedSubseriesIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
@@ -1298,6 +1323,14 @@ final class SearchViewModel {
         // so a conditional assignment would leak a stale subject filter into every hand-off.
         subjectBucket         = params.subjectBucket
         subjectBucketKey      = params.subjectBucketKey
+        // Unconditional for the same reason, and this pair is why a hand-off used to die on iOS
+        // and live on macOS: `MacSearchViewModel.applyParameters` assigns the whole
+        // `SearchParameters`, while this one copies named fields — so a field added there and not
+        // here is dropped between `consumePendingSearch` and `search()`, which re-derives from
+        // these very fields. The reader got "Enter a keyword, phrase, or prefix to search" from a
+        // door that had just handed over a perfectly good subject (#1023).
+        subjectRef            = params.subjectRef
+        subjectName           = params.subjectName
         // Project History scope is a live, manual choice — never inherited from a restored
         // snapshot or a pending-search hand-off (Analytics drill-in, "Find all mentions",
         // indexing banners). Without this reset a History scope selected earlier in the
