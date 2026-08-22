@@ -204,6 +204,26 @@ public struct SearchParameters: Codable, Sendable, Equatable {
     /// opposite.
     public var subjectBucketKey: String?
 
+    /// Restrict results to documents carrying this SUBJECT — the durable identity, re-resolved to a
+    /// vocabulary position on every query (#1022).
+    ///
+    /// The subject-grain counterpart of ``subjectBucketKey``, and durable for the same reason: a
+    /// position is right for SQL and wrong for anything archived, because `SavedSearch` JSON-archives
+    /// the whole parameters value to disk and iCloud. A regenerated artifact reorders the vocabulary
+    /// and every stored position would silently point at a different subject.
+    ///
+    /// A ref is *mostly* durable — the 472 `rec`-style refs are stable across drops, and roughly 95
+    /// synthetic ones are re-minted each time — which is why ``subjectName`` rides alongside as a
+    /// fallback rather than the ref standing alone.
+    public var subjectRef: String?
+
+    /// The display name of ``subjectRef``, carried as the fallback half of the durable key.
+    ///
+    /// Resolution is ref-first: the ref is exact, and the name catches a re-mint that moved it.
+    /// Stored rather than looked up because after a re-mint the ref no longer resolves to anything
+    /// whose name could be read — the whole point is to survive that.
+    public var subjectName: String?
+
 
     /// **Exclude** this explicit set of documents, each keyed `"volumeId/documentId"`.
     /// `nil` or empty = exclude nothing. Powers the **Project Focus** search scope's "only
@@ -385,6 +405,7 @@ public extension SearchParameters {
             || personRollupId != nil
             || subjectBucketKey != nil
             || subjectBucket != nil
+            || subjectRef != nil
     }
 
     /// `true` when the reader supplied text that an FTS5 MATCH would carry — a keyword, a phrase,
