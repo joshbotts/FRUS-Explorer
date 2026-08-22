@@ -348,7 +348,9 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         personAnchor: PersonRollupAnchor? = nil,
         includeFrontMatter: Bool = true,
         subjectBucket: Int? = nil,
-        subjectBucketKey: String? = nil
+        subjectBucketKey: String? = nil,
+        subjectRef: String? = nil,
+        subjectName: String? = nil
     ) {
         self.keywords = keywords
         self.phrase = phrase
@@ -363,6 +365,8 @@ public struct SearchParameters: Codable, Sendable, Equatable {
         self.documentIds = documentIds
         self.subjectBucket = subjectBucket
         self.subjectBucketKey = subjectBucketKey
+        self.subjectRef = subjectRef
+        self.subjectName = subjectName
         self.excludeDocumentIds = excludeDocumentIds
         self.includeDocumentText = includeDocumentText
         self.includeSummaries = includeSummaries

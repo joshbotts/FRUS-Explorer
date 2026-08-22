@@ -63,6 +63,8 @@ public final class BrowserViewModel {
         case compilation(volumeId: String, section: VolumeSection)
         case document(DocumentBrowserEntry)
         case people
+        /// The detected-topic index (#1023) — the subject-grain sibling of `people`.
+        case subjects
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -73,6 +75,7 @@ public final class BrowserViewModel {
                 hasher.combine(3); hasher.combine(vid); hasher.combine(s.sectionId)
             case .document(let e):     hasher.combine(4); hasher.combine(e.documentId)
             case .people:              hasher.combine(5)
+            case .subjects:            hasher.combine(6)
             }
         }
 
@@ -85,6 +88,7 @@ public final class BrowserViewModel {
                 return v1 == v2 && s1.sectionId == s2.sectionId
             case (.document(let a), .document(let b)): return a.documentId == b.documentId
             case (.people, .people): return true
+            case (.subjects, .subjects): return true
             default: return false
             }
         }

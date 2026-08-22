@@ -127,6 +127,18 @@ struct MacSearchWindowView: View {
         openWindow.fronting(id: "frus.archivalAnalytics")
     }
 
+    /// Opens the Subject Explorer window (#1023).
+    ///
+    /// `from: nil` because on macOS `openSubjectExplorer` addresses `.macSubjects` itself — the
+    /// scene id, not the presenting window. Fronting is a separate step and is required: the
+    /// hand-off alone sets the payload and leaves the window wherever it was, which for a window
+    /// the reader has never opened means nowhere.
+    private func browseTopics() {
+        appState.openSubjectExplorer(.all, from: nil)
+        appState.bindTool(.subjects, to: appState.provenance(of: .search))
+        openWindow.fronting(id: "frus.subjects")
+    }
+
     @State private var searchVM = MacSearchViewModel()
 
     /// Keyboard focus for the query field (#749 / audit L-35).
@@ -411,6 +423,7 @@ struct MacSearchWindowView: View {
                     searchVM.parametersVersion += 1
                 },
                 onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
+                onBrowseTopics: { browseTopics() },
                 onDiscloseSection: { section in
                     Task {
                         await facetController.load(
@@ -1102,6 +1115,12 @@ struct MacSearchWindowView: View {
                 case .advancedPopover, .facetPanel:
                     Button(field.displayName) { openEditor(for: field) }
                         .disabled(!canOpenEditor(for: field))
+                case .elsewhere:
+                    // Unreachable: `addableFields` filters these out, because a field with no
+                    // editor cannot be added from this menu. Handled explicitly rather than by a
+                    // `default:` so that a future editor-less field is a compile error here and
+                    // gets classified deliberately.
+                    EmptyView()
                 }
             }
         } label: {
@@ -1184,6 +1203,9 @@ struct MacSearchWindowView: View {
         case .inlineMenu:      return true
         case .advancedPopover: return true
         case .facetPanel:      return !searchVM.results.isEmpty
+        // No editor to open. The token still clears — which is the part that matters — and the
+        // help text below says where the value came from instead of promising a door.
+        case .elsewhere:       return false
         }
     }
 
@@ -1194,6 +1216,8 @@ struct MacSearchWindowView: View {
             break   // handled by the token's own Menu
         case .advancedPopover:
             openAdvancedFilters()
+        case .elsewhere:
+            break   // nothing to open; `canOpenEditor` already returns false
         case .facetPanel:
             guard !searchVM.results.isEmpty else { return }
             // **Seed the panel with the filter being edited, or editing it destroys it.**
@@ -1222,6 +1246,9 @@ struct MacSearchWindowView: View {
         case .advancedPopover:
             return String(localized: "search.token.editor.advanced.help",
                           defaultValue: "Edit this filter in Advanced filters")
+        case .elsewhere:
+            return String(localized: "search.token.editor.elsewhere.help",
+                          defaultValue: "Chosen in Topics. Remove it here, or pick another there.")
         case .facetPanel:
             // Named per field: two fields route here now, and "Years are chosen in the facet
             // panel" is simply false hovering over a Subject token.
@@ -1244,6 +1271,7 @@ struct MacSearchWindowView: View {
         case .type:        searchVM.setDocumentTypeFilter(.all)
         case .frontMatter: searchVM.setIncludeFrontMatter(true)
         case .subject:     searchVM.clearSubjectFilter()
+        case .topic:       searchVM.clearTopicFilter()
         }
     }
 

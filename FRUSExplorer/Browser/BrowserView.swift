@@ -113,6 +113,11 @@ struct BrowserView: View {
     /// which is a large side effect for a number. This reads the width the container was actually
     /// given — which, unlike the horizontal size class, already excludes the tab sidebar.
     @State private var containerWidth: CGFloat = 0
+
+    /// What a Subject Explorer hand-off arrived with, carried into the `.subjects` level (#1023).
+    /// `.all` is both the Browse-row state and the honest fallback when no payload was addressed
+    /// here — the index from the top, rather than a subject nobody asked for.
+    @State private var pendingSubjectRequest: SubjectExplorerRequest = .all
     // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
     // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
     // declared on `BrowserView()` from BrowserTabView (outside the nav container) they were silently
@@ -215,6 +220,9 @@ struct BrowserView: View {
         .onChange(of: appState.pendingBrowseVolume) { _, _ in
             consumePendingBrowseVolume()
         }
+        .onChange(of: appState.pendingSubjectExplorer) { _, _ in
+            consumePendingSubjectExplorer()
+        }
         .onChange(of: appState.filterDownloadedOnly) { _, flag in
             viewModel?.filterDownloadedOnly = flag
         }
@@ -310,6 +318,7 @@ struct BrowserView: View {
             consumePendingAnalytics()
             consumePendingSemanticMap()
             consumePendingChronology()
+            consumePendingSubjectExplorer()   // #1023 — see the function's doc for why both paths
         }
         // #324: under FRUS_UI_TEST_MODE the browse stack can render before AppState
         // finishes booting the download manager, so the view model would capture nil
@@ -861,6 +870,7 @@ struct BrowserView: View {
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
             case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
             case .people:            PersonIndexView()
+            case .subjects:          SubjectIndexView(request: pendingSubjectRequest)
             }
         }
         // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every
@@ -1073,6 +1083,29 @@ struct BrowserView: View {
     }
 
     /// Volume-grain sibling of `consumePendingBrowseDocument` — same adopt-then-clear contract.
+    /// Drains a pending Subject Explorer hand-off into the Browse stack (#1023).
+    ///
+    /// **Both `.onChange` and the `.onAppear` drain, never one.** `.onChange` cannot fire for a
+    /// value set before this view attached, which is precisely what the producers do: the pivot
+    /// sheet posts the payload and switches to Browse, and on a cold launch or in a fresh iPad
+    /// window Browse is instantiated by that very switch. That is #750 H-8/H-11, and the
+    /// appear-time drain exists because of it.
+    ///
+    /// **ASSIGNS the level rather than appending.** `consumePendingBrowseVolume` appends, because a
+    /// volume is a child of wherever the reader already was. This is a top-level index: the pivot
+    /// sheet is reachable from `PersonIndexView`, which IS the `.people` level, so appending would
+    /// produce Corpus → People → Topics with a breadcrumb claiming Topics sits inside People.
+    private func consumePendingSubjectExplorer() {
+        // `sceneID` and the view model both guarded, matching the siblings: a not-yet-bootstrapped
+        // window leaves the hand-off pending for the onAppear drain rather than consuming it into
+        // a view model that cannot navigate.
+        guard let sceneID, let vm = viewModel,
+              let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
+                                                    for: sceneID) else { return }
+        pendingSubjectRequest = payload
+        vm.select(.subjects)
+    }
+
     private func consumePendingBrowseVolume() {
         // #338 step 4: scene-addressed twin of consumePendingBrowseDocument (same vm-before-consume order).
         guard let sceneID, let vm = viewModel,

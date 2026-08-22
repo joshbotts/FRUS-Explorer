@@ -265,6 +265,8 @@ extension BrowserViewModel.BrowserLevel {
             return String(entry.header.prefix(40))
         case .people:
             return String(localized: "browser.breadcrumb.people", defaultValue: "People")
+        case .subjects:
+            return String(localized: "browser.breadcrumb.subjects", defaultValue: "Topics")
         }
     }
 }

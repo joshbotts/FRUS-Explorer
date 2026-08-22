@@ -41,10 +41,37 @@ struct SearchFilterTokensTests {
         #expect(SearchFilterTokens.tokens(parameters: defaults(), labels: noLabels).isEmpty)
     }
 
-    @Test("every field can be added when none is active")
-    func everyFieldIsAddable() {
-        let addable = SearchFilterTokens.addableFields(parameters: defaults(), labels: noLabels)
-        #expect(addable.count == SearchFilterField.allCases.count)
+    /// Rewritten for #1023. It compared `addable.count` to `SearchFilterField.allCases.count` —
+    /// both sides moved together, so adding a case gave a green test that proved nothing. It now
+    /// names the fields, so a new one has to be classified deliberately rather than counted.
+    @Test("every editable field can be added when none is active, and only those")
+    func everyEditableFieldIsAddable() {
+        let addable = Set(SearchFilterTokens.addableFields(parameters: defaults(), labels: noLabels))
+        #expect(addable == [.date, .years, .volume, .person, .tags, .type, .frontMatter, .subject], """
+            The + Filter menu offers \(addable.map(\.rawValue).sorted()). A field belongs here only \
+            if it has an editor to open; `.topic` comes from the Subject Explorer and has none, so \
+            listing it would put a permanently disabled row in the menu.
+            """)
+        #expect(!addable.contains(.topic))
+        for field in addable {
+            #expect(field.editor != .elsewhere, "\(field.rawValue) has no editor but is offered")
+        }
+    }
+
+    /// The complement: a field with no editor still produces a token, because the token is how a
+    /// filter says it is in force and how it is removed.
+    @Test("a topic filter produces a token even though it has no editor")
+    func topicFiltersAreVisibleAndRemovable() {
+        var params = defaults()
+        params.subjectRef = "rec00812a40defabcb"
+        params.subjectName = "Berlin blockade"
+        let tokens = SearchFilterTokens.tokens(parameters: params, labels: noLabels)
+        let topic = tokens.first { $0.field == .topic }
+        #expect(topic?.value == "Berlin blockade", """
+            A topic filter must show its own name. Got \(topic?.value ?? "no token") — and a filter \
+            in force with nothing on screen naming it is the failure this row exists to prevent.
+            """)
+        #expect(SearchFilterField.topic.editor == .elsewhere)
     }
 
     @Test("the two fields that used to have permanent chips are absent at their defaults")

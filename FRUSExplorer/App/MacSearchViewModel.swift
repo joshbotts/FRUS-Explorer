@@ -624,6 +624,18 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    /// Clears the SUBJECT filter (#1023) — both halves of the durable key, or the fallback would
+    /// resurrect it on the next resolution.
+    ///
+    /// Separate from `clearSubjectFilter` because the two are different grains and coexist: a
+    /// reader can hold an area from the results facet and a topic from the explorer, and clearing
+    /// one must not silently clear the other.
+    func clearTopicFilter() {
+        parameters.subjectRef = nil
+        parameters.subjectName = nil
+        parametersVersion += 1
+    }
+
     func clearVolumeFilter() {
         // Clear the manual volume/subseries selection, then re-derive the scope so the
         // executed gate matches: in Focus this falls back to the subject-derived volumes

@@ -469,3 +469,195 @@ struct SubjectRefShapeTests {
         #expect(checked == 21, "all 21 name-derived refs must be checked, not a sample")
     }
 }
+
+// MARK: - SubjectCatalogueTests
+
+/// Pins the Subject Explorer's catalogue (#1023 data layer).
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1023
+@Suite("Subject catalogue (#1023)")
+struct SubjectCatalogueTests {
+
+    /// The catalogue must carry the WHOLE vocabulary, including the subjects no volume's top-15
+    /// ranks — those are exactly what an index is for, and any profile-derived list omits them.
+    @MainActor
+    @Test("Every subject in the vocabulary appears, including the unranked ones")
+    func catalogueIsComplete() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let catalogue = index.subjectCatalogue
+        #expect(catalogue.count == index.subjectVocabulary.count)
+        #expect(catalogue.count > 450, "the shipped vocabulary is 491 subjects; got \(catalogue.count)")
+
+        let profiles = try #require(VolumeSubjectProfilesStore.shared)
+        let ranked = Set(profiles.volumesBySubjectRef.keys)
+        let unranked = catalogue.filter { !ranked.contains($0.ref) }
+        #expect(!unranked.isEmpty, """
+            Every catalogue subject also reaches some volume's top-15, so the explorer would show \
+            nothing a profile-derived list could not. The 111 unranked subjects are the reason this \
+            surface reads the vocabulary rather than the profiles.
+            """)
+    }
+
+    /// Reach must agree with the artifact it came from, on both axes.
+    @MainActor
+    @Test("Document and volume counts agree with the index")
+    func reachAgreesWithTheIndex() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        var checked = 0
+        for row in index.subjectCatalogue.prefix(60) {
+            #expect(row.documentCount == index.documentFrequency(forSubjectRef: row.ref),
+                    "\(row.ref): catalogue and documentFrequency disagree")
+            #expect(row.volumeCount == index.volumeIds(forSubjectRef: row.ref).count,
+                    "\(row.ref): catalogue and volumeIds disagree")
+            checked += 1
+        }
+        #expect(checked == 60)
+    }
+
+    /// The corpus/device split this surface inherits: the artifact counts all 552 volumes, so a
+    /// reach figure can exceed anything a search on this device returns. Pinned because the copy
+    /// that discloses it is only honest while this is true.
+    @MainActor
+    @Test("Reach is corpus-wide, so it can exceed one device's library")
+    func reachIsCorpusWide() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let widest = try #require(index.subjectCatalogue.max { $0.volumeCount < $1.volumeCount })
+        #expect(widest.volumeCount > 400, """
+            The widest subject reaches \(widest.volumeCount) volumes. The explorer's copy says these \
+            counts describe the whole series rather than the reader's library; if reach ever became \
+            device-scoped, that sentence would be the thing to rewrite.
+            """)
+        #expect(widest.documentCount > 1_000)
+    }
+
+    /// Alphabetical, not by reach — an index is read, not chosen from.
+    @MainActor
+    @Test("The catalogue is ordered by name")
+    func catalogueIsAlphabetical() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let names = index.subjectCatalogue.map(\.name)
+        #expect(names == names.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending },
+                "a 491-row index sorted by a number the reader did not ask about is unnavigable")
+    }
+}
+
+// MARK: - SubjectIndexGroupingTests
+
+/// Pins the Subject Explorer's grouping and filtering (#1023).
+///
+/// Drives `SubjectIndexGrouping.sections` — the real rule the view calls — rather than re-deriving
+/// it, which is why that rule is a pure static function on a type of its own.
+///
+/// Version history:
+///   1.0 — Session 2026-08-22: #1023
+@Suite("Subject index grouping (#1023)")
+struct SubjectIndexGroupingTests {
+
+    private func row(_ name: String, category: String = "Warfare",
+                     subcategory: String = "General") -> SubjectIndexGrouping.SubjectIndexRow {
+        .init(ref: "ref-\(name)", name: name, category: category, subcategory: subcategory,
+              documentCount: 1, volumeCount: 1)
+    }
+
+    @Test("Rows group under their initial letter")
+    func groupsByInitial() {
+        let sections = SubjectIndexGrouping.sections(
+            from: [row("Agriculture"), row("Arms control"), row("Berlin")], query: "")
+        #expect(sections.map(\.letter) == ["A", "B"])
+        #expect(sections[0].subjects.count == 2)
+    }
+
+    /// The non-letter bucket sorts LAST, not by code point. A heading whose position a reader
+    /// cannot predict belongs at the end.
+    @Test("A non-letter initial files under # and sorts last")
+    func nonLetterSortsLast() {
+        let sections = SubjectIndexGrouping.sections(
+            from: [row("1956 crisis"), row("Berlin"), row("Agriculture")], query: "")
+        #expect(sections.map(\.letter) == ["A", "B", "#"], """
+            Got \(sections.map(\.letter)). "#" sorts before "A" by code point, which would put an \
+            unpredictable heading at the top of a 491-row index.
+            """)
+        #expect(sections.last?.subjects.map(\.name) == ["1956 crisis"])
+    }
+
+    /// Search matches the sub-category too, because the sub-category is ON SCREEN in every row: a
+    /// row visibly containing the typed word must not be filtered out.
+    @Test("Search matches name, category and sub-category")
+    func searchMatchesWhatIsVisible() {
+        let rows = [row("Berlin blockade", category: "Warfare", subcategory: "Cold War"),
+                    row("Agriculture", category: "Global Issues", subcategory: "Food")]
+        #expect(SubjectIndexGrouping.sections(from: rows, query: "berlin")
+            .flatMap(\.subjects).map(\.name) == ["Berlin blockade"])
+        #expect(SubjectIndexGrouping.sections(from: rows, query: "cold war")
+            .flatMap(\.subjects).map(\.name) == ["Berlin blockade"], """
+            A row showing "Warfare · Cold War" must be findable by typing "cold war" — the \
+            sub-category is visible in the row, so filtering it out reads as a broken search.
+            """)
+        #expect(SubjectIndexGrouping.sections(from: rows, query: "food")
+            .flatMap(\.subjects).map(\.name) == ["Agriculture"])
+    }
+
+    @Test("Whitespace-only search does not filter")
+    func whitespaceIsNotAQuery() {
+        let rows = [row("Agriculture"), row("Berlin")]
+        #expect(SubjectIndexGrouping.sections(from: rows, query: "   ").flatMap(\.subjects).count == 2)
+    }
+
+    @Test("A search matching nothing yields no sections, not empty ones")
+    func noMatchesYieldsNoSections() {
+        #expect(SubjectIndexGrouping.sections(from: [row("Agriculture")], query: "zzz").isEmpty, """
+            Empty sections would render as headings with nothing under them; the view's \
+            ContentUnavailableView overlay keys on this being empty.
+            """)
+    }
+
+    /// The real vocabulary, so the grouping is exercised at production scale and shape.
+    @MainActor
+    @Test("The shipped catalogue groups without loss")
+    func shippedCatalogueGroupsCompletely() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let rows = index.subjectCatalogue.map {
+            SubjectIndexGrouping.SubjectIndexRow(
+                ref: $0.ref, name: $0.name, category: $0.category, subcategory: $0.subcategory,
+                documentCount: $0.documentCount, volumeCount: $0.volumeCount)
+        }
+        let grouped = SubjectIndexGrouping.sections(from: rows, query: "")
+        #expect(grouped.flatMap(\.subjects).count == rows.count, "grouping must not drop a subject")
+        #expect(grouped.count > 10, "491 subjects should span many initials")
+        #expect(Set(grouped.flatMap(\.subjects).map(\.ref)).count == rows.count, "no duplication")
+    }
+}
+
+// MARK: - SubjectExplorerRequestTests
+
+/// Pins the payload shape (#1023) — specifically that the facet door cannot express a subject.
+///
+/// Version history:
+///   1.0 — Session 2026-08-22: #1023
+@Suite("Subject explorer request (#1023)")
+struct SubjectExplorerRequestTests {
+
+    /// It rides a macOS window's restoration payload, so it must survive a Codable round-trip.
+    @Test("Every case round-trips through Codable")
+    func casesRoundTrip() throws {
+        for value: SubjectExplorerRequest in [.all, .group(categoryKey: "Warfare\u{1F}General"),
+                                              .subject(ref: "rec1", name: "Berlin blockade")] {
+            let data = try JSONEncoder().encode(value)
+            #expect(try JSONDecoder().decode(SubjectExplorerRequest.self, from: data) == value)
+        }
+    }
+
+    /// The distinction the sum type exists for: three doors, three amounts of knowledge. If this
+    /// ever collapses to `(ref, name)`, the facet door has to invent a ref it does not possess.
+    @Test("The cases carry different amounts of knowledge")
+    func casesAreDistinct() {
+        #expect(SubjectExplorerRequest.all != .group(categoryKey: "Warfare\u{1F}General"))
+        #expect(SubjectExplorerRequest.group(categoryKey: "a") != .group(categoryKey: "b"))
+        #expect(SubjectExplorerRequest.subject(ref: "r", name: "A")
+                != .subject(ref: "r", name: "B"), """
+            The name is part of identity, not decoration: it is the fallback half of the durable \
+            key and what the filter chip shows.
+            """)
+    }
+}

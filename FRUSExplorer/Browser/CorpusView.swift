@@ -78,6 +78,30 @@ struct CorpusView: View {
                 )
                 .help(String(localized: "browser.corpus.people.help",
                              defaultValue: "Browse an alphabetical index of all people mentioned across your indexed volumes — tap a name to search for every document where they appear"))
+
+                // BELOW People, deliberately. Two UI-test doc comments state that the corpus list's
+                // FIRST row "since Session 87 is People", and `testBrowseIsTwoPaneOnWideiPad` uses
+                // that row as its list-pane oracle. Inserting above would make both stale without
+                // failing anything.
+                Button {
+                    vm.select(.subjects)
+                } label: {
+                    Label(
+                        String(localized: "browser.corpus.subjects", defaultValue: "Topics"),
+                        systemImage: "tag"
+                    )
+                    .foregroundStyle(.primary)
+                    // Both modifiers, in this order — see the A/B measurement on the row above.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    String(localized: "browser.corpus.subjects.a11y",
+                           defaultValue: "Browse detected topics across the whole series")
+                )
+                .help(String(localized: "browser.corpus.subjects.help",
+                             defaultValue: "Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it"))
             }
 
             // Subseries list
