@@ -37,8 +37,22 @@ import Foundation
 /// and checked against real vocabulary, because if it is ever false the snippet silently
 /// stops highlighting matches and nothing else would notice.
 ///
+/// ## What the fix did NOT do, measured (#1019)
+/// The old assertion's comment said "the whole pass must stay well under a second" for a 7,500-row
+/// macOS fetch, and the test passed. Both cannot be true: the per-body cost it was passing at is
+/// **877 µs**, which across 7,500 rows is **6.6 seconds**. The budget expressed nothing like its
+/// stated goal, and nobody noticed because the number it compared against was arbitrary.
+///
+/// The real story is 41 s → 6.6 s for the worst case — a 25x improvement in the per-word work,
+/// which is a genuine fix and not a complete one. That worst case is a keyword search where NO row
+/// matches in its body (the hit was in a header, dateline, source note, summary or note), so the
+/// scan runs to the end of every body. It does not apply to a filter-only browse, which since
+/// #1046 has no query terms and never calls the snippet builder at all.
+///
 /// Version history:
 ///   1.0 — after the P-2 map measured search latency against the owner's own database
+///   1.1 — Session 2026-08-21: #1019, the cost guard becomes a ratio against the naive
+///         implementation rather than a wall-clock budget with 10% headroom
 @Suite("Search — snippet cost")
 struct SearchSnippetCostTests {
 
@@ -181,6 +195,22 @@ struct SearchSnippetCostTests {
 
     /// A no-match body is the expensive case: the scan runs to the end and returns nil.
     /// This is the shape that cost 41 s across a macOS result set.
+    ///
+    /// ## Measured against the naive implementation, not against the clock (#1019)
+    /// This assertion used to be `perBody < .milliseconds(1)` against a measured ~900 µs — **10%
+    /// headroom**. Under the full suite's parallel load it failed at 1,002 µs: two microseconds
+    /// over, on a budget that was really measuring how busy the machine was. A wall-clock budget
+    /// with no headroom does not test the code, and a suite that goes red at random teaches people
+    /// to re-run rather than to read.
+    ///
+    /// The fix is to compare against `naiveSnippet`, which IS the pre-#548 implementation — the one
+    /// that stemmed every word — measured in the same process under the same load. Both sides move
+    /// together when the machine is busy, so the ratio is stable where a stopwatch is not, and it
+    /// states the thing actually worth protecting: that the first-character rejection still avoids
+    /// the stemmer.
+    ///
+    /// Measured on an iPhone 17 simulator: **866 µs against 21,717 µs — 25.1x**. The guard is set
+    /// at 10x, so it has 2.5x of headroom and still fails long before the improvement is lost.
     @Test("A failed match over a large body is fast")
     func failedMatchIsCheap() {
         // ~5 KB, the doc-comment average body size, with no query term anywhere.
@@ -188,15 +218,45 @@ struct SearchSnippetCostTests {
             "The delegation met to discuss matters of mutual concern and adjourned. ", count: 70)
         #expect(body.count > 4_500)
 
-        let start = ContinuousClock.now
-        for _ in 0..<200 {
-            #expect(SearchService.makeContextSnippet(
-                body: body, stemmedTerms: ["zanzibar"], contextRadius: 1000) == nil)
+        func perCall(_ iterations: Int, _ work: () -> Void) -> Duration {
+            let start = ContinuousClock.now
+            for _ in 0..<iterations { work() }
+            return (ContinuousClock.now - start) / iterations
         }
-        let perBody = (ContinuousClock.now - start) / 200
+        // Warm both paths before timing either, so first-call costs land on neither side.
+        _ = perCall(20) {
+            _ = SearchService.makeContextSnippet(
+                body: body, stemmedTerms: ["zanzibar"], contextRadius: 1000)
+        }
+        _ = perCall(20) {
+            _ = Self.naiveSnippet(body: body, stemmedTerms: ["zanzibar"], contextRadius: 1000)
+        }
 
-        // 7,500 rows is the macOS fetch. The whole pass must stay well under a second.
-        #expect(perBody < .milliseconds(1),
-                "\(perBody) per body — across a 7,500-row macOS fetch that is \(perBody * 7500)")
+        var returnedNil = true
+        let fast = perCall(200) {
+            if SearchService.makeContextSnippet(
+                body: body, stemmedTerms: ["zanzibar"], contextRadius: 1000) != nil {
+                returnedNil = false
+            }
+        }
+        let naive = perCall(200) {
+            _ = Self.naiveSnippet(body: body, stemmedTerms: ["zanzibar"], contextRadius: 1000)
+        }
+        #expect(returnedNil, "the fixture must not match, or this times the early-exit path instead")
+
+        // THE GUARD. Ratio, not stopwatch: both sides feel the same machine.
+        #expect(naive > fast * 10, """
+            The fast path is \(fast) against the naive \(naive) — under 10x. It measured 25.1x when \
+            this guard was written, so losing two thirds of the improvement means the \
+            first-character rejection has stopped avoiding the Porter stemmer.
+            """)
+
+        // A BACKSTOP for the case a ratio cannot see: both paths regressing together. Deliberately
+        // loose — 4x the measured 877 µs — so it fires on a catastrophe and never on load.
+        #expect(fast < .milliseconds(4), """
+            \(fast) per body. Across a 7,500-row macOS fetch that is \(fast * 7500). This is the \
+            absolute backstop, not the real guard; it is set with 4x headroom precisely so that a \
+            busy machine cannot trip it.
+            """)
     }
 }
