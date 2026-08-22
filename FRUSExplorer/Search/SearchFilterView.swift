@@ -1354,8 +1354,15 @@ private struct SubjectCategoryFacetPicker: View {
     /// where one of its subjects happened to RANK — measured, 10.8% of real memberships. Falls back
     /// to the profiles when the index is absent, which is the pre-Phase-3 behaviour unchanged.
     ///
-    /// Computed per access and not cached: it is only read while the facet sheet is open, and a
-    /// cached copy would be a second thing to invalidate for a saving nobody would notice.
+    /// Cheap to read: `DocumentSubjectIndex.subjectsByVolume` is a stored map, so this is a
+    /// dictionary load however many times the body evaluates.
+    ///
+    /// It did not used to be. This comment previously reasoned that the map was "computed per
+    /// access and not cached ... a cached copy would be a second thing to invalidate for a saving
+    /// nobody would notice" — and both halves were wrong. The saving was 278 ms per read, which
+    /// `categories` multiplied by thirteen inside a `filter` closure into a **3.6-second main-actor
+    /// freeze per keystroke**; and there was nothing to invalidate, because the index decodes once
+    /// from a bundled artifact and every field on it is a `let`.
     private var resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
         DocumentSubjectStore.shared?.subjectsByVolume
             ?? VolumeSubjectProfilesStore.shared?.resolvedByVolume

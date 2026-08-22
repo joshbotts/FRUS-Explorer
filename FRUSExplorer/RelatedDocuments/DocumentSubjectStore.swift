@@ -117,6 +117,26 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     /// times and simply felt slow, with nothing to point at.
     private let indexByRef: [String: Int]
 
+    /// `volumeId → [ResolvedSubject]`, built once at decode. Backs ``subjectsByVolume``.
+    ///
+    /// **Stored, not computed — for the same reason `indexByRef` above is, at 155x the scale.**
+    /// As a computed property this rebuilt all 76,574 entries on EVERY read: allocate a
+    /// `ResolvedSubject` per (subject, volume) pair, append each into a per-volume array through a
+    /// dictionary lookup, then sort all 552 arrays. Measured on an iPhone 17 simulator, **278 ms
+    /// per access, on the main actor**.
+    ///
+    /// That cost multiplied at the call sites, because six scope surfaces read the property and one
+    /// reads it inside a loop. `SearchFilterView.categories` reads it once and then calls
+    /// `ScopeFacets.subCategoryCatalog(resolvedByVolume:)` once per category inside a `filter`
+    /// closure — so **typing one character into the topic picker's search field cost 3,623 ms** and
+    /// **expanding one category cost 3,204 ms**, both as a single main-actor block.
+    ///
+    /// There is nothing to invalidate. Every stored property here is a `let`, the type is a
+    /// `Sendable` struct, and the only instance is `DocumentSubjectStore.shared`, decoded once from
+    /// a bundled artifact that cannot change while the app runs. A re-decode produces a new value
+    /// with its own map, so the cache cannot outlive the data it was built from.
+    private let subjectsByVolumeCache: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+
     /// Decodes from the bundled artifact.
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -157,6 +177,23 @@ struct DocumentSubjectIndex: Decodable, Sendable {
             pairs: vocab.map { (category: $0.category, subcategory: $0.subcategory) })
         bucketVocabulary = vocabulary
         bucketByVocabIndex = vocab.map { vocabulary.id(category: $0.category, subcategory: $0.subcategory) ?? -1 }
+
+        // Built here rather than on demand — see `subjectsByVolumeCache`. Uses the local `byRef`
+        // inversion above rather than re-walking `documents`, and indexes `vocab` positionally
+        // instead of through `indexByRef`, so it adds one pass over the 76,574 membership pairs.
+        var byVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] = [:]
+        byVolume.reserveCapacity(byRef.count)
+        for (index, entry) in vocab.enumerated() {
+            guard let volumeIds = byRef[entry.ref] else { continue }
+            let resolved = VolumeSubjectProfiles.ResolvedSubject(
+                ref: entry.ref, name: entry.name, category: entry.category,
+                subcategory: entry.subcategory, score: idfByIndex[index])
+            for volumeId in volumeIds { byVolume[volumeId, default: []].append(resolved) }
+        }
+        for volumeId in byVolume.keys {
+            byVolume[volumeId]!.sort { ($0.score, $1.name) > ($1.score, $0.name) }
+        }
+        subjectsByVolumeCache = byVolume
     }
 
     enum CodingKeys: String, CodingKey {
@@ -270,23 +307,12 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     /// completely with no change to their signatures.
     ///
     /// `score` is the subject's IDF, as everywhere at this grain — the facets use it only for
-    /// ordering, and distinctiveness is the ordering a reader wants.
-    var subjectsByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
-        var out: [String: [VolumeSubjectProfiles.ResolvedSubject]] = [:]
-        out.reserveCapacity(volumesByRef.count)
-        for (ref, volumeIds) in volumesByRef {
-            guard let index = indexByRef[ref] else { continue }
-            let entry = vocab[index]
-            let resolved = VolumeSubjectProfiles.ResolvedSubject(
-                ref: entry.ref, name: entry.name, category: entry.category,
-                subcategory: entry.subcategory, score: idfByIndex[index])
-            for volumeId in volumeIds { out[volumeId, default: []].append(resolved) }
-        }
-        for volumeId in out.keys {
-            out[volumeId]!.sort { ($0.score, $1.name) > ($1.score, $0.name) }
-        }
-        return out
-    }
+    /// ordering, and distinctiveness is the ordering a reader wants (see
+    /// ``VolumeSubjectProfiles/ResolvedSubject/score`` for why that matters).
+    ///
+    /// A stored map since the topic picker was measured freezing the main actor for 3.6 s per
+    /// keystroke — see ``subjectsByVolumeCache``.
+    var subjectsByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] { subjectsByVolumeCache }
 
     /// The full subject vocabulary — all 491, including the **111 that never reach any volume's
     /// top-15** and are therefore invisible to a profile-derived catalogue.

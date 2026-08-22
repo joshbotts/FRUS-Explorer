@@ -293,3 +293,81 @@ struct SubjectFacetCopyTests {
             """)
     }
 }
+
+// MARK: - SubjectsByVolumeCostTests
+
+/// Pins that `DocumentSubjectIndex.subjectsByVolume` is a stored map, not a rebuild.
+///
+/// ## What was wrong
+/// It was a computed property that rebuilt all 76,574 entries on every read — allocating a
+/// `ResolvedSubject` per (subject, volume) pair, appending each through a dictionary lookup, then
+/// sorting all 552 arrays. Measured on an iPhone 17 simulator: **278 ms per access, on the main
+/// actor.**
+///
+/// Six scope surfaces read it, and one reads it in a loop. `SearchFilterView.categories` reads it
+/// once and then calls `subCategoryCatalog(resolvedByVolume:)` once per category inside a `filter`
+/// closure, so the measured cost of **typing one character** into the topic picker's search field
+/// was **3,623 ms**, and expanding one category was **3,204 ms** — single main-actor blocks, on a
+/// control the reader is expected to type into.
+///
+/// After: 193 ms and 121 ms. The remaining time is the catalogs themselves walking the map, which
+/// is a separate and much smaller question.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: from the #1027/#1024 review
+@Suite("subjectsByVolume is stored, not rebuilt")
+struct SubjectsByVolumeCostTests {
+
+    /// The guard. Absolute rather than ratio because there is no longer a slow path to compare
+    /// against, and the headroom is enormous: 200 reads of a stored map is microseconds, while 200
+    /// rebuilds would be ~56 seconds. Nothing between those two numbers is a plausible regression.
+    @MainActor
+    @Test("Repeated reads are free")
+    func repeatedReadsAreFree() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        _ = index.subjectsByVolume   // fault in whatever the first touch costs
+
+        let started = ContinuousClock.now
+        var total = 0
+        for _ in 0..<200 { total += index.subjectsByVolume.count }
+        let elapsed = ContinuousClock.now - started
+
+        #expect(total == 200 * index.subjectsByVolume.count)
+        #expect(elapsed < .milliseconds(500), """
+            200 reads took \(elapsed). A stored map makes this microseconds; if `subjectsByVolume` \
+            has gone back to rebuilding, this is ~56 seconds and the topic picker freezes for 3.6 s \
+            per keystroke.
+            """)
+    }
+
+    /// The cache must be RIGHT, not merely fast — a stored map that disagrees with the data would
+    /// be a worse bug than the one it fixes, and would show as wrong volume counts on six surfaces.
+    @MainActor
+    @Test("The stored map matches the membership it is derived from")
+    func storedMapMatchesMembership() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let byVolume = index.subjectsByVolume
+
+        // Rebuild independently from the subject-grain map and compare.
+        var expected: [String: Set<String>] = [:]
+        for (ref, volumeIds) in index.volumesBySubjectRef {
+            for volumeId in volumeIds { expected[volumeId, default: []].insert(ref) }
+        }
+        #expect(byVolume.count == expected.count, "volume coverage differs")
+        var mismatched: [String] = []
+        for (volumeId, subjects) in byVolume where Set(subjects.map(\.ref)) != expected[volumeId] {
+            mismatched.append(volumeId)
+        }
+        #expect(mismatched.isEmpty, """
+            \(mismatched.count) volumes' subject sets disagree with the membership map they are \
+            built from. First few: \(mismatched.prefix(3).joined(separator: ", "))
+            """)
+
+        // And the documented ordering survives: IDF-descending, ties by name.
+        for (_, subjects) in byVolume.prefix(50) {
+            let resorted = subjects.sorted { ($0.score, $1.name) > ($1.score, $0.name) }
+            #expect(subjects.map(\.ref) == resorted.map(\.ref),
+                    "a volume's subjects are not in the documented IDF-descending order")
+        }
+    }
+}
