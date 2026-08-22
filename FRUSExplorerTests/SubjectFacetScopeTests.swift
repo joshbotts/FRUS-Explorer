@@ -371,3 +371,101 @@ struct SubjectsByVolumeCostTests {
         }
     }
 }
+
+// MARK: - SubjectRefShapeTests
+
+/// Pins the ref-shape split the durable-key design rests on — because three shipped comments got
+/// it wrong, and the obvious way to check it is also wrong.
+///
+/// ## The design, and the claim under it
+/// A saved subject search stores `subjectRef` and resolves ref-first, with `subjectName` as a
+/// fallback. That is only worth doing if some refs move when the display name moves.
+///
+/// ## What is actually in the vocabulary — THREE shapes, not two
+/// - **470** opaque upstream record ids (`rec00812a40defabcb`), stable across drops;
+/// - **2** name-derived slugs wearing a `rec_` prefix (`rec_korean_war`, `rec_world_war_ii`);
+/// - **19** plain name-derived slugs (`collective-security`, `east-asia-and-pacific`).
+///
+/// The middle pair is the trap, and it is why this suite exists rather than a comment. A
+/// `hasPrefix("rec")` test — the obvious discriminator, and the one my first draft of this test
+/// used — counts them as stable ids and reports 472/19. They are not stable: they are the display
+/// name, lower-cased with separators. The discriminator that holds is that an opaque id is
+/// `rec` followed by alphanumerics ONLY, so a separator character is the tell.
+///
+/// The shipped comments had said "472 `rec`-style … roughly 95 synthetic". Both numbers were
+/// wrong, and ~95 is the count of refs the upstream generator re-mints per export — a different
+/// quantity, carried across from a note about that generator. The design was right and the
+/// arithmetic was not, which is the easiest kind of error to propagate by quotation.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: from the #1023 scoping pass
+@Suite("Subject ref shapes")
+struct SubjectRefShapeTests {
+
+    /// An opaque upstream id: `rec` then alphanumerics only. A separator means name-derived.
+    private static func isOpaqueRecordID(_ ref: String) -> Bool {
+        ref.hasPrefix("rec") && ref.dropFirst(3).allSatisfy { $0.isLetter || $0.isNumber }
+    }
+
+    @MainActor
+    @Test("The vocabulary splits 470 opaque ids to 21 name-derived refs")
+    func refShapeSplitIsAsDocumented() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let refs = index.subjectVocabulary.map(\.ref)
+        let opaque = refs.filter(Self.isOpaqueRecordID)
+        let derived = refs.filter { !Self.isOpaqueRecordID($0) }
+
+        #expect(refs.count == 491, "the shipped vocabulary is 491 subjects; got \(refs.count)")
+        #expect(opaque.count == 470, """
+            \(opaque.count) opaque record ids, not 470. The durable-key comments quote this number.
+            """)
+        #expect(derived.count == 21, """
+            \(derived.count) name-derived refs, not 21. These are what the name fallback exists for.
+            """)
+        #expect(opaque.count + derived.count == refs.count, "every ref is one shape or the other")
+    }
+
+    /// The specific trap: refs that LOOK like stable ids by prefix and are not. If a future drop
+    /// removes these two, the fallback is protecting less than the docs claim and the docs should
+    /// shrink to match.
+    @MainActor
+    @Test("Two name-derived refs wear a rec_ prefix, which prefix-matching would miss")
+    func recPrefixedSlugsAreNotOpaqueIDs() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let refs = index.subjectVocabulary.map(\.ref)
+        let prefixed = refs.filter { $0.hasPrefix("rec") && !Self.isOpaqueRecordID($0) }
+        #expect(Set(prefixed) == ["rec_korean_war", "rec_world_war_ii"], """
+            Expected exactly the two known rec_-prefixed slugs; found \(prefixed.sorted()). A \
+            `hasPrefix("rec")` discriminator counts these as stable ids and reports 472/19 — which \
+            is how the shipped comments came to say 472.
+            """)
+    }
+
+    /// The property the fallback depends on, and it is exact rather than approximate: strip
+    /// non-alphanumerics from a name-derived ref and from its display name and the two are
+    /// **identical**, for all 21. So the ref is a pure function of the name, and a renamed subject
+    /// is a re-minted ref — which is precisely the case `subjectName` exists to catch.
+    ///
+    /// Verified for every one of them, not sampled: if this ever became approximate, the fallback
+    /// would be resting on a coincidence rather than on a rule.
+    @MainActor
+    @Test("A name-derived ref is its display name, alphanumerics only")
+    func derivedRefsAreTheirNames() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        func alphanumerics(_ s: String) -> String {
+            String(s.lowercased().filter { $0.isLetter || $0.isNumber })
+        }
+        var checked = 0
+        for entry in index.subjectVocabulary where !Self.isOpaqueRecordID(entry.ref) {
+            let slug = entry.ref.hasPrefix("rec_") ? String(entry.ref.dropFirst(4)) : entry.ref
+            #expect(alphanumerics(slug) == alphanumerics(entry.name), """
+                Ref \(entry.ref) is not its name "\(entry.name)" reduced to alphanumerics \
+                (\(alphanumerics(slug)) vs \(alphanumerics(entry.name))). The name fallback assumes \
+                the ref is derived from the name; if that is now only approximately true, say so \
+                rather than loosening this test.
+                """)
+            checked += 1
+        }
+        #expect(checked == 21, "all 21 name-derived refs must be checked, not a sample")
+    }
+}

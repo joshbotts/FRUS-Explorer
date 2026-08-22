@@ -264,9 +264,12 @@ struct DocumentSubjectIndex: Decodable, Sendable {
 
     /// The vocabulary position for a subject NAME, or `nil` when no subject carries it.
     ///
-    /// The fallback half of the durable key. Subject refs are stable for the 472 `rec`-style
-    /// subjects and re-minted for the synthetic remainder on each upstream drop, so a saved search
-    /// carries both and resolves ref-first: the ref is exact, and the name catches a re-mint.
+    /// The fallback half of the durable key. **Measured: 470 opaque upstream record ids, and 21
+    /// name-derived refs** — 19 plain slugs plus 2 wearing a `rec_` prefix, which a
+    /// `hasPrefix("rec")` test would wrongly call stable. A name-derived ref IS its display name
+    /// reduced to alphanumerics, exactly, so renaming a subject re-mints it. A saved search
+    /// therefore carries both and resolves ref-first: the ref is exact, and the name catches a ref
+    /// that has moved. See `SubjectRefShapeTests`.
     /// Ambiguity is resolved by taking the LOWEST position rather than by refusing, because a
     /// duplicate display name is indistinguishable to the reader who saved the search — measured,
     /// no two subjects in the shipped vocabulary share a name, so this is a guard rather than a

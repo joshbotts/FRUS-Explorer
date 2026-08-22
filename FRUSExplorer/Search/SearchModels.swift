@@ -212,9 +212,20 @@ public struct SearchParameters: Codable, Sendable, Equatable {
     /// the whole parameters value to disk and iCloud. A regenerated artifact reorders the vocabulary
     /// and every stored position would silently point at a different subject.
     ///
-    /// A ref is *mostly* durable — the 472 `rec`-style refs are stable across drops, and roughly 95
-    /// synthetic ones are re-minted each time — which is why ``subjectName`` rides alongside as a
-    /// fallback rather than the ref standing alone.
+    /// A ref is *mostly* durable, and the vocabulary has **three shapes, measured**: 470 opaque
+    /// upstream record ids (`rec00812a40defabcb`), which are stable; 19 name-derived slugs
+    /// (`collective-security`); and **2 name-derived slugs wearing a `rec_` prefix**
+    /// (`rec_korean_war`, `rec_world_war_ii`). 491 in total.
+    ///
+    /// That middle pair is why `subjectName` is not optional. A name-derived ref IS its display
+    /// name reduced to alphanumerics — exactly, for all 21 — so renaming a subject re-mints its
+    /// ref, and the fallback is what carries a saved search across that.
+    ///
+    /// An earlier version of this comment said "472 `rec`-style … roughly 95 synthetic". Both
+    /// numbers were wrong. 472 comes from a `hasPrefix("rec")` test, which counts the two `rec_`
+    /// slugs as stable ids; ~95 is how many refs the upstream generator re-mints per export, a
+    /// different quantity carried across from a note about that generator. `SubjectRefShapeTests`
+    /// now checks all of this against the artifact, so the next person does not have to trust it.
     public var subjectRef: String?
 
     /// The display name of ``subjectRef``, carried as the fallback half of the durable key.
@@ -383,10 +394,14 @@ public struct SearchParameters: Codable, Sendable, Equatable {
 /// A filter that the SQL side can apply on its own and that NARROWS rather than widens:
 /// - a **person** filter, in either form — a single `personRef`, or a `personRollupId` from the
 ///   People browser's "Find all mentions" (Session 162);
-/// - a **subject** filter, in either form — a durable `subjectBucketKey` or a resolved
-///   `subjectBucket` position (#1022). `SearchService.makeFilters` re-resolves the key against the
-///   live vocabulary and substitutes a matches-nothing sentinel when the pair has gone, so a stale
-///   key returns nothing rather than everything.
+/// - a **subject-area** filter — a durable `subjectBucketKey` or a resolved `subjectBucket`
+///   position (#1022);
+/// - a **subject** filter — a durable `subjectRef` (with `subjectName` as its fallback), the
+///   finer grain (#1022-A).
+///
+///   Both re-resolve through `SearchService.makeFilters` against the live vocabulary, which
+///   substitutes a matches-nothing sentinel when the subject or pair has gone — so a stale saved
+///   search returns nothing rather than everything.
 ///
 /// Scope flags (`includeDocumentText` and friends) are deliberately NOT part of this: they select
 /// which columns a MATCH searches, and a filter-only query has no MATCH to scope. The keyword case
@@ -408,6 +423,14 @@ public extension SearchParameters {
             || subjectRef != nil
     }
 
+    /// `true` when this query will execute with **no FTS5 MATCH at all** — the browse shape.
+    ///
+    /// One definition, because the last time this rule was spelled out per site it was spelled out
+    /// five times and three of them disagreed (#1022). `SearchService` uses it to decide whether to
+    /// run without a MATCH; both view models use it to pick a fetch ceiling, because a browse and a
+    /// keyword search have very different per-row costs (see `searchHardLimit`).
+    var runsAsFilterOnly: Bool { supportsFilterOnlySearch && !hasTextTerms }
+
     /// `true` when the reader supplied text that an FTS5 MATCH would carry — a keyword, a phrase,
     /// a prefix, or an exclusion.
     ///
@@ -422,14 +445,6 @@ public extension SearchParameters {
     ///
     /// So a query with text and no scope is a scope error, not a filter-only search, and the
     /// service says so rather than quietly answering a different question.
-    /// `true` when this query will execute with **no FTS5 MATCH at all** — the browse shape.
-    ///
-    /// One definition, because the last time this rule was spelled out per site it was spelled out
-    /// five times and three of them disagreed (#1022). `SearchService` uses it to decide whether to
-    /// run without a MATCH; both view models use it to pick a fetch ceiling, because a browse and a
-    /// keyword search have very different per-row costs (see `searchHardLimit`).
-    var runsAsFilterOnly: Bool { supportsFilterOnlySearch && !hasTextTerms }
-
     var hasTextTerms: Bool {
         !(keywords ?? "").trimmingCharacters(in: .whitespaces).isEmpty
             || !(phrase ?? "").trimmingCharacters(in: .whitespaces).isEmpty
