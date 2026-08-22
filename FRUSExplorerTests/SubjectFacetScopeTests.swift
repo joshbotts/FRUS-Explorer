@@ -785,3 +785,116 @@ struct NarrowingCategoryTests {
         }
     }
 }
+
+// MARK: - DocumentTopicRowTests
+
+/// Pins the document-level topics row (#308) — and the measurements that chose its shape.
+///
+/// D1 retired the document-view Subjects section and specified the replacement be "a separate view,
+/// not an accordion". Both halves are now discharged: the separate view shipped as the Topic Index
+/// (#1023), and the owner explicitly overruled the accordion clause on 2026-08-22.
+///
+/// Version history:
+///   1.0 — Session 2026-08-22: #308
+@Suite("Document topics row (#308)")
+struct DocumentTopicRowTests {
+
+    /// Why the row is a FLAT chip list and not `hierarchy(forDocument:)`. If documents ever start
+    /// spanning several categories routinely, grouping becomes worth its cost and this is the
+    /// measurement that would say so.
+    @MainActor
+    @Test("Most documents' topics sit in one or two categories, so grouping would be overhead")
+    func groupingWouldBeOverhead() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        var single = 0, total = 0, spans: [Int] = []
+        for volumeId in index.taggedVolumeIds.prefix(60) {
+            for row in index.bucketRows(forVolume: volumeId) {
+                let key = DocumentKey(volumeId: volumeId, documentId: row.documentId)
+                let categories = Set(index.subjects(forDocument: key).map(\.category))
+                guard !categories.isEmpty else { continue }
+                total += 1
+                spans.append(categories.count)
+                if categories.count == 1 { single += 1 }
+            }
+        }
+        #expect(total > 1_000, "the sample must be large enough to mean something")
+        let singleShare = Double(single) / Double(total)
+        #expect(singleShare > 0.25, """
+            Only \(Int(singleShare * 100))% of documents keep their topics in one category. Measured \
+            at 36.7% corpus-wide when the flat row was chosen; if documents now span categories \
+            routinely, `hierarchy(forDocument:)` starts earning its cost.
+            """)
+        #expect(spans.sorted()[spans.count / 2] <= 3, "the median document spans few categories")
+    }
+
+    /// The cut at five. Chosen because it shows 81.7% of documents in full; this pins that the
+    /// figure still holds, since a cut that truncated most documents would be the wrong shape.
+    @MainActor
+    @Test("A five-chip cut shows most documents in full")
+    func fiveChipCutCoversMostDocuments() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        var within = 0, total = 0, maxSeen = 0
+        for volumeId in index.taggedVolumeIds.prefix(60) {
+            for row in index.bucketRows(forVolume: volumeId) {
+                let key = DocumentKey(volumeId: volumeId, documentId: row.documentId)
+                let count = index.subjects(forDocument: key).count
+                guard count > 0 else { continue }
+                total += 1
+                maxSeen = max(maxSeen, count)
+                if count <= 5 { within += 1 }
+            }
+        }
+        let share = Double(within) / Double(total)
+        #expect(share > 0.7, """
+            A five-chip cut shows \(Int(share * 100))% of documents in full — measured at 81.7% \
+            corpus-wide. Below about 70% the cut is hiding the common case rather than the tail.
+            """)
+        #expect(maxSeen > 20, """
+            The richest document in this sample carries \(maxSeen) topics, so the "+N more" path is \
+            exercised by real data rather than only in principle.
+            """)
+    }
+
+    /// Chips arrive most-distinctive-first, which is the whole reason a five-chip cut is defensible:
+    /// what survives it is what narrows.
+    @MainActor
+    @Test("Chips arrive IDF-descending, so the cut keeps the informative topics")
+    func chipsAreMostDistinctiveFirst() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        var checked = 0
+        for volumeId in index.taggedVolumeIds.prefix(30) {
+            for row in index.bucketRows(forVolume: volumeId) {
+                let subjects = index.subjects(
+                    forDocument: DocumentKey(volumeId: volumeId, documentId: row.documentId))
+                guard subjects.count > 1 else { continue }
+                let scores = subjects.map(\.score)
+                #expect(scores == scores.sorted(by: >), """
+                    A document's topics are not IDF-descending. The row shows only the first five, \
+                    so an unsorted list would cut the informative topics and keep the generic ones.
+                    """)
+                checked += 1
+                if checked > 200 { return }
+            }
+        }
+        #expect(checked > 50)
+    }
+
+    /// The row must be ABSENT, not empty, on the quarter of the corpus with no topics.
+    @Test("The rail withholds the section rather than showing an empty one")
+    func rowIsWithheldWhenEmpty() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("FRUSExplorer/DocumentView/ResearchRailView.swift"),
+            encoding: .utf8)
+        #expect(source.contains("if !topics.isEmpty {"), """
+            The topics accordion must render nothing when a document has none. 78,537 documents — \
+            24.8% of the corpus — carry no topics, so an empty state there is furniture on one \
+            document in four.
+            """)
+        #expect(source.contains("frus.document.researchPanel.subjects"), """
+            The expansion key C1 orphaned should be reused, so a reader who had this section open \
+            before D1 retired it still does.
+            """)
+    }
+}

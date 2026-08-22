@@ -241,5 +241,12 @@ Both platforms, both modes. Coexists with the strip until C1 (harmless one-PR du
 - Document Subjects surface (D1): returns as a **separate view** (not an accordion, not the handoff's grid
   tile) once document-level tagging is refined (#261 gate). The volume-level chips live on in the volume
   browser meanwhile.
+  - **SUPERSEDED 2026-08-22, by owner decision.** Both halves of D1 have now been discharged, in order.
+    The separate view shipped first as the Topic Index (#1023) once the owner ruled the #261 gate met;
+    #261 itself was then closed on measurement (the 579 anachronistic pre-1970 `AIDS` refs it gated on
+    are now **0**). The owner then **explicitly overruled the "not an accordion" clause** and asked for a
+    document-level display in the Research rail as a collapsible accordion above Summary — shipped in
+    #308. So the rail now carries what D1 retired, deliberately and with the gate discharged rather than
+    bypassed. Do not re-derive the original constraint from this line: read the overrule.
 - List-variant action area (mock's Tweaks alternative) — back pocket.
 - Live rect tracking during scroll; per-window rail state; Cite-in-titlebar variant (mock trade-off note).
