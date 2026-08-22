@@ -290,6 +290,40 @@ enum ScopeFacets {
     /// Whether category grain should instead count a volume only above some document-count
     /// threshold is an open design question, not a defect in this function: see the follow-up
     /// filed from the #1027/#1024 review.
+    /// The categories a scope menu should OFFER — those with at least one non-`General`
+    /// sub-category under them (#1040).
+    ///
+    /// ## Why a category is a grouping and not a scope
+    /// Measured over the shipped artifact: **7 of 13 categories select all 552 volumes** and the
+    /// narrowest selects 438. A category is not a coarse filter, it is very nearly no filter — and
+    /// no document-count threshold rescues it, because at 20 documents per volume seven categories
+    /// still select 476–548. That is a property of the taxonomy: its top level describes the series
+    /// rather than partitioning it.
+    ///
+    /// So the menus stopped offering "All of X" and a category became a heading. Which raises the
+    /// question this function answers: a category whose only sub-category is the folded `General`
+    /// bucket then has NOTHING under it, and would open onto an empty menu. Two are in that
+    /// position — Information Programs and Uncategorized.
+    ///
+    /// ## Why `General` is not simply unfolded instead
+    /// It was measured and it does not help: **`General` rows reach a median 542 of 552 volumes**,
+    /// as saturating as the categories they would replace. Unfolding would move a control that
+    /// cannot narrow one level down and rename it. Offering only what narrows means those two
+    /// categories are absent from the picker, which is the honest reading of a topic area that
+    /// selects 519 of 552 volumes — and since #1023 a reader wanting to scope by topic has the
+    /// Topic Index, where the subject grain does narrow.
+    ///
+    /// ONE definition, called by every scope surface. The last rule that was spelled out per site
+    /// in this area was spelled out five times and three of them disagreed (#1022).
+    static func narrowingCategories(
+        resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> [CategoryEntry] {
+        categoryCatalog(resolvedByVolume: resolvedByVolume).filter { category in
+            !subCategoryCatalog(forCategory: category.label,
+                                resolvedByVolume: resolvedByVolume).isEmpty
+        }
+    }
+
     static func categoryCatalog(
         resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> [CategoryEntry] {

@@ -1764,6 +1764,13 @@ struct WordCloudWindowContent: View {
 ///          (enabled with the honest indexed count, disabled when no member is
 ///          indexed; a zero-indexed scope could only ever render an empty cloud)
 private struct WordCloudScopeBar: View {
+
+    /// The scene this bar renders in, so the hand-off addresses the presenting window (#338) —
+    /// for the Topic-index door (#1040). `appState` is already declared below.
+    @Environment(\.sceneID) private var sceneID
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
     /// The scope binding shared with `WordCloudWindowContent`.
     @Binding var scope: WordCloudScope?
 
@@ -1812,13 +1819,9 @@ private struct WordCloudScopeBar: View {
         Menu(String(localized: "wordcloud.scope.bySubject", defaultValue: "By Detected Topic")) {
           Section(String(localized: "wordcloud.scope.subject.experimental",
                          defaultValue: "Detected topics — experimental")) {
-            ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
+            // A category is a HEADING, not a scope (#1040) — see `narrowingCategories`.
+            ForEach(ScopeFacets.narrowingCategories(resolvedByVolume: resolved)) { category in
                 Menu(category.label) {
-                    Button(String(format: String(
-                        localized: "wordcloud.scope.subject.wholeCategory %@",
-                        defaultValue: "All of %@"), category.label)) {
-                        scope = .subjectCategory(category: category.label, subcategory: nil)
-                    }
                     ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
                                                           resolvedByVolume: resolved)) { sub in
                         Button(sub.subcategory) {
@@ -1827,6 +1830,18 @@ private struct WordCloudScopeBar: View {
                         }
                     }
                 }
+            }
+
+            // #1040: where a reader goes when no topic AREA narrows enough. Subject grain does, and
+            // since #1023 there is a surface for it. After the categories — the finer alternative,
+            // not the headline.
+            Divider()
+            Button(String(localized: "wordcloud.scope.subject.browseIndex",
+                          defaultValue: "Browse all topics…")) {
+                appState.openSubjectExplorer(.all, from: sceneID)
+                #if os(macOS)
+                openWindow.fronting(id: "frus.subjects")
+                #endif
             }
           }
         }

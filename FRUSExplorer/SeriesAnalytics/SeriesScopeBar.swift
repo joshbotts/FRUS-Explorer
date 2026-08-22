@@ -70,6 +70,19 @@ struct SeriesScope: Sendable, Equatable {
 ///         selected menu items carry `.isSelected` for VoiceOver
 struct SeriesScopeBar: View {
 
+    /// Shared app state — for the Topic-index door (#1040).
+    ///
+    /// `@Environment` rather than an injected closure: all four hosts already hold `appState`, the
+    /// scene audit guarantees every scene provides it, and this file has no previews — the three
+    /// conditions under which the declaration-time trap (an `@Environment(Observable.self)` is
+    /// resolved when the view is CREATED, not when `body` runs) cannot fire.
+    @Environment(AppState.self) private var appState
+    /// The scene this bar renders in, so the hand-off addresses the presenting window (#338).
+    @Environment(\.sceneID) private var sceneID
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
     /// The manifest entries the dashboard summarises — the source of the subseries buckets.
     let entries: [VolumeManifestEntry]
     /// User-defined volume scopes (#258 Phase 4), live via `@Query`. Resolved at the
@@ -188,17 +201,13 @@ struct SeriesScopeBar: View {
         Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Detected Topic")) {
           Section(String(localized: "analytics.scope.subject.experimental",
                          defaultValue: "Detected topics — experimental")) {
-            ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
+            // A category is a HEADING, not a scope (#1040) — see `narrowingCategories`.
+            ForEach(ScopeFacets.narrowingCategories(resolvedByVolume: resolved)) { category in
                 let catIds = ScopeFacets.volumeIds(forCategory: category.label,
                                                    resolvedByVolume: resolved)
                     .intersection(manifestIds)
                 if !catIds.isEmpty {
                     Menu(category.label) {
-                        Button(String(format: String(
-                            localized: "analytics.scope.subject.wholeCategory %@",
-                            defaultValue: "All of %@"), category.label)) {
-                            setScope(SeriesScope(volumeIds: catIds, label: category.label))
-                        }
                         ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
                                                               resolvedByVolume: resolved)) { sub in
                             let subIds = ScopeFacets.volumeIds(forCategory: sub.category,
@@ -214,6 +223,18 @@ struct SeriesScopeBar: View {
                         }
                     }
                 }
+            }
+
+            // #1040: where a reader goes when no topic AREA narrows enough. Subject grain does, and
+            // since #1023 there is a surface for it. After the categories — the finer alternative,
+            // not the headline.
+            Divider()
+            Button(String(localized: "analytics.scope.subject.browseIndex",
+                          defaultValue: "Browse all topics…")) {
+                appState.openSubjectExplorer(.all, from: sceneID)
+                #if os(macOS)
+                openWindow.fronting(id: "frus.subjects")
+                #endif
             }
           }
         }

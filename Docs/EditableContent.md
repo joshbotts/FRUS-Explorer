@@ -554,7 +554,7 @@ Tap a subject to see the other FRUS volumes covering it across the entire series
 
 These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters, at two different grains, and the difference matters.
 
-At VOLUME grain: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, select every volume containing the topic — mentioned is enough. A whole category is broad enough that several reach nearly the entire series, so read the volume count beside each row and open a sub-category to narrow it.
+At VOLUME grain: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, select every volume containing the topic — mentioned is enough. A category is a heading rather than a filter, because every one of them reaches most of the series, so choose a sub-category and read the volume count beside it. For anything finer, browse the Topic index.
 
 At DOCUMENT grain: after a search, the Facets panel has a Subjects section. Choosing a row there is a subjects facet on your results — it narrows to the documents in that topic area, not to whole volumes, and it counts only documents in the volumes you have indexed. The panel says how much of the result set carries a topic at all, since many documents carry none.
 

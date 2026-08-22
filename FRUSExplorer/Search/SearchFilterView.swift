@@ -923,7 +923,7 @@ struct SearchFilterView: View {
                 summary: subjectFacetLabel ?? selectionSummary(0),
                 forced: customScopes.isEmpty && scopeWarningName != nil,
                 footer: Text(String(localized: "search.subject.facet.footer",
-                                    defaultValue: "Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choosing a category finds every volume containing that topic, so a broad category reaches most of the series — the volume count beside each one says how many. The volume picker then fills with the matches you have indexed."))
+                                    defaultValue: "Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed."))
             ) {
                 Button {
                     showSubjectFacet = true
@@ -1371,7 +1371,9 @@ private struct SubjectCategoryFacetPicker: View {
 
     /// Categories, filtered by the search text (matches the category or any of its sub-categories).
     private var categories: [ScopeFacets.CategoryEntry] {
-        let all = ScopeFacets.categoryCatalog(resolvedByVolume: resolvedByVolume)
+        // Only categories with something under them that narrows (#1040) — see
+        // `ScopeFacets.narrowingCategories`.
+        let all = ScopeFacets.narrowingCategories(resolvedByVolume: resolvedByVolume)
         guard !searchText.isEmpty else { return all }
         return all.filter { cat in
             cat.label.localizedCaseInsensitiveContains(searchText)
@@ -1430,15 +1432,8 @@ private struct SubjectCategoryFacetPicker: View {
             Section {
                 ForEach(categories) { category in
                     DisclosureGroup {
-                        // "All of <category>" — applies the whole (coarse) category.
-                        facetButton(
-                            title: String(format: String(
-                                localized: "search.subject.facet.wholeCategory %@",
-                                defaultValue: "All of %@"), category.label),
-                            reach: category.volumeCount,
-                            volumeIds: ScopeFacets.volumeIds(forCategory: category.label,
-                                                            resolvedByVolume: resolvedByVolume),
-                            label: category.label)
+                        // NO "All of <category>" row (#1040): a category is a heading here, not a
+                        // selectable scope. Seven of thirteen selected all 552 volumes.
                         // Sub-categories — where the facet actually discriminates (F3).
                         ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
                                                               resolvedByVolume: resolvedByVolume)) { sub in
@@ -1456,7 +1451,7 @@ private struct SubjectCategoryFacetPicker: View {
                 }
             } footer: {
                 Text(String(localized: "search.subject.facet.picker.footer",
-                            defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are broad and several reach the whole series; check the count beside each and open a sub-category to narrow the list."))
+                            defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer topics, browse the Topic index."))
                     // Let the long explanation wrap to its full height rather than truncating to
                     // one clipped line in the macOS inset list footer (#361).
                     .fixedSize(horizontal: false, vertical: true)

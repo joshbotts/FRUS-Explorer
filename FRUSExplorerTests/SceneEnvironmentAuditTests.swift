@@ -197,10 +197,21 @@ struct SceneEnvironmentAuditTests {
         for path in paths {
             let url = Self.sourceRoot.appendingPathComponent(path)
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            let range = NSRange(text.startIndex..<text.endIndex, in: text)
-            for match in pattern.matches(in: text, range: range) {
-                guard let captured = Range(match.range(at: 1), in: text) else { continue }
-                found.insert(String(text[captured]))
+            // COMMENT LINES ARE SKIPPED. This scan cannot tell code from prose, and the pattern it
+            // looks for is exactly what a doc comment WARNING about the by-type trap has to write
+            // down — #1040 added one (`@Environment(Observable.self)` is resolved when the view is
+            // created, not when `body` runs) and turned this test red without adding a single
+            // injection. A source scan that punishes documenting the hazard it guards teaches
+            // people to stop documenting it.
+            for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.hasPrefix("//") else { continue }
+                let lineText = String(line)
+                let range = NSRange(lineText.startIndex..<lineText.endIndex, in: lineText)
+                for match in pattern.matches(in: lineText, range: range) {
+                    guard let captured = Range(match.range(at: 1), in: lineText) else { continue }
+                    found.insert(String(lineText[captured]))
+                }
             }
         }
 
