@@ -107,12 +107,20 @@ struct ResearchRailView: View {
 
     // MARK: Accordion expansion (shared keys — survive navigation, stay in sync with any callers)
 
+    /// Restored in #308: the key C1 orphaned when D1 retired the document-view Subjects section.
+    /// Reused rather than minted fresh, so a reader who had it open before still does.
+    /// Defaults CLOSED — the row is supplementary, and 24.8% of documents have no topics at all.
+    @AppStorage("frus.document.researchPanel.subjects")    private var subjectsExpanded    = false
     @AppStorage("frus.document.researchPanel.summary")     private var summaryExpanded     = true
     @AppStorage("frus.document.researchPanel.notes")       private var notesExpanded       = true
     @AppStorage("frus.document.researchPanel.tags")        private var tagsExpanded        = false
     /// New in C1: the Collections membership accordion's expansion state.
     @AppStorage("frus.document.researchPanel.collections") private var collectionsExpanded = false
     @AppStorage(SettingsKeys.relatedAxisWeights) private var relatedWeights = AxisWeights.default
+
+    /// Whether the topics row is showing past its cut. Per-view, not persisted: it is a reading
+    /// gesture on one document, not a preference.
+    @State private var showAllSubjects = false
 
     // MARK: Data (re-declared from `entry`)
 
@@ -180,6 +188,10 @@ struct ResearchRailView: View {
                 // `summaryAccordion` carries its OWN leading divider (only when it renders — the
                 // section vanishes with no summarization service + no stored summary), so there's
                 // no double hairline between the tile grid and Notes on non-AI hardware (C1b F6).
+                // ABOVE Summary (#308). Carries its own leading divider, like `summaryAccordion`
+                // below it, because it VANISHES on the 24.8% of documents with no detected topics —
+                // an empty state here would be a permanent fixture on one document in four.
+                subjectsAccordion
                 summaryAccordion
                 Divider()
                 notesAccordion
@@ -342,6 +354,100 @@ struct ResearchRailView: View {
     }
 
     // MARK: - Accordions
+
+    /// The document's detected topics (#308), restoring a document-level display D1 retired.
+    ///
+    /// ## Why a flat chip row and not the hierarchy
+    /// `DocumentSubjectIndex.hierarchy(forDocument:)` exists and groups a document's topics by
+    /// category — and the data says not to use it here. Measured over the shipped index:
+    /// **36.7% of tagged documents have all their topics in ONE category**, and the median document
+    /// carries **2 topics spanning 2 categories**. Grouping would routinely render two headings
+    /// with a single chip under each. It earns its keep only for the 18.3% carrying five or more,
+    /// and paying that cost on every document to serve a sixth of them is the wrong trade.
+    ///
+    /// ## The cut
+    /// Chips arrive IDF-descending from `subjects(forDocument:)`, so the most distinctive lead —
+    /// a document tagged *War* and *Berlin blockade* opens with the one that narrows. Showing five
+    /// covers **81.7%** of documents in full; the rest get a "+N more" that expands in place, which
+    /// bounds the 85-topic worst case without truncating anyone silently.
+    ///
+    /// ## Absent, not empty
+    /// The whole section vanishes when a document has no topics. That is 24.8% of the corpus —
+    /// 78,537 documents — and an empty state on one document in four is furniture, not information.
+    @ViewBuilder private var subjectsAccordion: some View {
+        let topics = documentTopics
+        if !topics.isEmpty {
+            Divider()
+            accordionHeader(
+                title: String(localized: "panel.subjects.title", defaultValue: "Topics"),
+                badge: "\(topics.count)",
+                isExpanded: $subjectsExpanded)
+            if subjectsExpanded {
+                Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    subjectChips(topics)
+                    Text(String(localized: "panel.subjects.caveat",
+                                defaultValue: "Detected automatically from the text, not editorial subject headings — so some are wrong. Most distinctive first."))
+                        .font(FRUSTheme.captionSmallFont)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, hInset)
+                .padding(.vertical, 10)
+            }
+        }
+    }
+
+    /// The chips themselves, cut at five unless expanded.
+    @ViewBuilder
+    private func subjectChips(_ topics: [VolumeSubjectProfiles.ResolvedSubject]) -> some View {
+        let cut = 5
+        let shown = showAllSubjects ? topics : Array(topics.prefix(cut))
+        FlowLayout(spacing: 6) {
+            ForEach(shown) { topic in
+                Button {
+                    openTopic(topic)
+                } label: {
+                    FRUSTagChip(label: topic.name, style: .system)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(String(localized: "panel.subjects.chip.hint",
+                                          defaultValue: "Opens this topic in the topic index"))
+            }
+            if topics.count > cut && !showAllSubjects {
+                Button {
+                    showAllSubjects = true
+                } label: {
+                    Text(String(format: String(localized: "panel.subjects.more %lld",
+                                               defaultValue: "+%lld more"),
+                                Int64(topics.count - cut)))
+                        .font(FRUSTheme.captionFont)
+                        .padding(.horizontal, FRUSTheme.tagPaddingH)
+                        .padding(.vertical, FRUSTheme.tagPaddingV)
+                        .foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// This document's topics, most distinctive first; `[]` when the index is absent or it has none.
+    private var documentTopics: [VolumeSubjectProfiles.ResolvedSubject] {
+        guard let index = DocumentSubjectStore.shared else { return [] }
+        return index.subjects(forDocument: DocumentKey(volumeId: entry.volumeId,
+                                                       documentId: entry.documentId))
+    }
+
+    /// Opens the Topic index at this topic — the same hand-off the volume pivot sheet uses (#1023).
+    private func openTopic(_ topic: VolumeSubjectProfiles.ResolvedSubject) {
+        let request = SubjectExplorerRequest.subject(ref: topic.ref, name: topic.name)
+        #if os(macOS)
+        appState.openSubjectExplorer(request, from: sceneID)
+        openWindow.fronting(id: "frus.subjects")
+        #else
+        appState.openSubjectExplorer(request, from: sceneID)
+        #endif
+    }
 
     @ViewBuilder private var summaryAccordion: some View {
         if appState.summarizationService != nil || vm.activeSummary != nil {
