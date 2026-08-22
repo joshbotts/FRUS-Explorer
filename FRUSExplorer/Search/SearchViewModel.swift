@@ -476,13 +476,42 @@ final class SearchViewModel {
 
     // MARK: - Pagination
 
-    /// Maximum results fetched by `search()`.
+    /// Maximum results fetched by `search()` for a query with text in it.
     ///
     /// iOS pages through results (`pageSize` per page) rather than rendering them in one
     /// continuous list, so the full set is materialised in memory but only a single page
     /// of rows is ever rendered. Raised from 500 → 1 000 once pagination bounded the
     /// render cost. The macOS search window uses a separate hard limit of 7 500.
+    ///
+    /// The binding cost is not the rows, it is `body_text`: a keyword query needs it to build each
+    /// row's context snippet, and it measures a 7,416-character mean over the corpus — ~7.7 MB per
+    /// thousand rows, off SQLite overflow pages. That is what this ceiling bounds.
     static let searchHardLimit: Int = 1_000
+
+    /// Maximum results fetched for a **filter-only browse** — a subject or person constraint with
+    /// no keyword, phrase, or prefix.
+    ///
+    /// Higher than `searchHardLimit` because the row is a different size. A browse has no query
+    /// terms, so `SearchService` cannot build a context snippet and the fetch does not select
+    /// `body_text` at all; measured, a 1,000-row browse window carried 7,694,772 bytes of body
+    /// before that change and **0 after**, at half the wall time. What remains is header, dateline,
+    /// source note and tag ids — a few hundred bytes a row, so 7,500 costs less than the old 1,000.
+    ///
+    /// 7,500 is chosen against the data rather than by symmetry with macOS: measured over the
+    /// shipped subject index, a 1,000-row ceiling returns every document for 69% of subjects and
+    /// 7,500 does so for **95%**. The remaining 5% are the corpus-wide subjects (*War* reaches
+    /// 58,480 documents) where no ceiling a phone should hold would help, and where the
+    /// "loaded · total" header is the honest answer.
+    static let filterOnlyHardLimit: Int = 7_500
+
+    /// The ceiling the CURRENT results were actually fetched at.
+    ///
+    /// **Recorded at fetch time, not recomputed from `searchParameters`.** Those are the live
+    /// filter state and may have moved since the search ran — the same reason `resultsSnapshot`
+    /// passes `submittedSearchParameters` rather than the live value. Deriving the cap from them
+    /// would make `isResultsCapped` and the facet total answer for a query the user is still
+    /// typing, and both of those decide whether the app claims a count is complete.
+    private(set) var lastFetchLimit: Int = searchHardLimit
 
     /// Number of results rendered per page on iOS.
     static let pageSize: Int = 25
@@ -587,8 +616,11 @@ final class SearchViewModel {
             // Concurrently, not sequentially: the two statements share their joins, so the
             // second runs against pages the first has already faulted in. Mirrors
             // `MacSearchViewModel.performSearch`, which has always done it this way.
-            async let fetched = searchService.search(parameters: params,
-                                                     limit: Self.searchHardLimit)
+            // A browse fetches deeper than a keyword search because its rows are far smaller —
+            // no `body_text`, since there are no terms to snippet against. See `filterOnlyHardLimit`.
+            let fetchLimit = params.runsAsFilterOnly ? Self.filterOnlyHardLimit : Self.searchHardLimit
+            lastFetchLimit = fetchLimit
+            async let fetched = searchService.search(parameters: params, limit: fetchLimit)
             async let counted: Int? = {
                 // A failed count must not fail the search. The header and the capture warning
                 // both degrade to "total unavailable", which is what macOS already shows.
@@ -680,7 +712,7 @@ final class SearchViewModel {
                 resultCount: totalMatchCount ?? results.count,
                 loadedCount: results.count,
                 matchCount: totalMatchCount,
-                fetchLimit: Self.searchHardLimit,
+                fetchLimit: lastFetchLimit,
                 indexedVolumeCount: indexedVolumeCount,
                 // The executed parameters, not the live filter state — those may have moved.
                 parameters: submittedSearchParameters,
@@ -878,10 +910,14 @@ final class SearchViewModel {
     /// results-count header matches the visible rows.
     var resultCount: Int { displayedResults.count }
 
-    /// `true` when the result set hit `searchHardLimit`, indicating the query matches
+    /// `true` when the result set hit the ceiling it was fetched at, indicating the query matches
     /// more documents than are shown. Users should narrow their search terms. Keyed on the raw
     /// fetch count (not the checklist-filtered view), since the cap is about the FTS5 fetch.
-    var isResultsCapped: Bool { results.count == Self.searchHardLimit }
+    ///
+    /// Compares against `lastFetchLimit`, which differs by query shape: a browse is fetched to
+    /// `filterOnlyHardLimit`. Comparing against the keyword ceiling instead would call a
+    /// 7,500-row browse "not capped" at exactly the point it is.
+    var isResultsCapped: Bool { results.count == lastFetchLimit }
 
     // Note: this still checks the legacy `phrase`/`prefixWildcard`/`excludedTermsText`/
     // `booleanMode` fields even though `SearchFilterView` no longer exposes controls for
@@ -956,7 +992,7 @@ final class SearchViewModel {
         // fetched count as a total once the fetch hit its ceiling. The fallback is not dead code —
         // `searchCount` can fail, and `nil` is what the panel already renders as "total
         // unavailable".
-        totalMatchCount ?? Self.facetTotal(fetched: results.count, cap: Self.searchHardLimit)
+        totalMatchCount ?? Self.facetTotal(fetched: results.count, cap: lastFetchLimit)
     }
 
     /// The rule behind ``totalMatchCountForFacets``, extracted so it can be tested at the

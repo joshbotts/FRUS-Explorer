@@ -274,7 +274,7 @@ public actor SearchService {
             // ...but only when there is genuinely no text to run. Reaching here WITH text means
             // every content scope is off, which is a scope error; running the bare filter would
             // silently discard what the reader typed (#1022 review).
-            if parameters.supportsFilterOnlySearch, !parameters.hasTextTerms {
+            if parameters.runsAsFilterOnly {
                 return (nil, nil)
             }
             throw FTS5Error.emptyQuery
