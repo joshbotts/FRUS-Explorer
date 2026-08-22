@@ -126,16 +126,20 @@ struct ResearchFacilityTests {
     }
 
     /// The 72.9% case, and it has no repository string to key on.
-    @Test("State's central files derive their facility from the category alone")
+    @Test("Record-group material derives its facility from the category alone")
     func centralFilesResolveWithoutARepositoryString() {
-        for category in [SourceProvenanceCategory.centralDecimalFile, .centralForeignPolicyFile] {
+        for category in [SourceProvenanceCategory.centralDecimalFile, .centralForeignPolicyFile,
+                         .lotFile, .naraCollection, .namedFileSeries] {
             let facility = ResearchFacilityResolver.facility(
                 naId: nil, category: category, repository: nil, facts: { _ in nil })
             #expect(facility == .servedAt(facility: ResearchFacilityResolver.collegePark,
                                           provenance: "Department of State"), """
-                \(category.rawValue) resolved to \(facility) with no repository string. This is \
-                72.9% of the corpus's notes; keying it on a string that is usually absent would \
-                leave most of the packet unplaced.
+                \(category.rawValue) resolved to \(facility) with no repository string. Central \
+                files alone are 72.9% of the corpus's notes, and keying on a string that is usually \
+                absent would leave most of the packet unplaced. An UNRESOLVED lot file belongs here \
+                too: not knowing its series is not the same as not knowing its building, and filing \
+                it under "confirm where these are" would give the wrong advice for a record whose \
+                location is not in doubt.
                 """)
         }
     }
