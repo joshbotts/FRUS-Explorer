@@ -5652,7 +5652,7 @@ public actor IndexingPipeline {
         //
         // `subject` is a POSITION in the artifact's vocabulary, not a ref string. The ref would be
         // ~17 characters × 877,817 rows ≈ +15 MB, and it would not even buy durability: the
-        // upstream drop re-mints roughly 95 synthetic refs each time. Durability lives where it
+        // 21 of the 491 refs are name-derived and re-mint when the name changes. Durability lives where it
         // belongs instead — `SearchParameters.subjectRef` carries the ref (plus a name fallback)
         // and `SearchService.makeFilters` re-resolves it against the live vocabulary on every
         // query, exactly as `subjectBucketKey` does for buckets.
