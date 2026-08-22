@@ -401,6 +401,14 @@ public extension SearchParameters {
     ///
     /// So a query with text and no scope is a scope error, not a filter-only search, and the
     /// service says so rather than quietly answering a different question.
+    /// `true` when this query will execute with **no FTS5 MATCH at all** — the browse shape.
+    ///
+    /// One definition, because the last time this rule was spelled out per site it was spelled out
+    /// five times and three of them disagreed (#1022). `SearchService` uses it to decide whether to
+    /// run without a MATCH; both view models use it to pick a fetch ceiling, because a browse and a
+    /// keyword search have very different per-row costs (see `searchHardLimit`).
+    var runsAsFilterOnly: Bool { supportsFilterOnlySearch && !hasTextTerms }
+
     var hasTextTerms: Bool {
         !(keywords ?? "").trimmingCharacters(in: .whitespaces).isEmpty
             || !(phrase ?? "").trimmingCharacters(in: .whitespaces).isEmpty

@@ -2299,9 +2299,24 @@ public actor IndexingPipeline {
             // volume + document for a stable browse. Guard against an unbounded dump if somehow no
             // filter is present.
             guard !whereClause.isEmpty else { return [] }
+            // `body_text` IS DELIBERATELY NOT SELECTED HERE, and the empty literal keeps the column
+            // arity so the row decode below is shared with every other shape.
+            //
+            // A filter-only query has no MATCH, so it has no query terms, so
+            // `SearchService.search` cannot build a context snippet from the body — its guard is
+            // `!stemmedQueryTerms.isEmpty` and it falls through to the header/dateline snippet.
+            // `IndexedSearchRow.bodyText` has exactly one reader in the app, and on this path that
+            // reader provably never runs. Selecting it was loading prose to throw away.
+            //
+            // It is not a small saving. Measured over 4,311 real documents the mean body is 7,416
+            // characters, so a 1,000-row window carried ~7 MB and a 7,500-row one ~56 MB. And it is
+            // more than allocation: `body_text` lives on SQLite OVERFLOW PAGES, which the engine
+            // follows only for columns a statement actually selects — the same property the R-3a
+            // two-phase fetch below exists to exploit. That rewrite never reached this branch,
+            // because a filter-only query has no ranking phase to split.
             sql = """
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
-                       dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.source_note, '' AS body_text, dc.subject_tag_ids, dc.user_tag_ids,
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, 0.0 AS score
                 FROM document_cache dc
                 LEFT JOIN document_dates dd

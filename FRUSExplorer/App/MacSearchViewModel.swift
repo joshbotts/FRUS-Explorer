@@ -249,7 +249,7 @@ final class MacSearchViewModel {
     /// the count *is* available and exceeds the fetch, that also counts — a filter applied
     /// after the limit could otherwise hide the truncation.
     var isResultSetTruncated: Bool {
-        if results.count >= Self.searchHardLimit { return true }
+        if results.count >= lastFetchLimit { return true }
         if let totalMatchCount { return totalMatchCount > results.count }
         return false
     }
@@ -263,11 +263,27 @@ final class MacSearchViewModel {
     /// Whether the displayed count is the true total rather than just what was fetched.
     var isTotalCountAvailable: Bool { totalMatchCount != nil }
 
-    /// Hard upper bound on the number of results materialised by `performSearch`.
+    /// Hard upper bound on the number of results materialised by `performSearch` for a query
+    /// with text in it.
     /// Raised from 500 → 7,500 in Session 120 (PR #45). At ~5 KB body-text average
     /// the working set stays well under 50 MB on macOS; the count badge displays the
     /// true uncapped total via `totalMatchCount`.
     static let searchHardLimit: Int = 7_500
+
+    /// Hard upper bound for a **filter-only browse** — a subject or person constraint with no
+    /// keyword, phrase, or prefix.
+    ///
+    /// Same value as the keyword ceiling on this platform, and that is the point: a browse row
+    /// carries no `body_text` (there are no terms to snippet against, so the fetch does not select
+    /// it — measured, 7,694,772 bytes per thousand rows before that change and 0 after), so 7,500
+    /// browse rows cost a fraction of 7,500 keyword rows. The constant exists so the two ceilings
+    /// can move independently, and so `isResultsCapped` compares against the one actually used —
+    /// the iOS twin genuinely differs (1,000 keyword, 7,500 browse).
+    static let filterOnlyHardLimit: Int = 7_500
+
+    /// The ceiling the CURRENT results were actually fetched at. Recorded at fetch time rather
+    /// than recomputed from `parameters`, which are live filter state and may have moved since.
+    private(set) var lastFetchLimit: Int = searchHardLimit
 
     /// Returns `results` ordered according to `sortOrder`.
     ///
@@ -949,10 +965,16 @@ final class MacSearchViewModel {
         // when the same parameters value is sent to two actor-isolated calls below.
         let frozenParams = params
 
+        // A browse fetches under its own ceiling because its rows are far smaller — no `body_text`,
+        // since there are no terms to snippet against. Recorded so `isResultSetTruncated` compares
+        // against the ceiling actually used.
+        let fetchLimit = frozenParams.runsAsFilterOnly
+            ? Self.filterOnlyHardLimit : Self.searchHardLimit
+        lastFetchLimit = fetchLimit
+
         // Fetch results and total count in parallel. searchCount runs an FTS5 COUNT(*)
         // without snippet/bm25 work so it returns substantially faster than search().
-        async let resultsTask  = service.search(parameters: frozenParams,
-                                                limit: Self.searchHardLimit)
+        async let resultsTask  = service.search(parameters: frozenParams, limit: fetchLimit)
         async let countTask    = service.searchCount(parameters: frozenParams)
         async let expressionTask = try? service.matchExpressions(for: frozenParams).corpus
         do {
@@ -1027,7 +1049,7 @@ final class MacSearchViewModel {
                 resultCount: resultCountForDisplay,
                 loadedCount: results.count,
                 matchCount: totalMatchCount,
-                fetchLimit: Self.searchHardLimit,
+                fetchLimit: lastFetchLimit,
                 indexedVolumeCount: indexedVolumeCount,
                 parameters: submittedSearchParameters,
                 appliedCorpusId: filterVM?.appliedWorkingCorpusId,

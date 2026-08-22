@@ -930,3 +930,228 @@ struct FilterOnlyCompletionTests {
             """)
     }
 }
+
+
+// MARK: - FilterOnlyBodyTextTests
+
+/// Pins that the filter-only fetch does not load `body_text` (#1040 follow-up).
+///
+/// ## Why it was loading prose it could not use
+/// `IndexedSearchRow.bodyText` has exactly ONE reader in the app — `SearchService.search`, which
+/// builds a context snippet from it — and that reader is guarded by `!stemmedQueryTerms.isEmpty`.
+/// A filter-only query has no MATCH, therefore no query terms, therefore that guard never passes:
+/// the snippet falls through to the header/dateline form. So every row of a subject or person
+/// browse carried a full document body to be discarded.
+///
+/// Measured over 4,311 real documents from 12 volumes, the mean body is 7,416 characters — ~7 MB
+/// for a 1,000-row window, ~56 MB for a 7,500-row one. And the saving is larger than the
+/// allocation, because `body_text` lives on SQLite OVERFLOW PAGES, which the engine follows only
+/// for columns a statement selects. That is the same property the R-3a two-phase fetch exploits on
+/// the MATCH path; that rewrite never reached this branch because a filter-only query has no
+/// ranking phase to split.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: from the #1040 review
+@Suite("Filter-only fetch skips body_text (#1040)")
+struct FilterOnlyBodyTextTests {
+
+    private func makeVolumeXML(ids: Range<Int>) -> String {
+        // Bodies deliberately long, so a fetch that loaded them would be visibly different from
+        // one that did not — a fixture with three-word documents could not tell them apart.
+        let filler = String(repeating: "containment policy deliberation ", count: 400)
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in ids {
+            xml += """
+            <div type="document" xml:id="d\(index)">
+              <head>\(index + 1). Item \(index)</head>
+              <p>\(filler)</p>
+            </div>
+
+            """
+        }
+        return xml + "</body></text></TEI>"
+    }
+
+    private func makeFixture() async throws
+        -> (dir: URL, service: SearchService, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSBodyText-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        try makeVolumeXML(ids: 0..<8).data(using: .utf8)!
+            .write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, SearchService(fts5Store: fts5, pipeline: pipeline), pipeline)
+    }
+
+    private var rows: [String: [(documentId: String, buckets: [Int])]] {
+        ["vol1": (0..<8).map { (documentId: "d\($0)", buckets: [2]) }]
+    }
+
+    /// The pin: a filter-only row carries no body, and a MATCH row still does.
+    ///
+    /// Asserting the ABSENCE alone would pass against a fixture that simply had no bodies, so the
+    /// keyword half runs over the same documents and must still see them.
+    @Test("A filter-only row carries no body; a keyword row still does")
+    func filterOnlyRowsCarryNoBody() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: { rows[$0] ?? [] }, digest: "d1", volumeIds: ["vol1"])
+
+        var browse = SearchParameters()
+        browse.subjectBucket = 2
+        let filterOnly = try await pipeline.searchDocuments(
+            corpusMatch: nil, userContentMatch: nil,
+            filters: await service.filtersForTesting(browse), limit: 100, offset: 0)
+        #expect(filterOnly.count == 8, "the browse must return the bucket's documents")
+        #expect(filterOnly.allSatisfy { $0.bodyText.isEmpty }, """
+            A filter-only fetch selected body_text. Nothing can read it on this path — the only \
+            reader needs query terms — so it is prose loaded to be discarded, off SQLite overflow \
+            pages, at roughly 7 KB per row.
+            """)
+
+        // The control: the same documents through a MATCH still carry their bodies, so the
+        // assertion above is about the PATH and not about the fixture.
+        let expressions = try await service.matchExpressions(for: SearchParameters(keywords: "containment"))
+        let matched = try await pipeline.searchDocuments(
+            corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
+            filters: await service.filtersForTesting(SearchParameters(keywords: "containment")),
+            limit: 100, offset: 0)
+        #expect(matched.count == 8)
+        #expect(matched.allSatisfy { $0.bodyText.count > 1_000 },
+                "the keyword path must still hydrate bodies — it needs them for the snippet")
+    }
+
+    /// The user-visible consequence must not change: a browse row still shows a snippet, built
+    /// from the header rather than the body.
+    @Test("A browse result still shows a snippet")
+    func browseRowsStillHaveSnippets() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: { rows[$0] ?? [] }, digest: "d1", volumeIds: ["vol1"])
+
+        var browse = SearchParameters()
+        browse.subjectBucket = 2
+        let results = try await service.search(parameters: browse, limit: 100)
+        #expect(results.count == 8)
+        #expect(results.allSatisfy { !$0.snippet.isEmpty }, """
+            Dropping body_text must not empty the snippet — `SearchService` falls back to the \
+            header/dateline form, which is what a term-less query showed before this change too.
+            """)
+    }
+}
+
+// MARK: - BrowseCeilingTests
+
+/// Pins that a browse and a keyword search are fetched under different ceilings, and that the
+/// "is this capped" reporting follows the one actually used.
+///
+/// A browse row carries no `body_text`, so it costs a fraction of a keyword row — measured,
+/// 7,694,772 bytes per thousand rows before that change and 0 after. Raising the browse ceiling is
+/// what makes that saving reach the reader: at the shipped subject index, 1,000 returns every
+/// document for 69% of subjects and 7,500 does so for 95%.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: from the #1040 review
+@Suite("Browse fetches under its own ceiling")
+struct BrowseCeilingTests {
+
+    @Test("The shared rule identifies a browse, and only a browse")
+    func runsAsFilterOnlyIsPrecise() {
+        var browse = SearchParameters()
+        browse.subjectBucket = 2
+        #expect(browse.runsAsFilterOnly)
+
+        var person = SearchParameters()
+        person.personRef = "p1"
+        #expect(person.runsAsFilterOnly)
+
+        // Text of any kind makes it a search, not a browse — including an exclusion, which the
+        // filter-only path cannot apply.
+        var withKeyword = browse; withKeyword.keywords = "berlin"
+        #expect(!withKeyword.runsAsFilterOnly)
+        var withPhrase = browse; withPhrase.phrase = "berlin blockade"
+        #expect(!withPhrase.runsAsFilterOnly)
+        var withExclusion = browse; withExclusion.excludedTerms = ["berlin"]
+        #expect(!withExclusion.runsAsFilterOnly)
+
+        // And no standalone filter at all is neither.
+        #expect(!SearchParameters(keywords: "berlin").runsAsFilterOnly)
+        #expect(!SearchParameters().runsAsFilterOnly)
+    }
+
+    /// The ceilings differ on iOS and that difference has to be real, or the browse gains nothing.
+    @MainActor
+    @Test("iOS fetches a browse deeper than a keyword search")
+    func iOSCeilingsDiffer() {
+        #expect(SearchViewModel.filterOnlyHardLimit > SearchViewModel.searchHardLimit, """
+            The browse ceiling must exceed the keyword one — that is the entire point of not \
+            selecting body_text on the browse path.
+            """)
+        #expect(SearchViewModel.searchHardLimit == 1_000)
+        #expect(SearchViewModel.filterOnlyHardLimit == 7_500)
+    }
+
+    /// The reporting must follow the ceiling actually used. Before this, `isResultsCapped`
+    /// compared against the keyword ceiling, so a 7,500-row browse would have read "not capped"
+    /// at exactly the point it was.
+    ///
+    /// Drives the real view model rather than checking a constant, because the failure this
+    /// guards against is the fetch and the report disagreeing about which ceiling applied.
+    @MainActor
+    @Test("The cap report keys on the ceiling the fetch used, not the keyword one")
+    func capReportFollowsTheFetch() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSCeiling-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("t.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for i in 0..<6 {
+            xml += "<div type=\"document\" xml:id=\"d\(i)\"><head>\(i + 1). Item</head>"
+                + "<p>The doctrine of containment shaped policy.</p></div>\n"
+        }
+        xml += "</body></text></TEI>"
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                            volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        let subjectRows: @Sendable (String) -> [(documentId: String, buckets: [Int])] = { _ in
+            (0..<6).map { (documentId: "d\($0)", buckets: [2]) }
+        }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: subjectRows, digest: "d1", volumeIds: ["vol1"])
+        let vm = SearchViewModel(searchService: SearchService(fts5Store: fts5, pipeline: pipeline))
+
+        // Before any search: the keyword ceiling.
+        #expect(vm.lastFetchLimit == SearchViewModel.searchHardLimit)
+
+        // A keyword search keeps it.
+        vm.keywords = "containment"
+        await vm.search()
+        #expect(vm.results.count == 6, "the keyword search must return the fixture")
+        #expect(vm.lastFetchLimit == SearchViewModel.searchHardLimit,
+                "a keyword search hydrates body_text and stays under the smaller ceiling")
+
+        // A browse raises it.
+        vm.keywords = ""
+        vm.subjectBucket = 2
+        await vm.search()
+        #expect(vm.results.count == 6, "the browse must return the same documents")
+        #expect(vm.lastFetchLimit == SearchViewModel.filterOnlyHardLimit, """
+            A subject-only browse was fetched under the keyword ceiling. The deeper ceiling is the \
+            payoff for not selecting body_text; without it the saving reaches nobody.
+            """)
+        #expect(!vm.isResultsCapped, "6 of 7,500 is not capped")
+    }
+}
