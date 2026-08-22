@@ -332,10 +332,26 @@ public actor SearchService {
         } else {
             resolvedBucket = parameters.subjectBucket
         }
+        // #1022, subject grain. REF FIRST, THEN NAME. The ref is exact and stable for the 472
+        // `rec`-style subjects; the name catches the roughly 95 synthetic refs the upstream drop
+        // re-mints, where the ref a saved search stored no longer resolves to anything. Same `-1`
+        // sentinel and for the same reason: a subject that has left the vocabulary must match
+        // NOTHING, because falling back to `nil` reads as "no subject filter" and would widen a
+        // saved search to the whole corpus under a name promising one subject.
+        let resolvedSubject: Int?
+        if let ref = parameters.subjectRef {
+            let index = DocumentSubjectStore.shared
+            resolvedSubject = index?.subjectPosition(forRef: ref)
+                ?? parameters.subjectName.flatMap { index?.subjectPosition(forName: $0) }
+                ?? -1
+        } else {
+            resolvedSubject = nil
+        }
         return SearchSQLFilters(
             volumeIds: parameters.volumeIds,
             documentIds: parameters.documentIds,
             subjectBucket: resolvedBucket,
+            subjectRef: resolvedSubject,
             excludeDocumentIds: parameters.excludeDocumentIds,
             dateRange: parameters.dateRange,
             yearKeys: parameters.yearKeys,

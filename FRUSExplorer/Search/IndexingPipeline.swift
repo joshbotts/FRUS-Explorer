@@ -1640,7 +1640,8 @@ public actor IndexingPipeline {
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "terms",
                       "document_sources", "external_citations", "volume_sources",
-                      "volume_structures", "document_subjects", "document_subject_volumes"] {
+                      "volume_structures", "document_subjects", "document_subject_refs",
+                      "document_subject_volumes"] {
             let stmt = try auxPrepare("DELETE FROM \(table)")
             defer { sqlite3_finalize(stmt) }
             try auxStep(stmt)
@@ -3341,6 +3342,19 @@ public actor IndexingPipeline {
                         WHERE dsu.volume_id = dc.volume_id
                           AND dsu.document_id = dc.document_id
                           AND dsu.bucket = \(bucket))
+                """)
+        }
+
+        // #1022 subject-grain narrowing. Same shape as the bucket predicate above and against the
+        // parallel table: an EXISTS correlated to `document_cache`, so the PK serves it and no
+        // secondary index is wanted. Interpolated for the same reason — an Int from our own
+        // vocabulary, never user text.
+        if let subject = filters.subjectRef {
+            conditions.append("""
+                EXISTS (SELECT 1 FROM document_subject_refs dsr
+                        WHERE dsr.volume_id = dc.volume_id
+                          AND dsr.document_id = dc.document_id
+                          AND dsr.subject = \(subject))
                 """)
         }
 
@@ -5623,6 +5637,38 @@ public actor IndexingPipeline {
         // index, and it cost **20.5 MB — half the table again — and nearly doubled the backfill**
         // (1.5 s against 0.8 s). Whole table with the index: 41.4 MB. Without: 20.9 MB.
         try? exec("DROP INDEX IF EXISTS idx_document_subjects_bucket")
+
+        // #1022: the SUBJECT-grain companion. `document_subjects` folds a document's subjects to
+        // their `(category, subcategory)` buckets — 106 of them — which is the right grain for a
+        // results facet and cannot answer "which documents carry THIS subject", the question a
+        // subject browse asks. 877,817 rows for the full corpus against the bucket table's 744,054.
+        //
+        // A PARALLEL table rather than replacing the bucket one. Replacing it and deriving buckets
+        // through a 106-row join at query time would save ~3.8 MB net and one source of truth, at
+        // the cost of rewriting every #1018 facet query and invalidating the measurements above
+        // (744,054 rows / 20.9 MB / the EXPLAIN plans that justify having no bucket index). The two
+        // are populated in ONE pass from ONE closure and share a done-marker, so the drift a second
+        // table usually invites is structurally excluded — see `applyDocumentSubjects`.
+        //
+        // `subject` is a POSITION in the artifact's vocabulary, not a ref string. The ref would be
+        // ~17 characters × 877,817 rows ≈ +15 MB, and it would not even buy durability: the
+        // upstream drop re-mints roughly 95 synthetic refs each time. Durability lives where it
+        // belongs instead — `SearchParameters.subjectRef` carries the ref (plus a name fallback)
+        // and `SearchService.makeFilters` re-resolves it against the live vocabulary on every
+        // query, exactly as `subjectBucketKey` does for buckets.
+        //
+        // Same key, same `WITHOUT ROWID`, same deliberate absence of a secondary index as the
+        // bucket table, and for the same reasons — the narrowing predicate is an EXISTS correlated
+        // to `document_cache`, so it constrains `volume_id` and `document_id` too and is served by
+        // the primary key.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS document_subject_refs (
+                volume_id   TEXT    NOT NULL,
+                document_id TEXT    NOT NULL,
+                subject     INTEGER NOT NULL,
+                PRIMARY KEY (volume_id, document_id, subject)
+            ) WITHOUT ROWID
+            """)
         // Per-volume done-markers for the backfill. A table rather than one UserDefaults stamp
         // (the `applyBrokenRefsIndexIfNeeded` pattern) because population is per-volume and
         // open-ended: volumes arrive by download long after the first run, and a volume whose
@@ -6495,6 +6541,25 @@ public actor IndexingPipeline {
     /// Bucket ids are positions in ``SubjectBucketVocabulary``. If the artifact is regenerated with
     /// a new subcategory, every stored id shifts by one from that point on and the facet mislabels
     /// silently. So a digest mismatch triggers a **full rebuild**, not a merge.
+    /// The done-marker stamp for the subject tables — ONE definition, because both the launch
+    /// backfill and the per-volume refresh write it and a test asserts against it.
+    ///
+    /// Three parts, each load-bearing:
+    /// - `v2:` — THE MIGRATION. `document_subject_refs` is new and empty, but the done-markers it
+    ///   shares with `document_subjects` already say every volume is populated, so without a
+    ///   version change the backfill would skip all of them and the subject table would stay empty
+    ///   forever, on every device that has ever launched the app. Bumping it makes the existing
+    ///   markers stale, which the digest gate already knows how to handle: wipe both tables and
+    ///   repopulate. Costs one rebuild per device, needs no reindex, and is deliberately not
+    ///   `currentDateIndexVersion` — these tables derive from a bundled artifact, not from parsing.
+    /// - the vocabulary digest — bucket ids are positions, so a re-ordered vocabulary invalidates
+    ///   every stored id.
+    /// - the artifact's generation date — a re-drop that adds no subcategory keeps the same 106
+    ///   buckets in the same order while every document's tags may have changed.
+    static func documentSubjectsStamp(for index: DocumentSubjectIndex) -> String {
+        "v2:\(index.bucketVocabulary.digest)@\(index.generated)"
+    }
+
     public func applyDocumentSubjectsIfNeeded() throws {
         guard let index = DocumentSubjectStore.shared else { return }
         // Rows are produced PER VOLUME, on demand. Materialising every volume's rows up front
@@ -6504,9 +6569,17 @@ public actor IndexingPipeline {
         // order alone is not enough: a re-dropped artifact that adds no subcategory keeps the same
         // 106 buckets in the same order while every document's tags may have changed, and a
         // digest that did not move would leave the table describing the previous drop forever.
-        let stamp = "\(index.bucketVocabulary.digest)@\(index.generated)"
+        // THE `v2:` PREFIX IS THE MIGRATION. `document_subject_refs` is new and empty, but the
+        // done-markers it shares with `document_subjects` already say every volume is populated —
+        // so without a stamp change the backfill would skip all of them and the subject table would
+        // stay empty forever, on every device that has ever launched the app. Bumping the version
+        // makes the existing markers stale, which the digest gate below already knows how to
+        // handle: it wipes both tables and repopulates. Costs one rebuild per device (measured 0.8 s
+        // for the bucket table alone), needs no reindex, and is not `currentDateIndexVersion` —
+        // these tables are derived from a bundled artifact, not from parsing TEI.
+        let stamp = Self.documentSubjectsStamp(for: index)
         let populated = try applyDocumentSubjects(
-            rows: { index.bucketRows(forVolume: $0) }, digest: stamp,
+            rows: { index.subjectRows(forVolume: $0) }, digest: stamp,
             volumeIds: try allIndexedVolumeIds())
         #if DEBUG
         if populated > 0 {
@@ -6534,23 +6607,25 @@ public actor IndexingPipeline {
         sqlite3_bind_text(clear, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(clear)
         try applyDocumentSubjects(
-            rows: { index.bucketRows(forVolume: $0) },
-            digest: "\(index.bucketVocabulary.digest)@\(index.generated)",
+            rows: { index.subjectRows(forVolume: $0) },
+            digest: Self.documentSubjectsStamp(for: index),
             volumeIds: [volumeId])
     }
 
     /// The store-independent core (internal so tests can drive it over synthetic rows).
     ///
     /// - Parameters:
-    ///   - rows: called once per volume that needs populating, for the `(documentId, buckets)`
-    ///     rows the artifact asserts. A closure rather than a prepared dictionary so a launch with
-    ///     nothing to do does no work at all.
-    ///   - digest: the bucket vocabulary's fingerprint.
+    ///   - rows: called once per volume that needs populating, for the
+    ///     `(documentId, buckets, subjects)` rows the artifact asserts. A closure rather than a
+    ///     prepared dictionary so a launch with nothing to do does no work at all. ONE closure for
+    ///     both grains, so the two tables cannot describe different sets of documents (#1022).
+    ///   - digest: the stamp — vocabulary fingerprint, artifact date, and a schema version.
     ///   - volumeIds: the volumes actually present in `document_cache`.
     /// - Returns: how many volumes were populated this call.
     @discardableResult
-    func applyDocumentSubjects(rows: (String) -> [(documentId: String, buckets: [Int])],
-                               digest: String, volumeIds: Set<String>) throws -> Int {
+    func applyDocumentSubjects(
+        rows: (String) -> [(documentId: String, buckets: [Int], subjects: [Int])],
+        digest: String, volumeIds: Set<String>) throws -> Int {
         // A digest change invalidates every stored id, so rebuild rather than merge.
         var staleDigest = false
         let probe = try auxPrepare("SELECT digest FROM document_subject_volumes LIMIT 1")
@@ -6559,7 +6634,9 @@ public actor IndexingPipeline {
         }
         sqlite3_finalize(probe)
         if staleDigest {
+            // BOTH tables, or the surviving one describes a vocabulary the markers no longer match.
             try auxExec("DELETE FROM document_subjects")
+            try auxExec("DELETE FROM document_subject_refs")
             try auxExec("DELETE FROM document_subject_volumes")
         }
 
@@ -6580,12 +6657,19 @@ public actor IndexingPipeline {
             INSERT OR IGNORE INTO document_subjects (volume_id, document_id, bucket) VALUES (?, ?, ?)
             """)
         defer { sqlite3_finalize(insert) }
+        let insertRef = try auxPrepare("""
+            INSERT OR IGNORE INTO document_subject_refs (volume_id, document_id, subject)
+            VALUES (?, ?, ?)
+            """)
+        defer { sqlite3_finalize(insertRef) }
         let mark = try auxPrepare("""
             INSERT OR REPLACE INTO document_subject_volumes (volume_id, digest) VALUES (?, ?)
             """)
         defer { sqlite3_finalize(mark) }
         let purge = try auxPrepare("DELETE FROM document_subjects WHERE volume_id = ?")
         defer { sqlite3_finalize(purge) }
+        let purgeRef = try auxPrepare("DELETE FROM document_subject_refs WHERE volume_id = ?")
+        defer { sqlite3_finalize(purgeRef) }
 
         try inTransaction {
             for volumeId in wanted {
@@ -6594,6 +6678,9 @@ public actor IndexingPipeline {
                 sqlite3_reset(purge)
                 sqlite3_bind_text(purge, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
                 try auxStep(purge)
+                sqlite3_reset(purgeRef)
+                sqlite3_bind_text(purgeRef, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(purgeRef)
 
                 for row in rows(volumeId) {
                     for bucket in row.buckets {
@@ -6602,6 +6689,13 @@ public actor IndexingPipeline {
                         sqlite3_bind_text(insert, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                         sqlite3_bind_int(insert, 3, Int32(bucket))
                         try auxStep(insert)
+                    }
+                    for subject in row.subjects {
+                        sqlite3_reset(insertRef)
+                        sqlite3_bind_text(insertRef, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+                        sqlite3_bind_text(insertRef, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                        sqlite3_bind_int(insertRef, 3, Int32(subject))
+                        try auxStep(insertRef)
                     }
                 }
                 // Marked even when the volume contributed no rows — see the schema comment.
@@ -6688,6 +6782,7 @@ public actor IndexingPipeline {
             // the marker and the volume is permanently absent from the Subjects facet, because the
             // backfill would see it as already done. Re-adding the volume would not repair it.
             ("document_subjects", "volume_id"),
+            ("document_subject_refs", "volume_id"),
             ("document_subject_volumes", "volume_id"),
         ] {
             let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
@@ -8997,6 +9092,11 @@ public struct SearchSQLFilters: Sendable {
     /// for. As a predicate it is one integer, whatever the bucket's size.
     public var subjectBucket: Int?
 
+    /// Restrict to documents carrying this subject — a position in the artifact's vocabulary,
+    /// already resolved from `SearchParameters.subjectRef` by `SearchService.makeFilters` (#1022).
+    /// `-1` matches nothing, which is what a retired ref resolves to.
+    public var subjectRef: Int?
+
     /// **Exclude** this explicit set of `"volumeId/documentId"` keys (Project Focus "only new"
     /// option, #377 Phase 2b). `nil` (or empty) = exclude nothing.
     public var excludeDocumentIds: [String]?
@@ -9043,6 +9143,7 @@ public struct SearchSQLFilters: Sendable {
         volumeIds: [String]? = nil,
         documentIds: [String]? = nil,
         subjectBucket: Int? = nil,
+        subjectRef: Int? = nil,
         excludeDocumentIds: [String]? = nil,
         dateRange: DateRange? = nil,
         yearKeys: [String]? = nil,
@@ -9058,6 +9159,7 @@ public struct SearchSQLFilters: Sendable {
         self.volumeIds = volumeIds
         self.documentIds = documentIds
         self.subjectBucket = subjectBucket
+        self.subjectRef = subjectRef
         self.excludeDocumentIds = excludeDocumentIds
         self.dateRange = dateRange
         self.yearKeys = yearKeys

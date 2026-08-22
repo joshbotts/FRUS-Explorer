@@ -221,6 +221,60 @@ struct DocumentSubjectIndex: Decodable, Sendable {
         }
     }
 
+    /// Every `(documentId, facet buckets, subject positions)` row for one volume — the unit BOTH
+    /// subject tables are populated from, in one pass (#1022).
+    ///
+    /// ## Why one call rather than a sibling of `bucketRows`
+    /// The two tables are written inside a single transaction per volume, so a second closure would
+    /// walk the same `documents[volumeId]` dictionary twice for rows that must agree by
+    /// construction. It also makes the invariant local: a bucket here is
+    /// `bucketByVocabIndex[subject]` for one of the subjects in the same tuple, so the grains
+    /// cannot drift apart between passes.
+    ///
+    /// Buckets are de-duplicated (several subjects share a subcategory, and the facet counts
+    /// documents); subject positions are de-duplicated too, since a document's index entry can
+    /// repeat a subject. A document with subjects but no resolvable bucket still yields a row, so
+    /// the subject table does not silently inherit the bucket vocabulary's gaps.
+    ///
+    /// Positions, not refs. See the `document_subject_refs` schema comment for why, and for what
+    /// makes that safe across an artifact re-drop.
+    func subjectRows(forVolume volumeId: String)
+        -> [(documentId: String, buckets: [Int], subjects: [Int])] {
+        guard let byDocument = documents[volumeId] else { return [] }
+        return byDocument.compactMap { documentId, indices in
+            var buckets = Set<Int>()
+            var subjects = Set<Int>()
+            for index in indices where vocab.indices.contains(index) {
+                subjects.insert(index)
+                if bucketByVocabIndex.indices.contains(index) {
+                    let bucket = bucketByVocabIndex[index]
+                    if bucket >= 0 { buckets.insert(bucket) }
+                }
+            }
+            return subjects.isEmpty ? nil : (documentId, buckets.sorted(), subjects.sorted())
+        }
+    }
+
+    /// The vocabulary position for a subject ref, or `nil` when the ref is not in this drop.
+    ///
+    /// The conversion `SearchService.makeFilters` performs to turn a durable `subjectRef` into the
+    /// integer `document_subject_refs` stores — the subject-grain counterpart of
+    /// ``SubjectBucketVocabulary/id(forKey:)``.
+    func subjectPosition(forRef ref: String) -> Int? { indexByRef[ref] }
+
+    /// The vocabulary position for a subject NAME, or `nil` when no subject carries it.
+    ///
+    /// The fallback half of the durable key. Subject refs are stable for the 472 `rec`-style
+    /// subjects and re-minted for the synthetic remainder on each upstream drop, so a saved search
+    /// carries both and resolves ref-first: the ref is exact, and the name catches a re-mint.
+    /// Ambiguity is resolved by taking the LOWEST position rather than by refusing, because a
+    /// duplicate display name is indistinguishable to the reader who saved the search — measured,
+    /// no two subjects in the shipped vocabulary share a name, so this is a guard rather than a
+    /// routine path.
+    func subjectPosition(forName name: String) -> Int? {
+        vocab.enumerated().first { $0.element.name == name }?.offset
+    }
+
     /// Volume ids the index carries subjects for — the population work-list.
     var taggedVolumeIds: [String] { documents.keys.sorted() }
 

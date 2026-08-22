@@ -152,7 +152,7 @@ struct SubjectResultsFacetTests {
 @Suite("Subject results facet — SQL (#308)")
 struct SubjectResultsFacetSQLTests {
 
-    private typealias Rows = [String: [(documentId: String, buckets: [Int])]]
+    private typealias Rows = [String: [(documentId: String, buckets: [Int], subjects: [Int])]]
 
     /// Eight documents in `vol1` matching `containment`, four in `vol2` that do not.
     private func makeVolumeXML(volume: String, ids: Range<Int>) -> String {
@@ -205,9 +205,12 @@ struct SubjectResultsFacetSQLTests {
 
     /// `vol1`: d0 and d1 in bucket 2, d2 in bucket 0. `vol3` is not indexed.
     private var rows: Rows {
-        ["vol1": [(documentId: "d0", buckets: [2]), (documentId: "d1", buckets: [2]),
-                  (documentId: "d2", buckets: [0])],
-         "vol3": [(documentId: "d0", buckets: [5])]]
+        // Subjects deliberately DIFFER from buckets: two subjects (10, 11) fold to bucket 2, so a
+        // test that confused the grains would see it.
+        ["vol1": [(documentId: "d0", buckets: [2], subjects: [10, 11]),
+                  (documentId: "d1", buckets: [2], subjects: [10]),
+                  (documentId: "d2", buckets: [0], subjects: [3])],
+         "vol3": [(documentId: "d0", buckets: [5], subjects: [42])]]
     }
 
     // MARK: - The backfill
@@ -247,7 +250,7 @@ struct SubjectResultsFacetSQLTests {
         _ = try await pipeline.applyDocumentSubjects(
             rows: { rows[$0] ?? [] }, digest: "old", volumeIds: ["vol1", "vol2"])
         _ = try await pipeline.applyDocumentSubjects(
-            rows: { $0 == "vol1" ? [(documentId: "d0", buckets: [7])] : [] },
+            rows: { $0 == "vol1" ? [(documentId: "d0", buckets: [7], subjects: [70])] : [] },
             digest: "new", volumeIds: ["vol1", "vol2"])
         let breakdown = try await facets(pipeline, service)
         #expect(breakdown.subjects.map(\.key) == ["7"], """
@@ -296,10 +299,10 @@ struct SubjectResultsFacetSQLTests {
         let (dir, service, pipeline) = try await makeFixture()
         defer { cleanUp(dir) }
         _ = try await pipeline.applyDocumentSubjects(
-            rows: { $0 == "vol1" ? [(documentId: "d0", buckets: [1])] : [] },
+            rows: { $0 == "vol1" ? [(documentId: "d0", buckets: [1], subjects: [1])] : [] },
             digest: "vocab-abc@2026-08-21", volumeIds: ["vol1", "vol2"])
         _ = try await pipeline.applyDocumentSubjects(
-            rows: { $0 == "vol1" ? [(documentId: "d0", buckets: [4])] : [] },
+            rows: { $0 == "vol1" ? [(documentId: "d0", buckets: [4], subjects: [4])] : [] },
             digest: "vocab-abc@2026-09-01", volumeIds: ["vol1", "vol2"])
         let breakdown = try await facets(pipeline, service)
         #expect(breakdown.subjects.map(\.key) == ["4"], """
@@ -332,7 +335,10 @@ struct SubjectResultsFacetSQLTests {
     /// same marker the shipping path writes rather than an arbitrary one.
     private func currentStamp() -> String {
         guard let index = DocumentSubjectStore.shared else { return "none" }
-        return "\(index.bucketVocabulary.digest)@\(index.generated)"
+        // The SHIPPING stamp, not a copy of its shape. This helper used to spell the format out,
+        // and #1022's `v2:` prefix made it silently disagree with the markers the app writes — so
+        // the test asserted a rebuild it had itself caused.
+        return IndexingPipeline.documentSubjectsStamp(for: index)
     }
 
     // MARK: - The aggregate
@@ -782,10 +788,11 @@ struct SubjectOnlySearchTests {
     }
 
     /// `vol1`: d0 and d1 in bucket 2, d2 in bucket 0. `vol2`: d8 in bucket 2.
-    private var rows: [String: [(documentId: String, buckets: [Int])]] {
-        ["vol1": [(documentId: "d0", buckets: [2]), (documentId: "d1", buckets: [2]),
-                  (documentId: "d2", buckets: [0])],
-         "vol2": [(documentId: "d8", buckets: [2])]]
+    private var rows: [String: [(documentId: String, buckets: [Int], subjects: [Int])]] {
+        ["vol1": [(documentId: "d0", buckets: [2], subjects: [10, 11]),
+                  (documentId: "d1", buckets: [2], subjects: [10]),
+                  (documentId: "d2", buckets: [0], subjects: [3])],
+         "vol2": [(documentId: "d8", buckets: [2], subjects: [11])]]
     }
 
     /// The headline: no keyword at all, and the bucket's documents come back — across volumes,
@@ -989,8 +996,8 @@ struct FilterOnlyBodyTextTests {
         return (dir, SearchService(fts5Store: fts5, pipeline: pipeline), pipeline)
     }
 
-    private var rows: [String: [(documentId: String, buckets: [Int])]] {
-        ["vol1": (0..<8).map { (documentId: "d\($0)", buckets: [2]) }]
+    private var rows: [String: [(documentId: String, buckets: [Int], subjects: [Int])]] {
+        ["vol1": (0..<8).map { (documentId: "d\($0)", buckets: [2], subjects: [10]) }]
     }
 
     /// The pin: a filter-only row carries no body, and a MATCH row still does.
@@ -1126,8 +1133,8 @@ struct BrowseCeilingTests {
         let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
                                             volumesDirectory: volDir, concurrencyLimit: 1)
         try await pipeline.indexVolume("vol1")
-        let subjectRows: @Sendable (String) -> [(documentId: String, buckets: [Int])] = { _ in
-            (0..<6).map { (documentId: "d\($0)", buckets: [2]) }
+        let subjectRows: @Sendable (String) -> [(documentId: String, buckets: [Int], subjects: [Int])] = { _ in
+            (0..<6).map { (documentId: "d\($0)", buckets: [2], subjects: [10]) }
         }
         _ = try await pipeline.applyDocumentSubjects(
             rows: subjectRows, digest: "d1", volumeIds: ["vol1"])
@@ -1153,5 +1160,211 @@ struct BrowseCeilingTests {
             payoff for not selecting body_text; without it the saving reaches nobody.
             """)
         #expect(!vm.isResultsCapped, "6 of 7,500 is not capped")
+    }
+}
+
+// MARK: - SubjectGrainTests
+
+/// Pins #1022's subject-grain table: `document_subject_refs`.
+///
+/// `document_subjects` folds a document's subjects to their `(category, subcategory)` buckets — 106
+/// of them — which is right for a results facet and cannot answer *"which documents carry THIS
+/// subject"*, the question a subject browse asks. This is the parallel table that can, populated in
+/// the same pass from the same closure so the two grains cannot describe different documents.
+///
+/// **These tests use REAL refs from the bundled vocabulary**, not synthetic positions. A test-only
+/// positional parameter would have been simpler and would have skipped `makeFilters`' ref→position
+/// resolution — the half most likely to be wrong, and the half a saved search depends on.
+///
+/// Version history:
+///   1.0 — Session 2026-08-21: #1022 enabler A
+@Suite("Subject-grain narrowing (#1022)")
+struct SubjectGrainTests {
+
+    /// Two real subjects that share a bucket, plus their positions — so the fixture can put them on
+    /// different documents and prove the grains differ.
+    @MainActor
+    private func sharedBucketPair() throws
+        -> (index: DocumentSubjectIndex, aRef: String, aPos: Int, bRef: String, bPos: Int, bucket: Int) {
+        let index = try #require(DocumentSubjectStore.shared,
+                                 "document-subject-index.json must decode from the app bundle")
+        var byBucket: [Int: [(ref: String, pos: Int)]] = [:]
+        for (pos, entry) in index.subjectVocabulary.enumerated() {
+            guard let bucket = index.bucketVocabulary.id(category: entry.category,
+                                                         subcategory: entry.subcategory) else { continue }
+            byBucket[bucket, default: []].append((entry.ref, pos))
+        }
+        let pair = try #require(byBucket.values.first { $0.count >= 2 },
+                                "no bucket holds two subjects — the fixture's premise is gone")
+        let bucket = try #require(byBucket.first { $0.value.count >= 2 }?.key)
+        return (index, pair[0].ref, pair[0].pos, pair[1].ref, pair[1].pos, bucket)
+    }
+
+    private func makeVolumeXML(ids: Range<Int>) -> String {
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in ids {
+            xml += "<div type=\"document\" xml:id=\"d\(index)\"><head>\(index + 1). Item</head>"
+                + "<p>The doctrine of containment shaped policy.</p></div>\n"
+        }
+        return xml + "</body></text></TEI>"
+    }
+
+    private func makeFixture() async throws
+        -> (dir: URL, service: SearchService, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSubjGrain-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        try makeVolumeXML(ids: 0..<4).data(using: .utf8)!
+            .write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, SearchService(fts5Store: fts5, pipeline: pipeline), pipeline)
+    }
+
+    /// The headline: a subject narrows more finely than its bucket. If these ever agree, the
+    /// subject filter is resolving at bucket grain and the table adds storage for nothing.
+    @MainActor
+    @Test("A subject narrows to its own documents, not to its bucket's")
+    func subjectNarrowsMoreFinelyThanBucket() async throws {
+        let f = try sharedBucketPair()
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // d0, d1, d2 all carry subject A; only d1 also carries subject B. All three share A's
+        // bucket, so the bucket cannot tell them apart and the subject must.
+        let rows: @Sendable (String) -> [(documentId: String, buckets: [Int], subjects: [Int])] = { _ in
+            [(documentId: "d0", buckets: [f.bucket], subjects: [f.aPos]),
+             (documentId: "d1", buckets: [f.bucket], subjects: [f.aPos, f.bPos]),
+             (documentId: "d2", buckets: [f.bucket], subjects: [f.aPos])]
+        }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: rows, digest: "v2:test", volumeIds: ["vol1"])
+
+        var byBucket = SearchParameters()
+        byBucket.subjectBucket = f.bucket
+        let bucketKeys = try await service.search(parameters: byBucket, limit: 100)
+            .map(\.documentId).sorted()
+        #expect(bucketKeys == ["d0", "d1", "d2"], "the bucket holds three documents")
+
+        var bySubject = SearchParameters()
+        bySubject.subjectRef = f.bRef
+        let subjectKeys = try await service.search(parameters: bySubject, limit: 100)
+            .map(\.documentId).sorted()
+        #expect(subjectKeys == ["d1"], """
+            Subject \(f.bRef) reaches one document; its bucket reaches three. Got \(subjectKeys). \
+            If this returns the bucket's three, the filter is resolving at the wrong grain.
+            """)
+    }
+
+    /// A subject the vocabulary no longer carries must match NOTHING — never widen.
+    @MainActor
+    @Test("A retired subject matches nothing, not everything")
+    func retiredSubjectMatchesNothing() async throws {
+        let f = try sharedBucketPair()
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows: @Sendable (String) -> [(documentId: String, buckets: [Int], subjects: [Int])] = { _ in
+            [(documentId: "d0", buckets: [f.bucket], subjects: [f.aPos])]
+        }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: rows, digest: "v2:test", volumeIds: ["vol1"])
+
+        var params = SearchParameters()
+        params.subjectRef = "no-such-ref-anywhere"
+        params.subjectName = "No Such Subject In This Vocabulary"
+        let results = try await service.search(parameters: params, limit: 100)
+        #expect(results.isEmpty, """
+            A retired subject returned \(results.count) documents. Degrading to "no subject filter" \
+            would return the whole corpus under a saved search named for one subject — the failure \
+            the -1 sentinel exists to prevent.
+            """)
+    }
+
+    /// The name fallback: a re-minted ref still resolves through the name it was saved with.
+    @MainActor
+    @Test("A re-minted ref resolves through its stored name")
+    func nameFallbackSurvivesAReMint() async throws {
+        let f = try sharedBucketPair()
+        let name = try #require(f.index.subjectVocabulary.first { $0.ref == f.aRef }?.name)
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows: @Sendable (String) -> [(documentId: String, buckets: [Int], subjects: [Int])] = { _ in
+            [(documentId: "d0", buckets: [f.bucket], subjects: [f.aPos])]
+        }
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: rows, digest: "v2:test", volumeIds: ["vol1"])
+
+        // A ref that no longer exists — as after an upstream re-mint — but the name it was saved
+        // with still does.
+        var params = SearchParameters()
+        params.subjectRef = "frus-subject-remimted-0000"
+        params.subjectName = name
+        let keys = try await service.search(parameters: params, limit: 100).map(\.documentId)
+        #expect(keys == ["d0"], """
+            The name fallback did not resolve \(name). Roughly 95 refs are re-minted per upstream \
+            drop; without this a saved search silently stops matching after one.
+            """)
+    }
+
+    /// The migration. The two tables share a done-marker, so the new one would stay empty forever
+    /// on every existing install unless the stamp changes.
+    @MainActor
+    @Test("A pre-#1022 stamp forces both tables to repopulate")
+    func staleStampRebuildsBothTables() async throws {
+        let f = try sharedBucketPair()
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows: @Sendable (String) -> [(documentId: String, buckets: [Int], subjects: [Int])] = { _ in
+            [(documentId: "d0", buckets: [f.bucket], subjects: [f.aPos])]
+        }
+
+        // The stamp a PRE-#1022 build wrote: vocabulary digest and artifact date, no version.
+        // Spelled out here because it is the historical format and no longer has a producer — that
+        // is the point of the comparison below.
+        let preMigrationStamp = "\(f.index.bucketVocabulary.digest)@\(f.index.generated)"
+        let shippingStamp = IndexingPipeline.documentSubjectsStamp(for: f.index)
+
+        // The load-bearing assertion, and it must come from the REAL stamp function. An earlier
+        // version of this test hard-coded both strings and passed them in, which asserted only that
+        // two DIFFERENT digests force a rebuild — the pre-existing gate, not this migration.
+        // Mutation-testing caught it: deleting the version prefix left the test green.
+        #expect(shippingStamp != preMigrationStamp, """
+            The shipping stamp is byte-identical to the pre-#1022 format. Every existing install \
+            keeps its done-markers, the backfill skips every volume, and document_subject_refs \
+            stays empty forever — a subject browse that silently returns nothing, on every device.
+            """)
+
+        // Populate under the old stamp, as a shipped install would have.
+        _ = try await pipeline.applyDocumentSubjects(
+            rows: rows, digest: preMigrationStamp, volumeIds: ["vol1"])
+
+        // Then the real one: it must read as stale and repopulate, not skip on those markers.
+        let populated = try await pipeline.applyDocumentSubjects(
+            rows: rows, digest: shippingStamp, volumeIds: ["vol1"])
+        #expect(populated == 1, """
+            The v2 stamp did not invalidate the pre-#1022 markers. Every existing install would keep \
+            its done-markers, skip the backfill, and leave document_subject_refs empty forever — a \
+            subject browse that silently returns nothing, on every device.
+            """)
+
+        var params = SearchParameters()
+        params.subjectRef = f.aRef
+        let keys = try await service.search(parameters: params, limit: 100).map(\.documentId)
+        #expect(keys == ["d0"], "after the rebuild the subject table answers")
+    }
+
+    /// A subject filter is a standalone constraint, like a bucket or a person.
+    @MainActor
+    @Test("A subject-only query runs with no keyword")
+    func subjectOnlyQualifiesAsFilterOnly() {
+        var params = SearchParameters()
+        params.subjectRef = "rec123"
+        #expect(params.supportsFilterOnlySearch)
+        #expect(params.runsAsFilterOnly)
     }
 }
