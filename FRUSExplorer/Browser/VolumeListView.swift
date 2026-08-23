@@ -47,6 +47,11 @@ public struct VolumeListSpec: Hashable, Sendable {
     /// `"312 docs / 4.2%"` on an administration list or a role note on an editor list.
     public let accessories: [String: String]
 
+    /// Optional per-volume attention note (volumeId → text), rendered as an amber
+    /// caption beneath the row — the administration axis's "Also under Eisenhower"
+    /// dual-membership disclosure (#1051 B-2, design 1g).
+    public let notes: [String: String]
+
     /// Creates a spec.
     ///
     /// - Parameters:
@@ -55,18 +60,21 @@ public struct VolumeListSpec: Hashable, Sendable {
     ///   - volumeIds: Member ids in the axis's order.
     ///   - caption: Coverage caption above the rows, or `nil`.
     ///   - accessories: Per-volume trailing accessory text, keyed by volume id.
+    ///   - notes: Per-volume amber attention notes, keyed by volume id.
     public init(
         axisKey: String,
         title: String,
         volumeIds: [String],
         caption: String? = nil,
-        accessories: [String: String] = [:]
+        accessories: [String: String] = [:],
+        notes: [String: String] = [:]
     ) {
         self.axisKey = axisKey
         self.title = title
         self.volumeIds = volumeIds
         self.caption = caption
         self.accessories = accessories
+        self.notes = notes
     }
 
     public func hash(into hasher: inout Hasher) {
@@ -123,19 +131,26 @@ struct VolumeListView: View {
                         print("[BrowserView] Navigate → volume \(entry.volumeId) (axis \(spec.axisKey))")
                         #endif
                     } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            VolumeRowLabel(
-                                volume: entry,
-                                isDownloaded: vm.isDownloaded(entry.volumeId),
-                                isIndexed: vm.isIndexed(entry.volumeId),
-                                isDownloading: appState.downloadQueue.contains(entry.volumeId),
-                                documentCount: appState.administrationProfilesStore
-                                    .documentCount(forVolumeId: entry.volumeId)
-                            )
-                            if let accessory = spec.accessories[entry.volumeId] {
-                                Text(accessory)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                VolumeRowLabel(
+                                    volume: entry,
+                                    isDownloaded: vm.isDownloaded(entry.volumeId),
+                                    isIndexed: vm.isIndexed(entry.volumeId),
+                                    isDownloading: appState.downloadQueue.contains(entry.volumeId),
+                                    documentCount: appState.administrationProfilesStore
+                                        .documentCount(forVolumeId: entry.volumeId)
+                                )
+                                if let accessory = spec.accessories[entry.volumeId] {
+                                    Text(accessory)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            if let note = spec.notes[entry.volumeId] {
+                                Text(note)
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)

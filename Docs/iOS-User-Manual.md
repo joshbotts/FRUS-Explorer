@@ -272,12 +272,14 @@ The **Browse** tab navigates the series by its own structure: subseries (publica
 
 ### 6.1 The Browse Root
 
-The root of the Browse tab opens with a **search field** over all 552 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** section of doors into the series:
+The root of the Browse tab opens with a **search field** over all 552 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series:
 
 - **Subseries** — the classic era-by-era hierarchy (Section 6.1a).
 - **All Volumes** — one catalogue of every volume (Section 6.1b).
+- **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
+- **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
 
-More doors arrive as the browse-axes program lands (administrations, editors, and others).
+More doors arrive as the browse-axes program lands (your scopes and corpora, the archives, and others).
 
 ### 6.1a The Hierarchy
 
@@ -295,6 +297,20 @@ Tap **Subseries** for the era directory, then a subseries — *1969–1976*, say
 The counts are FRUS document divs from the app's bundled index; a search inside a volume can return a few more rows, because prose sections such as prefaces are searchable but aren't numbered documents.
 
 [SCREENSHOT: All Volumes catalogue — the segmented Title/Published/Era/Length control with decade headers in Published order.]
+
+### 6.1c Administrations
+
+**Administrations** lists every presidency from Lincoln on, in order, with its reach — how many volumes and documents *cover* it. Coverage means the documents' own dates: a volume is filed under the administration in office when its documents were written, never by when the volume was published. A volume spanning two administrations appears under both, and the index says so up front. Administrations FRUS has not yet reached (Clinton onward) stay visible but dimmed, with the reason.
+
+Tap an administration for its volumes, largest share of the term's documents first. Each row shows how many of that volume's documents date to the term and what share of the volume that is — and a volume that also belongs to a neighboring administration carries an inline *"Also under …"* note.
+
+[SCREENSHOT: Administrations index with the dimmed post-corpus presidencies, and the Truman drill with per-volume shares.]
+
+### 6.1d Editors
+
+**Editors** is an alphabetical index (by surname) of the volume editors — the historians named on each title page. Tap an editor for their volumes in publication order. Two honest limits, both stated on the screen: 81 early volumes name no editors at all, so the index cannot reach them; and general editors of the subseries are credited on each volume's own page rather than indexed here. Where the series printed the same person's name several ways, the index merges the spellings into one entry (and says how many it merged) — the printed forms themselves are never altered, and citations keep the name exactly as the title page has it.
+
+[SCREENSHOT: Editors index letter sections, one row showing a "spellings merged" caption.]
 
 ### 6.2 Top Subjects
 

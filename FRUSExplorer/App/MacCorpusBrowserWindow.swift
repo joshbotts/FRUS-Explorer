@@ -23,6 +23,10 @@ enum CorpusNavValue: Hashable {
     case volume(volumeId: String)
     /// A section's document list or structured front-matter view within a volume.
     case section(volumeId: String, section: VolumeSection)
+    /// An axis's R-1 volume list (#1051 B-2) — an administration's volumes, an editor's
+    /// volumes, any future axis's drill. Hashable through the spec, whose identity is its
+    /// `axisKey` (never the id array), matching the iOS `.volumeList` level.
+    case axisList(VolumeListSpec)
 }
 
 // MARK: - CorpusSidebarItem
@@ -40,6 +44,10 @@ enum CorpusNavValue: Hashable {
 enum CorpusSidebarItem: Hashable {
     /// The All Volumes catalogue (#1051 A-1/A-2).
     case allVolumes
+    /// The Administrations index (#1051 A-3).
+    case administrations
+    /// The Editors index (#1051 A-4).
+    case editors
     /// One subseries, keyed by its identifier string (the pre-#1051 selection).
     case subseries(String)
 }
@@ -79,6 +87,10 @@ enum CorpusSidebarItem: Hashable {
 ///          regression surface). `SubseriesVolumeListView` is promoted out of `private`
 ///          with a display-title parameter, adopting the unified `VolumeRowLabel` (R-1) —
 ///          the first shared row between the two hand-written twin browsers (#777)
+///   1.7 — #1051 B-2: the BROWSE section gains Administrations and Editors (the shared
+///          index views, mounted at the detail root); their drills push the new
+///          `CorpusNavValue.axisList` case, hosted by `MacAxisVolumeListView` over the
+///          promoted list's caption/accessory/note slots
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -138,6 +150,13 @@ struct CorpusBrowserWindowView: View {
                     Label(String(localized: "browser.catalogue.title", defaultValue: "All Volumes"),
                           systemImage: "books.vertical")
                         .tag(CorpusSidebarItem.allVolumes)
+                    Label(String(localized: "browser.administrations.title",
+                                 defaultValue: "Administrations"),
+                          systemImage: "building.columns")
+                        .tag(CorpusSidebarItem.administrations)
+                    Label(String(localized: "browser.editors.title", defaultValue: "Editors"),
+                          systemImage: "person.text.rectangle")
+                        .tag(CorpusSidebarItem.editors)
                 }
                 Section(String(localized: "corpus.sidebar.subseries", defaultValue: "Subseries")) {
                     ForEach(subseries, id: \.self) { sub in
@@ -182,6 +201,16 @@ struct CorpusBrowserWindowView: View {
                     switch selection {
                     case .allVolumes?:
                         catalogueView
+                    case .administrations?:
+                        AdministrationIndexView(
+                            index: appState.administrationProfilesStore.index,
+                            onSelect: { spec in detailPath.append(.axisList(spec)) }
+                        )
+                    case .editors?:
+                        EditorIndexView(
+                            entries: allEntries,
+                            onSelect: { spec in detailPath.append(.axisList(spec)) }
+                        )
                     case .subseries(let sub)?:
                         volumeList(for: sub)
                     case nil:
@@ -191,7 +220,7 @@ struct CorpusBrowserWindowView: View {
                             systemImage: "books.vertical",
                             description: Text(String(
                                 localized: "corpus.detail.empty.detail",
-                                defaultValue: "Choose All Volumes or a subseries to browse the series."))
+                                defaultValue: "Choose a browse axis or a subseries from the sidebar."))
                         )
                     }
                 }
@@ -203,6 +232,8 @@ struct CorpusBrowserWindowView: View {
                         }
                     case .section(let volumeId, let section):
                         CorpusSectionDocumentView(volumeId: volumeId, section: section, path: $detailPath)
+                    case .axisList(let spec):
+                        MacAxisVolumeListView(spec: spec, path: $detailPath)
                     }
                 }
             }
@@ -387,6 +418,9 @@ struct SubseriesVolumeListView: View {
     var caption: String? = nil
     /// The R-1 per-row trailing accessory slot (e.g. an administration's "N docs / N.N%").
     var accessory: (@MainActor (VolumeManifestEntry) -> String?)? = nil
+    /// The R-1 per-row amber attention-note slot (the administration axis's
+    /// "Also under Eisenhower" dual-membership disclosure, #1051 B-2).
+    var note: (@MainActor (VolumeManifestEntry) -> String?)? = nil
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
@@ -424,23 +458,30 @@ struct SubseriesVolumeListView: View {
             Button {
                 path.append(.volume(volumeId: vol.volumeId))
             } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    // R-1: the unified row, shared with the iOS lists — one badge
-                    // vocabulary on both platforms instead of the hand-written twin
-                    // this row used to be (#777).
-                    VolumeRowLabel(
-                        volume: vol,
-                        isDownloaded: appState.downloadManager?.isVolumeDownloaded(vol.volumeId) ?? false,
-                        isIndexed: (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true,
-                        isDownloading: appState.downloadQueue.contains(vol.volumeId),
-                        documentCount: appState.administrationProfilesStore
-                            .documentCount(forVolumeId: vol.volumeId),
-                        showsVolumeId: true
-                    )
-                    if let accessory, let text = accessory(vol) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        // R-1: the unified row, shared with the iOS lists — one badge
+                        // vocabulary on both platforms instead of the hand-written twin
+                        // this row used to be (#777).
+                        VolumeRowLabel(
+                            volume: vol,
+                            isDownloaded: appState.downloadManager?.isVolumeDownloaded(vol.volumeId) ?? false,
+                            isIndexed: (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true,
+                            isDownloading: appState.downloadQueue.contains(vol.volumeId),
+                            documentCount: appState.administrationProfilesStore
+                                .documentCount(forVolumeId: vol.volumeId),
+                            showsVolumeId: true
+                        )
+                        if let accessory, let text = accessory(vol) {
+                            Text(text)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if let note, let text = note(vol) {
                         Text(text)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -526,6 +567,47 @@ struct SubseriesVolumeListView: View {
                           defaultValue: "Downloading")
         }
         return ""
+    }
+}
+
+// MARK: - MacAxisVolumeListView
+
+/// The macOS host for an axis's R-1 drill (`CorpusNavValue.axisList`, #1051 B-2): resolves
+/// the spec's ids against the manifest **in the spec's own order** (the R-1 contract — an
+/// administration hands over document-count order, an editor publication order, and the
+/// list never re-sorts), and mounts the promoted `SubseriesVolumeListView` with the spec's
+/// caption, accessory, and note slots.
+///
+/// Owns its search state — the window's `searchText` belongs to the subseries lists, and
+/// sharing it would leak a query between unrelated levels.
+///
+/// Version history:
+///   1.0 — #1051 B-2: initial implementation
+private struct MacAxisVolumeListView: View {
+    let spec: VolumeListSpec
+    /// The window's detail-column path; tapping a volume pushes onto it.
+    @Binding var path: [CorpusNavValue]
+
+    @Environment(AppState.self) private var appState
+    @State private var searchText = ""
+
+    var body: some View {
+        // Caller order preserved; ids the manifest cannot resolve are skipped, never
+        // invented — then the local search narrows without re-sorting.
+        let entries = spec.volumeIds.compactMap { appState.manifestStore.entry(forVolumeId: $0) }
+        let filtered = searchText.isEmpty ? entries : entries.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText) ||
+            $0.volumeId.localizedCaseInsensitiveContains(searchText)
+        }
+        SubseriesVolumeListView(
+            title: spec.title,
+            filteredVolumes: filtered,
+            searchText: $searchText,
+            path: $path,
+            caption: spec.caption,
+            accessory: { spec.accessories[$0.volumeId] },
+            note: { spec.notes[$0.volumeId] }
+        )
     }
 }
 

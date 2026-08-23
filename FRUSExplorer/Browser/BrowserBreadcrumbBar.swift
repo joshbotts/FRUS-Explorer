@@ -273,6 +273,11 @@ extension BrowserViewModel.BrowserLevel {
             return String(localized: "browser.breadcrumb.catalogue", defaultValue: "All Volumes")
         case .volumeList(let spec):
             return spec.title
+        case .administrations:
+            return String(localized: "browser.breadcrumb.administrations",
+                          defaultValue: "Administrations")
+        case .editors:
+            return String(localized: "browser.breadcrumb.editors", defaultValue: "Editors")
         }
     }
 }
