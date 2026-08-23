@@ -98,19 +98,27 @@ struct TripChecklist: Equatable, Sendable {
         if flags.flags.contains(.recentRecords) {
             items.append(TripChecklistItem(
                 id: "a4.recent",
-                action: String(format: String(
-                    localized: "packet.checklist.a4.recent %lld",
-                    defaultValue: "Write earlier: %lld of your documents are dated 1960 or later, and NARA asks for extra notice for records dated in the 1960s and later"),
-                    Int64(flags.recentDocumentCount)),
+                // Two keys rather than a format inflection, so translators see both forms — the
+                // convention this repo already uses for counted headers.
+                action: flags.recentDocumentCount == 1
+                    ? String(localized: "packet.checklist.a4.recent.one",
+                             defaultValue: "Write earlier: 1 of your documents is dated 1960 or later, and NARA asks for extra notice for records dated in the 1960s and later")
+                    : String(format: String(
+                        localized: "packet.checklist.a4.recent.many %lld",
+                        defaultValue: "Write earlier: %lld of your documents are dated 1960 or later, and NARA asks for extra notice for records dated in the 1960s and later"),
+                        Int64(flags.recentDocumentCount)),
                 leadDays: 42, escalatedBy: .recentRecords))
         }
         if flags.flags.contains(.unresolvedLotCitations) {
             items.append(TripChecklistItem(
                 id: "a4.lots",
-                action: String(format: String(
-                    localized: "packet.checklist.a4.lots %lld",
-                    defaultValue: "Write earlier: %lld lot citations could not be resolved to a series, and NARA cautions that lot-file numbers do not always carry over"),
-                    Int64(flags.unresolvedLotCount)),
+                action: flags.unresolvedLotCount == 1
+                    ? String(localized: "packet.checklist.a4.lots.one",
+                             defaultValue: "Write earlier: 1 lot citation could not be resolved to a series, and NARA cautions that lot-file numbers do not always carry over")
+                    : String(format: String(
+                        localized: "packet.checklist.a4.lots.many %lld",
+                        defaultValue: "Write earlier: %lld lot citations could not be resolved to a series, and NARA cautions that lot-file numbers do not always carry over"),
+                        Int64(flags.unresolvedLotCount)),
                 leadDays: 42, escalatedBy: .unresolvedLotCitations))
         }
 

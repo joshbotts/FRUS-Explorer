@@ -153,10 +153,23 @@ enum ResearchFacilityResolver {
             return .unknown
         }
 
-        // 4. State's central files ARE College Park records, and the citation names the department
-        //    as the creating agency even when no repository string was parsed. This is the 72.9%
-        //    case, so getting it from the category rather than from a string matters.
-        if category == .centralDecimalFile || category == .centralForeignPolicyFile {
+        // 4. NARA record-group material IS College Park material, whether or not the citation
+        //    resolved to a series.
+        //
+        //    **The distinction this encodes is between not knowing the SERIES and not knowing the
+        //    BUILDING**, and conflating them makes the packet worse in both directions. A State
+        //    Department lot file is RG 59 whether or not the app could resolve it — the audit
+        //    measured 71.6% of notes resolving to a record group "and stopping", and a record group
+        //    is already enough to place a researcher. Sending those to `unknown` would file them
+        //    beside a presidential library under "confirm where these are", which is the wrong
+        //    advice: their location is not in doubt, only their series is, and THAT is what the A4
+        //    unresolved-lot flag already tells them to raise in the inquiry.
+        //
+        //    Central files are the 72.9% case and reach here without a repository string at all,
+        //    which is why this keys on the category rather than on parsed text.
+        if category == .centralDecimalFile || category == .centralForeignPolicyFile
+            || category == .lotFile || category == .naraCollection
+            || category == .namedFileSeries {
             return .servedAt(facility: collegePark, provenance: "Department of State")
         }
         if category == .intelligence {

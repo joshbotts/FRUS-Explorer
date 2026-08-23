@@ -138,8 +138,41 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// The curated rows. Empty at T-1.
     let rows: [RepositoryFactRow]
 
-    /// The shipping table: **no rows yet**, awaiting the four owner-confirmable facts.
-    static let current = RepositoryFactTable(rows: [])
+    /// The shipping table.
+    ///
+    /// ## One row, two verified facts — and the incrementality D7 designed for
+    /// The owner confirmed the NACP postal address and the NACP inquiry email on 2026-08-22. §3.2
+    /// calls that pair "the highest-value verification in the whole gate", because A2's
+    /// send-to-one-address rule is the inquiry mechanic and a generated draft must have a
+    /// recipient.
+    ///
+    /// **`appointmentPolicy` is still unverified and therefore still unprintable.** A1 distinguishes
+    /// the DC-area rooms ("strongly encouraged") from other facilities ("required"), and which
+    /// applies is per-row policy the owner has not confirmed — so the packet asks the researcher to
+    /// check rather than asserting. That is D7 working as intended: two facts light up, the third
+    /// stays dark, and no sitting had to complete for the first two to ship.
+    ///
+    /// The presidential libraries and the non-NARA tail are still absent entirely (D2, D11).
+    static let current = RepositoryFactTable(rows: [nacp])
+
+    /// National Archives at College Park — the only row with confirmed facts today.
+    ///
+    /// The date is the owner's confirmation, not the build date: D7's stamp answers "when was this
+    /// last known true", and tying it to a build would refresh itself without anyone checking.
+    static let nacp: RepositoryFactRow = {
+        let confirmed = DateComponents(calendar: .init(identifier: .gregorian),
+                                       timeZone: TimeZone(secondsFromGMT: 0),
+                                       year: 2026, month: 8, day: 22).date
+        return RepositoryFactRow(
+            id: ResearchFacilityResolver.collegePark,
+            displayName: ResearchFacilityResolver.collegePark,
+            address: VerifiedFact(value: "8601 Adelphi Road\nCollege Park, MD 20740",
+                                  verifiedDate: confirmed),
+            inquiryEmail: VerifiedFact(value: "Archives2reference@nara.gov", verifiedDate: confirmed),
+            // Unverified: see the note on `current`.
+            appointmentPolicy: .unverified("strongly encouraged for College Park"),
+            links: [])
+    }()
 
     /// The row for a repository, or `nil` — which is every lookup at T-1.
     func row(for repository: String) -> RepositoryFactRow? {

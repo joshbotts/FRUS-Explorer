@@ -166,17 +166,37 @@ struct TripChecklistTests {
 @Suite("Repository fact table (#830 T-1)")
 struct RepositoryFactTableTests {
 
-    /// **The constraint the whole T-0 gate rests on.** T-1 may not print an institutional fact the
-    /// owner has not confirmed, and the table shipping empty is what makes that enforceable rather
-    /// than aspirational.
-    @Test("The shipping table has no rows")
-    func shippingTableIsEmpty() {
-        #expect(RepositoryFactTable.current.rows.isEmpty, """
-            A curated repository row has shipped. Every row here is an institutional claim — an \
-            address, an inquiry email, an appointment policy — and T-1 may print none of them. If \
-            the owner has now confirmed some, this test changes deliberately, in the same commit.
+    /// **The constraint the whole T-0 gate rests on**, now at its second state.
+    ///
+    /// At T-1 this asserted the table was EMPTY, and said: "if the owner has now confirmed some,
+    /// this test changes deliberately, in the same commit." That happened on 2026-08-22 — the NACP
+    /// address and inquiry email were confirmed — so this now pins exactly what is confirmed and
+    /// exactly what is not, which is the stronger claim.
+    @Test("Only owner-confirmed facts are printable, and the rest stay dark")
+    func onlyConfirmedFactsArePrintable() throws {
+        let row = try #require(
+            RepositoryFactTable.current.row(for: ResearchFacilityResolver.collegePark))
+        #expect(row.address.printable?.contains("8601 Adelphi Road") == true, """
+            The NACP address is confirmed (2026-08-22) and must print — A2's one-address rule is \
+            the inquiry mechanic and a generated draft needs a recipient.
             """)
-        #expect(RepositoryFactTable.current.row(for: "Truman Library") == nil)
+        #expect(row.inquiryEmail.printable == "Archives2reference@nara.gov")
+        #expect(row.appointmentPolicy.printable == nil, """
+            The appointment policy printed. A1 distinguishes DC-area rooms from other facilities, \
+            and which applies is per-row policy the owner has NOT confirmed — so the packet must \
+            ask the researcher to check rather than assert.
+            """)
+    }
+
+    /// The libraries and the non-NARA tail are still entirely absent (D2, D11).
+    @Test("No presidential library has a curated row yet")
+    func librariesRemainUncurated() {
+        for library in ["Truman Library", "Kennedy Library", "Johnson Library"] {
+            #expect(RepositoryFactTable.current.row(for: library) == nil, """
+                \(library) has a curated row. D2 scopes the libraries to hand-curation and none has \
+                been confirmed; a library that resolved here would print an address nobody checked.
+                """)
+        }
     }
 
     /// An unverified fact is omitted, never printed undated.
