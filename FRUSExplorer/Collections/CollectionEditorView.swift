@@ -286,6 +286,29 @@ struct CollectionEditorView: View {
             iOSBody
             #endif
         }
+        // #830: attached to the SHARED body, not to a per-platform one.
+        //
+        // This sheet shipped inside `macBody`'s chain while the only control that sets
+        // `showTripPacket` lives in `iPhoneAddMenu` — so on iOS the button set a flag nothing
+        // observed, and on macOS the presenter had no control to open it. The entry point was dead
+        // on every platform from the day it landed, and no test caught it because nothing
+        // constructs `TripPacketSheet`.
+        //
+        // The other four sheets here are deliberately left as per-platform pairs: they are
+        // pre-existing and each body genuinely has its own copy. This one has a single presenter
+        // precisely so the two halves cannot drift apart again.
+        .sheet(isPresented: $showTripPacket) {
+            // From the ENTRIES rather than from `orderedDocumentKeys`, which is a `[String]` of
+            // composite keys — splitting those back apart would break on any id containing "/".
+            TripPacketSheet(
+                documents: sortedEntries
+                    .filter { $0.entryKind == .document
+                        && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) },
+                title: collection.name,
+                researchQuestion: nil)
+                .environment(appState)
+        }
         .transientToast($addDocumentsToast)
         // Reload document headers and per-document dates whenever the entry list changes.
         // (The Group has exactly one child per platform, so this task attaches once.)
@@ -452,18 +475,6 @@ struct CollectionEditorView: View {
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
                 addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
             }
-        }
-        .sheet(isPresented: $showTripPacket) {
-            // From the ENTRIES rather than from `orderedDocumentKeys`, which is a `[String]` of
-            // composite keys — splitting those back apart would break on any id containing "/".
-            TripPacketSheet(
-                documents: sortedEntries
-                    .filter { $0.entryKind == .document
-                        && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) },
-                title: collection.name,
-                researchQuestion: nil)
-                .environment(appState)
         }
         .sheet(isPresented: $showAddHighlights) {
             CollectionAddHighlightsSheet(
@@ -1379,6 +1390,19 @@ struct CollectionEditorView: View {
                 Label(String(localized: "collection.add.highlights",
                              defaultValue: "Add Highlighted Passages…"),
                       systemImage: "text.quote")
+            }
+            .disabled(orderedDocumentKeys.isEmpty)
+            Divider()
+            // #830: the same item `iPhoneAddMenu` carries, reusing the SAME localization key so the
+            // two menus cannot state different things. It was absent here, so at regular width —
+            // every iPad, and the larger iPhones in landscape — a collection had no route to the
+            // packet at all.
+            Button {
+                showTripPacket = true
+            } label: {
+                Label(String(localized: "collection.planVisit",
+                             defaultValue: "Plan an Archive Visit…"),
+                      systemImage: "building.columns")
             }
             .disabled(orderedDocumentKeys.isEmpty)
             Menu {

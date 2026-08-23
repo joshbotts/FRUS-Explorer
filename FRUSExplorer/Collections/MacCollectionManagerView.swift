@@ -631,6 +631,10 @@ private struct CollectionDetailPane: View {
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights = false
     @State private var showExport = false
+    /// #830: the packet presenter for this collection. macOS had the sheet in
+    /// `CollectionEditorView.macBody` and no control anywhere to open it; this pane is where
+    /// macOS actually edits a collection, so the control and the presenter both belong here.
+    @State private var showTripPacket = false
     /// Composer v2 (§B): the ⚙ Collection settings popover — the metadata / front-matter /
     /// composition surface that replaces the fixed header + inline Composition/Front-Matter
     /// disclosures (which are gone).
@@ -739,6 +743,18 @@ private struct CollectionDetailPane: View {
             .environment(appState)
         }
         .transientToast($addDocumentsToast)
+        .sheet(isPresented: $showTripPacket) {
+            // From the ENTRIES, matching `CollectionEditorView` — `orderedDocumentKeys` is a
+            // `[String]` of composite keys and splitting those apart breaks on any id containing "/".
+            TripPacketSheet(
+                documents: sortedEntries
+                    .filter { $0.entryKind == .document
+                        && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) },
+                title: collection.name,
+                researchQuestion: nil)
+                .environment(appState)
+        }
         .sheet(isPresented: $showAddHighlights) {
             CollectionAddHighlightsSheet(
                 documentKeys: orderedDocumentKeys,
@@ -1293,6 +1309,15 @@ private struct CollectionDetailPane: View {
                 Button { showAddHighlights = true } label: {
                     Label(String(localized: "collection.ribbon.addPassages", defaultValue: "Add Passages…"),
                           systemImage: "text.quote")
+                }
+                .disabled(orderedDocumentKeys.isEmpty)
+                Divider()
+                // #830: the macOS half of the collection entry point, absent until now. Reuses the
+                // iOS menus' localization key so the three surfaces cannot state different things.
+                Button { showTripPacket = true } label: {
+                    Label(String(localized: "collection.planVisit",
+                                 defaultValue: "Plan an Archive Visit…"),
+                          systemImage: "building.columns")
                 }
                 .disabled(orderedDocumentKeys.isEmpty)
                 Divider()
