@@ -68,12 +68,15 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 /// (``TripChecklist``).
 ///
 /// **It prints no institutional fact the owner has not confirmed.** Those live in
-/// ``RepositoryFactTable``, which ships with zero rows — so a chapter for a presidential library
-/// renders its heading and its confirm-before-you-travel prompt (D11) and nothing else. The packet
-/// builds, and the gap is visible rather than filled with a guess.
+/// ``RepositoryFactTable``, which ships ONE row (College Park, address and inquiry email confirmed
+/// 2026-08-22) — and even there, a field with no `verifiedDate` is unprintable, so the appointment
+/// policy is omitted rather than printed undated. A chapter for a presidential library renders its
+/// heading and its confirm-before-you-travel prompt (D11) and nothing else. The packet builds, and
+/// the gap is visible rather than filled with a guess.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
+///   1.1 — Session 2026-08-22: #830 T-3, the A6 substitutes aggregate
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.

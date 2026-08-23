@@ -37,6 +37,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2, chapters 1-3, 5-7
+///   1.1 — Session 2026-08-22: #830 T-3, chapter 4 (mandatory substitutes, A6)
 struct TripPacketExporter {
 
     /// The packet to render.

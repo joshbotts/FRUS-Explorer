@@ -79,6 +79,15 @@ enum SubstituteRoute: String, Sendable, Equatable, CaseIterable {
 ///    a `.tif` for a range and a whole-roll `.pdf`, neither of which is a usable citation target in
 ///    a printed packet.
 ///
+/// ## Why these URLs carry no `verifiedDate`, and D12 is not being dodged
+/// D12 stamps the links in ``RepositoryFactTable`` because they are *guidance pages* — prose that
+/// can be reorganised, rewritten, or quietly stop saying what the packet claims about it, which a
+/// status code cannot detect. A `catalog.archives.gov/id/<naId>` URL is not that: it is a record
+/// **identifier** rendered as a link, the app already emits it from `NARACatalogClient` and from
+/// each roll's own `catalogURL`, and NARA's citation guidance prints this exact form. Stamping an
+/// identifier would imply a freshness claim about a permalink and would put a date on 624 rows that
+/// no one could ever re-check.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-3, chapter 4
 struct MandatorySubstitutes: Equatable, Sendable {

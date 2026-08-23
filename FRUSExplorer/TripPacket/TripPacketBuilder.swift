@@ -43,6 +43,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
+///   1.1 — Session 2026-08-22: #830 T-3, per-document cited file numbers for chapter 4
 @MainActor
 enum TripPacketBuilder {
 
