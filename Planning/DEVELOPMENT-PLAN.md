@@ -8319,3 +8319,46 @@ drills that matter route through the seam and work everywhere.
 
 7 new unit tests. Docs: iOS §6.1g + the macOS sidebar paragraph. The root grid reaches
 the clean 2×2 the 2a design drew.
+
+## Session 2026-08-23 — #1051 B-6: the subject axis completes, and the polish sweep
+
+**The `.group(categoryKey:)` arrival lands.** The Topic Index now answers the request
+case that shipped inert with #1023: arriving with a bucket key narrows the index to that
+topic area, shown as a removable chip ("Topic area: Cold War — 5 topics"). Resolution is
+pure and test-pinned (`SubjectIndexGrouping.groupFilter(forCategoryKey:rows:)` +
+`filtered(_:by:)`): the key is the `SubjectBucketVocabulary` durable form (category,
+U+001F, subcategory), a malformed or stale key resolves to `nil` — the index then shows
+everything, the same honest fallback `.all` is, never an empty list under a phantom chip
+— and the chip label mirrors the vocabulary's own disambiguation rule (bare sub-category
+when unique, `category · subcategory` for the thirteen "General" buckets). A live-bundle
+test proves every key the shipped vocabulary can mint lands on the shipped catalogue.
+
+**One plan premise was false, and the sender moved.** The plan named the results-facet
+section header as "the natural door" for sending `.group`. Recon proved the facet panel
+structurally cannot: its Subjects section knows nothing narrower than `.all` (per-row
+facet doors are the deferred P2-i). The sender lives in `SubjectDetailSheet` instead —
+the one surface that knows its subject's (category, subcategory) bucket exactly — as an
+**All «area» topics** button, with the key minted by `vocabulary.id(category:subcategory:)`
++ `key(at:)`, never hand-assembled, and the door withheld on a digest mismatch rather
+than sending a key that cannot land. #833 ordering on both platforms.
+
+**The detail sheet gains its covering volumes**: complete membership from the document
+index (`volumeIds(forSubjectRef:)`, the #1027 resolver — never the profiles' top-15
+cut), previewed to six with a Show-all disclosure; rows open the volume in the browser
+through the pivot sheet's hand-off shape.
+
+**The polish sweep** re-counted the `FRUSExplorerApp.swift` scene doc-comment table
+against the scene body it describes and found it ten scenes stale: iOS is 12 auxiliary
+scenes, not 5 (the CW-9 analytics ports and the Word Cloud/semantic-map groups were
+never added); macOS is 27, not 22 — `"frus.subjects"` (#1023), the two Projects groups
+(#377), plus two type flips the table missed when they happened (`"frus.crossReferenceGraph"`
+to `WindowGroup(id:for:)` in M-2, `"about"` to a marker-value group in #824(3)) and one
+row-order drift. Every figure in the rewrite was verified against a declaration-by-
+declaration recount, and the table's own history line now records this drift too. Three
+downstream comments corrected in the same pass (the semantic-map MARK's claim about the
+table, the About-trap "28 scenes" wording in two files' fixed-count phrasing, and
+`SceneEnvironmentAuditTests`' "three helper properties" — there are nine).
+
+5 new unit tests (11 in the grouping suite total). Docs: iOS §6.2a + macOS §6.4 gain the
+covering-volumes list, the topic-area door, and the chip. B-7 remains gated on the
+build-42 semantic-map verdict; if that demotes the map, the program closes here.

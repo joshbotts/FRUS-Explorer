@@ -1,7 +1,7 @@
 # Browse Axes — Development Plan (#1051)
 
-**Status:** Live plan — ready to execute. All owner decisions are settled (§2); no open questions block any session.
-**Date:** 2026-08-22
+**Status:** Sessions B-1 (PR #1060), B-2 (#1064), B-3 (#1065), B-4 (#1066), B-5 (#1067), and B-6 shipped. Only B-7 remains, gated on the build-42 semantic-map verdict; if that verdict demotes the map, the program closed at B-6.
+**Date:** 2026-08-22 (status updated 2026-08-23)
 **Inputs:**
 - `Planning/Browse-Axes-Design-Requirements.md` (the feasibility study; R-1..R-4, A-1..A-8, engineering constraints — all still binding)
 - The design handoff (spec text mirrored at `Planning/browse-axes-design/Design-Handoff-README.md`; the authoritative annotated canvas `Browse Axes Proposals.dc.html` + 17 screenshots live in the owner's iCloud: `2026-06-30 FRUS Explorer Build 26 screenshots/Design proposals for requirements.zip`)
@@ -156,9 +156,9 @@ The Browse tab (iOS) and Corpus Browser window (macOS) gain: a search-first corp
 
 ## Session B-6 — Subject-axis completions (A-7) + program polish
 
-- Wire `SubjectExplorerRequest.group(categoryKey:)` end-to-end: a category-grouped presentation in `SubjectIndexView.load()` + at least one sender (the results-facet section header is the natural door).
-- `SubjectDetailSheet` gains its covering-volumes list (`volumeIds(forSubjectRef:)` + R-1 join) beside the existing count.
-- Program polish sweep: breadcrumb labels for every new level; hand-off drains verified from both `.onChange` and `.onAppear`; the stale scene doc-comment table in `FRUSExplorerApp.swift:55–105` updated if any scene metadata drifted; DEVELOPMENT-PLAN.md session logs for B-1..B-6; requirements-doc §7 annotated as resolved.
+- Wire `SubjectExplorerRequest.group(categoryKey:)` end-to-end: a category-grouped presentation in `SubjectIndexView.load()` + at least one sender ~~(the results-facet section header is the natural door)~~. **Shipped 2026-08-23, with one premise corrected:** the facet section header structurally cannot send `.group` — its Subjects section knows nothing narrower than `.all` (per-row facet doors are the deferred P2-i). The sender is `SubjectDetailSheet`'s **All «area» topics** button, the one surface that knows its bucket exactly; arrival renders as a removable topic-area chip, and a malformed/stale key honestly falls back to the full index.
+- `SubjectDetailSheet` gains its covering-volumes list (`volumeIds(forSubjectRef:)` + R-1 join) beside the existing count. **Shipped** — complete membership, six-row preview + Show-all, rows open the volume in the browser.
+- Program polish sweep: breadcrumb labels for every new level *(verified — all 18 levels label)*; hand-off drains verified from both `.onChange` and `.onAppear` *(verified intact)*; the stale scene doc-comment table in `FRUSExplorerApp.swift:55–105` updated if any scene metadata drifted *(it had — ten scenes stale; recounted to iOS 12 / macOS 27 against a declaration-by-declaration recount, plus three downstream comment fixes)*; DEVELOPMENT-PLAN.md session logs for B-1..B-6 *(done)*; requirements-doc §7 annotated as resolved *(done in PR #1059)*.
 
 ---
 

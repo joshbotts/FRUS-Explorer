@@ -77,6 +77,55 @@ enum SubjectIndexGrouping {
                 return lhs.letter < rhs.letter
             }
     }
+
+    // MARK: The .group arrival (#1051 B-6)
+
+    /// An active topic-area narrowing — the `.group(categoryKey:)` arrival's state.
+    struct GroupFilter: Equatable {
+        /// The bucket's top-level category.
+        let category: String
+        /// The bucket's sub-category.
+        let subcategory: String
+        /// The display label — the bare sub-category when it names one bucket, the
+        /// `category · subcategory` pair when the sub-category is shared (all thirteen
+        /// "General" buckets), mirroring `SubjectBucketVocabulary.label(at:)`.
+        let label: String
+    }
+
+    /// Resolves a `.group(categoryKey:)` arrival against the loaded rows.
+    ///
+    /// The key is the `SubjectBucketVocabulary` durable form — `category`, U+001F,
+    /// `subcategory` — split the way the vocabulary itself splits it. A malformed key,
+    /// or one naming a bucket no loaded subject belongs to (a stale key from an older
+    /// data drop), resolves to `nil`: the index then shows everything, the same honest
+    /// fallback `.all` is.
+    ///
+    /// - Parameters:
+    ///   - key: The durable bucket key.
+    ///   - rows: The loaded catalogue rows.
+    /// - Returns: The filter, or `nil` when the key cannot land.
+    static func groupFilter(forCategoryKey key: String, rows: [SubjectIndexRow]) -> GroupFilter? {
+        let parts = key.split(separator: "\u{1F}", maxSplits: 1, omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return nil }
+        let category = String(parts[0])
+        let subcategory = String(parts[1])
+        guard rows.contains(where: { $0.category == category && $0.subcategory == subcategory })
+        else { return nil }
+        let shared = rows.contains { $0.subcategory == subcategory && $0.category != category }
+        return GroupFilter(category: category, subcategory: subcategory,
+                           label: shared ? "\(category) · \(subcategory)" : subcategory)
+    }
+
+    /// The rows inside a topic area, or everything when no filter is active.
+    ///
+    /// - Parameters:
+    ///   - rows: The loaded catalogue rows.
+    ///   - filter: The active narrowing, or `nil`.
+    /// - Returns: The rows the index should section.
+    static func filtered(_ rows: [SubjectIndexRow], by filter: GroupFilter?) -> [SubjectIndexRow] {
+        guard let filter else { return rows }
+        return rows.filter { $0.category == filter.category && $0.subcategory == filter.subcategory }
+    }
 }
 
 // MARK: - SubjectIndexView
@@ -102,6 +151,13 @@ enum SubjectIndexGrouping {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #1023
+///   1.1 — #1051 B-6: the `.group(categoryKey:)` arrival lands — a topic-area chip
+///          narrows the index (stale keys degrade to the whole index); arrivals into a
+///          LIVE view re-apply via the `request` observer (also closing the pre-existing
+///          `.subject` re-arrival gap); `SubjectDetailSheet` gains its covering-volumes
+///          list (complete membership, previewed) and the "All «area» topics" door — the
+///          first `.group` producer, placed here because this sheet knows its bucket
+///          exactly where the facet panel's section header structurally cannot
 struct SubjectIndexView: View {
 
     /// Where the reader arrived — the whole index, a bucket, or one subject.
@@ -116,8 +172,13 @@ struct SubjectIndexView: View {
     @State private var rows: [SubjectIndexGrouping.SubjectIndexRow] = []
     @State private var query = ""
     @State private var selected: SubjectIndexGrouping.SubjectIndexRow?
+    /// The active topic-area narrowing — a `.group(categoryKey:)` arrival (#1051 B-6),
+    /// cleared by the chip's ✕. A stale or malformed key resolves to `nil` (= the whole
+    /// index, the same honest fallback `.all` is).
+    @State private var groupFilter: SubjectIndexGrouping.GroupFilter?
 
     var body: some View {
+        let visibleRows = SubjectIndexGrouping.filtered(rows, by: groupFilter)
         List {
             if rows.isEmpty {
                 unavailableSection
@@ -131,7 +192,11 @@ struct SubjectIndexView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                ForEach(SubjectIndexGrouping.sections(from: rows, query: query)) { section in
+                if let groupFilter {
+                    groupFilterChip(groupFilter, count: visibleRows.count)
+                }
+
+                ForEach(SubjectIndexGrouping.sections(from: visibleRows, query: query)) { section in
                     Section(section.letter) {
                         ForEach(section.subjects) { row in
                             Button { selected = row } label: { rowLabel(row) }
@@ -147,10 +212,46 @@ struct SubjectIndexView: View {
         .overlay { emptyResultsOverlay }
         .navigationTitle(String(localized: "subjects.index.title", defaultValue: "Topics"))
         .task { load() }
+        // The request can change while this view is LIVE (a second hand-off into the open
+        // macOS Topics window, or a new arrival at the already-selected Browse level):
+        // `load()`'s rows guard makes it once-only, so arrivals re-apply here (#1051 B-6 —
+        // this also covers the pre-existing `.subject` re-arrival gap the recon found).
+        .onChange(of: request) { _, newRequest in
+            apply(newRequest)
+        }
         .sheet(item: $selected) { row in
             SubjectDetailSheet(subject: row)
                 .environment(appState)
                 .environment(\.sceneID, sceneID)
+        }
+    }
+
+    /// The active topic-area chip: what the index is narrowed to, and the one-tap ✕ out.
+    @ViewBuilder
+    private func groupFilterChip(_ filter: SubjectIndexGrouping.GroupFilter, count: Int) -> some View {
+        Section {
+            HStack(spacing: 8) {
+                Image(systemName: "square.grid.2x2")
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true)
+                Text(String(localized: "subjects.index.groupFilter",
+                            defaultValue: "Topic area: \(filter.label) — \(count) topics"))
+                    .font(.caption)
+                Spacer(minLength: 4)
+                Button {
+                    groupFilter = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(
+                    String(localized: "subjects.index.groupFilter.clear.a11y",
+                           defaultValue: "Show all topics")
+                )
+                .help(String(localized: "subjects.index.groupFilter.clear.help",
+                             defaultValue: "Clear the topic-area narrowing"))
+            }
         }
     }
 
@@ -196,7 +297,9 @@ struct SubjectIndexView: View {
     @ViewBuilder
     private var emptyResultsOverlay: some View {
         if !rows.isEmpty,
-           SubjectIndexGrouping.sections(from: rows, query: query).isEmpty {
+           SubjectIndexGrouping.sections(
+               from: SubjectIndexGrouping.filtered(rows, by: groupFilter),
+               query: query).isEmpty {
             ContentUnavailableView.search(text: query)
         }
     }
@@ -208,8 +311,20 @@ struct SubjectIndexView: View {
                 ref: $0.ref, name: $0.name, category: $0.category, subcategory: $0.subcategory,
                 documentCount: $0.documentCount, volumeCount: $0.volumeCount)
         }
-        if case .subject(let ref, _) = request {
+        apply(request)
+    }
+
+    /// Lands an arrival: the whole index, one topic area, or one subject (#1051 B-6).
+    /// Called from `load()` and from the `request` observer, so a hand-off into a live
+    /// view lands the same way one into a fresh view does.
+    private func apply(_ request: SubjectExplorerRequest) {
+        switch request {
+        case .all:
+            break
+        case .subject(let ref, _):
             selected = rows.first { $0.ref == ref }
+        case .group(let categoryKey):
+            groupFilter = SubjectIndexGrouping.groupFilter(forCategoryKey: categoryKey, rows: rows)
         }
     }
 }
@@ -244,6 +359,16 @@ struct SubjectDetailSheet: View {
     /// count fails, which the caption renders as "not counted" rather than as zero.
     @State private var deviceCount: Int?
     @State private var counting = true
+    /// The covering volumes (#1051 B-6) — COMPLETE membership from the document index
+    /// (`volumeIds(forSubjectRef:)`, the #1027 resolver), never the profiles' top-15 cut.
+    @State private var coveringVolumeIds: [String] = []
+    /// Whether the covering-volumes section shows past its preview cap.
+    @State private var showsAllVolumes = false
+
+    /// How many covering volumes show before "Show all" (#1051 B-6). A subject can cover
+    /// most of the series (War reaches hundreds of volumes); the sheet previews, the
+    /// toggle discloses.
+    private static let volumePreviewCap = 6
 
     var body: some View {
         NavigationStack {
@@ -266,6 +391,8 @@ struct SubjectDetailSheet: View {
                                 defaultValue: "The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return. Topics are detected automatically from the text, not editorial subject headings."))
                 }
 
+                coveringVolumesSection
+
                 Section {
                     Button {
                         findDocuments()
@@ -275,6 +402,21 @@ struct SubjectDetailSheet: View {
                               systemImage: "magnifyingglass")
                     }
                     .disabled(!appState.isBootComplete)
+
+                    // #1051 B-6: the .group door — this sheet knows its subject's
+                    // (category, subcategory) bucket exactly, so it may send what the
+                    // results facet's section header structurally cannot (that header
+                    // knows nothing narrower than .all, and per-row facet doors are the
+                    // deferred P2-i). Lands on the index narrowed to the topic area.
+                    if let key = bucketKey {
+                        Button {
+                            browseTopicArea(key)
+                        } label: {
+                            Label(String(localized: "subjects.detail.browseArea",
+                                         defaultValue: "All \(subject.subcategory) topics"),
+                                  systemImage: "square.grid.2x2")
+                        }
+                    }
                 } footer: {
                     if !appState.isBootComplete {
                         Text(String(localized: "subjects.detail.preparing",
@@ -291,10 +433,108 @@ struct SubjectDetailSheet: View {
                     Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
                 }
             }
-            .task { await countOnThisDevice() }
+            .task {
+                coveringVolumeIds = DocumentSubjectStore.shared?
+                    .volumeIds(forSubjectRef: subject.ref).sorted() ?? []
+                await countOnThisDevice()
+            }
         }
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 460)
+        #endif
+    }
+
+    /// The covering-volumes list (#1051 B-6): complete membership joined to the manifest,
+    /// previewed to the cap with a Show-all disclosure. Rows open the volume in the
+    /// browser through the same hand-off the volume pivot sheet uses — safe to fire
+    /// beside `dismiss()` because the destination is the Browse tab / corpus-browser
+    /// window, not another sheet (the `VolumeSubjectVolumesSheet.open` precedent; the
+    /// sheet's Search and topic-area doors keep the #833 dismiss-first ordering instead).
+    @ViewBuilder
+    private var coveringVolumesSection: some View {
+        if !coveringVolumeIds.isEmpty {
+            let visible = showsAllVolumes
+                ? coveringVolumeIds
+                : Array(coveringVolumeIds.prefix(Self.volumePreviewCap))
+            Section {
+                ForEach(visible, id: \.self) { volumeId in
+                    Button {
+                        openVolume(volumeId)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
+                                .font(.callout)
+                                .multilineTextAlignment(.leading)
+                            Text(volumeId)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                        // Both modifiers, in this order — the #312 full-row tap-target idiom.
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(String(localized: "subjects.detail.volumeRow.hint",
+                                              defaultValue: "Opens this volume in the browser"))
+                }
+                if coveringVolumeIds.count > Self.volumePreviewCap {
+                    Button {
+                        showsAllVolumes.toggle()
+                    } label: {
+                        Text(showsAllVolumes
+                             ? String(localized: "subjects.detail.volumes.fewer",
+                                      defaultValue: "Show fewer")
+                             : String(localized: "subjects.detail.volumes.all",
+                                      defaultValue: "Show all \(coveringVolumeIds.count) volumes"))
+                            .font(.callout)
+                    }
+                    .buttonStyle(.borderless)
+                }
+            } header: {
+                Text(String(localized: "subjects.detail.volumes.header",
+                            defaultValue: "Covering volumes"))
+            } footer: {
+                Text(String(localized: "subjects.detail.volumes.footer",
+                            defaultValue: "Complete membership across the series — including volumes you have not downloaded."))
+            }
+        }
+    }
+
+    /// The durable bucket key for this subject's topic area, from the vocabulary itself
+    /// (never hand-assembled — the key format is the vocabulary's own). `nil` on a digest
+    /// mismatch, which withholds the door rather than sending a key that cannot land.
+    private var bucketKey: String? {
+        guard let vocabulary = DocumentSubjectStore.shared?.bucketVocabulary,
+              let id = vocabulary.id(category: subject.category, subcategory: subject.subcategory)
+        else { return nil }
+        return vocabulary.key(at: id)
+    }
+
+    /// Opens a covering volume in the browser (the pivot sheet's `open` shape).
+    private func openVolume(_ volumeId: String) {
+        appState.openBrowseVolume(volumeId, from: sceneID)
+        #if os(macOS)
+        openWindow.fronting(id: "frus.corpusBrowser")
+        #else
+        appState.openTab(.browse, from: sceneID)
+        #endif
+        dismiss()
+    }
+
+    /// Sends the `.group` arrival back to the index (#1051 B-6), with the #833 ordering.
+    private func browseTopicArea(_ key: String) {
+        #if os(macOS)
+        appState.openSubjectExplorer(.group(categoryKey: key), from: sceneID)
+        openWindow.fronting(id: "frus.subjects")
+        dismiss()
+        #else
+        // Dismiss first, hand off on the next turn — the presenting index consumes the
+        // request through its host's drain and re-applies it (#833).
+        dismiss()
+        Task { @MainActor in
+            appState.openSubjectExplorer(.group(categoryKey: key), from: sceneID)
+        }
         #endif
     }
 
