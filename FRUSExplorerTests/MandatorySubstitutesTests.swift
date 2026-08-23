@@ -148,13 +148,13 @@ struct MandatorySubstitutesTests {
             [.init(identifier: "763.72/50", year: 1918)], ranges: ranges)
 
         #expect(result.rows.count == 1)
-        #expect(result.rows[0].naId == "A")
-        #expect(result.rows[0].isSoleClaimant)
-        #expect(result.rows[0].objectCount == 802)
-        #expect(result.rows[0].documentCount == 1)
+        #expect(result.rows.first?.naId == "A")
+        #expect(result.rows.first?.isSoleClaimant == true)
+        #expect(result.rows.first?.objectCount == 802)
+        #expect(result.rows.first?.documentCount == 1)
         #expect(result.documentsTested == 1)
         #expect(result.documentsWithSubstitute == 1)
-        #expect(result.rows[0].catalogURL?.absoluteString == "https://catalog.archives.gov/id/A")
+        #expect(result.rows.first?.catalogURL?.absoluteString == "https://catalog.archives.gov/id/A")
     }
 
     /// NARA's digitisation is layered, so one serial legitimately sits inside several ranges. Every
@@ -227,7 +227,7 @@ struct MandatorySubstitutesTests {
             [.init(identifier: "7187", year: 1908)], numericalFile: numerical)
 
         #expect(result.rows.map(\.naId) == ["R1"])
-        #expect(result.rows[0].objectCount == 0)
+        #expect(result.rows.first?.objectCount == 0)
     }
 
     // MARK: - The denominator
@@ -281,7 +281,7 @@ struct MandatorySubstitutesTests {
         ], ranges: ranges)
 
         #expect(result.rows.map(\.naId) == ["ZZZ", "AAA"])
-        #expect(result.rows[0].documentCount == 2)
+        #expect(result.rows.first?.documentCount == 2)
     }
 
     // MARK: - The extractor's scope
