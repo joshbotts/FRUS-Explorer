@@ -126,11 +126,14 @@ struct BrowserView: View {
     @State private var analyticsParameters: AnalyticsParameters?
     @State private var showPersonAnalytics = false
     @State private var showCrossRefAnalytics = false
-    /// Semantic Analytics (the map, its lenses and slices).
-    @State private var showSemanticAnalytics = false
-    /// The scope and lens a continued map should open with (UI review F-28), or `nil` for a map
-    /// the reader opened here.
-    @State private var continuedSemanticMap: SemanticMapRequest?
+    /// Semantic Analytics (the map, its lenses and slices), presented as ONE item that
+    /// carries its continuation — the #862 rule. The first shape here was
+    /// `isPresented:` Bool beside a sibling `continuedSemanticMap` @State, and the B-7
+    /// cluster focus found the trap live on device: the sheet's content closure read the
+    /// sibling as `nil` even though the presenting function had just written it, so the
+    /// map opened whole-corpus and the focus silently vanished. Carrying the request IN
+    /// the item is what makes the write and the presentation one fact.
+    @State private var semanticMapSheet: SemanticMapSheetItem?
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
     // #498: every one of these sheets presents a view that opens its OWN NavigationStack, which
@@ -255,14 +258,17 @@ struct BrowserView: View {
                 // same defect). One line here covers every field on the sheet.
                 .statusBarHidden(false)
         }
-        .sheet(isPresented: $showSemanticAnalytics) {
+        .sheet(item: $semanticMapSheet) { sheet in
             // A sheet, matching its siblings — and note this is an iOS-only presentation. On macOS
             // the same view is a Window scene, because an MTKView in a SwiftUI sheet there draws,
             // presents, and never reaches the screen. That is an AppKit `SheetPresentationWindow`
             // behaviour; UIKit presents a sheet as a view controller and the map renders. Verified
             // on the simulator rather than assumed, because the macOS failure looked exactly like
             // this and cost two sessions.
-            SemanticAnalyticsView(appState: appState, continued: continuedSemanticMap)
+            //
+            // `item:` rather than `isPresented:` + a sibling request var — see the state
+            // declaration for the measured #862 staleness this closes.
+            SemanticAnalyticsView(appState: appState, continued: sheet.request)
                 .environment(appState)
                 .modelContainer(modelContext.container)
                 .environment(\.sceneID, sceneID)
@@ -882,6 +888,10 @@ struct BrowserView: View {
             case .corpusDocuments(let id, _): BrowseCorpusDocumentsLevel(vm: vm, corpusId: id)
             case .archives:          BrowseArchivesLevel(vm: vm)
             case .archivalCollection(let id, _): BrowseArchivalCollectionLevel(vm: vm, collectionId: id)
+            case .clusters:          BrowseClustersLevel(vm: vm)
+            case .clusterDocuments(let id, let label):
+                BrowseClusterDocumentsLevel(vm: vm, clusterId: id, label: label,
+                                            onSeeMap: { presentSemanticMap($0) })
             }
         }
         // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every
@@ -1082,8 +1092,7 @@ struct BrowserView: View {
             appState.openAuxWindow(request ?? .wholeCorpus, from: sceneID, using: openWindow)
             return
         }
-        continuedSemanticMap = request
-        showSemanticAnalytics = true
+        semanticMapSheet = SemanticMapSheetItem(request: request)
     }
 
     /// Chronology twin of ``consumePendingAnalytics`` — same both-ways contract (#750).
@@ -1193,6 +1202,25 @@ private struct SubseriesRowView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
     }
+}
+
+// MARK: - SemanticMapSheetItem
+
+/// The semantic-map sheet's presentation item (#1051 B-7): the continuation request,
+/// carried IN the item per the #862 rule — an `isPresented:` Bool beside a sibling
+/// request `@State` measurably presented the sheet with the sibling still `nil`, which
+/// silently dropped the cluster focus the drill had just minted.
+///
+/// A fresh `id` per presentation, so re-presenting — even with an equal request —
+/// replaces the sheet exactly as the Bool used to.
+///
+/// Version history:
+///   1.0 — #1051 B-7: initial implementation
+struct SemanticMapSheetItem: Identifiable {
+    /// One identity per presentation.
+    let id = UUID()
+    /// The continuation to open the map with, or `nil` for the whole-corpus map.
+    let request: SemanticMapRequest?
 }
 
 #endif // os(iOS)

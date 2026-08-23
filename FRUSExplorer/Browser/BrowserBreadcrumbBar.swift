@@ -290,6 +290,10 @@ extension BrowserViewModel.BrowserLevel {
             return String(localized: "browser.breadcrumb.archives", defaultValue: "Archives")
         case .archivalCollection(_, let name):
             return name
+        case .clusters:
+            return String(localized: "browser.breadcrumb.clusters", defaultValue: "Clusters")
+        case .clusterDocuments(_, let label):
+            return label
         }
     }
 }

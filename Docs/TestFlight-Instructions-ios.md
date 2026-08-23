@@ -44,5 +44,7 @@ Resizing an iPad window no longer crashes. A new volume scope now saves — it c
 8. Raise the semantic weight; judge matches, especially pre-1900 (long-press to record a verdict).
 9. iPad two-pane, both orientations.
 10. Unprinted pointers: does the ranking read sensibly?
+11. Browse ▸ Clusters: skim several clusters and open a few. Do the groupings read as coherent research leads, or as arbitrary piles? This feeds the same leads-or-noise verdict as item 4 — the list view exists so you can judge membership directly, not just the map's picture.
+12. In a cluster: **See on the semantic map** should land zoomed on that region with its card open; **Save as Working Corpus** on a big cluster should say it kept the first 7,500.
 
 Include device + iOS version, what you tapped, what you expected, what happened. Thanks for testing!

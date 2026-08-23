@@ -104,6 +104,12 @@ public final class BrowserViewModel {
         /// One archival collection's pushed detail (#1051 B-5). Identity is the
         /// authority record's stable string id; the name rides along for the breadcrumb.
         case archivalCollection(id: String, name: String)
+        /// The Semantic Clusters index (#1051 B-7, A-8).
+        case clusters
+        /// One cluster's document drill (#1051 B-7, R-3). Identity is the ARTIFACT's
+        /// cluster id — in-memory navigation only, never persisted (ids re-mint per
+        /// artifact generation); the label rides along for the breadcrumb.
+        case clusterDocuments(id: Int, label: String)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -126,6 +132,8 @@ public final class BrowserViewModel {
             case .corpusDocuments(let id, _): hasher.combine(15); hasher.combine(id)
             case .archives:            hasher.combine(16)
             case .archivalCollection(let id, _): hasher.combine(17); hasher.combine(id)
+            case .clusters:            hasher.combine(18)
+            case .clusterDocuments(let id, _): hasher.combine(19); hasher.combine(id)
             }
         }
 
@@ -150,6 +158,8 @@ public final class BrowserViewModel {
             case (.corpusDocuments(let a, _), .corpusDocuments(let b, _)): return a == b
             case (.archives, .archives): return true
             case (.archivalCollection(let a, _), .archivalCollection(let b, _)): return a == b
+            case (.clusters, .clusters): return true
+            case (.clusterDocuments(let a, _), .clusterDocuments(let b, _)): return a == b
             default: return false
             }
         }

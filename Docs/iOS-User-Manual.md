@@ -279,8 +279,9 @@ The root of the Browse tab opens with a **search field** over all 552 volumes �
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
 - **Archives** — volumes filed by where their documents came from (Section 6.1g).
+- **Clusters** — documents grouped by the language they share, computed from the text (Section 6.1h).
 
-Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f), with more doors arriving as the browse-axes program lands.
+Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f).
 
 ### 6.1a The Hierarchy
 
@@ -348,6 +349,18 @@ Nearly every FRUS document carries a printed **source note** saying which file i
 The two lenses sit **beside** each other on purpose: the app has no reliable mapping from a collection to a provenance type, so it shows both truthfully rather than nesting one under the other. The screen also states its limits up front — the counts describe the notes printed under documents (not every document), only about a quarter of sourced documents name a *collection* (most cite a central-file number, which is what the types lens holds), and the ~50 volumes that print no notes at all — mostly the pre-1906 annuals — can't appear here. For deeper archival analysis (era rankings, co-citation networks, central-file classes), the **Archival Analytics** tool in the Analysis menu remains the instrument.
 
 [SCREENSHOT: the Archives axis — the Provenance Types doors with counts; the Collections lens; a collection's detail reached by push with its citing volumes.]
+
+### 6.1h Clusters
+
+The **Clusters** door browses the corpus the way a language model read it: 179 groups of documents whose language reads alike, computed from the text itself rather than chosen by an editor. This is the same grouping the **semantic map** (Section 15.6) draws as coloured regions — here it is a browsable list, largest cluster first.
+
+Each row shows the cluster's **label** — its four most distinctive sampled terms, such as *nanking · shanghai · hankow · chinese* — its document count, and a small **era histogram** showing when its volumes fall. Three honesty rules are printed right on the screen, and they matter: the labels are **sampled terms, not subject headings** (read them as a hint at what a group is about, never a claim about every document in it); about **28% of the corpus belongs to no cluster** and cannot be reached from this list; and the era bars reflect each **volume's coverage era**, not each document's own date.
+
+Tap a cluster for its documents, grouped by volume in coverage order. The list pages — the largest cluster holds 38,652 documents — with **Show more** extending it and a line saying how much is shown. Documents in indexed volumes open directly; the rest appear as the usual gray rows with a **Download** or **Index** button, never a dead end. Two actions sit above the list: **See on the semantic map** opens the map zoomed to this cluster with its region card ready, and **Save as Working Corpus** captures the membership as a fixed document set (Section 6.1f) — capped at 7,500 documents, with the truncation stated when a cluster is larger.
+
+Clusters are an **experimental, computed** view — the same "leads or noise?" question the semantic map asks. If a cluster's members read like a genuine research lead, that is worth knowing; if they read like an arbitrary pile, that is worth knowing too.
+
+[SCREENSHOT: the Clusters index — labels, counts, era histograms; a cluster's document drill with the coverage line and Save-as-Corpus; the semantic map focused on the cluster after "See on the semantic map".]
 
 ### 6.2 Top Subjects
 

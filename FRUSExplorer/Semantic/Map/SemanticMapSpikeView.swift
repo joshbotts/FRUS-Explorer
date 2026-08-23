@@ -490,6 +490,82 @@ final class SemanticMapModel {
     /// default camera has no reason to hop to the main actor to read a number.
     nonisolated static let revealHalfExtent: Float = 900
 
+    /// Focuses a region by artifact cluster id (#1051 B-7 — Browse's "See on the semantic map").
+    ///
+    /// The reveal's twin, with the reveal's `.notReady` deferral — a focus that arrives while
+    /// `prepare()` is still uploading 314,483 points is stored and re-applied, never dropped. The
+    /// one extra guard is the DIGEST: cluster ids re-mint per artifact generation, and this request
+    /// can ride window restoration across an app update that regenerated the artifact, so a focus
+    /// whose digest does not match the loaded artifact is refused (`.notFound` — the map opens
+    /// unfocused) rather than landing on whatever re-minted cluster now wears the number.
+    ///
+    /// - Parameters:
+    ///   - id: The artifact's cluster id.
+    ///   - digest: The provenance digest the id was minted against.
+    /// - Returns: What happened — `.notReady` means ask again, exactly as `reveal` documents.
+    @discardableResult
+    func focusRegion(id: Int, digest: String) -> RevealOutcome {
+        guard index != nil, BundledSemanticMap.index != nil else {
+            #if DEBUG
+            print("[SemanticMapModel] focusRegion(\(id)) deferred: not ready")
+            #endif
+            pendingFocusRegion = PendingRegionFocus(id: id, digest: digest)
+            return .notReady
+        }
+        pendingFocusRegion = nil
+        guard Self.regionFocusApplies(requestDigest: digest,
+                                      artifactDigest: BundledSemanticMap.index?.provenanceDigest),
+              let region = clusters.first(where: { $0.id == id }) else {
+            #if DEBUG
+            print("[SemanticMapModel] focusRegion(\(id)) refused: digest or id did not land")
+            #endif
+            return .notFound
+        }
+        #if DEBUG
+        print("[SemanticMapModel] focusRegion(\(id)) applied")
+        #endif
+        // A successful focus replaces a document card with the region card, exactly as
+        // `select(at:)` swaps the two — and a FAILED one must not clear anything.
+        selection = nil
+        selectedRegion = region
+        let position = SIMD2(Float(region.centreX), Float(region.centreY))
+        // The RENDERER first, then the mirror — the same order `pan`, `zoom` and `reveal` use.
+        renderer?.focus(on: position, halfExtent: Self.regionFocusHalfExtent)
+        if let renderer { camera = renderer.camera }
+        return .revealed
+    }
+
+    /// A region focus asked for before the map could honour it — the `pendingRevealKey`
+    /// shape, and for the same measured reason: the caller's copy of the request does not
+    /// survive until `prepare()` finishes.
+    struct PendingRegionFocus: Equatable {
+        let id: Int
+        let digest: String
+    }
+
+    /// See ``PendingRegionFocus``.
+    private(set) var pendingFocusRegion: PendingRegionFocus?
+
+    /// Whether a cluster-focus request may land on the loaded artifact.
+    ///
+    /// Extracted and `nonisolated` so the rule the never-persist policy hangs on is a
+    /// testable equation rather than an inline `==` a refactor could drop.
+    ///
+    /// - Parameters:
+    ///   - requestDigest: The digest the request was minted against.
+    ///   - artifactDigest: The loaded artifact's digest.
+    /// - Returns: `true` only when both exist and agree.
+    nonisolated static func regionFocusApplies(requestDigest: String?,
+                                               artifactDigest: String?) -> Bool {
+        guard let requestDigest, let artifactDigest else { return false }
+        return requestDigest == artifactDigest
+    }
+
+    /// How much of the map a region focus leaves in view, in grid units — wider than a
+    /// document reveal, because the question is "what is this group and what sits around
+    /// it", not "where is this point".
+    nonisolated static let regionFocusHalfExtent: Float = 3600
+
 
     /// Gathers the selected region as a capture, ready to become a working corpus.
     ///
@@ -1216,6 +1292,11 @@ struct SemanticMapSpikeView: View {
     /// move is immediately overruled — which is why it lives at the end of the view's `.task`
     /// rather than inside `prepare`.
     private func applyPendingRevealIfNeeded() {
+        if let pending = model.pendingFocusRegion {
+            // The region-focus twin (#1051 B-7): driven from the model's memory for the
+            // same measured reason as the key below.
+            model.focusRegion(id: pending.id, digest: pending.digest)
+        }
         guard let key = model.pendingRevealKey else { return }
         revealFailedKey = model.reveal(documentKey: key, isReadable: isReadable) == .notFound ? key : nil
     }
@@ -1257,6 +1338,13 @@ struct SemanticMapSpikeView: View {
         if let key = continued.focusDocumentKey {
             outcome = model.reveal(documentKey: key, isReadable: isReadable)
             revealFailedKey = outcome == .notFound ? key : nil
+        } else if let clusterID = continued.focusClusterID {
+            // The cluster focus (#1051 B-7), only when no document focus rides the same
+            // request — a document reveal is the finer ask and would overrule the camera
+            // anyway. A digest-mismatched or unknown id opens the map unfocused, with no
+            // banner: the request outlived its artifact, and there is nothing to point at.
+            outcome = model.focusRegion(id: clusterID,
+                                        digest: continued.focusClusterDigest ?? "")
         }
         // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
         // first line of the method, so the continuation was banked before the reveal was even
