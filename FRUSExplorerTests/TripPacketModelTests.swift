@@ -294,7 +294,14 @@ struct TripPacketModelTests {
             A library headed a chapter with no confirmed facility. No chapter may be headed with a \
             string that names no place a researcher can be served.
             """)
-        #expect(only.facts == nil, "the curated table is empty at T-1")
+        // T-1 asserted this was nil because the table was empty. The table now ships ten library
+        // rows, so the meaningful assertion is that the group reached ITS row — and only its own.
+        #expect(only.facts?.id == "Truman Library", """
+            A library group did not reach its curated row. `Group.facts` is the ONLY lookup that \
+            reaches a library: a library never resolves to a facility heading (D3), so the \
+            exporter's facility-keyed lookup cannot serve it.
+            """)
+        #expect(only.facts?.links.count == 1)
         #expect(model.needingConfirmation.map(\.id) == ["truman"], """
             A group the packet cannot place must be REPORTED — it is exactly what the reader has to \
             ring ahead about, and dropping it would leave part of their reading unplanned.

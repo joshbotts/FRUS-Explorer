@@ -48,6 +48,14 @@ struct TripPacketExporter {
     let arrival: Date?
     /// Injected so the export is deterministic under test.
     var calendar: Calendar = .current
+    /// The curated repository facts, injected so tests drive the real table rather than a mirror.
+    ///
+    /// **Two lookups, because the packet genuinely has two key spaces.** A facility section is
+    /// headed by a place (`National Archives at College Park`) and looks its row up here; a library
+    /// in the confirm-prompt is a REPOSITORY the corpus cites, and reads the row the model already
+    /// resolved onto its group. Neither can serve the other: `Department of State` folds to itself,
+    /// not to a NARA facility, so a group-keyed lookup would never reach the College Park row.
+    var factTable: RepositoryFactTable = .current
 
     /// The whole packet.
     func export() -> String {
@@ -105,15 +113,20 @@ struct TripPacketExporter {
         for facility in orderedFacilities(in: placeable) {
             let groups = placeable.filter { $0.facility.chapterHeading == facility }
             out.append("### \(facility)")
-            if let row = RepositoryFactTable.current.row(for: facility) {
+            if let row = factTable.row(for: facility) {
                 // Only ever `printable` — an unverified fact is omitted, never printed undated (D7).
                 if let email = row.inquiryEmail.printable { out.append("To: \(email)") }
                 if let address = row.address.printable { out.append(address) }
-                if row.appointmentPolicy.printable == nil {
-                    // A1 distinguishes DC-area rooms from other facilities; which applies here is
-                    // unconfirmed, so the packet asks rather than asserts.
-                    out.append("Check whether this facility requires an appointment before you write.")
+                if let policy = row.appointmentPolicy.printable {
+                    out.append("Appointments: \(policy)")
+                } else if !row.links.isEmpty {
+                    // D15: the policy is IN FLUX, so it was negated into a link rather than left
+                    // pending. A sentence that rots between the packet being printed and the trip
+                    // being taken is worse than a pointer to the page that always says the truth.
+                    out.append("Appointment policy changes — check NARA's current guidance before "
+                               + "you write.")
                 }
+                out.append(contentsOf: Self.linkLines(row.links))
             }
             out.append("")
             out.append("Topic: \(model.topicSentence.forExport)")
@@ -141,6 +154,13 @@ struct TripPacketExporter {
                 if case .confirmBeforeTravelling(let named) = group.facility {
                     out.append("    Cited as \(named). Records centres transfer their holdings, so "
                                + "ask staff where these records are now.")
+                }
+                // D11's other half: the ask, beside the page that answers it. `facts` is the row
+                // the MODEL resolved for this group's repository — the one lookup that reaches a
+                // library, since a library never resolves to a facility heading (D3) and so never
+                // reaches the facility-keyed lookup above.
+                if let row = group.facts {
+                    for line in Self.linkLines(row.links) { out.append("    \(line)") }
                 }
             }
         }
@@ -333,18 +353,64 @@ struct TripPacketExporter {
     /// A14's four room rules fail A14's own "changes packing or planning" test and are also absent.
     var visitDayCard: String {
         var out = ["## On the day", ""]
-        // Day-0 registration is one of the four owner-confirmable facts and is NOT yet confirmed,
-        // so it is described as something to check rather than asserted as a requirement.
-        out.append("- Check whether you need to register for a researcher ID card on arrival, and "
-                   + "allow time for it.")
+        // Day-0 registration: CONFIRMED by the owner 2026-08-22, so it is asserted rather than
+        // hedged. The rider is the useful half — the card itself must be collected in person, but
+        // much of the process can be finished beforehand, which changes how long day 0 takes.
+        out.append("- A researcher ID card must be obtained in person when you arrive. Several of "
+                   + "the steps can be completed in advance — do them before you travel, and allow "
+                   + "time on arrival for the rest.")
         out.append("- Lockers are provided; laptops, cameras and flatbed or overhead scanners are "
                    + "allowed. Auto-feed and hand-held scanners and personal copiers are not.")
         out.append("- NARA staff cannot undertake research for you, but a consultation desk and "
                    + "dedicated foreign-affairs reference staff exist — ask at the reference desk.")
         out.append("- Records that are digitised or on microfilm must be used in those forms where "
                    + "they are available.")
+        // The pages that answer what this card deliberately does not assert (T-0 §3.2: pull times,
+        // the 5:15 cutoff, the consultation area's hours and the Wednesday specialist window are
+        // all negated as printed facts precisely because they rot).
+        let links = Self.linkLines(factTable.row(for: ResearchFacilityResolver.collegePark)?.links ?? [])
+        if !links.isEmpty {
+            out.append("")
+            out.append("Hours, pull schedules and room rules change. Check before you travel:")
+            for line in links { out.append("- \(line)") }
+        }
         return out.joined(separator: "\n")
     }
+
+    // MARK: - Links
+
+    /// Renders a row's links, worst-freshness rule applied per link (D12).
+    ///
+    /// ## Three rules, and each is the difference between a useful line and a misleading one
+    /// 1. **An unstamped link does not print.** `isPrintable` is the gate, exactly as `printable`
+    ///    gates a prose fact — a URL is an institutional claim like any other, and one nobody has
+    ///    checked is the claim most likely to be wrong.
+    /// 2. **A stale stamp degrades the sentence, never the row.** Past the freshness window the
+    ///    line appends when it was last checked and says to confirm. Withholding the link would
+    ///    leave the reader with nothing where they previously had something slightly old, and
+    ///    failing the build would punish a release for NARA's site staying still.
+    /// 3. **The date is printed in ISO form, not localised.** This line is pasted into an email to
+    ///    reference staff and read months later; `8/22/26` is ambiguous across the Atlantic and
+    ///    this packet's whole subject is transatlantic archives.
+    static func linkLines(_ links: [RepositoryLink], asOf now: Date = Date()) -> [String] {
+        links.filter(\.isPrintable).map { link in
+            var line = "\(link.label): \(link.url)"
+            if link.isStale(asOf: now), let checked = link.verifiedDate {
+                line += " — last checked \(Self.stampFormatter.string(from: checked)); "
+                    + "confirm current guidance"
+            }
+            return line
+        }
+    }
+
+    /// ISO-8601 dates for link stamps — see rule 3 on ``linkLines(_:asOf:)``.
+    private static let stampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     /// Facilities in the order their groups appear, de-duplicated — so the packet's chapter order
     /// follows how much of the reading each facility holds.

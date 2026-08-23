@@ -79,14 +79,25 @@ struct TripPacketExporterTests {
     @Test("An unconfirmed fact never reaches the page")
     func unconfirmedFactsNeverPrint() {
         let text = exporter().export()
-        #expect(!text.contains("strongly encouraged for College Park"), """
+        // Read from the SHIPPING row rather than typed as a literal. A hardcoded string goes
+        // vacuously green the moment the curated value is reworded — which is exactly what
+        // happened when D15 rewrote this policy, and the old assertion would have kept passing
+        // while proving nothing.
+        let unverified = RepositoryFactTable.nacp.appointmentPolicy.value
+        #expect(!unverified.isEmpty, "fixture drift: the row carries no unverified policy to hide")
+        #expect(!text.contains(unverified), """
             The packet printed the unverified appointment policy. D7: an unverified fact is \\
             omitted, never printed undated — the exporter must read `printable`, not `value`.
             """)
-        #expect(text.contains("Check whether this facility requires an appointment"), """
+        #expect(text.contains("Appointment policy changes"), """
             With the policy unconfirmed the packet must still tell the researcher to check. \\
             Silence would read as "no appointment needed".
             """)
+        // Every library row ships an empty, unverified address and email; none may reach the page.
+        for row in RepositoryFactTable.presidentialLibraries {
+            #expect(row.address.printable == nil)
+            #expect(row.inquiryEmail.printable == nil)
+        }
     }
 
     /// The two facts the owner confirmed on 2026-08-22 do print — A2's one-address rule is the
