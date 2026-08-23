@@ -30,6 +30,9 @@ enum CorpusNavValue: Hashable {
     /// The in-Browse scope editor (#1051 B-3, design 3a), keyed by the scope's id —
     /// pushed in the detail column, never a new window (#824).
     case scopeEditor(UUID)
+    /// One working corpus's document drill (#1051 B-4, R-3). Identity is the corpus id;
+    /// the name rides along for display.
+    case corpusDocuments(id: UUID, name: String)
 }
 
 // MARK: - CorpusSidebarItem
@@ -53,6 +56,8 @@ enum CorpusSidebarItem: Hashable {
     case editors
     /// The My Scopes level (#1051 A-5).
     case myScopes
+    /// The Working Corpora level (#1051 A-6).
+    case workingCorpora
     /// One subseries, keyed by its identifier string (the pre-#1051 selection).
     case subseries(String)
 }
@@ -96,6 +101,9 @@ enum CorpusSidebarItem: Hashable {
 ///          index views, mounted at the detail root); their drills push the new
 ///          `CorpusNavValue.axisList` case, hosted by `MacAxisVolumeListView` over the
 ///          promoted list's caption/accessory/note slots
+///   1.8 — #1051 B-4: YOUR SETS gains Working Corpora; a corpus's document drill pushes
+///          `CorpusNavValue.corpusDocuments` (the shared R-3 degraded-row surface), with
+///          indexed rows routing to this browser's document host
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -167,6 +175,9 @@ struct CorpusBrowserWindowView: View {
                     Label(String(localized: "browser.scopes.title", defaultValue: "My Scopes"),
                           systemImage: "square.stack.3d.up")
                         .tag(CorpusSidebarItem.myScopes)
+                    Label(String(localized: "browser.corpora.title", defaultValue: "Working Corpora"),
+                          systemImage: "tray.full")
+                        .tag(CorpusSidebarItem.workingCorpora)
                 }
                 Section(String(localized: "corpus.sidebar.subseries", defaultValue: "Subseries")) {
                     ForEach(subseries, id: \.self) { sub in
@@ -227,6 +238,10 @@ struct CorpusBrowserWindowView: View {
                             onOpen: { spec in detailPath.append(.axisList(spec)) },
                             onEdit: { id in detailPath.append(.scopeEditor(id)) }
                         )
+                    case .workingCorpora?:
+                        CorporaIndexView(onOpen: { id, name in
+                            detailPath.append(.corpusDocuments(id: id, name: name))
+                        })
                     case .subseries(let sub)?:
                         volumeList(for: sub)
                     case nil:
@@ -255,6 +270,14 @@ struct CorpusBrowserWindowView: View {
                             if case .scopeEditor = detailPath.last {
                                 detailPath.removeLast()
                             }
+                        })
+                    case .corpusDocuments(let id, _):
+                        // Indexed rows route to this browser's document host — the
+                        // browser window stays open beside the opened document
+                        // (`CorpusSectionDocumentView`'s precedent).
+                        CorpusDocumentsView(corpusId: id, onOpenDocument: { entry in
+                            appState.openDocument(entry, from: .tool(.corpusBrowser),
+                                                  using: openWindow)
                         })
                     }
                 }

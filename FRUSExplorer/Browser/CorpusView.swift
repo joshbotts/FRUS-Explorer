@@ -73,6 +73,9 @@ struct CorpusView: View {
     /// The user's scopes, for the Your Sets row's count (#1051 B-3).
     @Query private var scopes: [CustomVolumeScope]
 
+    /// The user's working corpora, for the Your Sets row's count (#1051 B-4).
+    @Query private var corpora: [WorkingCorpus]
+
     /// The root search query. Inline state, deliberately not `.searchable` — see the type doc.
     @State private var searchText: String = ""
 
@@ -390,6 +393,38 @@ struct CorpusView: View {
             )
             .help(String(localized: "browser.corpus.scopes.help",
                          defaultValue: "Volume sets you assemble yourself — browse, edit, or narrow the whole Browse tab to one"))
+
+            Button {
+                vm.select(.corpora)
+                #if DEBUG
+                print("[BrowserView] Navigate → working corpora")
+                #endif
+            } label: {
+                HStack {
+                    Label(
+                        String(localized: "browser.corpus.corpora", defaultValue: "Working Corpora"),
+                        systemImage: "tray.full"
+                    )
+                    .foregroundStyle(.primary)
+                    Spacer(minLength: 8)
+                    if !corpora.isEmpty {
+                        Text("\(corpora.count)")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                // Both modifiers, in this order — see the People row's A/B measurement.
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("browse.root.corporaRow")
+            .accessibilityLabel(
+                String(localized: "browser.corpus.corpora.a11y",
+                       defaultValue: "Browse your working corpora")
+            )
+            .help(String(localized: "browser.corpus.corpora.help",
+                         defaultValue: "Fixed document sets captured from Search results or the semantic map — browse each one's documents, grouped by volume"))
         }
     }
 

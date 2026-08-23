@@ -279,7 +279,7 @@ The root of the Browse tab opens with a **search field** over all 552 volumes �
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
 
-Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) now, with working corpora and more doors arriving as the browse-axes program lands.
+Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f), with more doors arriving as the browse-axes program lands.
 
 ### 6.1a The Hierarchy
 
@@ -324,6 +324,18 @@ You can now build scopes right in Browse:
 - **Browse Within This Scope** (on a scope's long-press menu) narrows the whole subseries hierarchy to the scope's volumes, with an amber **"Browsing within: …"** banner and a one-tap ✕ to clear. The filter is honest about edge cases: a scope with nothing to show, or one deleted on another device, shows an explanation and *nothing* — never the whole corpus wearing a scope's name.
 
 [SCREENSHOT: My Scopes list; the scope editor with red minus rows and Add Volumes; the amber "Browsing within" banner over the subseries list.]
+
+### 6.1f Working Corpora
+
+Where a scope is a set of *volumes*, a **working corpus** is a fixed set of *documents* — captured from a result set with **Save as Working Corpus** on Search results or the semantic map's lasso, and synced via iCloud. There is deliberately nothing to create here: a corpus is a snapshot of an actual result, and the list says where each came from, when, and — in amber — whether the capture stopped short of every match (a corpus saved before the app recorded that says "not recorded" rather than pretending completeness).
+
+Tap a corpus for its documents, **grouped by volume in one list that always renders** — the first Browse screen that shows rows for volumes this device hasn't indexed:
+
+- The top states coverage plainly: *"1,873 of 2,340 documents indexed on this device"*, in amber until complete.
+- Documents in **indexed** volumes show their real headings and dates and open with a tap.
+- Documents in volumes you don't have yet appear as gray identifiers with a **Download** (or, for a downloaded-but-unindexed volume, **Index**) button right on the row — the list never dead-ends, only the actions wait. Index a volume and its rows upgrade in place.
+
+[SCREENSHOT: a corpus drill — the amber coverage line, an indexed volume's titled rows, and an unindexed volume's gray rows with the Download button.]
 
 ### 6.2 Top Subjects
 

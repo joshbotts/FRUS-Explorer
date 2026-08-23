@@ -93,6 +93,11 @@ public final class BrowserViewModel {
         case scopes
         /// The in-Browse scope editor (#1051 design 3a), keyed by the scope's id.
         case scopeEditor(UUID)
+        /// The Working Corpora level (#1051 A-6) — the user's captured document sets.
+        case corpora
+        /// One corpus's document drill (#1051 R-3). Identity is the corpus id; the name
+        /// rides along for the breadcrumb.
+        case corpusDocuments(id: UUID, name: String)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -111,6 +116,8 @@ public final class BrowserViewModel {
             case .editors:             hasher.combine(11)
             case .scopes:              hasher.combine(12)
             case .scopeEditor(let id): hasher.combine(13); hasher.combine(id)
+            case .corpora:             hasher.combine(14)
+            case .corpusDocuments(let id, _): hasher.combine(15); hasher.combine(id)
             }
         }
 
@@ -131,6 +138,8 @@ public final class BrowserViewModel {
             case (.editors, .editors): return true
             case (.scopes, .scopes): return true
             case (.scopeEditor(let a), .scopeEditor(let b)): return a == b
+            case (.corpora, .corpora): return true
+            case (.corpusDocuments(let a, _), .corpusDocuments(let b, _)): return a == b
             default: return false
             }
         }
