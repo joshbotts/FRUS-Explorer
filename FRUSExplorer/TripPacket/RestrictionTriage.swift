@@ -86,12 +86,18 @@ enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1, per D4
+///   1.1 — Session 2026-08-23: #830 — rows carry the series' display title, so chapter 5
+///          names what is closed instead of pointing at a NAID
 struct RestrictionTriage: Equatable, Sendable {
 
     /// One series the planned reading touches.
     struct Row: Equatable, Sendable, Identifiable {
         /// The series NAID.
         let naId: String
+        /// The series' display title, when the resolution that produced this NAID carried
+        /// one (#830 v1.1) — so the packet can say WHICH series is closed. A bare NAID is
+        /// a number the reader cannot act on.
+        let seriesTitle: String?
         /// NARA's stated access status, verbatim; `nil` when it states none.
         let accessStatus: String?
         /// NARA's stated exemptions, e.g. `FOIA (b)(1) National Security`.
@@ -122,16 +128,20 @@ struct RestrictionTriage: Equatable, Sendable {
     ///
     /// - Parameters:
     ///   - documentCountsByNaId: series NAID → how many of the reader's documents cite it.
+    ///   - seriesTitles: series NAID → display title, from the resolutions that produced
+    ///     the NAIDs. A NAID with no entry prints bare, which is disclosed, not hidden.
     ///   - unresolvedDocumentCount: documents whose citation reached no series.
     ///   - facts: the series-facts lookup; injected so tests drive the real rule.
     static func build(
         documentCountsByNaId: [String: Int],
+        seriesTitles: [String: String] = [:],
         unresolvedDocumentCount: Int,
         facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) }
     ) -> RestrictionTriage {
         let rows = documentCountsByNaId.map { naId, count -> Row in
             let f = facts(naId)
             return Row(naId: naId,
+                       seriesTitle: seriesTitles[naId],
                        accessStatus: f?.accessStatus,
                        accessRestrictions: f?.accessRestrictions ?? [],
                        documentCount: count,

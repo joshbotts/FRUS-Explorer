@@ -184,7 +184,7 @@ struct RepositoryLinkRenderTests {
         let model = TripPacketModel.build(
             groups: [(key: "nixon", label: "Nixon Presidential Materials, NSC Files",
                       category: .presidentialLibrary, repository: "Nixon Presidential Materials",
-                      seriesNaId: nil, documentCount: 40)],
+                      resolution: nil, documents: TripPacketExporterTests.refs(40))],
             documentYears: [1971], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
             researchQuestion: nil, facts: { _ in nil })
         let text = TripPacketExporter(model: model, projectName: "P", arrival: nil).inquiryDrafts
@@ -204,7 +204,8 @@ struct RepositoryLinkRenderTests {
     func visitDayCardLinksWhatItWillNotAssert() {
         let model = TripPacketModel.build(
             groups: [(key: "cdf", label: "Central Decimal File", category: .centralDecimalFile,
-                      repository: "National Archives", seriesNaId: nil, documentCount: 10)],
+                      repository: "National Archives", resolution: nil,
+                      documents: TripPacketExporterTests.refs(10))],
             documentYears: [1948], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
             researchQuestion: nil, facts: { _ in nil })
         let card = TripPacketExporter(model: model, projectName: "P", arrival: nil).visitDayCard

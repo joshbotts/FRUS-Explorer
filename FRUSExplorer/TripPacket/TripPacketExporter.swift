@@ -22,6 +22,17 @@ import Foundation
 /// Chapter 2's inquiry draft is an **email a researcher sends to NARA reference staff**, so it has
 /// to survive being pasted into a mail client. The whole packet is therefore plain text rather than
 /// attributed strings or HTML: one format, no lossy step between what is reviewed and what is sent.
+/// (The PDF share renders THIS string paginated — same content, never a second composition.)
+///
+/// ## English, deliberately — the packet's language policy (#830)
+/// Every string in this type is a raw literal, and that is a decision rather than a gap. The
+/// packet is a document addressed to United States archives: chapter 2 is an email to NARA
+/// reference staff, chapters 4 and 6 quote NARA's own English guidance verbatim (an attributed
+/// quotation must not be translated), and the checklist quotes the research-visit FAQ. A
+/// localized packet would send NARA a letter in the researcher's UI language and translate
+/// quotations out of their attributability — so the EXPORTED document stays English by design,
+/// like `HTMLCollectionExporter`'s content, while everything the app itself shows around it
+/// (`TripPacketSheet`, the entry points) is localized as usual.
 ///
 /// ## Every chapter can be empty, and none of them lies about it
 /// The packet is generated before a trip is booked, from a project that may cite records the app
@@ -38,6 +49,12 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2, chapters 1-3, 5-7
 ///   1.1 — Session 2026-08-22: #830 T-3, chapter 4 (mandatory substitutes, A6)
+///   1.2 — Session 2026-08-23: #830 — the data-starved chapters get their data: chapter 2
+///          prints A3's four-field records line and A5's verbatim unresolved notes, chapter 3
+///          gains the per-document roster (FRUS citation · file/folder · blank Box), chapter 5
+///          names its series, discloses its truncation and carries A10's withdrawal-notice/
+///          FOIA/MDR explainer, and chapter 6 prints the worked examples transcribed from the
+///          deposited "Citing Foreign Affairs Records" (D13/D17), pre-filled from the packet
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -143,9 +160,45 @@ struct TripPacketExporter {
             out.append("Records of interest:")
             for group in groups.prefix(12) {
                 out.append("  - \(group.label) (\(group.documentCount) documents)")
+                // A3's four fields — RG · entry · series title · NAID — in NARA's own
+                // format, with the catalog link, whenever the citation resolved. This is
+                // what the effective-inquiry spec asks the records be identified by.
+                if let line = group.recordsLine {
+                    out.append("    \(line)")
+                    if let url = group.resolution?.catalogURL { out.append("    \(url)") }
+                }
             }
             if groups.count > 12 {
                 out.append("  - …and \(groups.count - 12) further groups, listed in the pull worksheet.")
+            }
+            // A5: every source note whose citation reached no NARA series appears VERBATIM,
+            // with its FRUS citation, as a help-me-locate item — because NARA's own FAQ
+            // says resolving poorly-described records "cannot be done effectively on an ad
+            // hoc basis while researchers wait in a research room", and the lot numbers
+            // FRUS prints "do not always carry over into use by the National Archives"
+            // (both quoted from the deposited research-visit FAQ). The consultation desk
+            // is the day-of fallback; this is the advance route.
+            let unresolved = groups.filter { $0.category == .lotFile && $0.resolution == nil }
+            if !unresolved.isEmpty {
+                out.append("")
+                out.append("Please help me locate the following. FRUS cites them as printed "
+                           + "below; this file designation may be one that did not carry over "
+                           + "into use by the National Archives:")
+                for group in unresolved {
+                    out.append("  - \(group.label) (\(group.documentCount) documents)")
+                    for document in group.documents.prefix(Self.unresolvedNoteLimit) {
+                        out.append("      \(document.citation)")
+                        out.append("      Cited as: \(document.sourceNote)")
+                    }
+                    // Disclose a truncation rather than trailing off — the reader is
+                    // pasting this into an email and must know the list is partial.
+                    if group.documents.count > Self.unresolvedNoteLimit {
+                        let n = group.documents.count - Self.unresolvedNoteLimit
+                        out.append("      …and \(n) further "
+                                   + (n == 1 ? "citation" : "citations")
+                                   + " from the same file, listed in the pull worksheet.")
+                    }
+                }
             }
             out.append("")
         }
@@ -204,11 +257,26 @@ struct TripPacketExporter {
         let placeable = model.groups.filter(\.canHeadChapter)
         for facility in orderedFacilities(in: placeable) {
             out.append("### \(facility)")
-            out.append("")
-            out.append("| Group | Documents | Box |")
-            out.append("|---|---:|---|")
             for group in placeable where group.facility.chapterHeading == facility {
-                out.append("| \(group.label) | \(group.documentCount) | |")
+                out.append("")
+                out.append("**\(group.label)** (\(group.documentCount) documents)")
+                // The scope's series line: title · entry · NAID → Catalog link · dates —
+                // the same composed A3 line the inquiry prints, so the two chapters cannot
+                // disagree about how a series is identified.
+                if let line = group.recordsLine {
+                    out.append("\(line)")
+                    if let url = group.resolution?.catalogURL { out.append("\(url)") }
+                }
+                out.append("")
+                // The per-document roster: FRUS citation · the file/folder designation the
+                // note cites · a blank Box column for the reading room. The box is blank by
+                // design — the packet never fabricates a box number; boxes are assigned at
+                // the pull desk from NARA's own finding aids.
+                out.append("| FRUS citation | File / folder | Box |")
+                out.append("|---|---|---|")
+                for document in group.documents {
+                    out.append("| \(document.citation) | \(document.fileDesignation ?? "") | |")
+                }
             }
             out.append("")
         }
@@ -308,12 +376,27 @@ struct TripPacketExporter {
                        + " a restriction or no stated status. A closed series cannot be pulled, so "
                        + "raise these in your inquiry rather than on arrival.")
             out.append("")
-            for row in flagged.prefix(20) {
+            let shown = flagged.prefix(Self.triageRowLimit)
+            for row in shown {
                 let status = row.accessStatus ?? "No status recorded"
-                out.append("  - NAID \(row.naId) — \(status) (\(row.documentCount) documents)")
+                // The series NAME leads when the resolution carried one — a bare NAID is a
+                // number the reader cannot act on; the NAID rides along for the pull slip.
+                let name = row.seriesTitle.map { "\($0) — NAID \(row.naId)" } ?? "NAID \(row.naId)"
+                out.append("  - \(name) — \(status) (\(row.documentCount) documents)")
                 if !row.accessRestrictions.isEmpty {
                     out.append("    \(row.accessRestrictions.joined(separator: "; "))")
                 }
+            }
+            // Disclose a truncation rather than trailing off (the chapter-4 rule). The
+            // dropped tail here would be CLOSED SERIES on a large project — precisely what
+            // this chapter exists to surface before someone books a flight.
+            if flagged.count > shown.count {
+                out.append("")
+                let n = flagged.count - shown.count
+                out.append("\(n) further flagged "
+                           + (n == 1 ? "series is" : "series are")
+                           + " not listed here. Every cited series' status is on its NARA "
+                           + "catalog page; raise the full set in your inquiry.")
             }
         }
         if triage.unresolvedDocumentCount > 0 {
@@ -323,8 +406,28 @@ struct TripPacketExporter {
                        + " no series this app could resolve, so nothing is known about "
                        + (n == 1 ? "its" : "their") + " access. Not covered by the list above.")
         }
+        // A10's second half: what the slip of paper where a document used to be MEANS, and
+        // that a remedy exists. Explanatory rather than procedural — it names no time or
+        // place, so it rots slowly (the T-0 walkthrough's reason for keeping it) — and it
+        // matters before the trip: with restricted series in the reading list, the reader
+        // should know the remedy exists before deciding the trip is worth taking.
+        out.append("")
+        out.append("If a folder you pull holds a withdrawal notice where a document should be, "
+                   + "the document was removed as classified or otherwise restricted — it is "
+                   + "not lost. The notice identifies what was withdrawn, and you can request "
+                   + "a declassification review of it under FOIA or through Mandatory "
+                   + "Declassification Review (MDR); ask the reference desk how to file either. "
+                   + "Copies of previously classified documents may carry declassification "
+                   + "stamps — record them, since they are part of the document's history.")
         return out.joined(separator: "\n")
     }
+
+    /// How many flagged triage rows print before the chapter discloses a remainder.
+    private static let triageRowLimit = 20
+
+    /// How many verbatim unresolved citations print per group in the inquiry's
+    /// help-me-locate list before it defers to the pull worksheet.
+    private static let unresolvedNoteLimit = 8
 
     // MARK: - Chapter 6: citation crib
 
@@ -334,23 +437,178 @@ struct TripPacketExporter {
     /// recommendation as NARA's own rather than prescribing one — which is already this app's
     /// posture elsewhere, where `CitationStyle` ships three styles and marks one "Recommended".
     ///
-    /// The quotations themselves await the three citation PDFs being deposited at
-    /// `Planning/reference/`; until then this chapter prints its frame and says what is missing,
-    /// rather than paraphrasing guidance nobody has checked.
+    /// ## The worked examples are TRANSCRIPTIONS, and that is the verification story
+    /// Every quoted form below is transcribed from NARA Research Services' *Citing Foreign
+    /// Affairs Records* (September 2023), deposited at
+    /// `Planning/reference/nara-citing-foreign-affairs-records-2023-09.md` (D17 — the
+    /// governing guidance for these records; GIL 17 is optional background). Checking this
+    /// chapter is a transcription check against that file, never a judgement call — which is
+    /// exactly the tier T-0 §3.5 moved it into. A packet series type with no transcribed
+    /// example gets the pointer to the guidance, not a paraphrase.
+    ///
+    /// The pre-fill under each quotation substitutes only what the packet KNOWS (the file
+    /// number, the series title, the entry, the record group); everything read off the
+    /// physical document — correspondents, type, date — stays as a marked placeholder.
     var citationCrib: String {
-        [
+        var out = [
             "## Citing what you find",
             "",
             "Citation form is governed by your publisher, and publishers disagree. NARA publishes "
-                + "its own guidance (General Information Leaflet 17, and \"Citing Foreign Affairs "
-                + "Records\"); this packet reports that guidance as NARA's rather than "
-                + "prescribing it.",
-            "",
-            "The worked examples for this packet's own series are not yet included — they quote "
-                + "NARA's PDFs, which have not been deposited in this repository, and a paraphrase "
-                + "would be exactly the unattributed prescription this chapter avoids.",
-        ].joined(separator: "\n")
+                + "its own guidance (\"Citing Foreign Affairs Records\", Research Services, "
+                + "September 2023, and General Information Leaflet 17); this packet reports that "
+                + "guidance as NARA's rather than prescribing it.",
+        ]
+        let examples = cribExamples
+        if examples.isEmpty {
+            out.append("")
+            out.append("None of this packet's series types is among the worked examples NARA's "
+                       + "guidance illustrates; consult the guidance itself for your records.")
+        }
+        for example in examples {
+            out.append("")
+            out.append("### \(example.heading)")
+            out.append("")
+            out.append("NARA's \"Citing Foreign Affairs Records\" gives this form"
+                       + (example.naraContext.isEmpty ? ":" : " (\(example.naraContext)):"))
+            out.append("")
+            for line in example.quotedForm { out.append("> \(line)") }
+            if !example.prefill.isEmpty {
+                out.append("")
+                out.append("For this packet's own documents — fill ⟨…⟩ from the document in "
+                           + "front of you:")
+                for line in example.prefill { out.append("  \(line)") }
+            }
+        }
+        out.append("")
+        out.append("NARA's guidance also asks that a first citation carry the full series title "
+                   + "and record group, that central-file citations carry NO box number, and that "
+                   + "citations to online records \"include the elements noted above, not just "
+                   + "the URL\".")
+        return out.joined(separator: "\n")
     }
+
+    /// One worked example the crib prints.
+    struct CribExample {
+        /// The section heading naming the series type.
+        let heading: String
+        /// Which of NARA's examples this is, for the attribution sentence.
+        let naraContext: String
+        /// NARA's long and short forms, transcribed VERBATIM from the deposited guidance.
+        let quotedForm: [String]
+        /// The template instantiated with the packet's own fields, placeholders for the rest.
+        let prefill: [String]
+    }
+
+    /// The examples matching this packet's series types, decimal first.
+    ///
+    /// Selection is by the FORM of the packet's own file designations, not by era fields:
+    /// a dotted number (`611.93/12-854`) is a Central Decimal File citation and a
+    /// letter-led designator (`POL 17-3 JORDAN`) is a Subject-Numeric one, whatever year
+    /// the document carries — the same by-the-number rule the catalog client documents.
+    var cribExamples: [CribExample] {
+        var out: [CribExample] = []
+        let centralGroups = model.groups.filter {
+            $0.category == .centralDecimalFile || $0.category == .centralForeignPolicyFile
+        }
+        let designations = centralGroups.flatMap(\.documents).compactMap(\.fileDesignation)
+
+        // Decimal: date-form suffixes (`/12-854`) get NARA's Example 5; consecutive
+        // numbering gets Example 2. One example, chosen by what the packet actually holds.
+        if let decimal = designations.first(where: { $0.first?.isNumber == true }) {
+            let dateForm = DecimalFileSegment.suffixYear(from: decimal) != nil
+            let band = DecimalFileSegment.segment(for: decimal, fallbackYear: nil)
+                .map { "\($0) " } ?? ""
+            out.append(CribExample(
+                heading: "Central Decimal File",
+                naraContext: dateForm
+                    ? "Example 5, telegram with date numbering"
+                    : "Example 2, telegram with consecutive numbering",
+                quotedForm: dateForm ? Self.naraExample5 : Self.naraExample2,
+                prefill: [
+                    "⟨Sender⟩ to ⟨recipient⟩, ⟨Type and number⟩, ⟨date⟩, file \(decimal), "
+                        + "\(band)Central Decimal File, RG 59: General Records of the "
+                        + "Department of State, U.S. National Archives.",
+                ]))
+        }
+
+        if let subjectNumeric = designations.first(where: { $0.first?.isLetter == true }) {
+            out.append(CribExample(
+                heading: "Subject-Numeric File",
+                naraContext: "Example 7, airgram",
+                quotedForm: Self.naraExample7,
+                prefill: [
+                    "⟨Sender⟩ to ⟨recipient⟩, ⟨Type and number⟩, ⟨date⟩, file \(subjectNumeric), "
+                        + "⟨years⟩ Subject-Numeric File, RG 59: General Records of the "
+                        + "Department of State, U.S. National Archives.",
+                ]))
+        }
+
+        // Lot files and every other non-central entry: NARA's own note says Example 8 "also
+        // serves as a model that can be followed for all other records entries other than
+        // those of the Department of State central files". Pre-filled from the first
+        // RESOLVED lot — series title, entry, record group — when the packet has one.
+        let lotGroups = model.groups.filter { $0.category == .lotFile }
+        if !lotGroups.isEmpty {
+            var prefill = ["⟨Sender⟩ to ⟨recipient⟩, ⟨Type⟩, ⟨date⟩, file ⟨folder title⟩, "
+                           + "⟨series title⟩, Entry ⟨entry number⟩, RG ⟨record group⟩: "
+                           + "⟨record group title⟩, U.S. National Archives."]
+            if let resolved = lotGroups.first(where: { $0.resolution != nil }),
+               let resolution = resolved.resolution {
+                let entries = resolution.seriesHmsMlrEntryNumbers ?? resolution.hmsMlrEntryNumbers
+                prefill.append("For \(resolved.label): "
+                    + "⟨Sender⟩ to ⟨recipient⟩, ⟨Type⟩, ⟨date⟩, file ⟨folder title⟩, "
+                    + (resolution.displaySeriesTitle ?? resolution.title)
+                    + (entries?.first.map { ", Entry \($0)" } ?? "")
+                    + (resolution.recordGroup.map { ", RG \($0)" } ?? "")
+                    + ", U.S. National Archives.")
+            }
+            out.append(CribExample(
+                heading: "Lot files and other records entries",
+                naraContext: "Example 8, which NARA notes \"also serves as a model that can be "
+                    + "followed for all other records entries other than those of the Department "
+                    + "of State central files\"",
+                quotedForm: Self.naraExample8,
+                prefill: prefill))
+        }
+        return out
+    }
+
+    // MARK: NARA's transcribed forms (verify against
+    // Planning/reference/nara-citing-foreign-affairs-records-2023-09.md — a transcription
+    // check, per T-0 §3.5; these strings must match the deposit character for character).
+
+    static let naraExample2 = [
+        "(long) U.S. Embassy Germany to Department of State, Telegram 507, June 17, 1939, file "
+            + "840.48 REFUGEES/1677, 1930-39 Central Decimal File, RG 59: General Records of the "
+            + "Department of State, U.S. National Archives. Available on National Archives "
+            + "Microfilm Publication M1284.",
+        "(short) Germany to State, Telegram 507, June 17, 1939, 840.48 REFUGEES/1677, 1930-39 "
+            + "CDF, RG 59, USNA. M1284.",
+    ]
+
+    static let naraExample5 = [
+        "(long) U.S. Embassy Great Britain to Department of State, Telegram 2684, December 8, "
+            + "1954, file 611.93/12-854, 1950-54 Central Decimal File, RG 59: General Records of "
+            + "the Department of State, U.S. National Archives.",
+        "(short) Great Britain to State, Telegram 2684, December 8, 1954, 611.93/12-854, 1950-54 "
+            + "CDF, RG 59, USNA.",
+    ]
+
+    static let naraExample7 = [
+        "(long) U.S. Embassy Jordan to Department of State, Airgram A-477, April 19, 1965, file "
+            + "POL 17-3 JORDAN, 1964-66 Subject-Numeric File, RG 59: General Records of the "
+            + "Department of State, U.S. National Archives.",
+        "(short) Jordan to State, Airgram A-477, April 19, 1965, POL 17-3 JORDAN, 1964-66 SNF, "
+            + "RG 59, USNA.",
+    ]
+
+    static let naraExample8 = [
+        "(long) CU/AP (Rodis) to CU (McLaughlin), Memorandum, November 5, 1965, file Sports "
+            + "General, Interagency Youth Committee General Records, Entry P-5, RG 353: Records "
+            + "of Inter- and Intra-department Committee, U.S. National Archives.",
+        "(short) CU/AP to CU, November 5, 1965, Sports General, IAYC General Records, Entry P-5, "
+            + "RG 353, USNA.",
+    ]
 
     // MARK: - Chapter 7: visit-day card
 

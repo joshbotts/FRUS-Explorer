@@ -214,14 +214,15 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// nothing here may encode "ten": a row with no cited documents simply never gets looked up,
     /// which is why adding Clinton later is one row and no other change (D14).
     ///
-    /// ## One link per library today, not the two D16 asks for
+    /// ## Both D16 links ship on every row (D21 discharged)
     /// D16 wants a visit-planning page (*what you must do to get access*) beside a finding aid
-    /// (*what kinds of records are held*). Only the first ships. The finding-aid URLs the app
-    /// already carries in `NARACatalogClient` were re-checked on 2026-08-22 and **five of six
-    /// answer 404** — the hosts discriminate (their roots and the visit pages answer 200, invented
-    /// paths answer 404), so those are genuinely dead rather than a fetch artefact. Printing a
-    /// verified-dead link is worse than printing none, and guessing replacements would be exactly
-    /// the unverified institutional fact D7 exists to prevent.
+    /// (*what kinds of records are held*), separately labelled. The finding-aid half was
+    /// withheld while five of six of the app's library URLs answered 404; #1061 replaced the
+    /// dead ones with owner-supplied, fetch-verified URLs (2026-08-22), so both halves now
+    /// print. Two caveats ride in `NARACatalogClient.libraryFallbackURL`'s doc and bind the
+    /// D12 checker: jfklibrary.org and discoverlbj.org 403 every automated fetch (those two
+    /// are owner-asserted, and a checker must treat them as such, never as dead), and the JFK
+    /// entry is a faceted search URL that can answer 200 while returning the wrong result set.
     static let current = RepositoryFactTable(rows: [nacp] + presidentialLibraries)
 
     /// The owner's confirmation date for every fact in this table.
@@ -267,40 +268,56 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// onto them without a hand-written alias list.
     static let presidentialLibraries: [RepositoryFactRow] = [
         library("Nixon", "Richard Nixon Presidential Library",
-                "https://www.nixonlibrary.gov/research/research-frequently-asked-questions-faqs"),
+                visit: "https://www.nixonlibrary.gov/research/research-frequently-asked-questions-faqs",
+                holdings: "https://www.nixonlibrary.gov/research/guide-holdings"),
         library("Johnson Library", "Lyndon B. Johnson Presidential Library",
-                "https://www.lbjlibrary.org/research/plan-your-visit"),
+                visit: "https://www.lbjlibrary.org/research/plan-your-visit",
+                holdings: "https://discoverlbj.org/loh"),
         library("Carter Library", "Jimmy Carter Presidential Library",
-                "https://www.jimmycarterlibrary.gov/research/archives/onsite-services"),
+                visit: "https://www.jimmycarterlibrary.gov/research/archives/onsite-services",
+                holdings: "https://www.jimmycarterlibrary.gov/research/archives/finding-aids"),
         library("Eisenhower Library", "Dwight D. Eisenhower Presidential Library",
-                "https://www.eisenhowerlibrary.gov/research-overview"),
+                visit: "https://www.eisenhowerlibrary.gov/research-overview",
+                holdings: "https://www.eisenhowerlibrary.gov/research/finding-aids"),
         library("Kennedy Library", "John F. Kennedy Presidential Library",
-                "https://www.jfklibrary.org/archives/plan-a-research-visit"),
+                visit: "https://www.jfklibrary.org/archives/plan-a-research-visit",
+                holdings: "https://www.jfklibrary.org/search?f%5B0%5D=type_dctm_object%3ACollection&f%5B1%5D=source%3A46&sort_by=aggregated_title&sort_order=ASC&items_per_page=25"),
         library("Ford Library", "Gerald R. Ford Presidential Library",
-                "https://www.fordlibrarymuseum.gov/digital-research-room/frequently-asked-questions"),
+                visit: "https://www.fordlibrarymuseum.gov/digital-research-room/frequently-asked-questions",
+                holdings: "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids"),
         library("Reagan Library", "Ronald Reagan Presidential Library",
-                "https://www.reaganlibrary.gov/archives/plan-research-visit"),
+                visit: "https://www.reaganlibrary.gov/archives/plan-research-visit",
+                holdings: "https://www.reaganlibrary.gov/archives/white-house-inventories"),
         library("Roosevelt Library", "Franklin D. Roosevelt Presidential Library",
-                "https://www.fdrlibrary.org/research-visit"),
+                visit: "https://www.fdrlibrary.org/research-visit",
+                holdings: "https://www.fdrlibrary.org/finding-aids"),
         library("Truman Library", "Harry S. Truman Presidential Library",
-                "https://www.trumanlibrary.gov/library/researching-our-holdings"),
+                visit: "https://www.trumanlibrary.gov/library/researching-our-holdings",
+                holdings: "https://www.trumanlibrary.gov/library/truman-papers"),
         library("Bush Library", "George H.W. Bush Presidential Library",
-                "https://www.bush41library.gov/digital-research-room/request-textual-research-appointment"),
+                visit: "https://www.bush41library.gov/digital-research-room/request-textual-research-appointment",
+                holdings: "https://www.bush41library.gov/digital-research-room/about-textual-collections/all-textual-collections"),
     ]
 
-    /// One presidential-library row: a visit-planning link and nothing else.
+    /// One presidential-library row: D16's pairing and nothing else — the visit-planning
+    /// page (*what you must do to get access*) beside the finding aids (*what is held*),
+    /// labels stating the distinction, never merged into one "more information" link.
     ///
     /// Address, inquiry email and appointment policy are all left unverified — D11 reduced the
     /// library chapter from a drafted letter to a confirm-before-you-travel prompt precisely
     /// because at collection grain the packet can name neither a series nor a NAID, and 33
-    /// institutional facts collapsed to a set of URLs. Each of these was fetched on 2026-08-22 and
-    /// answered without a redirect.
-    private static func library(_ key: String, _ name: String, _ url: String) -> RepositoryFactRow {
+    /// institutional facts collapsed to a set of URLs. The visit URLs were fetched 2026-08-22
+    /// and answered without a redirect; the holdings URLs are #1061's owner-supplied set,
+    /// verified the same day (JFK and LBJ owner-asserted — their hosts 403 automated fetches).
+    private static func library(_ key: String, _ name: String,
+                                visit: String, holdings: String) -> RepositoryFactRow {
         RepositoryFactRow(
             id: key, matchKeys: [key], displayName: name,
             address: .unverified(""), inquiryEmail: .unverified(""),
             appointmentPolicy: .unverified(""),
-            links: [RepositoryLink(url: url, label: "Plan a research visit",
+            links: [RepositoryLink(url: visit, label: "Plan a research visit",
+                                   verifiedDate: confirmed),
+                    RepositoryLink(url: holdings, label: "Finding aids — what is held",
                                    verifiedDate: confirmed)])
     }
 }

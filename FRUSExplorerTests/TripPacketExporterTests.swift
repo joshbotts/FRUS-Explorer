@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import CoreGraphics
 @testable import FRUSExplorer
 
 // MARK: - TripPacketExporterTests
@@ -37,20 +38,44 @@ struct TripPacketExporterTests {
         return c
     }
 
+    /// `n` roster rows for a fixture group.
+    static func refs(_ n: Int, volume: String = "frus1948v02",
+                     designation: (Int) -> String? = { _ in nil },
+                     note: String = "A source note.") -> [TripPacketModel.Group.DocumentRef] {
+        (1...n).map { i in
+            .init(volumeId: volume, documentId: "d\(i)",
+                  citation: "FRUS 1948 II, Document \(i)",
+                  fileDesignation: designation(i), sourceNote: note)
+        }
+    }
+
+    /// The resolved lot's resolution — the fields the builder used to discard.
+    static let lotResolution = ArchivalResolution(
+        naId: "555", catalogURL: "https://catalog.archives.gov/id/555",
+        title: "Records of the Policy Planning Staff, 1947-1953",
+        recordGroup: "59", matchType: "lot",
+        hmsMlrEntryNumbers: ["A1 558"], levelOfDescription: "series",
+        seriesNaId: nil, seriesTitle: nil, seriesHmsMlrEntryNumbers: nil)
+
     /// The scope doc's own oracle fixture.
     private func oracleModel(researchQuestion: String? = "US policy toward Berlin, 1948")
         -> TripPacketModel {
         TripPacketModel.build(
             groups: [
                 (key: "cdf", label: "Central Decimal File 762.00", category: .centralDecimalFile,
-                 repository: nil, seriesNaId: nil, documentCount: 30),
+                 repository: nil, resolution: nil,
+                 documents: Self.refs(30, designation: { "762.00/2-\($0)48" },
+                                      note: "Department of State, Central Files, 762.00")),
                 (key: "lot-resolved", label: "Lot 64 D 199", category: .lotFile,
-                 repository: nil, seriesNaId: "555", documentCount: 8),
+                 repository: nil, resolution: Self.lotResolution,
+                 documents: Self.refs(8, designation: { _ in "Germany 1948" },
+                                      note: "Department of State, Lot 64 D 199, Germany 1948")),
                 (key: "lot-unresolved", label: "Lot 71 D 483", category: .lotFile,
-                 repository: nil, seriesNaId: nil, documentCount: 3),
+                 repository: nil, resolution: nil,
+                 documents: Self.refs(3, note: "Department of State, Lot 71 D 483, Box 2")),
                 (key: "library", label: "Truman Library, President's Secretary's Files",
                  category: .presidentialLibrary, repository: "Truman Library",
-                 seriesNaId: nil, documentCount: 12),
+                 resolution: nil, documents: Self.refs(12)),
             ],
             documentYears: [1948, 1948, 1972],
             unresolvedLotCount: 1,
@@ -62,7 +87,7 @@ struct TripPacketExporterTests {
                     accessRestrictions: ["FOIA (b)(1) National Security"],
                     useStatus: nil, useRestrictions: [], extent: nil,
                     referenceUnit: "National Archives at College Park - Textual Reference",
-                    findingAids: [], years: nil) : nil
+                    findingAids: [], years: "1947-1953") : nil
             })
     }
 
@@ -189,16 +214,146 @@ struct TripPacketExporterTests {
             """)
     }
 
-    /// D13: the crib attributes rather than prescribes, and says what is missing.
-    @Test("The citation crib attributes and does not prescribe")
+    /// D13: the crib attributes rather than prescribes — and now quotes the worked examples
+    /// transcribed from the deposited "Citing Foreign Affairs Records" (D17), selected by the
+    /// packet's own series types and pre-filled from its own fields.
+    @Test("The citation crib attributes, quotes the deposited examples, and pre-fills")
     func citationCribAttributes() {
         let text = exporter().export()
         #expect(text.contains("governed by your publisher"))
         #expect(text.contains("reports that guidance as NARA's rather than prescribing it"))
-        #expect(text.contains("have not been deposited"), """
-            The crib must say its worked examples are missing rather than paraphrasing guidance \\
-            nobody has checked.
+        #expect(!text.contains("have not been deposited"), """
+            The governing PDF was deposited 2026-08-22 (D17); the old sentence claiming \
+            otherwise was false in shipped output and must not return.
             """)
+        // The oracle's decimal designations are date-form, so Example 5 is the match.
+        #expect(text.contains("Example 5, telegram with date numbering"))
+        #expect(text.contains("611.93/12-854"), "NARA's example quoted verbatim, not paraphrased")
+        // The pre-fill substitutes only what the packet KNOWS; the rest stays a placeholder.
+        #expect(text.contains("file 762.00/2-148"), "the packet's own file number is substituted")
+        #expect(text.contains("⟨Sender⟩"), "what is read off the document stays a placeholder")
+        // The lot example, pre-filled from the resolved lot's own fields.
+        #expect(text.contains("also serves as a model"))
+        #expect(text.contains("Entry P-5"), "Example 8 quoted verbatim")
+        #expect(text.contains("Records of the Policy Planning Staff, 1947-1953, Entry A1 558, RG 59"),
+                "the resolved lot's series title, entry and RG pre-fill NARA's form")
+        // No subject-numeric designation in the oracle, so Example 7 must NOT print — an
+        // example for a series type the packet does not hold would be noise wearing help's
+        // clothes.
+        #expect(!text.contains("Subject-Numeric File"), "no SNF citations in this packet")
+    }
+
+    /// A3: the inquiry identifies resolved records by NARA's own four fields, with the link.
+    @Test("The inquiry's records of interest carry A3's four-field line")
+    func inquiryCarriesRecordsLine() {
+        let text = exporter().export()
+        let inquiry = text.components(separatedBy: "## Advance inquiry")[1]
+            .components(separatedBy: "## Pull worksheet")[0]
+        #expect(inquiry.contains("RG 59 · Entry A1 558 · Records of the Policy Planning Staff, "
+                                 + "1947-1953 · NAID 555 · 1947-1953"), """
+            The effective-inquiry spec asks records be identified by RG + entry + series \
+            title, with NAID links — the fields the builder used to compute and discard.
+            """)
+        #expect(inquiry.contains("https://catalog.archives.gov/id/555"))
+    }
+
+    /// A5: an unresolved lot's source notes appear VERBATIM, each with its FRUS citation,
+    /// inside the inquiry — the advance route for exactly the citations NARA's FAQ says
+    /// cannot be resolved "while researchers wait in a research room".
+    @Test("Unresolved citations appear verbatim in the inquiry as help-me-locate items")
+    func unresolvedNotesQuotedInInquiry() {
+        let text = exporter().export()
+        let inquiry = text.components(separatedBy: "## Advance inquiry")[1]
+            .components(separatedBy: "## Pull worksheet")[0]
+        #expect(inquiry.contains("Please help me locate"))
+        #expect(inquiry.contains("Lot 71 D 483"))
+        #expect(inquiry.contains("Cited as: Department of State, Lot 71 D 483, Box 2"),
+                "the note must be quoted verbatim — staff match on the printed designation")
+        #expect(inquiry.contains("FRUS 1948 II, Document 1"), "each note carries its FRUS citation")
+        #expect(inquiry.contains("did not carry over"), "the FAQ's own explanation frames the ask")
+        // The RESOLVED lot is not a locate request — it resolved.
+        let locate = inquiry.components(separatedBy: "Please help me locate")[1]
+        #expect(!locate.contains("Lot 64 D 199"))
+    }
+
+    /// Chapter 3's roster: one row per document — FRUS citation · file/folder · blank Box.
+    @Test("The pull worksheet has a per-document roster under each group")
+    func worksheetHasDocumentRoster() {
+        let text = exporter().export()
+        let worksheet = text.components(separatedBy: "## Pull worksheet")[1]
+            .components(separatedBy: "## Use these instead")[0]
+        #expect(worksheet.contains("| FRUS citation | File / folder | Box |"))
+        #expect(worksheet.contains("| FRUS 1948 II, Document 3 | 762.00/2-348 | |"),
+                "a roster row is the citation, the cited file designation, and a blank box")
+        #expect(worksheet.contains("| FRUS 1948 II, Document 2 | Germany 1948 | |"),
+                "a lot's folder designation is a roster designation too")
+        // The series line above the roster, same composed A3 line as the inquiry.
+        #expect(worksheet.contains("NAID 555"))
+    }
+
+    /// Chapter 5 names the series the resolution knew, instead of a bare NAID.
+    @Test("The triage names its series")
+    func triageNamesItsSeries() {
+        let text = exporter().export()
+        #expect(text.contains("Records of the Policy Planning Staff, 1947-1953 — NAID 555 — "
+                              + "Restricted - Partly (8 documents)"), """
+            A row reading "NAID 555 — Restricted - Partly" is a number the reader cannot \
+            act on; the resolution carried the title all along.
+            """)
+    }
+
+    /// Chapter 5 disclosed nothing when it truncated — and its dropped tail is closed
+    /// series, which is precisely what the chapter exists to surface before a flight is
+    /// booked. Mirror of chapter 4's disclosure rule, driven over a >limit fixture.
+    @Test("A triage longer than the row limit discloses its remainder")
+    func triageDisclosesTruncation() {
+        let counts = Dictionary(uniqueKeysWithValues: (1...25).map { ("naid-\($0)", 1) })
+        let model = TripPacketModel.build(
+            groups: [], documentYears: [], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil })
+        let triage = RestrictionTriage.build(
+            documentCountsByNaId: counts, unresolvedDocumentCount: 0,
+            facts: { _ in SeriesFactsIndex.Facts(
+                accessStatus: "Restricted - Fully", accessRestrictions: [],
+                useStatus: nil, useRestrictions: [], extent: nil,
+                referenceUnit: nil, findingAids: [], years: nil) })
+        let patched = TripPacketModel(
+            groups: model.groups, triage: triage, substitutes: model.substitutes,
+            flags: model.flags, checklist: model.checklist, topicSentence: model.topicSentence)
+        let text = exporter(model: patched).export()
+        #expect(text.contains("5 further flagged series are not listed here"), """
+            25 flagged series against a limit of 20 must disclose the remainder — a list \
+            that silently stops reads as complete.
+            """)
+    }
+
+    /// A10's second half: the withdrawal-notice / FOIA / MDR explainer.
+    @Test("Chapter 5 explains the withdrawal notice and names the remedy")
+    func withdrawalExplainerPrints() {
+        let text = exporter().export()
+        #expect(text.contains("withdrawal notice"))
+        #expect(text.contains("Mandatory Declassification Review"))
+        #expect(text.contains("FOIA"))
+        #expect(text.contains("not lost"), """
+            The explainer's job is the case that survives the trip: what the slip of paper \
+            where a document used to be means, and that a remedy exists.
+            """)
+    }
+
+    /// The PDF share renders the exporter's own string — a readable multi-page PDF, driven
+    /// through the real renderer and read back through CGPDFDocument.
+    @Test("The PDF renderer paginates the packet into a readable PDF")
+    func pdfRendersAndReadsBack() throws {
+        let text = exporter().export()
+        let url = try #require(TripPacketPDFRenderer.render(packet: text, title: "Berlin/1948"))
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(!url.lastPathComponent.contains("/") || url.lastPathComponent.hasSuffix(".pdf"))
+        let document = try #require(CGPDFDocument(url as CFURL),
+                                    "the produced file must be a PDF CoreGraphics can open")
+        #expect(document.numberOfPages >= 1)
+        // The oracle packet runs several pages at 9pt monospaced; a one-page result would
+        // mean the pagination loop stopped after the first frame.
+        #expect(document.numberOfPages >= 2, "the oracle packet does not fit one page")
     }
 
     /// T-0 §3.2: the fastest-rotting claims are absent.

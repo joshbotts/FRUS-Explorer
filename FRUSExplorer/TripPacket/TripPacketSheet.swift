@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import CoreText
 
 // MARK: - TripPacketSheet
 
@@ -30,6 +31,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
+///   1.1 — Session 2026-08-23: #830 — the roster's citations come from the real formatter
+///          (the data source gains the manifest map), and a PDF share rides beside the
+///          plain-text one — the SAME string paginated, never a second composition
 struct TripPacketSheet: View {
 
     /// The reading list.
@@ -43,6 +47,8 @@ struct TripPacketSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var packet: String?
+    /// The packet paginated as a PDF, regenerated with the packet itself.
+    @State private var packetPDF: URL?
     @State private var hasDate = false
     @State private var arrival = Date()
     @State private var isBuilding = true
@@ -90,6 +96,17 @@ struct TripPacketSheet: View {
                         }
                     }
                 }
+                // The PDF beside the text, never instead of it: plain text is the format
+                // the inquiry draft must survive in (it is pasted into a mail client),
+                // and the PDF is the same string paginated for printing and filing.
+                if let packetPDF {
+                    ToolbarItem(placement: .primaryAction) {
+                        ShareLink(item: packetPDF) {
+                            Label(String(localized: "packet.share.pdf", defaultValue: "Share as PDF"),
+                                  systemImage: "doc.richtext")
+                        }
+                    }
+                }
             }
             .task { await rebuild() }
             .onChange(of: hasDate) { _, _ in Task { await rebuild() } }
@@ -126,15 +143,97 @@ struct TripPacketSheet: View {
     private func rebuild() async {
         isBuilding = true
         defer { isBuilding = false }
-        guard let pipeline = appState.indexingPipeline else { packet = nil; return }
-        let model = await TripPacketBuilder.build(
-            documents: documents, researchQuestion: researchQuestion,
-            dataSource: TripPacketDataSource(pipeline: pipeline))
-        guard !model.groups.isEmpty || model.triage.unresolvedDocumentCount > 0 else {
+        guard let pipeline = appState.indexingPipeline else {
             packet = nil
+            packetPDF = nil
             return
         }
-        packet = TripPacketExporter(model: model, projectName: title,
-                                    arrival: hasDate ? arrival : nil).export()
+        // The same manifest set CollectionContentResolver batches, keyed once — what lets
+        // the roster's citations come from the real formatter rather than the fallback.
+        let manifest = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        let model = await TripPacketBuilder.build(
+            documents: documents, researchQuestion: researchQuestion,
+            dataSource: TripPacketDataSource(
+                pipeline: pipeline,
+                manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
+                                        uniquingKeysWith: { first, _ in first })))
+        guard !model.groups.isEmpty || model.triage.unresolvedDocumentCount > 0 else {
+            packet = nil
+            packetPDF = nil
+            return
+        }
+        let rendered = TripPacketExporter(model: model, projectName: title,
+                                          arrival: hasDate ? arrival : nil).export()
+        packet = rendered
+        packetPDF = TripPacketPDFRenderer.render(packet: rendered, title: title)
+    }
+}
+
+// MARK: - TripPacketPDFRenderer
+
+/// Paginates the packet string into a US-Letter PDF (#830).
+///
+/// ## The same string, never a second composition
+/// The exporter's one-format rule stands: this renders the EXACT plain text the reader
+/// reviewed, in a monospaced face, flowed across pages by CoreText. A structured PDF
+/// (styled headings, laid-out tables) would be a second composition of the packet — a
+/// second place for its honesty rules to be applied differently — which is the exact
+/// failure #960 measured across the collection exporters. The technique is
+/// `PDFCollectionExporter`'s (CoreText framesetter into a `CGContext` PDF); the ambition
+/// deliberately is not.
+///
+/// Version history:
+///   1.0 — Session 2026-08-23: #830
+enum TripPacketPDFRenderer {
+
+    /// Renders the packet to a temporary PDF, or `nil` when the context cannot be made.
+    ///
+    /// - Parameters:
+    ///   - packet: The exporter's plain-text output.
+    ///   - title: Names the file, sanitized.
+    /// - Returns: A `file://` URL in the temporary directory.
+    static func render(packet: String, title: String) -> URL? {
+        var pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)   // US Letter, points
+        let textRect = pageRect.insetBy(dx: 54, dy: 54)              // 0.75" margins
+
+        let font = CTFontCreateWithName("Menlo" as CFString, 9, nil)
+        let attributed = NSAttributedString(
+            string: packet,
+            attributes: [
+                NSAttributedString.Key(kCTFontAttributeName as String): font,
+                NSAttributedString.Key(kCTForegroundColorAttributeName as String):
+                    CGColor(gray: 0, alpha: 1),
+            ])
+        let framesetter = CTFramesetterCreateWithAttributedString(attributed)
+
+        let safeName = title.components(separatedBy: CharacterSet(charactersIn: "/\\:"))
+            .joined(separator: "-")
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Archive visit — \(safeName).pdf")
+        guard let consumer = CGDataConsumer(url: url as CFURL),
+              let context = CGContext(consumer: consumer, mediaBox: &pageRect, nil) else {
+            return nil
+        }
+
+        var location = 0
+        let length = attributed.length
+        var pages = 0
+        // The page cap is a runaway guard, not a feature limit: at ~60 lines a page it
+        // sits far above any packet a reading list can produce.
+        while location < length && pages < 500 {
+            context.beginPDFPage(nil)
+            let path = CGPath(rect: textRect, transform: nil)
+            let frame = CTFramesetterCreateFrame(
+                framesetter, CFRange(location: location, length: 0), path, nil)
+            CTFrameDraw(frame, context)
+            context.endPDFPage()
+            let visible = CTFrameGetVisibleStringRange(frame)
+            // Always advances, so a zero-visible frame (a degenerate rect) cannot loop.
+            location += max(visible.length, 1)
+            pages += 1
+        }
+        context.closePDF()
+        return url
     }
 }

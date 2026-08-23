@@ -46,5 +46,7 @@ Resizing an iPad window no longer crashes. A new volume scope now saves — it c
 10. Unprinted pointers: does the ranking read sensibly?
 11. Browse ▸ Clusters: skim several clusters and open a few. Do the groupings read as coherent research leads, or as arbitrary piles? This feeds the same leads-or-noise verdict as item 4 — the list view exists so you can judge membership directly, not just the map's picture.
 12. In a cluster: **See on the semantic map** should land zoomed on that region with its card open; **Save as Working Corpus** on a big cluster should say it kept the first 7,500.
+13. Project Home ▸ **Plan a Visit** (or a collection's add menu ▸ **Plan an Archive Visit…**): read the generated packet against documents you know. Is anything it asserts about your records wrong? The inquiry draft should paste cleanly into Mail; **Share as PDF** should print the same text.
+14. In the packet: with no visit date, deadlines should read relative; a citation the app can't place should appear verbatim under "help me locate", never dropped.
 
 Include device + iOS version, what you tapped, what you expected, what happened. Thanks for testing!

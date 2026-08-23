@@ -1150,6 +1150,16 @@ private extension EducationPage {
                 ]
             ),
             EducationSection(
+                id: "trip-packet",
+                heading: "The Research Trip Packet",
+                systemImage: "building.columns",
+                paragraphs: [
+                    "When your research points beyond the published series \u{2014} to the boxes at College Park or a presidential library \u{2014} the trip packet turns a set of documents into an archive-visit plan. The app reads each document's printed source note, resolves it against the bundled National Archives data, and generates seven chapters: a pre-arrival checklist with NARA's own lead times, a draft advance inquiry per facility, a pull worksheet whose rows carry the record group, entry number, series title and NAID that staff ask researchers to quote, the records you must read digitised or on film instead of pulling, an access-restriction triage naming any cited series NARA lists as closed, NARA's own citation forms for your series types \u{2014} quoted and attributed, never prescribed \u{2014} and a visit-day card holding only the facts that don't go stale.",
+                    "The packet is deliberately honest about its limits. A citation the app cannot resolve is quoted verbatim in the inquiry draft as a help-me-locate item rather than dropped \u{2014} NARA's guidance is that poorly described records are resolved by writing ahead. An institutional fact nobody has verified is omitted, never printed undated. Availability is never promised: where the truth is \u{201C}confirm with staff\u{201D}, that is what it says. And the visit date is optional, because the packet is most useful before a trip is booked \u{2014} without one, every deadline prints relative to your arrival.",
+                    "Find it on Project Home (\u{201C}Plan a Visit\u{201D}, over the project's documents, with the research question seeding the inquiry) or in any collection's add menu (\u{201C}Plan an Archive Visit\u{2026}\u{201D}). Share it as plain text \u{2014} the inquiry pastes straight into an email \u{2014} or as a PDF for printing."
+                ]
+            ),
+            EducationSection(
                 id: "collections",
                 heading: "Collections & Export",
                 systemImage: "tray.2",
