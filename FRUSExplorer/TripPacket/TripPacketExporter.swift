@@ -117,16 +117,25 @@ struct TripPacketExporter {
                 // Only ever `printable` — an unverified fact is omitted, never printed undated (D7).
                 if let email = row.inquiryEmail.printable { out.append("To: \(email)") }
                 if let address = row.address.printable { out.append(address) }
+                // Everything from here to "Topic:" is the DRAFT'S letterhead — a researcher pastes
+                // from "Topic:" down into an email. Notes addressed to the researcher rather than
+                // to NARA therefore go under an explicit label, or a link meant for the sender
+                // reads as something they were supposed to send.
+                var notes: [String] = []
                 if let policy = row.appointmentPolicy.printable {
-                    out.append("Appointments: \(policy)")
+                    notes.append("Appointments: \(policy)")
                 } else if !row.links.isEmpty {
                     // D15: the policy is IN FLUX, so it was negated into a link rather than left
                     // pending. A sentence that rots between the packet being printed and the trip
                     // being taken is worse than a pointer to the page that always says the truth.
-                    out.append("Appointment policy changes — check NARA's current guidance before "
-                               + "you write.")
+                    notes.append("Appointment policy changes — check NARA's current guidance.")
                 }
-                out.append(contentsOf: Self.linkLines(row.links))
+                notes.append(contentsOf: Self.linkLines(row.links))
+                if !notes.isEmpty {
+                    out.append("")
+                    out.append("Before you write:")
+                    for note in notes { out.append("  \(note)") }
+                }
             }
             out.append("")
             out.append("Topic: \(model.topicSentence.forExport)")

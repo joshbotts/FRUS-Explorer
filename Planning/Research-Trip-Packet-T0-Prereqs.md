@@ -566,3 +566,26 @@ now print the first two and rule the last two.
    `580618` begins *1963-02-01* — so 1963 splits by form, `NARACatalogClient` is right, and
    `DecimalFileSegment` claims all of 1963. It feeds neighbour clustering in `IndexingPipeline` and
    Source Explorer, so a 1963 subject-numeric document is clustered into a segment it is not in.
+
+**D21 — the link tier ships half of D16, and the missing half is a measurement.**
+D16 asks each library row to carry a visit-planning page beside a finding aid. Only the first
+ships. Every URL in the table was fetched 2026-08-22, redirect-following, with a browser user
+agent; the results settled what could honestly print:
+
+| Set | Result |
+|---|---|
+| Owner-supplied visit-planning pages (10 libraries + 2 NARA) | **All live.** 11 clean `200` with no redirect; `bush41library.gov` returns `202`, and an invented path on that host returns `404`, so the host discriminates and the page is real |
+| `NARACatalogClient`'s library finding-aid URLs | **Five of six `404`.** JFK returns `403` on every path including invented ones — undecidable, not dead |
+| `NARACatalogClient`'s Bush URL | **`NXDOMAIN`.** `www.bush41library.tamu.edu` does not resolve; without the `www.` it `301`s to the `.gov` **homepage**, discarding `/research` |
+| `ManuscriptRepositoryGuidance`'s 14 | 11 live. **Library of Congress has MOVED** (`403` + redirect to a `research-centers` path) though its doc comment records it `.fetched`; Yale and Michigan State redirect elsewhere; NDU and CMH are the documented `.searchIndex` case |
+
+The 404s are not a fetch artefact: the same hosts answer `200` for their roots and for the
+visit-planning pages, and `404` for deliberately invented paths. **Printing a verified-dead link is
+worse than printing none**, and guessing replacements is precisely the unverified institutional
+fact D7 exists to prevent — so the finding-aid half is withheld until the owner supplies confirmed
+URLs, and the dead ones are reported rather than patched.
+
+**The invented-path control is the reusable technique here.** A `403` alone cannot distinguish a
+bot filter from a dead page. Requesting a path that certainly does not exist on the same host
+answers it: same code means the host answers everything alike and a fetch proves nothing
+(`.searchIndex`); a different code means the host discriminates and the original result is real.
