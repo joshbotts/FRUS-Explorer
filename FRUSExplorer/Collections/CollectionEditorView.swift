@@ -182,6 +182,8 @@ struct CollectionEditorView: View {
     @State private var addDocumentsToast: String?
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights  = false
+    /// Presents the research-trip packet for this collection's documents (#830 T-2).
+    @State private var showTripPacket     = false
     @State private var showExport         = false
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
@@ -450,6 +452,18 @@ struct CollectionEditorView: View {
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
                 addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
             }
+        }
+        .sheet(isPresented: $showTripPacket) {
+            // From the ENTRIES rather than from `orderedDocumentKeys`, which is a `[String]` of
+            // composite keys — splitting those back apart would break on any id containing "/".
+            TripPacketSheet(
+                documents: sortedEntries
+                    .filter { $0.entryKind == .document
+                        && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) },
+                title: collection.name,
+                researchQuestion: nil)
+                .environment(appState)
         }
         .sheet(isPresented: $showAddHighlights) {
             CollectionAddHighlightsSheet(
@@ -1308,6 +1322,17 @@ struct CollectionEditorView: View {
                 Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
                       systemImage: "list.bullet.rectangle")
             }
+            Divider()
+            // #830 T-2: the packet is built from this collection's documents. Disabled with none,
+            // rather than hidden, so the action is discoverable before a collection has content.
+            Button {
+                showTripPacket = true
+            } label: {
+                Label(String(localized: "collection.planVisit",
+                             defaultValue: "Plan an Archive Visit…"),
+                      systemImage: "building.columns")
+            }
+            .disabled(orderedDocumentKeys.isEmpty)
             Divider()
             Menu {
                 sortByDateScopeItems

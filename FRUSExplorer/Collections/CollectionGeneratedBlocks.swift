@@ -248,10 +248,15 @@ enum CollectionGeneratedBlocks {
         let seriesName: String?
         /// The raw source-note text (grouping fallback for unrecognized citations).
         let rawText: String
+        /// The parser's classification of the citation form — see
+        /// `DocumentArchivalSource.citationEra`. Carried so the trip packet can reach
+        /// `SourceProvenanceCategory` without a second classifier (#830 T-2).
+        let citationEra: String?
 
         /// Creates a source record.
         init(volumeId: String, documentId: String, repository: String?,
-             recordGroup: String?, lotFile: String?, seriesName: String?, rawText: String) {
+             recordGroup: String?, lotFile: String?, seriesName: String?, rawText: String,
+             citationEra: String? = nil) {
             self.volumeId = volumeId
             self.documentId = documentId
             self.repository = repository
@@ -259,6 +264,7 @@ enum CollectionGeneratedBlocks {
             self.lotFile = lotFile
             self.seriesName = seriesName
             self.rawText = rawText
+            self.citationEra = citationEra
         }
     }
 
@@ -488,6 +494,13 @@ enum CollectionGeneratedBlocks {
 
     /// The grouping key for a source record: the structured fields when any is present,
     /// else the raw note text (so distinct unrecognized citations never merge).
+    /// The grouping key, shared with the trip packet (#830 T-2) so a packet group IS a Sources
+    /// block group rather than merely resembling one.
+    static func tripPacketGroupKey(for record: SourceRecord) -> String { groupKey(for: record) }
+
+    /// The display label, shared with the trip packet for the same reason.
+    static func tripPacketLabel(for record: SourceRecord) -> String { label(for: record) }
+
     private static func groupKey(for record: SourceRecord) -> String {
         let structured = [record.repository, record.recordGroup,
                           record.lotFile, record.seriesName]

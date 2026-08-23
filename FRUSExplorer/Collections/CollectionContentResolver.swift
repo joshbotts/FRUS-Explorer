@@ -1266,7 +1266,8 @@ class CollectionContentResolver {
                 CollectionGeneratedBlocks.SourceRecord(
                     volumeId: $0.volumeId, documentId: $0.documentId,
                     repository: $0.repository, recordGroup: $0.recordGroup,
-                    lotFile: $0.lotFile, seriesName: $0.seriesName, rawText: $0.rawText)
+                    lotFile: $0.lotFile, seriesName: $0.seriesName, rawText: $0.rawText,
+                    citationEra: $0.citationEra)
             }
         }
 

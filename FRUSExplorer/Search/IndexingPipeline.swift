@@ -3814,7 +3814,7 @@ public actor IndexingPipeline {
             let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
             let sql = """
                 SELECT volume_id || '/' || document_id, volume_id, document_id,
-                       repository, record_group, lot_file, series_name, raw_text
+                       repository, record_group, lot_file, series_name, raw_text, citation_era
                 FROM document_sources
                 WHERE volume_id || '/' || document_id IN (\(placeholders))
                 """
@@ -3832,7 +3832,8 @@ public actor IndexingPipeline {
                     recordGroup: auxColumnString(stmt, 4),
                     lotFile: auxColumnString(stmt, 5),
                     seriesName: auxColumnString(stmt, 6),
-                    rawText: auxColumnString(stmt, 7) ?? "")
+                    rawText: auxColumnString(stmt, 7) ?? "",
+                    citationEra: auxColumnString(stmt, 8))
             }
         }
         return result
@@ -9563,10 +9564,20 @@ public struct DocumentArchivalSource: Sendable {
     public let seriesName: String?
     /// The raw source-note text.
     public let rawText: String
+    /// The parser's own classification of the citation form (`decimal`, `cfpf`, `lot_file`,
+    /// `named_series`, `foreign`, `published`, `structured`) — already stored on
+    /// `document_sources` and, until #830 T-2, never selected back out.
+    ///
+    /// The trip packet needs it: `SourceProvenanceCategory.from(citationEra:repository:)` is how a
+    /// citation becomes a provenance category, and the category is what decides which facility
+    /// serves it. Deriving that from the parsed fields instead would be a second classifier that
+    /// could disagree with the one the indexer used.
+    public let citationEra: String?
 
     /// Creates a structured source row.
     public init(volumeId: String, documentId: String, repository: String?,
-                recordGroup: String?, lotFile: String?, seriesName: String?, rawText: String) {
+                recordGroup: String?, lotFile: String?, seriesName: String?, rawText: String,
+                citationEra: String? = nil) {
         self.volumeId = volumeId
         self.documentId = documentId
         self.repository = repository
@@ -9574,6 +9585,7 @@ public struct DocumentArchivalSource: Sendable {
         self.lotFile = lotFile
         self.seriesName = seriesName
         self.rawText = rawText
+        self.citationEra = citationEra
     }
 }
 
