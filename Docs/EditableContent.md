@@ -6,7 +6,21 @@ the analytics info popovers and captions, the Source Explorer panels, the method
 stamped on every export, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes.**
+
+**The 2026-08-23 amendment** verified every block's prose against the source string it names —
+mechanically, block by block — and repaired the twenty that had drifted since build 42. Most of the
+drift came from four passes that edited strings without touching this mirror: the #838 archival
+copy pass (footers shortened, prose moved into ⓘ items), the #834 central-file channel (the Flows
+scope ⓘ and the graph's help now describe three citation kinds, not two), the #1052 subject-facet
+rewrite (categories are headings, not scopes), and the American-spelling copy guard
+(coloured/centre/recognise → colored/center/recognize). It also **filled three §13 blocks that had
+been empty since they were written** (the map's About body, the experimental-standing line, and the
+layout caveat), repointed a §13 block that carried the slice's *horizontal* caption under the
+*vertical* caption's key, replaced the retired graph help block with the live
+`graph.info.interact.body.v2`, and added the blocks the post-42 features grew:
+`archival.info.library.*` (#838's moved Your-Library rule) and `graph.context.centralFile` (#834's
+class nodes).
 
 The build-42 amendment adds **§13**, which covers the semantic map and the Settings section that
 governs its files — a surface this file had never carried, and which grew a great deal in this
@@ -668,6 +682,8 @@ Find it from the Browse tab’s Analysis Tools menu (iOS) or the Word Cloud wind
 **Cross-Reference Graph**
 
 Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.
+
+Teal nodes mark what the editors cited but did not print — lot files, presidential-library collections, and central-file numbers — so the graph also shows where a document's footnotes point beyond the published series.
 
 Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.
 
@@ -2328,7 +2344,7 @@ Source notes parsed for %lld of %lld matches; %lld name a record group.
 
 <!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 925–926 | key: search.subject.facet.footer -->
 
-Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choosing a category finds volumes where that topic is one of their most distinctive. The volume picker then fills with the matches you have indexed.
+Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.
 
 <!-- END SOURCE: search.subject.facet.footer -->
 
@@ -2338,7 +2354,7 @@ Experimental. These topics are detected automatically from the text, not editori
 
 <!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 1441–1442 | key: search.subject.facet.picker.footer -->
 
-Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when a topic is among its most distinctive, not merely mentioned. Categories are broad. Open a sub-category to narrow the list.
+Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer topics, browse the Topic index.
 
 <!-- END SOURCE: search.subject.facet.picker.footer -->
 
@@ -2983,6 +2999,21 @@ Document counts are unavailable in this build — the bundled usage index did no
 
 ---
 
+#### Unprinted pointers on the classes lens — the self-citation disclosure
+<!-- #834: the class lens gained its own pointer vocabulary, so Unprinted pointers is no longer
+     withheld there — but most central-file citations name the citing document's own file, so
+     without this footnote a reader comparing the two lenses compares two different things. The
+     shares are measured (three in five overall, three in four before 1946); do not round them
+     away. -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | key: archival.caveats.classPointersSelfCitation -->
+
+Most central-file citations name the file the citing document itself came from — about three in five, and closer to three in four before 1946. They are counted here, because the file was still cited, but they are not movement between archives.
+
+<!-- END SOURCE: archival.caveats.classPointersSelfCitation -->
+
+---
+
 ### 9.2 Collections — the ranking
 
 #### While the archival authority loads
@@ -3001,7 +3032,7 @@ Reading the archival authority…
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1116 | key: archival.ranking.caption %@ %lld %@ %lld -->
 
-Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are coloured by who holds the records.
+Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colored by who holds the records.
 
 <!-- END SOURCE: archival.ranking.caption %@ %lld %@ %lld -->
 
@@ -3121,7 +3152,7 @@ Select a node to see the link
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 837 | key: archival.network.dock.summary.v2 %lld %lld %@ -->
 
-%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the centre shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
+%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
 
 <!-- END SOURCE: archival.network.dock.summary.v2 %lld %lld %@ -->
 
@@ -3145,7 +3176,7 @@ Select a node to see the link
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 846 | key: archival.network.dock.capped.v2 %lld -->
 
-%lld more are held back so each custodian's quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighbourhood rather than to see more of it.
+%lld more are held back so each custodian's quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it.
 
 <!-- END SOURCE: archival.network.dock.capped.v2 %lld -->
 
@@ -3345,7 +3376,7 @@ No cross-reference runs between %1$@ and another collection in this direction. T
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 665 | key: archival.flows.caveats.body.v3 %lld %lld %lld %lld -->
 
-Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld volumes in the series contribute a single reference. The cross-reference style these come from postdates 1945. The figures cover the whole series whatever you have downloaded, but they carry no dates. The stored data is a pair of archival units and a count, with no volume or year attached. So you cannot narrow this mode to a period. Central-file classes are left out on purpose. Across the whole series they carry %3$lld references over %4$lld pairs, which is under two per pair. That is too thin to rank, and there are no labels to rank it with.
+Only %1$lld of the %2$lld volumes in the series contribute a single reference — the gap is itself a finding. The central-file classes left out of the diagrams carry %3$lld references over %4$lld pairs. These figures cover the whole series whatever you have downloaded, and carry no dates, so this mode cannot be narrowed to a period.
 
 <!-- END SOURCE: archival.flows.caveats.body.v3 %lld %lld %lld %lld -->
 
@@ -3355,7 +3386,7 @@ Coverage is uneven, and the gap is itself a finding. Only %1$lld of the %2$lld v
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.browse.detail -->
 
-You cannot browse the individual citations here. The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.
+The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.
 
 <!-- END SOURCE: archival.info.flows.browse.detail -->
 
@@ -3495,17 +3526,23 @@ The volumes contributing here cover %1$lld to %2$lld.
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 637 | key: archival.flows.caveats.unprinted.ibid.v2 %@ -->
 
-%@ of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation.
+%@ of these citations come from an “Ibid.”, which the app follows back — a reading rather than a quotation, explained in the ⓘ.
 
 <!-- END SOURCE: archival.flows.caveats.unprinted.ibid.v2 %@ -->
 
 ---
 
-#### Unprinted material — what a ribbon claims
+#### Unprinted material — what Flows reads, and what it does not
 
+<!-- #834/#1012: this ⓘ item was rewritten when the central-file channel shipped. The old text
+     ("what a ribbon claims") lives on in archival.info.flows.detail; this one now carries the
+     scope — three citation kinds — and the self-file share, which is why a citation count reads
+     roughly three times the number of pointers that lead somewhere new. -->
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.scope.detail -->
 
-A ribbon says the editors, working on material from one collection, told the reader that something they did not print is in another. It does not say the two archives refer to each other, and it is not a count of documents held anywhere.
+This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite, which is why they were nearly absent here until it was added.
+
+Most central-file citations point at the citing document's own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between archives. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere new.
 
 <!-- END SOURCE: archival.info.flows.scope.detail -->
 
@@ -3611,7 +3648,7 @@ Your most-cited collections
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1411 | key: archival.library.collections.caption %lld %lld -->
 
-Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognise. Neither group is listed here.
+Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognize. Neither group is listed here.
 
 <!-- END SOURCE: archival.library.collections.caption %lld %lld -->
 
@@ -3621,7 +3658,7 @@ Matched from your own source notes against the archival authority list in the ap
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1422–1423 | key: archival.library.collections.empty -->
 
-None of your volumes' source notes name a collection the bundled authority recognises.
+None of your volumes' source notes name a collection the bundled authority recognizes.
 
 <!-- END SOURCE: archival.library.collections.empty -->
 
@@ -3643,19 +3680,21 @@ Shows the documents in your index drawn from this collection
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1490 | key: archival.library.footer %lld %lld -->
 
-Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series. Index more and these charts change with you. The Collections mode is different: it does not depend on what you have downloaded.
+Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series.
 
 <!-- END SOURCE: archival.library.footer %lld %lld -->
 
 ---
 
-#### Footer — why the total is smaller than your document count
+#### Footer — the two counts the collections list leaves out
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
+<!-- #838(2) moved the "a source note is not a document" explanation off the page into the ⓘ
+     (archival.info.library.detail); the footer keeps only the two measured counts. -->
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1497 | key: archival.library.footer.detail %lld %lld -->
 
-A source note is not a document. Only documents whose editors recorded where the original was found appear here. So this total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records. %1$lld notes cite the central files, which are a filing system rather than a collection; those notes are counted in the composition above. Another %2$lld name something the app's authority list does not recognise.
+%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app's authority list does not recognize.
 
 <!-- END SOURCE: archival.library.footer.detail %lld %lld -->
 
@@ -3699,7 +3738,7 @@ What you're seeing
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 235–236 | key: archival.info.shows.detail.v2 -->
 
-Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file classes each era's volumes drew on. Network puts one collection at the centre and groups everything cited alongside it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.
+Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era's volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.
 
 <!-- END SOURCE: archival.info.shows.detail.v2 -->
 
@@ -3765,6 +3804,29 @@ About 95% of the references behind Flows are footnotes. A ribbon means the edito
 
 ---
 
+#### Your Library's rule — title
+<!-- #838(2): Your Library's rule, moved off the page into this ⓘ item. The two counts it used to
+     carry stay on the chart footer (archival.library.footer.detail) — they are measurements of
+     the reader's own library; this is the rule they obey. -->
+
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.library.title -->
+
+A source note is not a document
+
+<!-- END SOURCE: archival.info.library.title -->
+
+---
+
+#### Your Library's rule — detail
+
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.library.detail -->
+
+Only documents whose editors recorded where the original was found appear in Your Library. So its total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records; notes citing the central files are a filing system rather than a collection and are counted in the composition instead. Your Library counts only what you have indexed — Collections does not, and does not change with your downloads.
+
+<!-- END SOURCE: archival.info.library.detail -->
+
+---
+
 #### Collections and classes — title
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 255 | key: archival.info.units.title -->
@@ -3779,7 +3841,7 @@ Collections and classes are different things
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 256–257 | key: archival.info.units.detail -->
 
-A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. The two are never mixed in one ranking. Before 1948 the series cites classes far more than collections. After 1976 it barely cites classes at all.
+A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. The two are never mixed in one ranking. Classes are ranked at one depth: a decimal file number stands for itself, while subject-numeric designators are grouped to their category and number, and a grouped row opens to the exact designators underneath it. Before 1948 the series cites classes far more than collections. After 1976 it barely cites classes at all.
 
 <!-- END SOURCE: archival.info.units.detail -->
 
@@ -4806,7 +4868,7 @@ How the corpus's language sits
 
 <!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 158 | key: semanticAnalytics.about.body.v2 | shared: iOS+macOS (single edit point) -->
 
-
+Every document in the corpus placed by the shape of its language, not by citations or archival provenance. Regions are named by the vocabulary that distinguishes them. Tap a document to open it, draw a lasso to keep a set, or pick two poles to lay the corpus along an axis you can state — which replaces the vertical axis with each volume's coverage year.
 
 <!-- END SOURCE: semanticAnalytics.about.body.v2 -->
 
@@ -4815,14 +4877,14 @@ How the corpus's language sits
 
 <!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 170 | key: semanticAnalytics.about.experimental | shared: iOS+macOS (single edit point) -->
 
-
+Experimental. This is a model's reading of the language, not an editorial fact, and its quality before 1900 has not been measured.
 
 <!-- END SOURCE: semanticAnalytics.about.experimental -->
 
 #### Layout caveat, under the map
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1289 | key: semanticMap.caveat.map | shared: iOS+macOS (single edit point) -->
 
-
+Layout preserves local similarity; distances between far regions are not meaningful.
 
 <!-- END SOURCE: semanticMap.caveat.map -->
 
@@ -4903,11 +4965,11 @@ This version of the app has no language summary for one of these volumes, so it 
 #### Reading a slice's position
 <!-- The bit width is READ FROM THE ARTIFACT, not typed — it said '256-bit' for a whole generation after the corpus moved to 512. Keep the placeholder. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1333–1334 | key: semanticMap.caveat.slice.vertical.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1408–1414 | key: semanticMap.caveat.slice.position.v2 %@ %@ %lld | shared: iOS+macOS (single edit point) -->
 
 Left to right is how far each document leans from %1$@ toward %2$@. The reading is approximate — it comes from a compact %3$lld-bit summary of each document — so treat a clear side as meaningful and a small gap as noise.
 
-<!-- END SOURCE: semanticMap.caveat.slice.vertical.v2 -->
+<!-- END SOURCE: semanticMap.caveat.slice.position.v2 -->
 
 #### Reading a slice's vertical axis
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 1333–1334 | key: semanticMap.caveat.slice.vertical.v2 | shared: iOS+macOS (single edit point) -->
@@ -5350,28 +5412,32 @@ Digitized Scans
      mixed axis, these figures must be re-measured or removed — they are not read from data. -->
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.mixed.detail -->
 
-Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram above.
+Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram.
 
 <!-- END SOURCE: archival.info.flows.mixed.detail -->
 
 
-### Cross-Reference Graph — unprinted archival material (#837)
+### Cross-Reference Graph — unprinted archival material (#837, #834)
 
-#### Teal nodes are archival material the editors pointed to but did not print
-<!-- The graph's help sheet. Keeps the shipped shape vocabulary: unit nodes are CIRCLES like
-     every other node (owner's decision 2026-08-19) — the design handoff drew rounded squares,
-     which would have inverted the archival Network view's circle=collection / square=class
-     reading. The last sentence is a refusal and must survive editing: an unmatched citation is
-     left off rather than guessed. -->
-> ⚠️ **RETIRED — editing this block has no effect.** The app no longer ships this
-> string: the graph's help is now the graph.info.* item set. Kept so the wording is not lost; delete it, or point it at a
-> live key, when you next revise this section.
+#### Navigating the graph, and what a teal node is
+<!-- The graph's ⓘ "Navigating the graph" item — the retired graph.help.body's successor, repointed
+     2026-08-23. Keeps the shipped shape vocabulary: unit and class nodes are CIRCLES like every
+     other node (owner's decision 2026-08-19) — the design handoff drew rounded squares, which
+     would have inverted the archival Network view's circle=collection / square=class reading.
+     #834's last commit put central-file class nodes on this canvas; the body names all three
+     citation kinds and says a class node carries its number with NO subject gloss, because the
+     filing schedule was renumbered in 1950 and only the earlier schedule ships (#828's standard:
+     where the table cannot place something, say nothing). The last sentence is a refusal and must
+     survive editing: an unmatched citation is left off rather than guessed. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.info.interact.body.v2 -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.help.body -->
+Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
 
-Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead. A citation the app could not match to a known collection is left off the graph rather than drawn as a guess.
+Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.
 
-<!-- END SOURCE: graph.help.body -->
+This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection's record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.
+
+<!-- END SOURCE: graph.info.interact.body.v2 -->
 
 #### The legend key
 <!-- Shown only when the canvas actually carries a unit node — a permanent key for something
@@ -5381,3 +5447,12 @@ Teal nodes are archival material the editors pointed to in a footnote but did no
 Not printed — opens the collection
 
 <!-- END SOURCE: graph.legend.unit -->
+
+#### A class node's context-menu heading
+<!-- #834: the central-file counterpart of graph.context.unprinted. "Central file" and not the
+     class number, because the menu heading names the KIND — the number is on the node. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.context.centralFile -->
+
+Central file, not printed
+
+<!-- END SOURCE: graph.context.centralFile -->
