@@ -290,9 +290,18 @@ struct TripPacketModelTests {
     private func group(_ key: String, category: SourceProvenanceCategory?, repository: String?,
                        naId: String? = nil, count: Int = 1)
         -> (key: String, label: String, category: SourceProvenanceCategory?,
-            repository: String?, seriesNaId: String?, documentCount: Int) {
+            repository: String?, resolution: ArchivalResolution?,
+            documents: [TripPacketModel.Group.DocumentRef]) {
         (key: key, label: key, category: category, repository: repository,
-         seriesNaId: naId, documentCount: count)
+         resolution: naId.map { naId in
+             ArchivalResolution(naId: naId,
+                                catalogURL: "https://catalog.archives.gov/id/\(naId)",
+                                title: "Series \(naId)", recordGroup: "59", matchType: "lot",
+                                hmsMlrEntryNumbers: nil, levelOfDescription: "series",
+                                seriesNaId: nil, seriesTitle: nil,
+                                seriesHmsMlrEntryNumbers: nil)
+         },
+         documents: TripPacketExporterTests.refs(count))
     }
 
     /// The packet builds with the empty table, and a library group renders a heading-less
@@ -316,7 +325,11 @@ struct TripPacketModelTests {
             reaches a library: a library never resolves to a facility heading (D3), so the \
             exporter's facility-keyed lookup cannot serve it.
             """)
-        #expect(only.facts?.links.count == 1)
+        // D16's full pairing (D21 discharged): the visit-planning page AND the finding aids,
+        // separately labelled — never merged into one "more information" link.
+        #expect(only.facts?.links.count == 2)
+        #expect(only.facts?.links.map(\.label) == ["Plan a research visit",
+                                                   "Finding aids — what is held"])
         #expect(model.needingConfirmation.map(\.id) == ["truman"], """
             A group the packet cannot place must be REPORTED — it is exactly what the reader has to \
             ring ahead about, and dropping it would leave part of their reading unplanned.

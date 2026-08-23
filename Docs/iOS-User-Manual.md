@@ -658,6 +658,8 @@ In the Research tab, filter notes, tags, and highlights to a specific project wh
 
 **Project Home** suggests documents related to the ones you have already gathered under the project, ranked by the same signals as Related Documents (Section 8.5). Each lead shows the document's header, how many of your project's documents it relates to, and a few lines of what it actually says — its summary if it has one, otherwise its opening text — so you can judge it without opening it. A lead whose volume isn't indexed on this device shows the header alone. Leads are the closest thing the app has to a research assistant: gather ten documents under a project and it will tell you what else belongs in the pile.
 
+Beside the Collections section header sits **Plan a Visit**, which generates a **research trip packet** (Section 14.8) over the project's engaged documents — the same set that seeds the leads engine — with the project's research question as the inquiry's topic sentence. It stays disabled until the project has documents.
+
 ---
 
 ## 11. Citing and Reference Managers
@@ -725,7 +727,7 @@ Selections append in the order you picked them; adding a document already presen
 
 ### 12.3 Section Headings and Prose
 
-From the manager's **add** menu, insert editorial structure anywhere in the order:
+From the manager's **add** menu, insert editorial structure anywhere in the order (the same menu also offers **Plan an Archive Visit…**, which generates a research trip packet over the collection's documents — Section 14.8; it stays disabled until the collection has documents):
 
 - **Section headings** group the documents beneath them ("Opening Moves", "The Crisis Deepens") and become headings in the export and its table of contents. Sections **nest to three levels** — parts containing chapters containing sub-sections. Long-press a heading for **Indent** / **Outdent** (plus **Rename**, **Delete Heading Only** — contents stay, sub-headings move up a level — and **Delete Section**, which removes everything in it after confirming). Rows indent to show structure; each heading's chevron collapses its section while you work (display only); dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
 - **Prose blocks** are your connecting commentary, written in a rich-text editor — bold, italic, underline, colour, and hyperlinks from the formatting bar above the keyboard — and preserved through every export. This is where a course reader's head-of-section framing lives.
@@ -904,6 +906,24 @@ A **Collection** record shows two kinds of counts, deliberately distinct: the *s
 ### 14.7 The NARA API Key
 
 A free API key from the National Archives (**Settings → System → Connections → NARA Catalog**; the card links to where you get one) lets Source Explorer enrich lot-file lookups — and the presidential-library citations the bundled catalog cannot answer — with live catalog data. Everything else — central files, decimal files, pre-1910, Paris Peace Conference, named series, outside-NARA repositories, CIA — works with no key at all. The key is stored in your keychain and syncs to your devices via iCloud Keychain.
+
+### 14.8 The Research Trip Packet
+
+Everything this chapter teaches document by document, the **trip packet** assembles in one pass: pick a set of documents, and the app reads their printed source notes, resolves them against the bundled NARA data, and generates a seven-chapter planning document for an archive visit. Reach it from **Project Home ▸ Plan a Visit** (built over the project's engaged documents, Section 10.4) or from a collection's add menu ▸ **Plan an Archive Visit…** (Section 12.3).
+
+The packet's chapters:
+
+1. **Cover and checklist** — how many archival groups and documents, and the pre-arrival checklist. A visit date is optional, deliberately: the packet is most useful *before* a trip is booked, so without a date every deadline prints relative ("4 weeks before you arrive"), and the escalation criteria that need extra notice — documents dated 1960 or later, State Department record groups, lot citations NARA may know under another number — are quoted from NARA's own research-visit guidance.
+2. **Advance inquiry** — a draft email per facility, with the confirmed address and inquiry email for College Park, your project's research question as the editable topic sentence, each resolved series identified the way NARA asks (record group · entry number · series title · NAID, with the catalog link), and — for citations the app could not resolve — a **help-me-locate list quoting each source note verbatim** with its FRUS citation, because NARA's own advice is that poorly described records are resolved by writing ahead, not at the reading-room desk. Presidential-library material gets a confirm-before-you-travel prompt with each library's visit-planning and finding-aid pages instead of a drafted letter — at collection grain the packet cannot name a series, and it never implies a precision the data lacks.
+3. **Pull worksheet** — grouped by facility so its rows can become pull slips, each series headed by the same four-field line, then a per-document roster: FRUS citation, the file or folder designation the note cites, and a **blank Box column** — the packet never invents a box number; boxes are assigned at the pull desk.
+4. **Use these instead of pulling** — records NARA requires you to read digitised or on film, with catalog links (Section 14.5's data, made into an obligation list).
+5. **Access restrictions** — every cited series with a stated restriction, worst first, by name; and what a **withdrawal notice** in a folder means, with the FOIA / Mandatory Declassification Review route past it.
+6. **Citing what you find** — NARA's own citation forms for the series types in *your* packet, quoted verbatim from its "Citing Foreign Affairs Records" guidance and attributed as NARA's (your publisher's rules govern), each pre-filled with your own file numbers and series titles where the app knows them.
+7. **On the day** — only the facts that don't rot: researcher-card registration, locker and scanner rules, and stamped links to NARA's current-guidance pages for everything that changes (pull schedules deliberately are not printed — a stale schedule is worse than none).
+
+Two honesty rules run through every chapter: an institutional fact nobody has verified is **omitted, never printed undated**, and availability is never promised — the packet says "confirm with staff" where confirmation is the truth. **Share** exports the packet as plain text (the inquiry drafts survive pasting into a mail client); **Share as PDF** exports the same text paginated for printing. The packet is generated in English by design — its letters address U.S. archives staff and its quotations are NARA's own words.
+
+[SCREENSHOT: the trip packet sheet — the date toggle, a generated packet with the inquiry draft visible, and the Share buttons.]
 
 ---
 
@@ -1155,13 +1175,12 @@ Quantitative or quasi-quantitative claims about the record ("mentions of X colla
 
 Before travel to College Park or a presidential library:
 
-1. From each key document, open **Sources** (14.1–14.2) and record the resolved collection, the **File Series**, and the **HMS/MLR Entry** numbers — what NARA staff ask you to quote on a pull slip.
-2. Check **Divided at NARA** (14.6) for any lot file you plan to request — a divided lot has several correct answers, and this section lists every claiming series so you request the right ones.
-3. Run **Archival Neighbors** (14.4) over your key sources to see what else in the published record came from the same boxes — and, by extension, what the editors left unprinted around your documents.
-4. In **Archival Analytics**, switch **Count by** to **Unprinted pointers** (15.5) for the collections where editors pointed at material they did not print — a map of what exists beyond the published series.
-5. Check **Where These Records Are** (14.2) for anything held outside NARA — including the two repositories whose names have changed since FRUS printed them.
-6. Build a **Source dossier** collection (12.7) of your target documents and export it — a finding aid you can carry into the reading room, with each document's source note attached.
-7. Add a **NARA API key** first (14.7) so lot-file lookups run at full precision.
+1. **Generate the trip packet** (14.8): from Project Home tap **Plan a Visit**, or from a collection's add menu **Plan an Archive Visit…**. This automates what used to be this recipe's first six steps — the packet resolves every source note, drafts the advance inquiries, builds the pull worksheet with the RG / entry / series / NAID lines staff ask you to quote, flags restricted series and mandatory substitutes, and cribs NARA's citation forms for your series types.
+2. Add a **NARA API key** first (14.7) so lot-file lookups run at full precision before the packet is built.
+3. Read the packet's **Access restrictions** chapter before booking anything — a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
+4. Send the **advance inquiry** well ahead (the checklist says how far), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.
+5. For anything you want to dig into beyond the packet: **Divided at NARA** (14.6) lists every claiming series for a divided lot; **Archival Neighbors** (14.4) shows what else came from the same boxes; **Unprinted pointers** in Archival Analytics (15.5) maps what the editors cited but did not print; and **Where These Records Are** (14.2) covers holdings outside NARA.
+6. Build a **Source dossier** collection (12.7) of your target documents and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's pull worksheet (shared as PDF) rides beside it.
 
 ### 18.4 Building a Course Reader
 
@@ -1205,6 +1224,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 | Tag a document | Research rail → **Tags** accordion |
 | Add a document to a collection | Research rail → **Collections** accordion |
 | Get a citation / BibTeX / RIS | Research rail → **Cite** tile |
+| Plan an archive visit | Project Home → **Plan a Visit**, or a collection's add menu → **Plan an Archive Visit…** (14.8) |
 | Send a document to Zotero | Research rail → **Share** tile |
 | Summarize a document | Research rail → **Summary** accordion |
 | See a document's archival source | Research rail → **Sources** tile |

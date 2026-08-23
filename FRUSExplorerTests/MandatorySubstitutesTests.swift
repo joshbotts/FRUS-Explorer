@@ -325,7 +325,7 @@ struct MandatorySubstitutesChapterTests {
         TripPacketModel.build(
             groups: [(key: "cdf", label: "Central Decimal File 763.72",
                       category: .centralDecimalFile, repository: nil,
-                      seriesNaId: nil, documentCount: 4)],
+                      resolution: nil, documents: TripPacketExporterTests.refs(4))],
             documentYears: [1918],
             unresolvedLotCount: 0,
             unresolvedDocumentCount: 0,
@@ -384,7 +384,8 @@ struct MandatorySubstitutesChapterTests {
     }
 
     /// A list that silently stopped would read as complete, and the reader would pull the records
-    /// it did not mention. Chapter 5 truncates without disclosing; chapter 4 must not copy that.
+    /// it did not mention. (Chapter 5 once truncated without disclosing; both chapters now
+    /// carry the disclosure, and each is pinned by its own test.)
     @Test("Truncation past the row limit is disclosed")
     func truncationIsDisclosed() {
         let substitutes = MandatorySubstitutes(rows: rows(23), documentsTested: 30,

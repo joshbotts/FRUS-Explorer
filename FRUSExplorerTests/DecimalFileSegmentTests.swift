@@ -38,8 +38,29 @@ struct DecimalFileSegmentTests {
         #expect(DecimalFileSegment.segment(forYear: 1942) == "1940–1944")
         #expect(DecimalFileSegment.segment(forYear: 1947) == "1945–1949")
         #expect(DecimalFileSegment.segment(forYear: 1925) == "1910–1929")
-        #expect(DecimalFileSegment.segment(forYear: 1962) == "1960–1963")
+        // The last band is NAMED for when the decimal file actually closed — January
+        // 1963 — so this label and `decimalFilePeriodLabel` on the same Source Explorer
+        // screen can no longer contradict each other (#830).
+        #expect(DecimalFileSegment.segment(forYear: 1962) == "1960–January 1963")
+        #expect(DecimalFileSegment.segment(forYear: 1963) == "1960–January 1963")
+        #expect(DecimalFileSegment.segment(forYear: 1964) == nil)  // subject-numeric era
         #expect(DecimalFileSegment.segment(forYear: 1905) == nil)  // outside decimal era
+    }
+
+    /// 1963 divides by NUMBER FORM (#830): a dotted decimal number is a decimal filing
+    /// whatever its date; a letter-led subject-numeric designator never is, whatever year
+    /// rides along. Banding a `POL` ref would cluster it with filings from a system it
+    /// was never part of — a live wrong answer in `relatedByDecimal`, not a label.
+    @Test("A non-decimal-form ref is refused, whatever its year")
+    func nonDecimalFormIsRefused() {
+        #expect(DecimalFileSegment.segment(for: "POL 27 VIET S", fallbackYear: 1963) == nil)
+        #expect(DecimalFileSegment.segment(for: "POL 17-3 JORDAN", fallbackYear: 1962) == nil)
+        // A decimal-form ref with a 1963 fallback year IS decimal — the number decides.
+        #expect(DecimalFileSegment.segment(for: "611.61/2200", fallbackYear: 1963)
+                == "1960–January 1963")
+        // And a decimal date-form suffix still resolves by its own embedded year.
+        #expect(DecimalFileSegment.segment(for: "611.93/12-854", fallbackYear: nil)
+                == "1950–1954")
     }
 
     @Test("The feature's worked example resolves to the right neighbor verdicts")

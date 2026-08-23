@@ -68,7 +68,12 @@ struct ResearchGuideCoverageTests {
         // #1023: the topic index. Terms checked against the guide, the mirror and BOTH manuals
         // before the section was written — all four returned zero, which is the only way this row
         // pins anything on the day it is added.
-        "the topic index": ["topic index"]
+        "the topic index": ["topic index"],
+        // #830: the research trip packet. Terms verified zero-hit against the guide, the mirror
+        // and both manuals before the section was written (the same discipline as above). NOT
+        // "archive visit" — that phrase already headed the manuals' §18.3 recipe, so a row using
+        // it would have passed on day one and pinned nothing.
+        "the research trip packet": ["trip packet", "pull worksheet"]
     ]
 
     private static func source(_ path: String) throws -> String {

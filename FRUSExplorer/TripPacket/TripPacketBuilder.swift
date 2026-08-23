@@ -70,7 +70,8 @@ enum TripPacketBuilder {
             records.map { ("\($0.volumeId)/\($0.documentId)", $0) },
             uniquingKeysWith: { first, _ in first })
 
-        var grouped: [String: (record: CollectionGeneratedBlocks.SourceRecord, count: Int)] = [:]
+        var grouped: [String: (record: CollectionGeneratedBlocks.SourceRecord,
+                               documents: [TripPacketModel.Group.DocumentRef])] = [:]
         var order: [String] = []
         var placed = 0
         // Chapter 4's input, one entry per PLACED document. A document with no indexed source note
@@ -85,21 +86,32 @@ enum TripPacketBuilder {
                 continue   // no source note indexed — counted as unresolved below
             }
             placed += 1
+            // One parse per document, consumed twice: chapter 4's substitute lookup keeps
+            // its deliberately-narrow central-file identifier, and the roster row keeps
+            // whatever file or folder designation the note carries.
+            let parsed = parser.parse(record.rawText)
             citedFiles.append(.init(
-                identifier: Self.centralFileIdentifier(in: record.rawText, parser: parser),
+                identifier: Self.centralFileIdentifier(from: parsed),
                 year: dates[documentKey].flatMap { Int($0.dateISO.prefix(4)) }))
             let key = CollectionGeneratedBlocks.tripPacketGroupKey(for: record)
             if grouped[key] == nil {
-                grouped[key] = (record, 0)
+                grouped[key] = (record, [])
                 order.append(key)
             }
-            grouped[key]?.count += 1
+            grouped[key]?.documents.append(.init(
+                volumeId: document.volumeId,
+                documentId: document.documentId,
+                citation: dataSource.citation(volumeId: document.volumeId,
+                                              documentId: document.documentId),
+                fileDesignation: Self.fileDesignation(from: parsed),
+                sourceNote: record.rawText))
         }
 
         let groups = order.compactMap { key -> (key: String, label: String,
                                                 category: SourceProvenanceCategory?,
-                                                repository: String?, seriesNaId: String?,
-                                                documentCount: Int)? in
+                                                repository: String?,
+                                                resolution: ArchivalResolution?,
+                                                documents: [TripPacketModel.Group.DocumentRef])? in
             guard let entry = grouped[key] else { return nil }
             let record = entry.record
             // The parser's own classification, never a second one derived from the parsed fields.
@@ -110,13 +122,15 @@ enum TripPacketBuilder {
                     label: CollectionGeneratedBlocks.tripPacketLabel(for: record),
                     category: category,
                     repository: record.repository,
-                    seriesNaId: ArchivalResolver.documentResolution(lotFile: record.lotFile)?.naId,
-                    documentCount: entry.count)
+                    // The WHOLE resolution — reducing it to `.naId` here is exactly what
+                    // starved chapters 2, 3, 5 and 6 of the fields the app already knows.
+                    resolution: ArchivalResolver.documentResolution(lotFile: record.lotFile),
+                    documents: entry.documents)
         }
 
         // A lot citation that produced no series is exactly A4's "lot numbers do not always carry
         // over" case. Counted at GROUP grain, because the criterion is about the citation.
-        let unresolvedLots = groups.filter { $0.category == .lotFile && $0.seriesNaId == nil }.count
+        let unresolvedLots = groups.filter { $0.category == .lotFile && $0.resolution == nil }.count
 
         return TripPacketModel.build(
             groups: groups,
@@ -148,8 +162,29 @@ enum TripPacketBuilder {
     /// citation cannot land in it.
     static func centralFileIdentifier(in sourceNote: String,
                                       parser: SourceNoteParser = SourceNoteParser()) -> String? {
-        guard case .centralFiles(_, let fileIdentifier) = parser.parse(sourceNote) else { return nil }
+        centralFileIdentifier(from: parser.parse(sourceNote))
+    }
+
+    /// The same rule over an already-parsed note, so the builder parses once.
+    static func centralFileIdentifier(from parsed: ParsedSourceNote) -> String? {
+        guard case .centralFiles(_, let fileIdentifier) = parsed else { return nil }
         return fileIdentifier
+    }
+
+    /// The file or folder designation for a roster row — DELIBERATELY WIDER than
+    /// ``centralFileIdentifier(from:)``, and the two must not be merged: chapter 4's rule
+    /// excludes lot folders and library boxes because they would inflate its tested
+    /// denominator, while chapter 3's roster wants exactly those designations, because a
+    /// pull slip is written against whatever the note names.
+    static func fileDesignation(from parsed: ParsedSourceNote) -> String? {
+        switch parsed {
+        case .centralFiles(_, let fileIdentifier):               return fileIdentifier
+        case .cfpfFile(let fileIdentifier):                      return fileIdentifier
+        case .lotFile(_, _, let fileIdentifier):                 return fileIdentifier
+        case .presidentialLibrary(_, _, let fileIdentifier):     return fileIdentifier
+        case .namedFileSeries(_, let fileIdentifier):            return fileIdentifier
+        default:                                                 return nil
+        }
     }
 }
 
@@ -161,16 +196,44 @@ enum TripPacketBuilder {
 /// the Project Home entry point has no collection. It calls the **same pipeline methods**, so the
 /// two cannot see different source notes; only the batch plumbing differs.
 ///
-/// The four members the packet never reads return empty rather than trapping: this type conforms to
-/// a protocol written for a richer consumer, and pretending otherwise would invite someone to wire
-/// a packet chapter to a method that has never been exercised.
+/// The three members the packet never reads return empty rather than trapping: this type conforms
+/// to a protocol written for a richer consumer, and pretending otherwise would invite someone to
+/// wire a packet chapter to a method that has never been exercised.
 @MainActor
 struct TripPacketDataSource: CollectionGeneratedBlockDataSource {
 
     /// The pipeline every method reads through.
     let pipeline: IndexingPipeline
 
-    func citation(volumeId: String, documentId: String) -> String { "\(volumeId)/\(documentId)" }
+    /// The manifest entries the citation formatter reads — the same
+    /// `diffResult?.known ?? bundledEntries` set `CollectionContentResolver` batches.
+    let manifestMap: [String: VolumeManifestEntry]
+
+    /// The house citation style — a pure struct, so held rather than re-made per call.
+    private let formatter = HistoryAtStateCitationFormatter()
+
+    init(pipeline: IndexingPipeline, manifestMap: [String: VolumeManifestEntry] = [:]) {
+        self.pipeline = pipeline
+        self.manifestMap = manifestMap
+    }
+
+    /// The history.state.gov-style citation — the exact mirror of
+    /// `CollectionContentResolver.shortCitation`, header-independent by the same design:
+    /// the formatter reads only volume metadata and the document number, so no volume XML
+    /// is ever needed. This used to return the protocol's documented UNKNOWN-VOLUME
+    /// fallback unconditionally, so the first chapter to print a citation would have
+    /// printed `frus1948v02/d123` for every document.
+    func citation(volumeId: String, documentId: String) -> String {
+        let docNum: String? = documentId.hasPrefix("d")
+            ? Int(documentId.dropFirst()).map { String($0) }
+            : nil
+        let docMeta = FRUSDocumentMetadata(
+            documentId: documentId, documentNumber: docNum,
+            header: "", dateline: nil)
+        return manifestMap[volumeId]
+            .map { formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
+            ?? "\(volumeId)/\(documentId)"
+    }
 
     func dateMetadata(
         for documents: [(volumeId: String, documentId: String)]

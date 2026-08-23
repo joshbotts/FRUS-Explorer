@@ -8454,3 +8454,73 @@ New UI test in `KeyboardDismissBarReachTests` (the suite's count-before/count-af
 measurement, skipping without a software keyboard); verified on-device end-to-end:
 focus → Done chip above the keyboard, banner yielded → tap → keyboard down, tab bar
 reachable, banner returned.
+
+## Sessions 2026-08-22/23 — #830 T-1…T-3 and the entry-point fix (retroactive record)
+
+Recorded after the fact — the audit that found six issues shipped-but-open also found
+this log's last #830 entry was T-0 while T-1, T-2 and T-3 had shipped. Six PRs merged:
+#1055 (T-1 foundations — `TripPacketModel`, facility derivation per D2/D3, the A4 flag
+engine, `RestrictionTriage` per D4, the fact table with its D7 nullable stamps), #1056
+(T-2 exporter — all seven chapters, the first two owner-confirmed facts), #1057 (entry
+points: Project Home + the collection add menu), #1058 (T-3 chapter 4, mandatory
+substitutes over the digitised-range and M862 roll indexes), #1061 (7 dead library
+finding-aid URLs replaced with owner-verified ones), #1062 (the D12 link render path —
+stamped links, staleness degrading the sentence), #1063 (moved manuscript-repository
+URLs; the State-records route). #1073 then fixed the collection entry point, which had
+been dead on every platform since T-2 (the sheet lived in `macBody`'s chain while the
+only setter lived in `iPhoneAddMenu`).
+
+## Session 2026-08-23 — #830: the remainder — the packet gets its data, and the defects go
+
+The 2026-08-23 status audit's list, executed in full.
+
+**The plumbing prerequisite.** `TripPacketBuilder` computed the full `ArchivalResolution`
+(title, catalog URL, HMS/MLR entries, series title), the provenance category, the
+repository string and the per-document file identifier — and discarded each at the model
+seam, keeping only `naId`. `TripPacketModel.Group` now carries the resolution whole, the
+category, the series years, and materialized per-document rows (citation · file/folder
+designation · verbatim source note), with `documentCount` DERIVED from the rows so the
+headline and the roster cannot disagree. That one seam unblocked five renders:
+
+- **Chapter 2** prints A3's four-field records line (RG · entry · series title · NAID,
+  composed once on `Group.recordsLine` so no two chapters format it differently) and
+  A5's help-me-locate list — every unresolved lot's source notes quoted VERBATIM with
+  their FRUS citations, framed by the FAQ's own "did not carry over" language.
+- **Chapter 3** gains the per-document roster: FRUS citation · file/folder · blank Box.
+- **Chapter 5** names its series instead of pointing at NAIDs.
+- **Chapter 6** prints the worked examples — transcribed character-for-character from
+  the deposited "Citing Foreign Affairs Records" (D17), selected by the FORM of the
+  packet's own file designations, quoted as NARA's (D13), and pre-filled with the
+  packet's own file numbers and the resolved lot's series/entry/RG, placeholders for
+  everything read off the physical document.
+
+**The four defects.** Chapter 6's false "have not been deposited" sentence is gone
+(with the test that PINNED the falsehood rewritten to pin its absence); chapter 5's
+silent 20-row truncation now discloses its remainder (the dropped tail is closed
+series — the chapter's whole point); `TripPacketDataSource.citation` formats real
+citations through `HistoryAtStateCitationFormatter` (the exact `shortCitation` mirror;
+it returned the documented unknown-volume fallback unconditionally); and
+`DecimalFileSegment` now splits 1963 by NUMBER FORM — a non-decimal ref is refused and
+the last band is named "1960–January 1963" — so `relatedByDecimal` stops clustering
+February-1963 subject-numeric filings with January's decimal ones, and the neighbor
+basis line stops contradicting `decimalFilePeriodLabel` on the same screen.
+
+**The features.** A10's second half — the withdrawal-notice / FOIA / MDR explainer —
+closes chapter 5. D16's second link ships on all ten library rows (the #1061-verified
+finding-aid URLs, "Finding aids — what is held" beside "Plan a research visit"; D21
+discharged). The D12/D19 link checker exists (`Scripts/check_repository_links.py`,
+stdlib py3.9, owner-run): follows redirects and reports final≠declared as NEEDS REVIEW,
+knows the two 403-everything hosts as owner-asserted, refuses a parse under 20 links,
+and `--stamp` rewrites `confirmed` only on a clean pass — smoke-run live: 23/23 links
+parsed, 20 OK, 0 dead, 3 owner-asserted. **PDF share**: `TripPacketPDFRenderer`
+paginates the exporter's exact string (CoreText, US Letter) — the same content, never a
+second composition, which is the one-format rule surviving the new format. **Language
+policy recorded**: the exported packet stays English by design (its letters address
+U.S. archives staff; its quotations are NARA's and must stay attributable); the UI
+around it localizes as usual.
+
+**Docs**: manuals gain §14.8 (the packet reference, both platforms) and §18.3 is
+rewritten around the feature it used to work around; entry points documented at §10.4,
+§12.1/§12.3, §19.1; the Research Guide gains its trip-packet section with the
+EditableContent mirror; `ResearchGuideCoverageTests` gains the mustCover row (terms
+verified zero-hit first); TestFlight notes gain items 13–14.

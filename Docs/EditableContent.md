@@ -759,6 +759,16 @@ A project is an activity lens on your work. Every note, highlight, summary, and 
 
 A default project is created for you; you never have to set one up before exploring.
 
+<!-- section-id: trip-packet -->
+
+**The Research Trip Packet**
+
+When your research points beyond the published series — to the boxes at College Park or a presidential library — the trip packet turns a set of documents into an archive-visit plan. The app reads each document's printed source note, resolves it against the bundled National Archives data, and generates seven chapters: a pre-arrival checklist with NARA's own lead times, a draft advance inquiry per facility, a pull worksheet whose rows carry the record group, entry number, series title and NAID that staff ask researchers to quote, the records you must read digitised or on film instead of pulling, an access-restriction triage naming any cited series NARA lists as closed, NARA's own citation forms for your series types — quoted and attributed, never prescribed — and a visit-day card holding only the facts that don't go stale.
+
+The packet is deliberately honest about its limits. A citation the app cannot resolve is quoted verbatim in the inquiry draft as a help-me-locate item rather than dropped — NARA's guidance is that poorly described records are resolved by writing ahead. An institutional fact nobody has verified is omitted, never printed undated. Availability is never promised: where the truth is “confirm with staff”, that is what it says. And the visit date is optional, because the packet is most useful before a trip is booked — without one, every deadline prints relative to your arrival.
+
+Find it on Project Home (“Plan a Visit”, over the project's documents, with the research question seeding the inquiry) or in any collection's add menu (“Plan an Archive Visit…”). Share it as plain text — the inquiry pastes straight into an email — or as a PDF for printing.
+
 <!-- section-id: collections -->
 
 **Collections & Export**
