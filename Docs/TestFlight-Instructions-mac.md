@@ -48,5 +48,7 @@ Corpus word clouds are built on demand now — allow several minutes. Several sh
 8. Raise the semantic weight; judge matches, especially pre-1900 (right-click to record a verdict).
 9. Re-invoke open analytics windows from the menu — each should raise, not duplicate.
 10. Unprinted pointers: does the ranking read sensibly?
+11. Corpus Browser ▸ Clusters: skim several clusters and open a few. Do the groupings read as coherent research leads, or as arbitrary piles? This feeds the same leads-or-noise verdict as item 4 — the list exists so you can judge membership directly, not just the map's picture.
+12. In a cluster: **See on the semantic map** should raise the map window zoomed on that region with its card open; **Save as Working Corpus** on a big cluster should say it kept the first 7,500.
 
 Include macOS version, what you clicked, what you expected, what happened. Thanks for testing!

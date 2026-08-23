@@ -8362,3 +8362,62 @@ table, the About-trap "28 scenes" wording in two files' fixed-count phrasing, an
 5 new unit tests (11 in the grouping suite total). Docs: iOS §6.2a + macOS §6.4 gain the
 covering-volumes list, the topic-area door, and the chip. B-7 remains gated on the
 build-42 semantic-map verdict; if that demotes the map, the program closes here.
+
+## Session 2026-08-23 — #1051 B-7: the Clusters axis, as the instrument that gathers the verdict
+
+**The gate resolved by owner direction, with the purpose inverted.** B-7 was gated on
+the build-42 semantic-map leads-or-noise verdict; the owner instead directed that B-7
+proceed *to help testers reach that verdict* — the browsable cluster list is the
+instrument (a tester can judge membership directly instead of squinting at the map's
+picture), and both TestFlight What-to-Test files now carry the ask.
+
+**The load-path decision (the plan's "decide first" item), decided by measurement
+against a stale premise.** The plan preferred a metadata-only decode so the list would
+not force the vector binary; measured, `BundledSemanticVectors.prepare()` already runs
+unconditionally at every launch, the binary is mmapped rather than read (and is 19.5MB
+at the shipped 512-dim generation, not the plan's 10.23MB), and the drill needs the
+placements regardless. So the level loads through `BundledSemanticMap.prepare()` — the
+shipped loader with both provenance refusals — because a second decode path would be a
+second place for the generation-mixing rule to drift, to save a load that already
+happened. A bounded retry rides out the loader's benign second-caller `.pending` window.
+
+**What shipped**: the fifth Browse-by tile (2-2-1 grid); `.clusters` index level —
+largest-first (labels are machine terms with no alphabetical meaning; size is the one
+predictable order), four-term labels, era mini-histograms with the two peak bars
+accented, and the computed honesty caption (labels sampled not subject headings /
+88,207 = 28.0% unclustered and unreachable / eras are volume coverage) — every figure
+from the live artifact; `.clusterDocuments` drill — **Browse's first PAGED list**
+(cluster 8 = 38,652 documents; 500 per Show-more, metadata loaded per visible slice
+only), reusing `CorporaAxis`'s key-generic grouping/ordering/row-state verbatim, with
+the cluster card (era rows via the map's own `SemanticMapRegionRows`, coverage via a
+throwaway `WorkingCorpusResolver` resolve — the map's precedent — and the two mandatory
+disclosure sentences in this surface's vocabulary); membership enumerated in ONE
+`withPlacements` pass composing the shipped `SemanticMapPicking.rows(inCluster:)` rule
+with the raw-pointer read `scopeMask` uses (the per-row `placement(at:)` re-entry trap
+avoided); Save-as-Working-Corpus materializing document keys at capture, 7,500 cap,
+truncation said out loud, map-style naming so both save paths read alike in the corpora
+list; and **See on the semantic map** — `SemanticMapRequest` gains `focusClusterID` +
+`focusClusterDigest`, and the map a `focusRegion(id:digest:)` with the reveal's exact
+`.notReady` deferral, where the DIGEST GUARD is the never-persist rule at runtime: a
+request restored across an artifact regeneration opens the map unfocused rather than
+landing on whatever re-minted cluster wears the number.
+
+**A shipped #862 was found live and fixed.** On-device verification (not the test
+suite) caught the cluster focus silently vanishing: the map sheet was `isPresented:`
+Bool beside a sibling `continuedSemanticMap` @State, and the sheet's content closure
+read the sibling as nil even though the presenting function had just written it —
+the exact `.sheet`-sibling staleness class of #862. The sheet now presents one
+`SemanticMapSheetItem` carrying the request, which also fixes the latent F-28 iPhone
+hand-off (a continued map could open unscoped/unfocused the same way). Unified-log
+tracing (`applyContinued: nil`) was the evidence; the pty console truncates at sheet
+presentation and cannot be trusted for this.
+
+14 new unit tests in two suites: ordering (tie-break fixture chosen so id order alone
+fails), era bars (slots/peaks/tie/pooling/sum), the caption (grouping-separator
+assertions), the digest guard, membership against a binary built by the REAL packer and
+read by the REAL reader, live-bundle partition (sum of cluster counts + unclustered ==
+placed documents) and membership parity (bin enumeration == index counts for three
+clusters), and the request's Codable round-trip incl. an old payload without the new
+fields. Docs: iOS §6.1h + door list; macOS §6.1 sidebar sentence; both TestFlight
+What-to-Test files gain the clusters verdict items. The browse-axes program is
+complete: B-1..B-7 all shipped.

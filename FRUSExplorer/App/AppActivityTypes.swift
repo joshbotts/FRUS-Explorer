@@ -83,17 +83,37 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
     /// Handoff activity decodes with `nil` and behaves exactly as it did.
     var focusDocumentKey: String?
 
+    /// A cluster to focus when the map opens (#1051 B-7 — Browse's "See on the semantic
+    /// map"), by the ARTIFACT's cluster id — meaningful only against the generation that
+    /// minted it, which is why ``focusClusterDigest`` always travels with it.
+    ///
+    /// Part of the window identity for the same reason `focusDocumentKey` is. Optional and
+    /// absent from every older payload, so old restorations decode with `nil` unchanged.
+    var focusClusterID: Int?
+
+    /// The provenance digest of the artifact ``focusClusterID`` was minted against.
+    ///
+    /// Cluster ids re-mint per artifact generation (the never-persist rule), and this
+    /// request can outlive one — it rides window restoration across launches, and an app
+    /// update between them can regenerate the artifact. The map applies the focus only
+    /// when this digest matches the loaded artifact's; a stale request opens the map
+    /// unfocused rather than landing on whatever re-minted cluster now wears the number.
+    var focusClusterDigest: String?
+
     /// Creates a request.
     /// - Parameters:
     ///   - volumeIDs: Scope, or `nil` for the whole series.
     ///   - scopeLabel: The scope's name.
     ///   - lensRawValue: The colour lens's raw value.
     init(volumeIDs: [String]?, scopeLabel: String?, lensRawValue: String,
-         focusDocumentKey: String? = nil) {
+         focusDocumentKey: String? = nil,
+         focusClusterID: Int? = nil, focusClusterDigest: String? = nil) {
         self.volumeIDs = volumeIDs
         self.scopeLabel = scopeLabel
         self.lensRawValue = lensRawValue
         self.focusDocumentKey = focusDocumentKey
+        self.focusClusterID = focusClusterID
+        self.focusClusterDigest = focusClusterDigest
     }
 
     /// The unscoped whole-series map at the default lens — what the Browse menu's Semantic

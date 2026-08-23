@@ -366,6 +366,24 @@ struct CorpusView: View {
                     )
                     .help(String(localized: "browser.corpus.tile.archives.help",
                                  defaultValue: "Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on"))
+
+                    BrowseAxisGridTile(
+                        title: String(localized: "browser.corpus.tile.clusters",
+                                      defaultValue: "Clusters"),
+                        systemImage: "circle.hexagongrid",
+                        accessibilityIdentifier: "browse.root.clustersTile"
+                    ) {
+                        vm.select(.clusters)
+                        #if DEBUG
+                        print("[BrowserView] Navigate → clusters axis")
+                        #endif
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.tile.clusters.a11y",
+                               defaultValue: "Browse by semantic cluster")
+                    )
+                    .help(String(localized: "browser.corpus.tile.clusters.help",
+                                 defaultValue: "Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings"))
                 }
             }
             .listRowInsets(EdgeInsets())

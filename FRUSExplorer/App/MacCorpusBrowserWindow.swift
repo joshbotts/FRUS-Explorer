@@ -37,6 +37,10 @@ enum CorpusNavValue: Hashable {
     /// via `CollectionAuthorityStore.record(id:)` (the record type is not Hashable, and
     /// the `.volume` case documents the same re-lookup contract).
     case collection(collectionId: String)
+    /// One semantic cluster's document drill (#1051 B-7, R-3). Identity is the
+    /// ARTIFACT's cluster id — valid only for the loaded generation, and this stack is
+    /// in-memory state, never persisted; the label rides along for display.
+    case clusterDocuments(id: Int, label: String)
 }
 
 // MARK: - CorpusSidebarItem
@@ -60,6 +64,8 @@ enum CorpusSidebarItem: Hashable {
     case editors
     /// The Archives axis (#1051 A-9).
     case archives
+    /// The Semantic Clusters axis (#1051 A-8, B-7).
+    case clusters
     /// The My Scopes level (#1051 A-5).
     case myScopes
     /// The Working Corpora level (#1051 A-6).
@@ -183,6 +189,9 @@ struct CorpusBrowserWindowView: View {
                     Label(String(localized: "browser.archives.title", defaultValue: "Archives"),
                           systemImage: "archivebox")
                         .tag(CorpusSidebarItem.archives)
+                    Label(String(localized: "browser.clusters.title", defaultValue: "Clusters"),
+                          systemImage: "circle.hexagongrid")
+                        .tag(CorpusSidebarItem.clusters)
                 }
                 Section(String(localized: "corpus.sidebar.yourSets", defaultValue: "Your sets")) {
                     Label(String(localized: "browser.scopes.title", defaultValue: "My Scopes"),
@@ -252,6 +261,10 @@ struct CorpusBrowserWindowView: View {
                                 detailPath.append(.collection(collectionId: record.id))
                             }
                         )
+                    case .clusters?:
+                        ClustersIndexView(onSelectCluster: { id, label in
+                            detailPath.append(.clusterDocuments(id: id, label: label))
+                        })
                     case .myScopes?:
                         ScopeIndexView(
                             manifestIds: Set(allEntries.map(\.volumeId)),
@@ -299,6 +312,23 @@ struct CorpusBrowserWindowView: View {
                             appState.openDocument(entry, from: .tool(.corpusBrowser),
                                                   using: openWindow)
                         })
+                    case .clusterDocuments(let id, let label):
+                        // #1051 B-7: indexed rows route to this browser's document host
+                        // (the `.corpusDocuments` precedent); "See on map" rides the
+                        // Handoff into the singleton Semantic Analytics window and
+                        // fronts it — `openWindow(value:)` has no macOS scene for this
+                        // request type (the ResearchRailView-documented mistake).
+                        ClusterDocumentsView(
+                            clusterId: id,
+                            label: label,
+                            onOpenDocument: { entry in
+                                appState.openDocument(entry, from: .tool(.corpusBrowser),
+                                                      using: openWindow)
+                            },
+                            onSeeMap: { request in
+                                appState.openSemanticMap(request, from: nil)
+                                openWindow.fronting(id: "frus.semanticAnalytics")
+                            })
                     case .collection(let collectionId):
                         // #1051 B-5: the shared detail, push-hosted, with citing-volume
                         // rows routed IN PLACE so the axis back-stack survives. The

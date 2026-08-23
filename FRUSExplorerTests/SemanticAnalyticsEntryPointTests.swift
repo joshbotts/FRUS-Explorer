@@ -30,6 +30,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-4: added when the semantic map became an analytics surface
+///   1.1 — #1051 B-7: the iOS presentation pins follow the sheet to its `item:` form
+///         (`SemanticMapSheetItem` — the #862 sibling-state fix)
 @Suite("Semantic analytics — entry points")
 struct SemanticAnalyticsEntryPointTests {
 
@@ -99,10 +101,13 @@ struct SemanticAnalyticsEntryPointTests {
     @Test("The iOS Analysis Tools menu offers it, presents it, and names it in its help")
     func iOSEntryPoint() throws {
         let source = try Self.source("Browser/BrowserView.swift")
-        #expect(source.contains("showSemanticAnalytics = true"),
+        // #1051 B-7: the presentation is ONE item that carries the continuation — the
+        // #862 sibling-state fix; the old `isPresented:` Bool beside a request var
+        // measurably presented the sheet with the request still nil.
+        #expect(source.contains("semanticMapSheet = SemanticMapSheetItem(request:"),
                 "the Analysis Tools menu has no row that opens Semantic Analytics")
         // #363's unreachable-pane shape: a row that sets state nothing presents.
-        #expect(source.contains(".sheet(isPresented: $showSemanticAnalytics)"),
+        #expect(source.contains(".sheet(item: $semanticMapSheet)"),
                 "the row sets state nothing presents — the #363 unreachable-pane shape")
         // Prefix, not the whole call: CW-7c added a `continued:` argument for the Handoff
         // continuation, and this assertion is about the sheet presenting the view at all.

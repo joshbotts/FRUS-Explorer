@@ -1,6 +1,6 @@
 # Browse Axes — Development Plan (#1051)
 
-**Status:** Sessions B-1 (PR #1060), B-2 (#1064), B-3 (#1065), B-4 (#1066), B-5 (#1067), and B-6 shipped. Only B-7 remains, gated on the build-42 semantic-map verdict; if that verdict demotes the map, the program closed at B-6.
+**Status:** COMPLETE. Sessions B-1 (PR #1060), B-2 (#1064), B-3 (#1065), B-4 (#1066), B-5 (#1067), B-6 (#1068), and B-7 all shipped. The B-7 gate resolved by owner direction 2026-08-23: rather than waiting on the build-42 semantic-map verdict, the clusters axis ships as the *instrument* testers use to reach it — the browsable membership list is what lets a tester judge leads-or-noise directly, and the TestFlight What-to-Test files carry the ask.
 **Date:** 2026-08-22 (status updated 2026-08-23)
 **Inputs:**
 - `Planning/Browse-Axes-Design-Requirements.md` (the feasibility study; R-1..R-4, A-1..A-8, engineering constraints — all still binding)
@@ -24,7 +24,7 @@ The Browse tab (iOS) and Corpus Browser window (macOS) gain: a search-first corp
 | Q-1 | Editor index membership | **Compilers only** (`editors`); general editors stay on the volume page. ~38-row curated alias table normalizes spellings **in the grouping layer only** — manifest strings are never rewritten (citation exporters render them as-printed). |
 | Q-2 | Administration membership | **volumeCount** (any dated document), with the any-overlap double-membership disclosure. |
 | Q-3 | Scope application idiom | **Live reference** (WordCloud pattern): Browse stores the scope UUID, resolves at render, shows the explicit "Scope unavailable" state on deletion. Filter state itself is device-local UserDefaults. |
-| Q-4 | Semantic Clusters | Designed now (1j), **implemented only after** the build-42 semantic-map leads-or-noise verdict. Session B-7 does not start without it. |
+| Q-4 | Semantic Clusters | Designed now (1j), ~~implemented only after the build-42 verdict~~ — **resolved 2026-08-23 by owner direction**: B-7 shipped as the *instrument* for the leads-or-noise verdict (testers judge cluster membership in the browsable list; the TestFlight notes carry the ask). |
 | Q-5 | Tag chips on subseries-less paths | **Push the subseries level with the filter applied** (replaces today's silent no-op + latent state). |
 | Q-6 | Per-volume document counts | **One named accessor over `volumeTotals`** (administration-profiles-index). No generator change. The three dead `documentCount > 0` labels are rewired to the accessor. |
 | Q-8 | Tag axis | **Cut.** Topics (shipped) is the subject-style axis. Canvas 1k stays struck-through for the record. |
@@ -162,11 +162,11 @@ The Browse tab (iOS) and Corpus Browser window (macOS) gain: a search-first corp
 
 ---
 
-## Session B-7 — Semantic Clusters (A-8) — GATED
+## Session B-7 — Semantic Clusters (A-8) — SHIPPED 2026-08-23
 
-**Do not start until the owner relays the build-42 semantic-map leads-or-noise verdict (Q-4).** If the verdict demotes the map, this session is cancelled, the root tile is removed (not left dead), and the plan closes at B-6.
+~~**Do not start until the owner relays the build-42 semantic-map leads-or-noise verdict (Q-4).**~~ **Gate resolved by owner direction 2026-08-23:** B-7 proceeds *to help testers provide the verdict* — the axis is the instrument, not the verdict's consumer. If the eventual verdict demotes the map, removing the tile remains one clean commit.
 
-- Decide the load path first: the 25KB `semantic-map-index.json` list level either accepts the `BundledSemanticVectors` (10.23MB) dependency or gains a metadata-only decode (preferred — the list should render without the vector binary; membership drill loads the rest).
+- Decide the load path first: the 25KB `semantic-map-index.json` list level either accepts the `BundledSemanticVectors` (10.23MB) dependency or gains a metadata-only decode (preferred — the list should render without the vector binary; membership drill loads the rest). **Decided by measurement: the metadata-only preference rested on a stale premise** — `BundledSemanticVectors.prepare()` runs unconditionally at every launch, the binary is mmapped not read (and is 19.5MB at the shipped 512-dim generation, not 10.23MB), and the drill needs the placements anyway. The level loads through `BundledSemanticMap.prepare()`, inheriting both provenance refusals rather than duplicating one.
 - `.clusters` level per design 1j: 4-term label · "N documents" · era mini-histogram; pinned caption (labels are sampled terms, not subject headings; 88,207 documents / 28.0% belong to no cluster and are unreachable here; eras are volume-coverage-midpoint).
 - Drill: R-3 degraded document list with paging (cluster 8 = 38,652 docs), reusing the map card's behaviors (`isDownloaded`-gated Open, Save-as-Working-Corpus with the 7,500 truncation disclosure), plus "See on map" cross-link.
 - **Never persist cluster ids** in synced data or deep links (ids re-mint per artifact generation); materialize document keys at capture.

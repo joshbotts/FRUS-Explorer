@@ -30,6 +30,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — CW-12: created with the three missing exits
+///   1.1 — #1051 B-7: the scanner also matches `.sheet(item:)` — the semantic-map sheet
+///         moved to the item form (the #862 sibling-state fix) and vanished from the scan
 @Suite("Sheet exits")
 struct SheetExitTests {
 
@@ -45,15 +47,19 @@ struct SheetExitTests {
         try String(contentsOf: repoRoot.appending(path: relativePath), encoding: .utf8)
     }
 
-    /// The root view type of every `.sheet(isPresented:)` in `BrowserView`.
+    /// The root view type of every `.sheet(isPresented:)` and `.sheet(item:)` in `BrowserView`.
     ///
     /// Deliberately parsed rather than listed: a hardcoded list would pass forever after someone
-    /// adds the seventh sheet, which is exactly the failure this suite exists to catch.
+    /// adds the seventh sheet, which is exactly the failure this suite exists to catch. Both
+    /// presentation spellings are matched because #1051 B-7 converted the semantic-map sheet to
+    /// `item:` (the #862 sibling-state fix) — a scanner pinned to one spelling silently dropped
+    /// that sheet from every assertion below.
     private static func browserSheetViewTypes() throws -> [String] {
         let browser = try source("FRUSExplorer/Browser/BrowserView.swift")
         let lines = browser.components(separatedBy: .newlines)
         var found: [String] = []
-        for (index, line) in lines.enumerated() where line.contains(".sheet(isPresented:") {
+        for (index, line) in lines.enumerated()
+        where line.contains(".sheet(isPresented:") || line.contains(".sheet(item:") {
             // The presented view is the first type-like call in the closure. Comment lines are
             // skipped: three of these sheets open with a paragraph of rationale before the view.
             for candidate in lines[(index + 1)..<min(index + 12, lines.count)] {
