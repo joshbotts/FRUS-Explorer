@@ -48,6 +48,9 @@ import SwiftUI
 ///   Session 09: "Top subjects" Section (bundled volume-subject profiles) between
 ///         the Tags section and the structure list; chips pivot to the other
 ///         volumes covering a subject.
+///   2.6 — #1051 B-1: the metadata header's document count comes from the R-2 accessor
+///          (`AdministrationProfilesStore.documentCount(forVolumeId:)`); the old gate read
+///          the manifest's structurally-dead `documentCount` and had never rendered
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -66,7 +69,11 @@ struct VolumeView: View {
         List {
             // Volume metadata header
             Section {
-                VolumeMetadataView(volume: volume)
+                VolumeMetadataView(
+                    volume: volume,
+                    documentCount: appState.administrationProfilesStore
+                        .documentCount(forVolumeId: volume.volumeId)
+                )
             }
 
             // Tag chips
@@ -356,6 +363,10 @@ struct VolumeView: View {
 
 private struct VolumeMetadataView: View {
     let volume: VolumeManifestEntry
+    /// The volume's document count from the R-2 accessor, or `nil` to omit the line.
+    /// (#1051 B-1 — the old `volume.documentCount > 0` gate read the manifest's
+    /// structurally-dead field and had never rendered.)
+    var documentCount: Int? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -369,8 +380,8 @@ private struct VolumeMetadataView: View {
                 .textSelection(.enabled)
                 // Canonical full-title display; expose to the VoiceOver headings rotor.
                 .accessibilityAddTraits(.isHeader)
-            if volume.documentCount > 0 {
-                Text("\(volume.documentCount) documents")
+            if let documentCount {
+                Text("\(documentCount) documents")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

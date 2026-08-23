@@ -95,7 +95,7 @@ Wherever FRUS Explorer links to an external resource — onboarding, About, the 
 
 Fifteen minutes, one document, most of the core workflow. This walkthrough assumes at least one volume has finished indexing (the banner above the tab bar tracks progress — Section 4.8).
 
-1. **Browse to a document.** In the **Browse** tab, tap a subseries, then a volume, then a chapter, and open any document. It renders as readable prose — heading, dateline, body, footnotes — laid out for your screen.
+1. **Browse to a document.** In the **Browse** tab, tap **Subseries**, then a subseries, then a volume, then a chapter, and open any document. It renders as readable prose — heading, dateline, body, footnotes — laid out for your screen. (Or just type a title into the search field at the top of the tab.)
 
 2. **Read without clutter.** The document toolbar carries a single control: the **Research-rail toggle** (a `doc.text.magnifyingglass` button). With the rail hidden you are in **Read mode** — a clean page, where tapping near the left or right screen edge turns to the previous or next document in the volume, like paging through a book (Section 4.4).
 
@@ -266,13 +266,35 @@ Indexing is what turns a downloaded volume into a searchable one — it parses t
 
 ## 6. Browsing the Corpus
 
-The **Browse** tab navigates the series by its own structure: subseries (publication eras) → volumes → chapters → documents.
+The **Browse** tab navigates the series by its own structure: subseries (publication eras) → volumes → chapters → documents — and, from its root, by other ways in.
 
-![Browse on iPad — the corpus root in a portrait split view, with the People entry above the subseries list.](screenshots/ipad/browse.png)
+[SCREENSHOT: Browse root — the search field, the People and Topics rows, and the "Browse by" tiles.]
 
-### 6.1 The Hierarchy
+### 6.1 The Browse Root
 
-Tap a subseries — *1969–1976*, say — to see its volumes; tap a volume for its table of contents, each document labeled with number, heading, and date. Long volume titles wrap onto a second line rather than truncating. A toggle in the Browse toolbar limits the list to **downloaded volumes only** — useful when you want to see exactly what's available offline, on a flight or in an archive basement.
+The root of the Browse tab opens with a **search field** over all 552 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** section of doors into the series:
+
+- **Subseries** — the classic era-by-era hierarchy (Section 6.1a).
+- **All Volumes** — one catalogue of every volume (Section 6.1b).
+
+More doors arrive as the browse-axes program lands (administrations, editors, and others).
+
+### 6.1a The Hierarchy
+
+Tap **Subseries** for the era directory, then a subseries — *1969–1976*, say — to see its volumes; tap a volume for its table of contents, each document labeled with number, heading, and date. Long volume titles wrap onto a second line rather than truncating. A toggle in the Browse toolbar limits the list to **downloaded volumes only** — useful when you want to see exactly what's available offline, on a flight or in an archive basement. Subseries and volume rows now show a **document count** for every volume — even ones you haven't downloaded — alongside the publication year and the download/index badges.
+
+### 6.1b The All Volumes Catalogue
+
+**All Volumes** lists the whole series in one place, with a search field and a control that arranges it four ways:
+
+- **Title** — filed A–Z by each volume's *distinctive* title segment (*China, 1969–1972*), since almost every full title begins with the same series boilerplate. Early annual volumes, whose distinctive part is just a year, file under **#** at the end.
+- **Published** — newest first, grouped by decade. This is the **print year** from each volume's title page, not a declassification or release date; for the early annual volumes, publication year and coverage year are roughly the same thing.
+- **Era** — the subseries grouping, flattened into one list.
+- **Length** — largest first, by document count.
+
+The counts are FRUS document divs from the app's bundled index; a search inside a volume can return a few more rows, because prose sections such as prefaces are searchable but aren't numbered documents.
+
+[SCREENSHOT: All Volumes catalogue — the segmented Title/Published/Era/Length control with decade headers in Published order.]
 
 ### 6.2 Top Subjects
 
@@ -300,7 +322,7 @@ An **Analysis Tools** menu (a chart icon) in the Browse toolbar gathers the corp
 
 ### 6.5 The People Browser
 
-At the very top of the Browse screen, above the subseries list, is a **People** row: a reconciled, corpus-wide index of everyone named across the volumes you've indexed — one alphabetical list, not a per-volume one.
+Near the top of the Browse root, below the search field, is a **People** row: a reconciled, corpus-wide index of everyone named across the volumes you've indexed — one alphabetical list, not a per-volume one.
 
 The same person often appears across many volumes under different name forms ("Kissinger, Henry A.", "Kissinger, Henry", "Kissinger, Henry A. Laurence"). FRUS Explorer consolidates these into **one identity**, so you aren't chasing one person through a dozen entries. Each row shows the canonical name; a subtitle with **role and active years** where a volume's List of Persons supplied them (*Secretary of State · 1973–1977*); a **mention count** — the number of distinct documents referencing this identity across your indexed corpus; and a small **reconciled-identity seal** when the entry is matched to the bundled name-authority data. A search field filters by name.
 

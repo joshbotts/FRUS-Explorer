@@ -49,6 +49,14 @@ import Observation
 ///          compilation claim "Index Required" for the whole session; `indexVolume`'s
 ///          nil-pipeline guard now records `BrowserIndexingError.pipelineUnavailable`
 ///          instead of returning silently
+///   1.5 — #1051 B-1: three new levels for the browse-axes program — `.subseriesIndex`
+///          (the era directory the 2a root moves one tap deep), `.catalogue` (the 1e
+///          All Volumes catalogue), and `.volumeList(VolumeListSpec)` (the R-1 shared
+///          cross-subseries volume list every axis drills into). `corpusStats` removed
+///          (display left in Session 130; its document sum read the dead manifest field).
+///          `activateTagFilter` gains the Q-5 fallback: with no `.subseries` ancestor on
+///          the path it PUSHES the subseries level with the filter applied, instead of
+///          silently setting latent state (the axis-list route to `VolumeView`).
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -65,6 +73,16 @@ public final class BrowserViewModel {
         case people
         /// The detected-topic index (#1023) — the subject-grain sibling of `people`.
         case subjects
+        /// The subseries directory (#1051 B-1) — the era hierarchy the 2a root moves
+        /// behind its double-width tile. Payload-less, like `.people`/`.subjects`.
+        case subseriesIndex
+        /// The All Volumes catalogue (#1051 A-1/A-2) — all 552 volumes under one
+        /// searchable level with Title / Published / Era / Length presentations.
+        case catalogue
+        /// An arbitrary ordered cross-subseries volume list (#1051 R-1) — the shared
+        /// destination every browse axis drills into. Identity is the spec's `axisKey`,
+        /// never the id array, so a recomputed set under the same axis compares equal.
+        case volumeList(VolumeListSpec)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -76,6 +94,9 @@ public final class BrowserViewModel {
             case .document(let e):     hasher.combine(4); hasher.combine(e.documentId)
             case .people:              hasher.combine(5)
             case .subjects:            hasher.combine(6)
+            case .subseriesIndex:      hasher.combine(7)
+            case .catalogue:           hasher.combine(8)
+            case .volumeList(let s):   hasher.combine(9); hasher.combine(s.axisKey)
             }
         }
 
@@ -89,6 +110,9 @@ public final class BrowserViewModel {
             case (.document(let a), .document(let b)): return a.documentId == b.documentId
             case (.people, .people): return true
             case (.subjects, .subjects): return true
+            case (.subseriesIndex, .subseriesIndex): return true
+            case (.catalogue, .catalogue): return true
+            case (.volumeList(let a), .volumeList(let b)): return a.axisKey == b.axisKey
             default: return false
             }
         }
@@ -233,24 +257,6 @@ public final class BrowserViewModel {
         indexingPipeline = pipeline
     }
 
-    // MARK: - Corpus Statistics
-
-    /// Aggregate statistics computed from all manifest entries.
-    public var corpusStats: CorpusStats {
-        let all = allVolumes
-        let docs = all.reduce(0) { $0 + $1.documentCount }
-        let docDates  = all.compactMap { $0.dateRange.earliest } + all.compactMap { $0.dateRange.latest }
-        let pubDates  = all.compactMap(\.publicationDate)
-        return CorpusStats(
-            totalVolumes: all.count,
-            totalDocuments: docs,
-            earliestDocumentDate: docDates.min(),
-            latestDocumentDate: docDates.max(),
-            earliestPublicationDate: pubDates.min(),
-            latestPublicationDate: pubDates.max()
-        )
-    }
-
     // MARK: - Subseries Groups
 
     /// Every volume the app can show — the catalogue plus anything side-loaded (#777).
@@ -258,7 +264,9 @@ public final class BrowserViewModel {
     /// Was `diffResult?.known ?? bundledEntries`, which is the catalogue and only the catalogue;
     /// a side-loaded volume produced no subseries group and no row, however thoroughly it was
     /// indexed. `browsableEntries` is that expression with the local entries folded in.
-    private var allVolumes: [VolumeManifestEntry] {
+    /// Internal since #1051 B-1: the corpus root's search field and the All Volumes
+    /// catalogue read the same universe this view model navigates.
+    var allVolumes: [VolumeManifestEntry] {
         manifestStore.browsableEntries
     }
 
@@ -299,20 +307,47 @@ public final class BrowserViewModel {
 
     // MARK: - Tag Filter Actions
 
-    /// Activates a tag slug as a filter for the given subseries and (if needed)
-    /// pops the navigation stack back to the Subseries level.
+    /// Activates a tag slug as a filter for the given subseries, then lands the reader on
+    /// that subseries level — popping back to it when it is an ancestor, or pushing it when
+    /// it is not.
+    ///
+    /// ## The Q-5 fallback (#1051 B-1)
+    /// A `VolumeView` can now be reached from paths with no `.subseries` ancestor (the All
+    /// Volumes catalogue, root search, and every future axis list). Before this fix the
+    /// no-ancestor case silently did nothing visible while setting LATENT filter state that
+    /// pre-filtered the subseries the next time it was entered from the root. The ruled
+    /// behaviour (owner decision Q-5) is to push the subseries level with the filter
+    /// applied, so the chip's promise — "show other volumes with this tag" — lands
+    /// somewhere visible and the breadcrumb stays truthful.
     public func activateTagFilter(slug: String, forSubseries subseries: String) {
         tagFilters[subseries, default: []].insert(slug)
-        // Pop back to subseries level if we are deeper.
-        if let idx = navigationPath.firstIndex(where: {
-            if case .subseries(let g) = $0 { return g.subseries == subseries }
-            return false
-        }) {
+        if let idx = Self.subseriesAncestorIndex(in: navigationPath, subseries: subseries) {
             navigationPath = Array(navigationPath.prefix(through: idx))
+        } else {
+            // Build the group from the UNFILTERED universe: `allSubseriesGroups` respects
+            // `filterDownloadedOnly`, and a chip on an undownloaded volume must still land.
+            let vols = allVolumes.filter { $0.subseries == subseries }
+            guard !vols.isEmpty else { return }
+            navigationPath.append(.subseries(SubseriesGroup(subseries: subseries, volumes: vols)))
         }
         #if DEBUG
         print("[BrowserView] Tag filter activated: \(slug) for subseries \(subseries)")
         #endif
+    }
+
+    /// The index of the `.subseries` level for `subseries` on `path`, or `nil` when the
+    /// path has no such ancestor (the Q-5 push case). Static and pure so the pop-vs-push
+    /// decision is unit-testable without a manifest store.
+    ///
+    /// - Parameters:
+    ///   - path: The navigation path to search.
+    ///   - subseries: The subseries identifier the tag filter belongs to.
+    /// - Returns: The 0-based index to pop through, or `nil` to push instead.
+    static func subseriesAncestorIndex(in path: [BrowserLevel], subseries: String) -> Int? {
+        path.firstIndex(where: {
+            if case .subseries(let g) = $0 { return g.subseries == subseries }
+            return false
+        })
     }
 
     /// Removes a tag slug filter for the given subseries.
