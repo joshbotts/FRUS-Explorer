@@ -605,6 +605,18 @@ struct MacSourceExplorerView: View {
                                                    defaultValue: "File"),
                                       value: fileId)
                     }
+                    // Mirrors the iOS panel's orientation link, on the same condition (nothing
+                    // curated for this series) and reading the same shared URL and label, so the
+                    // two hand-maintained twins cannot offer different destinations.
+                    if CuratedLotResolutionsStore.shared?.record(forSeriesName: series) == nil {
+                        Button {
+                            openURL(NARACatalogClient.stateDepartmentRecordsURL)
+                        } label: {
+                            Label(NARACatalogClient.stateDepartmentRecordsLabel,
+                                  systemImage: "arrow.up.right.square")
+                        }
+                        .buttonStyle(.link)
+                    }
 
                 case .unrecognized:
                     provenanceRow(label: String(localized: "source.explorer.unrecognized.type",
