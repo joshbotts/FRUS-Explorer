@@ -188,14 +188,29 @@ struct RepositoryFactTableTests {
             """)
     }
 
-    /// The libraries and the non-NARA tail are still entirely absent (D2, D11).
-    @Test("No presidential library has a curated row yet")
-    func librariesRemainUncurated() {
+    /// A library row now exists — and carries **only** a link.
+    ///
+    /// This test used to assert the libraries were absent entirely, which was true while the table
+    /// was empty and became false the moment the ten rows landed. The premise was never the point:
+    /// D2/D11's actual guarantee is that no unconfirmed institutional fact prints, and that survives
+    /// the rows arriving. So it now pins the guarantee rather than the emptiness — a row may hold a
+    /// stamped URL, and its address, email and appointment policy must all stay dark.
+    @Test("A library row carries a stamped link and no unconfirmed prose")
+    func librariesCarryLinksOnly() {
         for library in ["Truman Library", "Kennedy Library", "Johnson Library"] {
-            #expect(RepositoryFactTable.current.row(for: library) == nil, """
-                \(library) has a curated row. D2 scopes the libraries to hand-curation and none has \
-                been confirmed; a library that resolved here would print an address nobody checked.
+            guard let row = RepositoryFactTable.current.row(for: library) else {
+                Issue.record("\(library) is cited by the corpus but has no curated row")
+                continue
+            }
+            #expect(row.address.printable == nil, """
+                \(library) would print an address nobody confirmed. D11 reduced the library chapter \
+                to a confirm-before-you-travel prompt precisely because the packet cannot name a \
+                series or a NAID at collection grain — an address here would imply it could.
                 """)
+            #expect(row.inquiryEmail.printable == nil)
+            #expect(row.appointmentPolicy.printable == nil)
+            #expect(row.links.allSatisfy { $0.isPrintable }, "an unstamped link would not print")
+            #expect(row.hasAnythingToPrint, "a row that renders nothing should not be in the table")
         }
     }
 
