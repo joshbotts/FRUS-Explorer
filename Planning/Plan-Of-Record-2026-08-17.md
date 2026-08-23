@@ -29,6 +29,23 @@ at 512 dims with V-5 assessed and deliberately not built
 (`semantic-vectors/V5-Query-Encoder-Assessment.md`); Archival Analytics shipped #825–#829 and
 #832–#838 down to narrow, audited remainders (§3.1).
 
+**Since this plan was written — the browse-axes program (#1051), complete.** By owner direction,
+2026-08-22/23: feasibility survey and design requirements (PR #1053), the development plan
+(#1059), then sessions B-1…B-7 (PRs #1060, #1064–#1069) plus the #1070 keyboard-trap regression
+fix (#1071). The Browse root is now search-first (design 2a) with eight axes beside the classic
+hierarchy — All Volumes, Administrations, Editors, Archives, Clusters, My Scopes, Working
+Corpora, and the Topic Index (#1023) beside People — twinned into the macOS Corpus Browser's
+sidebar. Along the way it retired two of this plan's Tier-1 items (§2 B-3: #862 was verified
+already fixed; #861's class got two more adoptions plus the banner-occlusion fix) and settled
+one open question the hard way: **the B-7 semantic-clusters gate was inverted by the owner** —
+rather than waiting on the build-42 leads-or-noise verdict, the browsable cluster list shipped
+as the *instrument* for it, and the TestFlight What-to-Test files (items 11–12) now put the
+question to testers against cluster membership directly. If the verdict demotes the map, removing
+the Clusters tile is one clean commit. The program plan and design docs are archived in
+`Completed/` (`Browse-Axes-Development-Plan.md`, `Browse-Axes-Design-Requirements.md`,
+`browse-axes-design/`); deferred-with-obligations items (collection-lens doc counts, class
+browsing, era grouping on the Archives axis) are recorded in the plan's B-5 section, not lost.
+
 ## 2. Tier 1 — known bugs
 
 ### B-1 · iPad stability pair — #950, #657 *(owner evidence first)*
@@ -50,11 +67,15 @@ pending index-content change rides the same bump or waits for the next one. Cand
 and anything tester feedback surfaces. **Rule: one bump per wave of index-content changes, never
 one per change.** Build 42 just forced a re-index; the next bump should be worth its cost.
 
-### B-3 · iOS input residuals — #861, #862
-#928 shipped the app's first keyboard-dismissal affordance and fixed part of both. Remaining, as
-recorded in that PR: the **stuck text fields it lists** (#861), and #862's residual — **a custom
-volume scope saved on iOS does not appear in the list after a successful Save**, which was left
-unexplained. Same surfaces, one session, and the residual needs diagnosis before code.
+### ~~B-3 · iOS input residuals — #861, #862~~ — DONE (both issues closed)
+#928 shipped the app's first keyboard-dismissal affordance and fixed part of both. The residuals
+closed during the browse-axes program: **#862**'s scope-save defect was verified already fixed
+(`ScopeEditorTarget`, confirmed rather than re-diagnosed in #1051 B-3, PR #1065), and the #861
+class was extended by #1070/#1071 — the Browse root search and the Browse scope editor's name
+field adopted the bar, and the **cross-cutting occlusion** was fixed: the bottom-inset
+sync/indexing banner floated onto the keyboard's accessory row, leaving every #861 Done bar
+under a tab root present but unhittable whenever the banner showed. The banner now yields while
+the keyboard is up (`MainTabView` 1.15).
 
 ### B-4 · Lot-grammar correctness — #809 *(runs inside the S-5 grammar cluster, §4.1)*
 `SourceNoteKit`'s shared grammar cannot see a 4-digit lot prefix (`Lot 2015D608`), so those notes
@@ -235,7 +256,7 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 |---|---|---|---|
 | S-1 | iPad stability + scene plumbing | #950, #657, #752, ride: #824 | owner evidence (§5) |
 | S-2 | Index-content batch | #888, rider: #279 index half | O-4 design optional; else #888 alone |
-| S-3 | iOS input finish | #861, #862 residuals | none |
+| ~~S-3~~ | ~~iOS input finish~~ **DONE** — #862 verified fixed (#1051 B-3); #861 class extended + banner occlusion fixed (#1070/#1071) | ~~#861, #862 residuals~~ closed | — |
 | S-4 | Archival narrow set | #825(1,2), #832(a), #838(1,3), #829 rider | #838(2,4) sentences help, don't block |
 | S-5 | Source-note grammar cluster | #353, #809, ~~#372~~ (done), #733/#808, #681 tests | O-1 for the tail items |
 | S-5b | Collection export parity | #960: harness first, then DOCX cloud/TOC, PDF pagination, shared Source: fix | #960 item 6 rides S-5; RIS/BibTeX titles ride #888 |
@@ -245,6 +266,12 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 | S-9+ | Archival follow-ons, subjects scaffolding, backlog | #831 → #837; #308 scaffolding | tester feedback may pre-empt |
 
 Tester feedback on build 42 outranks this order when it lands.
+
+**Shipped outside this table, by owner direction (2026-08-22/23):** the browse-axes program —
+#1051 B-1…B-7 plus the #1070 regression (PRs #1053, #1059, #1060, #1064–#1069, #1071) and the
+Topic Index (#1023) — see §1's "Since this plan was written" paragraph. It also discharged S-3
+above. The next build carries the clusters leads-or-noise items in its What-to-Test notes, so
+the tester-feedback gate this table already defers to now has its instrument.
 
 ## 8. Planning-document disposition
 
