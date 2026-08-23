@@ -114,6 +114,8 @@ struct ProjectHomeView: View {
 
     /// Whether the "manage collections" editor sheet is presented (#377 Phase 5 polish).
     @State private var showCollectionsEditor = false
+    /// Presents the research-trip packet over this project's engaged documents (#830 T-2).
+    @State private var showTripPacket = false
 
     /// Whether the focus-tags editor sheet is presented (#377 Phase 3 — tag focus).
     @State private var showTagsEditor = false
@@ -192,6 +194,17 @@ struct ProjectHomeView: View {
         .sheet(isPresented: $showTagsEditor) {
             ProjectFocusTagsEditor(projectId: projectId)
         }
+        .sheet(isPresented: $showTripPacket) {
+            // The engaged set, de-duplicated the same way the leads engine seeds itself — distinct
+            // document-kind entries with non-empty ids — so the packet and Suggested Next describe
+            // the same body of work.
+            TripPacketSheet(
+                documents: engagedDocumentsForPacket(),
+                title: project?.name ?? String(localized: "project.home.planVisit.untitled",
+                                               defaultValue: "This project"),
+                researchQuestion: project?.researchQuestion)
+                .environment(appState)
+        }
     }
 
     // MARK: - Focus tags (#377 Phase 3 — tag focus)
@@ -245,6 +258,29 @@ struct ProjectHomeView: View {
 
     // MARK: - Collections (#377 Phase 5 polish)
 
+
+    /// The project's engaged documents, for the trip packet (#830 T-2).
+    ///
+    /// Deliberately the same rule `ProjectLeadsService.collectionSeedKeys` uses — distinct
+    /// document-kind entries with non-empty ids — so the packet describes the same body of work
+    /// Suggested Next ranks over. A packet built from a different set would quietly disagree with
+    /// the rest of Project Home about what this project contains.
+    private func engagedDocumentsForPacket() -> [(volumeId: String, documentId: String)] {
+        var seen = Set<String>()
+        var out: [(volumeId: String, documentId: String)] = []
+        for collection in summary.collections {
+            for entry in collection.documentEntries ?? []
+            where entry.entryKind == .document && !entry.volumeId.isEmpty
+                && !entry.documentId.isEmpty {
+                let key = "\(entry.volumeId)/\(entry.documentId)"
+                if seen.insert(key).inserted {
+                    out.append((volumeId: entry.volumeId, documentId: entry.documentId))
+                }
+            }
+        }
+        return out
+    }
+
     /// The project's collections: which ones are attached, plus a "Manage" entry to attach or detach
     /// existing collections. A collection belongs to a project via `Collection.projectIds`, which was
     /// previously set only implicitly (when a collection was created while the project was active);
@@ -257,6 +293,19 @@ struct ProjectHomeView: View {
                 Text(String(localized: "project.home.collections.title", defaultValue: "Collections"))
                     .font(.headline)
                 Spacer()
+                // #830 T-2: the packet is built over the project's ENGAGED set — the same
+                // collection documents that seed the leads engine — so it describes the archives
+                // behind work the researcher has actually done, not everything they have opened.
+                Button {
+                    showTripPacket = true
+                } label: {
+                    Label(String(localized: "project.home.planVisit",
+                                 defaultValue: "Plan a Visit"),
+                          systemImage: "building.columns")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+                .disabled(members.isEmpty)
                 Button {
                     showCollectionsEditor = true
                 } label: {
