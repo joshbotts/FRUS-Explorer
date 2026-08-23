@@ -53,16 +53,17 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
 /// ## Window Architecture
-/// Recounted from this file's scene body, 2026-07-18 (provenance PR 2). **Keep this table in
-/// sync when adding a scene** — it drifted before (six scenes missing at the 2026-07-15 #241
-/// count, then `relatedDocumentsScene` omitted again by #308), and
+/// Recounted from this file's scene body, 2026-08-23 (#1051 B-6 polish sweep). **Keep this
+/// table in sync when adding a scene** — it drifted before (six scenes missing at the
+/// 2026-07-15 #241 count, `relatedDocumentsScene` omitted again by #308, then TEN scenes
+/// missing or mistyped at the 2026-08-23 recount), and
 /// `Planning/Completed/241-iPad-Windowing-Investigation.md` depends on it being true.
 ///
 /// **Shared:** the default `WindowGroup` main window (onboarding → `MainTabView` on iOS,
 /// `MainWindowView` on macOS), plus `archivalNeighborsScene` and `relatedDocumentsScene`,
 /// declared once and referenced from both platform regions.
 ///
-/// **iOS auxiliary scenes (5)** — all `WindowGroup`; windowed multitasking only — and note
+/// **iOS auxiliary scenes (12)** — all `WindowGroup`; windowed multitasking only — and note
 /// `supportsMultipleWindows` is plist-derived, NOT strictly "Stage Manager" (an iPad in Full
 /// Screen Apps mode may still report true — unprobed; #241 review). `openWindow` is a no-op
 /// where it is false, so every caller keeps a sheet/inline fallback:
@@ -71,10 +72,17 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; CONTENT dead-ends in a permanent spinner when the volume is gone or boot loses the race (#323) |
 /// | (`SourceExplorerRequest`)       | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentSourceNote`-reading id scene) |
 /// | (`GraphWindowRequest`)          | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentGraphEntry`-reading id scene) |
+/// | (`WordCloudScope`)              | WindowGroup   | Value-based — the Word Cloud window (#752 / M-31) |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Value-based — restores correctly (#241 port): boot-race guard + honest empty state verified by the #241 review |
 /// | (`RelatedDocumentsRequest`)     | WindowGroup   | Value-based — find-related work list (#308 Phase 2b), shared `relatedDocumentsScene` |
+/// | (`SemanticMapRequest`)          | WindowGroup   | Value-based — the semantic map (F-25 / CW-9a), shared `semanticMapScene` |
+/// | (`AnalyticsParameters`)         | WindowGroup   | Value-based — Corpus Analytics (CW-9b), `corpusAnalyticsScene` |
+/// | (`ChronologyParameters`)        | WindowGroup   | Value-based — Chronology (CW-9b), `chronologyScene` |
+/// | (`ArchivalScopeRequest`)        | WindowGroup   | Value-based — Archival Analytics (CW-9c), `archivalAnalyticsScene` |
+/// | (`PersonAnalyticsRequest`)      | WindowGroup   | Value-based — Person Analytics (CW-9d), `personAnalyticsScene` |
+/// | (`CrossReferenceAnalyticsRequest`)| WindowGroup | Value-based — Cross-Reference Analytics (CW-9e), `crossReferenceAnalyticsScene` |
 ///
-/// **macOS auxiliary scenes (22)** — 17 singleton `Window`, 4 `WindowGroup`, 1 `Settings`.
+/// **macOS auxiliary scenes (27)** — 16 singleton `Window`, 10 `WindowGroup`, 1 `Settings`.
 /// `SwiftUI.Window` is `@available(iOS, unavailable)`, which is why no singleton scene below
 /// can port to iPad as-is; each would become a `WindowGroup` (#241 §3):
 /// | Scene ID                        | Type          | Purpose                                          |
@@ -84,24 +92,27 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.citationLookup"`         | Window        | Citation lookup (⌘⇧F) — the other find flow      |
 /// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
 /// | `"frus.people"`                 | Window        | Cross-volume person index (B5)                   |
-/// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
+/// | `"frus.subjects"`               | Window        | Cross-volume topic index (#1023)                 |
+/// | `"frus.crossReferenceGraph"`    | WindowGroup   | Cross-reference graph — id-fronted `WindowGroup(id:for:)` since M-2 |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
 /// | (`RelatedDocumentsRequest`)     | WindowGroup   | Related Documents — value-based work list (#308 Phase 2b)|
 /// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
-/// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.semanticAnalytics"`      | Window        | The corpus as a map of its own vocabulary        |
+/// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
 /// | `"frus.archivalAnalytics"`      | Window        | Archival analytics — era × collection rankings, co-citation network, reference flows, your library |
 /// | `"frus.wordcloud"`              | Window        | Word cloud (note the lowercase `c`)              |
 /// | `"frus.chronology"`             | Window        | Chronology                                       |
 /// | `"frus.research"`               | Window        | Research — notes, tags, collections, highlights  |
+/// | (`ProjectHomeRequest`)          | WindowGroup   | Project Home — value-based, off the Window menu (#377 Phase 1) |
+/// | `"frus.newProject"`             | WindowGroup   | New Project — marker-value group (#377 Phase 5)  |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
 /// | (`NoteComposerRequest`)         | WindowGroup   | Note composer — value-based, off the Window menu (#363) |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | (`Settings`)                    | Settings      | Settings scene (`FRUSSettingsView`)              |
-/// | `"about"`                       | Window        | About FRUS Explorer                              |
+/// | `"about"`                       | WindowGroup   | About — marker-value `WindowGroup(id:for:)`, off the Window menu (#824(3)) |
 /// | (`ResearchGuideWindowID`)       | WindowGroup   | FRUS Research Guide — value-based, off the Window menu (#363) |
 ///
 /// Version history:
@@ -197,6 +208,11 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          (DEBUG-only, inert unless `FRUS_UI_TEST_SEED_VOLUME` is set) before building the
 ///          `IndexingPipeline`, so a UI test can reach the compilation level — coverage the
 ///          R-9 defect was able to hide behind because no test could get a volume on disk
+///   4.9 — #1051 B-6 polish: the Window Architecture table recounted against the scene body,
+///          which it had drifted from by TEN scenes (iOS 12 not 5 — the CW-9 analytics ports
+///          and Word Cloud/semantic-map groups were never added; macOS 27 not 22 — Topics,
+///          the two Projects groups, plus two type flips the table missed when they shipped
+///          and one row-order drift). Doc-comment only; no scene changed.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -661,8 +677,8 @@ struct FRUSExplorerApp: App {
 
         // MARK: - Semantic Map Window (UI review F-25 / CW-9a)
         //
-        // The FIRST analytics surface to get a window on iOS — the scene table above has
-        // listed five value-based groups and no analytics one since it was written. See
+        // The FIRST analytics surface to get a window on iOS — until it landed, the scene
+        // table above listed five value-based groups and no analytics one. See
         // `semanticMapScene` for why the repair is regular width rather than modality, and
         // why this surface came first (its request type already existed for Handoff).
         semanticMapScene
@@ -1163,7 +1179,7 @@ struct FRUSExplorerApp: App {
         // "declared without injection", not "read without injection" — grepping for reads would
         // clear this window wrongly.
         //
-        // It was the only one of 28 scenes injecting nothing, bare since 2026-05-17. Harmless until
+        // It was the only one of the then-28 scenes injecting nothing, bare since 2026-05-17. Harmless until
         // S-5a moved the Research Guide row in on 2026-07-25 and added that declaration, which
         // turned a dormant omission into a hard trap: `openWindow(id: "about")` builds the window
         // synchronously inside the menu action, so the trap fires on the click. Worse, a singleton

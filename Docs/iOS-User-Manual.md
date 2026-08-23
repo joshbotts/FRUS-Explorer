@@ -361,7 +361,11 @@ Each row shows the topic, its `Category · Sub-category`, and its reach — how 
 
 **Those figures describe the whole series, not your library.** A topic can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. So a topic's own page shows both numbers, labelled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device*. If the last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a topic your library may be full of.
 
+The topic's page also lists its **Covering volumes** — complete membership across the series, including volumes you have not downloaded. Long lists preview the first few, with **Show all N volumes** to disclose the rest; tap any volume to open it in the browser.
+
 **Find documents on this topic** runs a search filtered to that one topic. That filter is finer than the topic-area rows in the Facets panel (Section 7.5): an area such as *Warfare · General* holds about five topics, and this narrows to one. Both can be active at once, and each gets its own chip so you can remove either.
+
+**All «area» topics** (for example *All Cold War topics*) goes back to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbours without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 5 topics* — with a ✕ to return to the full index.
 
 Reach it three ways: **Browse ▸ Topics** (beside People), the **Browse this topic in the index** button on any topic chip's pivot sheet, or **Browse all topics** in the Subjects section of a search's Facets panel.
 

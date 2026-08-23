@@ -554,6 +554,8 @@ struct SubjectCatalogueTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #1023
+///   1.1 — Session 2026-08-23: #1051 B-6 — the `.group(categoryKey:)` arrival
+///         (`groupFilter(forCategoryKey:rows:)` + `filtered(_:by:)`)
 @Suite("Subject index grouping (#1023)")
 struct SubjectIndexGroupingTests {
 
@@ -629,6 +631,97 @@ struct SubjectIndexGroupingTests {
         #expect(grouped.flatMap(\.subjects).count == rows.count, "grouping must not drop a subject")
         #expect(grouped.count > 10, "491 subjects should span many initials")
         #expect(Set(grouped.flatMap(\.subjects).map(\.ref)).count == rows.count, "no duplication")
+    }
+
+    // MARK: The .group arrival (#1051 B-6)
+
+    /// The key is the `SubjectBucketVocabulary` durable form: `category`, U+001F, `subcategory`.
+    @Test("A valid bucket key resolves to its filter")
+    func validKeyResolves() throws {
+        let rows = [row("Berlin blockade", category: "Warfare", subcategory: "Cold War"),
+                    row("Agriculture", category: "Global Issues", subcategory: "Food")]
+        let filter = try #require(
+            SubjectIndexGrouping.groupFilter(forCategoryKey: "Warfare\u{1F}Cold War", rows: rows))
+        #expect(filter.category == "Warfare")
+        #expect(filter.subcategory == "Cold War")
+        #expect(filter.label == "Cold War",
+                "a sub-category naming one bucket labels itself bare, without the category prefix")
+    }
+
+    /// All thirteen top-level categories have a "General" bucket, so a bare "General" chip would
+    /// not say WHICH — mirroring `SubjectBucketVocabulary.label(at:)`'s disambiguation rule.
+    @Test("A shared sub-category labels with its category prefix")
+    func sharedSubcategoryLabelsWithCategory() throws {
+        let rows = [row("Armistices", category: "Warfare", subcategory: "General"),
+                    row("Exports", category: "Trade", subcategory: "General")]
+        let filter = try #require(
+            SubjectIndexGrouping.groupFilter(forCategoryKey: "Warfare\u{1F}General", rows: rows))
+        #expect(filter.label == "Warfare · General", """
+            Got "\(filter.label)". Thirteen buckets are called "General"; a chip that does not name \
+            the category cannot tell the reader which topic area is narrowing the index.
+            """)
+    }
+
+    /// A malformed key (no U+001F separator) and a stale key (a bucket from an older data drop
+    /// that no loaded subject belongs to) both resolve to `nil` — the index then shows everything,
+    /// the same honest fallback `.all` is, rather than an empty list under a phantom chip.
+    @Test("A malformed or stale key resolves to nil")
+    func malformedAndStaleKeysResolveToNil() {
+        let rows = [row("Berlin blockade", category: "Warfare", subcategory: "Cold War")]
+        #expect(SubjectIndexGrouping.groupFilter(forCategoryKey: "Warfare — Cold War",
+                                                 rows: rows) == nil,
+                "a key without the U+001F separator is not the durable form and cannot land")
+        #expect(SubjectIndexGrouping.groupFilter(forCategoryKey: "Warfare\u{1F}World War II",
+                                                 rows: rows) == nil,
+                "a bucket no loaded subject belongs to would filter the index to an empty list")
+        #expect(SubjectIndexGrouping.groupFilter(forCategoryKey: "Cold War\u{1F}Warfare",
+                                                 rows: rows) == nil,
+                "category and sub-category are positional — a swapped key names no bucket")
+    }
+
+    /// The filter matches on BOTH halves: a sub-category name can recur across categories, so
+    /// filtering on the sub-category alone would leak the other category's rows in.
+    @Test("Filtering keeps exactly the bucket's rows; nil keeps everything")
+    func filterApplication() {
+        let rows = [row("Armistices", category: "Warfare", subcategory: "General"),
+                    row("Exports", category: "Trade", subcategory: "General"),
+                    row("Berlin blockade", category: "Warfare", subcategory: "Cold War")]
+        let filter = SubjectIndexGrouping.GroupFilter(
+            category: "Warfare", subcategory: "General", label: "Warfare · General")
+        #expect(SubjectIndexGrouping.filtered(rows, by: filter).map(\.name) == ["Armistices"], """
+            "Trade · General" shares the sub-category and must not leak in; "Warfare · Cold War" \
+            shares the category and must not either.
+            """)
+        #expect(SubjectIndexGrouping.filtered(rows, by: nil).count == rows.count,
+                "no active narrowing shows the whole catalogue")
+    }
+
+    /// Every bucket key the vocabulary can mint resolves against the shipped catalogue — the two
+    /// artifacts (`subject-bucket` vocabulary and subject catalogue) come from the same drop, so a
+    /// mintable key that cannot land would mean the sender and this resolver disagree about the
+    /// durable form itself.
+    @MainActor
+    @Test("Every mintable vocabulary key lands on the shipped catalogue")
+    func everyVocabularyKeyLands() throws {
+        let index = try #require(DocumentSubjectStore.shared)
+        let vocabulary = index.bucketVocabulary
+        let rows = index.subjectCatalogue.map {
+            SubjectIndexGrouping.SubjectIndexRow(
+                ref: $0.ref, name: $0.name, category: $0.category, subcategory: $0.subcategory,
+                documentCount: $0.documentCount, volumeCount: $0.volumeCount)
+        }
+        #expect(vocabulary.buckets.count > 100,
+                "the shipped vocabulary has 106 buckets; the fixture is broken")
+        for id in vocabulary.buckets.indices {
+            let key = try #require(vocabulary.key(at: id))
+            let filter = SubjectIndexGrouping.groupFilter(forCategoryKey: key, rows: rows)
+            #expect(filter != nil, """
+                vocabulary bucket \(id) (\(vocabulary.buckets[id].label)) minted key \
+                \(key.replacingOccurrences(of: "\u{1F}", with: "␟")) that no catalogue row answers
+                """)
+            #expect(SubjectIndexGrouping.filtered(rows, by: filter).isEmpty == false,
+                    "bucket \(id) resolved but filters to an empty index")
+        }
     }
 }
 

@@ -85,9 +85,11 @@ struct SceneEnvironmentAuditTests {
     /// Every scene declared in `FRUSExplorerApp.swift`, with its block.
     ///
     /// Anchored on **exactly eight leading spaces**, which is the indentation of a scene inside
-    /// `var body: some Scene` and inside each of the three `some Scene` helper properties
-    /// (`mainWindowScene`, `archivalNeighborsScene`, `relatedDocumentsScene`). Deeper matches — a
-    /// `Window` mentioned in a comment, or a nested view — are not scenes and are not audited.
+    /// `var body: some Scene` and inside every `some Scene` helper property (nine at the
+    /// 2026-08-23 recount — `mainWindowScene`, `archivalNeighborsScene`,
+    /// `relatedDocumentsScene`, `semanticMapScene`, and the five CW-9 analytics scenes).
+    /// Deeper matches — a `Window` mentioned in a comment, or a nested view — are not scenes
+    /// and are not audited.
     private static func sceneBlocks(in source: String) -> [SceneBlock] {
         let lines = source.components(separatedBy: "\n")
         var blocks: [SceneBlock] = []
