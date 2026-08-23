@@ -38,6 +38,8 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #861: settles the open question the audit could not
+///   1.1 — #1070: the Browse root search field — the B-1 field that shipped without any
+///         dismissal affordance and trapped a reader under the raised keyboard
 final class KeyboardDismissBarReachTests: XCTestCase {
 
     var app: XCUIApplication!
@@ -122,6 +124,50 @@ final class KeyboardDismissBarReachTests: XCTestCase {
 
         popoverDone.tap()
         XCTAssertTrue(waitForKeyboardGone(), "Tapping the popover's Done left the keyboard up.")
+    }
+
+    /// The Browse root's inline volume search (#1070): the field that trapped a reader.
+    ///
+    /// A plain `TextField` in the root List — no Cancel, a root often too short to
+    /// scroll-dismiss, and the raised keyboard covers the tab bar, so before the fix there
+    /// was no route off the screen at all. The fix is the #861 bar; this measures it the
+    /// suite's own way — a Done count taken before focus and again after, so the toolbar's
+    /// unrelated buttons cannot satisfy the assertion.
+    func testDismissBarRendersOnTheBrowseRootSearchField() throws {
+        let browse = app.buttons["Browse"].firstMatch
+        if browse.waitForExistence(timeout: 10) { browse.tap() }
+
+        let field = app.textFields["browse.root.searchField"].firstMatch
+        guard field.waitForExistence(timeout: 10) else {
+            throw XCTSkip("The Browse root search field is not on this destination")
+        }
+
+        let doneBefore = app.buttons.matching(
+            NSPredicate(format: "label ==[c] 'Done'")).count
+
+        field.tap()
+        guard waitForKeyboard() else {
+            throw XCTSkip("""
+                No software keyboard appeared, so no accessory bar can exist and this test would \
+                pass vacuously. Disconnect the Simulator's hardware keyboard (⇧⌘K).
+                """)
+        }
+
+        let doneAfter = app.buttons.matching(
+            NSPredicate(format: "label ==[c] 'Done'")).count
+        XCTAssertGreaterThan(doneAfter, doneBefore, """
+            Focusing the Browse root search field raised the keyboard without the #861 Done \
+            bar — the keyboard covers the tab bar and nothing else on the root dismisses it \
+            (#1070's trapped-reader shape).
+            """)
+
+        // The bar's Done is the one that arrived with the keyboard.
+        let done = app.buttons.matching(
+            NSPredicate(format: "label ==[c] 'Done'")).allElementsBoundByIndex
+            .last { $0.isHittable }
+        XCTAssertNotNil(done, "A Done was counted but none is hittable")
+        done?.tap()
+        XCTAssertTrue(waitForKeyboardGone(), "Tapping Done left the keyboard up.")
     }
 
     private func waitForKeyboardGone(timeout: TimeInterval = 5) -> Bool {

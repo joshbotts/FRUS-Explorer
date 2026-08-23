@@ -56,6 +56,10 @@ import SwiftData
 ///          Subseries tile double-width above a two-column `LazyVGrid` (All Volumes,
 ///          Administrations, Editors), tiles painting their own cards in one
 ///          chrome-free row
+///   2.2 — #1070: the root search keyboard can be put away — the #861 Done bar +
+///          interactive scroll dismissal on the List, `.submitLabel(.search)` on the
+///          field, and a result-row tap resigns before navigating (the raised keyboard
+///          covered the tab bar and nothing dismissed it)
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -109,6 +113,13 @@ struct CorpusView: View {
         // #377 Phase 5: on regular-width iPad the top-inset "Working on:" banner is suppressed (it
         // collides with the floating tab bar, #238); surface the research question here instead.
         .workingOnSubtitle(isActive: showsWorkingOnSubtitle)
+        // #1070: the root search field shipped (B-1) with NO dismissal affordance — a plain
+        // TextField in a List has no Cancel, the root is often too short to scroll-dismiss,
+        // and the raised keyboard covers the tab bar, so the reader was trapped on Browse.
+        // The house #861 pair: the Done bar always works; the interactive scroll dismissal
+        // covers the reader who drags the list instead.
+        .scrollDismissesKeyboard(.interactively)
+        .keyboardDismissBar()
     }
 
     // MARK: - Search
@@ -143,6 +154,9 @@ struct CorpusView: View {
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 #endif
+                // #1070: the return key reads "Search" and — search being live — its one
+                // job is putting the keyboard away.
+                .submitLabel(.search)
                 .accessibilityIdentifier("browse.root.searchField")
                 if !searchText.isEmpty {
                     Button {
@@ -178,6 +192,9 @@ struct CorpusView: View {
             } else {
                 ForEach(matches) { entry in
                     Button {
+                        // #1070: picking a result must not carry the raised keyboard into
+                        // the volume view (the pushed screen has no field to resign it).
+                        KeyboardDismissBar.dismiss()
                         // Root-level selection ASSIGNS the path (the list-pane contract) —
                         // a volume chosen from root search is a fresh start, not a push.
                         vm.select(.volume(entry))

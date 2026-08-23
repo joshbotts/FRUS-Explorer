@@ -8421,3 +8421,36 @@ clusters), and the request's Codable round-trip incl. an old payload without the
 fields. Docs: iOS §6.1h + door list; macOS §6.1 sidebar sentence; both TestFlight
 What-to-Test files gain the clusters verdict items. The browse-axes program is
 complete: B-1..B-7 all shipped.
+
+## Session 2026-08-23 — #1070: the undismissible keyboard, and the banner that was eating the Done bar
+
+A tester was trapped on the Browse root: the B-1 inline search field raised a keyboard
+with no way to put it away, and the raised keyboard covers the tab bar. Two defects
+stacked, and the reach test separated them.
+
+**The field shipped bare.** The root search is a plain `TextField` in a List — no
+Cancel, a root often too short to scroll-dismiss — and it never adopted the #861 house
+pattern. Fixed: `.keyboardDismissBar()` + `.scrollDismissesKeyboard(.interactively)` on
+the root List, `.submitLabel(.search)` on the field, and a result-row tap resigns
+before navigating so the keyboard is not carried into the pushed volume. The audit of
+the whole #1051 wave found ONE more live case — `ScopeEditorView`'s name field (B-3),
+the exact stuck shape #861/#862 were written about, re-introduced — now fixed;
+`VolumeListView`'s field is in an alert (self-dismissing) and `PersonCorrectionsView`'s
+is macOS-only.
+
+**And the bar alone would not have fixed it.** The new reach test measured the #861
+Done as PRESENT BUT UNHITTABLE on the Browse root while the popover adopter passed —
+because the sync/indexing banner rides a bottom `safeAreaInset`, which floats up with
+the keyboard and lands exactly on the accessory row (the same overlay the map's lasso
+toggle comment documents eating taps). Every #861 adopter on a tab root was occluded
+whenever the banner showed — which, for a signed-out or local-only user, is always.
+Fixed in `MainTabView`: the shared banner inset yields while the keyboard is visible
+(keyboardWillShow/Hide observers), chosen over `.ignoresSafeArea(.keyboard)` on the
+tab roots because that would also stop every tab's own fields from avoiding the
+keyboard. The banner's states persist, so nothing is lost by waiting out a typing
+session.
+
+New UI test in `KeyboardDismissBarReachTests` (the suite's count-before/count-after
+measurement, skipping without a software keyboard); verified on-device end-to-end:
+focus → Done chip above the keyboard, banner yielded → tap → keyboard down, tab bar
+reachable, banner returned.

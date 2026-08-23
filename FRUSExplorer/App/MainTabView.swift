@@ -87,6 +87,10 @@ import SwiftData
 ///   1.14 — Session 2026-08-11: #833 — the shell presents Archival Analytics from
 ///          `pendingArchivalScope`. That surface had no presenter outside `BrowserView`'s own
 ///          `@State`, so a scope handed over from Search or a subject sheet opened nothing.
+///   1.15 — #1070: the shared banner inset yields to the on-screen keyboard. A bottom
+///          `safeAreaInset` floats onto the keyboard's accessory row, and the sync banner
+///          was occluding the #861 Done bar there (measured: the Done existed, unhittable)
+///          — with the keyboard also covering the tab bar, a reader was trapped
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -140,6 +144,10 @@ struct MainTabView: View {
     /// could not be opened from the others. Before this, the search door switched to the Browse
     /// tab and nothing appeared — the surface's only opener was a menu button in that tab.
     @State private var presentedArchivalScope: Handoff<ArchivalScopeRequest>?
+
+    /// Whether the on-screen keyboard is up — the banner inset yields to it (#1070; see
+    /// the observers on the `TabView` for the measured occlusion this prevents).
+    @State private var keyboardIsVisible = false
 
     var body: some View {
         @Bindable var appState = appState
@@ -255,6 +263,22 @@ struct MainTabView: View {
         // hand-off producer can address its `Handoff` to this scene, and only this scene consumes it
         // (the foundation for fixing the pendingX fan-out across open iPad windows).
         .environment(\.sceneID, SceneID(sceneIDToken))
+        // #1070: the banner inset yields to the keyboard. A bottom `safeAreaInset` floats
+        // up with the keyboard, landing exactly on the accessory row where the #861 Done
+        // bar renders — measured on the Browse root, the bar's Done existed but was not
+        // hittable, so the keyboard could not be put away and the raised keyboard covered
+        // the tab bar (the reported trap). Hiding rather than `.ignoresSafeArea(.keyboard)`
+        // on the tab roots, because that modifier would also stop every tab's own fields
+        // from avoiding the keyboard — a worse defect than a banner that waits out a
+        // typing session (its states persist; it returns the moment the keyboard goes).
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation { keyboardIsVisible = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation { keyboardIsVisible = false }
+        }
         // #316 — persist THIS window's selection as the fresh-window seed. Written straight to
         // UserDefaults (not a shared @Observable property), so a user tap here is never observed
         // by another window and cannot mirror. Any window may update the seed; it is just "the
@@ -405,10 +429,17 @@ struct MainTabView: View {
     /// slides up from the tab bar edge when indexing completes.
     @ViewBuilder
     private var indexingBanner: some View {
+        // #1070: nothing in this inset renders while the keyboard is up — the inset floats
+        // onto the keyboard's accessory row and occludes the #861 Done bar (measured: the
+        // bar's Done existed but was unhittable under this banner). Every state here
+        // persists or re-announces, so nothing is lost by waiting out a typing session.
+        if keyboardIsVisible {
+            EmptyView()
+        }
         // #665: the iCloud indicator shares this inset. Indexing wins when both want it —
         // indexing is transient and finishes, while a local-only or failed-sync state waits and
         // will still be true when the banner frees up.
-        if appState.indexingBatch == nil, appState.completedIndexingMetadata == nil,
+        else if appState.indexingBatch == nil, appState.completedIndexingMetadata == nil,
            SyncStatusBanner.isWorthShowing(state: appState.cloudKitSyncState,
                                            cloudKitEnabled: appState.cloudKitSyncEnabled) {
             SyncStatusBanner(

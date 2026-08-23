@@ -26,6 +26,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #1051 B-3: initial implementation
+///   1.1 — #1070: adopts the #861 keyboard Done bar — the name field re-introduced the
+///          exact stuck-TextField shape the bar was written for
 struct ScopeEditorView: View {
 
     /// The scope under edit, resolved live.
@@ -82,6 +84,10 @@ struct ScopeEditorView: View {
                 }
             }
         }
+        // #1070 (via #861): the name field is a plain TextField in a List — the exact
+        // stuck shape the original scope editor shipped (#862's other end), re-introduced
+        // here by B-3. The keyboard-placement bar coexists with the toolbar above.
+        .keyboardDismissBar()
         .onDisappear {
             // Belt to Done's braces: a Back/pop must not drop edits either.
             try? modelContext.save()
