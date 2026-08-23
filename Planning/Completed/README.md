@@ -20,6 +20,14 @@ left residual work, that work is tracked in GitHub issues or in
   feature documents (feasibility + design handoff) — the feature shipped; its open remainders are
   tracked on `../Archival-Analytics-Adversarial-Review.md` and issues #825/#830–#838.
 
+- **The browse-axes program (#1051, 3 files — moved 2026-08-23)** — the program completed
+  B-1…B-7 (PRs #1060, #1064–#1069) plus the #1070 regression fix (#1071):
+  `Browse-Axes-Development-Plan.md` (the executed plan; its §2 decision register and B-5's
+  deferred-with-obligations list remain the record), `Browse-Axes-Design-Requirements.md` (the
+  feasibility study, R-1…R-4/A-1…A-9), and `browse-axes-design/` (the Claude Design handoff
+  mirror). The B-7 clusters gate was resolved by owner direction — the axis shipped as the
+  instrument for the build-42 leads-or-noise verdict; see the live plan's §1 addendum.
+
 - **Numbered session plans (01…406)** — the session-by-session build of the app, all delivered.
   Includes the architecture/design records for shipped subsystems
   (`102-DocumentHighlight-Architecture`, `140-147-WebKit-Rendering-Migration`,
