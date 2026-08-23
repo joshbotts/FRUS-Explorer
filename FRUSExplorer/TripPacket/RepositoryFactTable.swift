@@ -252,6 +252,12 @@ struct RepositoryFactTable: Equatable, Sendable {
                            label: "Planning a research visit (NARA)", verifiedDate: confirmed),
             RepositoryLink(url: "https://www.archives.gov/dc-metro/college-park/civilian-textual.html",
                            label: "Before you visit College Park", verifiedDate: confirmed),
+            // D16's OTHER half, which College Park lacked. The two links above answer "what must I
+            // do to get access"; this one answers "what is actually held" — the same pairing every
+            // library row carries, and the distinction the labels exist to draw. Verified
+            // 2026-08-22: 200, titled "Records of the Department of State | National Archives".
+            RepositoryLink(url: "https://www.archives.gov/research/foreign-policy/state-dept/agency-records",
+                           label: "Records of the Department of State", verifiedDate: confirmed),
         ])
 
     /// The ten presidential libraries the corpus cites, most-cited first.
