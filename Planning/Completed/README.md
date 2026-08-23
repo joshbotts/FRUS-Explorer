@@ -5,12 +5,12 @@ here 2026-08-05 so `Planning/` holds only live documents. Nothing was edited in 
 files carry status lines that predate their own completion (e.g. `Collections-Authoring-Scope`
 says "no implementation started" — the shipped code says otherwise). Where a completed document
 left residual work, that work is tracked in GitHub issues or in
-`../Plan-Of-Record-2026-08-17.md`, not here.
+the live plan of record (currently `../Plan-Of-Record-2026-08-23.md`), not here.
 
 **What lives here, by cluster:**
 
 - **The 2026-08-17 consolidation (16 files)** — every plan, review and assessment archived when
-  `../Plan-Of-Record-2026-08-17.md` became the single live plan after the build-42 TestFlight
+  `Plan-Of-Record-2026-08-17.md` (now archived here too) became the single live plan after the build-42 TestFlight
   release. Its §8 records where each document's live residue went. The set: the consolidated and
   resolve-open-issues plans, the eight-issue plan, the feature-priorities review, the three Q&CA
   documents, the restoration-depth design (#754; its deferred §B/§C are pointed at from the live
@@ -19,6 +19,10 @@ left residual work, that work is tracked in GitHub issues or in
   cross-platform porting assessment, the Dynamic Type worklist, and the two Archival Analytics
   feature documents (feasibility + design handoff) — the feature shipped; its open remainders are
   tracked on `../Archival-Analytics-Adversarial-Review.md` and issues #825/#830–#838.
+
+- **`Plan-Of-Record-2026-08-17.md` (moved 2026-08-23)** — the discharged plan itself: every
+  session row S-1…S-8 shipped (its struck tables carry the per-row PR evidence), superseded by
+  `../Plan-Of-Record-2026-08-23.md`, written from the owner's next-wave decision.
 
 - **The 2026-08-23 post-wave retirement (16 artifacts)** — moved when the issue-and-planning
   audit found every Plan-of-Record session row discharged. The archival-analytics wave closed

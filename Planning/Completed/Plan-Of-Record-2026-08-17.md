@@ -18,8 +18,8 @@ the semantic program's contracts and data paths, `People-Early-Era-Program.md` (
 M-2's Source Explorer half, CW-12, the CW-11 re-captures, the slice-poles Handoff deferral),
 `Map-Figure-Export-And-Visual-Outputs.md` (open design, unbuilt), `M2-Semantic-Pipeline-
 Ride-Along.md`, `OS27-Semantic-Retrieval-Design.md`, and the operational runbook/artifact
-dirs. Per this document's own rule, its successor should be written when the owner picks the
-next wave; until then this file is the record, not the sequence.
+dirs. Per this document's own rule, its successor is now written from the owner's wave picks:
+**`Plan-Of-Record-2026-08-23.md` is the single live plan**; this file is the discharged record.
 
 **Status:** ~~the single live plan~~ discharged — see above. Written by consolidating every open planning document and all 36
 open issues against the tree at `build-42`/`d7534884` (plus #950, filed after tagging), verifying
