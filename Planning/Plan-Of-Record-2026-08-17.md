@@ -1,6 +1,27 @@
 # Plan of Record — 2026-08-17, after the build-42 TestFlight release
 
-**Status:** the single live plan. Written by consolidating every open planning document and all 36
+**Status update, 2026-08-23 — this plan is DISCHARGED.** The full issue-and-planning audit
+(tree `75c5d40c`) verified every §7 session row shipped (S-1…S-8 and S-9+'s follow-ons; the
+evidence table is in `DEVELOPMENT-PLAN.md`'s 2026-08-23 audit entry and on each issue), plus
+three programs this plan never sequenced: the subjects wave (#308/#261 → #1015–#1054, all
+closed), the browse-axes program (#1051 B-1…B-7, closed), and the research trip packet
+(#830 T-0…T-3 + remainder, closed). **Seven issues remained open at the audit; #830 closed
+with it, leaving six**: #106 (screenshots, owner-lane), #234 (early-era people, gated on two
+owner keying sittings), #1014 (Ibid. class inheritance — well-scoped, unblocked, artifact+
+index-bump cost), and the three owner-design gates #266 (O-5), #279 (O-4), #626 (O-2).
+Note for those three: **§4.5's schema-batch rationale partly dissolved** — R-2b shipped with
+NO Production deploy (PR #981: a removal is not a deploy), so #266 and #279 are each other's
+only remaining batch partner. Sixteen completed planning artifacts moved to `Completed/`
+(indexed in its README); the still-live docs are the spec, this file, `DEVELOPMENT-PLAN.md`,
+the semantic program's contracts and data paths, `People-Early-Era-Program.md` (+
+`early-era-people/`), `Cross-Platform-UI-Adversarial-Review/` (four items only it tracks:
+M-2's Source Explorer half, CW-12, the CW-11 re-captures, the slice-poles Handoff deferral),
+`Map-Figure-Export-And-Visual-Outputs.md` (open design, unbuilt), `M2-Semantic-Pipeline-
+Ride-Along.md`, `OS27-Semantic-Retrieval-Design.md`, and the operational runbook/artifact
+dirs. Per this document's own rule, its successor should be written when the owner picks the
+next wave; until then this file is the record, not the sequence.
+
+**Status:** ~~the single live plan~~ discharged — see above. Written by consolidating every open planning document and all 36
 open issues against the tree at `build-42`/`d7534884` (plus #950, filed after tagging), verifying
 claims against code and issue audit trails rather than against document status lines. Seventeen
 planning documents were archived to `Planning/Completed/` in the same commit; §8 records where each
@@ -199,10 +220,13 @@ Shipped instead: one sentence in the Flows caveat naming the two concentrations,
 `MEASURE=1 swift run ProvenanceFlowIndexGenerator` as the reproducible instrument. **No schema
 bump**, so `provenance-flow-index.json` stays at schema 1.
 
-**#837** (the graph's unprinted-citations layer) is unstarted and is now unblocked rather than
-waiting: it was sequenced after #831 so it would draw era-keyed data, and there is no era keying
-to wait for. **#834** (the decimal channel) stays deferred by design — the pre-war reach, waiting
-on the file-number grammar (#965's territory).
+**#837** (the graph's unprinted-citations layer) ~~is unstarted~~ **SHIPPED** (#983/#984; closed
+2026-08-19). **#834** (the decimal channel) ~~stays deferred by design~~ **SHIPPED AND CLOSED
+2026-08-21** — measured first (#1008), then the harvest, class column and index bump to v46, the
+copy and the graph channel (#1009–#1013), with #965's despatch serials shipping separately
+(#1004). The one recorded residue is **#1014** (a bare `Ibid.` after a class-carrying footnote
+does not inherit the class) — open, well-scoped, unblocked, but a generator + bundled-artifact +
+index-bump change, so it should batch with the next index-content wave.
 
 ### 4.5 The schema-deploy batch — O-4 (#279), O-5 (#266), R-2b
 Each alone costs a CloudKit Production promotion (#488 is what happens when one is skipped).
@@ -213,20 +237,19 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 
 | Item | What it is | Blocks |
 |---|---|---|
-| #950 repro + crash log | resize context, Stage Manager or split view, Analytics log | B-1 |
-| #657 backtrace (if it recurs on 42) | device backtrace | B-1 |
-| ~~O-3 · #751/#553 leads-list decision~~ | **SETTLED 2026-08-19** — Project Home reads in-sheet (#553); Research/History keep handing off (#751). See `iOS-Reading-Journey-Design.md` §3b | — |
-| O-6 · #261 upstream ask | send the email; the ask text is drafted in the issue | 4.3 |
-| O-1 · #681 keyed v2 call | one API call to confirm `collectionIdentifier` on v2 | 4.1's test coverage |
-| O-2 · #626 design decision | what "wider than headnotes" means | backlog |
-| O-4 · #279 design | reversible per-document override; schema field → 4.5 batch | B-2 rider |
-| O-5 · #266 design | freshness anchor that survives reindex; schema field → 4.5 batch | backlog |
-| ~~O-7 · #372 record-group guard~~ | **SETTLED** — the 13 cross-RG lots admitted as a table, not a rule (951512a6) | — |
-| #838 (2) + (4) | two one-sentence ratifications (the 1d exception; the iPhone layout answer) | 3.1 |
-| #830 T-0 fact table | confirm the repository-fact table item by item before T-0 builds | trip packet |
-| R-2b deploy | Dashboard promotion, 19 → 17 | 3.4 |
-| VoiceOver pass | after #268's adoption; Audio Graph on a real screen reader | 3.5 |
-| #106 + CW-11 screenshots | the checklist exists; the UI has now settled at build 42 | docs |
+| ~~#950 repro + crash log~~ | **MOOT** — #950 closed (#953) | — |
+| ~~#657 backtrace~~ | **MOOT** — #657 closed (#953/#954, re-tested on build 43) | — |
+| ~~O-3 · #751/#553 leads-list decision~~ | **SETTLED 2026-08-19** — Project Home reads in-sheet (#553); Research/History keep handing off (#751). See `Completed/iOS-Reading-Journey-Design.md` §3b | — |
+| ~~O-6 · #261 upstream ask~~ | **MOOT** — #261 closed by outcome 2026-08-22 (gate discharged by data quality; the ask was never sent and is no longer owed; a residual smaller ask lives in #261's comments) | — |
+| ~~O-1 · #681 keyed v2 call~~ | **DONE** — the completed keyed-v2 harvest verified `collectionIdentifier` (#974); #681 closed | — |
+| O-2 · #626 design decision | what "wider than headnotes" means — **still owed**; #626 open | next wave |
+| O-4 · #279 design | reversible per-document override — **still owed**; #279 open. The index half has missed four bumps; the schema half's only remaining batch partner is #266 | next wave |
+| O-5 · #266 design | freshness anchor that survives reindex — **still owed**; #266 open. Same batch note | next wave |
+| ~~#838 (2) + (4)~~ | **DONE** — ratified in #1003 | — |
+| ~~#830 T-0 fact table~~ | **DONE** — #1038 walked the gate; T-1…T-3 + remainder shipped; #830 closed. Release-checklist habits remain: `Scripts/check_repository_links.py --stamp`, and reading the 3 owner-asserted URLs | — |
+| ~~R-2b deploy~~ | **MOOT** — #981: no deploy required (a removal is not a deploy) | — |
+| VoiceOver pass | **still owed** — #268's adoption shipped (#979); the on-device screen-reader validation remains owner work | — |
+| #106 + CW-11 screenshots | **still owed** — the hold condition ("once the UI settles") is plausibly met post-browse-axes; the issue body is three doc-generations stale and worth a reconciliation pass to the 13 live placeholders | docs |
 
 ## 6. Deferred, each with its reason written down
 
@@ -252,18 +275,20 @@ rule: batch if the timing aligns within a build, do not hold R-2b indefinitely.
 
 ## 7. Session sequence
 
-| # | Session | Issues | Gate |
-|---|---|---|---|
-| S-1 | iPad stability + scene plumbing | #950, #657, #752, ride: #824 | owner evidence (§5) |
-| S-2 | Index-content batch | #888, rider: #279 index half | O-4 design optional; else #888 alone |
-| ~~S-3~~ | ~~iOS input finish~~ **DONE** — #862 verified fixed (#1051 B-3); #861 class extended + banner occlusion fixed (#1070/#1071) | ~~#861, #862 residuals~~ closed | — |
-| S-4 | Archival narrow set | #825(1,2), #832(a), #838(1,3), #829 rider | #838(2,4) sentences help, don't block |
-| S-5 | Source-note grammar cluster | #353, #809, ~~#372~~ (done), #733/#808, #681 tests | O-1 for the tail items |
-| S-5b | Collection export parity | #960: harness first, then DOCX cloud/TOC, PDF pagination, shared Source: fix | #960 item 6 rides S-5; RIS/BibTeX titles ride #888 |
-| S-6 | Storage + content loose ends | #926 items 2–3, EditableContent §13 gap, #777 residuals | none |
-| S-7 | Infra debt | #270 ×4, #268 ×4, #312 | none |
-| S-8 | R-2b retirement | schema 19 → 17 | owner deploy (§5, batch per 4.5) |
-| S-9+ | Archival follow-ons, subjects scaffolding, backlog | #831 → #837; #308 scaffolding | tester feedback may pre-empt |
+**All rows discharged (2026-08-23 audit; per-row PR evidence in `DEVELOPMENT-PLAN.md`):**
+
+| # | Session | Discharged by |
+|---|---|---|
+| ~~S-1~~ | iPad stability + scene plumbing | #953, #954/#957 (+#956 re-test build), #992; ride #824 → #993 |
+| ~~S-2~~ | Index-content batch | #888 closed by #991 — the fix had shipped at index v14; NO bump needed. The #279 rider never materialized (O-4 absent) and has since missed four bumps (v41/42/44/46) |
+| ~~S-3~~ | iOS input finish | #958 (#862); #861 closed, class extended + banner occlusion fixed (#1070/#1071) |
+| ~~S-4~~ | Archival narrow set | #995, #997, #1003; #825/#829 closed on audit evidence; #990 (EditableContent keys) |
+| ~~S-5~~ | Source-note grammar cluster | #964, #966–#972 (v41/v42), #973, #963, #998/#999; #681 closed — O-1 answered by the completed keyed-v2 harvest (#974) |
+| ~~S-5b~~ | Collection export parity | #975 (harness + 4 red tests), #977 (v44) |
+| ~~S-6~~ | Storage + content loose ends | #976 (+ EditableContent §14), #978 |
+| ~~S-7~~ | Infra debt | #979 (#268), #980 (#270, #312) |
+| ~~S-8~~ | R-2b retirement | #981 — **no Production deploy** (a removal is not a deploy; 20→18 measured, not the spec's 19→17) |
+| ~~S-9+~~ | Archival follow-ons, subjects scaffolding | #982 (#831 closed by measurement), #983/#984 (#837), then the whole subjects program (#1015–#1054) and #834 shipped after all (#1008–#1013 — residue: **#1014**, not in this plan) |
 
 Tester feedback on build 42 outranks this order when it lands.
 
@@ -275,18 +300,28 @@ the tester-feedback gate this table already defers to now has its instrument.
 
 ## 8. Planning-document disposition
 
-**Stays live** (each is a spec, a live design, a runbook, or the tracker for open work):
-`DEVELOPMENT-PLAN.md` (session log) · `FRUS-Explorer-Specification.md` (spec) · **this document** ·
-`308-Subject-Integration-Design.md` (#308/#261) · `iOS-Reading-Journey-Design.md` (#751/O-3) ·
+**Stays live** *(census updated 2026-08-23 — the struck entries moved to `Completed/` when
+their work closed; see the status block at the top and `Completed/README.md`)*:
+`DEVELOPMENT-PLAN.md` (session log) · `FRUS-Explorer-Specification.md` (spec) · **this document**
+(discharged, kept as the record until its successor) ·
+~~`308-Subject-Integration-Design.md`~~ (#308/#261 closed) · ~~`iOS-Reading-Journey-Design.md`~~
+(#751 closed; O-3's settlement stays in its §3b) ·
 `People-Early-Era-Program.md` (#234) · `Vector-Embeddings-Semantic-Design.md`,
-`OS27-Semantic-Retrieval-Design.md`, `semantic-vectors/` (live program + verdicts) ·
-`Archival-Analytics-Adversarial-Review.md` (tracker for #825/#830–#838 remainders) ·
-`Archival-Analytics-Revision-Design-Handoff/` (artboards cited by #830/#831) ·
-`Research-Trip-Packet-Scope.md` (#830) · `Navigation-State-Audit-2026-08.md` (evidence of record
-for M-16/M-17b on #751) · `Wave-R-Research-Trail-2026-08.md` (R-2b's only spec) ·
-`Cross-Platform-UI-Adversarial-Review/` (live workstream; STATUS.md's owed list is folded into §5)
-· runbooks: `352-lot-resolution-runbook.md`, `nara-record-group-catalog-runbook.md`,
-`BigPicture-Pre1910-CentralFiles.md` + `Pre1910-CentralFiles-Reference-Data.md` ·
+`OS27-Semantic-Retrieval-Design.md`, `semantic-vectors/`, `semantic-map/`, `semantic-spike/`
+(live program contracts + tool/test data paths — tests hard-code `semantic-vectors/shards/`) ·
+`Map-Figure-Export-And-Visual-Outputs.md` (open design, unbuilt) ·
+~~`Archival-Analytics-Adversarial-Review.md`~~ (every tracked issue closed) ·
+~~`Archival-Analytics-Revision-Design-Handoff/`~~ ·
+~~`Research-Trip-Packet-Scope.md` + `-T0-Prereqs.md`~~ (#830 closed; the citation deposits stay
+live in `reference/`) · ~~`Navigation-State-Audit-2026-08.md`~~ (#751 closed) ·
+~~`Wave-R-Research-Trail-2026-08.md`~~ (R-2b shipped, #981) ·
+`Cross-Platform-UI-Adversarial-Review/` (STATUS.md alone tracks: M-2's Source Explorer half,
+CW-12, the CW-11 re-captures, the slice-poles Handoff deferral)
+· runbooks: ~~`352-lot-resolution-runbook.md`~~ (discharged; recurring lot operations live in
+CLAUDE.md's generator entries), `nara-record-group-catalog-runbook.md`,
+~~`BigPicture-Pre1910-CentralFiles.md` + `Pre1910-CentralFiles-Reference-Data.md`~~ (the plan
+executed in June 2026 — harvest run, schema-3 index committed, classifier live; the Phase-3
+tail series stay registered as `SURVEY_SERIES` targets in CLAUDE.md) ·
 `M2-Semantic-Pipeline-Ride-Along.md` (its seam rules bind any M2 resumption).
 
 **Archived to `Planning/Completed/` in this commit**, residue folded above:

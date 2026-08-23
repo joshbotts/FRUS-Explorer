@@ -20,6 +20,27 @@ left residual work, that work is tracked in GitHub issues or in
   feature documents (feasibility + design handoff) — the feature shipped; its open remainders are
   tracked on `../Archival-Analytics-Adversarial-Review.md` and issues #825/#830–#838.
 
+- **The 2026-08-23 post-wave retirement (16 artifacts)** — moved when the issue-and-planning
+  audit found every Plan-of-Record session row discharged. The archival-analytics wave closed
+  (`Archival-Analytics-Adversarial-Review.md` — every tracked issue #825–#838 closed —
+  and its `Archival-Analytics-Revision-Design-Handoff/` artboards); the research trip packet
+  shipped and #830 closed (`Research-Trip-Packet-Scope.md` v1.4 + `Research-Trip-Packet-
+  T0-Prereqs.md` with the D1–D21 decisions ledger — chapter 6's transcription deposits stay
+  live in `../reference/`); Wave R finished (`Wave-R-Research-Trail-2026-08.md` — R-2b shipped
+  in PR #981 with NO Production deploy, since a removal is not a deploy); the subjects program
+  completed (`308-Subject-Integration-Design.md` — #308/#261 closed — and
+  `Subjects-Followup-Plan-2026-08.md` — #1019–#1030 all closed); #751's evidence and design
+  records closed with it (`Navigation-State-Audit-2026-08.md`, `iOS-Reading-Journey-Design.md`
+  — O-3's settlement stays recorded in the latter's §3b); the executed-in-June pre-1910 plan
+  (`BigPicture-Pre1910-CentralFiles.md` + `Pre1910-CentralFiles-Reference-Data.md` — the
+  harvest ran, schema-3 index committed, classifier live; the un-harvested Phase-3 tail series
+  remain registered as `SURVEY_SERIES` targets in CLAUDE.md); the discharged lot runbook
+  (`352-lot-resolution-runbook.md` — its recurring operations live in CLAUDE.md's generator
+  entries); and #834's frozen measurement record (`Decimal-Channel-Measurement-2026-08-20.md`
+  + its two JSONs — #1014's live instrument is the in-code `MEASURE_DECIMAL=1` harness, which
+  mints fresh copies at the Planning root) plus the superseded `external-citations/` sample
+  (the current baseline is `../external-citation-sample.json`).
+
 - **The browse-axes program (#1051, 3 files — moved 2026-08-23)** — the program completed
   B-1…B-7 (PRs #1060, #1064–#1069) plus the #1070 regression fix (#1071):
   `Browse-Axes-Development-Plan.md` (the executed plan; its §2 decision register and B-5's
