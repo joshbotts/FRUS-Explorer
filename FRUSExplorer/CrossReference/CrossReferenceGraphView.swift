@@ -119,6 +119,11 @@ private enum CompactGraphContent {
 ///          `external_citations` TABLE, which gains a class column only with the index-version
 ///          bump #834's third commit carries. The copy now says which surface reads what, rather
 ///          than claiming the app cannot read these citations at all.
+///   2.4 — Session 2026-08-23: `graph.info.interact.body` → `.v2`. The 2.3 wording outlived its
+///          facts: #834's final commit put `.centralFileClass` nodes on this canvas, so the info
+///          sheet was denying nodes the reader could see. The body now names all three citation
+///          kinds, says a class node carries its number with no subject (the 1950 renumbering —
+///          #828's no-wrong-gloss standard), and keeps the unmatched-citation refusal verbatim.
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1496,8 +1501,8 @@ struct CrossReferenceGraphView: View {
             graphInfoRow(
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
-                body:  String(localized: "graph.info.interact.body",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so it ends the walk there: opening it shows the collection's record instead.\n\nThis graph draws two kinds of citation: State Department lot files, and collections in the presidential libraries. A footnote that cites the central files by decimal number, such as 681.8229/8–2950, shows no teal node here — so a document whose editors cited that way can look bare however many archival footnotes it carries. Citing the central files by number is the usual practice in the earlier volumes and still accounts for most archival footnotes in the volumes covering the 1950s, so an empty graph is not evidence that the editors cited little. Those citations are counted in Archival Analytics, which reads them; only this per-document graph does not yet. Separately, a citation that was read but could not be matched to a known collection is left off rather than drawn as a guess.")
+                body:  String(localized: "graph.info.interact.body.v2",
+                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection's record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",

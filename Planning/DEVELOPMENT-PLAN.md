@@ -8524,3 +8524,50 @@ rewritten around the feature it used to work around; entry points documented at 
 §12.1/§12.3, §19.1; the Research Guide gains its trip-packet section with the
 EditableContent mirror; `ResearchGuideCoverageTests` gains the mustCover row (terms
 verified zero-hit first); TestFlight notes gain items 13–14.
+
+## Session 2026-08-23 — Docs: everything since build 42, reconciled across all four surfaces
+
+The four tester-facing text surfaces — both TestFlight notes, both manuals, the in-app
+Research Guide, and the EditableContent mirror — brought current against the 104 commits
+since `build-42`, by audit rather than by memory: every EditableContent block was
+compared mechanically against the source string its `key:` names, and every claim
+checked here is cited to the commit that made it true or false.
+
+**TestFlight notes rewritten as "Since Build 42"** (they still said *Since Build 40* and
+had grown to ~4,900 characters as items were appended). New headline set: the Browse
+axes, subjects through search and reading, the trip packet; the re-index warning now
+counts the six date-index bumps (40 → 46: #971 recovered notes, #972 repairs, #973 CIA
+neighbors, #977 archival rows, #1004 despatch serials, #1010 class column). iOS 3,998 /
+Mac 3,951 under App Store Connect's 4,000. Build-42 content (semantic map, two-pane,
+window fixes) dropped — testers have it.
+
+**The one shipped falsehood found: the graph's own help denied the class channel.**
+`graph.info.interact.body` still said a decimal-number footnote "shows no teal node
+here … only this per-document graph does not yet" — #1013 put `.centralFileClass` nodes
+on that canvas, and its title says the gap the help apologised for is closed, but the
+apology itself never got the edit. Now `.v2`, naming all three citation kinds and the
+no-gloss rule (view history 2.4). The Research Guide's graph section gains the teal
+sentence for the same reason (guide history 1.7), and both manuals' graph sections gain
+the archival-layer bullet they never had (#837 shipped it without touching them).
+
+**Both manuals, five shared corrections beyond the graph**: the Flows paragraph's
+"central-file numbers this measure does not read" (false since #1009) rewritten around
+the three-kinds scope and the three-in-five self-file share; "Unprinted pointers … for
+named collections only" (false since #834 gave the class lens a pointer vocabulary)
+replaced with the self-citation caveat; the §15 intro gains the #979 Audio Graphs
+sentence — the feature was documented nowhere; Source Explorer's pre-1910 passage gains
+the #1004 despatch serial (one pre-1906 document in ten); Archival Neighbors' same-
+source list gains the #973 CIA job number.
+
+**EditableContent: 20 drifted blocks repaired, 3 empty ones filled, 2 mis-pointed.**
+The sweep compared all 311 blocks against source (283 now verify byte-equal after
+placeholder normalisation; the rest are the deliberate RETIRED/interpolation
+exceptions). The drift came from four passes that edited strings without the mirror:
+#838's copy consolidation, #834/#1012's Flows scope, #1052's category-is-a-heading
+rewrite, and the American-spelling guard. Three §13 blocks (`about.body.v2`,
+`about.experimental`, `caveat.map`) had been **empty since #947 wrote them**; the
+slice-position caption sat under the slice-*vertical* key. New blocks:
+`graph.info.interact.body.v2`, `graph.context.centralFile`,
+`archival.info.library.*` (#838's moved rule), `classPointersSelfCitation` (#834's
+disclosure). `EditableContentKeyTests`' contract re-checked by hand against every new
+annotation.

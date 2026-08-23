@@ -558,6 +558,9 @@ enum EducationCategory: String {
 ///   1.6 — Session 2026-08-11: #835 — an Archival Analytics walkthrough section (the tool
 ///         appeared nowhere in the guide), and `presentationContext` forwarded to the
 ///         dashboards through `iOSPageView`
+///   1.7 — Session 2026-08-23: the Cross-Reference Graph section names the teal archival
+///         layer (#837/#834) — the guide described the graph as documents-only after the
+///         canvas had stopped being that
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -1055,6 +1058,7 @@ private extension EducationPage {
                 systemImage: "point.3.connected.trianglepath.dotted",
                 paragraphs: [
                     "Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.",
+                    "Teal nodes mark what the editors cited but did not print — lot files, presidential-library collections, and central-file numbers — so the graph also shows where a document's footnotes point beyond the published series.",
                     "Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.",
                     "Find it from the Research rail's Graph tile (it opens in its own window on Mac and on iPad with Stage Manager)."
                 ]
