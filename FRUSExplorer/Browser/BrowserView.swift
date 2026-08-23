@@ -871,6 +871,9 @@ struct BrowserView: View {
             case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
             case .people:            PersonIndexView()
             case .subjects:          SubjectIndexView(request: pendingSubjectRequest)
+            case .subseriesIndex:    SubseriesDirectoryView(vm: vm)
+            case .catalogue:         BrowseCatalogueLevel(vm: vm)
+            case .volumeList(let s): VolumeListView(vm: vm, spec: s)
             }
         }
         // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every

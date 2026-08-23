@@ -267,6 +267,12 @@ extension BrowserViewModel.BrowserLevel {
             return String(localized: "browser.breadcrumb.people", defaultValue: "People")
         case .subjects:
             return String(localized: "browser.breadcrumb.subjects", defaultValue: "Topics")
+        case .subseriesIndex:
+            return String(localized: "browser.breadcrumb.subseriesIndex", defaultValue: "Subseries")
+        case .catalogue:
+            return String(localized: "browser.breadcrumb.catalogue", defaultValue: "All Volumes")
+        case .volumeList(let spec):
+            return spec.title
         }
     }
 }

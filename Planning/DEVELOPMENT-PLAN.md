@@ -8105,3 +8105,54 @@ What is still owner-only is those four claims. T-1 may now start on the whole
 platform-neutral half — facility derivation, `TripPacketModel`, the A4 tests and their settled
 presentation, the restriction-triage read, the repository-table schema with zero rows in it, both
 checklist lead-time forms, and the seeded-editable topic sentence.
+
+## Session 2026-08-22 — #1051 B-1: the browse-axes foundations, and the root that makes room for them
+
+The first implementation session of `Planning/Browse-Axes-Development-Plan.md` (all decisions
+pre-settled in its §2 register — nothing was re-litigated here). Four things landed, each the
+substrate the B-2+ axis sessions stand on.
+
+**R-2 — the one document count.** `AdministrationProfilesStore.documentCount(forVolumeId:)` is
+the named seam over `volumeTotals` — the exact per-volume div count for all 552 volumes
+(pinned by a new test: the sum is 314,483 and frus1861 is 312, against the live bundle). The
+three shipped labels gated on the manifest's structurally-dead `documentCount` (`> 0` never
+true — the header parser cannot compute it) now render for the first time through the accessor:
+the subseries row's "N docs", the volume row's caption, and the volume page's "N documents".
+`CorpusStats` and `SubseriesGroup.totalDocuments` — which summed the dead field into a
+permanently-zero lie nothing displayed since Session 130 — are deleted rather than repaired.
+
+**R-1 — the shared volume list.** `VolumeListSpec` (identity = `axisKey`, never the id array;
+order = the caller's payload, never re-sorted — both pinned by tests) + `BrowserLevel.volumeList`
++ the iOS `VolumeListView`. The unified row is `VolumeRowLabel` grown to the full badge
+vocabulary (Indexed and Downloading join Downloaded/Side-loaded/Partial/Planned) **and adopted by
+the macOS `SubseriesVolumeListView`** — promoted out of `private` with a display-title parameter
+and the R-1 caption/accessory slots — so the two hand-written twin rows (#777) are now one
+component with a `showsVolumeId` platform accent.
+
+**The 2a root + the 1e catalogue.** `CorpusView` becomes search-first (an INLINE field, not
+`.searchable`, because the two-pane list pane shares a navigation container with pushed levels
+that carry their own search — two `.searchable` sources on one container is the composition to
+avoid); People stays the first cross-volume row (test-pinned); the subseries list moves behind
+the double-width "Subseries" tile (`.subseriesIndex` → `SubseriesDirectoryView`, rows keeping
+their exact a11y labels so the drilling suites only needed a tile-tap step); "All Volumes" opens
+`.catalogue` → `VolumeCatalogueView`, shared across platforms behind three `@MainActor` closures,
+with the four presentations (Title on the distinctive segment — 409 of 552 titles share one
+boilerplate prefix, so `distinctiveTitleKey` files "China, 1969–1972" under C and the early
+annuals under #; Published via `firstYear` never string sort — the manifest's one full-ISO date
+among 551 bare years is a pinned fixture; Era; Length via R-2). macOS: the sidebar retypes
+`String?` → `CorpusSidebarItem?` and gains the BROWSE section, with the `.onChange` path-reset,
+`pendingVolumePush` deferral, and `.macCorpusBrowser` hand-off consumption carried over intact.
+
+**Q-5.** `activateTagFilter` pushes the subseries level (built from the UNFILTERED universe, so
+a chip on an undownloaded volume still lands) when the path has no `.subseries` ancestor —
+previously a silent no-op that set latent filter state. The pop-vs-push decision is a pure
+static, tested.
+
+**One trap re-verified, one memory honored.** The first draft parked `fourDigitRuns` on
+`CorpusView`; the nonisolated test calling it crashed at runtime (a `View`'s statics are
+MainActor-isolated). The fix was the recorded rule — move the helper (to
+`VolumeCatalogueGrouping`), don't annotate the test.
+
+Docs: both manuals' Browse sections rewritten for the new root ([SCREENSHOT] placeholders — owner
+captures). Tests: 26 new unit tests green; UI drilling suites (UIObstruction/Compilation/TwoPane)
+updated with an `openSubseriesDirectory()` step since the subseries rows moved one tap deep.

@@ -24,6 +24,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
+///   1.1 — #1051 B-1 (R-2): `documentCount(forVolumeId:)` — the one named seam through
+///          which Browse reads per-volume document counts
 @Observable
 @MainActor
 final class AdministrationProfilesStore {
@@ -31,6 +33,29 @@ final class AdministrationProfilesStore {
     /// The decoded administration-profiles aggregate, or `nil` if the bundled
     /// resource was absent or could not be decoded.
     let index: AdministrationProfilesIndex?
+
+    /// The volume's total FRUS document count, or `nil` when the index is absent or does
+    /// not know the volume (side-loaded volumes, a malformed bundle).
+    ///
+    /// ## Why this artifact, and why a named accessor (R-2, #1051)
+    /// `volumeTotals` is an exact per-volume count of `<div type="document">` elements for
+    /// all 552 volumes — verified against the raw TEI and summing to 314,483, the same
+    /// number the semantic pipeline counts independently. The manifest's `documentCount`
+    /// is structurally dead (the header parser cannot compute it; 0 in all 552 entries),
+    /// so Browse reads counts HERE. The accessor exists so that dependency on an artifact
+    /// named for another feature stays behind one seam — if the counts ever move into the
+    /// manifest, this is the only method that changes.
+    ///
+    /// Wording rule for every caller: this counts FRUS document divs. Search over the same
+    /// volume can return MORE rows (quasi-documents: prose-only chapters, prefaces —
+    /// +2,356 corpus-wide), so never present the two as the same universe.
+    ///
+    /// - Parameter volumeId: The manifest volume id, e.g. `"frus1861"`.
+    /// - Returns: `pointDocs + rangeDocs + undatedDocs`, or `nil` when unknown.
+    func documentCount(forVolumeId volumeId: String) -> Int? {
+        guard let totals = index?.volumeTotals[volumeId] else { return nil }
+        return totals.pointDocs + totals.rangeDocs + totals.undatedDocs
+    }
 
     /// Loads and decodes `administration-profiles-index.json` from the app bundle.
     ///

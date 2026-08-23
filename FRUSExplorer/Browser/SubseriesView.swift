@@ -62,7 +62,14 @@ struct SubseriesView: View {
                             print("[BrowserView] Navigate → volume \(volume.volumeId)")
                             #endif
                         } label: {
-                            VolumeRowLabel(volume: volume, isDownloaded: vm.isDownloaded(volume.volumeId))
+                            VolumeRowLabel(
+                                volume: volume,
+                                isDownloaded: vm.isDownloaded(volume.volumeId),
+                                isIndexed: vm.isIndexed(volume.volumeId),
+                                isDownloading: appState.downloadQueue.contains(volume.volumeId),
+                                documentCount: appState.administrationProfilesStore
+                                    .documentCount(forVolumeId: volume.volumeId)
+                            )
                         }
                         .buttonStyle(.plain)
                         #if os(iOS)
@@ -316,9 +323,24 @@ private struct TagPickerSheet: View {
 ///   1.5 — Session 2026-07-03: .contentShape(Rectangle()) — the enclosing Browse-list
 ///          Buttons are .buttonStyle(.plain), which only hit-tests opaque content, so
 ///          taps between/around the text labels were dead
+///   1.6 — #1051 B-1 (R-1): the ONE badge vocabulary on both platforms — `isIndexed`
+///          (green check) and `isDownloading` (blue arrow) join Downloaded / Side-loaded /
+///          Partial / Planned, so the iOS row stops carrying fewer facts than its macOS
+///          twin (#777 drift class); the dead `volume.documentCount > 0` gate (0 in all
+///          552 manifest entries — it had never rendered) is replaced by the
+///          `documentCount` parameter, fed by the R-2 accessor at every call site
 struct VolumeRowLabel: View {
     let volume: VolumeManifestEntry
     let isDownloaded: Bool
+    /// Whether the volume is indexed on this device (the green check badge).
+    var isIndexed: Bool = false
+    /// Whether the volume is currently in the download queue (the blue badge).
+    var isDownloading: Bool = false
+    /// The volume's document count from the R-2 accessor, or `nil` to omit the caption.
+    var documentCount: Int? = nil
+    /// Whether the metadata line leads with the volume id — the macOS corpus browser's
+    /// convention, off on iOS.
+    var showsVolumeId: Bool = false
 
     #if os(iOS)
     @Environment(AppState.self) private var appState
@@ -351,14 +373,34 @@ struct VolumeRowLabel: View {
                             String(localized: "browser.volume.downloaded.a11y",
                                    defaultValue: "Downloaded")
                         )
+                    if isIndexed {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.caption)
+                            .accessibilityLabel(
+                                String(localized: "browser.volume.indexed.a11y",
+                                       defaultValue: "Indexed")
+                            )
+                    }
+                } else if isDownloading {
+                    Image(systemName: "arrow.down.circle")
+                        .foregroundStyle(.blue)
+                        .font(.caption)
+                        .accessibilityLabel(
+                            String(localized: "browser.volume.downloading.a11y",
+                                   defaultValue: "Downloading")
+                        )
                 }
             }
             HStack(spacing: 8) {
+                if showsVolumeId {
+                    Text(volume.volumeId).foregroundStyle(.secondary)
+                }
                 if let pub = volume.publicationDate {
                     Text(pub).foregroundStyle(.secondary)
                 }
-                if volume.documentCount > 0 {
-                    Text("\(volume.documentCount) docs")
+                if let documentCount {
+                    Text("\(documentCount) docs")
                         .foregroundStyle(.secondary)
                 }
                 if volume.status == .partiallyPublished {

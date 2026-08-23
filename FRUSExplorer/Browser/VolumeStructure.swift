@@ -289,21 +289,11 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
     }
 }
 
-// MARK: - CorpusStats
-
-/// Aggregate statistics computed from the volume manifest, displayed at the
-/// Browser's Corpus level.
-///
-/// Version history:
-///   1.0 — Session 11: initial implementation
-public struct CorpusStats: Sendable {
-    public let totalVolumes: Int
-    public let totalDocuments: Int
-    public let earliestDocumentDate: String?
-    public let latestDocumentDate: String?
-    public let earliestPublicationDate: String?
-    public let latestPublicationDate: String?
-}
+// `CorpusStats` — removed #1051 B-1. Its display left in Session 130 (CorpusView 1.3), and its
+// `totalDocuments` summed the manifest's structurally-dead `documentCount` field (0 in all 552
+// entries — the header parser cannot compute it), so the value was a permanently-zero lie.
+// Per-volume document counts now come from `AdministrationProfilesStore.documentCount(forVolumeId:)`
+// (R-2), the one named seam over the bundled `volumeTotals` table.
 
 // MARK: - SubseriesGroup
 
@@ -314,6 +304,9 @@ public struct CorpusStats: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — #1051 B-1: `totalDocuments` removed — it summed the manifest's dead `documentCount`
+///          (0 in all 552 entries) and its one consumer's `> 0` gate had therefore never
+///          rendered; subseries document counts now sum the R-2 accessor at the call site
 public struct SubseriesGroup: Sendable, Identifiable {
     /// The subseries identifier, e.g. `"1969-76"`, `"1861"`.
     public let subseries: String
@@ -326,7 +319,6 @@ public struct SubseriesGroup: Sendable, Identifiable {
     // MARK: - Derived statistics
 
     public var totalVolumes: Int { volumes.count }
-    public var totalDocuments: Int { volumes.reduce(0) { $0 + $1.documentCount } }
 
     /// Published BY THE CATALOGUE. A side-loaded entry mints `status: .published` (the TEI
     /// header carries no status), and counting it here read "553 of 552" against a series

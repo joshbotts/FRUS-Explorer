@@ -241,14 +241,17 @@ The two are distinct, and the app never makes you wait for the second to do the 
 
 ## 6. Browsing the Corpus
 
-Open the **Corpus Browser** with **⇧⌘B** (or **Find ▸ Corpus Browser…**) to navigate the series as a hierarchy.
+Open the **Corpus Browser** with **⇧⌘B** (or **Find ▸ Corpus Browser…**) to navigate the series as a hierarchy — or through the sidebar's **Browse** section, by other ways in.
 
 ![Corpus Browser — the subseries list with downloaded counts in the sidebar, the People toolbar button, and the detail pane.](screenshots/macos/browser.png)
 
-### 6.1 Navigation Levels
+### 6.1 The Sidebar and Navigation Levels
 
-- **Corpus view** — every publication subseries, with totals for volumes, documents, and the date range covered.
-- **Subseries view** — the volumes a subseries contains: title, editors, publication date, and whether each is downloaded and indexed.
+The sidebar has two sections. **Browse** holds the cross-cutting doors — today, **All Volumes**: one catalogue of every volume, searchable, with a control arranging it by **Title** (A–Z on each volume's distinctive title segment, since almost every full title begins with the same series boilerplate; early annuals file under **#**), **Published** (print year, newest first, in decade groups — the year from the title page, not a declassification date), **Era**, or **Length** (document count, largest first). More doors arrive as the browse-axes program lands. **Subseries** below it is the classic era list.
+
+[SCREENSHOT: Corpus Browser — the sidebar's Browse section with All Volumes selected and the catalogue in the detail column.]
+
+- **Subseries view** — the volumes a subseries contains: title, volume number, publication date, **document count**, and whether each is downloaded and indexed (the same row the iPhone and iPad lists use, so the two browsers can no longer drift apart).
 - **Volume view** — front matter, chapters, and appendices, each chapter with its document count. A **Top subjects** section lists the subjects most characteristic of the volume — automatically detected topics (not editorial subject headings, so an occasional mistag is possible), grouped by category, and shown even before the volume is downloaded, so you can size up an unfamiliar volume before committing to it. Click a subject to see every other FRUS volume covering it across the corpus and jump straight to any of them; the sheet also offers **Archival profile of these volumes**, opening Archival Analytics on the collections those volumes draw on (Section 15.5).
 - **Chapter view** — individual document listings with dateline, source note, and document number.
 

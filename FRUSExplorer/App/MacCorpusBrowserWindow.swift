@@ -25,6 +25,25 @@ enum CorpusNavValue: Hashable {
     case section(volumeId: String, section: VolumeSection)
 }
 
+// MARK: - CorpusSidebarItem
+
+/// One sidebar selection in the corpus browser: a browse axis or a subseries (#1051 R-4).
+///
+/// The retype from the old `String?` subseries selection is what lets the ONE browser
+/// window absorb the browse axes in its sidebar instead of minting per-axis singleton
+/// windows (16 exist; each adds an un-suppressible Window-menu entry — the #824 cleanup's
+/// regression class). Each axis session adds a case to the BROWSE section; the
+/// `.onChange` path-reset and the `pendingVolumePush` deferral carry over unchanged.
+///
+/// Version history:
+///   1.0 — #1051 B-1: initial implementation (`.allVolumes` is the first axis)
+enum CorpusSidebarItem: Hashable {
+    /// The All Volumes catalogue (#1051 A-1/A-2).
+    case allVolumes
+    /// One subseries, keyed by its identifier string (the pre-#1051 selection).
+    case subseries(String)
+}
+
 /// Standalone macOS window listing all FRUS subseries and their volumes.
 ///
 /// Uses a `NavigationSplitView`: subseries in the sidebar, volumes in the detail column.
@@ -52,12 +71,20 @@ enum CorpusNavValue: Hashable {
 ///   1.5 — Session 2026-07-04 (macOS UI audit B5): the People toolbar button opens the
 ///          frus.people window instead of a `PersonIndexView` sheet (which stacked the
 ///          person-detail sheet on top of itself)
+///   1.6 — #1051 B-1 (R-4): the sidebar selection retypes from `String?` to
+///          `CorpusSidebarItem?` and gains a BROWSE section — All Volumes (the shared
+///          `VolumeCatalogueView`) is the first axis, with later sessions adding theirs.
+///          The `.onChange` path-reset, the `pendingVolumePush` deferral, and the
+///          `.macCorpusBrowser` hand-off consumption survive the retype (the named
+///          regression surface). `SubseriesVolumeListView` is promoted out of `private`
+///          with a display-title parameter, adopting the unified `VolumeRowLabel` (R-1) —
+///          the first shared row between the two hand-written twin browsers (#777)
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openWindow) private var openWindow
 
-    @State private var selectedSubseries: String? = nil
+    @State private var selection: CorpusSidebarItem? = nil
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
@@ -65,7 +92,7 @@ struct CorpusBrowserWindowView: View {
     /// the window so it survives detail re-renders and is shared by every pushed level.
     @State private var detailPath: [CorpusNavValue] = []
     /// A volume push deferred until the subseries selection change lands (see
-    /// `consumePendingVolume`): the `.onChange(of: selectedSubseries)` observer resets
+    /// `consumePendingVolume`): the `.onChange(of: selection)` observer resets
     /// `detailPath` after every selection change, so pushing the volume synchronously
     /// alongside the selection would be wiped by that reset. The observer applies this
     /// push instead of the reset when it is set.
@@ -103,9 +130,19 @@ struct CorpusBrowserWindowView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selectedSubseries) {
-                ForEach(subseries, id: \.self) { sub in
-                    subseriesRow(sub).tag(sub)
+            List(selection: $selection) {
+                // The BROWSE axes (#1051 R-4). Each axis session appends its row here;
+                // the section exists so the one window absorbs them all — never a new
+                // singleton Window scene (#824).
+                Section(String(localized: "corpus.sidebar.browse", defaultValue: "Browse")) {
+                    Label(String(localized: "browser.catalogue.title", defaultValue: "All Volumes"),
+                          systemImage: "books.vertical")
+                        .tag(CorpusSidebarItem.allVolumes)
+                }
+                Section(String(localized: "corpus.sidebar.subseries", defaultValue: "Subseries")) {
+                    ForEach(subseries, id: \.self) { sub in
+                        subseriesRow(sub).tag(CorpusSidebarItem.subseries(sub))
+                    }
                 }
             }
             .listStyle(.sidebar)
@@ -142,13 +179,19 @@ struct CorpusBrowserWindowView: View {
         } detail: {
             NavigationStack(path: $detailPath) {
                 Group {
-                    if let sub = selectedSubseries {
+                    switch selection {
+                    case .allVolumes?:
+                        catalogueView
+                    case .subseries(let sub)?:
                         volumeList(for: sub)
-                    } else {
+                    case nil:
                         ContentUnavailableView(
-                            "Select a Subseries",
+                            String(localized: "corpus.detail.empty.title",
+                                   defaultValue: "Select from the Sidebar"),
                             systemImage: "books.vertical",
-                            description: Text("Choose a subseries from the list to browse its volumes.")
+                            description: Text(String(
+                                localized: "corpus.detail.empty.detail",
+                                defaultValue: "Choose All Volumes or a subseries to browse the series."))
                         )
                     }
                 }
@@ -164,10 +207,12 @@ struct CorpusBrowserWindowView: View {
                 }
             }
         }
-        // Switching subseries returns to the volume-list root (avoids a stale pushed
+        // Switching the sidebar selection returns to the detail root (avoids a stale pushed
         // volume) — unless the change was made by `consumePendingVolume`, whose
-        // deferred volume push is applied here instead of the reset.
-        .onChange(of: selectedSubseries) { _, _ in
+        // deferred volume push is applied here instead of the reset. The retype to
+        // `CorpusSidebarItem` (#1051 R-4) keeps this observer's semantics exactly: ANY
+        // selection change resets, axis rows included.
+        .onChange(of: selection) { _, _ in
             if let volumeId = pendingVolumePush {
                 detailPath = [.volume(volumeId: volumeId)]
                 pendingVolumePush = nil
@@ -206,11 +251,11 @@ struct CorpusBrowserWindowView: View {
         let volumeId = handoff.payload
         guard let entry = allEntries.first(where: { $0.volumeId == volumeId }) else { return }
         appState.pendingBrowseVolume = nil
-        if selectedSubseries == entry.subseries {
+        if selection == .subseries(entry.subseries) {
             detailPath = [.volume(volumeId: volumeId)]
         } else {
             pendingVolumePush = volumeId
-            selectedSubseries = entry.subseries
+            selection = .subseries(entry.subseries)
         }
         #if DEBUG
         print("[CorpusBrowserWindowView] pendingBrowseVolume consumed: \(volumeId)")
@@ -269,17 +314,44 @@ struct CorpusBrowserWindowView: View {
             $0.volumeId.localizedCaseInsensitiveContains(searchText)
         }
         SubseriesVolumeListView(
-            subseries: subseries,
+            title: subseries,
             filteredVolumes: filtered,
             searchText: $searchText,
             path: $detailPath
+        )
+    }
+
+    /// The All Volumes catalogue at the detail root (#1051 A-1/A-2) — the shared
+    /// `VolumeCatalogueView`, wired to this window's stores; rows push the existing
+    /// string-keyed `.volume` case.
+    private var catalogueView: some View {
+        VolumeCatalogueView(
+            entries: allEntries,
+            documentCount: { [store = appState.administrationProfilesStore] id in
+                store.documentCount(forVolumeId: id)
+            },
+            status: { [appState] id in
+                VolumeCatalogueStatus(
+                    isDownloaded: appState.downloadManager?.isVolumeDownloaded(id) ?? false,
+                    isIndexed: (try? appState.indexingPipeline?.isVolumeIndexed(id)) == true,
+                    isDownloading: appState.downloadQueue.contains(id)
+                )
+            },
+            onSelect: { entry in
+                detailPath.append(.volume(volumeId: entry.volumeId))
+                #if DEBUG
+                print("[CorpusBrowserWindowView] Catalogue → volume \(entry.volumeId)")
+                #endif
+            }
         )
     }
 }
 
 // MARK: - SubseriesVolumeListView
 
-/// Volume list for a selected FRUS subseries with per-volume cross-reference graph access.
+/// Volume list for an arbitrary entry set in the corpus browser's detail column — a
+/// subseries today, any axis's list from B-2 on — with per-volume cross-reference graph
+/// access.
 ///
 /// Each volume row has a small graph button that opens the Cross-Reference Graph
 /// *window* (`frus.crossReferenceGraph`) in its volume-connections stage, pre-selected
@@ -297,13 +369,24 @@ struct CorpusBrowserWindowView: View {
 ///          frus.crossReferenceGraph window via the `pendingVolumeGraph` hand-off
 ///          instead of presenting `VolumeConnectionGraphView` in a local sheet — the
 ///          graph is browsable content, and the window precedent already existed
-private struct SubseriesVolumeListView: View {
-    let subseries: String
+///   1.5 — #1051 B-1 (R-1): promoted out of `private` with a display-title parameter
+///          (its list contract already took an arbitrary entry array — the `subseries:`
+///          name was the only subseries-specific thing left); adopts the unified
+///          `VolumeRowLabel`, ending the hand-rolled twin row (#777); gains the R-1
+///          caption and trailing-accessory slots the axis lists arrive with
+struct SubseriesVolumeListView: View {
+    /// The navigation title — a subseries string today, an axis entity's name from B-2 on.
+    let title: String
     let filteredVolumes: [VolumeManifestEntry]
 
     @Binding var searchText: String
     /// The window's detail-column drill-down path; tapping a volume pushes onto it.
     @Binding var path: [CorpusNavValue]
+
+    /// The R-1 coverage-caption slot, rendered above the rows. Every counting axis owes one.
+    var caption: String? = nil
+    /// The R-1 per-row trailing accessory slot (e.g. an administration's "N docs / N.N%").
+    var accessory: (@MainActor (VolumeManifestEntry) -> String?)? = nil
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
@@ -312,13 +395,22 @@ private struct SubseriesVolumeListView: View {
 
     var body: some View {
         List {
-            ForEach(filteredVolumes) { vol in
-                volumeRow(vol)
+            if let caption {
+                Section {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Section {
+                ForEach(filteredVolumes) { vol in
+                    volumeRow(vol)
+                }
             }
         }
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
-        .navigationTitle(subseries)
+        .navigationTitle(title)
     }
 
     // MARK: - Volume Row
@@ -332,41 +424,23 @@ private struct SubseriesVolumeListView: View {
             Button {
                 path.append(.volume(volumeId: vol.volumeId))
             } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(vol.title)
-                        .font(.system(size: 12))
-                        .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 8) {
-                        Text(vol.volumeId)
-                            .font(.system(size: 10))
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    // R-1: the unified row, shared with the iOS lists — one badge
+                    // vocabulary on both platforms instead of the hand-written twin
+                    // this row used to be (#777).
+                    VolumeRowLabel(
+                        volume: vol,
+                        isDownloaded: appState.downloadManager?.isVolumeDownloaded(vol.volumeId) ?? false,
+                        isIndexed: (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true,
+                        isDownloading: appState.downloadQueue.contains(vol.volumeId),
+                        documentCount: appState.administrationProfilesStore
+                            .documentCount(forVolumeId: vol.volumeId),
+                        showsVolumeId: true
+                    )
+                    if let accessory, let text = accessory(vol) {
+                        Text(text)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
-                        // #777: mirrors the iOS row badge — the two browsers are hand-written
-                        // twins, and a label only one of them carries is the dual-Settings bug.
-                        if vol.provenance == .sideloaded {
-                            Text(String(localized: "browser.volume.sideloaded",
-                                        defaultValue: "Side-loaded"))
-                                .font(.system(size: 10))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 4)
-                                .background(.quaternary, in: Capsule())
-                        }
-                        if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
-                            Label("Downloaded", systemImage: "arrow.down.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.secondary)
-                                .labelStyle(.titleAndIcon)
-                            if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
-                                Label("Indexed", systemImage: "checkmark.circle.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.green)
-                                    .labelStyle(.titleAndIcon)
-                            }
-                        } else if appState.downloadQueue.contains(vol.volumeId) {
-                            Label("Downloading", systemImage: "arrow.down.circle")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.blue)
-                                .labelStyle(.titleAndIcon)
-                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
