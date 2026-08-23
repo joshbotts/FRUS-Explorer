@@ -453,6 +453,19 @@ struct SourceExplorerView: View {
                             defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                // The explainer above is where this panel used to stop. NARA's own State-records
+                // page covers the central files, the post files and the lot files together, which
+                // is the ambiguity a name-only citation leaves open — so it is a real next step
+                // rather than a consolation link. Shown ONLY when nothing curated was found, so a
+                // reader with a specific answer is not offered a general one beside it.
+                Button {
+                    openURL(NARACatalogClient.stateDepartmentRecordsURL)
+                } label: {
+                    Label(NARACatalogClient.stateDepartmentRecordsLabel,
+                          systemImage: "arrow.up.right.square")
+                    .font(.callout)
+                }
+                .padding(.top, 2)
             }
         }
 

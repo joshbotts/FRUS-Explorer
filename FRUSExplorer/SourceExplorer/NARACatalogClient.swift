@@ -393,6 +393,32 @@ public actor NARACatalogClient {
             + "state-dept/rg-59-central-files/cfpf-faqs.pdf")!
     }
 
+    /// NARA's landing page for the records of the Department of State, and its label.
+    ///
+    /// **Static, and shared by both platform views deliberately.** The iOS panel and the macOS
+    /// twin are hand-maintained copies, and a URL written twice is two places to drift — the same
+    /// reason `ManuscriptRepositoryGuidance` and `NamedFileSeriesRouting` hold their own wording.
+    ///
+    /// ## Who this is for, and it is not the reader who already has an answer
+    /// A central-file citation already routes to a period-specific finding aid, and a resolved lot
+    /// reaches the catalogue. This is for the citations that reach **nothing**: a named file series
+    /// carries no record group and states no repository, and 5,369 of those 5,745 documents are
+    /// told only that the citation does not say where the records are. NARA's own State-records
+    /// page is the honest next step — it covers the central files, the post files (RG 84) and the
+    /// lot files together, which is exactly the ambiguity a name-only citation leaves open.
+    ///
+    /// Verified 2026-08-22: `200`, titled "Records of the Department of State | National Archives".
+    /// Note this is a PAGE, unlike the deliberately-similar-looking `/files/…/finding-aids` path in
+    /// `filingManualURL`, which is a directory prefix and must not be swapped for a landing page.
+    public nonisolated static let stateDepartmentRecordsURL = URL(
+        string: "https://www.archives.gov/research/foreign-policy/state-dept/agency-records")!
+
+    /// The link's title, naming the destination so it can be judged before it is opened.
+    public nonisolated static var stateDepartmentRecordsLabel: String {
+        String(localized: "source.explorer.stateRecords.link",
+               defaultValue: "Department of State records at the National Archives")
+    }
+
     /// URL to the NARA Access to Archival Databases (AAD) Electronic Telegrams series list.
     ///
     /// The AAD database contains the electronic telegrams component of the CFPF.
@@ -421,6 +447,24 @@ public actor NARACatalogClient {
     ///
     /// CIA records are not indexed in the NARA Catalog. CREST is the
     /// appropriate resource for CIA operational records and historical files.
+    ///
+    /// ## Measured 2026-08-23, and DELIBERATELY LEFT UNCHANGED
+    /// `cia.gov/readingroom` answers `302` pointing at **itself**, so an automated client loops
+    /// until it gives up — 50 hops with a browser user agent, a cookie jar, and a full
+    /// `Accept`/`Accept-Language`/`Upgrade-Insecure-Requests` header set. Every path under
+    /// `/readingroom` behaves the same way, including `/readingroom/search/site/` and
+    /// `/readingroom/advanced-search`.
+    ///
+    /// **The link is FINE and must not be "fixed".** The owner confirmed 2026-08-23 that
+    /// `cia.gov/readingroom/` loads normally in Safari, so the loop is bot defence and nothing
+    /// else — cia.gov fingerprints clients beyond headers, and curl never gets past it however it
+    /// is dressed up.
+    ///
+    /// This is the third URL in this file that a status-code check condemns wrongly, and the three
+    /// fail in three different ways: `filingManualURL`'s base is a directory prefix whose children
+    /// all resolve; `jfklibrary.org` answers 403 to every path including its own root; and this one
+    /// redirects forever at any client that is not a real browser. **A checker can prove a URL
+    /// resolves. It cannot prove one is broken.** Confirm in a browser before touching any of them.
     public nonisolated func ciaResearchURL(jobNumber: String? = nil) -> URL {
         if let job = jobNumber, !job.isEmpty {
             let encoded = job.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? job

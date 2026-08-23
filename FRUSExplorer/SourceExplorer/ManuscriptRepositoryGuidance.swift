@@ -79,6 +79,16 @@ import Foundation
 /// the silent wrong answer a wrong archival identifier gives — but the distinction is recorded
 /// on the entry rather than assumed.
 ///
+/// `.redirectTarget` was added 2026-08-23 after a full re-check of all 95 URLs in the app. Three
+/// of these fourteen had **moved**: Library of Congress, Yale and Michigan State. Yale's new
+/// destination reads correctly (`Manuscripts and Archives Reading Room`, the right division — the
+/// Beinecke trap above did not recur) so it stays `.fetched`; the other two answer with a bot
+/// shell rather than a page, and neither existing case describes that honestly. See the case's own
+/// note. **Michigan State is the one to learn from**: `lib.msu.edu` returns `200` to every path
+/// including an invented one, so the 200 that made an audit call it "moved, fine" proved nothing
+/// at all. The invented-path control catches this — but only if it is run against a **2xx**, which
+/// nobody thinks to do.
+///
 /// ## Matching
 /// Spellings are folded through `CollectionKeying.canonicalRepository` + `normalized`, the same
 /// pair `NARACustody` uses, so the corpus's variants reach one entry: `the Hoover Institution`,
@@ -91,6 +101,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #354 item 4, repository-level finding-aid guidance
+///   1.1 — Session 2026-08-23: three moved URLs re-pointed; `.redirectTarget` added
 enum ManuscriptRepositoryGuidance {
 
     // MARK: - Verification
@@ -103,6 +114,25 @@ enum ManuscriptRepositoryGuidance {
         /// Corroborated only by the search engine's index — the host answers `403` to every
         /// path, real or invented, so fetching cannot discriminate.
         case searchIndex
+        /// **The institution's own server redirected us here, and the destination could not be
+        /// read.** Added 2026-08-23, when a re-check found two entries that fit neither case above.
+        ///
+        /// Calling these `fetched` would assert a check nobody performed; calling them
+        /// `searchIndex` would claim the host refuses robots, which is false — it answers, just
+        /// not with anything readable. The redirect itself is the evidence, and it is good
+        /// evidence: it is the repository asserting where its own archives now live.
+        ///
+        /// Two shapes produced it, and the second is the more dangerous:
+        /// - **Library of Congress** — Cloudflare returns a `Just a moment...` interstitial, so the
+        ///   status code describes the bot check rather than the page. With redirects suppressed
+        ///   the old path resolves to a *specific* Manuscript Division successor while an invented
+        ///   sibling resolves to a *generic* catch-all; that asymmetry is what makes the successor
+        ///   credible.
+        /// - **Michigan State** — the destination answers `200`, but so does **every** path on that
+        ///   host, including an invented one, and the body is an Incapsula bot-defence shell. A
+        ///   `200` there is worth nothing. This is the mirror of the `searchIndex` case and it is
+        ///   easier to be fooled by, because a 200 reads as success to any checker.
+        case redirectTarget
     }
 
     // MARK: - Entry
@@ -144,8 +174,8 @@ enum ManuscriptRepositoryGuidance {
               holdings: "The Manuscript Reading Room in the Madison Building, Washington, "
                       + "D.C., holds the personal papers this citation names. Finding aids "
                       + "for individual collections are published separately.",
-              url: URL(string: "https://www.loc.gov/rr/mss/"),
-              verification: .fetched,
+              url: URL(string: "https://www.loc.gov/research-centers/manuscript/about-this-research-center/"),
+              verification: .redirectTarget,
               spellings: ["Library of Congress"]),
 
         Entry(name: "U.S. Army Center of Military History",
@@ -216,7 +246,7 @@ enum ManuscriptRepositoryGuidance {
               formerName: nil,
               holdings: "Sterling Memorial Library, New Haven, holds the Chester Bowles "
                       + "Papers (MS 628).",
-              url: URL(string: "https://library.yale.edu/visit-and-study/visit-information/manuscripts-and-archives-reading-room"),
+              url: URL(string: "https://library.yale.edu/sterling-memorial-library/manuscripts-and-archives-reading-room"),
               verification: .fetched,
               spellings: ["Yale University"]),
 
@@ -247,8 +277,8 @@ enum ManuscriptRepositoryGuidance {
               formerName: nil,
               holdings: "University Archives and Historical Collections, East Lansing, holds "
                       + "the Hannah and Fishel papers.",
-              url: URL(string: "https://archives.msu.edu/"),
-              verification: .fetched,
+              url: URL(string: "https://lib.msu.edu/branches/ua/"),
+              verification: .redirectTarget,
               spellings: ["Michigan State University"]),
     ]
 
