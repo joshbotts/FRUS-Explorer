@@ -880,6 +880,8 @@ struct BrowserView: View {
             case .scopeEditor(let id): BrowseScopeEditorLevel(vm: vm, scopeId: id)
             case .corpora:           BrowseCorporaLevel(vm: vm)
             case .corpusDocuments(let id, _): BrowseCorpusDocumentsLevel(vm: vm, corpusId: id)
+            case .archives:          BrowseArchivesLevel(vm: vm)
+            case .archivalCollection(let id, _): BrowseArchivalCollectionLevel(vm: vm, collectionId: id)
             }
         }
         // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every

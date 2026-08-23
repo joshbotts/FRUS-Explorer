@@ -98,6 +98,12 @@ public final class BrowserViewModel {
         /// One corpus's document drill (#1051 R-3). Identity is the corpus id; the name
         /// rides along for the breadcrumb.
         case corpusDocuments(id: UUID, name: String)
+        /// The Archives axis (#1051 A-9) — provenance types and archival collections,
+        /// as SIBLING lenses.
+        case archives
+        /// One archival collection's pushed detail (#1051 B-5). Identity is the
+        /// authority record's stable string id; the name rides along for the breadcrumb.
+        case archivalCollection(id: String, name: String)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -118,6 +124,8 @@ public final class BrowserViewModel {
             case .scopeEditor(let id): hasher.combine(13); hasher.combine(id)
             case .corpora:             hasher.combine(14)
             case .corpusDocuments(let id, _): hasher.combine(15); hasher.combine(id)
+            case .archives:            hasher.combine(16)
+            case .archivalCollection(let id, _): hasher.combine(17); hasher.combine(id)
             }
         }
 
@@ -140,6 +148,8 @@ public final class BrowserViewModel {
             case (.scopeEditor(let a), .scopeEditor(let b)): return a == b
             case (.corpora, .corpora): return true
             case (.corpusDocuments(let a, _), .corpusDocuments(let b, _)): return a == b
+            case (.archives, .archives): return true
+            case (.archivalCollection(let a, _), .archivalCollection(let b, _)): return a == b
             default: return false
             }
         }

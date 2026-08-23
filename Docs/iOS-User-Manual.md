@@ -278,6 +278,7 @@ The root of the Browse tab opens with a **search field** over all 552 volumes �
 - **All Volumes** — one catalogue of every volume (Section 6.1b).
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
+- **Archives** — volumes filed by where their documents came from (Section 6.1g).
 
 Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f), with more doors arriving as the browse-axes program lands.
 
@@ -336,6 +337,17 @@ Tap a corpus for its documents, **grouped by volume in one list that always rend
 - Documents in volumes you don't have yet appear as gray identifiers with a **Download** (or, for a downloaded-but-unindexed volume, **Index**) button right on the row — the list never dead-ends, only the actions wait. Index a volume and its rows upgrade in place.
 
 [SCREENSHOT: a corpus drill — the amber coverage line, an indexed volume's titled rows, and an unindexed volume's gray rows with the Download button.]
+
+### 6.1g Archives
+
+Nearly every FRUS document carries a printed **source note** saying which file it came from, and the **Archives** door browses the series by that archival record — two lenses, side by side:
+
+- **Provenance Types** — ten doors for the *kinds* of files FRUS drew on: the Central Decimal File, presidential libraries, lot files, intelligence records, and so on. Each opens the volumes with documents from that kind of file, largest count first, with each volume's share of its own sourced documents.
+- **Collections** — the same archival collection index the Source Explorer uses (every collection in the bundled cross-volume authority, grouped by repository, searchable), opening each collection's full record: its NARA catalog link, related collections, when the series cited it, and every citing volume — tap one to browse it without losing your place.
+
+The two lenses sit **beside** each other on purpose: the app has no reliable mapping from a collection to a provenance type, so it shows both truthfully rather than nesting one under the other. The screen also states its limits up front — the counts describe the notes printed under documents (not every document), only about a quarter of sourced documents name a *collection* (most cite a central-file number, which is what the types lens holds), and the ~50 volumes that print no notes at all — mostly the pre-1906 annuals — can't appear here. For deeper archival analysis (era rankings, co-citation networks, central-file classes), the **Archival Analytics** tool in the Analysis menu remains the instrument.
+
+[SCREENSHOT: the Archives axis — the Provenance Types doors with counts; the Collections lens; a collection's detail reached by push with its citing volumes.]
 
 ### 6.2 Top Subjects
 
