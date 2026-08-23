@@ -30,7 +30,7 @@ re-entry should be re-argued before it is built rather than after.
 ## 3. The wave
 
 Sessions are sized for one working session each unless noted. Order within a tier is
-suggested, not binding; tiers A/B/C/D can interleave as owner inputs land.
+suggested, not binding; tiers A–E can interleave as owner inputs land.
 
 ### Tier A — ready-to-schedule engineering (unblocked today)
 
@@ -65,6 +65,21 @@ suggested, not binding; tiers A/B/C/D can interleave as owner inputs land.
 | W-9 | **V-5 free-text semantic search, by its own sequence** | The re-entry order is written at `Planning/semantic-vectors/V5-Query-Encoder-Assessment.md` §6 and binds: (1) `CSUserQuery` `textContent` first (the cheap Spotlight-native half), (2) the honest evaluation instrument — whose "positives independent of lexical overlap" requirement the doc-grain subject index (#1016) may now satisfy, which was the missing piece when V-5 was deferred, (3) PRF, (4) the query encoder itself last. | Favorable leads-or-noise verdict (§2) |
 | W-10 | **OS-27 adoption** | From sketch (`OS27-Semantic-Retrieval-Design.md`) to code exercised against the actual SDK. Scope the first session as an assessment-against-the-beta rather than a build. | SDK availability; after or beside W-9's step 1 |
 
+### Tier E — backlog admissions (owner disposition, 2026-08-23)
+
+Six of the fourteen §6 backlog ideas were admitted to the wave; two are assessments whose
+deliverable is a scoping verdict, not code.
+
+| # | Session | Scope | Gate |
+|---|---|---|---|
+| W-11 | **Previously-published outbound resolver** | Turn the `previouslyPublished` panel's "consult the cited publication" dead end into deep links — *Department of State Bulletin* (Internet Archive/HathiTrust), *Public Papers of the Presidents* (American Presidency Project, govinfo), UST/TIAS treaties, the Congressional serial set. A small citation grammar over the already-classified SourceNoteKit parse plus a bundled link table; the presidential-library link work is the shape precedent, and the D12-style stamped-link rules apply to any URL it prints. | none |
+| W-12 | **Parallel-series concordance — ASSESSMENT** | A scoping doc, not a build: what a curated volume-level concordance to DBPO (UK), DDF (France), AAPD (Germany), Dodis (Switzerland — open API), and the Wilson Center Digital Archive would contain; what the taxonomy's era/region tags can and cannot key; the curation cost per series; and the honest boundary (document-level alignment is a research project and stays out). Ends with a build/no-build recommendation for the owner. | none |
+| W-13 | **Coverage map / systematic-review mode** | "You have opened 43 of the 267 documents in this working corpus — 12 annotated, 224 unread; here they are," computed from `ExportHistoryEntry` + `ProjectEngagedDocuments`, plus an exportable coverage statement completing the method appendix (searched → examined). No schema change. | none |
+| W-14 | **Read-aloud** | `AVSpeechSynthesizer` over the render tree — skip footnotes, track position, honor the read-vs-research mode split. Purely additive; serves commuters and low-vision users beyond VoiceOver's posture. | none |
+| W-15 | **Geographic/analytics — ASSESSMENT, with historical toponymy first-class** | Assess BigPicture-Analytics priorities 8/10/11/12 together, with the owner's stated requirement: the geographic derivation must take **changing historical place names** into account — the corpus spans 1861–1988, and Constantinople/Istanbul, St. Petersburg/Petrograd/Leningrad, Persia/Iran, Siam/Thailand, Danzig/Gdańsk-class renames mean era-correct names must reconcile to stable places or every regional chart double-counts. The assessment decides: which of the four proceed; how a `place_mentions` table (P10 — the schema change) encodes name-at-date vs. place identity; whether P11's "More like this" still earns a slot beside the shipped semantic Related axis; and P12's external-fetch posture. P10, if it proceeds, boards W-1b's index bump or the next one. Ends with a per-priority recommendation. | none |
+| W-16 | **Dispersion statistic: surface or delete** | `FTS5Vocabulary.occurrencesPerDocument` is built with zero callers (verified 2026-08-23). Either surface it where it earns its keep — the Query Inspector is the natural home — or delete it so the vocabulary type stops carrying dead API. XS. | none |
+| W-17 | **Lexical similarity as a query** | The approved query-time variant from the withdrawn-artifact verdict (`Completed/Lexical-Similarity-Neighbors-Assessment.md` §0/§9): extract the anchor's top TF-IDF terms (`fts5vocab` supplies df) and run a BM25 OR-query — "more like this" with no bundled artifact. Ship as a Related axis defaulting to weight 0, with the recorded costs stated on-surface (indexed volumes only; results vary with library composition). **Sequence beside W-9's instrument step** so the lexical and semantic routes are judged by the same measure instead of shipping un-compared — and it is the standing fallback if the semantic verdict disappoints. | none (evaluation pairs with W-9) |
+
 ## 4. The owner lane
 
 | Item | Feeds |
@@ -85,37 +100,37 @@ suggested, not binding; tiers A/B/C/D can interleave as owner inputs land.
 the substrate (`SummaryAuthorship`) remains, and the closure comment records the two defects a
 revival must fix first. Re-file from the issue if wanted later.
 
-## 6. Backlog — awaiting the owner's disposition
+## 6. Backlog — DISPOSITIONED (owner, 2026-08-23)
 
-Carried from the discharged plan's §6, reminded to the owner 2026-08-23; **each is either
-scheduled into a future wave or closed as unplanned by the owner — none is scheduled here**:
+The fourteen ideas carried from the discharged plan's §6, each ruled on by the owner. Seven
+are admitted to the wave (Tier E, W-11…W-17); one is deferred indefinitely; six are closed as
+unplanned. Nothing here is silently dropped — every closed item keeps its archive pointer and
+can be revived by re-arguing it, not by claiming it was forgotten.
 
-1. **Declassification-gap explorer** (Feature-Priorities §5a.1) — surface the "not declassified" /
-   "not printed" markers as data: per-document redaction flags, density by volume/era/topic, a
-   browsable not-printed list, plus an MDR/FOIA request-draft generator. One new indexing pass —
-   would board W-1b's bump if scheduled now.
-2. **Previously-published outbound resolver** (§5a.3) — turn the `previouslyPublished` panel's
-   "consult the cited publication" dead end into deep links (Bulletin, Public Papers, UST/TIAS,
-   serial set). Cheap; reuses the existing parse.
-3. **Parallel-series concordance** (§5a.4) — a curated volume-level map to DBPO/DDF/AAPD/Dodis.
-   Needs its own scoping doc first.
-4. **Telegram-thread reconstruction** (§5b.5) — Deptel/Embtel chains as a Related axis. Highest
-   research delight on the list; needs its own scoping doc + eval baseline.
-5. **Coverage map / systematic-review mode** (§5c.6) — "opened 43 of 267" + an exportable
-   coverage statement completing the method appendix. Small; no schema change.
-6. **Computational dataset export** (§5c.7) — a working corpus as text+metadata+provenance
-   bundle for Python/R users. An exporter session.
-7. **Read-aloud** (§5d.8) — `AVSpeechSynthesizer` over the render tree. Small-to-medium.
-8. **Collection → static-site publish** (§5d.9, minor) — extend the HTML export to a site bundle.
-9. **Analytics priorities 8/10/11/12** (BigPicture-Analytics) — geographic/topic charts + the
-   administration analytics axis; `place_mentions` (a schema change); per-document "More like
-   this"; VIAF/Wikidata enrichment (the only external-fetch item).
-10. **Lexical similarity as a query** (Lexical assessment §0) — the withdrawn-as-artifact
-    verdict allows a query-time variant.
-11. **Hosted quick-start index** (PreIndex 2026-05) — the semantic shard repo has since proven
-    the hosting channel.
-12. **Restoration depth §B/§C** — `@SceneStorage` navigation paths; macOS window-content
-    restoration (M-21's deferred mechanisms). §B notes `SearchParameters` is not `Codable`.
-13. **Q&CA dispersion statistic** — `FTS5Vocabulary.occurrencesPerDocument` is built and has
-    zero app callers (verified 2026-08-23); either surface it or delete it.
-14. **Cross-platform port** — strategic reference only (`Completed/Cross-Platform-Porting-Assessment.md`).
+**Admitted → Tier E** (see §3): #2 previously-published resolver (W-11) · #3 parallel-series
+concordance *as an assessment* (W-12) · #5 coverage map (W-13) · #7 read-aloud (W-14) ·
+#9 analytics priorities 8/10/11/12 *as an assessment, with changing historical place names a
+first-class requirement* (W-15) · #13 dispersion surface-or-delete (W-16) · #10 lexical
+similarity as a query (W-17, its evaluation paired with W-9's instrument so the lexical and
+semantic routes are judged by one measure).
+
+**Deferred indefinitely** (owner's word — not closed, not scheduled):
+
+- **#1 declassification-gap explorer** (Feature-Priorities §5a.1) — the "not declassified" /
+  "not printed" markers as data, density views, the not-printed list, the MDR/FOIA draft
+  generator. If ever revived it needs one indexing pass and should board whatever index bump
+  is next open (W-1b's, if still pending).
+
+**Closed as unplanned** (archive pointers; revive by re-arguing):
+
+- **#4 telegram-thread reconstruction** (§5b.5) — the Deptel/Embtel exchange axis.
+- **#6 computational dataset export** (§5c.7) — the text+metadata+provenance bundle.
+- **#8 collection → static-site publish** (§5d.9).
+- **#11 hosted quick-start index** (`Completed/PreIndex-Feasibility.md`) — noting for any
+  revival that the semantic shard repo proved the hosting channel, and the maintenance cost is
+  tracking `currentDateIndexVersion` (four bumps this month alone).
+- **#12 restoration depth §B/§C** (`Completed/Restoration-Depth-Design.md`) — `@SceneStorage`
+  paths and macOS window-content restoration; the shipped resume-reading affordance stands as
+  the accepted depth.
+- **#14 cross-platform port** (`Completed/Cross-Platform-Porting-Assessment.md`) — remains a
+  strategic reference; Route B is the recorded answer if the question ever goes live.
