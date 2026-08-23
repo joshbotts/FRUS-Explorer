@@ -8156,3 +8156,42 @@ MainActor-isolated). The fix was the recorded rule — move the helper (to
 Docs: both manuals' Browse sections rewritten for the new root ([SCREENSHOT] placeholders — owner
 captures). Tests: 26 new unit tests green; UI drilling suites (UIObstruction/Compilation/TwoPane)
 updated with an `openSubseriesDirectory()` step since the subseries rows moved one tap deep.
+
+## Session 2026-08-23 — #1051 B-2: administrations and editors, the first axes through the shared list
+
+The second browse-axes session, and the first consumers of B-1's R-1 contract — which held:
+neither axis needed a view of its own for its volume list, only a `VolumeListSpec`.
+
+**Administrations (A-3).** `AdministrationAxis` builds the drill spec from the bundled
+profiles index: ids in the ARTIFACT's order (pointDocs descending — the R-1 never-re-sort
+contract, pinned by a fixture whose id order would invert it), a "N docs · N.N%" accessory
+against the R-2 denominators, and the design's amber "Also under …" note on every
+dual-membership volume (a new `notes` slot on the spec, rendered by both platforms' lists).
+The index roster runs Lincoln → the sitting term in presidency order; zero-volume
+administrations (Clinton onward) render DISABLED at 45% with the reason, never hidden — and
+the real-bundle guard pins the axis's premises: roster sorted, memberships sum past 552 (the
+any-overlap disclosure's number is computed live, never hard-coded), a zero-volume profile
+exists, and every drill id resolves in `volumeTotals`. Wording is "covering", never
+"published under", per the settled Q-2/coverage semantics.
+
+**Editors (A-4).** Q-1 is compilers only — `generalEditor` stays on the volume page, which
+also keeps the corpus's one cross-surname misspelling (Nuermberger/Nuremberger, a
+general-editor credit) out of scope entirely. Two normalization layers, both measured against
+the shipped manifest before writing a line: a MECHANICAL pass (whitespace, `"J ."`,
+`"E.R."` → `"E. R."`, trailing periods spared for initials and Jr./Sr.) that alone folds the
+punctuation variants, then a 39-row curated alias table over the 35 real spelling clusters,
+canonical = the most frequently printed form. The Phillips pair is deliberately ABSENT from
+the table (two historians colliding on surname + initial — the over-merge the survey warned
+about) and a test pins both that they stay split and that no alias variant survives as a row.
+The real-manifest guard folds 552 volumes to one row per person (Slany 1, Perkins 1,
+Aandahl 1, Phillips 2). Drills order by publication year and the caption says so.
+
+**The 2a grid arrives.** With four doors the root's Browse-by section takes its designed
+shape: the Subseries tile double-width above a two-column grid (All Volumes,
+Administrations, Editors), tiles painting their own cards in one chrome-free row. Tile
+identifiers are unchanged, so the B-1 UI-test drills hold. macOS: the BROWSE sidebar gains
+both rows; the drills ride ONE new `CorpusNavValue.axisList(VolumeListSpec)` case hosted by
+`MacAxisVolumeListView` — own search state, caller order preserved — over the promoted
+list's caption/accessory/note slots, so every future axis lands as a spec, not a view.
+
+Docs: both manuals gain the two axes (§6.1c/6.1d on iOS). 17 new unit tests.

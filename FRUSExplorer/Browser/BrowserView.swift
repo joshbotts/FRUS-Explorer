@@ -874,6 +874,8 @@ struct BrowserView: View {
             case .subseriesIndex:    SubseriesDirectoryView(vm: vm)
             case .catalogue:         BrowseCatalogueLevel(vm: vm)
             case .volumeList(let s): VolumeListView(vm: vm, spec: s)
+            case .administrations:   BrowseAdministrationsLevel(vm: vm)
+            case .editors:           BrowseEditorsLevel(vm: vm)
             }
         }
         // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every

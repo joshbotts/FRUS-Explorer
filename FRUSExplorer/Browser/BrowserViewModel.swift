@@ -83,6 +83,12 @@ public final class BrowserViewModel {
         /// destination every browse axis drills into. Identity is the spec's `axisKey`,
         /// never the id array, so a recomputed set under the same axis compares equal.
         case volumeList(VolumeListSpec)
+        /// The Administrations index (#1051 A-3) — presidencies drilling to the volumes
+        /// whose documents cover each term.
+        case administrations
+        /// The Editors index (#1051 A-4) — volume editors (compilers, per Q-1) drilling
+        /// to the volumes naming them.
+        case editors
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -97,6 +103,8 @@ public final class BrowserViewModel {
             case .subseriesIndex:      hasher.combine(7)
             case .catalogue:           hasher.combine(8)
             case .volumeList(let s):   hasher.combine(9); hasher.combine(s.axisKey)
+            case .administrations:     hasher.combine(10)
+            case .editors:             hasher.combine(11)
             }
         }
 
@@ -113,6 +121,8 @@ public final class BrowserViewModel {
             case (.subseriesIndex, .subseriesIndex): return true
             case (.catalogue, .catalogue): return true
             case (.volumeList(let a), .volumeList(let b)): return a.axisKey == b.axisKey
+            case (.administrations, .administrations): return true
+            case (.editors, .editors): return true
             default: return false
             }
         }

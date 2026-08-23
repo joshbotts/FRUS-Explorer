@@ -51,6 +51,10 @@ import SwiftUI
 ///          Administrations/Editors land with B-2, and the section becomes a 2-column grid
 ///          when it holds four); `SubseriesRowLabel` moved to `SubseriesDirectoryView.swift`
 ///          with its dead `totalDocuments` gate rewired to the R-2 accessor
+///   2.1 — #1051 B-2: the section reached four doors, so the 2a grid arrives — the
+///          Subseries tile double-width above a two-column `LazyVGrid` (All Volumes,
+///          Administrations, Editors), tiles painting their own cards in one
+///          chrome-free row
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -254,48 +258,92 @@ struct CorpusView: View {
 
     // MARK: - Browse by (the axis doors, 2a)
 
-    /// The axis tiles. B-1 ships Subseries + All Volumes; each later session appends its
-    /// axis's tile here (Administrations/Editors in B-2, the sets and Archives after), and
-    /// once the section holds four the pairs form the 2a two-column grid.
+    /// The axis doors: the double-width Subseries tile above the two-column grid — the 2a
+    /// shape, which arrived when the section reached four doors (B-2). Each later session
+    /// appends its axis's grid tile (the sets in B-3/B-4, Archives in B-5, Clusters in
+    /// B-7). The tiles paint their own cards because the section's one row clears the
+    /// grouped-list chrome to host the grid.
     private var browseBySection: some View {
         Section(header: Text(String(localized: "browser.corpus.browseBy.header",
                                     defaultValue: "Browse by"))) {
-            BrowseAxisTile(
-                title: String(localized: "browser.corpus.tile.subseries", defaultValue: "Subseries"),
-                caption: subseriesTileCaption,
-                systemImage: "books.vertical",
-                accessibilityIdentifier: "browse.root.subseriesTile"
-            ) {
-                vm.select(.subseriesIndex)
-                #if DEBUG
-                print("[BrowserView] Navigate → subseries directory")
-                #endif
-            }
-            .accessibilityLabel(
-                String(localized: "browser.corpus.tile.subseries.a11y",
-                       defaultValue: "Browse by subseries")
-            )
-            .help(String(localized: "browser.corpus.tile.subseries.help",
-                         defaultValue: "Browse the series era by era — every subseries with its volumes"))
+            VStack(spacing: 10) {
+                BrowseAxisTile(
+                    title: String(localized: "browser.corpus.tile.subseries", defaultValue: "Subseries"),
+                    caption: subseriesTileCaption,
+                    systemImage: "books.vertical",
+                    accessibilityIdentifier: "browse.root.subseriesTile"
+                ) {
+                    vm.select(.subseriesIndex)
+                    #if DEBUG
+                    print("[BrowserView] Navigate → subseries directory")
+                    #endif
+                }
+                .accessibilityLabel(
+                    String(localized: "browser.corpus.tile.subseries.a11y",
+                           defaultValue: "Browse by subseries")
+                )
+                .help(String(localized: "browser.corpus.tile.subseries.help",
+                             defaultValue: "Browse the series era by era — every subseries with its volumes"))
 
-            BrowseAxisTile(
-                title: String(localized: "browser.corpus.tile.catalogue", defaultValue: "All Volumes"),
-                caption: String(localized: "browser.corpus.tile.catalogue.caption",
-                                defaultValue: "Search all \(vm.allVolumes.count) titles"),
-                systemImage: "line.3.horizontal.decrease.circle",
-                accessibilityIdentifier: "browse.root.catalogueTile"
-            ) {
-                vm.select(.catalogue)
-                #if DEBUG
-                print("[BrowserView] Navigate → All Volumes catalogue")
-                #endif
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())],
+                          spacing: 10) {
+                    BrowseAxisGridTile(
+                        title: String(localized: "browser.corpus.tile.catalogue",
+                                      defaultValue: "All Volumes"),
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        accessibilityIdentifier: "browse.root.catalogueTile"
+                    ) {
+                        vm.select(.catalogue)
+                        #if DEBUG
+                        print("[BrowserView] Navigate → All Volumes catalogue")
+                        #endif
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.tile.catalogue.a11y",
+                               defaultValue: "Browse all volumes")
+                    )
+                    .help(String(localized: "browser.corpus.tile.catalogue.help",
+                                 defaultValue: "One catalogue of every volume — search it, or arrange it by title, publication year, era, or length"))
+
+                    BrowseAxisGridTile(
+                        title: String(localized: "browser.corpus.tile.administrations",
+                                      defaultValue: "Administrations"),
+                        systemImage: "building.columns",
+                        accessibilityIdentifier: "browse.root.administrationsTile"
+                    ) {
+                        vm.select(.administrations)
+                        #if DEBUG
+                        print("[BrowserView] Navigate → administrations index")
+                        #endif
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.tile.administrations.a11y",
+                               defaultValue: "Browse by administration")
+                    )
+                    .help(String(localized: "browser.corpus.tile.administrations.help",
+                                 defaultValue: "Volumes filed by the presidency their documents cover"))
+
+                    BrowseAxisGridTile(
+                        title: String(localized: "browser.corpus.tile.editors",
+                                      defaultValue: "Editors"),
+                        systemImage: "person.text.rectangle",
+                        accessibilityIdentifier: "browse.root.editorsTile"
+                    ) {
+                        vm.select(.editors)
+                        #if DEBUG
+                        print("[BrowserView] Navigate → editors index")
+                        #endif
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.tile.editors.a11y",
+                               defaultValue: "Browse by editor")
+                    )
+                    .help(String(localized: "browser.corpus.tile.editors.help",
+                                 defaultValue: "Volumes filed by the editors named on their title pages"))
+                }
             }
-            .accessibilityLabel(
-                String(localized: "browser.corpus.tile.catalogue.a11y",
-                       defaultValue: "Browse all volumes")
-            )
-            .help(String(localized: "browser.corpus.tile.catalogue.help",
-                         defaultValue: "One catalogue of every volume — search it, or arrange it by title, publication year, era, or length"))
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
         }
     }
 
@@ -318,15 +366,29 @@ struct CorpusView: View {
 
 // MARK: - BrowseAxisTile
 
-/// One "Browse by" door on the corpus root (#1051 2a): icon, title, caption, chevron.
-///
-/// Rendered as a full-width List row (the grouped list's card chrome IS the tile chrome);
-/// when the section holds four or more doors the pairs move into the 2a two-column grid.
-/// The action assigns the path via `vm.select` at the call site — root doors assign, never
-/// append.
+/// The card ground the axis tiles paint, since their section row clears the grouped-list
+/// chrome to host the 2a grid.
+enum BrowseTileChrome {
+    /// The tile card color — the grouped list's own card color, so the tiles read as
+    /// native rows that happen to sit in a grid.
+    static var cardColor: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
+    }
+}
+
+/// The double-width "Browse by" door on the corpus root (#1051 2a): icon, title, caption,
+/// chevron — the Subseries tile's shape, whose width and count copy carry the hierarchy's
+/// primacy (the trade Q-9 signed off). The action assigns the path via `vm.select` at the
+/// call site — root doors assign, never append.
 ///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
+///   1.1 — #1051 B-2: paints its own card (the section row's chrome is cleared for the
+///          2a grid)
 struct BrowseAxisTile: View {
     let title: String
     let caption: String
@@ -356,10 +418,53 @@ struct BrowseAxisTile: View {
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 6)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
             // Both modifiers, in this order — the #312 full-row tap-target idiom.
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
+            .background(BrowseTileChrome.cardColor,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
+    }
+}
+
+// MARK: - BrowseAxisGridTile
+
+/// One half-width "Browse by" door in the 2a grid: icon plus a single-line label
+/// (the 1d/2a tile shape — 21pt icon, 14pt medium label, radius-12 card).
+///
+/// Version history:
+///   1.0 — #1051 B-2: initial implementation
+struct BrowseAxisGridTile: View {
+    let title: String
+    let systemImage: String
+    var accessibilityIdentifier: String? = nil
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 21))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 14)
+            // Both modifiers, in this order — the #312 full-row tap-target idiom.
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .background(BrowseTileChrome.cardColor,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
