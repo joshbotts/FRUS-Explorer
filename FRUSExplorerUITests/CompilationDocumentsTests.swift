@@ -159,6 +159,16 @@ final class CompilationDocumentsTests: XCTestCase {
     private func navigateToSeededCompilation() {
         selectSection("Browse")
 
+        // #1051 B-1 (root 2a): the subseries list moved one tap deep behind the root's
+        // "Subseries" tile; the rows keep their labels at the new depth.
+        let subseriesTile = app.buttons["browse.root.subseriesTile"].firstMatch
+        XCTAssertTrue(
+            subseriesTile.waitForExistence(timeout: 15),
+            "The Browse root's Subseries tile did not appear — the subseries directory is "
+                + "unreachable and this suite cannot reach a compilation at all."
+        )
+        subseriesTile.tap()
+
         XCTAssertTrue(
             subseriesRow.waitForExistence(timeout: 15),
             "No subseries row appeared with filterDownloadedOnly=YES — the fixture volume was "

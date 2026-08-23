@@ -273,6 +273,12 @@ public actor NARACatalogClient {
     ///   - fileIdentifier: The parsed central-file number, used at the 1963 boundary.
     /// - Returns: URL to the filing manual PDF, or `nil`.
     public nonisolated func filingManualURL(year: Int, fileIdentifier: String? = nil) -> URL? {
+        // DO NOT "FIX" THIS BASE BECAUSE IT 404s. It is a directory PREFIX, not a page: archives.gov
+        // serves no listing for it, but every PDF built from it is live — all six were fetched
+        // 2026-08-22 and answered 200. A URL audit on 2026-08-22 flagged the bare path as a dead
+        // link and a replacement landing page was offered in good faith; swapping it would have
+        // broken six working manual links while the audit reported an improvement. The test for a
+        // prefix is whether the things built from it resolve, never whether the prefix itself does.
         let base = "https://www.archives.gov/files/research/foreign-policy/state-dept/finding-aids"
         let decimalManual = URL(string: "\(base)/manual-1960-63.pdf")   // the last decimal manual
         let isDecimal = (fileIdentifier.map(Self.isDecimalFileNumber) ?? false) && year >= 1910
@@ -321,27 +327,54 @@ public actor NARACatalogClient {
     /// Used as a fallback when the NARA Catalog API returns zero results for a
     /// presidential library query. Never returns a generic NARA search link —
     /// each library has its own online finding-aid portal.
+    ///
+    /// ## Re-checked 2026-08-22, and SEVEN of these were dead
+    /// Every URL was fetched redirect-following with a browser user agent. Ford, LBJ, Nixon,
+    /// Carter, Reagan and Truman all answered **404**, and the Bush host
+    /// (`www.bush41library.tamu.edu`) was **NXDOMAIN** — Texas A&M no longer serves the library,
+    /// and the bare domain now only forwards to the `.gov` homepage. Eisenhower and Roosevelt were
+    /// the only two still live. Replacements are the owner's, each verified to answer `200` with a
+    /// title naming the right institution.
+    ///
+    /// **A 404 alone did not settle any of these, and the control that did is worth reusing.**
+    /// Several of these hosts answer 404 to an invented path too, so the invented-path test says
+    /// only "the host discriminates" when the codes differ. What proved the deaths was a POSITIVE
+    /// control: each host's root and parent section answered `200`, so a 404 beneath a live parent
+    /// is a real absence rather than a blanket refusal to robots.
+    ///
+    /// **Two entries here can never be machine-checked, and that is a property of the hosts.**
+    /// `jfklibrary.org` and `discoverlbj.org` sit behind Cloudflare and answer **403 to every
+    /// path, including their own roots and invented ones** — so a fetch proves nothing either way
+    /// and no link checker will ever validate them. Both are owner-asserted, which is the only
+    /// verification available. `discoverlbj.org` is independently corroborated as the LBJ holdings
+    /// host by `CuratedLibraryResolutionsTests`.
+    ///
+    /// **The JFK entry is a faceted SEARCH url and is brittle in a way a checker cannot see.**
+    /// `source:46` and `type_dctm_object` are the CMS's internal identifiers; if the library
+    /// re-indexes, the endpoint will still answer `200` while returning the wrong result set or
+    /// none at all. A green link check on this row means the search page exists, never that it
+    /// still lists finding aids.
     public nonisolated func libraryFallbackURL(libraryName: String) -> URL {
         let lc = libraryName.lowercased()
         switch lc {
         case _ where lc.contains("kennedy") || lc.contains("jfk"):
-            return URL(string: "https://www.jfklibrary.org/archives/finding-aids")!
+            return URL(string: "https://www.jfklibrary.org/search?f%5B0%5D=type_dctm_object%3ACollection&f%5B1%5D=source%3A46&sort_by=aggregated_title&sort_order=ASC&items_per_page=25")!
         case _ where lc.contains("johnson") || lc.contains("lbj"):
-            return URL(string: "https://www.lbjlibrary.org/research/research-resources")!
+            return URL(string: "https://discoverlbj.org/loh")!
         case _ where lc.contains("nixon"):
-            return URL(string: "https://www.nixonlibrary.gov/research/finding-aids")!
+            return URL(string: "https://www.nixonlibrary.gov/research/guide-holdings")!
         case _ where lc.contains("ford"):
-            return URL(string: "https://www.fordlibrarymuseum.gov/library/finding-aids.asp")!
+            return URL(string: "https://www.fordlibrarymuseum.gov/digital-research-room/finding-aids")!
         case _ where lc.contains("carter"):
-            return URL(string: "https://www.jimmycarterlibrary.gov/research/finding-aids")!
+            return URL(string: "https://www.jimmycarterlibrary.gov/research/archives/finding-aids")!
         case _ where lc.contains("reagan"):
-            return URL(string: "https://www.reaganlibrary.gov/research")!
+            return URL(string: "https://www.reaganlibrary.gov/archives/white-house-inventories")!
         case _ where lc.contains("bush"):
-            return URL(string: "https://www.bush41library.tamu.edu/research")!
+            return URL(string: "https://www.bush41library.gov/digital-research-room/about-textual-collections/all-textual-collections")!
         case _ where lc.contains("eisenhower") || lc.contains("ddel"):
             return URL(string: "https://www.eisenhowerlibrary.gov/research/finding-aids")!
         case _ where lc.contains("truman") || lc.contains("hstl"):
-            return URL(string: "https://www.trumanlibrary.gov/research/finding-aids")!
+            return URL(string: "https://www.trumanlibrary.gov/library/truman-papers")!
         case _ where lc.contains("roosevelt") || lc.contains("fdrl"):
             return URL(string: "https://www.fdrlibrary.org/finding-aids")!
         default:

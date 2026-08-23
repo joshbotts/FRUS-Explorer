@@ -167,6 +167,15 @@ final class TwoPaneDocumentTests: XCTestCase {
                 + "gate, so the interaction does not arise here"
         )
 
+        // #1051 B-1 (root 2a): the subseries list moved one tap deep behind the root's
+        // "Subseries" tile (in the persistent list pane); the directory renders in the
+        // detail pane and the rows keep their labels.
+        let subseriesTile = app.buttons["browse.root.subseriesTile"].firstMatch
+        XCTAssertTrue(subseriesTile.waitForExistence(timeout: 15),
+                      "The Browse root's Subseries tile did not appear in the list pane")
+        subseriesTile.tap()
+        Thread.sleep(forTimeInterval: 1.0)
+
         XCTAssertTrue(subseriesRow.waitForExistence(timeout: 15),
                       "No subseries row with filterDownloadedOnly=YES — the fixture volume was "
                           + "probably not seeded")

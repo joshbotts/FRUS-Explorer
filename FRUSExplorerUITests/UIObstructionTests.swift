@@ -314,7 +314,12 @@ final class UIObstructionTests: XCTestCase {
         // The Browse tab is selected by default; confirm we are in the browser.
         selectBrowseSection()
 
-        // The corpus list (CorpusView) shows subseries groups as rows.
+        // #1051 B-1: the LONG list this scenario scrolls is the subseries directory now —
+        // the 2a root is a short doors list that may never need to scroll at all, which
+        // would let this pass without exercising the obstruction it exists to catch.
+        openSubseriesDirectory()
+
+        // The directory shows subseries groups as rows.
         // Wait for at least one cell to appear before scrolling.
         let firstCell = app.cells.firstMatch
         let appeared = firstCell.waitForExistence(timeout: 10)
@@ -324,16 +329,24 @@ final class UIObstructionTests: XCTestCase {
         // Scroll toward the bottom of the list, settling briefly after each swipe,
         // until the last cell becomes hittable. XCTest's `isHittable` returns false
         // when a view is clipped or covered.
-        // **Scroll the LIST, not the app.** `app.swipeUp()` targets the app element's horizontal
-        // centre, which was the corpus list while Browse was a single full-width column. Since
-        // F-2's two-pane it is the *detail* pane on a wide iPad — so the gesture scrolled a
-        // different view and the last row never moved, which is how this scenario failed the
-        // moment the layout changed. Addressing the scroll view that owns the cells is correct in
-        // both layouts and on both platforms, and it is what the design's §4 means by making the
-        // oracles pane-aware rather than making them green.
-        let listPane = app.collectionViews.firstMatch.exists
-            ? app.collectionViews.firstMatch
-            : app.tables.firstMatch
+        // **Scroll the pane that OWNS the last cell, not `firstMatch`.** This oracle has now
+        // been wrong-pane'd twice: `app.swipeUp()` targeted the detail pane when the corpus
+        // list held the rows (the F-2 failure this comment used to record), and after #1051's
+        // 2a root the DIRECTORY is the detail pane while `collectionViews.firstMatch` resolves
+        // the list pane of doors — measured on iPad Pro 13-inch, the gesture scrolled the
+        // doors and the directory's 1861 row never moved. Choosing the scroller by the last
+        // cell's x-position is correct in every layout this tab has ever had.
+        func scrollerOwningLastCell() -> XCUIElement {
+            let lastX = app.cells.element(boundBy: app.cells.count - 1).frame.midX
+            for index in 0..<app.collectionViews.count {
+                let candidate = app.collectionViews.element(boundBy: index)
+                let frame = candidate.frame
+                if frame.minX <= lastX && lastX <= frame.maxX { return candidate }
+            }
+            return app.collectionViews.firstMatch.exists
+                ? app.collectionViews.firstMatch
+                : app.tables.firstMatch
+        }
         var becameHittable = false
         for _ in 1...15 {
             let lastCell = app.cells.element(boundBy: app.cells.count - 1)
@@ -341,8 +354,9 @@ final class UIObstructionTests: XCTestCase {
                 becameHittable = true
                 break
             }
-            if listPane.exists {
-                listPane.swipeUp(velocity: .fast)
+            let scroller = scrollerOwningLastCell()
+            if scroller.exists {
+                scroller.swipeUp(velocity: .fast)
             } else {
                 app.swipeUp(velocity: .fast)
             }
@@ -374,6 +388,9 @@ final class UIObstructionTests: XCTestCase {
     func testBreadcrumbBarNotObstructingFirstRow() throws {
         // Ensure we are on the Browse tab.
         selectBrowseSection()
+
+        // #1051 B-1: reach the directory first — the subseries rows moved one tap deep.
+        openSubseriesDirectory()
 
         // Drill into a SUBSERIES — what this test's name and docstring have always described.
         //
@@ -570,6 +587,29 @@ final class UIObstructionTests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
     }
 
+    /// Opens the subseries directory from the Browse root (#1051 B-1, root direction 2a).
+    ///
+    /// The subseries list is no longer the corpus root's content — it lives one tap deep
+    /// behind the root's "Subseries" tile. Every scenario that asserts on
+    /// `corpusSubseriesRow` calls this first, right after selecting the Browse tab; the
+    /// rows keep their exact "Subseries <name>, <n> volumes" labels at the new depth, so
+    /// nothing else about those assertions changes. In the two-pane layout the tile lives
+    /// in the persistent list pane and the directory renders in the detail pane; in the
+    /// stack layout it is an ordinary push (so a BackButton exists from here on — the
+    /// deeper drill assertions rely on the level-specific oracles, e.g. "Add Tag Filter",
+    /// not on BackButton appearance alone).
+    @discardableResult
+    private func openSubseriesDirectory(timeout: TimeInterval = 10) -> Bool {
+        let tile = app.buttons["browse.root.subseriesTile"].firstMatch
+        guard tile.waitForExistence(timeout: timeout) else {
+            XCTFail("The Browse root's Subseries tile did not appear within \(Int(timeout))s — "
+                    + "the subseries directory (and every subseries-row assertion) is unreachable")
+            return false
+        }
+        tile.tap()
+        return corpusSubseriesRow.waitForExistence(timeout: timeout)
+    }
+
     /// On iPad the tabs render via `.tabViewStyle(.sidebarAdaptable)`, which the user can
     /// toggle between a leading sidebar and a floating top tab bar. In the top-tab-bar
     /// representation a `NavigationSplitView` nested inside the TabView mis-computed the
@@ -611,6 +651,10 @@ final class UIObstructionTests: XCTestCase {
 
         // Representation A — whatever the install launched in.
         selectBrowseSection()
+        // #1051 B-1: reach the directory — the subseries rows moved one tap deep. The
+        // representation toggle below happens with the directory open, and navigation
+        // state survives it, so no re-drill is needed for representation B.
+        openSubseriesDirectory()
         XCTAssertTrue(
             corpusSubseriesRow.waitForExistence(timeout: 10),
             "Corpus subseries rows did not appear in the launch representation"
@@ -756,11 +800,18 @@ final class UIObstructionTests: XCTestCase {
                 + "chrome may be overlaying content one level below the corpus root (#238)"
         )
 
-        // Reset for the caller. In a two-pane there is nothing to pop: the corpus list is on
-        // screen throughout, which is the whole point of the layout, so the caller already
-        // resumes at the root.
+        // Reset for the caller. "In a two-pane there is nothing to pop" stopped being true
+        // with #1051's 2a root: the subseries rows live in the DETAIL pane (the directory)
+        // now, not the persistent list pane, and this drill just replaced the directory with
+        // the subseries level — measured on iPad Pro 13-inch, the caller's next
+        // `corpusSubseriesRow` assertion then resolved nothing. The detail pane's own F-2
+        // Back control returns it to the directory. (The outer stack has no pushed level in
+        // the two-pane, so plain "Back" cannot match a system nav-bar button here.)
         if !twoPane {
             app.buttons["BackButton"].tap()
+        } else {
+            let detailBack = app.buttons["Back"].firstMatch
+            if detailBack.exists, detailBack.isHittable { detailBack.tap() }
         }
         Thread.sleep(forTimeInterval: 0.5)
     }
@@ -1683,11 +1734,15 @@ final class UIObstructionTests: XCTestCase {
             return false
         }
 
-        let subseriesRow = app.cells.element(boundBy: min(3, max(0, app.cells.count - 1)))
-        guard subseriesRow.exists else {
-            throw XCTSkip("No subseries rows on this device — nothing to open beside the list")
+        // #1051 B-1: the first drill is the root's Subseries TILE (label-addressed via its
+        // identifier, in the spirit of this test's own "never by position" rule) — it puts
+        // the subseries directory in the detail pane, and the depth loop's `openInDetail`
+        // then walks directory → subseries → volume.
+        let tile = app.buttons["browse.root.subseriesTile"].firstMatch
+        guard tile.waitForExistence(timeout: 10) else {
+            throw XCTSkip("No Subseries tile on this device — nothing to open beside the list")
         }
-        subseriesRow.tap()
+        tile.tap()
         Thread.sleep(forTimeInterval: 1.5)
 
         for step in 1...3 {
