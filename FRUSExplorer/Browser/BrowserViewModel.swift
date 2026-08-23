@@ -89,6 +89,10 @@ public final class BrowserViewModel {
         /// The Editors index (#1051 A-4) — volume editors (compilers, per Q-1) drilling
         /// to the volumes naming them.
         case editors
+        /// The My Scopes level (#1051 A-5) — the user's custom volume scopes.
+        case scopes
+        /// The in-Browse scope editor (#1051 design 3a), keyed by the scope's id.
+        case scopeEditor(UUID)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -105,6 +109,8 @@ public final class BrowserViewModel {
             case .volumeList(let s):   hasher.combine(9); hasher.combine(s.axisKey)
             case .administrations:     hasher.combine(10)
             case .editors:             hasher.combine(11)
+            case .scopes:              hasher.combine(12)
+            case .scopeEditor(let id): hasher.combine(13); hasher.combine(id)
             }
         }
 
@@ -123,6 +129,8 @@ public final class BrowserViewModel {
             case (.volumeList(let a), .volumeList(let b)): return a.axisKey == b.axisKey
             case (.administrations, .administrations): return true
             case (.editors, .editors): return true
+            case (.scopes, .scopes): return true
+            case (.scopeEditor(let a), .scopeEditor(let b)): return a == b
             default: return false
             }
         }

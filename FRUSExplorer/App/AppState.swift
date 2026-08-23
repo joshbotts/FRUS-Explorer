@@ -271,6 +271,24 @@ final class AppState {
         }
     }
 
+    /// The custom volume scope the Browse hierarchy is narrowed to, or `nil` for the
+    /// whole corpus (#1051 B-3, owner decision Q-3).
+    ///
+    /// A LIVE REFERENCE, deliberately: the id is stored and the scope's membership is
+    /// re-resolved at render, so edits reflect immediately and a scope deleted on another
+    /// device becomes an explicit unavailable state (`ScopeAxis.filterState`) — never a
+    /// silent whole-corpus fallback (#258). Device-local UserDefaults, following
+    /// `filterDownloadedOnly`: a browse filter is this device's concern, and a stored
+    /// property on a synced `@Model` would trip the CloudKit schema-deploy gate.
+    var browseScopeFilterId: UUID? = UserDefaults.standard.string(
+        forKey: Keys.browseScopeFilterId
+    ).flatMap(UUID.init(uuidString:)) {
+        didSet {
+            UserDefaults.standard.set(browseScopeFilterId?.uuidString,
+                                      forKey: Keys.browseScopeFilterId)
+        }
+    }
+
     // MARK: - Pending Download Scope
 
     /// Set by onboarding or `DownloadManagerSettingsView` when the user confirms a
@@ -2162,6 +2180,7 @@ final class AppState {
         static let activeTab = "frus.activeTab"
         static let lastActivityTabVisit = "frus.lastActivityTabVisit"
         static let filterDownloadedOnly = "frus.filterDownloadedOnly"
+        static let browseScopeFilterId = "frus.browseScopeFilterId"
     }
 }
 

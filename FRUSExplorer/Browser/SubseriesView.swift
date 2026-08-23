@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - SubseriesView
 
@@ -28,9 +29,21 @@ struct SubseriesView: View {
     @Environment(AppState.self) private var appState
     /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
     @Environment(\.sceneID) private var sceneID
+    /// The scopes, queried live so the "Browsing within" filter (Q-3) resolves at render
+    /// (#1051 B-3).
+    @Query private var scopes: [CustomVolumeScope]
 
     var body: some View {
+        let filterState = ScopeAxis.filterState(
+            filterId: appState.browseScopeFilterId,
+            scopes: scopes,
+            manifestIds: Set(vm.allVolumes.map(\.volumeId))
+        )
         List {
+            BrowseScopeFilterSection(state: filterState) {
+                appState.browseScopeFilterId = nil
+            }
+
             // Subseries statistics
             Section {
                 SubseriesStatsView(group: group)
@@ -42,8 +55,11 @@ struct SubseriesView: View {
                 SubseriesTagFilterBar(vm: vm, subseries: group.subseries)
             }
 
-            // Volume list
-            let volumes = vm.filteredVolumes(for: group.subseries)
+            // Volume list — the scope filter composes with the tag and downloaded filters
+            // (#1051 B-3; `.empty`/`.unavailable` show the explicit nothing, never the
+            // whole corpus).
+            let volumes = ScopeAxis.scopedVolumes(vm.filteredVolumes(for: group.subseries),
+                                                  state: filterState)
             Section(header: Text(
                 volumes.isEmpty
                     ? String(localized: "browser.subseries.noResults", defaultValue: "No Matching Volumes")
@@ -74,6 +90,12 @@ struct SubseriesView: View {
                         .buttonStyle(.plain)
                         #if os(iOS)
                         .contextMenu {
+                            // #1051 B-3 (design 3b): the scope items lead, then the
+                            // volume's own actions — the order the design specifies.
+                            VolumeScopeMenuItems(volumeId: volume.volumeId) { id in
+                                vm.navigationPath.append(.scopeEditor(id))
+                            }
+                            Divider()
                             VolumeRowContextMenu(volume: volume)
                         }
                         #endif
@@ -447,7 +469,9 @@ struct VolumeRowLabel: View {
 ///
 /// Version history:
 ///   1.0 — Session 115: initial implementation
-private struct VolumeRowContextMenu: View {
+///   1.1 — #1051 B-3: internal (not `private`) — the shared R-1 `VolumeListView` composes
+///          it after the pan-axis scope items
+struct VolumeRowContextMenu: View {
     let volume: VolumeManifestEntry
     @Environment(AppState.self) private var appState
     /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.

@@ -278,6 +278,10 @@ extension BrowserViewModel.BrowserLevel {
                           defaultValue: "Administrations")
         case .editors:
             return String(localized: "browser.breadcrumb.editors", defaultValue: "Editors")
+        case .scopes:
+            return String(localized: "browser.breadcrumb.scopes", defaultValue: "My Scopes")
+        case .scopeEditor:
+            return String(localized: "browser.breadcrumb.scopeEditor", defaultValue: "Edit Scope")
         }
     }
 }

@@ -27,6 +27,9 @@ enum CorpusNavValue: Hashable {
     /// volumes, any future axis's drill. Hashable through the spec, whose identity is its
     /// `axisKey` (never the id array), matching the iOS `.volumeList` level.
     case axisList(VolumeListSpec)
+    /// The in-Browse scope editor (#1051 B-3, design 3a), keyed by the scope's id —
+    /// pushed in the detail column, never a new window (#824).
+    case scopeEditor(UUID)
 }
 
 // MARK: - CorpusSidebarItem
@@ -48,6 +51,8 @@ enum CorpusSidebarItem: Hashable {
     case administrations
     /// The Editors index (#1051 A-4).
     case editors
+    /// The My Scopes level (#1051 A-5).
+    case myScopes
     /// One subseries, keyed by its identifier string (the pre-#1051 selection).
     case subseries(String)
 }
@@ -158,6 +163,11 @@ struct CorpusBrowserWindowView: View {
                           systemImage: "person.text.rectangle")
                         .tag(CorpusSidebarItem.editors)
                 }
+                Section(String(localized: "corpus.sidebar.yourSets", defaultValue: "Your sets")) {
+                    Label(String(localized: "browser.scopes.title", defaultValue: "My Scopes"),
+                          systemImage: "square.stack.3d.up")
+                        .tag(CorpusSidebarItem.myScopes)
+                }
                 Section(String(localized: "corpus.sidebar.subseries", defaultValue: "Subseries")) {
                     ForEach(subseries, id: \.self) { sub in
                         subseriesRow(sub).tag(CorpusSidebarItem.subseries(sub))
@@ -211,6 +221,12 @@ struct CorpusBrowserWindowView: View {
                             entries: allEntries,
                             onSelect: { spec in detailPath.append(.axisList(spec)) }
                         )
+                    case .myScopes?:
+                        ScopeIndexView(
+                            manifestIds: Set(allEntries.map(\.volumeId)),
+                            onOpen: { spec in detailPath.append(.axisList(spec)) },
+                            onEdit: { id in detailPath.append(.scopeEditor(id)) }
+                        )
                     case .subseries(let sub)?:
                         volumeList(for: sub)
                     case nil:
@@ -234,6 +250,12 @@ struct CorpusBrowserWindowView: View {
                         CorpusSectionDocumentView(volumeId: volumeId, section: section, path: $detailPath)
                     case .axisList(let spec):
                         MacAxisVolumeListView(spec: spec, path: $detailPath)
+                    case .scopeEditor(let id):
+                        ScopeEditorView(scopeId: id, onDone: {
+                            if case .scopeEditor = detailPath.last {
+                                detailPath.removeLast()
+                            }
+                        })
                     }
                 }
             }
@@ -373,6 +395,9 @@ struct CorpusBrowserWindowView: View {
                 #if DEBUG
                 print("[CorpusBrowserWindowView] Catalogue → volume \(entry.volumeId)")
                 #endif
+            },
+            onEditScope: { id in
+                detailPath.append(.scopeEditor(id))
             }
         )
     }
@@ -424,6 +449,11 @@ struct SubseriesVolumeListView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.modelContext) private var modelContext
+
+    /// The 3c capture prompt's working name (#1051 B-3).
+    @State private var captureName = ""
+    @State private var showingCapturePrompt = false
 
     // MARK: - Body
 
@@ -445,6 +475,37 @@ struct SubseriesVolumeListView: View {
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(title)
+        .toolbar {
+            // #1051 B-3 (3c): whole-slice capture on every R-1 list — subseries and axis
+            // drills alike; name pre-filled from the list's identity.
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    captureName = String(localized: "browser.scopes.capture.prefill",
+                                         defaultValue: "\(title) (\(filteredVolumes.count) volumes)")
+                    showingCapturePrompt = true
+                } label: {
+                    Label(String(localized: "browser.scopes.capture", defaultValue: "Save as Scope…"),
+                          systemImage: "plus.square.on.square")
+                }
+                .help(String(localized: "browser.scopes.capture.help",
+                             defaultValue: "Save this list's volumes as a custom scope"))
+            }
+        }
+        .alert(String(localized: "browser.scopes.capture.title", defaultValue: "Save as Scope"),
+               isPresented: $showingCapturePrompt) {
+            TextField(String(localized: "browser.scopes.capture.name", defaultValue: "Scope name"),
+                      text: $captureName)
+            Button(String(localized: "browser.scopes.capture.save", defaultValue: "Save")) {
+                _ = ScopeAxis.create(named: captureName,
+                                     volumeIds: filteredVolumes.map(\.volumeId),
+                                     in: modelContext)
+            }
+            Button(String(localized: "browser.scopes.capture.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "browser.scopes.capture.detail",
+                        defaultValue: "The scope keeps this list's volumes; the axis's ordering and counts stay here."))
+        }
     }
 
     // MARK: - Volume Row
@@ -538,6 +599,11 @@ struct SubseriesVolumeListView: View {
         }
         .padding(.vertical, 2)
         .contextMenu {
+            // #1051 B-3 (3b): the scope items lead, then the volume's own actions.
+            VolumeScopeMenuItems(volumeId: vol.volumeId) { id in
+                path.append(.scopeEditor(id))
+            }
+            Divider()
             Button {
                 appState.openWordCloud(.volume(volumeId: vol.volumeId), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
