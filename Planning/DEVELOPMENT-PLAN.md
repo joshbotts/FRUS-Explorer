@@ -8239,3 +8239,41 @@ and edit scopes — working corpora stay capture-only):**
   sidebar has no filter surface designed), stated in the docs.
 
 14 new unit tests. Docs: iOS §6.1e + the macOS sidebar paragraph.
+
+## Session 2026-08-23 — #1051 B-4: working corpora, and Browse's first degraded rows
+
+The document-grain half of the browse-axes program, and the session that imports the R-3
+pattern the design study specified: the Collections/semantic-map hybrid, deliberately NOT
+Browse's own volume-level gate — and the PR says so, because a reviewer pattern-matching
+CompilationView's "Index Required" wall would reasonably call these rows a bug.
+
+**Working Corpora (A-6).** `.corpora` on iOS, a Your-sets sidebar row on macOS, plus the
+root row with a live count. Rows: name · count · origin · capture date, with the
+THREE-STATE truncation disclosure (`CaptureTruncation`) rendered as the model's doc
+comment demands — truncated in amber with both numbers, complete silent, and UNRECORDED
+said out loud rather than collapsed into complete. Capture-only stands: the footer names
+the two capture surfaces and offers nothing to create.
+
+**The R-3 drill** (`.corpusDocuments` / `CorpusNavValue.corpusDocuments`, shared
+`CorpusDocumentsView`): one list that ALWAYS renders, grouped by volume in id order —
+1. coverage ONCE at the top in `WorkingCorpusResolver`'s own sentence, orange until
+   complete (membership by VOLUME, never header presence — editorial notes are
+   indexed-but-headerless, and the decider `CorporaAxis.rowState` is tested on exactly
+   that: indexed beats a missing file check);
+2. indexed rows carry real headers and dates from the BULK paths
+   (`CrossReferenceStore.documentHeaders` + `datesByDocumentKey`, both internally
+   chunked — 7,500 keys, never per-key queries), ordered by the Collections three-tier
+   date key (per-doc ISO → volume earliest → "9999" sentinel, tie-break fixtures named
+   per the house rule);
+3. unindexed rows are gray ids with the Download-or-Index capsule ON the row — the list
+   never dead-ends, only actions gate — and the whole surface re-keys on the
+   indexed-volume count so finishing an index pass upgrades rows in place;
+4. opening mints a metadata-less `DocumentBrowserEntry` (the map's precedent — the
+   reader parses TEI), pushed in the Browse stack on iOS and routed through the corpus
+   browser's document host on macOS so the window stays open beside the document.
+
+Nothing is snapshotted into the @Model, and one first-run test failure earned its keep:
+interpolated Ints in `String(localized:)` localize with grouping separators, so the
+truncation line reads "7,500 of 9,212" and the test now asserts the formatted forms.
+
+10 new unit tests. Docs: iOS §6.1f + the macOS Your-sets paragraph.

@@ -282,6 +282,10 @@ extension BrowserViewModel.BrowserLevel {
             return String(localized: "browser.breadcrumb.scopes", defaultValue: "My Scopes")
         case .scopeEditor:
             return String(localized: "browser.breadcrumb.scopeEditor", defaultValue: "Edit Scope")
+        case .corpora:
+            return String(localized: "browser.breadcrumb.corpora", defaultValue: "Working Corpora")
+        case .corpusDocuments(_, let name):
+            return name
         }
     }
 }
