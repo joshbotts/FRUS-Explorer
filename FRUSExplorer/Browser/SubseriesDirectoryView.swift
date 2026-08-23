@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - SubseriesDirectoryView
 
@@ -25,16 +26,30 @@ import SwiftUI
 ///   1.0 — #1051 B-1: extracted from `CorpusView` (root direction 2a); the row's dead
 ///          `totalDocuments` gate ("N docs" never rendered — it summed the manifest's
 ///          structurally-zero `documentCount`) is rewired to the R-2 accessor
+///   1.1 — #1051 B-3: honours the "Browsing within" scope filter — the amber banner atop
+///          the list, groups restricted at manifest grain via `ScopeAxis.scopedGroups`
+///          (a live `@Query` reference, so edits reflect immediately; `.empty` and
+///          `.unavailable` show the explicit nothing, never the whole corpus — #258)
 struct SubseriesDirectoryView: View {
 
     let vm: BrowserViewModel
 
     @Environment(AppState.self) private var appState
+    /// The scopes, queried live so the Q-3 reference resolves at render.
+    @Query private var scopes: [CustomVolumeScope]
 
     var body: some View {
+        let filterState = ScopeAxis.filterState(
+            filterId: appState.browseScopeFilterId,
+            scopes: scopes,
+            manifestIds: Set(vm.allVolumes.map(\.volumeId))
+        )
         List {
+            BrowseScopeFilterSection(state: filterState) {
+                appState.browseScopeFilterId = nil
+            }
             Section {
-                ForEach(vm.allSubseriesGroups) { group in
+                ForEach(ScopeAxis.scopedGroups(vm.allSubseriesGroups, state: filterState)) { group in
                     Button {
                         vm.navigationPath.append(.subseries(group))
                         #if DEBUG

@@ -315,8 +315,16 @@ struct VolumeCatalogueView: View {
     let documentCount: @MainActor (String) -> Int?
     /// Device-state flags per volume id (same isolation rationale).
     let status: @MainActor (String) -> VolumeCatalogueStatus
-    /// Row action — the mount's navigation (same isolation rationale).
+    /// Picker mode (#1051 B-3, design 3a): when non-nil, rows TOGGLE membership in this
+    /// set (with a trailing check) instead of navigating, and `onSelect` is unused — the
+    /// scope editor's Add Volumes sheet is the catalogue with a selection.
+    var selection: Binding<Set<String>>? = nil
+    /// Row action — the mount's navigation (same isolation rationale). Ignored in picker
+    /// mode.
     let onSelect: @MainActor (VolumeManifestEntry) -> Void
+    /// Enables the pan-axis scope context menu on rows (#1051 B-3, design 3b), navigating
+    /// to the editor after "New Scope from Volume…". Suppressed in picker mode.
+    var onEditScope: (@MainActor (UUID) -> Void)? = nil
 
     /// The selected presentation, device-local and persistent (decision register:
     /// device-local browse state lives in UserDefaults, never on a synced model).
@@ -382,15 +390,46 @@ struct VolumeCatalogueView: View {
     @ViewBuilder
     private func rows(for section: VolumeCatalogueGrouping.CatalogueSection) -> some View {
         ForEach(section.entries) { entry in
-            Button {
-                onSelect(entry)
-            } label: {
-                rowLabel(for: entry)
+            if let selection {
+                // Picker mode: toggle membership, trailing check, no navigation.
+                Button {
+                    if selection.wrappedValue.contains(entry.volumeId) {
+                        selection.wrappedValue.remove(entry.volumeId)
+                    } else {
+                        selection.wrappedValue.insert(entry.volumeId)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        rowLabel(for: entry)
+                        Image(systemName: selection.wrappedValue.contains(entry.volumeId)
+                              ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(selection.wrappedValue.contains(entry.volumeId)
+                                             ? Color.accentColor : Color.secondary)
+                    }
                     // Both modifiers, in this order — the #312 full-row tap-target idiom.
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selection.wrappedValue.contains(entry.volumeId)
+                                        ? [.isSelected] : [])
+            } else {
+                Button {
+                    onSelect(entry)
+                } label: {
+                    rowLabel(for: entry)
+                        // Both modifiers, in this order — the #312 full-row tap-target idiom.
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    if let onEditScope {
+                        VolumeScopeMenuItems(volumeId: entry.volumeId,
+                                             onEditCreatedScope: onEditScope)
+                    }
+                }
             }
-            .buttonStyle(.plain)
         }
     }
 
@@ -473,6 +512,9 @@ struct BrowseCatalogueLevel: View {
                 #if DEBUG
                 print("[BrowserView] Catalogue → volume \(entry.volumeId)")
                 #endif
+            },
+            onEditScope: { [vm] id in
+                vm.navigationPath.append(.scopeEditor(id))
             }
         )
     }

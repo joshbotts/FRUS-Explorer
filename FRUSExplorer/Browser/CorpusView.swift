@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - CorpusView
 
@@ -69,6 +70,9 @@ struct CorpusView: View {
 
     @Environment(AppState.self) private var appState
 
+    /// The user's scopes, for the Your Sets row's count (#1051 B-3).
+    @Query private var scopes: [CustomVolumeScope]
+
     /// The root search query. Inline state, deliberately not `.searchable` — see the type doc.
     @State private var searchText: String = ""
 
@@ -85,6 +89,7 @@ struct CorpusView: View {
             if searchTrimmed.isEmpty {
                 crossVolumeIndicesSection
                 browseBySection
+                yourSetsSection
             } else {
                 searchResultsSection
             }
@@ -344,6 +349,47 @@ struct CorpusView: View {
             }
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
+        }
+    }
+
+    // MARK: - Your sets (#1051 B-3)
+
+    /// The user's own collections of the corpus — My Scopes now, Working Corpora with B-4.
+    /// Rows, not tiles: the 1d/2a design keeps Your Sets as a row section with counts.
+    private var yourSetsSection: some View {
+        Section(header: Text(String(localized: "browser.corpus.yourSets.header",
+                                    defaultValue: "Your sets"))) {
+            Button {
+                vm.select(.scopes)
+                #if DEBUG
+                print("[BrowserView] Navigate → my scopes")
+                #endif
+            } label: {
+                HStack {
+                    Label(
+                        String(localized: "browser.corpus.scopes", defaultValue: "My Scopes"),
+                        systemImage: "square.stack.3d.up"
+                    )
+                    .foregroundStyle(.primary)
+                    Spacer(minLength: 8)
+                    if !scopes.isEmpty {
+                        Text("\(scopes.count)")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                // Both modifiers, in this order — see the People row's A/B measurement.
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("browse.root.scopesRow")
+            .accessibilityLabel(
+                String(localized: "browser.corpus.scopes.a11y",
+                       defaultValue: "Browse your custom volume scopes")
+            )
+            .help(String(localized: "browser.corpus.scopes.help",
+                         defaultValue: "Volume sets you assemble yourself — browse, edit, or narrow the whole Browse tab to one"))
         }
     }
 

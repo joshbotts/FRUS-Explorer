@@ -8195,3 +8195,47 @@ both rows; the drills ride ONE new `CorpusNavValue.axisList(VolumeListSpec)` cas
 list's caption/accessory/note slots, so every future axis lands as a spec, not a view.
 
 Docs: both manuals gain the two axes (§6.1c/6.1d on iOS). 17 new unit tests.
+
+## Session 2026-08-23 — #1051 B-3: scopes come to Browse, and the gate that was already open
+
+The plan gated this session on diagnosing #862 before any code stacked on scope
+visibility. The gate was already cleared: #862 is CLOSED, its root cause measured and
+recorded (a `.sheet(item:)` reading a SIBLING `@State` — the editor received a stale
+`isDraft`, skipped its insert, and saved nothing, silently), its structural fix shipped
+in `CustomScopesView` (`ScopeEditorTarget`, one Identifiable item carrying every fact),
+and `CustomScopeSaveTests` reproduces it. This session verified all three in the shipped
+code rather than re-diagnosing, and carried the lesson forward: the new editor resolves
+its scope through a live `@Query` by id — the store is the only state — and a unit test
+pins the #862 class at creation grain (`create` must leave the model IN a context).
+
+**What shipped (A-5 + designs 1i/3a/3b/3c, under the owner call that Browse may create
+and edit scopes — working corpora stay capture-only):**
+
+- **My Scopes** (`.scopes` on iOS, a Your-sets sidebar section on macOS): the user's
+  scopes, most recently edited first, each opening its R-1 volume list at manifest grain
+  (the scope's own sorted order; unresolvable entries disclosed in the caption, never
+  silently dropped). Root gains the Your-sets row with a live count.
+- **The editor** (`.scopeEditor(UUID)` / `CorpusNavValue.scopeEditor`) — a PUSHED level
+  on both platforms, never a window (#824): rename with clear button, red-minus removal,
+  and Add Volumes through the catalogue in a NEW PICKER MODE (`selection:` binding —
+  1e reused rather than a second volume picker). Every membership write is a full-array
+  reassignment (`ScopeAxis.add/remove` — the `@Model` array `didSet` rule), and a member
+  the catalogue cannot resolve renders disclosed-and-removable.
+- **The pan-axis menu (3b) lives ONCE in the shared lists** — VolumeListView, the
+  catalogue, the iOS subseries rows, and the macOS promoted list all mount
+  `VolumeScopeMenuItems`: Add to "«most recent»" (disabled for members), Add to Scope…
+  with checkmarked members (adding one again is a tested no-op), New Scope from Volume…
+  (creates and opens the editor). **Save as Scope… (3c)** rides every R-1 toolbar with
+  the name pre-filled from the axis identity — the Truman drill captures as
+  "Harry S. Truman (44 volumes)" in two taps.
+- **Browsing within a scope (Q-3 = live reference)**: `AppState.browseScopeFilterId`
+  (device-local UserDefaults, the filterDownloadedOnly precedent — never a stored
+  property on the synced @Model), resolved AT RENDER through live `@Query`s in the
+  hierarchy views, so edits reflect immediately. `ScopeAxis.filterState` has four
+  states and the two degenerate ones — an empty scope, a dangling id from a deletion on
+  another device — show an amber explanation and NOTHING, never the whole corpus under
+  the scope's name (the #258 HIGH rule, pinned by `danglingIdIsUnavailable_neverWholeCorpus`).
+  The filter composes with the tag and downloaded filters; iOS-only for now (the macOS
+  sidebar has no filter surface designed), stated in the docs.
+
+14 new unit tests. Docs: iOS §6.1e + the macOS sidebar paragraph.

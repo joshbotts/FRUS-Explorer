@@ -279,7 +279,7 @@ The root of the Browse tab opens with a **search field** over all 552 volumes �
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
 
-More doors arrive as the browse-axes program lands (your scopes and corpora, the archives, and others).
+Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) now, with working corpora and more doors arriving as the browse-axes program lands.
 
 ### 6.1a The Hierarchy
 
@@ -311,6 +311,19 @@ Tap an administration for its volumes, largest share of the term's documents fir
 **Editors** is an alphabetical index (by surname) of the volume editors — the historians named on each title page. Tap an editor for their volumes in publication order. Two honest limits, both stated on the screen: 81 early volumes name no editors at all, so the index cannot reach them; and general editors of the subseries are credited on each volume's own page rather than indexed here. Where the series printed the same person's name several ways, the index merges the spellings into one entry (and says how many it merged) — the printed forms themselves are never altered, and citations keep the name exactly as the title page has it.
 
 [SCREENSHOT: Editors index letter sections, one row showing a "spellings merged" caption.]
+
+### 6.1e My Scopes
+
+A **scope** is a set of volumes you assemble yourself — *Cold War Berlin*, *my dissertation's sources* — and it works across the app: Search, analytics, and word clouds can all narrow to one. **My Scopes** under Your sets lists yours, most recently edited first; scopes sync via iCloud.
+
+You can now build scopes right in Browse:
+
+- **Tap a scope** for its volumes; **the pencil** (or its long-press menu) opens the editor — rename it, remove volumes with the red minus, or **Add Volumes…** through the All Volumes catalogue with a checkmark on each chosen volume. Removing a volume never deletes it from your device.
+- **Long-press any volume row anywhere in Browse** — a subseries list, the catalogue, an administration's or editor's volumes — for *Add to "«your latest scope»"*, *Add to Scope…* (existing members are checkmarked; adding one again does nothing), or *New Scope from Volume…*, which creates a scope and opens its editor.
+- **Save as Scope…** in any axis volume list's toolbar captures that whole slice — the Truman administration's volumes, an editor's volumes — as a scope, with the name pre-filled.
+- **Browse Within This Scope** (on a scope's long-press menu) narrows the whole subseries hierarchy to the scope's volumes, with an amber **"Browsing within: …"** banner and a one-tap ✕ to clear. The filter is honest about edge cases: a scope with nothing to show, or one deleted on another device, shows an explanation and *nothing* — never the whole corpus wearing a scope's name.
+
+[SCREENSHOT: My Scopes list; the scope editor with red minus rows and Add Volumes; the amber "Browsing within" banner over the subseries list.]
 
 ### 6.2 Top Subjects
 

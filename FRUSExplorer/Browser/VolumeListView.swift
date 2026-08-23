@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - VolumeListSpec
 
@@ -102,12 +103,21 @@ public struct VolumeListSpec: Hashable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
+///   1.1 — #1051 B-3: the pan-axis scope affordances land in the SHARED list, so every
+///          axis inherits them — the 3b context menu on each row, and the 3c
+///          "Save as Scope…" whole-slice capture in the toolbar (name pre-filled from
+///          the axis identity)
 struct VolumeListView: View {
 
     let vm: BrowserViewModel
     let spec: VolumeListSpec
 
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
+    /// The 3c capture prompt's working name.
+    @State private var captureName = ""
+    @State private var showingCapturePrompt = false
 
     var body: some View {
         // Resolved in caller order; unknown ids are skipped, never invented (an axis list can
@@ -157,12 +167,55 @@ struct VolumeListView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        // #1051 B-3 (3b): scope items first, then the volume's own actions.
+                        VolumeScopeMenuItems(volumeId: entry.volumeId) { [vm] id in
+                            vm.navigationPath.append(.scopeEditor(id))
+                        }
+                        Divider()
+                        VolumeRowContextMenu(volume: entry)
+                    }
                 }
             }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(spec.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // #1051 B-3 (3c): whole-slice capture — the list's current volume set becomes
+            // a scope, name pre-filled from the axis identity.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    let count = spec.volumeIds
+                        .filter { appState.manifestStore.entry(forVolumeId: $0) != nil }.count
+                    captureName = String(localized: "browser.scopes.capture.prefill",
+                                         defaultValue: "\(spec.title) (\(count) volumes)")
+                    showingCapturePrompt = true
+                } label: {
+                    Label(String(localized: "browser.scopes.capture", defaultValue: "Save as Scope…"),
+                          systemImage: "plus.square.on.square")
+                }
+                .help(String(localized: "browser.scopes.capture.help",
+                             defaultValue: "Save this list's volumes as a custom scope"))
+            }
+        }
+        .alert(String(localized: "browser.scopes.capture.title", defaultValue: "Save as Scope"),
+               isPresented: $showingCapturePrompt) {
+            TextField(String(localized: "browser.scopes.capture.name", defaultValue: "Scope name"),
+                      text: $captureName)
+            Button(String(localized: "browser.scopes.capture.save", defaultValue: "Save")) {
+                let ids = spec.volumeIds.filter { appState.manifestStore.entry(forVolumeId: $0) != nil }
+                _ = ScopeAxis.create(named: captureName, volumeIds: ids, in: modelContext)
+                #if DEBUG
+                print("[VolumeListView] Captured scope from \(spec.axisKey): \(ids.count) volumes")
+                #endif
+            }
+            Button(String(localized: "browser.scopes.capture.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "browser.scopes.capture.detail",
+                        defaultValue: "The scope keeps this list's volumes; the axis's ordering and counts stay here."))
+        }
     }
 }
 
