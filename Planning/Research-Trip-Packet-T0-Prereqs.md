@@ -457,3 +457,112 @@ enforceable rather than aspirational.
   put to the owner, of which D1–D4 were settled the same day (curate the decimal date-block
   series; derive the NARA facility and curate only the tail; map non-visitable strings to the
   serving facility; promote restriction triage to the first cut).
+
+---
+
+## 5. Owner decisions, 2026-08-22 (session following T-2)
+
+The owner supplied the repository URL set and NARA's *Citing Foreign Affairs Records* PDF, and
+settled six questions. These supersede the corresponding rows in §3.2 and §4.
+
+**D14 — the library row set is TEN, and Clinton is "not yet" rather than "never".**
+Hoover and Clinton are dropped from the shipping set. Measured against the tree: `clinton` occurs
+**0 times** in `collection-authority.json` and `hoover library` **0 times**, while the corpus's
+latest coverage is **1991** (`frus1989-92v31`) — Clinton took office in 1993, so no volume can
+cite his library yet. The owner reports Clinton-era volumes are **currently being declassified and
+will be published within a few years**, so the absence is a property of the publication schedule,
+not of the design. **Nothing may hardcode the ten.** A row set that cannot grow, an enum of
+libraries, or a test asserting "ten rows" would all have to be found and rewritten when the first
+Clinton volume ships; the set must stay data, and a library with zero cited documents must simply
+not print. Hoover is the standing test of that rule — it is inert today for a different reason
+(nothing cites it) and must behave identically.
+
+**D15 — both Bush hosts are declared valid by the owner, but only one is live.** Measured
+2026-08-22: `www.bush41library.tamu.edu` is **NXDOMAIN**, so the URL the app ships at
+`NARACatalogClient.swift:340` does not resolve at all. Without the `www.`,
+`bush41library.tamu.edu` resolves (an alias for `bushlibrary.tamu.edu`) and **redirects to
+`https://www.bush41library.gov/`** — the Texas A&M host is now a forwarder, not a second site, and
+it forwards to the .gov **homepage**, discarding the `/research` path. Under D12's own rule
+(`final != declared` is *needs review*, not success) the tamu URL fails the check twice. The
+shipped URL must be corrected regardless of the two-host decision.
+
+**D16 — a library row carries TWO links under distinct labels, and the labels state the
+distinction.** Per the owner: a **finding aid** tells a researcher *what kinds of records the
+repository holds*; a **visit-planning page** tells them *what they must do to get access to them*.
+Both ship, separately labelled, never merged into one "more information" link.
+
+**D17 — GIL 17 is ratified as optional, not blocking.** NARA's *Citing Foreign Affairs Records*
+states on its own first page that GIL 17 gives the **general** recommendations while it is
+**"specialized guidance primarily for the users of Department of State and other foreign affairs
+records."** For FRUS material the specialized document governs, and it is now deposited. This
+discharges T-0 §3.5's exit condition; GIL 17 may still be deposited later as background.
+
+**D18 — the research-visit FAQ URL ships without its trailing `?`.** As supplied it would read as
+`final != declared` on every checker run.
+
+**D19 — D12's checker is NOT owner-only, because its premise was false.** Both deposit headers
+claimed archives.gov is unreachable from the development container. Measured 2026-08-22 it answers
+`200` with no redirect, as do 13 of the 15 URLs in the set. The consequence is that the *mechanical*
+half of verification — does it resolve, does it redirect, does the host discriminate — is
+automatable here and should be automated. What remains genuinely owner-only is the half a status
+code cannot prove: **whether the page still says what the packet claims about it.**
+
+### The verification vocabulary a status code forced
+
+Two hosts cannot be verified by fetching, and the reason differs, so `ManuscriptRepositoryGuidance`'s
+existing `.fetched` / `.searchIndex` distinction is not sufficient on its own — the discriminating
+test is. Requesting an **invented path** on the same host separates them:
+
+| Host | Real path | Invented path | Reading |
+|---|---|---|---|
+| `jfklibrary.org` | 403 | **403** | Host answers everything alike; a fetch proves nothing either way. `.searchIndex`, exactly the NDU / Center of Military History case |
+| `bush41library.gov` | 202 | **404** | Host **does** discriminate, so the real page exists and the 202 is that page's own response. `.fetched` |
+
+Recording the invented-path control is what makes the difference legible. A checker that only reads
+the declared URL's status code would call the first a dead link and the second a pass, and both
+readings would be wrong.
+
+**D20 — D1 is CLOSED, and no entry number is ever curated.** Owner, 2026-08-22: entry numbers
+exist for each central-file block, are **available in the research consultation room**, and
+researchers enter them on pull slips **during a visit** — they are "not required or even useful
+for any pre-visit planning or correspondence." The packet is a pre-visit artefact, so it never
+needs them, and the 23-way ambiguity on `302021` stops being a problem to solve.
+
+This retires the whole of D1. Measured against the harvest 2026-08-22, the other three fields are
+derivable and need no curation:
+
+| Field | Source |
+|---|---|
+| Series title | `302021` *Central Decimal Files* / `580618` *Subject-Numeric Files* / `654098` *Central Foreign Policy Files* |
+| NAID | the same three |
+| Block boundaries | each series' own `arrangement` note, quotable — `302021` reads *"1910-1929; 1930-1939; 1940-1944; 1945-1949; 1950-1954; 1955-1959; and 1960-January 1963"* |
+| Entry number | **never printed pre-visit** (this decision) |
+
+**The rule generalises, and the model already encodes it.** `CentralFilesIndex` deliberately
+separates `hmsMlrEntryNumbers` (the resolved record's OWN) from `seriesHmsMlrEntryNumbers` (its
+parent series'), with a doc comment forbidding the merge. The packet's rule is therefore: **print
+the record's own entry number, never the parent's.** For central files the app only ever holds the
+parent's, so it prints none — agreeing with NARA's citation guidance §I[7] ("not necessary for the
+Central Files or Post Files"), with the owner's operational knowledge, and with the app's own
+existing contract. For lot files and specialized record groups the app holds the record's own, and
+NARA's Example 8 prints it (`Entry P-5`), so there it ships.
+
+**Consequence for chapter 3.** The pull worksheet already prints a blank **Box** column for the
+reading room. The entry number is the same shape of fact — obtained on site, written on the slip —
+so it becomes a second blank column rather than a curated value. That is also the honest answer to
+D10: the ordering instruction the researcher needs is RG + series + entry + box, and the packet can
+now print the first two and rule the last two.
+
+**Two consequences beyond D1**, both measured on the same pass:
+
+1. **The CFPF subset discriminator is free.** NARA's §II requires a 1973-and-later citation to name
+   the subset; `654098`'s arrangement note lists all eight in NARA's own spellings (Electronic
+   Telegrams, P-Reel Microfilm Master Copies, Top Secret Telegrams, …). This was on the T-3 list as
+   code with no data source.
+2. **A live defect: the app has three non-identical decimal bandings.**
+   `DecimalFileSegment.segment(forYear:)` ends `1960...1963`; `NARACatalogClient
+   .decimalFilePeriodLabel` ends `1960...1962` and resolves 1963 by number form; `filingManualURL`
+   collapses 1910–1949 into one manual. NARA settles it — `302021` runs to *1960-January 1963* and
+   `580618` begins *1963-02-01* — so 1963 splits by form, `NARACatalogClient` is right, and
+   `DecimalFileSegment` claims all of 1963. It feeds neighbour clustering in `IndexingPipeline` and
+   Source Explorer, so a 1963 subject-numeric document is clustered into a segment it is not in.

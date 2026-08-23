@@ -97,6 +97,8 @@ struct TripPacketModel: Equatable, Sendable {
     let groups: [Group]
     /// Access triage across the whole reading list.
     let triage: RestrictionTriage
+    /// Records that must be read online or on film instead of pulled (A6).
+    let substitutes: MandatorySubstitutes
     /// Which A4 criteria fired.
     let flags: AdvanceNoticeFlags
     /// The pre-arrival checklist.
@@ -116,6 +118,10 @@ struct TripPacketModel: Equatable, Sendable {
     ///   - groups: `(key, label, category, repository, seriesNaId, documentCount)` per archival
     ///     group, as `archivalSourceRows` already computes them.
     ///   - documentYears: each document's year where known, for the A4 date test.
+    ///   - citedFiles: each document's cited file number and year, for the A6 substitute lookup.
+    ///     One entry per document, carrying `nil` where the note named no file — passing the nils
+    ///     is what keeps the chapter's denominator honest. The year is load-bearing rather than
+    ///     incidental: it is what separates a 1906–1910 case number from a dotless decimal class.
     ///   - unresolvedLotCount: lot citations that reached no series.
     ///   - unresolvedDocumentCount: documents whose citation reached no series at all.
     ///   - researchQuestion: the project's, for D8's seed.
@@ -125,11 +131,15 @@ struct TripPacketModel: Equatable, Sendable {
         groups: [(key: String, label: String, category: SourceProvenanceCategory?,
                   repository: String?, seriesNaId: String?, documentCount: Int)],
         documentYears: [Int?],
+        citedFiles: [MandatorySubstitutes.CitedFile] = [],
         unresolvedLotCount: Int,
         unresolvedDocumentCount: Int,
         researchQuestion: String?,
         table: RepositoryFactTable = .current,
-        facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) }
+        facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) },
+        substitutes: ([MandatorySubstitutes.CitedFile]) -> MandatorySubstitutes = {
+            MandatorySubstitutes.build(citedFiles: $0)
+        }
     ) -> TripPacketModel {
         let built = groups.map { group in
             Group(id: group.key,
@@ -155,6 +165,7 @@ struct TripPacketModel: Equatable, Sendable {
             groups: built,
             triage: .build(documentCountsByNaId: countsByNaId,
                            unresolvedDocumentCount: unresolvedDocumentCount, facts: facts),
+            substitutes: substitutes(citedFiles),
             flags: flags,
             checklist: .build(flags: flags),
             topicSentence: .seeded(from: researchQuestion))

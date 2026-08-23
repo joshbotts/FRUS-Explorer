@@ -50,7 +50,8 @@ struct TripPacketExporter {
 
     /// The whole packet.
     func export() -> String {
-        [cover, inquiryDrafts, pullWorksheet, restrictionTriage, citationCrib, visitDayCard]
+        [cover, inquiryDrafts, pullWorksheet, mandatorySubstitutes, restrictionTriage,
+         citationCrib, visitDayCard]
             .joined(separator: "\n\n")
     }
 
@@ -154,6 +155,15 @@ struct TripPacketExporter {
     /// RG / entry / series / box line this worksheet already prints.
     var pullWorksheet: String {
         var out = ["## Pull worksheet", ""]
+        // A6 asks substitutes to lead. The chapter numbering puts them after this table, so the
+        // table defers to them explicitly — and generally rather than per row, because a substitute
+        // is range-grain and a worksheet row is group-grain, so naming the affected rows here would
+        // assert a correspondence the data does not support.
+        if !model.substitutes.isEmpty {
+            out.append("Some of these records are digitised or on film and must be read that way — "
+                       + "see \"Use these instead of pulling\" before writing slips.")
+            out.append("")
+        }
         if model.groups.isEmpty {
             out.append("No archival groups — this project's documents carry no resolvable source notes.")
             return out.joined(separator: "\n")
@@ -185,6 +195,68 @@ struct TripPacketExporter {
         }
         return out.joined(separator: "\n")
     }
+
+    // MARK: - Chapter 4: mandatory substitutes
+
+    /// Records NARA requires be read online or on film rather than pulled (A6).
+    ///
+    /// The rule is quoted and attributed, not paraphrased: it is an obligation the reading room
+    /// enforces, so a pull slip written against a filmed record is a slip that gets declined. That
+    /// is why this chapter sits before the access triage rather than reading as a convenience list.
+    ///
+    /// **The coverage sentence is not boilerplate and always prints**, including — especially — when
+    /// the chapter is empty. The app sees two routes, both narrow (digitised decimal ranges reach
+    /// 2.9% of decimal citations, concentrated in the WWI file; the M862 rolls reach 1906–1910
+    /// only). An empty chapter with no caveat would read as a clearance to pull everything, which
+    /// is the exact error A6 exists to prevent.
+    var mandatorySubstitutes: String {
+        var out = ["## Use these instead of pulling", ""]
+        out.append("NARA's research-visit guidance states the rule as an obligation: "
+                   + "\"Researchers must use microfilm and online resources when those options are "
+                   + "available.\"")
+        out.append("")
+
+        let substitutes = model.substitutes
+        if substitutes.isEmpty {
+            out.append(substitutes.coverageNote)
+            return out.joined(separator: "\n")
+        }
+
+        let rows = substitutes.rows
+        let shown = rows.prefix(Self.substituteRowLimit)
+        for row in shown {
+            var line = "  - \(row.title) — \(row.documentCount) "
+                + (row.documentCount == 1 ? "document" : "documents")
+                + " (\(row.route.label), NAID \(row.naId)"
+            if row.objectCount > 0 { line += ", \(row.objectCount) images" }
+            line += ")"
+            out.append(line)
+            if let url = row.catalogURL { out.append("    \(url.absoluteString)") }
+            if !row.isSoleClaimant {
+                out.append("    More than one digitised unit claims these documents — NARA's "
+                           + "digitisation is layered, so check this one covers yours.")
+            }
+        }
+        // Disclose a truncation rather than trailing off. A list that silently stopped would read
+        // as complete, and the reader would pull the records it did not mention.
+        if rows.count > shown.count {
+            out.append("")
+            out.append("\(rows.count - shown.count) further "
+                       + (rows.count - shown.count == 1 ? "unit is" : "units are")
+                       + " not listed here; the full set is in Source Explorer.")
+        }
+        out.append("")
+        out.append(substitutes.coverageNote)
+        out.append("")
+        // From NARA's "Citing Foreign Affairs Records": the substitute changes the citation, and a
+        // reader who only records the URL cannot reconstruct the reference.
+        out.append("When you cite one of these, NARA's guidance asks for the microfilm publication "
+                   + "number, and for online records \"the elements noted above, not just the URL\".")
+        return out.joined(separator: "\n")
+    }
+
+    /// How many substitute rows print before the chapter discloses a remainder.
+    private static let substituteRowLimit = 20
 
     // MARK: - Chapter 5: restriction triage
 

@@ -72,11 +72,21 @@ enum TripPacketBuilder {
         var grouped: [String: (record: CollectionGeneratedBlocks.SourceRecord, count: Int)] = [:]
         var order: [String] = []
         var placed = 0
+        // Chapter 4's input, one entry per PLACED document. A document with no indexed source note
+        // contributes nothing rather than a nil: it was never testable, and counting it as a tested
+        // miss would understate the chapter's own coverage. The year rides along because it, not
+        // the number's form, is what separates the two substitute routes.
+        var citedFiles: [MandatorySubstitutes.CitedFile] = []
+        let parser = SourceNoteParser()
         for document in documents {
-            guard let record = recordsByKey["\(document.volumeId)/\(document.documentId)"] else {
+            let documentKey = "\(document.volumeId)/\(document.documentId)"
+            guard let record = recordsByKey[documentKey] else {
                 continue   // no source note indexed — counted as unresolved below
             }
             placed += 1
+            citedFiles.append(.init(
+                identifier: Self.centralFileIdentifier(in: record.rawText, parser: parser),
+                year: dates[documentKey].flatMap { Int($0.dateISO.prefix(4)) }))
             let key = CollectionGeneratedBlocks.tripPacketGroupKey(for: record)
             if grouped[key] == nil {
                 grouped[key] = (record, 0)
@@ -113,12 +123,32 @@ enum TripPacketBuilder {
                 dates["\(document.volumeId)/\(document.documentId)"]
                     .flatMap { Int($0.dateISO.prefix(4)) }
             },
+            citedFiles: citedFiles,
             unresolvedLotCount: unresolvedLots,
             // Documents whose source note was never indexed. Reported rather than dropped — the
             // triage says so, because a packet silently covering part of a reading list reads as a
             // clean bill of health for the rest.
             unresolvedDocumentCount: documents.count - placed,
             researchQuestion: researchQuestion)
+    }
+
+    /// The central-file number a source note cites, or `nil`.
+    ///
+    /// **Deliberately narrower than "any file identifier the parser found."** Chapter 4 has exactly
+    /// two lookups — decimal serial ranges and 1906–1910 case numbers — and both live under
+    /// ``ParsedSourceNote/centralFiles(recordGroup:fileIdentifier:)``. The other cases also carry a
+    /// `fileIdentifier`, but a lot file's is a folder designation and a library's is a box or
+    /// folder, so feeding either in would add documents to ``MandatorySubstitutes/documentsTested``
+    /// that no route could ever match — inflating the denominator and making the chapter report a
+    /// worse hit rate than it earned, over documents it never actually tested.
+    ///
+    /// `.cfpfFile` is excluded for a data reason rather than a shape one: the digitised-range index
+    /// covers the Central Decimal File's NAIDs, and the CFPF is a different series, so a 1973–79
+    /// citation cannot land in it.
+    static func centralFileIdentifier(in sourceNote: String,
+                                      parser: SourceNoteParser = SourceNoteParser()) -> String? {
+        guard case .centralFiles(_, let fileIdentifier) = parser.parse(sourceNote) else { return nil }
+        return fileIdentifier
     }
 }
 
