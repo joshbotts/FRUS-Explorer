@@ -64,6 +64,16 @@ struct RepositoryFactRow: Equatable, Sendable, Identifiable {
 
     /// Stable key — the repository string as the corpus cites it.
     let id: String
+    /// Every spelling this row answers to, folded through the shared normalizers at lookup.
+    ///
+    /// **The packet has two key spaces and this is what reconciles them.** Chapter 2 heads its
+    /// sections by FACILITY (`ResearchFacilityResolver.collegePark`), while
+    /// `TripPacketModel.Group.facts` looks a row up by the raw REPOSITORY string the corpus cites
+    /// (`Nixon Presidential Materials`). A single `id` compared with `==` served one and silently
+    /// missed the other — measured over the export sample, 43 of 126 presidential-library records
+    /// do not equal any canonical form, including the corpus's commonest Nixon spelling, which
+    /// alone rides ~7,000 notes.
+    let matchKeys: [String]
     /// What the packet calls this place.
     let displayName: String
     /// Postal address. One of the four claims still owner-only.
@@ -75,6 +85,22 @@ struct RepositoryFactRow: Equatable, Sendable, Identifiable {
     let appointmentPolicy: VerifiedFact<String>
     /// Links, each independently stamped (D12).
     let links: [RepositoryLink]
+
+    /// Memberwise, with ``matchKeys`` defaulting to the row's own id.
+    ///
+    /// Written out rather than synthesised so a row that answers to only one spelling — the common
+    /// case — does not have to repeat it.
+    init(id: String, matchKeys: [String]? = nil, displayName: String,
+         address: VerifiedFact<String>, inquiryEmail: VerifiedFact<String>,
+         appointmentPolicy: VerifiedFact<String>, links: [RepositoryLink]) {
+        self.id = id
+        self.matchKeys = matchKeys ?? [id]
+        self.displayName = displayName
+        self.address = address
+        self.inquiryEmail = inquiryEmail
+        self.appointmentPolicy = appointmentPolicy
+        self.links = links
+    }
 
     /// Whether this row can print anything at all.
     ///
@@ -135,48 +161,146 @@ struct RepositoryLink: Equatable, Sendable, Identifiable {
 ///   1.0 — Session 2026-08-22: #830 T-1
 struct RepositoryFactTable: Equatable, Sendable {
 
-    /// The curated rows. Empty at T-1.
+    /// The curated rows.
     let rows: [RepositoryFactRow]
 
-    /// The shipping table.
+    /// Folded spelling → row, built once.
     ///
-    /// ## One row, two verified facts — and the incrementality D7 designed for
-    /// The owner confirmed the NACP postal address and the NACP inquiry email on 2026-08-22. §3.2
-    /// calls that pair "the highest-value verification in the whole gate", because A2's
-    /// send-to-one-address rule is the inquiry mechanic and a generated draft must have a
-    /// recipient.
-    ///
-    /// **`appointmentPolicy` is still unverified and therefore still unprintable.** A1 distinguishes
-    /// the DC-area rooms ("strongly encouraged") from other facilities ("required"), and which
-    /// applies is per-row policy the owner has not confirmed — so the packet asks the researcher to
-    /// check rather than asserting. That is D7 working as intended: two facts light up, the third
-    /// stays dark, and no sitting had to complete for the first two to ship.
-    ///
-    /// The presidential libraries and the non-NARA tail are still absent entirely (D2, D11).
-    static let current = RepositoryFactTable(rows: [nacp])
+    /// Uses `CollectionKeying.canonicalRepository` + `normalized`, the pair
+    /// `ManuscriptRepositoryGuidance` and `NARACustody` already use — so a row keyed here matches
+    /// the same corpus spellings those surfaces match, rather than a second, subtly different set.
+    private let byKey: [String: RepositoryFactRow]
 
-    /// National Archives at College Park — the only row with confirmed facts today.
-    ///
-    /// The date is the owner's confirmation, not the build date: D7's stamp answers "when was this
-    /// last known true", and tying it to a build would refresh itself without anyone checking.
-    static let nacp: RepositoryFactRow = {
-        let confirmed = DateComponents(calendar: .init(identifier: .gregorian),
-                                       timeZone: TimeZone(secondsFromGMT: 0),
-                                       year: 2026, month: 8, day: 22).date
-        return RepositoryFactRow(
-            id: ResearchFacilityResolver.collegePark,
-            displayName: ResearchFacilityResolver.collegePark,
-            address: VerifiedFact(value: "8601 Adelphi Road\nCollege Park, MD 20740",
-                                  verifiedDate: confirmed),
-            inquiryEmail: VerifiedFact(value: "Archives2reference@nara.gov", verifiedDate: confirmed),
-            // Unverified: see the note on `current`.
-            appointmentPolicy: .unverified("strongly encouraged for College Park"),
-            links: [])
-    }()
+    /// Builds the table and its folded index.
+    init(rows: [RepositoryFactRow]) {
+        self.rows = rows
+        var table: [String: RepositoryFactRow] = [:]
+        for row in rows {
+            for spelling in row.matchKeys {
+                guard let canonical = CollectionKeying.canonicalRepository(spelling) else { continue }
+                let key = CollectionKeying.normalized(canonical)
+                guard !key.isEmpty else { continue }
+                table[key] = row
+            }
+        }
+        byKey = table
+    }
 
-    /// The row for a repository, or `nil` — which is every lookup at T-1.
+    /// Equality ignores the derived index — it is a function of `rows`.
+    static func == (lhs: RepositoryFactTable, rhs: RepositoryFactTable) -> Bool {
+        lhs.rows == rhs.rows
+    }
+
+    /// The row for a repository or facility name, or `nil`.
     func row(for repository: String) -> RepositoryFactRow? {
-        let key = repository.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return rows.first { $0.id.lowercased() == key }
+        guard let canonical = CollectionKeying.canonicalRepository(repository) else { return nil }
+        return byKey[CollectionKeying.normalized(canonical)]
+    }
+
+    // MARK: - The shipping table
+
+    /// The shipping table: College Park plus the ten presidential libraries the corpus cites.
+    ///
+    /// ## Ten libraries, and why the number is data rather than a constant
+    /// Measured by joining `collection-usage-index.json` to `collection-authority.json`: Nixon
+    /// 7,971 documents, Johnson 4,628, Carter 4,618, Eisenhower 3,220, Kennedy 2,353, Ford 1,922,
+    /// Reagan 1,339, Roosevelt 405, Truman 104, Bush 10 — 28,570 documents across ten repositories.
+    ///
+    /// **Hoover and Clinton are absent, for two different reasons, and neither is permanent.**
+    /// `hoover library` occurs zero times in the authority (the corpus cites the Hoover
+    /// *Institution* at Stanford, a different place). Clinton occurs zero times because the corpus
+    /// ends at **1991** and he took office in 1993 — the owner reports those volumes are in
+    /// declassification now and will publish within a few years. So this is a "not yet", and
+    /// nothing here may encode "ten": a row with no cited documents simply never gets looked up,
+    /// which is why adding Clinton later is one row and no other change (D14).
+    ///
+    /// ## One link per library today, not the two D16 asks for
+    /// D16 wants a visit-planning page (*what you must do to get access*) beside a finding aid
+    /// (*what kinds of records are held*). Only the first ships. The finding-aid URLs the app
+    /// already carries in `NARACatalogClient` were re-checked on 2026-08-22 and **five of six
+    /// answer 404** — the hosts discriminate (their roots and the visit pages answer 200, invented
+    /// paths answer 404), so those are genuinely dead rather than a fetch artefact. Printing a
+    /// verified-dead link is worse than printing none, and guessing replacements would be exactly
+    /// the unverified institutional fact D7 exists to prevent.
+    static let current = RepositoryFactTable(rows: [nacp] + presidentialLibraries)
+
+    /// The owner's confirmation date for every fact in this table.
+    ///
+    /// The owner's date, never the build date: D7's stamp answers "when was this last known true",
+    /// and tying it to a build would refresh itself without anyone checking.
+    static let confirmed: Date? = DateComponents(
+        calendar: .init(identifier: .gregorian), timeZone: TimeZone(secondsFromGMT: 0),
+        year: 2026, month: 8, day: 22).date
+
+    /// National Archives at College Park.
+    ///
+    /// **`appointmentPolicy` is deliberately never verified, and that is now a finding rather than
+    /// a gap.** The owner reports the policy is *in flux* and that researchers should check NARA's
+    /// site for current guidance (D15), so there is no stable sentence to stamp — the fact was
+    /// negated into a link rather than left pending. `printable` returns nil, the exporter prints
+    /// the link instead, and no undated claim reaches the reader.
+    static let nacp: RepositoryFactRow = RepositoryFactRow(
+        id: ResearchFacilityResolver.collegePark,
+        matchKeys: [ResearchFacilityResolver.collegePark, "National Archives"],
+        displayName: ResearchFacilityResolver.collegePark,
+        address: VerifiedFact(value: "8601 Adelphi Road\nCollege Park, MD 20740",
+                              verifiedDate: confirmed),
+        inquiryEmail: VerifiedFact(value: "Archives2reference@nara.gov", verifiedDate: confirmed),
+        appointmentPolicy: .unverified("in flux — see NARA's current guidance"),
+        links: [
+            RepositoryLink(url: "https://www.archives.gov/research/start/research-visit-faqs",
+                           label: "Planning a research visit (NARA)", verifiedDate: confirmed),
+            RepositoryLink(url: "https://www.archives.gov/dc-metro/college-park/civilian-textual.html",
+                           label: "Before you visit College Park", verifiedDate: confirmed),
+            // D16's OTHER half, which College Park lacked. The two links above answer "what must I
+            // do to get access"; this one answers "what is actually held" — the same pairing every
+            // library row carries, and the distinction the labels exist to draw. Verified
+            // 2026-08-22: 200, titled "Records of the Department of State | National Archives".
+            RepositoryLink(url: "https://www.archives.gov/research/foreign-policy/state-dept/agency-records",
+                           label: "Records of the Department of State", verifiedDate: confirmed),
+        ])
+
+    /// The ten presidential libraries the corpus cites, most-cited first.
+    ///
+    /// Keys are the canonical forms `CollectionKeying.repositoryKeywords` produces, so the corpus's
+    /// own variants (`Nixon Presidential Materials`, `Gerald R. Ford Presidential Library`) fold
+    /// onto them without a hand-written alias list.
+    static let presidentialLibraries: [RepositoryFactRow] = [
+        library("Nixon", "Richard Nixon Presidential Library",
+                "https://www.nixonlibrary.gov/research/research-frequently-asked-questions-faqs"),
+        library("Johnson Library", "Lyndon B. Johnson Presidential Library",
+                "https://www.lbjlibrary.org/research/plan-your-visit"),
+        library("Carter Library", "Jimmy Carter Presidential Library",
+                "https://www.jimmycarterlibrary.gov/research/archives/onsite-services"),
+        library("Eisenhower Library", "Dwight D. Eisenhower Presidential Library",
+                "https://www.eisenhowerlibrary.gov/research-overview"),
+        library("Kennedy Library", "John F. Kennedy Presidential Library",
+                "https://www.jfklibrary.org/archives/plan-a-research-visit"),
+        library("Ford Library", "Gerald R. Ford Presidential Library",
+                "https://www.fordlibrarymuseum.gov/digital-research-room/frequently-asked-questions"),
+        library("Reagan Library", "Ronald Reagan Presidential Library",
+                "https://www.reaganlibrary.gov/archives/plan-research-visit"),
+        library("Roosevelt Library", "Franklin D. Roosevelt Presidential Library",
+                "https://www.fdrlibrary.org/research-visit"),
+        library("Truman Library", "Harry S. Truman Presidential Library",
+                "https://www.trumanlibrary.gov/library/researching-our-holdings"),
+        library("Bush Library", "George H.W. Bush Presidential Library",
+                "https://www.bush41library.gov/digital-research-room/request-textual-research-appointment"),
+    ]
+
+    /// One presidential-library row: a visit-planning link and nothing else.
+    ///
+    /// Address, inquiry email and appointment policy are all left unverified — D11 reduced the
+    /// library chapter from a drafted letter to a confirm-before-you-travel prompt precisely
+    /// because at collection grain the packet can name neither a series nor a NAID, and 33
+    /// institutional facts collapsed to a set of URLs. Each of these was fetched on 2026-08-22 and
+    /// answered without a redirect.
+    private static func library(_ key: String, _ name: String, _ url: String) -> RepositoryFactRow {
+        RepositoryFactRow(
+            id: key, matchKeys: [key], displayName: name,
+            address: .unverified(""), inquiryEmail: .unverified(""),
+            appointmentPolicy: .unverified(""),
+            links: [RepositoryLink(url: url, label: "Plan a research visit",
+                                   verifiedDate: confirmed)])
     }
 }
