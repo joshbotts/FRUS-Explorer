@@ -25,7 +25,15 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-03 (Source Explorer Phase 4 step 2): initial implementation
+///   1.1 — #1051 B-5: the `onSelect` seam — the Browse Archives axis mounts this same
+///          list and PUSHES the shared detail in its stack instead of sheeting it; `nil`
+///          keeps the sheet for the existing Source Explorer hosts, so one list serves
+///          both without a third collection browser being born (#777 class)
 struct CollectionBrowserView: View {
+
+    /// When set, a row hands its record here instead of presenting the detail sheet —
+    /// the #1051 B-5 push-hosting seam. `nil` (the default) keeps the sheet.
+    var onSelect: ((AuthorityCollectionRecord) -> Void)? = nil
 
     /// One repository bucket of the grouped authority.
     private struct RepositoryGroup: Identifiable {
@@ -123,7 +131,11 @@ struct CollectionBrowserView: View {
     /// The tappable collection label: canonical name plus its series-wide volume count.
     private func recordButton(_ record: AuthorityCollectionRecord) -> some View {
         Button {
-            detailRecord = record
+            if let onSelect {
+                onSelect(record)
+            } else {
+                detailRecord = record
+            }
         } label: {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {

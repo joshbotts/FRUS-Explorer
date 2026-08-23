@@ -8277,3 +8277,45 @@ interpolated Ints in `String(localized:)` localize with grouping separators, so 
 truncation line reads "7,500 of 9,212" and the test now asserts the formatted forms.
 
 10 new unit tests. Docs: iOS §6.1f + the macOS Your-sets paragraph.
+
+## Session 2026-08-23 — #1051 B-5: the Archives axis, and the two seams that kept it to zero new surfaces
+
+The axis the owner added to the program (A-9), shipped at the shape the feasibility
+survey settled: **sibling lenses, never nested** — because no shipped data maps a
+collection to a provenance category (measured many-to-many against the export sample;
+the id-prefix heuristic refuted there; the schema-2 generator field explicitly not
+taken). The doc comment on `ArchivesAxis` carries that argument so a future session
+cannot innocently "improve" the axis into the join that doesn't exist.
+
+**Two seams instead of two new surfaces.** The collection half reuses Source Explorer's
+own views through exactly the injection points the survey specified: `CollectionBrowserView`
+gained `onSelect` (nil keeps the sheet for its three shipped hosts; Browse pushes), and
+`CollectionDetailView` gained `onOpenVolumeInPlace` (nil keeps the sheet-era
+`pendingBrowseVolume` hand-off everywhere it ships today; a push host appends the volume
+to ITS OWN stack, so the citing-volume rows stop tearing down the axis back-stack).
+One near-miss caught before it built: the detail owns its own `List`, so the first draft's
+wrapping `List { CollectionDetailView }` would have nested lists — it mounts bare.
+The NAID/catalog-link trust gate stays inside the shared detail; the axis never renders
+`record.naId` itself.
+
+**The types lens** is the ten `SourceProvenanceCategory` doors over the new ~10-line
+forward accessor (`CollectionUsageIndex.documentsByVolume(forCategory:)`, beside its
+inverse), drilling straight to R-1 volume lists — largest count first, accessories
+sharing against `volumeNoteCounts` (each volume's OWN sourced documents, the caption
+says which universe). Every caption computes from the LIVE coverage block, never from
+doc-comment figures, several of which are known-stale.
+
+**The premises are test-pinned against the live bundle**: every artifact slug maps into
+`SourceProvenanceCategory` (the join the doors depend on), the categories PARTITION the
+notes (door doc counts sum to `coverage.noteCount` exactly — the generator's invariant,
+re-pinned so a regeneration cannot silently break the arithmetic), and no door reaches
+more volumes than carry notes. Deliberately out, per the plan: central-file CLASS
+browsing (cross-link to Archival Analytics is the class story), era grouping (the #763
+stored-rollup drift guard), and doc-count accessories on the collection lens (which
+would drag in the umbrella-chip and front-matter-only obligations — deferred with them).
+Known two-pane limitation noted in review: the detail's Related-Collections rows use
+NavigationLink and are inert in the iPad two-pane's container-less detail pane; the
+drills that matter route through the seam and work everywhere.
+
+7 new unit tests. Docs: iOS §6.1g + the macOS sidebar paragraph. The root grid reaches
+the clean 2×2 the 2a design drew.

@@ -175,6 +175,18 @@ struct CollectionUsageIndex: Decodable, Sendable {
         return volumeNoteCounts[index]
     }
 
+    /// Volumes drawn from one provenance category, with per-volume document counts — the
+    /// FORWARD companion of ``categoryCounts(forVolumeId:)``, added for the Browse
+    /// Archives axis (#1051 B-5). Empty for an unknown slug.
+    ///
+    /// - Parameter slug: A category slug from ``categories``.
+    /// - Returns: `volumeId → documents`, for every volume the category reaches.
+    func documentsByVolume(forCategory slug: String) -> [String: Int] {
+        guard let key = categories.firstIndex(of: slug),
+              let row = volumeCategories.first(where: { $0.key == key }) else { return [:] }
+        return pairs(row)
+    }
+
     /// Documents in each provenance category for one volume, keyed by category slug.
     func categoryCounts(forVolumeId id: String) -> [String: Int] {
         guard let volumeIndex = volumes.firstIndex(of: id) else { return [:] }

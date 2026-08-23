@@ -33,6 +33,10 @@ enum CorpusNavValue: Hashable {
     /// One working corpus's document drill (#1051 B-4, R-3). Identity is the corpus id;
     /// the name rides along for display.
     case corpusDocuments(id: UUID, name: String)
+    /// One archival collection's pushed detail (#1051 B-5) — the STRING id, re-looked-up
+    /// via `CollectionAuthorityStore.record(id:)` (the record type is not Hashable, and
+    /// the `.volume` case documents the same re-lookup contract).
+    case collection(collectionId: String)
 }
 
 // MARK: - CorpusSidebarItem
@@ -54,6 +58,8 @@ enum CorpusSidebarItem: Hashable {
     case administrations
     /// The Editors index (#1051 A-4).
     case editors
+    /// The Archives axis (#1051 A-9).
+    case archives
     /// The My Scopes level (#1051 A-5).
     case myScopes
     /// The Working Corpora level (#1051 A-6).
@@ -104,6 +110,10 @@ enum CorpusSidebarItem: Hashable {
 ///   1.8 — #1051 B-4: YOUR SETS gains Working Corpora; a corpus's document drill pushes
 ///          `CorpusNavValue.corpusDocuments` (the shared R-3 degraded-row surface), with
 ///          indexed rows routing to this browser's document host
+///   1.9 — #1051 B-5: BROWSE gains Archives (sibling lenses — provenance-type doors and
+///          the shipped `CollectionBrowserView` through its `onSelect` seam); a
+///          collection pushes `CorpusNavValue.collection` hosting the shared
+///          `CollectionDetailView` with its citing-volume rows routed in place
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -170,6 +180,9 @@ struct CorpusBrowserWindowView: View {
                     Label(String(localized: "browser.editors.title", defaultValue: "Editors"),
                           systemImage: "person.text.rectangle")
                         .tag(CorpusSidebarItem.editors)
+                    Label(String(localized: "browser.archives.title", defaultValue: "Archives"),
+                          systemImage: "archivebox")
+                        .tag(CorpusSidebarItem.archives)
                 }
                 Section(String(localized: "corpus.sidebar.yourSets", defaultValue: "Your sets")) {
                     Label(String(localized: "browser.scopes.title", defaultValue: "My Scopes"),
@@ -232,6 +245,13 @@ struct CorpusBrowserWindowView: View {
                             entries: allEntries,
                             onSelect: { spec in detailPath.append(.axisList(spec)) }
                         )
+                    case .archives?:
+                        ArchivesIndexView(
+                            onSelectCategory: { spec in detailPath.append(.axisList(spec)) },
+                            onSelectCollection: { record in
+                                detailPath.append(.collection(collectionId: record.id))
+                            }
+                        )
                     case .myScopes?:
                         ScopeIndexView(
                             manifestIds: Set(allEntries.map(\.volumeId)),
@@ -279,6 +299,24 @@ struct CorpusBrowserWindowView: View {
                             appState.openDocument(entry, from: .tool(.corpusBrowser),
                                                   using: openWindow)
                         })
+                    case .collection(let collectionId):
+                        // #1051 B-5: the shared detail, push-hosted, with citing-volume
+                        // rows routed IN PLACE so the axis back-stack survives. The
+                        // NAID/catalog-link trust gate stays inside the shared detail.
+                        if let record = CollectionAuthorityStore.shared?.record(id: collectionId) {
+                            CollectionDetailView(record: record, onOpenVolumeInPlace: { volumeId in
+                                detailPath.append(.volume(volumeId: volumeId))
+                            })
+                        } else {
+                            ContentUnavailableView(
+                                String(localized: "browser.archives.collection.unavailable.title",
+                                       defaultValue: "Collection Unavailable"),
+                                systemImage: "archivebox",
+                                description: Text(String(
+                                    localized: "browser.archives.collection.unavailable.detail",
+                                    defaultValue: "This collection is not in the bundled archival authority."))
+                            )
+                        }
                     }
                 }
             }

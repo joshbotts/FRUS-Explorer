@@ -348,6 +348,24 @@ struct CorpusView: View {
                     )
                     .help(String(localized: "browser.corpus.tile.editors.help",
                                  defaultValue: "Volumes filed by the editors named on their title pages"))
+
+                    BrowseAxisGridTile(
+                        title: String(localized: "browser.corpus.tile.archives",
+                                      defaultValue: "Archives"),
+                        systemImage: "archivebox",
+                        accessibilityIdentifier: "browse.root.archivesTile"
+                    ) {
+                        vm.select(.archives)
+                        #if DEBUG
+                        print("[BrowserView] Navigate → archives axis")
+                        #endif
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.tile.archives.a11y",
+                               defaultValue: "Browse by archival provenance")
+                    )
+                    .help(String(localized: "browser.corpus.tile.archives.help",
+                                 defaultValue: "Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on"))
                 }
             }
             .listRowInsets(EdgeInsets())

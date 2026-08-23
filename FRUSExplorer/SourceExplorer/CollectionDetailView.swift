@@ -77,6 +77,12 @@ struct CollectionDetailView: View {
     /// it and the reader sees nothing happen. Only the host knows it is presented, so only the
     /// host can close itself.
     var onNavigateAway: (() -> Void)?
+    /// #1051 B-5: when this detail is PUSHED inside a browse stack, citing-volume rows
+    /// route here — appending the volume to the SAME stack — instead of the sheet-era
+    /// `pendingBrowseVolume` hand-off, which flips the corpus browser's sidebar and
+    /// tears down the axis back-stack the reader is standing in. `nil` (every sheet and
+    /// window host) keeps the shipped hand-off behaviour unchanged.
+    var onOpenVolumeInPlace: ((String) -> Void)? = nil
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
@@ -549,6 +555,11 @@ struct CollectionDetailView: View {
     /// Corpus Browser is a separate window there, so dismissing would throw away the reader's
     /// place in a list they are working through.
     private func openVolume(_ volumeId: String) {
+        // #1051 B-5: a push host keeps the reader in their axis stack — see the property doc.
+        if let onOpenVolumeInPlace {
+            onOpenVolumeInPlace(volumeId)
+            return
+        }
         appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(macOS)
         openWindow.fronting(id: "frus.corpusBrowser")

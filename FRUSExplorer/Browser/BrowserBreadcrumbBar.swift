@@ -286,6 +286,10 @@ extension BrowserViewModel.BrowserLevel {
             return String(localized: "browser.breadcrumb.corpora", defaultValue: "Working Corpora")
         case .corpusDocuments(_, let name):
             return name
+        case .archives:
+            return String(localized: "browser.breadcrumb.archives", defaultValue: "Archives")
+        case .archivalCollection(_, let name):
+            return name
         }
     }
 }
