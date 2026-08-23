@@ -1124,6 +1124,10 @@ struct SourceExplorerView: View {
     /// - All filing manual PDFs are verified present.
     static let allFilingPeriods: [FilingPeriod] = {
         let base     = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files"
+        // A DIRECTORY PREFIX, NOT A PAGE — see the note on `NARACatalogClient.filingManualURL`.
+        // The bare path 404s (archives.gov serves no listing) while all six PDFs beneath it answer
+        // 200; a 2026-08-22 audit flagged it as a dead link, and replacing it would have broken
+        // every manual link below.
         let manBase  = "https://www.archives.gov/files/research/foreign-policy/state-dept/finding-aids"
         let parent   = "\(base)/1910-1963"  // sub-period pages 404; parent is canonical
 
