@@ -142,7 +142,7 @@ struct MandatorySubstitutes: Equatable, Sendable {
     /// drift apart: any surface that prints ``rows`` can print this beside them.
     var coverageNote: String {
         guard documentsTested > 0 else {
-            return "None of these documents cites a file number the app can test for a digitised "
+            return "None of these documents cites a file number the app can test for a digitized "
                 + "substitute, so this chapter can say nothing either way. Ask staff whether any "
                 + "of the records you have listed have been filmed or scanned."
         }
@@ -150,11 +150,11 @@ struct MandatorySubstitutes: Equatable, Sendable {
             + (documentsTested == 1 ? "document" : "documents")
             + " that cite a file number; \(documentsWithSubstitute) "
             + (documentsWithSubstitute == 1 ? "lands" : "land")
-            + " in a digitised range or a filmed roll."
+            + " in a digitized range or a filmed roll."
         if partiallyDigitizedCount > 0 {
             sentence += " A further \(partiallyDigitizedCount) "
                 + (partiallyDigitizedCount == 1 ? "cites a file that is" : "cite files that are")
-                + " partly digitised, but not the part they name."
+                + " partly digitized, but not the part they name."
         }
         sentence += " The app sees two routes only — NARA's scans of decimal-file ranges, and the "
             + "M862 rolls of the 1906–1910 Numerical File — so silence here is not evidence that "

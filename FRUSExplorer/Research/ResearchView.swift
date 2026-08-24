@@ -453,7 +453,7 @@ struct ResearchView: View {
                             Text(Self.researchGuideName)
                                 .foregroundStyle(.primary)
                             Text(String(localized: "research.sidebar.guide.caption",
-                                        defaultValue: "How the corpus is organised, and how to read it"))
+                                        defaultValue: "How the corpus is organized, and how to read it"))
                                 .font(FRUSTheme.captionFont)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)

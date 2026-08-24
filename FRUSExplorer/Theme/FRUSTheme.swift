@@ -304,7 +304,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "crossRefAnalytics.info.shows.detail",
-                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broad scope, which mixes several editorial practices.")),
+                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broader scope that mixes several editorial practices.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.matrix.title", defaultValue: "Reading the heat matrix"),
                     detail: String(localized: "crossRefAnalytics.info.matrix.detail",

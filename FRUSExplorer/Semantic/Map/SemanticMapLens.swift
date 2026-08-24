@@ -92,12 +92,12 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .cluster:
             return String(localized: "semanticMap.lens.cluster.caption",
-                          defaultValue: "Colour separates neighbouring regions rather than naming them; the names are on the map.")
+                          defaultValue: "Color separates neighboring regions rather than naming them; the names are on the map.")
         case .era, .availability:
             return nil
         case .provenance:
             return String(localized: "semanticMap.lens.provenance.caption.v2",
-                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncoloured.")
+                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncolored.")
         }
     }
 

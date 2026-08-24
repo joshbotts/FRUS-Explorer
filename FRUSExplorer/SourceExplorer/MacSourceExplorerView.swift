@@ -1877,7 +1877,7 @@ struct MacSourceExplorerView: View {
                     Text(String(localized: "source.explorer.scans.multiple",
                                 defaultValue: """
                                 \(ranges.count) scanned file ranges contain \(fileIdentifier). \
-                                They are listed narrowest first. NARA digitised this file in \
+                                They are listed narrowest first. NARA digitized this file in \
                                 overlapping sets, so the widest range is not wrong. The \
                                 narrowest is simply the most specific.
                                 """))

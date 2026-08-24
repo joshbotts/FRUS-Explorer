@@ -302,7 +302,7 @@ struct TopCollectionsCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.provenance.topCollections.method.v2",
-                        defaultValue: "Colours group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 catalogued volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking."))
+                        defaultValue: "Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking."))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)

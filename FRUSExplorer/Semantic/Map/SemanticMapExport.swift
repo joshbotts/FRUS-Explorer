@@ -121,7 +121,7 @@ enum SemanticMapExport {
                 Int64(layout.unclusteredCount)),
             String(format: String(
                 localized: "semanticMap.export.caveat.method %@ %lld %lld %@ %@",
-                defaultValue: "Method: %1$@ from %2$lld dimensions (neighbours %3$lld), clustered with %4$@. Labels: %5$@."),
+                defaultValue: "Method: %1$@ from %2$lld dimensions (neighbors %3$lld), clustered with %4$@. Labels: %5$@."),
                 layout.method, Int64(layout.sourceDims), Int64(layout.neighbors),
                 layout.clustering, layout.labelSampling),
             String(format: String(
@@ -130,7 +130,7 @@ enum SemanticMapExport {
                 index.generated, index.provenanceDigest),
             String(format: String(
                 localized: "semanticMap.export.caveat.lens %@",
-                defaultValue: "Colour lens in effect when this table was taken: %1$@. The lens changes only what the points are coloured by, never where they sit."),
+                defaultValue: "Color lens in effect when this table was taken: %1$@. The lens changes only what the points are colored by, never where they sit."),
                 lensLabel),
             String(localized: "semanticMap.export.caveat.identity",
                    defaultValue: "The map artifact stores positions and region membership only — no document titles and no dates — so this table names regions and counts, and cannot name a document."),
@@ -163,8 +163,8 @@ enum SemanticMapExport {
             String(localized: "semanticMap.export.column.region", defaultValue: "Region"),
             String(localized: "semanticMap.export.column.terms", defaultValue: "Terms"),
             String(localized: "semanticMap.export.column.documents", defaultValue: "Documents"),
-            String(localized: "semanticMap.export.column.x", defaultValue: "Centre X"),
-            String(localized: "semanticMap.export.column.y", defaultValue: "Centre Y"),
+            String(localized: "semanticMap.export.column.x", defaultValue: "Center X"),
+            String(localized: "semanticMap.export.column.y", defaultValue: "Center Y"),
         ] + eras.map(\.label)
         let rows = ranked.map { cluster -> [String] in
             // `eraCounts` is keyed by CoverageEra's raw value as a string — the artifact's own

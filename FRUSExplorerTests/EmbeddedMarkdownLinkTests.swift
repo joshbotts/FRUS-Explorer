@@ -34,6 +34,9 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-06-06: introduced alongside the in-app browser sheet
 ///         (`InAppBrowserView`) for these same embedded links
+///   1.1 — Build-43 content pass: the feature-catalog test re-pinned to the contracts
+///         convention (pages 5–7 organized by task, closing with a User Manual pointer;
+///         the per-feature section ids and per-section glyphs were the retired convention)
 struct EmbeddedMarkdownLinkTests {
 
     // MARK: - Link extraction
@@ -143,31 +146,31 @@ struct EmbeddedMarkdownLinkTests {
         }
     }
 
-    @Test("Research Guide includes the expanded feature catalog and grouping")
+    @Test("Research Guide keeps its three using-the-app pages, as contracts")
     @MainActor
     func featureCatalogPagesPresent() {
+        // Build-43 content pass: the owner rewrote pages 5–7 as CONTRACTS — organized by
+        // research task (finding, seeing the bigger picture, working with documents), never by
+        // feature. So this test no longer pins the per-feature section catalog ("search",
+        // "browser", "chronology", …) or a per-section interface glyph: both were the retired
+        // convention, and the manual now carries the how. What still holds: the three pages
+        // exist, each is organized as task contracts that close by pointing at the User Manual,
+        // and the sidebar grouping is unchanged.
         let pageIDs = Set(EducationPage.all.map(\.id))
         #expect(pageIDs.isSuperset(of: ["finding-documents", "corpus-analysis", "working-with-documents"]),
                 "The three feature pages must be present")
-
-        // Feature topics new users should be able to discover.
-        let topicIDs = Set(EducationPage.all.flatMap { $0.sections.map(\.id) })
-        for topic in ["search", "browser", "chronology", "person-index", "analytics", "collections", "projects", "citations", "ai", "sync"] {
-            #expect(topicIDs.contains(topic), "Missing feature topic: \(topic)")
-        }
 
         // Pages are grouped for the macOS reference sidebar: 4 background + 3 feature pages.
         #expect(EducationPage.all.filter { $0.category == .aboutFRUS }.count == 4)
         #expect(EducationPage.all.filter { $0.category == .usingTheApp }.count == 3)
 
-        // Every feature section shows the actual SF Symbol of its interface element, so
-        // users can recognise the on-screen control.
+        // The contract shape: every using-the-app page ends by handing the reader to the manual
+        // for the how — the pointer is what licenses these pages to stop spelling out controls.
         for page in EducationPage.all where page.category == .usingTheApp {
-            for section in page.sections {
-                let symbol = section.systemImage
-                #expect(symbol != nil && !(symbol ?? "").isEmpty,
-                        "Feature section \(section.id) must carry its interface glyph")
-            }
+            #expect(!page.sections.isEmpty, "\(page.id) has no sections")
+            let closing = page.sections.last
+            #expect(closing?.paragraphs.joined().contains("User Manual") == true,
+                    "\(page.id) must close by pointing at the User Manual")
         }
     }
 }

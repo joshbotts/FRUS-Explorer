@@ -175,7 +175,7 @@ struct ConcordanceView: View {
             systemImage: "text.alignleft",
             description: Text(String(
                 localized: "search.kwic.empty.detail",
-                defaultValue: "These results matched, but none of their text could be aligned on your search term. Phrase, wildcard and proximity searches match in ways a concordance cannot centre on a single word."
+                defaultValue: "These results matched, but none of their text could be aligned on your search term. Phrase, wildcard and proximity searches match in ways a concordance cannot center on a single word."
             ))
         )
     }
@@ -189,7 +189,7 @@ struct ConcordanceView: View {
             }
             if result.documentsWithoutLines > 0 {
                 Text(String(localized: "search.kwic.unaligned",
-                            defaultValue: "\(result.documentsWithoutLines) matching documents contributed no line — their match isn’t a whole word this view can centre on."))
+                            defaultValue: "\(result.documentsWithoutLines) matching documents contributed no line — their match isn’t a whole word this view can center on."))
             }
         }
         .font(.caption2)

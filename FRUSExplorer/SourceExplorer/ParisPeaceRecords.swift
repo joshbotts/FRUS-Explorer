@@ -185,7 +185,7 @@ enum ParisPeaceRecords {
         String(localized: "source.explorer.parisPeace.rolls",
                defaultValue: """
                Microfilm publication M820 reproduces the series. Most of its 538 file units \
-               are digitised, each covering a range of decimal numbers. This panel does not \
+               are digitized, each covering a range of decimal numbers. This panel does not \
                say which one holds this document. The ranges overlap and are not always \
                continuous, so use the index below to find it.
                """)

@@ -6,11 +6,11 @@ The headlines: Browse rebuilt around research axes, detected subjects through se
 
 ## Browse, rebuilt around axes
 
-Browse now opens on doors, not one list: **All Volumes**, one searchable catalogue arranged by title, print year, era, or length; **Administrations** (Lincoln on), **Editors**, and **Subjects**, each drilling to its volumes; **Archives**, the series by its printed source notes, in two side-by-side lenses; and **Clusters**, the corpus's 179 computed language groups, the semantic map's regions as a list. Beside them, your sets: **Working Corpora** and **My Scopes** — scopes are created and edited right here, and any volume list saves as one.
+Browse now opens on doors, not one list: **All Volumes**, one searchable catalog arranged by title, print year, era, or length; **Administrations** (Lincoln on), **Editors**, and **Subjects**, each drilling to its volumes; **Archives**, the series by its printed source notes, in two side-by-side lenses; and **Clusters**, the corpus's 179 computed language groups, the semantic map's regions as a list. Beside them, your sets: **Working Corpora** and **My Scopes** — scopes are created and edited right here, and any volume list saves as one.
 
 ## Subjects, wired through
 
-Search results break down by detected topic: a **Subjects** facet shows the topic areas in your matches, and a row narrows the search. The **Topic Index** (Browse, beside People) lists all 491 topics with complete membership, series and your-library figures labelled apart. A document's own topics show in the Research rail; Related's chips name the shared topics, and **Adjust weights** gains a real Reset. Topics are detected from the text, not editorial headings — the screens say so, and some are wrong.
+Search results break down by detected topic: a **Subjects** facet shows the topic areas in your matches, and a row narrows the search. The **Topic Index** (Browse, beside People) lists all 491 topics with complete membership, series and your-library figures labeled apart. A document's own topics show in the Research rail; Related's chips name the shared topics, and **Adjust weights** gains a real Reset. Topics are detected from the text, not editorial headings — the screens say so, and some are wrong.
 
 ## Plan an archive visit
 
@@ -33,7 +33,7 @@ Every analytics chart now plays as a VoiceOver **Audio Graph**. Collection expor
 5. Search something broad ▸ Facets ▸ Subjects: narrow by a row; **Browse all topics** opens the Topic Index.
 6. Trip packet over documents you know: is anything it asserts wrong? The inquiry pastes cleanly into Mail; Share as PDF prints the same text.
 7. No visit date: deadlines relative; an unplaceable citation lands under "help me locate", never dropped.
-8. The graph on a 1930s–40s document: teal central-file nodes, labelled by bare number?
+8. The graph on a 1930s–40s document: teal central-file nodes, labeled by bare number?
 9. VoiceOver on any analytics chart: the Audio Graph should play.
 
 Include device + iOS version, what you tapped, what you expected, what happened. Thanks for testing!

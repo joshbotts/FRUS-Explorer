@@ -8600,3 +8600,34 @@ the family contract — shared `circle.hexagongrid` prefix, never the graph's mo
 Related axis pinned to `.document`, all three variants distinct. Verified on the 16e:
 the Analysis Tools menu now shows the filled grid beside Cross-Reference Analytics'
 dots, and the Browse root's Clusters tile rhymes with both.
+
+## Session 2026-08-24 — Build-43 content pass: the owner's EditableContent revision, implemented
+
+The owner's full `Docs/EditableContent.md` editing round, ported to source. The centerpiece
+is the Research Guide restructure: pages 5–7 rewritten as **contracts** — what a reader will
+be able to do, organized by research task (finding, seeing the bigger picture, working with
+documents), never where the buttons live — with each page closing by pointing at the User
+Manual (About screen), which now owns the how. Retitled "… in FRUS Explorer" (owner). Page 3
+drops the broken-references section; page 4 drops "Follow the Person", gains the owner's
+"Think of FRUS as a Map of the Archives", and its subtitle trades "archive" for "volumes".
+About's FRUS description consolidated to one paragraph (owner); the cross-ref analytics
+info popover reworded (owner). The three-page port was GENERATED from the mirror text
+programmatically, so mirror and source agree by construction.
+
+**The en-US sweep the owner asked for** ("organise/analyse leaked through — find the
+stragglers"): 31 mirror-side fixes plus the source strings behind them and every other
+shipped British spelling the census found — 47 string fixes across 18 source files
+(neighbour/centre/colour/grey/coloured/recognise[r]/digitised/organised/catalogued families),
+README's Analyse/Organise bullets, and both TestFlight instruction docs
+(catalogue/labelled). `ArchivalCopyRulesTests` 1.1 extends the guard to every file the
+sweep fixed and adds `analyse`/`catalogu` to the banned stems — a sweep that does not
+extend the guard holds only until the next edit.
+
+**Two tests re-pinned rather than the owner's changes discarded** (their mandate):
+`ArchivalLibraryQueryTests.theGuideAndTheToolPointAtEachOther` (pinned the per-feature
+"Find it … window (Mac)" line — now pins the contracts shape: `archival-signal` section,
+capability named, manual pointer present, the old line banned) and
+`EmbeddedMarkdownLinkTests.featureCatalogPagesPresent` (pinned the retired per-feature
+section catalog and per-section glyphs — now pins the three pages, the sidebar grouping,
+and every using-the-app page closing on the User Manual pointer). One owner typo fixed
+("with document" → "with documents"); nothing else overruled.

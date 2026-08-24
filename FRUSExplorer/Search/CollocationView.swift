@@ -238,15 +238,15 @@ struct CollocationView: View {
                             defaultValue: "The scan couldn’t finish. Try opening this panel again.")
         case .noArtifact:
             detail = String(localized: "search.collocation.unavailable.noArtifact",
-                            defaultValue: "The bundled corpus reference could not be loaded, so there is nothing to measure these neighbourhoods against.")
+                            defaultValue: "The bundled corpus reference could not be loaded, so there is nothing to measure these neighborhoods against.")
         case .configurationMismatch(let mismatches):
             detail = String(format: String(
                 localized: "search.collocation.unavailable.mismatch %@",
-                defaultValue: "Your Word Cloud settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to rank these neighbours."),
+                defaultValue: "Your Word Cloud settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to rank these neighbors."),
                 Self.describe(mismatches))
         case .noMatches:
             detail = String(localized: "search.collocation.unavailable.noMatches",
-                            defaultValue: "None of these results contains a whole word this measure can centre on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.")
+                            defaultValue: "None of these results contains a whole word this measure can center on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.")
         case .noNeighboursAboveFloor(let minimum):
             detail = String(format: String(
                 localized: "search.collocation.unavailable.floor %lld",
