@@ -93,6 +93,9 @@ Test builds are distributed through TestFlight:
 
 - [iOS / iPadOS User Manual](Docs/iOS-User-Manual.md) — the full feature documentation.
 - [macOS User Manual](Docs/macOS-User-Manual.md) — the same, for the Mac app.
+- [Agentic Analysis with the FRUS Explorer Database](Docs/Agentic-Analysis-Guide.md) — for
+  researchers pointing an AI agent at the local SQLite index: schema reference, working query
+  patterns, the ways the data will quietly mislead you, and how to keep provenance intact.
 - [`Planning/FRUS-Explorer-Specification.md`](Planning/FRUS-Explorer-Specification.md) — the design
   specification.
 - [`CLAUDE.md`](CLAUDE.md) — build, test, and data-generator commands; coding standards; release
