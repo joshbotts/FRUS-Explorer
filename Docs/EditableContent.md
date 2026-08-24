@@ -51,7 +51,7 @@ They are recorded here because they are the failure mode to watch for in your ow
    captions, caveat blocks, empty states and info popover. None of it was in this file before.
  - **§10 Export method statements** — the prose stamped above the numbers in an exported CSV or
    figure, for the archival surfaces and for the four About-the-Series dashboards. This is what a
-   reader sees when the file has travelled without the app, so it has to stand alone. (§5 already
+   reader sees when the file has traveled without the app, so it has to stand alone. (§5 already
    carried the corpus, Person, Cross-Reference and Word Cloud statements.)
  - **§11 Source Explorer** — the panel prose: what a citation resolved to, what it did not, and
    what to do about it. Note that nearly every key here exists twice, once per platform.
@@ -109,9 +109,7 @@ lists, and changing headings.
 
 <!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: frusDescriptionRaw | lines: 260–268 | key: about.frus.description -->
 
-The **Foreign Relations of the United States** (FRUS) series is the official documentary record of U.S. foreign policy. The Department of State has published it continuously since 1861. The series now runs to more than 550 volumes, covering 1861 through the early 1990s.
-
-What the series covers has changed over time. Recent volumes document U.S. bilateral and regional relations around the world, and how U.S. policymakers responded to unfolding crises. They cover global issues such as human rights, terrorism, narcotics, health, and the environment. They also cover thematic topics such as national security policy, foreign economic policy, and foreign affairs organization and management. Scholars, policymakers, and citizens use FRUS to trace the origins of today's challenges and the United States's role in the world.
+The **Foreign Relations of the United States** (FRUS) series is the official documentary record of U.S. foreign policy, published continually by the Department of State since 1861. The series now runs to more than 550 volumes, covering 1861 through the early 1990s. Recent volumes document U.S. bilateral and regional relations around the world, and how U.S. policymakers responded to unfolding crises. They cover global issues such as human rights, terrorism, narcotics, health, and the environment. They also follow thematic topics such as national security policy, foreign economic policy, and foreign affairs organization and management. Scholars, policymakers, and citizens use FRUS to trace the origins of today's challenges and the United States's role in the world.
 
 <!-- END SOURCE: about.frus.description -->
 
@@ -410,14 +408,6 @@ When a source note records classification markings — "Secret; Nodis", or expli
 
 The app also ships a corpus-wide authority of the archival collections FRUS cites: from Source Explorer you can open any matched collection to see its variant citation forms, its National Archives catalog record, every volume across the series that cites it, and how many documents in your own indexed volumes came from it.
 
-<!-- section-id: broken-references -->
-
-**When a Cross-Reference Leads Nowhere**
-
-The printed volumes cite each other constantly — "see page 700," "see Document 42." Because pre-digital volumes were retyped from the printed books and their cross-references retroactively tagged, a small number cite a page, document, or volume that does not exist in the digital corpus. The app ships a corpus-wide validation of every cross-reference (about 2.7 million checked), so it knows exactly which ones cannot be followed.
-
-A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many).
-
 <!-- section-id: classifications -->
 
 **Excisions**
@@ -442,7 +432,7 @@ FRUS publishes thousands of documents for every administration's foreign policy,
 
 **Title:** Using FRUS for Research
 
-**Subtitle:** Strategies for getting the most from the archive
+**Subtitle:** Strategies for getting the most from the volumes
 
 <!-- section-id: intro -->
 
@@ -453,12 +443,6 @@ FRUS rewards researchers who read across documents, not just within them, and wh
 **Read the Front Matter**
 
 Every FRUS volume opens with a substantial editorial introduction that explains the volume's scope, the sources available (and unavailable), major gaps in the record, and key themes. Reading this Front Matter takes minutes but saves hours of confusion.
-
-<!-- section-id: person -->
-
-**Follow the Person, Not Just the Topic**
-
-Some of the richest insights come from tracking individual policymakers across documents. Secretary Kissinger's position in one cable often illuminates a memo written three weeks earlier. The person index in this app aggregates mentions across a volume; use it to trace who was driving decisions, not just what decisions were made.
 
 <!-- section-id: dates -->
 
@@ -478,6 +462,12 @@ When an editorial note summarizes a meeting or document rather than reproducing 
 
 The focus and scope of individual FRUS volumes embody decisions about how to slice a complex record. A decision made in a document on one page of a Latin America volume might have been shaped by simultaneous conversations documented in a Foreign Economic Policy volume. Searching, following cross-references, and building collections across subseries and time periods often reveals policy coherence (or contradiction) that single-volume reading misses.
 
+<!-- section-id: archival-road-map -->
+
+**Think of FRUS as a Map of the Archives**
+
+Recent FRUS volumes can serve as a map of U.S. government agency archives in three ways. First, it publishes transcriptions of the most critical historical records that document the foreign policy decision-making process and key diplomatic meetings, making them directly available to researchers. Second, the source notes for the documents selected for publication tell researchers the archival collections they came from, pointing them toward other useful files. Third, the note on sources in volume front matter identifies the broad range of archival repositories and collections that FRUS historians consulted to identify candidate documents for selection and publication. The most sophisticated users of FRUS rely on the series not only for the records it delivers directly, but also for the documentary trail it offers to a wider and richer range of U.S. Government sources.
+
 <!-- section-id: omissions -->
 
 **Don't Forget What You're Not Reading**
@@ -486,362 +476,139 @@ FRUS tells the U.S. side of the history of foreign relations. The counterpart ca
 
 <!-- END SOURCE: page research-practices -->
 
----
-
-
-### The Topic Index
-
-The topic index lists every detected topic in the series — all 491, including the ones no single volume is characteristic of, which are exactly the topics spread thinly enough to be hard to find any other way. Each row shows how many documents and volumes carry it.
-
-Those figures describe the whole series, not your library. A topic can reach four thousand documents and return sixty here, because a search reaches only the volumes you have indexed — so each topic's page shows both numbers side by side, and says which is which.
-
-Open a topic to see its reach across the whole series and to find the documents on it you can actually read. The filter that applies is a topic filter, finer than the topic-area rows in search facets: an area holds about five topics, and this narrows to one of them.
-
-Find it in the Browse tab beside People, from any topic chip's pivot sheet, or from the Subjects section of a search's Facets panel. On the Mac it opens as its own window that stays open while you read.
-
-### 3.5 Page 5 — Finding What You Need
+### 3.5 Page 5 — Finding What You Need in FRUS Explorer
 
 <!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 852–939 -->
 
-**Title:** Finding What You Need
+**Title:** Finding What You Need in FRUS Explorer
 
-**Subtitle:** Ways to locate documents across the corpus
+**Subtitle:** What you can start from, and what you can narrow to
 
-<!-- section-id: search -->
+<!-- section-id: starting-points -->
 
-**Full-Text Search**
+**Start From Whatever You Have**
 
-Search the full text of every downloaded and indexed volume at once. Results are ranked by relevance with English stemming, so searching "negotiation" also returns "negotiate," "negotiated," and "negotiations." The search box understands Google-style syntax: wrap words in quotes for an exact phrase ("missile crisis"), use OR for either term, a leading minus to exclude a word (-Cuba), and a trailing asterisk for prefix matching (negoti*).
+Historical research can start from a question you are trying to answer or a source you are trying to understand. FRUS Explorer is designed to help, regardless of whether your starting point is a phrase you half-remember, a citation that caught your eye in someone's footnote, a name that keeps appearing, a fateful date, a subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you have downloaded and indexed is searchable at once. A citation resolves to the document it names. Many people can be followed through everything that mentions them. Any span of days can be laid out in order, as they unfolded. The topic index reaches subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors' own arrangement, shared people and topics, or, if you choose to turn it on, the resemblance of their language.
 
-Open the advanced filters to narrow by date range, document type, a person mentioned, and the search scope (document text, summaries, notes). You can also limit a search to specific volumes or whole subseries, apply one of your named volume scopes (My Volume Scopes), or filter by a detected topic — either fills the volume picker with the matching indexed volumes, and warns you when a scope has none indexed yet. Search only covers indexed volumes — download and index more to widen the corpus.
+<!-- section-id: narrowing -->
 
-Find it on the Search tab (iOS) or the search window, ⌘F (Mac).
+**Narrow Without Losing Count**
 
-<!-- section-id: query-inspector -->
+Whatever a search returns, you can see its shape before you read a page of it: how the matches spread across years, volumes, people, document types, and archival provenance. Any of those facets becomes a filter with one tap, and the subjects facet narrows a result set to a single topic area. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the series can be sliced. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
 
-**What Your Query Actually Searched For**
+<!-- section-id: honest-arithmetic -->
 
-Search rewrites what you type before it runs — stemming, implicit AND between words, the operators above. The Query Inspector shows the expression it compiled, so a search that returns something surprising can be read rather than guessed at.
+**Search That Shows Its Arithmetic**
 
-It also warns where stemming widens a search past what you meant: type “containment” and the panel tells you it was searched as “contain,” which also matches “contains” and “container.” Prefix the word with = to search it literally. This matters most when you are about to report a count: an unexpectedly large number is usually a stem, not a finding.
-<!-- section-id: result-facets -->
+The app treats your counts as evidence, and holds itself to that standard. The Query Inspector shows how the app translated what you typed into the search box into the query that actually ran under the hood. This can be especially important when your results are surprising. For example, an unexpectedly large count is usually related to how the app applies "stemming" to sweep variants of your terms into searches. Capped results are reported as floors, never as totals, and the app offers tools to visualize matches it cannot list. And wherever a figure could describe either the whole series or only your indexed volumes, the app says which one it is counting.
 
-**The Shape of a Result Set**
+<!-- section-id: whole-series -->
 
-Facets break a result set down by year, volume, person, document type and archival provenance, so you can see at a glance whether a term clusters in one administration, one country file, or one editor’s volumes.
+**The Whole Series, Not Just Your Library**
 
-Read the denominator carefully, because it is deliberately not the list you are looking at: facets describe the whole match, before any narrowing you apply below them. That is what makes them comparable to each other — a breakdown that shifted every time you filtered would tell you about your filtering rather than about the corpus.
+Finding does not wait for downloading. Subjects, people, series-wide figures, and every volume's place in the corpus are all visible before a volume is on your device — so discovery can run ahead of your library and tell you which volumes are worth adding to it. What needs the text itself — full-text search, reading documents, analysis of the words — works over what you have indexed, and the app is plain about that boundary rather than letting a small library masquerade as the series.
 
-Facet rows are also controls. Tapping one narrows the search to that year, volume, or person, and the narrowing appears as a chip you can clear.
-<!-- section-id: working-corpora -->
+<!-- section-id: manual -->
 
-**Working Corpora**
+**Where the Controls Are**
 
-A working corpus is a fixed set of documents — the results of one search, frozen. Save one with “Save as Working Corpus…” and apply it from the advanced filters under My Working Corpora; every later search then runs only inside it.
-
-This is different from a volume scope. A scope narrows to whole volumes; a corpus narrows to the particular documents you captured, which is what you want when the set you care about is “the 240 documents that matched, minus the eleven I decided were irrelevant.”
-
-Each corpus records how it was made, and the app repeats it back where you apply one. If the search that produced it was capped, the corpus says so — “the highest-scoring 7,500 of 67,034 matches” — because a set that was truncated at capture is not the same evidence as a set that was complete, and you should not have to remember which was which.
-<!-- section-id: volume-scopes -->
-
-**Custom Volume Scopes**
-
-A volume scope is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration. Build one in Settings → Volume Scopes: the editor lists the whole series with a title filter, and Add Volumes By… gathers matches by detected subject, person, manifest tag, or coverage years and editor. Scopes sync to your other devices via iCloud, and volumes you haven't downloaded stay in a scope and take effect once indexed.
-
-Apply a scope anywhere the corpus can be sliced: the search filters, the Corpus, Person, and Cross-Reference Analytics scope menus, the Word Cloud, and the About the Series dashboards. Each entry shows how many of the scope's volumes are indexed, and a scope with none indexed is called out honestly rather than silently searching nothing.
-
-<!-- section-id: browser -->
-
-**Corpus Browser**
-
-Browse the series the way it is published: corpus → subseries → volume → compilation → document, with a breadcrumb trail so you always know where you are. From here you also download and queue volumes for indexing.
-
-Find it on the Browse tab (iOS) or the Corpus Browser window, ⇧⌘B (Mac).
-
-<!-- section-id: volume-subjects -->
-
-**Top Subjects on Volumes**
-
-Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from experimental subject data and grouped by category.
-
-Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.
-
-These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters, at two different grains, and the difference matters.
-
-At VOLUME grain: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, select every volume containing the topic — mentioned is enough. A category is a heading rather than a filter, because every one of them reaches most of the series, so choose a sub-category and read the volume count beside it. For anything finer, browse the Topic index.
-
-At DOCUMENT grain: after a search, the Facets panel has a Subjects section. Choosing a row there is a subjects facet on your results — it narrows to the documents in that topic area, not to whole volumes, and it counts only documents in the volumes you have indexed. The panel says how much of the result set carries a topic at all, since many documents carry none.
-
-<!-- section-id: chronology -->
-
-**Chronology**
-
-Pick a date range and browse every indexed document from that period, grouped by date — ideal for reconstructing how a crisis or summit unfolded day by day. A distribution chart shows where documents cluster across the range and which volumes they come from, and dense dates collapse so a busy day stays readable. Tap a chart bar to jump to that date; tap a volume in the legend to filter. Documents that span a wide range of dates (chiefly editorial notes) are listed separately rather than pinned to a single day. A Word Cloud for this range button turns whatever span you are viewing into a word cloud.
-
-Find it from the Browse tab’s Analysis Tools menu (iOS) or the Chronology window (Mac).
-
-<!-- section-id: person-index -->
-
-**Person Index**
-
-An alphabetical directory of everyone named across your indexed volumes. Select a person to see every document that mentions them — a fast way to follow an individual policymaker, diplomat, or foreign leader through the record.
-
-The app groups a person's appearances across volumes automatically, but it is deliberately cautious — it won't merge two entries unless it is confident they are the same person, so some people appear more than once. You can finish the job by hand: merge two entries from a person's detail (or a row's context menu), and undo any merge or separation later from the Corrections list. Your corrections sync across your devices.
-
-A person's detail also lists Subjects — detected topics characteristic of the volumes where they are mentioned (volume-level, not per-document tags). Tap one to see every volume covering it.
-
-Find it in the Corpus Browser's People section.
-
-<!-- section-id: citation-lookup -->
-
-**Find by Citation**
-
-Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app helps you look for the right document — no manual hunting through volumes and document numbers.
-
-Find it in the Search screen's overflow (More) menu (iOS) or under Find ▸ Citation Lookup, ⇧⌘F (Mac).
-
-<!-- section-id: related-documents -->
-
-**Related Documents**
-
-From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending seven signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, corpus proximity, shared people, shared topics, and — off until you turn it on — semantic similarity. Small icon chips on each result show why it matched, and each chip says only what its signal can support: a count of citations, or simply "same provenance", where a percentage would mean nothing.
-
-Corpus proximity reads the FRUS editors' own arrangement. Two documents printed side by side, or gathered into the same short chapter, score highest; the signal eases off as the container they share widens to a whole compilation and then the whole volume, and lower again for a different volume in the same subseries. It is a way of asking what the editors thought belonged together.
-
-A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. Your tuning stores only the sliders you actually move, so a signal you leave alone follows the app's default even after that default changes.
-
-Shared topics is live, and weighted below the editorial signals on purpose: these are topics detected automatically from the text, matched by name and variants, not editorial subject headings — recall-oriented, so a few are wrong. Semantic similarity is experimental and starts at zero; drag its slider above zero to include it.
-
-Find it in the Research rail's Related tile. On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results.
+To delve into the details about search screens, filters, and syntax, visit the User Manual — linked from the About screen. It will walk you through how the app delivers these capabilities.
 
 <!-- END SOURCE: page finding-documents -->
 
 ---
 
-### 3.6 Page 6 — Seeing the Bigger Picture
+### 3.6 Page 6 — Seeing the Bigger Picture in FRUS Explorer
 
 <!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 940–1028 -->
 
-**Title:** Seeing the Bigger Picture
+**Title:** Seeing the Bigger Picture in FRUS Explorer
 
-**Subtitle:** Tools for analysis across documents and volumes
+**Subtitle:** Questions you can put to the series as a whole
 
-<!-- section-id: analytics -->
+<!-- section-id: over-time -->
 
-**Corpus Analytics**
+**Change Over Time**
 
-Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.
+You can watch the record move. Any term or phrase can be charted across the series' thirteen decades to see when it enters the record, when it surges, and which volumes carry it — as raw counts, or as a share of each period's documents so a term does not look like it is surging just because the series grew. Any stretch of days can be reconstructed in sequence. And any set of documents you assemble — a search's results, a collection — can be read as a timeline, so its gaps and concentrations show at a glance.
 
-A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The “% of documents” toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count — the percentage of that period’s documents that contain it — so a term doesn’t look like it is surging simply because the series published more in later decades.
+<!-- section-id: language -->
 
-An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three; on By Subseries and By Volume the figure items are dimmed and only the CSV is available.
+**The Language Itself**
 
-Analytics runs entirely on your local index; no network connection is required.
+You can ask what any slice of the corpus sounds like — a document, a volume, a decade, a working corpus — and get more than a list of frequent words: the words most distinctive of that slice compared with the whole series, the company a term keeps (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be read as usage rather than skimmed as a list. An experimental semantic analytics feature places every document in the series on one map by the shape of its wording, so documents that read alike sit near each other whether or not they share a volume, a date, or a citation.
 
-Find it from the Browse tab’s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac).
+<!-- section-id: people -->
 
-<!-- section-id: reading-results -->
+**The People**
 
-**Four Ways to Read a Search Result Set**
+You can ask who the published record foregrounds: the most-mentioned figures of an era, one person's presence traced year by year, two careers compared, pairs tracked together, and the network of who is named alongside whom. These readings reach the volumes whose editors tagged people during production — the more recent ones — and the app tells you so rather than letting an editorial gap read as a historical absence.
 
-Above your search results, four readings of the same search are available. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.
+<!-- section-id: citation-web -->
 
-They do not all count the same thing, and each panel names the set it used. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search.
+**The Web the Editors Drew**
 
-<!-- section-id: keyness -->
+FRUS editors stitched the series together with cross-references between printed documents and out to archival records. In FRUS Explorer, you can read that stitching at both scales: one document's neighborhood as a graph — what informed it, what it fed into, including the archival material its footnotes cite but the series never printed — and the whole citation web as a statistical object, with its most-cited landmarks and the volumes that lean on each other. These are measures of how the editors linked documents, not a ranking of historical importance.
 
-**Distinctive Words, Not Just Frequent Ones**
+<!-- section-id: archival-signal -->
 
-The Word Cloud can size words two ways. By frequency, the biggest words in almost any FRUS scope are the ones that are big everywhere — government, department, president. Switch “Size words by” to distinctiveness and the cloud instead ranks words by how much more they appear here than in the corpus as a whole, which is what makes one volume, decade or working corpus look different from every other.
+**Where the Documents Came From**
 
-The comparison is made against a reference built from the whole series and shipped with the app, so it works with no volumes downloaded. It is also honest about when it cannot run: change the tokenizing settings in a way the reference was not built for, or ask for a scope with too little text, and the app says the ranking is unavailable rather than showing you a number it cannot stand behind.
-<!-- section-id: person-analytics -->
+Every published document names the archival file its original was found in, and clustered across the series those source notes answer a question no volume states outright: which bodies of records each era's editors actually worked in. Archival analytics offers source rankings, co-citation networks, and flows between archival units, era by era — and the same signal works at reading distance: from any document you can gather the other indexed documents drawn from the same file or collection, so pieces of one archival file scattered across volumes come back together.
 
-**Person Analytics**
+<!-- section-id: finding-aid -->
 
-Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people that were tagged by Office of the Historian editors during production appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period’s dated documents), and — when exactly two people are selected — draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.
+**Honest Evidence**
 
-Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
-
-Find it from the Browse tab’s Analysis Tools menu (iOS) or the Person Analytics window (Mac).
-
-<!-- section-id: word-cloud -->
-
-**Word Cloud**
-
-See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a detected topic, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.
-
-Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don’t want to see, or compare two scopes side by side; from the Options menu, export the cloud as a PNG, PDF, or CSV, where the CSV ranks every visible term with its count and its share of the words counted and records your settings — including how many words you hid by hand. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud’s typeface and density in Settings.
-
-Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.
-
-Find it from the Browse tab’s Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, saved searches, and your custom volume scopes (Settings → Volume Scopes).
-
-<!-- section-id: cross-reference-graph -->
-
-**Cross-Reference Graph**
-
-Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.
-
-Teal nodes mark what the editors cited but did not print — lot files, presidential-library collections, and central-file numbers — so the graph also shows where a document's footnotes point beyond the published series.
-
-Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.
-
-Find it from the Research rail's Graph tile (it opens in its own window on Mac and on iPad with Stage Manager).
-
-<!-- section-id: cross-reference-analytics -->
-
-**Cross-Reference Analytics**
-
-Where the graph traces one document’s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network’s shape — a few heavily-cited landmarks and a long tail — a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of “landmark” documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.
-
-These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.
-
-Find it from the Browse tab’s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
-
-<!-- section-id: archival-analytics -->
-
-**Archival Analytics**
-
-Every published FRUS document carries a source note naming the archival file its original was found in. Read one at a time they are citations; clustered across the whole series they answer a question no volume states outright — which bodies of records each era's editors actually worked in. Archival Analytics is where that clustering is shown: era-by-era rankings of the collections and filing-system classes the volumes drew on, a co-citation network of which collections were used together, the editors' cross-reference flows between archival units, and an archival profile of your own indexed volumes.
-
-Scope it to a subseries, a saved volume scope, a detected topic, or one president's volumes — and note that it scopes over the whole series rather than over your library, so the same scope gives the same figures on any device, with nothing downloaded. Counts can be read as documents or as volumes; those are different questions and give different answers.
-
-These figures show where the editors drew their documents, which is an editorial and archival signal rather than a census of the archives themselves. The rankings say what was cited, not what exists.
-
-Find it from the Browse tab's Analysis Tools menu (iOS) or the Archival Analytics window (Mac), and from the "Open Archival Analytics" link on the Archival Sourcing page of this guide.
-
-<!-- section-id: semantic-analytics -->
-
-**Semantic Analytics**
-
-Every other analytics surface measures something the corpus states — who is named, what cites what, where a document came from. Semantic Analytics measures how the language sits. Every document in the series is placed on one map by the shape of its wording, so documents that read alike land near each other whether or not they share a volume, a date, or a citation. Regions are named by the vocabulary that distinguishes them from the rest of the corpus.
-
-You can colour the map four ways — by region, by coverage era, by what is downloaded on this device, or by provenance: the archival category most of each volume's source notes name, which shows the State Department's central files giving way to the presidential libraries across the plane. A key under the map names the colours, except on Regions, where colour separates neighbouring regions and the names are drawn on the map itself. Tap a point to see which document it is and open it. Draw a lasso around an area to keep everything inside it as a working corpus, which you can then use to scope a search. Or tap two documents as poles and lay the whole series along the axis between them: the axis runs between the two documents' volumes, so two documents from the same volume give no axis, and a slice replaces the vertical axis with each volume's coverage year.
-
-You can also **scope** the map with the same control the other analytics surfaces use — a subseries, one of your own volume scopes, a detected topic, or a president's volumes. Scoping does not shrink the map: the rest of the corpus stays on screen in grey, and the documents in scope keep their colour, so you can see where an editorial or political segment actually falls in the corpus's language. Region names re-rank to the regions the scope fills, and taps and lassos apply only to it. Note the grain: every scope here is a set of whole volumes, so a detected-topic scope lights every document in the volumes carrying that tag rather than only the documents on that subject.
-
-This is a model's reading of the language, not an editorial fact, and it is experimental. Two cautions in particular. The map's plane preserves local similarity: neighbours are meaningfully near each other, but the distance between two far-apart regions means nothing. And the model was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown rather than a checked result.
-
-Find it from the Browse tab's Analysis Tools menu (iOS) or the Semantic Analytics window (Mac).
-
-<!-- section-id: source-explorer -->
-
-**Source Explorer & NARA Catalog**
-
-Open the Source Explorer from any document to read its source note broken into structured archival fields detected during indexing, and to follow citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.
-
-You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies rely on a free NARA Catalog API key you can request from the National Archives and then add in Settings.
-
-From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same detected archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document’s row in a volume’s sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.
-
-More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app’s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, and the value you will need when you request the original records.
-
-<!-- section-id: timeline -->
-
-**Document Timeline**
-
-Turn any set of results into a timeline. From a search result list or a collection, the timeline view charts those documents by year (and lists them chronologically) so you can see their distribution over time at a glance and spot gaps or concentrations.
+FRUS is a selective, evolving proxy for the archival record. The app keeps that honest for you — denominators are named where available, experimental signals are marked as experimental, and where a measure cannot stand behind a number it says the measure is unavailable rather than showing one. To learn more about the app's analytics features, see the User Manual — linked from the About screen — for the full tour.
 
 <!-- END SOURCE: page corpus-analysis -->
 
 ---
 
-### 3.7 Page 7 — Working With Documents
+### 3.7 Page 7 — Working With Documents in FRUS Explorer
 
 <!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 1029–1115 -->
 
-**Title:** Working With Documents
+**Title:** Working With Documents in FRUS Explorer
 
 **Subtitle:** Reading, annotating, organizing, and exporting
 
-<!-- section-id: document -->
+<!-- section-id: reading -->
 
-**The Document Reader**
+**The Text, As Published**
 
-Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Read mode keeps the focus on the published text, while Research mode opens the Research rail — your notes, tags, collections, and AI summaries — alongside it.
+The document you read is the document the volume printed: its structure, its datelines, its style, its footnotes in place, with the people it names linked to the volume's own glossary. Reading stays clean until you ask for more — your notes, tags, and summaries sit in a rail you open when you want them and close when you don't.
 
-<!-- section-id: annotations -->
+<!-- section-id: your-apparatus -->
 
-**Highlights, Notes & Tags**
+**Your Own Layer on the Record**
 
-Create color-coded text highlights that persist across sessions, attach free-text research notes to a passage or a whole document, and apply your own tags to group documents by theme, actor, or analytical category. All of it is yours and travels with your account.
+Everything you add — highlights, notes, tags, the projects that keep separate research threads distinct — is your layer, kept apart from the published text and never blended into it. It follows you across your devices, and it stays private: the app shares nothing about your research with anyone, and everything you make can be exported so you can use it elsewhere.
 
-<!-- section-id: projects -->
+<!-- section-id: outputs -->
 
-**Research Projects**
+**From Reading List to Finished Output**
 
-A project is an activity lens on your work. Every note, highlight, summary, and collection you create is tagged with the active project, so you can keep separate research threads distinct and switch between them instantly — or work in the global context with no project selected. Switch or create projects from the project picker.
+A set of documents can become a shaped thing: a teaching reader, a briefing packet, a source dossier — ordered, sectioned, curated in your own words, annotated, and exported in forms other people can actually use, from print-ready files to a working set that a colleague opens in their own FRUS Explorer. Every document carries a citation in the series' own style, ready for your footnotes or your reference manager. And where on-device AI is available it can draft summaries for you that are always labeled as generated, never passed off as the record or as you.
 
-A default project is created for you; you never have to set one up before exploring.
+<!-- section-id: integrity -->
 
-<!-- section-id: trip-packet -->
+**Claims That Survive Checking**
 
-**The Research Trip Packet**
+The app is built so that what you publish from it can be checked. Every quotation you freeze into a collection is re-verified against the text of the document it cites before export — presentation is forgiven, wording is not, and a paraphrase does not pass. Your searches can be exported as a method appendix: the query log records each query with its scope, its date, and how many volumes were indexed at the time, which is what turns "I searched and found nothing" from an assertion into evidence a reader can check.
 
-When your research points beyond the published series — to the boxes at College Park or a presidential library — the trip packet turns a set of documents into an archive-visit plan. The app reads each document's printed source note, resolves it against the bundled National Archives data, and generates seven chapters: a pre-arrival checklist with NARA's own lead times, a draft advance inquiry per facility, a pull worksheet whose rows carry the record group, entry number, series title and NAID that staff ask researchers to quote, the records you must read digitised or on film instead of pulling, an access-restriction triage naming any cited series NARA lists as closed, NARA's own citation forms for your series types — quoted and attributed, never prescribed — and a visit-day card holding only the facts that don't go stale.
+<!-- section-id: beyond -->
 
-The packet is deliberately honest about its limits. A citation the app cannot resolve is quoted verbatim in the inquiry draft as a help-me-locate item rather than dropped — NARA's guidance is that poorly described records are resolved by writing ahead. An institutional fact nobody has verified is omitted, never printed undated. Availability is never promised: where the truth is “confirm with staff”, that is what it says. And the visit date is optional, because the packet is most useful before a trip is booked — without one, every deadline prints relative to your arrival.
+**When the Trail Leaves the Series**
 
-Find it on Project Home (“Plan a Visit”, over the project's documents, with the research question seeding the inquiry) or in any collection's add menu (“Plan an Archive Visit…”). Share it as plain text — the inquiry pastes straight into an email — or as a PDF for printing.
+When you are ready to follow source notes or footnotes past the published series to the shelves at College Park or a presidential library, FRUS Explorer can help you plan research visits. Documents you select seed a visit and research plan. The app's research trip packet resolves each document's source note against National Archives data to flag access-restriction warnings for still-classified collections, draft advance inquiries to an archivist, and even begin preparing pull slips.
 
-<!-- section-id: collections -->
+<!-- section-id: manual -->
 
-**Collections & Export**
+**Where the Controls Are**
 
-Collections are curated sets you assemble for a purpose — a teaching reader, a briefing packet, a source dossier. The manager is where you shape the content: add documents from any volume, interleave your own section headings and rich-text prose (bold, italic, underline, colour), attach notes to a document, and inspect a document's notes, highlights, tags, summary, and archival source in place. Add Documents gathers documents without leaving the editor — search the index, browse a volume, paste citations or history.state.gov links (each line resolves to its document), or pull in everything carrying one of your tags. The composition lives on the collection itself — default body depth (full text, an AI summary, or a compact index), footnotes, table-of-contents style, and whether to include highlights, notes, or a word cloud — and any single document or whole section can override the body depth. Four one-tap presets — teaching reader, briefing packet, source dossier, scholarly edition — set the whole composition at once as a starting point, adding any apparatus they call for without disturbing what you have already placed. Sections nest up to three levels — indent or outdent a heading from its context menu, drag a heading to move its whole section as a block, and give the collection a subtitle, author line, rich-text introduction, and colophon for a true title page. Excerpt quotations freeze a highlighted or selected passage into the collection as a styled block quote with its citation, and each document's inspector is a per-document control surface — an editable “key takeaway” headnote above the body (seeded by on-device AI, or written in your own words, with a small chip noting which), per-document overrides for highlights, notes, source note, footnotes, and summary prompt, and a “See also” line citing cross-referenced documents inside the collection. Generated apparatus blocks — a bibliography, a chronology, a sources-and-archives list, a persons index, and a thematic index — are computed from the collection’s documents at every export and in the preview, placeable anywhere like any other row. Sort by Date puts the documents in chronological order either across the whole collection in one sweep, or within each section only — so documents stay under their own heading rather than crossing into a neighboring section. A live preview shows the collection exactly as its HTML export while you compose — side-by-side on iPad and Mac, a Preview toggle on iPhone.
-
-Export is simply how you share it. Render the collection — section headings and prose included — as a PDF, HTML file, or Word document; produce a BibTeX or RIS file for a reference manager; or save a native “.fruscollection” file: an editable copy a colleague opens right back into their own FRUS Explorer, where the documents travel as references they can download. Import one with Import Collection or by opening the file. A smart collection driven by a saved search can be frozen into an editable copy with Create Static Snapshot.
-
-Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac).
-
-<!-- section-id: quotation-check -->
-
-**Checking Your Quotations**
-
-An excerpt in a collection is a frozen quotation, captured whenever you captured it. Volumes get reindexed, removed and re-downloaded, so before a collection exports, the app checks every stored excerpt against the text of the document it cites.
-
-The check is a deterministic comparison, not a judgement. It forgives everything about presentation — line breaks, curly versus straight quotes, soft hyphens, capitalisation, and elisions marked with an ellipsis, whose fragments must still appear in order — and forgives nothing about wording. A paraphrase does not pass.
-
-It warns; it never blocks. A quotation from a volume you have since removed cannot be checked at all, and the app says that rather than calling it wrong — being unable to verify something is not the same as finding it false.
-<!-- section-id: method-appendix -->
-
-**The Query Log as a Method Appendix**
-
-The app records the searches you run, and exports them as a methods statement: every query with the scope it ran under, how many volumes were indexed at the time, and what it returned. Find it in Settings → Data & Recovery, as a Markdown table and a CSV.
-
-The reason to keep it is the zeros. “I searched for this and found nothing” is an assertion; the same sentence with a date, a scope and a denominator is evidence, and it is the only form of it a reader can check.
-
-A count that hit the app’s row ceiling is written as “at least 7,500,” never as 7,500 — it is a floor, and the CSV carries a column saying so, because a spreadsheet will otherwise happily sum a column of floors into a total that was never measured. Searches recorded before the app kept this detail are printed and marked, not quietly dropped.
-
-A collection can carry the same appendix, narrowed to the project it was exported under. That is off by default: it contains the text of every search you ran, which is exactly the thing not to attach to a shared PDF by accident.
-<!-- section-id: citations -->
-
-**Citations & Bibliographic Export**
-
-Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File → Import).
-
-Sending to Zotero is one action: connect a Zotero account (Settings → Connections) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import.
-
-<!-- section-id: ai -->
-
-**AI Summaries**
-
-Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be used as first drafts of research notes that you revise or exported alongside documents in collections; every summary in an exported collection is labeled as AI-generated content attributed to Apple Intelligence. Treat them as orientation only: always read the primary document yourself for your actual research.
-
-To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, date range, or one of your saved volume scopes unattended, reporting progress as it goes — so a stack of summaries is ready when you return.
-
-<!-- section-id: sync -->
-
-**Syncing Across Devices**
-
-Your notes, highlights, tags, collections, and projects sync automatically through iCloud, so your research follows you between iPhone, iPad, and Mac. Downloaded volumes and the search index are stored per-device and are not synced.
-
-<!-- section-id: privacy -->
-
-**Your Data Stays Private**
-
-The app does not share any usage or research data with anyone. You can export and share anonymized diagnostic data with the developer for troubleshooting if and when you choose. You can also export all your research data.
+To learn more about what FRUS Explorer lets you do with documents, see the User Manual — linked from the About screen.
 
 <!-- END SOURCE: page working-with-documents -->
 
@@ -972,7 +739,7 @@ Some categories are hidden. Each share below is a share of the categories still 
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 619–620 | key: series.provenance.caveats.body -->
 
-These figures come from parsing each document's source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. "Other / Unclassified" means a citation the parser could not classify, not a missing source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. Those early retrospective compilations are left out of the charts. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system, and the Central Foreign Policy File is its post-1963 successor. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors drew their documents. That is an editorial and archival signal, not a full census of the underlying archives.
+These figures come from parsing each document's source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. "Other / Unclassified" means a citation the parser could not classify, not a missing source note. Coverage spans 522 of the 552 cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. Those early retrospective compilations are left out of the charts. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system, and the Central Foreign Policy File is its post-1963 successor. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors drew their documents. That is an editorial and archival signal, not a full census of the underlying archives.
 
 <!-- END SOURCE: series.provenance.caveats.body -->
 
@@ -1079,7 +846,7 @@ The individual place tags carried by the most volumes — the concrete detail be
 #### Regional-bureau mapping footnote
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 354–355 | key: series.geography.caveats.body -->
 
-Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 catalogued volumes carry at least one place tag. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet.
+Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 cataloged volumes carry at least one place tag. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet.
 
 <!-- END SOURCE: series.geography.caveats.body -->
 Note: while a subseries scope is active, this dashboard's caveats block also shows the shared scope line `series.caveats.scope %@` (`SeriesGeographyDashboard.swift` lines 321–322). Its canonical block lives in the Production & Timeliness subsection below; the same key and defaultValue appear in both files, so edit both occurrences together.
@@ -1110,7 +877,7 @@ Each point is a volume. The horizontal axis is its publication year. The vertica
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var perYearChart (caption) | lines: 258–259 | key: series.chart.peryear.caption | shared: iOS+macOS (single edit point) -->
 
-How many volumes reached print in each year, coloured by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication.
+How many volumes reached print in each year, colored by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication.
 
 <!-- END SOURCE: series.chart.peryear.caption -->
 
@@ -1152,7 +919,7 @@ These figures cover only published, digitized volumes. A volume's publication ye
 #### What the graph shows
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1469–1470 | key: graph.info.what.body -->
 
-Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
+Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 
 <!-- END SOURCE: graph.info.what.body -->
 
@@ -1170,10 +937,10 @@ Timeline places each document at its date along a time axis. Documents this one 
 
 <!-- END SOURCE: graph.info.timeline.body -->
 
-#### Neighbourhood degree
+#### Neighborhood degree
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1487–1488 | key: graph.info.degree.body -->
 
-1° shows only direct neighbours of the central document. 2° adds neighbours of those neighbours. 3° extends one further hop. Resize the window to see denser graphs more clearly.
+1° shows only direct neighbors of the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.
 
 <!-- END SOURCE: graph.info.degree.body -->
 
@@ -1280,7 +1047,7 @@ Words listed here are removed from every word cloud, on top of the built-in stop
 
 <!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | StopListScope.footer (.lens) | lines: 353–354 | key: settings.wordcloud.lens.footer | shared: iOS+macOS (single edit point) -->
 
-Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recogniser keeps mistaking) without affecting other lenses.
+Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recognizer keeps mistaking) without affecting other lenses.
 
 <!-- END SOURCE: settings.wordcloud.lens.footer -->
 
@@ -1331,7 +1098,7 @@ Each document sits at its TEI date, and is shown no more precisely than its sour
 #### The distribution chart
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1117–1118 | key: chronology.info.chart.detail -->
 
-The stacked chart colour-codes documents by source volume (the top volumes, then a grey “Other”). Use the chart-colours menu to choose how many volumes get a distinct colour.
+The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.
 
 <!-- END SOURCE: chronology.info.chart.detail -->
 
@@ -1445,7 +1212,7 @@ Tap a ranking bar, or use "Add a person to compare", to plot several people's me
 #### What you're seeing
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 270–271 | key: crossRefAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broad scope, which mixes several editorial practices.
+How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broader scope that mixes several editorial practices.
 
 <!-- END SOURCE: crossRefAnalytics.info.shows.detail -->
 
@@ -2374,7 +2141,7 @@ Detected topics (experimental). These are inferred from the text, not editorial 
 
 <!-- SOURCE: FRUSExplorer/Search/ConcordanceView.swift | key: search.kwic.empty.detail -->
 
-These results matched, but none of their text could be aligned on your search term. Phrase, wildcard and proximity searches match in ways a concordance cannot centre on a single word.
+These results matched, but none of their text could be aligned on your search term. Phrase, wildcard and proximity searches match in ways a concordance cannot center on a single word.
 
 <!-- END SOURCE: search.kwic.empty.detail -->
 
@@ -2390,7 +2157,7 @@ These results matched, but none of their text could be aligned on your search te
 
 *Interpolated with a document count.*
 
-%lld matching documents contributed no line — their match isn't a whole word this view can centre on.
+%lld matching documents contributed no line — their match isn't a whole word this view can center on.
 
 <!-- END SOURCE: search.kwic.unaligned -->
 
@@ -2402,7 +2169,7 @@ These results matched, but none of their text could be aligned on your search te
 
 <!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.noArtifact -->
 
-The bundled corpus reference could not be loaded, so there is nothing to measure these neighbourhoods against.
+The bundled corpus reference could not be loaded, so there is nothing to measure these neighborhoods against.
 
 <!-- END SOURCE: search.collocation.unavailable.noArtifact -->
 
@@ -2414,13 +2181,13 @@ The bundled corpus reference could not be loaded, so there is nothing to measure
 
 *Interpolated with the setting that differs.*
 
-Your Word Cloud settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to rank these neighbours.
+Your Word Cloud settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to rank these neighbors.
 
 <!-- END SOURCE: search.collocation.unavailable.mismatch -->
 
 <!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.noMatches -->
 
-None of these results contains a whole word this measure can centre on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.
+None of these results contains a whole word this measure can center on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.
 
 <!-- END SOURCE: search.collocation.unavailable.noMatches -->
 
@@ -2826,11 +2593,11 @@ More in [`Docs/screenshots/`](Docs/screenshots).
   each term's index form, and its corpus-wide versus in-scope counts.
 - **Facet** — break a result set down by year, volume, person, document type, and archival
   provenance; tap a row to narrow.
-- **Analyse** — corpus, series, person, and cross-reference dashboards; a chronology view; and a
+- **Analyze** — corpus, series, person, and cross-reference dashboards; a chronology view; and a
   word cloud with keyness and collocation.
 - **Trace sources** — Source Explorer resolves FRUS source notes to NARA record groups, lot files,
-  and collections, with archival neighbours and cross-volume provenance, from bundled indexes.
-- **Organise** — projects, collections, exports (PDF, HTML, Word, BibTeX, RIS), Zotero, a research
+  and collections, with archival neighbors and cross-volume provenance, from bundled indexes.
+- **Organize** — projects, collections, exports (PDF, HTML, Word, BibTeX, RIS), Zotero, a research
   trail, and iCloud sync of your own work.
 - **Summarize** — on-device Apple Intelligence summaries, one document at a time or as unattended
   bulk runs, with authorship recorded on every summary.
@@ -3859,7 +3626,7 @@ A named collection is a body of records with a custodian. A central-file class i
 
 ## 10. Export Method Statements
 
-*Every analytics figure and table that leaves the app carries a methods statement above its numbers — a `#`-commented preamble on a CSV, a printed block on a figure plate. This is the prose a reader sees when the file has travelled without the app, so it has to stand alone. §5 already carries the corpus, Person, Cross-Reference and Word Cloud statements; the Archival and About-the-Series ones are new here.*
+*Every analytics figure and table that leaves the app carries a methods statement above its numbers — a `#`-commented preamble on a CSV, a printed block on a figure plate. This is the prose a reader sees when the file has traveled without the app, so it has to stand alone. §5 already carries the corpus, Person, Cross-Reference and Word Cloud statements; the Archival and About-the-Series ones are new here.*
 
 ---
 
@@ -4083,7 +3850,7 @@ Unit: a source note is not a document. Only documents whose editors recorded whe
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 42 | key: series.export.caveat.corpus %lld -->
 
-Corpus: these figures come from a data file that ships with the app and covers all %lld catalogued volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything.
+Corpus: these figures come from a data file that ships with the app and covers all %lld cataloged volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything.
 
 <!-- END SOURCE: series.export.caveat.corpus %lld -->
 
@@ -4257,7 +4024,7 @@ A free NARA Catalog API key is needed to search for lot file and Presidential Li
 
 ---
 
-#### The citation form was not recognised
+#### The citation form was not recognized
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 838–839 | key: source.explorer.unrecognized.explanation | shared: iOS+macOS (the same key in both views — edit both) -->
 
@@ -4525,13 +4292,13 @@ The American Commission to Negotiate Peace kept its own decimal file, separate f
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/ParisPeaceRecords.swift | lines: 185–191 | key: source.explorer.parisPeace.rolls -->
 
-Microfilm publication M820 reproduces the series. Most of its 538 file units are digitised, each covering a range of decimal numbers. This panel does not say which one holds this document. The ranges overlap and are not always continuous, so use the index below to find it.
+Microfilm publication M820 reproduces the series. Most of its 538 file units are digitized, each covering a range of decimal numbers. This panel does not say which one holds this document. The ranges overlap and are not always continuous, so use the index below to find it.
 
 <!-- END SOURCE: source.explorer.parisPeace.rolls -->
 
 ---
 
-### 11.6 Digitised scans
+### 11.6 Digitized scans
 
 #### Only the class is known — iOS
 
@@ -4559,7 +4326,7 @@ NARA has scanned \(count) file ranges in this decimal class, but none of them co
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1833–1839 | key: source.explorer.scans.multiple | shared: iOS+macOS (the same key in both views — edit both) -->
 
-\(ranges.count) scanned file ranges contain \(fileIdentifier). They are listed narrowest first. NARA digitised this file in overlapping sets, so the widest range is not wrong. The narrowest is simply the most specific.
+\(ranges.count) scanned file ranges contain \(fileIdentifier). They are listed narrowest first. NARA digitized this file in overlapping sets, so the widest range is not wrong. The narrowest is simply the most specific.
 
 <!-- END SOURCE: source.explorer.scans.multiple -->
 
@@ -4855,7 +4622,7 @@ two sentences is the feature. Nearly all of it is new in build 42.*
 
 **The standing rule for this section: plainer must not become more confident.** The semantic axis
 ships at weight 0, its quality before 1900 is a declared unknown rather than a measured pass, and
-the neighbour list is drawn only from volumes on the device even though the map draws all 552. Every
+the neighbor list is drawn only from volumes on the device even though the map draws all 552. Every
 one of those limits is stated somewhere below. If an edit reads as having removed one rather than
 unpacked it, that is a defect — say so and it goes back.
 
@@ -4987,7 +4754,7 @@ Up and down is the volume's coverage midpoint, not each document's own date.
 <!-- END SOURCE: semanticMap.caveat.slice.vertical.v2 -->
 
 
-### 13.4 Arriving from a document, and leaving by its neighbours
+### 13.4 Arriving from a document, and leaving by its neighbors
 
 
 #### Research-rail tile
@@ -5324,7 +5091,7 @@ Too few source notes
 #### Each volume takes the category its source notes name most…
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 99–100 | key: semanticMap.lens.provenance.caption.v2 -->
 
-Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncoloured.
+Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncolored.
 
 <!-- END SOURCE: semanticMap.lens.provenance.caption.v2 -->
 
@@ -5397,10 +5164,10 @@ Open Document
 
 <!-- END SOURCE: research.action.openDocument.v2 -->
 
-#### Colours group collections by who holds the records — four…
+#### Colors group collections by who holds the records — four…
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 304–305 | key: series.provenance.topCollections.method.v2 -->
 
-Colours group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 catalogued volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking.
+Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking.
 
 <!-- END SOURCE: series.provenance.topCollections.method.v2 -->
 

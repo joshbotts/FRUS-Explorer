@@ -25,6 +25,9 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
+///   1.1 — Build-43 content pass: the guide↔tool pointer test re-pinned to the contracts
+///         convention (the per-feature "Find it … window (Mac)" line is retired; the guide
+///         names the capability and points at the User Manual instead)
 @Suite("Archival analytics — whole-library queries")
 struct ArchivalLibraryQueryTests {
 
@@ -309,11 +312,24 @@ struct ArchivalAnalyticsEntryPointTests {
         // Before this, "Archival Analytics" appeared NOWHERE in the 1,200-line walkthrough —
         // not a missing sentence, a missing section. The #363 unreachable-surface shape, in the
         // one place that exists to tell a reader what the app can do.
+        //
+        // Build-43 content pass: the owner rewrote the walkthrough's feature pages as CONTRACTS —
+        // what a reader will be able to do, never where the buttons live; the how moved to the
+        // User Manual, which each page points at. So this test no longer pins the per-feature
+        // "Find it … window (Mac)" line (that convention is retired, and reintroducing it is the
+        // regression), and the section that names the archival signal is `archival-signal` on the
+        // bigger-picture page rather than a per-tool `archival-analytics` blurb.
         let education = try Self.source("Onboarding/IndexingEducationView.swift")
-        #expect(education.contains("id: \"archival-analytics\""),
-                "the walkthrough has no Archival Analytics section")
-        #expect(education.contains("or the Archival Analytics window (Mac)"),
-                "the section must say where to find it, like every sibling section")
+        #expect(education.contains("id: \"archival-signal\""),
+                "the walkthrough no longer names the archival signal at all")
+        #expect(education.lowercased().contains("archival analytics"),
+                "the capability must still be named, or a reader cannot find the tool's manual entry")
+        #expect(education.contains("the User Manual"),
+                "the contract pages must point at the manual that carries the how")
+        #expect(!education.contains("or the Archival Analytics window (Mac)"), """
+            The per-feature where-to-find-it line is the retired convention this rewrite removed — \
+            the how lives in the User Manual now, and the guide points there instead.
+            """)
         #expect(!education.contains("link on the Archival Sourcing page of this guide."), """
             That link is WITHHELD mid-onboarding, which is when most readers meet this section — \
             telling them to use it would be an instruction they cannot follow.
@@ -355,7 +371,7 @@ struct ArchivalAnalyticsEntryPointTests {
         #expect(card.contains("four custodians, not the ten categories above"))
         // The measured claim, not the one the first draft made: the AUTHORITY names 356 volumes
         // and none before 1900; it is the document index that covers all 552 with no floor.
-        #expect(card.contains("covering all 552 catalogued volumes with no 1900 floor"))
+        #expect(card.contains("covering all 552 cataloged volumes with no 1900 floor"))
         #expect(card.contains("reaches 356 of them"))
         #expect(!card.contains("archival authority, which spans all 552"), """
             The authority does not span 552 volumes — measured, it names 356, none of them \

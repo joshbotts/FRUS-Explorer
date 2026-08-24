@@ -674,7 +674,7 @@ struct PersonCoMentionGraphView: View {
                     localized: "personCoMention.node.a11yValue",
                     defaultValue: "\(node.sharedWithFocus) shared documents with \(vm.focusName)"))
                 .accessibilityHint(String(localized: "personCoMention.node.hint",
-                                          defaultValue: "Tap to see the connection and re-centre the network on this person; right-click or long-press for actions"))
+                                          defaultValue: "Tap to see the connection and re-center the network on this person; right-click or long-press for actions"))
                 .help(String(localized: "personCoMention.node.help",
                              defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
             }

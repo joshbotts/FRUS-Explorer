@@ -192,7 +192,7 @@ struct MandatorySubstitutesTests {
         #expect(result.partiallyDigitizedCount == 1)
         #expect(result.documentsWithSubstitute == 0)
         #expect(result.documentsTested == 1)
-        #expect(result.coverageNote.contains("partly digitised"))
+        #expect(result.coverageNote.contains("partly digitized"))
     }
 
     // MARK: - The microfilm route

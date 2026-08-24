@@ -1384,7 +1384,7 @@ struct CrossReferenceGraphView: View {
                 Text(String(localized: "graph.degree.twoHops", defaultValue: "2 hops"))
                     .tag(2)
                     .help(String(localized: "graph.degree.2.help",
-                                 defaultValue: "Add references to and from each direct neighbour"))
+                                 defaultValue: "Add references to and from each direct neighbor"))
                 Text(String(localized: "graph.degree.threeHops", defaultValue: "3 hops"))
                     .tag(3)
                     .help(String(localized: "graph.degree.3.help",
@@ -1478,7 +1478,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.what.title",
                               defaultValue: "What the graph shows"),
                 body:  String(localized: "graph.info.what.body",
-                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
+                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.edges.title",
@@ -1494,9 +1494,9 @@ struct CrossReferenceGraphView: View {
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
-                              defaultValue: "Neighbourhood degree"),
+                              defaultValue: "Neighborhood degree"),
                 body:  String(localized: "graph.info.degree.body",
-                              defaultValue: "1° shows only direct neighbours of the central document. 2° adds neighbours of those neighbours. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
+                              defaultValue: "1° shows only direct neighbors of the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.interact.title",

@@ -1112,7 +1112,7 @@ struct ChronologyView: View {
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.chart.title", defaultValue: "The distribution chart"),
                         detail: String(localized: "chronology.info.chart.detail",
-                                       defaultValue: "The stacked chart colour-codes documents by source volume (the top volumes, then a grey “Other”). Use the chart-colours menu to choose how many volumes get a distinct colour.")),
+                                       defaultValue: "The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.")),
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.cap.title", defaultValue: "Wide ranges"),
                         detail: String(localized: "chronology.info.cap.detail",

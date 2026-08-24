@@ -40,7 +40,7 @@ enum SeriesAnalyticsExport {
     static func corpusStatement(volumeCount: Int) -> String {
         String(format: String(
             localized: "series.export.caveat.corpus %lld",
-            defaultValue: "Corpus: these figures come from a data file that ships with the app and covers all %lld catalogued volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything."),
+            defaultValue: "Corpus: these figures come from a data file that ships with the app and covers all %lld cataloged volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything."),
             Int64(volumeCount))
     }
 

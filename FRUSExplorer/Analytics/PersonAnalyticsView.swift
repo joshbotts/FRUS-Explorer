@@ -1226,7 +1226,7 @@ struct PersonAnalyticsView: View {
                     systemImage: "person.crop.circle.badge.questionmark",
                     description: Text(String(
                         localized: "personAnalytics.network.noFocus.detail",
-                        defaultValue: "Search for a person above to centre the co-mention network on them. No people are indexed in this range yet."))
+                        defaultValue: "Search for a person above to center the co-mention network on them. No people are indexed in this range yet."))
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

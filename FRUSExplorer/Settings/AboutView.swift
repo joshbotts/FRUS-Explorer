@@ -259,16 +259,14 @@ struct AboutView: View {
     static var frusDescriptionRaw: String {
         String(localized: "about.frus.description", defaultValue: """
 The **Foreign Relations of the United States** (FRUS) series is the official documentary \
-record of U.S. foreign policy. The Department of State has published it continuously since \
-1861. The series now runs to more than 550 volumes, covering 1861 through the early 1990s.
-
-What the series covers has changed over time. Recent volumes document U.S. bilateral and \
-regional relations around the world, and how U.S. policymakers responded to unfolding crises. \
-They cover global issues such as human rights, terrorism, narcotics, health, and the \
-environment. They also cover thematic topics such as national security policy, foreign \
-economic policy, and foreign affairs organization and management. Scholars, policymakers, and \
-citizens use FRUS to trace the origins of today's challenges and the United States's role in \
-the world.
+record of U.S. foreign policy, published continually by the Department of State since 1861. \
+The series now runs to more than 550 volumes, covering 1861 through the early 1990s. Recent \
+volumes document U.S. bilateral and regional relations around the world, and how U.S. \
+policymakers responded to unfolding crises. They cover global issues such as human rights, \
+terrorism, narcotics, health, and the environment. They also follow thematic topics such as \
+national security policy, foreign economic policy, and foreign affairs organization and \
+management. Scholars, policymakers, and citizens use FRUS to trace the origins of today's \
+challenges and the United States's role in the world.
 """)
     }
 

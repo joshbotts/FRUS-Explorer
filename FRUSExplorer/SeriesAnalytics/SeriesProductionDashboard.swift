@@ -256,7 +256,7 @@ struct SeriesProductionDashboard: View {
             title: String(localized: "series.chart.peryear.title",
                           defaultValue: "Volumes published per year"),
             caption: String(localized: "series.chart.peryear.caption",
-                            defaultValue: "How many volumes reached print in each year, coloured by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication."),
+                            defaultValue: "How many volumes reached print in each year, colored by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication."),
             inspector: ChartInspectorAdapters.perYearTable(buckets),
             provenance: SeriesAnalyticsExport.production(
                 figureTitle: String(localized: "series.chart.peryear.title",

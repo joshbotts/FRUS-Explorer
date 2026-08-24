@@ -243,7 +243,7 @@ struct TripPacketExporter {
         // is range-grain and a worksheet row is group-grain, so naming the affected rows here would
         // assert a correspondence the data does not support.
         if !model.substitutes.isEmpty {
-            out.append("Some of these records are digitised or on film and must be read that way — "
+            out.append("Some of these records are digitized or on film and must be read that way — "
                        + "see \"Use these instead of pulling\" before writing slips.")
             out.append("")
         }
@@ -331,8 +331,8 @@ struct TripPacketExporter {
             out.append(line)
             if let url = row.catalogURL { out.append("    \(url.absoluteString)") }
             if !row.isSoleClaimant {
-                out.append("    More than one digitised unit claims these documents — NARA's "
-                           + "digitisation is layered, so check this one covers yours.")
+                out.append("    More than one digitized unit claims these documents — NARA's "
+                           + "digitization is layered, so check this one covers yours.")
             }
         }
         // Disclose a truncation rather than trailing off. A list that silently stopped would read
@@ -630,7 +630,7 @@ struct TripPacketExporter {
                    + "allowed. Auto-feed and hand-held scanners and personal copiers are not.")
         out.append("- NARA staff cannot undertake research for you, but a consultation desk and "
                    + "dedicated foreign-affairs reference staff exist — ask at the reference desk.")
-        out.append("- Records that are digitised or on microfilm must be used in those forms where "
+        out.append("- Records that are digitized or on microfilm must be used in those forms where "
                    + "they are available.")
         // The pages that answer what this card deliberately does not assert (T-0 §3.2: pull times,
         // the 5:15 cutoff, the consultation area's hours and the Wednesday specialist window are

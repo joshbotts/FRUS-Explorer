@@ -2916,10 +2916,10 @@ struct SemanticMapSpikeView: View {
             // that cannot be shortened without lying about what it shows — and the design lists
             // several more lenses to come. A menu costs one tap and holds any number.
             HStack(spacing: 8) {
-                Text(String(localized: "semanticMap.lens", defaultValue: "Colour by"))
+                Text(String(localized: "semanticMap.lens", defaultValue: "Color by"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Picker(String(localized: "semanticMap.lens", defaultValue: "Colour by"),
+                Picker(String(localized: "semanticMap.lens", defaultValue: "Color by"),
                        selection: $lens) {
                     ForEach(availableLenses) { option in
                         Text(option.displayName).tag(option)

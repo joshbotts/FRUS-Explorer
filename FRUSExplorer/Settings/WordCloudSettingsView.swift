@@ -351,7 +351,7 @@ struct WordCloudSettingsView: View {
                               defaultValue: "Words listed here are removed from every word cloud, on top of the built-in stop lists.")
             case .lens:
                 return String(localized: "settings.wordcloud.lens.footer",
-                              defaultValue: "Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recogniser keeps mistaking) without affecting other lenses.")
+                              defaultValue: "Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recognizer keeps mistaking) without affecting other lenses.")
             }
         }
     }

@@ -32,6 +32,11 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-11: #838
+///   1.1 — Build-43 content pass: the en-US sweep fixed shipped British spellings far outside
+///         the archival family (graph popovers, concordance/collocates, the semantic map's
+///         export and lens copy, chronology, person analytics, series dashboards), so those
+///         files join `sources` and the banned list gains `analyse`/`catalogu` — otherwise the
+///         sweep holds only until the next edit reintroduces one
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -52,6 +57,24 @@ struct ArchivalCopyRulesTests {
         // shipped in `archival.info.method.title` while this suite stayed green — the guard was
         // reading every file the copy came from EXCEPT the one the consolidation moved it into.
         "Theme/FRUSTheme.swift",
+        // Build-43 en-US sweep (1.1): every file it fixed joins the guard, for the same reason
+        // FRUSTheme did — a sweep that does not extend the guard holds only until the next edit.
+        "Research/ResearchView.swift",
+        "Settings/WordCloudSettingsView.swift",
+        "SeriesAnalytics/SourceProvenanceDashboard.swift",
+        "SeriesAnalytics/SeriesAnalyticsExport.swift",
+        "SeriesAnalytics/SeriesGeographyDashboard.swift",
+        "SeriesAnalytics/SeriesProductionDashboard.swift",
+        "SeriesAnalytics/TopCollectionsCard.swift",
+        "CrossReference/CrossReferenceGraphView.swift",
+        "Search/ConcordanceView.swift",
+        "Search/CollocationView.swift",
+        "Semantic/Map/SemanticMapExport.swift",
+        "Semantic/Map/SemanticMapSpikeView.swift",
+        "Semantic/Map/SemanticMapLens.swift",
+        "Analytics/PersonAnalyticsView.swift",
+        "Analytics/PersonCoMentionGraphView.swift",
+        "Chronology/ChronologyView.swift",
     ]
 
     private static func source(_ relative: String) throws -> String {
@@ -134,7 +157,7 @@ struct ArchivalCopyRulesTests {
         // Matching the stem covers the plural, the possessive and the compound at once.
         let banned = ["coloured", "recognises", "recognise", "digitised", "digitise",
                       "organise", "organised", "neighbour", "behaviour", "centre",
-                      "colour"]
+                      "colour", "analyse", "catalogu"]
         for relative in Self.sources {
             for text in Self.shippedStrings(in: try Self.source(relative)) {
                 let lowered = text.lowercased()
