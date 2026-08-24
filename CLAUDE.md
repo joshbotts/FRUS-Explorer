@@ -233,9 +233,11 @@ do not hand-edit `CloudKitSchemaInventory.installedIdentifiers` to make the red 
 
 1. Paste the printed list over `installedIdentifiers`.
 2. Add the new identifiers to `identifiersAwaitingDeploy` (the app then reports it at launch and
-   in Settings ▸ Data & Recovery ▸ iCloud Schema). The list is also an **interlock**:
-   `ResearchTrailMigration` refuses to run while a record type it writes is listed here, because it
-   deletes the rows it replaces in the same call and CloudKit would keep only the deletions.
+   in Settings ▸ Data & Recovery ▸ iCloud Schema). The list also serves as an **interlock** for
+   any migration that deletes the rows it replaces in the same call — CloudKit would keep only
+   the deletions while the new type awaits deploy. (`ResearchTrailMigration` was the type case;
+   it and the session models were retired in R-2b, PR #981 — with NO Production deploy, because
+   Production is append-only and a removal is not a deploy.)
 3. Owner step: exercise the new type/field once on a Development build with iCloud signed in, then
    CloudKit Dashboard → Schema → **Deploy Schema Changes to Production**.
 4. Clear `identifiersAwaitingDeploy`, re-run the suite, paste the count + digest it prints, and
