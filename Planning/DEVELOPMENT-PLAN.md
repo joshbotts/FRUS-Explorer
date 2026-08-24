@@ -8631,3 +8631,46 @@ capability named, manual pointer present, the old line banned) and
 section catalog and per-section glyphs — now pins the three pages, the sidebar grouping,
 and every using-the-app page closing on the User Manual pointer). One owner typo fixed
 ("with document" → "with documents"); nothing else overruled.
+
+---
+
+## Release 2026-08-24 — TestFlight build 43 (v0.2), both platforms
+
+Tagged **`build-43`** at `ad920cff`. Annotated, and carrying the headline, the re-index
+requirement, the CloudKit position and where the tester notes live — the same four facts
+`build-42` records, for the reason #949 gives: reconstructing what a build contained after the
+fact costs real time, and `git show build-43` should make that unnecessary.
+
+**109 commits since `build-42`.** The headline is **Browse rebuilt around research axes** (#1051,
+B-1…B-7): All Volumes, Administrations, Editors, Subjects, Archives and Clusters as doors rather
+than one list, with Working Corpora and My Scopes beside them. Then **detected subjects wired
+through** (#1019–#1030): a Subjects facet on results, the Topic Index's 491 topics with series and
+your-library figures labeled apart, a document's own topics in the Research rail. Then the
+**research trip packet** (#830): Project Home ▸ Plan a Visit turns documents into seven chapters —
+lead times, an inquiry draft per facility, a pull worksheet carrying the RG / entry / NAID lines
+staff ask researchers to quote, mandatory substitutes, restriction flags, NARA's own citation
+forms, a visit-day card. Also in the range: the archives more visible (#1009/#1013/#834 put
+central-file decimal classes on the graph and into Archival Analytics; #1004 the pre-1906 despatch
+serials), VoiceOver Audio Graphs on every chart (#979), the semantic surfaces' one icon family
+(#1077), and this release's own content pass (#1078) — the Research Guide's three feature pages
+rewritten as contracts that hand the reader to the User Manual for the how.
+
+**A full re-index is required on first launch** — `currentDateIndexVersion` 40 → 46, six index
+changes, and that constant's doc comment says a date bump forces a full clean reparse.
+`currentPersonRollupVersion` is unchanged at 9. Both tester-notes files lead with this.
+
+**No CloudKit deploy.** `identifiersAwaitingDeploy` is empty and Production is deployed through
+build 40. Wave R-2b (#981) retired `ResearchSession`/`SessionEvent`, 15 identifiers — and **a
+removal is not a deploy**: Production schema is append-only, so those identifiers remain there
+unmirrored and `deployedThroughBuild` must not move for them. That finding is also what dissolved
+the plan's schema-batch rationale, leaving #266 and #279 as each other's only batch partner.
+
+**Release-checklist habits, both discharged for this build**: `Scripts/check_repository_links.py
+--stamp` ran clean (20 OK, 0 needs-review, 0 dead, 3 owner-asserted — JFK and LBJ hosts that
+answer a script with 403 and were confirmed by hand), stamping `confirmed` to 2026-08-24; and the
+version was already 43 in `project.yml` and `project.pbxproj`, so no build bump was needed at
+release time. The owner's VoiceOver pass and the App Store Connect archive-and-upload remain
+owner-only steps — nothing in the repo can do them or attest to them.
+
+Tester notes live in `Docs/TestFlight-Instructions-ios.md` and `-mac.md`, one per platform, both
+written against **build 42** as the baseline, which both platforms received.
