@@ -271,7 +271,7 @@ struct ClustersIndexView: View {
                 ContentUnavailableView(
                     String(localized: "browser.clusters.unavailable.title",
                            defaultValue: "Clusters Unavailable"),
-                    systemImage: "circle.hexagongrid",
+                    systemImage: SemanticGlyph.clusters,
                     description: Text(unavailableText)
                 )
             }
@@ -437,7 +437,7 @@ struct ClusterDocumentsView: View {
                 ContentUnavailableView(
                     String(localized: "browser.clusters.unavailable.title",
                            defaultValue: "Clusters Unavailable"),
-                    systemImage: "circle.hexagongrid",
+                    systemImage: SemanticGlyph.clusters,
                     description: Text(String(localized: "browser.clusters.drill.unavailable",
                                              defaultValue: "This cluster's data could not be loaded."))
                 )
@@ -521,7 +521,7 @@ struct ClusterDocumentsView: View {
                 } label: {
                     Label(String(localized: "browser.clusters.seeOnMap",
                                  defaultValue: "See on the semantic map"),
-                          systemImage: "map")
+                          systemImage: SemanticGlyph.feature)
                 }
             }
             Button {

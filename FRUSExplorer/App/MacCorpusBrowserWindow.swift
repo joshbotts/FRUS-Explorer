@@ -190,7 +190,7 @@ struct CorpusBrowserWindowView: View {
                           systemImage: "archivebox")
                         .tag(CorpusSidebarItem.archives)
                     Label(String(localized: "browser.clusters.title", defaultValue: "Clusters"),
-                          systemImage: "circle.hexagongrid")
+                          systemImage: SemanticGlyph.clusters)
                         .tag(CorpusSidebarItem.clusters)
                 }
                 Section(String(localized: "corpus.sidebar.yourSets", defaultValue: "Your sets")) {

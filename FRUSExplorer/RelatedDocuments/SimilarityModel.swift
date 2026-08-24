@@ -105,7 +105,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .subseries:          return "books.vertical"
         case .sharedPersons:      return "person.2"
         case .sharedSubjects:     return "tag"
-        case .semanticSimilarity: return "text.magnifyingglass"
+        case .semanticSimilarity: return SemanticGlyph.document
         }
     }
 

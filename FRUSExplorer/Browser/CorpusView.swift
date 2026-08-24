@@ -387,7 +387,7 @@ struct CorpusView: View {
                     BrowseAxisGridTile(
                         title: String(localized: "browser.corpus.tile.clusters",
                                       defaultValue: "Clusters"),
-                        systemImage: "circle.hexagongrid",
+                        systemImage: SemanticGlyph.clusters,
                         accessibilityIdentifier: "browse.root.clustersTile"
                     ) {
                         vm.select(.clusters)

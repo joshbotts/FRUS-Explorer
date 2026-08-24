@@ -1178,11 +1178,19 @@ Timeline places each document at its date along a time axis. Documents this one 
 <!-- END SOURCE: graph.info.degree.body -->
 
 #### Navigating the graph
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1493–1494 | key: graph.info.interact.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1504–1505 | key: graph.info.interact.body.v2 -->
+<!-- Repointed from graph.info.interact.body after the 2026-08-23 docs pass bumped the key to
+     .v2 (the teal-node and three-citation-kinds paragraphs) but left this in-place block on the
+     dead key. The §14 copy carries the change rationale; this is the section's editing surface,
+     the same in-place + §14 pairing the archival.info.weights.* keys use. -->
 
 Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
 
-<!-- END SOURCE: graph.info.interact.body -->
+Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.
+
+This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection's record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.
+
+<!-- END SOURCE: graph.info.interact.body.v2 -->
 
 #### Undownloaded volumes
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1499–1500 | key: graph.info.undownloaded.body -->

@@ -17,6 +17,7 @@ import Testing
 #if canImport(UIKit)
 import UIKit
 #endif
+@testable import FRUSExplorer
 
 // MARK: - SymbolNameAuditTests
 
@@ -46,6 +47,10 @@ import UIKit
 ///
 /// Version history:
 ///   1.0 — Q wave: initial implementation
+///   1.1 — Semantic iconography: runtime checks for the symbol-bearing types the literal scan
+///         cannot reach (`SemanticGlyph`, `SimilarityAxis.systemImage`), plus the family
+///         contract — every semantic surface shares the hexagon-grid motif and none may
+///         borrow the cross-reference graph's glyph again
 @Suite("SF Symbol name audit")
 struct SymbolNameAuditTests {
 
@@ -156,6 +161,43 @@ struct SymbolNameAuditTests {
         #expect(!symbols.contains("search.mode.facets"))
         #expect(!symbols.contains("search.corpus.save"))
         #expect(!symbols.contains("wordcloud.unavailable.title"))
+    }
+
+    /// The symbol-bearing types the literal scan cannot reach, checked the runtime way — the
+    /// pattern the suite's own doc comment prescribes. `SemanticGlyph`'s constants feed
+    /// `railTile(_:...)` (a positional argument, no marker) and `SimilarityAxis.systemImage`
+    /// is an enum property, so neither appears in ``literals()``.
+    @Test("Symbol-bearing types resolve at runtime")
+    func symbolBearingTypesResolve() {
+        for name in [SemanticGlyph.feature, SemanticGlyph.clusters, SemanticGlyph.document] {
+            #expect(UIImage(systemName: name) != nil, "SemanticGlyph names a missing symbol: \(name)")
+        }
+        for axis in SimilarityAxis.allCases {
+            #expect(UIImage(systemName: axis.systemImage) != nil,
+                    "SimilarityAxis.\(axis) names a missing symbol: \(axis.systemImage)")
+        }
+    }
+
+    /// The semantic-family contract. Every surface built on the semantic-vector methodology
+    /// shares the hexagon-grid root motif — that shared root is the point of ``SemanticGlyph``,
+    /// and a variant swapped to an unrelated glyph would dissolve the family silently. And none
+    /// of them may be the cross-reference graph's glyph in either fill state: the rail once
+    /// showed the two tiles side by side differing only by fill, and Settings' vector-storage
+    /// row used the graph's exact glyph, which is the collision this family exists to end.
+    @Test("Semantic glyphs share the root motif and never borrow the graph's")
+    func semanticFamilyContract() {
+        let family = [SemanticGlyph.feature, SemanticGlyph.clusters, SemanticGlyph.document]
+        for name in family {
+            #expect(name.hasPrefix("circle.hexagongrid"),
+                    "semantic glyph left the family motif: \(name)")
+            #expect(!name.contains("trianglepath"),
+                    "semantic glyph borrows the cross-reference graph's motif: \(name)")
+        }
+        #expect(SimilarityAxis.semanticSimilarity.systemImage == SemanticGlyph.document,
+                "the Related semantic axis must carry the family's per-document glyph")
+        // The three variants stay distinct — feature door, groupings, one-document — or two
+        // surfaces with different meanings collapse into one icon.
+        #expect(Set(family).count == family.count)
     }
     #endif
 }

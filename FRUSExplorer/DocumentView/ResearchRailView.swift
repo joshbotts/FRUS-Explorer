@@ -278,7 +278,7 @@ struct ResearchRailView: View {
             railTile("archivebox", RailTileCopy.sources, action: openSources)
             railTile("point.3.connected.trianglepath.dotted", RailTileCopy.graph, action: openGraph)
             railTile("doc.on.doc", RailTileCopy.related, action: openRelated)
-            railTile("point.3.filled.connected.trianglepath.dotted", RailTileCopy.semanticMap,
+            railTile(SemanticGlyph.document, RailTileCopy.semanticMap,
                      action: openSemanticMap)
             railTile("square.and.arrow.up", RailTileCopy.share) {
                 showSharePopover = true
@@ -296,7 +296,7 @@ struct ResearchRailView: View {
             railTile("archivebox", RailTileCopy.sources) { onOpenTool(.sources) }
             railTile("point.3.connected.trianglepath.dotted", RailTileCopy.graph) { onOpenTool(.graph) }
             railTile("doc.on.doc", RailTileCopy.related) { onOpenTool(.related) }
-            railTile("point.3.filled.connected.trianglepath.dotted", RailTileCopy.semanticMap) {
+            railTile(SemanticGlyph.document, RailTileCopy.semanticMap) {
                 onOpenTool(.semanticMap)
             }
             DocumentShareMenu(vm: vm) {
