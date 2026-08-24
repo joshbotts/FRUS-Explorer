@@ -136,7 +136,7 @@ struct SemanticAnalyticsView: View {
                 Label(
                     String(localized: "semanticAnalytics.about.title",
                            defaultValue: "How the corpus's language sits"),
-                    systemImage: "point.3.filled.connected.trianglepath.dotted")
+                    systemImage: SemanticGlyph.feature)
                     .font(.headline)
                 Spacer(minLength: 12)
                 Button {

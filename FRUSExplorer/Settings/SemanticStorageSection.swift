@@ -90,7 +90,7 @@ struct SemanticStorageSection: View {
         SettingsNavRow(
             label: String(localized: "settings.vectors.downloaded.label",
                           defaultValue: "Downloaded"),
-            systemImage: "point.3.connected.trianglepath.dotted",
+            systemImage: SemanticGlyph.feature,
             detail: String(
                 format: String(localized: "settings.vectors.downloaded.detail %@ %@",
                                defaultValue: "%@ of %@ on this device."),

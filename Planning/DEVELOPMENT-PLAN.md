@@ -8571,3 +8571,32 @@ slice-position caption sat under the slice-*vertical* key. New blocks:
 `archival.info.library.*` (#838's moved rule), `classPointersSelfCitation` (#834's
 disclosure). `EditableContentKeyTests`' contract re-checked by hand against every new
 annotation.
+
+## Session 2026-08-23 — Semantic iconography: one family for one methodology (pre-build-43)
+
+Owner direction before shipping build 43: the semantic surfaces' icons "should at least
+hint at a common root methodology." The census found worse than inconsistency — two of
+the three identities were borrowed. The map's doors and the rail's "On the Map" tile
+used `point.3.filled.connected.trianglepath.dotted`, one fill-state from the
+cross-reference graph's long-standing glyph (unreadable at tile size, and the rail
+showed the two tiles side by side); Settings' vector-storage row used the graph's
+*exact* glyph; the Related semantic axis used `text.magnifyingglass`; only the Clusters
+axis (B-7) and the map's own region card agreed on `circle.hexagongrid`.
+
+**`SemanticGlyph`** (new, the `WordCloudGlyph` pattern) makes the hexagon grid the
+family root with three variants by relationship to the corpus: `.feature`
+(`circle.hexagongrid.fill`) for the whole-corpus doors — both platforms' Semantic
+Analytics menu items, the map's about header, the guide section, the storage row, and
+the cluster drill's "See on the semantic map" (formerly the geographic `map`);
+`.clusters` (plain) for the groupings — Clusters axis, region card/pill, now by
+constant; `.document` (`circle.hexagongrid.circle`) for one-document-against-the-corpus
+— the rail tile and `SimilarityAxis.semanticSimilarity`. Every cross-reference surface
+keeps its glyph untouched.
+
+`SymbolNameAuditTests` 1.1 adds what its own doc comment prescribed: runtime resolution
+for the symbol-bearing types the literal scan cannot reach (`SemanticGlyph` feeds
+`railTile(_:...)` positionally; `SimilarityAxis.systemImage` is an enum property), plus
+the family contract — shared `circle.hexagongrid` prefix, never the graph's motif, the
+Related axis pinned to `.document`, all three variants distinct. Verified on the 16e:
+the Analysis Tools menu now shows the filled grid beside Cross-Reference Analytics'
+dots, and the Browse root's Clusters tile rhymes with both.

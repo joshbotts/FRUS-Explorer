@@ -1087,7 +1087,7 @@ private extension EducationPage {
             EducationSection(
                 id: "semantic-analytics",
                 heading: "Semantic Analytics",
-                systemImage: "point.3.filled.connected.trianglepath.dotted",
+                systemImage: SemanticGlyph.feature,
                 paragraphs: [
                     "Every other analytics surface measures something the corpus states \u{2014} who is named, what cites what, where a document came from. Semantic Analytics measures how the language sits. Every document in the series is placed on one map by the shape of its wording, so documents that read alike land near each other whether or not they share a volume, a date, or a citation. Regions are named by the vocabulary that distinguishes them from the rest of the corpus.",
                     "You can colour the map four ways \u{2014} by region, by coverage era, by what is downloaded on this device, or by provenance: the archival category most of each volume\u{2019}s source notes name, which shows the State Department\u{2019}s central files giving way to the presidential libraries across the plane. A key under the map names the colours, except on Regions, where colour separates neighbouring regions and the names are drawn on the map itself. Tap a point to see which document it is and open it. Draw a lasso around an area to keep everything inside it as a working corpus, which you can then use to scope a search. Or tap two documents as poles and lay the whole series along the axis between them: the axis runs between the two documents\u{2019} volumes, so two documents from the same volume give no axis, and a slice replaces the vertical axis with each volume\u{2019}s coverage year.",

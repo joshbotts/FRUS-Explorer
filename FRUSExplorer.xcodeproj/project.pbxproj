@@ -255,6 +255,7 @@
 		33EA037FE5006EDEA9CFB0F7 /* CrossReferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E07E3C0FF3893FAC63B624D /* CrossReferenceStore.swift */; };
 		341EE1203179EFEB35D7649D /* TripPacketBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E967930307B0277C99423208 /* TripPacketBuilder.swift */; };
 		3445DC2918566C5A49A4CFAB /* SummarizationRetryPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFBA46CE9F486C16583F05C /* SummarizationRetryPolicy.swift */; };
+		34ABE0D4A43EA04029BC0143 /* SemanticGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09200ADBDF6CF67CF04A1EFD /* SemanticGlyph.swift */; };
 		34C1CE00FF0839F2BCE76D0A /* CentralFilesIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6909B8BF1949C639A2FD6D0 /* CentralFilesIndex.swift */; };
 		34D9472860C5729A0F055705 /* BatchRunReadinessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD5FD460D42B7BB8E2514C7 /* BatchRunReadinessTests.swift */; };
 		3581E598BE7CC3E0A9FC2927 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A3807C69C5FBF4EE379B748 /* OnboardingViewModel.swift */; };
@@ -783,6 +784,7 @@
 		9FCEE37B0C45CDB8AB665621 /* SceneAddressingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CE88730392B6E8B64F9601 /* SceneAddressingTests.swift */; };
 		A0213B71CB185DDA13D92A91 /* ConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D8E36B500E8886EA309C53 /* ConnectionsView.swift */; };
 		A0380F04B1E1115B760BBA50 /* ProjectHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32C37FA3C3CBEFC46979B0 /* ProjectHomeView.swift */; };
+		A05BB46FEA33232135FE1807 /* SemanticGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09200ADBDF6CF67CF04A1EFD /* SemanticGlyph.swift */; };
 		A0657C60BC4A42D5C7D7486A /* RealTEICoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BD609D0467D3679F7C327A /* RealTEICoverageTests.swift */; };
 		A06B6C722AD32F76F15CF97D /* KWICLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */; };
 		A0A03094C376596EF89943D4 /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B574AF4FE49E9A08617B014 /* UserTag.swift */; };
@@ -1373,6 +1375,7 @@
 		07FF8DC81284AA9B9B225BEC /* WordCloudPayloadDigest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudPayloadDigest.swift; sourceTree = "<group>"; };
 		08BCAE1978E06447F0CA5A4E /* SemanticVectorIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticVectorIndex.swift; sourceTree = "<group>"; };
 		08C16FC0FB7155D72E3193CC /* CorpusProximityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorpusProximityTests.swift; sourceTree = "<group>"; };
+		09200ADBDF6CF67CF04A1EFD /* SemanticGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticGlyph.swift; sourceTree = "<group>"; };
 		0975FA5C560DCC925D601728 /* FTS5Connection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Connection.swift; sourceTree = "<group>"; };
 		098147A931A317EF31085A2E /* ResearchNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchNote.swift; sourceTree = "<group>"; };
 		098DBCD31246184178FBB2BD /* ConcordanceMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcordanceMetrics.swift; sourceTree = "<group>"; };
@@ -2415,6 +2418,7 @@
 				CBE94AA9FE60469904C09F6B /* BundledSemanticVectors.swift */,
 				D9E1DFD8948152A43D6A6553 /* SemanticAnalyticsView.swift */,
 				09A023463EA56B0D8BF43881 /* SemanticFeedbackLog.swift */,
+				09200ADBDF6CF67CF04A1EFD /* SemanticGlyph.swift */,
 				81881562215EEB75EA40274A /* SemanticShardFetcher.swift */,
 				FC52ABEC2468EE7421C829DD /* SemanticShardStore.swift */,
 				29C1043B976B3006ECBFDC35 /* SemanticStorageReport.swift */,
@@ -3924,6 +3928,7 @@
 				5AA375882185CE465A20055B /* SemanticAxis.swift in Sources */,
 				411487B2AEB9ABC2EC92AEA1 /* SemanticFeedbackLog.swift in Sources */,
 				B5B6E69E52ED438C5A37C630 /* SemanticFeedbackView.swift in Sources */,
+				A05BB46FEA33232135FE1807 /* SemanticGlyph.swift in Sources */,
 				C8116663859AD26EC50B73DE /* SemanticMapArtifacts.swift in Sources */,
 				8060C29D2625D105A1E4F8A9 /* SemanticMapExport.swift in Sources */,
 				15F31743927E19BC0FD1F326 /* SemanticMapLabels.swift in Sources */,
@@ -4390,6 +4395,7 @@
 				1AB8054C75938C0582669B89 /* SemanticAxis.swift in Sources */,
 				5AC73FE6017B9B2A5AEB4DDF /* SemanticFeedbackLog.swift in Sources */,
 				9067A80270AE4F3D82B9AB7C /* SemanticFeedbackView.swift in Sources */,
+				34ABE0D4A43EA04029BC0143 /* SemanticGlyph.swift in Sources */,
 				574707E60FBD1728EEBA8EE4 /* SemanticMapArtifacts.swift in Sources */,
 				A6C6BA67E4D01ADA11C89BA2 /* SemanticMapExport.swift in Sources */,
 				DBAAEA0541F3F5230664B78A /* SemanticMapLabels.swift in Sources */,

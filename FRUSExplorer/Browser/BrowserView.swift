@@ -437,7 +437,7 @@ struct BrowserView: View {
                 } label: {
                     Label(String(localized: "browse.semanticAnalytics.a11y",
                                  defaultValue: "Semantic Analytics"),
-                          systemImage: "point.3.filled.connected.trianglepath.dotted")
+                          systemImage: SemanticGlyph.feature)
                 }
                 Button {
                     appState.openWordCloud(.corpus, from: sceneID)

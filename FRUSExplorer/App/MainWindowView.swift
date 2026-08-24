@@ -345,7 +345,7 @@ struct MainWindowView: View {
                 } label: {
                     Label(String(localized: "mainwindow.tools.semanticAnalytics",
                                  defaultValue: "Semantic Analytics"),
-                          systemImage: "point.3.filled.connected.trianglepath.dotted")
+                          systemImage: SemanticGlyph.feature)
                 }
                 Divider()
                 Button {

@@ -1880,7 +1880,7 @@ struct SemanticMapSpikeView: View {
     private func compactCardIcon(_ card: CompactCard) -> String {
         switch card {
         case .axis: return "arrow.left.and.right"
-        case .region: return "circle.hexagongrid"
+        case .region: return SemanticGlyph.clusters
         case .selection: return "hand.point.up.left"
         case .lasso: return "lasso"
         }
@@ -1971,7 +1971,7 @@ struct SemanticMapSpikeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
                     Label(String(localized: "semanticMap.region.title", defaultValue: "Region"),
-                          systemImage: "circle.hexagongrid")
+                          systemImage: SemanticGlyph.clusters)
                         .font(.subheadline.weight(.semibold))
                     Spacer(minLength: 12)
                     Button {
