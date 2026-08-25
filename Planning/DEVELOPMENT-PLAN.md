@@ -8674,3 +8674,29 @@ owner-only steps — nothing in the repo can do them or attest to them.
 
 Tester notes live in `Docs/TestFlight-Instructions-ios.md` and `-mac.md`, one per platform, both
 written against **build 42** as the baseline, which both platforms received.
+
+## Session 2026-08-25 — planning: the packet's missing third body of evidence enters the wave
+
+A scoping question with a one-word answer, and the answer became a wave admission. Asked
+whether the Research Trip Packet covers external references beside document sources: it does
+not. `TripPacketBuilder` feeds every chapter from `documentSourcesByKey` alone — the
+`document_sources` table, each printed document's own source note — and nothing in
+`FRUSExplorer/TripPacket/` touches `external_citations` (#784), whose only consumers are
+Source Explorer, the cross-reference graph, and the archival analytics. The design never
+weighed and rejected them: `Completed/Research-Trip-Packet-Scope.md` defines the aggregation
+as "documents → parses → resolutions" over source notes, and the word "external" appears
+nowhere in it — not even in the out-of-scope list.
+
+The omission matters for exactly the packet's purpose: a footnote citation often points at
+material the editors cite but do not print, which is what a researcher visits the archive to
+pull. And the join is structurally cheap — the table is per-document, indexed on
+`(volume_id, document_id)`, with `documentSourcesByKey` as the query shape to mirror. The one
+recorded trap for whoever builds it: "drawn from" and "pointed at" are the two claims whose
+addition was the defect #783 removed (`externalCitationStats`'s doc comment keeps them in
+separate methods for that reason), so the packet must render external references as their own
+section per repository chapter, never folded into chapter 3's pull rosters.
+
+Admitted to `Plan-Of-Record-2026-08-23.md` as **W-18**, placed in Tier A directly behind
+W-1b — #1014's inheritance rule enriches this same table, so the sequencing affinity is real,
+but there is no gate: the table ships today, and the session needs no index bump, no schema
+change, and no new artifact. No code this session.
