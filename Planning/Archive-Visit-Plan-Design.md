@@ -1,4 +1,4 @@
-# Archive Visits — the archival research plan (design v2.1, 2026-08-26)
+# Archive Visits — the archival research plan (design v3, 2026-08-26)
 
 **Status: OPEN DESIGN — owner decisions pending (§7).** v1 answered the owner's first direction
 (seeding surfaces, per-document source/references choice, persistence). **v2 revises it against
@@ -16,10 +16,19 @@ the owner's second direction**, which changed two things v1 got wrong and one it
    repository-filtered, priority-grouped target list with consultation metadata, (c) a draft
    inquiry email per repository.
 
-Everything cited was verified against tree `979aa413`. **v2.1** (same day) folds in the
-owner's three refinements: per-target seeding links + reference context in deliverable (b),
-which resolves the W-18 claims question (§3, §7.4-resolved); and user-defined priority
-tiers, unlimited and optionally labeled (§2, §4, §7.2-resolved).
+Everything cited was verified against tree `979aa413`. **v2.1** folded in per-target seeding
+links + verbatim reference context in (b) — which resolved the W-18 claims question — and
+user-defined priority tiers.
+
+**v3 (this revision) records the owner's decisions and fixes three defects the verification pass
+found in v2.1 itself.** Decisions: chapters 1/3/7 **dropped**; name **"Archive Visit"**; schema
+timing **coupled to the W-4+W-5 promotion** (no holding-state ship); orphaned targets **report
+coverage**; **child `@Model` per target** (the owner made this conditional on it genuinely
+protecting multi-device data — §2a answers that on the merits, and it does); **full CRUD** for
+plans. Defects fixed: the target key contained `claim`, contradicting v2.1's own "one unit row"
+promise (§2); `tripPacketGroupKey` is **not unit-grain** for the commonest citation form (§2b —
+the most consequential correction here); and "fold substitutes into a per-target marker" is not
+supported by the data (§3).
 
 ## 1. What exists today (unchanged from v1)
 
@@ -54,29 +63,87 @@ documents" row is disclosed, not deleted.
 now carries two levels:**
 
 ```
-PlanDocument { documentKey, includeSource: Bool, includeExternalRefs: Bool }
-PlanTier     { id: UUID, label: String?, order: Int }          // user-defined, any number
-PlanTarget   { targetKey: {claim: drawnFrom|pointedAt, identity},
-               tierId: UUID?, included: Bool, userNote: String? }
+ArchiveVisitPlan   { id, name, inquiryText?, projectIds, tiersData: Data,
+                     deliverableToggles, createdAt, lastModified }     // ~11 identifiers
+PlanDocument       { id (derived), plan, documentKey,
+                     includeSource: Bool, includeExternalRefs: Bool,
+                     stateData: Data?, lastModified }                  // ~12
+PlanTarget         { id (derived), plan, targetKey,
+                     tierId: UUID?, included: Bool, userNote: String?,
+                     stateData: Data?, lastModified }                  // ~12
 ```
 
-Tiers are **plan-scoped and user-defined** — create, rename, reorder, delete, any number, labels
-optional (an unlabeled tier renders by its position, "Priority 1"). `tierId == nil` is the
-implicit **Unprioritized** group, which always exists and always sorts last; deleting a tier
-drops its members there, disclosed. A new plan starts with no tiers — every target Unprioritized,
-one visible "Add a priority tier" control — so casual use pays nothing for the feature.
+### 2a. Why a child `@Model` per target, on the merits
 
-Per-document flags control **what a document contributes** (the v1 three-way choice, unchanged at
-add time); per-target state controls **how each resulting target is treated** — include, priority
-bucket, a private note. Membership (which documents feed which target, and the counts) is derived
-at render time from the included documents; per-target state persists across membership changes
-because it keys on the stable identity. This two-level shape is exactly the owner's "not only
-per-document override affordances, but also per-target ones," and the blob absorbs it with no
-schema change beyond v1's single model — the reason the blob was the right call.
+The owner made this conditional on genuine multi-device protection. It is, and the reason is
+mechanical rather than a preference: SwiftData mirrors **one `@Model` to one CKRecord and one
+stored property to one CKRecord field** (`CloudKitSchemaInventory.swift:44`). So:
 
-Record-grain last-write-wins, sync, R-7 mechanics, and the rejection of plan-as-Collection
-(21-file surface tax, mixed-build masquerade), device-local storage, and the ephemeral tray all
-stand as v1 argued.
+| two devices… | one blob | child `@Model` per target |
+|---|---|---|
+| edit **different** targets | both rewrite the one field — the loser loses **its whole session** (every tier, note, and newly minted target), silently | different records: **nothing conflicts, both survive** |
+| edit the **same** target | one winner | one winner, but the loss is bounded to that target |
+| one adds seeds while the other tiers | whichever writes second wins the blob | inserts vs a different record: **both survive** |
+
+The blob's failure is not "one entry lost" — it is a whole-array clobber that still renders as a
+coherent, partly stale document. The child model's residual cost is duplicate rows, which are
+visible and repairable, where a silent revert is neither. **Cost: ~35 identifiers across three
+record types, one deploy** — the reserved W-4+W-5 promotion, per the owner's timing decision.
+
+Three consequences follow, all of which the design adopts:
+
+- **Targets are a STATE OVERLAY, not a materialized list.** A `PlanTarget` row is minted only when
+  the user gives that target state (a tier, a note, an exclusion). An untouched target is a pure
+  render-time derivation from the plan's seeds. Record count is bounded by what the user touched;
+  duplicates become near-impossible (two devices deriving the same list independently create zero
+  records); and the rendered list is `derived(seeds) ∪ stored-state rows`, which **is** the
+  coverage-reporting doctrine the owner chose for orphans.
+- **Child ids are DERIVED, not random** — a namespace hash over `planId | key` — because SwiftData
+  under CloudKit cannot declare `@Attribute(.unique)`, and `DuplicateRecordCleanup` groups by `id`.
+  Two devices seeding from the same document mint the same row *deterministically*, which is
+  exactly the case a random id hides from that pass. Enrol both types in `dedupeSimple`.
+- **No `didSet` on any new model** (the array-observer trap `WorkingCorpus` documents); stamp
+  through `ModelModificationStamper`. Relationships take `.nullify` inverses like
+  `Collection`/`CollectionEntry`, with an explicit cascading delete helper (§5a).
+
+**This also moots the CloudKit record-size question** — one record per touched target, rather than
+one blob that crosses the 1 MB CKRecord limit at roughly 4,600 seeded documents. The ceiling
+discussion disappears rather than needing an answer.
+
+### 2b. The target key — and the correction that matters most
+
+Two fixes to v2.1:
+
+**(i) The key does not contain `claim`.** v2.1 keyed on `{claim, identity}`, which would mint two
+rows for a unit cited both ways — contradicting its own §3 promise of "one unit row, claims
+itemized inside it." Claim belongs to the **seeding**, not the target.
+
+**(ii) `tripPacketGroupKey` is not unit-grain, and using it would have wrecked the feature.** For a
+decimal citation the parser puts the **file identifier** into `seriesName`
+(`IndexingPipeline.swift:6238`), so the packet's group key yields one group per file number —
+measured, ~25 groups from 30 pre-1950 documents, i.e. nearly one per document. Since central
+decimal files are the commonest form in the corpus, target-grain prioritization would have
+degenerated to per-document rows for most plans. The archival unit a researcher actually consults
+is the decimal **class**, and the app already stores it: `document_sources.decimal_class`, indexed,
+canonical (`IndexingPipeline.swift:6198`), with #828's labels making it read in words.
+
+So the target key is **form-aware**:
+
+| citation form | target key | the per-seeding detail |
+|---|---|---|
+| central decimal | `decimal_class` (e.g. `611.51`) | the full file number |
+| lot file | `lot_file_norm` | folder/box designation |
+| library / named collection | `repository \| collection` | box/folder |
+| unrecognized | the raw note text | — |
+
+This also resolves the dropped chapter 3 cleanly: the isolated **file designation** the pull
+worksheet uniquely carried now lives on the seeding row under a class-grain target — which is
+where a pull slip needs it anyway.
+
+The rejection of plan-as-Collection (21-file surface tax, mixed-build masquerade), of
+device-local storage, and of the ephemeral tray all stand as v1 argued. `stateData` on both
+children is the reserved evolution column (the `SavedSearch.parametersData` pattern), so future
+per-target properties cost no further deploy.
 
 ## 3. The deliverables, narrowed
 
@@ -114,13 +181,64 @@ with their priorities, unresolved citations quoted verbatim as help-me-locate it
 consultation framing ("seeking further advice") the owner named. One draft per repository in the
 filtered set.
 
-**Demoted to opt-in appendices (default off) or dropped — owner decision §7.5:** the pre-arrival
-checklist with lead times (ch1), the reading-room pull worksheet as a distinct artifact (ch3 —
-largely subsumed by (b)), substitutes and triage as chapters (ch4/ch5 — folded into (b)'s
-markers), NARA's citation forms (ch6), the visit-day card (ch7). "Customizable" = deliverable and
-appendix toggles on the plan, blob-stored.
+### 3a. The seven chapters, decided (owner, 2026-08-26)
 
-**The claims question W-18 forces — resolved by (b)'s reference context (§7.4).** W-18 mandated
+**Dropped outright: ch1 (Before you go), ch3 (Pull worksheet), ch7 (On the day).** ch1 and ch7 are
+wholly NARA-procedural — and ch7 unconditionally printed College Park's rules even for a
+library-only plan. ch3's only unique payload, the isolated file designation, moves to (b)'s
+seeding rows (§2b); its blank Box column was an affordance, not data, and the packet never
+fabricated a box number.
+
+**ch4 — substitutes: fold to the SEEDING row, not the target.** v2.1 said per-target; the shipped
+code refuses that correspondence in as many words ("a substitute is range-grain and a worksheet
+row is group-grain, so naming the affected rows here would assert a correspondence the data does
+not support", `TripPacketExporter.swift:242-248`) because `MandatorySubstitutes.Row` keys on the
+**digitized unit's** NAID and carries no target key. The document-grain fold *is* exact — the
+lookup is already built one `CitedFile` per placed document — but it is **blocked today**:
+`CitedFile` carries `identifier` and `year` and no document key, so Phase 1 must add one and have
+`build` return a per-document match. Four facts have no row to sit on and must ride in the
+plan-level coverage report (§3c) or be lost: the `coverageNote` denominators (documents tested /
+with a substitute), `partiallyDigitizedCount` ("the class is digitized but not this serial" — by
+design never a row), the `isSoleClaimant` layered-digitization warning, and the chapter's closing
+microfilm-publication rule. **Substitutes are tested on drawn-from seedings only** — a footnote
+reference is a pointer, not a thing you were going to pull. **An empty result must never render as
+absence**: the coverage line prints unconditionally, because the type's own doc warns that an
+empty chapter with no caveat "would read as a clearance to pull everything."
+
+**ch5 — restrictions: fold to a per-target marker, plus a plan-level line — but the join is not
+1:1 and the design says so.** `RestrictionTriage` keys on **series** NAID; a target keys on a lot,
+class or collection. The shipped lot-claimants artifact carries 123 divided lots, one claimed by
+up to 13 series, so "is this target restricted?" can have several different answers. Rejected:
+*show the most severe* (invents certainty), *unanimity-or-silence* (goes silent on most divided
+lots), and *single-pick* (today's behavior — prints one claimant's status as if it were the lot's).
+Adopted: **one line, not a badge** — the worst *covered* status, the series it belongs to, and how
+many claimants are unmeasured — and the divided lot routes into (c) **as a question for the
+archivist**, which is what a divided lot actually is.
+
+**ch6 — citation crib: opt-in appendix, default OFF.** At most three sections drawn from four
+verbatim NARA forms, selected by designation form; zero overlap with (b), so it cannot fold. Do
+**not** render a per-target citation form (it would repeat one form under 14–25 targets). One
+exception worth folding: on central-file targets only, NARA's no-box rule as a single line. *A
+live defect to fix while porting*: the Example-8 gate is `category == .lotFile` where it should be
+"any target that is not a central-file target."
+
+### 3b. What "customizable" means
+
+Deliverable toggles — (a)/(b)/(c) and the ch6 appendix — are plan-level, stored in
+`ArchiveVisitPlan`. Defaults: (a), (b), (c) on; ch6 off.
+
+### 3c. The coverage report — one honest home for the homeless facts
+
+The owner's orphaned-target decision (report coverage, the `WorkingCorpus` pattern) creates the
+place these facts belong. One block, stated in true denominators: targets derived vs. stored-state
+rows that no longer derive; documents indexed on this device vs. seeded; substitutes tested vs.
+found, with the partial-digitization count; restriction claimants measured vs. unmeasured. **The
+cause of a non-deriving target is usually a device with fewer indexed volumes, not a data defect**
+— and citation-derived identity means an authority re-clustering never moves a key.
+
+### 3d. The claims question W-18 forces — resolved by (b)'s reference context (§7.4)
+
+ W-18 mandated
 a *separate* per-repository section for pointed-at references, "never folded into chapter 3's
 pull rosters" — written when the roster was the artifact and a folded row would have carried a
 bare, unattributed count. In (b), every seeding is itemized **with its claim and its verbatim
@@ -155,6 +273,28 @@ captions for absent halves, never a dead toggle. **Mac prerequisite (unchanged):
 Material is iOS-only (9 refs vs 0 in `MacSourceExplorerView`); the Mac scope control waits on the
 port.
 
+### 4a. Plan management — full CRUD (owner requirement)
+
+**Where the list lives.** iOS: the **Research tab**, as a pinned entry beside Project Home — the
+tab bar is full and this is research-workspace furniture, not a corpus axis. macOS: one singleton
+`Window("Archive Visits", id: "frus.archiveVisits")` reached from the existing My Research menu,
+matching how the other research surfaces get windows.
+
+**Create** — no naming dialog. Seeded creation auto-names from its seed (the collection's name,
+the project's name, the archival unit's label); an empty plan is "Untitled Archive Visit,"
+renameable in place. **Read** — row shows name, then `N targets · M repositories · lastModified`;
+empty state explains what a plan is and how to seed one. **Update** — rename via context menu
+(alert with a text field) and inline in the editor header, both shipped grammars. **Duplicate** —
+offered in the context menu: a plan is a working hypothesis, and forking one before re-scoping is
+the natural move; duplication copies seeds, tiers and per-target state under fresh derived ids.
+**Delete** — swipe action plus destructive context item, with a confirmation dialog naming what
+goes, and an explicit cascading delete of the children (`.nullify` inverses do not cascade by
+themselves — §2a).
+
+**Settings registration is mandatory and test-pinned**: the three new types must join
+`ResetInventory.erased` (a suite asserts erased + retained == `frusModelTypes` exactly), the
+research-data item counts a user checks before erasing, and `ModelModificationStamper`.
+
 ## 5. The build seam, revised
 
 v1's two-list seam (`sourceDocuments` / `referenceDocuments`) survives as the pipeline boundary,
@@ -173,7 +313,7 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
 - **Phase 1 — the pipeline + the narrowed exporter.** Batched `externalCitations(for:)` (today
   per-document only, `IndexingPipeline.swift:6087`); the two-channel builder; **target minting**
   (keys as §2) with restriction/substitute markers folded in; the narrowed (a)/(b)/(c) exporter
-  with appendix toggles defaulted per §7.5 — this *is* W-18's delivery, in the revised shape; the
+  with deliverable/appendix toggles defaulted per §3b — this *is* W-18's delivery, in the revised shape; the
   Mac Unprinted Material port. Ephemeral (collection-seeded) packets get the narrowed artifact
   with all-targets-included defaults — no plan object needed yet.
 - **Phase 2 — the @Model** (unchanged: ~8 identifiers, blob per §2, boards the reserved W-4+W-5
@@ -182,33 +322,39 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
   add flows).
 - **Phase 4 — unit-grain entry UI + the live-index sparsity re-measure.**
 
-## 7. Owner decisions (v2; defaults first — v1 decisions not listed here carried unchanged)
+## 7. Decisions — resolved and remaining
 
-1. **Naming** — "Archive Visit" / "Archive Visits" (unchanged from v1).
-2. **Priority vocabulary — RESOLVED (owner, 2026-08-26)**: user-defined tiers, any number,
-   labels optional, plan-scoped; implicit Unprioritized catch-all; new plans start with none.
-   (Open sliver: whether a new plan seeds suggested tier names as placeholders — default no.)
-3. **Target grain** — default: unit-grain targets + per-document contribution flags (§2). The
-   finer (document × unit) exclusion grain is deliberately NOT offered — excluding a document's
-   contribution is done on the document row.
-4. **Claims presentation — RESOLVED (owner, 2026-08-26)**: one repository-grouped list whose
-   rows itemize each seeding with its claim and verbatim reference context (§3). The two
-   testable rules stand in for W-18's section split: counts never sum across claims; claim
-   groups visibly distinct within the row. W-18's plan-of-record row gets a disposition note on
-   approval.
-5. **Appendix disposition** — which of ch1/ch3/ch4-as-chapter/ch5-as-chapter/ch6/ch7 survive as
-   opt-in appendices vs are dropped outright. Default: checklist (ch1) and citation forms (ch6)
-   as opt-in appendices; pull worksheet, substitutes chapter, triage chapter, visit-day card
-   dropped (their load-bearing data lives in (b)'s rows).
-6. **Orphaned target state** — default: retain silently, disclose "no longer cited by this plan's
-   documents" rows rather than deleting them.
-7. **Ephemeral entry points now vs Phase 3 picker** — unchanged from v1 (default: wait).
-8. **Schema timing / conflict grain / unit grain in v1 / Mac timing** — unchanged from v1
-   (batched promotion; record-level LWW; blob headroom only; iOS first).
+**Resolved by the owner, 2026-08-26:** naming ("Archive Visit"); chapters 1/3/7 dropped, 4/5 folded
+per §3a, 6 an opt-in appendix defaulting off; schema timing coupled to the W-4+W-5 promotion;
+conflict grain = child `@Model` per target (§2a answers the owner's condition: yes, on the
+merits); orphaned targets = report coverage (§3c); priority tiers user-defined, any number
+(§2); claims presentation = one claim-labeled list (§3d); full CRUD (§4a).
 
-## 8. What v2 explicitly does not change
+**Resolved by the verification pass, recorded here rather than re-asked:**
+- **CloudKit record size** — moot under child models (§2a); the ceiling discussion is deleted
+  rather than answered.
+- **Collections menu (§7.3)** — *keep* "Plan an Archive Visit…" as the ephemeral verb through
+  Phases 1–2, then replace it in Phase 3. Coupling the schema to W-4+W-5 means the ephemeral
+  packet is the only packet for a while; removing its verb first would leave a gap.
+- **Neighbors entry point (§7.7)** — land it in **Phase 1**, for the same reason, as one honest
+  option over the documents shown rather than an N-shown/M-cohort menu. It must live in the shared
+  content core, not the sheet, or it is missing from the macOS and Stage-Manager windows.
+- **Mac timing (§7.10)** — the Unprinted Material port lands in **Phase 1**: the Mac view already
+  holds every dependency, so deferring it buys nothing and costs the Mac its scope control.
+- **Tier placeholders (§7.2 sliver)** — start empty. (The duplicate-prompts scar is *not* the
+  supporting argument — that was a two-platform seeding-duplication bug, a different failure. The
+  argument is simply that per-object state starts empty here, as focus tags do.)
+- **`ResearchDataExporter`** — bump `currentFormatVersion` to 6 and carry the plan header, its
+  seeds, its tier definitions and every stored target state **including orphans**; never the
+  derived packet, which is a rendering and not the user's work.
 
-The persistence verdicts (§3 of v1, absorbed above), the seeding-surface designs, the sparsity
-and Mac-port constraints, the W-1b independence (affinity, not a gate), and Phase 0's content.
-W-18's plan-of-record row will need a disposition note once this design is approved — its
-delivery becomes Phase 1 in the revised shape.
+**Still open (small):** whether a duplicated plan's name gets a "copy" suffix or is left for the
+user to rename; and whether the ch6 appendix toggle is per-plan (default) or a global preference.
+
+## 8. What v3 does not change
+
+The persistence verdicts against plan-as-Collection, device-local storage and the ephemeral tray;
+the seeding-surface designs; the sparsity constraint (references on ≲6% of documents — counts at
+add time, captions for absent halves, never a dead toggle); W-1b independence (affinity, not a
+gate); and Phase 0's content. W-18's plan-of-record row needs a disposition note on approval — its
+delivery is Phase 1 in this shape.
