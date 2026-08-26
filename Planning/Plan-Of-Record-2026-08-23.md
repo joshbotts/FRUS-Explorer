@@ -3,20 +3,29 @@
 **Status:** the single live plan, superseding `Completed/`-bound `Plan-Of-Record-2026-08-17.md`
 (discharged in full — every session row shipped; its final state and per-row evidence stay in
 that file and in `DEVELOPMENT-PLAN.md`'s 2026-08-23 audit entry). Written from the owner's wave
-decision of 2026-08-23, against tree `75c5d40c` and the audit PR #1076.
+decision of 2026-08-23, against tree `75c5d40c` and the audit PR #1076. **Refreshed
+2026-08-26 against tree `2ea5c100`** — build 43 shipped, and three rows were overtaken by
+work merged after the plan was written (W-6 discharged, W-7 re-sequenced, W-1 re-scoped);
+see the strikes and the notes on those rows.
 
 **How to keep this current:** when a session ships, strike its row in §3 and update the issue.
 When this document's sequencing is overtaken, replace it the way it replaced its predecessor.
 
 ---
 
-## 1. Ship first: TestFlight build 43
+## 1. Ship first: TestFlight build 43 — ~~SHIPPED 2026-08-24~~
 
-The owner ships the current v2 as **build 43** after reviewing `Docs/EditableContent.md`.
+**Discharged.** Tagged `build-43` at `ad920cff` (annotated; `git show build-43` carries the
+headline, the re-index requirement, the CloudKit position and where the tester notes live),
+release record in `DEVELOPMENT-PLAN.md` via #1079, content pass via #1078. The link check ran
+clean and stamped 2026-08-24. **Still owner-only: the VoiceOver pass and the App Store Connect
+archive-and-upload** — nothing in the repo can perform or attest to either.
+
+~~The owner ships the current v2 as **build 43** after reviewing `Docs/EditableContent.md`.
 Everything is already in place: `CURRENT_PROJECT_VERSION` is 43 in both `project.yml` and
 `project.pbxproj` (bumped in #956), the four tester-facing docs were reconciled with everything
 since build 42 (#1075 — including the six index changes forcing a first-launch re-index, which
-the notes disclose), and `identifiersAwaitingDeploy` is empty. No engineering precedes the ship.
+the notes disclose), and `identifiersAwaitingDeploy` is empty. No engineering precedes the ship.~~
 
 ## 2. The standing gate
 
@@ -36,13 +45,13 @@ suggested, not binding; tiers A–E can interleave as owner inputs land.
 
 | # | Session | Scope | Gate |
 |---|---|---|---|
-| W-1 | **#1014 step 1: measure the bare-`Ibid.` gap** | Run the in-code harness (`MEASURE_DECIMAL=1`, `ExternalCitationIndexRunner`) to measure bare-`Ibid.`-after-class within `ibidReach` per era band — the 2,600 figure is an extrapolation and unquotable. Changes no artifact. Ends with a go/no-go on the issue. | Owner machine (needs `VOLUMES_DIR`) |
+| W-1 | **#1014 step 1: measure the bare-`Ibid.` gap** | **Re-scoped 2026-08-26 — the first action is to WRITE a measurement mode, not to run one.** The row previously read "run the in-code harness (`MEASURE_DECIMAL=1`)"; verified against the tree, that harness counts only what `FootnoteCitationScanner.classCandidates(inNote:)` returns, and that function (a) takes a **single note** so it cannot see the preceding footnote that `ibidReach` is measured against, and (b) requires a decimal class **inside the clause**, so a bare `Ibid.` yields zero candidates and is structurally invisible to it. `FootnoteCitationGrammar`'s document-ordered `Ibid.` state exists for the **lot/library** scanner, not for this one. So: add cross-footnote state to the measurement pass, then measure bare-`Ibid.`-after-class within `ibidReach` per era band — the 2,600 figure is an extrapolation and unquotable. Changes no artifact. Ends with a go/no-go on the issue. | Owner machine (needs `VOLUMES_DIR`; present, 694 volumes) |
 | W-1b | **#1014 step 2, if go** | The inheritance rule in `FootnoteCitationGrammar`, artifact regeneration, `external_citations` re-index (v46 → 47), `SAMPLE_OUTPUT` read before trusting the run. **This is the wave's index-content batch anchor** — #279's index half boards the same bump (W-4), per the one-bump-per-wave rule. | W-1's verdict; batches with W-4 |
 | W-18 | **#830 packet: the external-references section** *(added 2026-08-25, owner request)* | The trip packet reads only `document_sources` — each document's own source note — while the editors' footnote citations (#784's per-document `external_citations` FTS5 table, NOT the bundled corpus aggregate, which carries no document identity) never reach it, though they often point at material FRUS cites without printing: exactly what a researcher visits an archive to pull. Batch the reading list through the table (indexed on `(volume_id, document_id)`; `documentSourcesByKey` is the query shape to mirror) and resolve lots through the same `ArchivalResolver` route the packet already uses. Render as a **separate per-repository section** ("also cited by this reading list's footnotes"), never folded into chapter 3's pull rosters — "drawn from" and "pointed at" are the two claims whose addition was #783's defect, and the pipeline keeps them in separate methods for that reason; `inherited` (`Ibid.`) rows disclose it. Unresolved rows route into the A5 advance-inquiry draft like unresolved lots. No index or schema change — read-only over the shipped table. Prefer scheduling after W-1b, whose inheritance rule enriches this same table; no gate — the table ships today. | none (affinity with W-1b, not a gate) |
 | W-2 | **Cross-platform review: the four owed items** | The only tracker is `Cross-Platform-UI-Adversarial-Review/STATUS.md`, untouched since #924: M-2's Source Explorer half (a value-based window beside the graph's), CW-12 (macOS text scaling, window-fronting audit, iPad probes), the semantic-map slice-poles Handoff deferral (`requestedPoles`), and CW-11 re-capture *prep* (the shot list; captures are owner-lane). | none |
 | W-3 | **Semantic-map figure export** | Execute `Map-Figure-Export-And-Visual-Outputs.md` (#1007) — the offscreen Metal render path that lifts `SemanticMapExport`'s "No figure, deliberately" refusal with publication-quality output. | none |
 | W-4… (see Tier B) | | | |
-| W-6 | **#106 reconciliation** | Rewrite the 166-row, three-doc-generations-stale checklist down to the **13 live `[SCREENSHOT` placeholders** now in the manuals (8 browse-axes, trip packet ×2, iPad rail ×2, macOS Corpus Browser) + `Docs/screenshots/README.md`'s tier list; strike the cancelled rows; note the unreferenced `macos/collections-ribbon.png` and the never-committed Settings-tier spec. Capture stays owner-lane. | none |
+| ~~W-6~~ | ~~**#106 reconciliation**~~ — **DONE 2026-08-24, struck 2026-08-26** | The deliverable shipped as **#1081** ("Screenshot checklist — current manuals and README"), which re-keys the checklist to the current manuals and covers all **13 live `[SCREENSHOT` placeholders** (11 in the iOS manual, 2 in the macOS manual — counted 2026-08-26). #106 was closed NOT_PLANNED the same day, superseded by it. #1081 also adds an owner decision this row did not anticipate — *every committed capture is treated as stale* — which supersedes the tier list in `Docs/screenshots/README.md`. **Consequence: the owner-lane capture row is unblocked today**, because the reconciled list it waited on now exists. | ~~—~~ |
 
 ### Tier B — the two O-design features (design, then build)
 
@@ -56,7 +65,8 @@ suggested, not binding; tiers A–E can interleave as owner inputs land.
 
 | # | Session | Scope | Gate |
 |---|---|---|---|
-| W-7 | **#234 early-era people — the NER harvest and what it feeds** | The owner runs the detector harvest on the Mac Studio (`tools/semantic-harvest/NER-RUNBOOK.md`; the free NLTagger control `EarlyEraNERControl` prices the comparison). **The program's §5 gates still bind**: scoring needs the two ground-truth keyings — the M1a identity CSV (`Planning/early-era-people/m1a-eval-candidates.csv`, 300 rows, 0 keyed) and the M2a span sample (`stage_m2a.py` stages it; the scorer refuses to run without `m2a-ground-truth.jsonl`). Sequence: keyings + harvest → `score_detections.py` (detector vs control vs editors' own markup) → then M1b reconciliation, R-2/R-3 (clustering + adversarial review), R-4 bundled artifact, M3 UI. Multiple sessions; the first schedulable engineering is the scoring session once ground truth + a `detected/` store exist. | **Owner: 2 keyings + the harvest run** |
+| W-7 | **#234 early-era people — the NER harvest and what it feeds** | **Re-sequenced 2026-08-26 by #1083.** The old sequence ("keyings + harvest → `score_detections.py`") and gate ("Owner: 2 keyings + the harvest run") put the ~18-day Studio sweep on the scoring path. It is not on it: `stage_m2a.py`'s wider draw shares **zero volumes** with M1a's pilot twelve, so the existing `detected/` stores cover **0 of the 72 gold documents**, and the runbook now records that "the full sweep is not needed for scoring at all: it is what the scoring verdict authorizes, never its input." **This applies to the free control store too** — it has the same 12-volume scope, so it also needs a targeted re-run (cheap: the Swift control already supports `ONLY_DOCUMENTS`). Scoring instead needs a targeted ~90-chunk / **~8-minute** pass over exactly the gold documents. **There is now schedulable engineering BEFORE the keyings** — see W-7a. After scoring: M1b reconciliation, R-2/R-3 (clustering + adversarial review), R-4 bundled artifact, M3 UI. **The program's §5 gates still bind** (M1a CSV: 300 rows, **0 keyed**, re-counted 2026-08-26; M2a: staged but un-keyed). | **Owner: the M2a sitting** (+ the M1a keying for the separate identity half). The sweep is no longer a gate. |
+| W-7a | **#234 harness prerequisite — `ONLY_DOCUMENTS` + a worker pool** *(new 2026-08-26, from #1083)* | Two changes to `tools/semantic-harvest/harvest_ner.py`, both unblocked and both on the critical path. (a) **`ONLY_DOCUMENTS`** — restrict a run to an `m2a-ground-truth.jsonl`'s documents and record `sampled_doc_ids`, without which the scorer refuses the store; the Swift control already implements exactly this (`EarlyEraNERControlRunner`), so the shape is settled and the Python side is a port. Verified 2026-08-26: the identifier appears in **no** Python file under `tools/semantic-harvest/`. (b) **`WORKERS`** — a per-volume thread pool merging results in chunk order, selftest-pinned to write a byte-identical store at any width; the probe measured 3.92× at 4 workers with the knee at 4. Pin both in `selftest_harvest_ner.py`. | None — engineering only |
 | W-8 | **Pre-1910 Phase-3 tail harvest** | The consular series the June 2026 harvest deliberately left: Instructions (604019), Notes to/from Foreign Consuls (1076611 / 1076629), Domestic & Miscellaneous Letters, Special Agents — all registered as `SURVEY_SERIES` targets in CLAUDE.md's `CentralFilesIndexGenerator` entry. Survey first, then harvest into `central-files-index.json` (schema 3 already accommodates), then the downstream regeneration chain per CLAUDE.md's run order. The executed plan and its reference data are archived at `Completed/BigPicture-Pre1910-CentralFiles.md` + `Completed/Pre1910-CentralFiles-Reference-Data.md` — the method and golden checks live there. Also carries the two minor June leftovers recorded at retirement: enclosure dual-home rendering, and a live UI walkthrough of the classifier surfaces. | Owner machine + `CATALOG_API_KEY` |
 
 ### Tier D — the semantic re-entry (order binding, from the V-5 assessment §6)
@@ -85,13 +95,13 @@ deliverable is a scoping verdict, not code.
 
 | Item | Feeds |
 |---|---|
-| Review `EditableContent.md`, ship build 43 | §1 |
+| ~~Review `EditableContent.md`, ship build 43~~ — **done 2026-08-24** (#1078, tag `build-43`); the **VoiceOver pass** and the **App Store Connect archive-and-upload** remain owed | §1 |
 | O-4 design (one page: what an override is and who honors it) | W-4 |
 | O-5 design (one page: what "new" means across devices and reindexes) | W-5 |
-| The two #234 keyings (M1a identity CSV; M2a span sitting) + the Mac Studio NER harvest | W-7 |
-| Pre-1910 Phase-3 harvest runs (keyed) | W-8 |
+| The two #234 keyings — M1a identity CSV (0/300) and the **M2a span sitting**, which is the one on the critical path. Staged at `~/frus-m2a` **on the Mac Studio**, so the sitting happens there (or re-stage locally; `stage_m2a.py` is `SEED`-pinned, so a re-stage is deterministic). The NER sweep is **no longer a gate** — see W-7. | W-7 |
+| Pre-1910 Phase-3 runs — **`CATALOG_API_KEY` is needed for BOTH the survey (`SURVEY_SERIES=…`) and the harvest**, not the harvest alone | W-8 |
 | VoiceOver on-device pass (adoption shipped, #979) | quality |
-| Screenshot captures, after W-6 delivers the reconciled 13-shot list | #106 |
+| Screenshot captures — **unblocked 2026-08-24**: the reconciled list exists as **#1081** (13 live placeholders), and its owner decision treats every committed capture as stale | #1081 |
 | Release habits: `Scripts/check_repository_links.py --stamp`; eyeball the 3 owner-asserted URLs (JFK ×2, LBJ) | each release |
 | CloudKit Production promotion for the W-4+W-5 fields (one Dashboard step, batched) | Tier B |
 
