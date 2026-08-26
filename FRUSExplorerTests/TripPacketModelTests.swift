@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import SwiftData
 @testable import FRUSExplorer
 
 // MARK: - AdvanceNoticeFlagTests
@@ -388,5 +389,47 @@ struct TripPacketModelTests {
         #expect(model.triage.unresolvedDocumentCount == 9)
         #expect(model.checklist.items.contains { $0.escalatedBy == .recentRecords })
         #expect(model.groups[0].facility == .derived(facility: "National Archives at College Park"))
+    }
+
+    // MARK: - The collection seed rule (Archive Visits Phase 0)
+
+    /// `TripPacketSeed.staticSeedDocuments` is the one place the three collection surfaces
+    /// derive a packet's reading list, so its rules are pinned here: excerpts count as the
+    /// documents they quote, duplicates collapse first-occurrence-wins, order is `sortOrder`,
+    /// and non-document kinds contribute nothing.
+    @Test("The static seed takes documents and excerpts, deduplicated, in sort order")
+    @MainActor
+    func staticSeedRule() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Seed fixture")
+        context.insert(collection)
+
+        // Deliberately out of creation order so sortOrder is the only thing that can produce
+        // the expected sequence.
+        let excerpt = CollectionEntry(collectionId: collection.id, documentId: "d2",
+                                      volumeId: "v1", sortOrder: 0)
+        excerpt.entryKind = .excerpt
+        let doc = CollectionEntry(collectionId: collection.id, documentId: "d1",
+                                  volumeId: "v1", sortOrder: 1)
+        let duplicate = CollectionEntry(collectionId: collection.id, documentId: "d2",
+                                        volumeId: "v1", sortOrder: 2)
+        let heading = CollectionEntry(collectionId: collection.id, documentId: "",
+                                      volumeId: "", sortOrder: 3)
+        heading.entryKind = .heading
+        let emptyExcerpt = CollectionEntry(collectionId: collection.id, documentId: "",
+                                           volumeId: "", sortOrder: 4)
+        emptyExcerpt.entryKind = .excerpt
+        for e in [doc, excerpt, duplicate, heading, emptyExcerpt] { context.insert(e) }
+        try context.save()
+
+        let seeded = TripPacketSeed.staticSeedDocuments(
+            from: [doc, excerpt, duplicate, heading, emptyExcerpt])
+        #expect(seeded.map(\.documentId) == ["d2", "d1"], """
+            Expected the excerpt's document first (sortOrder 0), the document second, the \
+            duplicate collapsed, and the heading and id-less excerpt contributing nothing — \
+            got \(seeded).
+            """)
+        #expect(seeded.map(\.volumeId) == ["v1", "v1"])
     }
 }

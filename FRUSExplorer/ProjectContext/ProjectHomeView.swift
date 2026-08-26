@@ -116,6 +116,8 @@ struct ProjectHomeView: View {
     @State private var showCollectionsEditor = false
     /// Presents the research-trip packet over this project's engaged documents (#830 T-2).
     @State private var showTripPacket = false
+    /// The engaged set the packet is built over — the leads-seed union, cached per project.
+    @State private var engagedPacketDocuments: [(volumeId: String, documentId: String)] = []
 
     /// Whether the focus-tags editor sheet is presented (#377 Phase 3 — tag focus).
     @State private var showTagsEditor = false
@@ -171,6 +173,7 @@ struct ProjectHomeView: View {
             questionDraft = project?.researchQuestion ?? ""
             if let project { draftWeights = ProjectLeadsService.effectiveWeights(for: project) }
             scheduleRecompute(immediate: true)   // no chatter to debounce on open / project switch
+            await refreshEngagedPacketDocuments()   // the Plan-a-Visit gate's content test
         }
         // Keyed on the LEAD KEYS, not the project (#553). A recompute replaces the lead set without
         // changing `projectId`, so a project-keyed task would leave the old snippets on screen —
@@ -195,11 +198,10 @@ struct ProjectHomeView: View {
             ProjectFocusTagsEditor(projectId: projectId)
         }
         .sheet(isPresented: $showTripPacket) {
-            // The engaged set, de-duplicated the same way the leads engine seeds itself — distinct
-            // document-kind entries with non-empty ids — so the packet and Suggested Next describe
-            // the same body of work.
+            // The engaged set — computed by the SAME gatherSeed call the leads engine makes, so
+            // the packet and Suggested Next describe the same body of work by construction.
             TripPacketSheet(
-                documents: engagedDocumentsForPacket(),
+                seed: .documents(engagedPacketDocuments),
                 title: project?.name ?? String(localized: "project.home.planVisit.untitled",
                                                defaultValue: "This project"),
                 researchQuestion: project?.researchQuestion)
@@ -259,26 +261,19 @@ struct ProjectHomeView: View {
     // MARK: - Collections (#377 Phase 5 polish)
 
 
-    /// The project's engaged documents, for the trip packet (#830 T-2).
+    /// The project's engaged documents, for the trip packet (Archive Visits Phase 0).
     ///
-    /// Deliberately the same rule `ProjectLeadsService.collectionSeedKeys` uses — distinct
-    /// document-kind entries with non-empty ids — so the packet describes the same body of work
-    /// Suggested Next ranks over. A packet built from a different set would quietly disagree with
-    /// the rest of Project Home about what this project contains.
-    private func engagedDocumentsForPacket() -> [(volumeId: String, documentId: String)] {
-        var seen = Set<String>()
-        var out: [(volumeId: String, documentId: String)] = []
-        for collection in summary.collections {
-            for entry in collection.documentEntries ?? []
-            where entry.entryKind == .document && !entry.volumeId.isEmpty
-                && !entry.documentId.isEmpty {
-                let key = "\(entry.volumeId)/\(entry.documentId)"
-                if seen.insert(key).inserted {
-                    out.append((volumeId: entry.volumeId, documentId: entry.documentId))
-                }
-            }
-        }
-        return out
+    /// Parity with Suggested Next **by construction**: this calls the same
+    /// `ProjectLeadsService.gatherSeed` the leads engine runs — collections ∪ noted documents
+    /// ∪ focus-tagged documents — rather than re-implementing one of its three sources. The
+    /// previous version walked `summary.collections` only, while claiming parity in its doc
+    /// comment: a researcher who works by annotating rather than filing got a packet that
+    /// omitted every document they had engaged with, three sections below the leads that
+    /// ranked over all of them.
+    private func refreshEngagedPacketDocuments() async {
+        let keys = await ProjectLeadsService.gatherSeed(
+            forProject: projectId, container: modelContext.container).seedKeys
+        engagedPacketDocuments = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
     }
 
     /// The project's collections: which ones are attached, plus a "Manage" entry to attach or detach
@@ -293,11 +288,15 @@ struct ProjectHomeView: View {
                 Text(String(localized: "project.home.collections.title", defaultValue: "Collections"))
                     .font(.headline)
                 Spacer()
-                // #830 T-2: the packet is built over the project's ENGAGED set — the same
-                // collection documents that seed the leads engine — so it describes the archives
-                // behind work the researcher has actually done, not everything they have opened.
+                // Archive Visits Phase 0: the packet is built over the ENGAGED set — the same
+                // collections ∪ notes ∪ focus-tags union that seeds the leads engine — and the
+                // gate tests that CONTENT, not whether a collection happens to be attached. An
+                // attached-but-empty collection used to enable this button onto an empty packet.
                 Button {
-                    showTripPacket = true
+                    Task {
+                        await refreshEngagedPacketDocuments()
+                        showTripPacket = true
+                    }
                 } label: {
                     Label(String(localized: "project.home.planVisit",
                                  defaultValue: "Plan a Visit"),
@@ -305,7 +304,7 @@ struct ProjectHomeView: View {
                         .font(.caption)
                 }
                 .buttonStyle(.borderless)
-                .disabled(members.isEmpty)
+                .disabled(engagedPacketDocuments.isEmpty)
                 Button {
                     showCollectionsEditor = true
                 } label: {

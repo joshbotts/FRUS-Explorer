@@ -55,6 +55,12 @@ import Foundation
 ///          names its series, discloses its truncation and carries A10's withdrawal-notice/
 ///          FOIA/MDR explainer, and chapter 6 prints the worked examples transcribed from the
 ///          deposited "Citing Foreign Affairs Records" (D13/D17), pre-filled from the packet
+///   1.3 — Archive Visits Phase 0: chapter 3's roster joins the packet's truncation grammar —
+///          it was the one uncapped chapter (every row of every group, unbounded). Three
+///          disclosed regimes: 20 rows per group with an exact-count remainder line; a
+///          ~200-row packet budget after which rosters elide to their counts; and a ≥500-
+///          document group whose roster is elided outright — a list that size belongs to a
+///          finding aid, and rostering it would bury the worksheet's usable groups.
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -255,6 +261,14 @@ struct TripPacketExporter {
         // room and its rows become pull slips; one flat table mixing College Park with a
         // presidential library invites a researcher to request material that is a plane ride away.
         let placeable = model.groups.filter(\.canHeadChapter)
+        // The roster caps (Archive Visits Phase 0). Chapter 3 was the one uncapped chapter —
+        // fine at collection grain, unbounded at unit grain (measured: p99 = 506 documents per
+        // archival unit, max 17,606) — so it joins the packet's disclosed-truncation grammar.
+        // The budget is spent in group order; a group past the budget keeps its header and its
+        // exact count, because a group that silently vanished would read as absent from the
+        // archives rather than elided from the page.
+        var rosterRowsRemaining = Self.rosterRowBudget
+        var elidedGroups = 0
         for facility in orderedFacilities(in: placeable) {
             out.append("### \(facility)")
             for group in placeable where group.facility.chapterHeading == facility {
@@ -268,16 +282,43 @@ struct TripPacketExporter {
                     if let url = group.resolution?.catalogURL { out.append("\(url)") }
                 }
                 out.append("")
+                if group.documents.count >= Self.rosterElisionThreshold {
+                    // A roster this size belongs to a finding aid, not a worksheet.
+                    out.append("All \(group.documentCount) documents cite this file — too many "
+                               + "to roster here. Work from the series' own finding aid at the "
+                               + "pull desk; the app's Sources view lists every document.")
+                    elidedGroups += 1
+                    continue
+                }
+                let rows = min(group.documents.count,
+                               min(Self.rosterRowsPerGroupLimit, rosterRowsRemaining))
+                guard rows > 0 else {
+                    out.append("\(group.documentCount) documents — roster elided; this "
+                               + "worksheet caps at \(Self.rosterRowBudget) rows. The app's "
+                               + "Sources view carries the full roster.")
+                    elidedGroups += 1
+                    continue
+                }
                 // The per-document roster: FRUS citation · the file/folder designation the
                 // note cites · a blank Box column for the reading room. The box is blank by
                 // design — the packet never fabricates a box number; boxes are assigned at
                 // the pull desk from NARA's own finding aids.
                 out.append("| FRUS citation | File / folder | Box |")
                 out.append("|---|---|---|")
-                for document in group.documents {
+                for document in group.documents.prefix(rows) {
                     out.append("| \(document.citation) | \(document.fileDesignation ?? "") | |")
                 }
+                rosterRowsRemaining -= rows
+                if group.documents.count > rows {
+                    out.append("… and \(group.documents.count - rows) more documents — the "
+                               + "app's Sources view carries this group's full roster.")
+                }
             }
+            out.append("")
+        }
+        if elidedGroups > 0 {
+            out.append("\(elidedGroups) group\(elidedGroups == 1 ? "'s roster was" : "s' rosters were") "
+                       + "elided above — every group still shows its exact document count.")
             out.append("")
         }
         if !model.needingConfirmation.isEmpty {
@@ -355,6 +396,15 @@ struct TripPacketExporter {
 
     /// How many substitute rows print before the chapter discloses a remainder.
     private static let substituteRowLimit = 20
+
+    /// How many roster rows a single chapter-3 group prints before its remainder line.
+    /// Matches the 12/8/20 truncation grammar the other chapters ship (Phase 0, decided 20).
+    static let rosterRowsPerGroupLimit = 20
+    /// The whole worksheet's roster-row budget, spent in group order (Phase 0, decided 200).
+    static let rosterRowBudget = 200
+    /// A group at or past this many documents elides its roster outright — a list that size
+    /// belongs to a finding aid, and the group keeps its records line and exact count.
+    static let rosterElisionThreshold = 500
 
     // MARK: - Chapter 5: restriction triage
 

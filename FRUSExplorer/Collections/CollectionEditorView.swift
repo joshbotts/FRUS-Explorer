@@ -298,13 +298,12 @@ struct CollectionEditorView: View {
         // pre-existing and each body genuinely has its own copy. This one has a single presenter
         // precisely so the two halves cannot drift apart again.
         .sheet(isPresented: $showTripPacket) {
-            // From the ENTRIES rather than from `orderedDocumentKeys`, which is a `[String]` of
-            // composite keys — splitting those back apart would break on any id containing "/".
+            // The COLLECTION, not a pre-filtered list: the sheet resolves membership itself —
+            // smart collections through the same `smartRefs` their exports use, static ones
+            // through `TripPacketSeed.staticSeedDocuments` (documents + excerpts, de-duplicated)
+            // — so this surface and the export cannot describe different membership (Phase 0).
             TripPacketSheet(
-                documents: sortedEntries
-                    .filter { $0.entryKind == .document
-                        && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) },
+                seed: .collection(collection),
                 title: collection.name,
                 researchQuestion: nil)
                 .environment(appState)
@@ -1343,7 +1342,14 @@ struct CollectionEditorView: View {
                              defaultValue: "Plan an Archive Visit…"),
                       systemImage: "building.columns")
             }
-            .disabled(orderedDocumentKeys.isEmpty)
+            // Content or a saved search — the export sheet's own rule. A smart collection's
+            // membership resolves from its search at build time (its static entries are
+            // ignored, as the editor itself tells the user), and excerpt entries carry real
+            // document provenance, so neither may leave this disabled (Phase 0).
+            .disabled(orderedDocumentKeys.isEmpty
+                      && !sortedEntries.contains { $0.entryKind == .excerpt
+                          && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                      && linkedSavedSearchId == nil)
             Divider()
             Menu {
                 sortByDateScopeItems
@@ -1404,7 +1410,14 @@ struct CollectionEditorView: View {
                              defaultValue: "Plan an Archive Visit…"),
                       systemImage: "building.columns")
             }
-            .disabled(orderedDocumentKeys.isEmpty)
+            // Content or a saved search — the export sheet's own rule. A smart collection's
+            // membership resolves from its search at build time (its static entries are
+            // ignored, as the editor itself tells the user), and excerpt entries carry real
+            // document provenance, so neither may leave this disabled (Phase 0).
+            .disabled(orderedDocumentKeys.isEmpty
+                      && !sortedEntries.contains { $0.entryKind == .excerpt
+                          && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                      && linkedSavedSearchId == nil)
             Menu {
                 ForEach(CollectionGeneratedBlockType.allCases) { blockType in
                     Button {

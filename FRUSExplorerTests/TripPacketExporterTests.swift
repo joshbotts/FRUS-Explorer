@@ -29,6 +29,9 @@ import CoreGraphics
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
+///   1.1 — Archive Visits Phase 0: chapter 3's roster caps (20/group with exact remainder,
+///          the 200-row packet budget, the ≥500 elision) and the edited topic sentence's
+///          route into the export — each driven through the real exporter
 @Suite("Trip packet exporter (#830 T-2)")
 struct TripPacketExporterTests {
 
@@ -427,5 +430,91 @@ struct TripPacketExporterTests {
         #expect(text.contains("no inquiry to draft"))
         #expect(text.contains("Nothing to report"))
         #expect(!text.isEmpty)
+    }
+
+    // MARK: - Chapter 3 roster caps (Archive Visits Phase 0)
+
+    /// A group past 20 documents prints exactly 20 rows and an exact-count remainder — the
+    /// oracle's 30-document decimal group is the fixture, so this drives the shipping path.
+    @Test("A group's roster caps at 20 rows with an exact remainder")
+    func rosterCapsPerGroup() {
+        let text = exporter().export()
+        let rows = text.components(separatedBy: "| FRUS 1948 II, Document ").count - 1
+        // The 30-document group prints 20; the 8-, 3- and 12-document groups print in full
+        // (3 of the 12-doc library rows are also in the worksheet only if placeable — count
+        // against the whole packet, which is what a reader receives).
+        #expect(text.contains("… and 10 more documents — the app's Sources view carries this group's full roster."),
+                "the 30-document group must disclose its exact remainder")
+        #expect(rows < 30 + 8 + 3 + 12, "the uncapped roster is back")
+    }
+
+    /// At 500 documents the roster elides outright: the records line and the exact count stay,
+    /// the finding-aid sentence replaces the table, and the chapter's closing line counts it.
+    @Test("A 500-document group elides its roster and keeps its exact count")
+    func rosterElidesAtThreshold() {
+        let model = TripPacketModel.build(
+            groups: [
+                (key: "big", label: "Central Decimal File 611.51", category: .centralDecimalFile,
+                 repository: nil, resolution: nil,
+                 documents: Self.refs(TripPacketExporter.rosterElisionThreshold,
+                                      note: "Department of State, Central Files, 611.51")),
+            ],
+            documentYears: [1950], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil })
+        let text = exporter(model: model).export()
+        #expect(text.contains("All 500 documents cite this file — too many to roster here."),
+                "the elision must state the exact count")
+        #expect(text.contains("Work from the series' own finding aid at the pull desk"),
+                "the finding-aid sentence is the elision's replacement, not silence")
+        #expect(!text.contains("| FRUS 1948 II, Document 1 |"),
+                "an elided group must print no roster rows")
+        #expect(text.contains("1 group's roster was elided above"),
+                "the chapter must close by counting what it elided")
+    }
+
+    /// The packet-wide budget: groups spend it in order, and a group past it keeps its header
+    /// and count while its roster elides — never a silent disappearance.
+    @Test("The 200-row packet budget elides later groups with their counts intact")
+    func rosterBudgetAcrossGroups() {
+        // Twelve 20-document groups: the first ten spend the 200-row budget exactly; the
+        // eleventh and twelfth must elide with counts.
+        let groups: [(key: String, label: String, category: SourceProvenanceCategory?,
+                      repository: String?, resolution: ArchivalResolution?,
+                      documents: [TripPacketModel.Group.DocumentRef])] =
+            (1...12).map { i in
+                (key: "g\(i)", label: "Lot 6\(i) D 199 group \(i)", category: .lotFile,
+                 repository: nil, resolution: nil,
+                 documents: Self.refs(TripPacketExporter.rosterRowsPerGroupLimit,
+                                      note: "Department of State, Lot 6\(i) D 199"))
+            }
+        let model = TripPacketModel.build(
+            groups: groups, documentYears: [1950], unresolvedLotCount: 0,
+            unresolvedDocumentCount: 0, researchQuestion: nil, facts: { _ in nil })
+        let text = exporter(model: model).export()
+        let rows = text.components(separatedBy: "| FRUS 1948 II, Document ").count - 1
+        #expect(rows == TripPacketExporter.rosterRowBudget,
+                "the worksheet printed \(rows) rows against a budget of \(TripPacketExporter.rosterRowBudget)")
+        #expect(text.contains("roster elided; this worksheet caps at \(TripPacketExporter.rosterRowBudget) rows"),
+                "a budget-elided group must say why its roster is missing")
+        #expect(text.contains("2 groups' rosters were elided above"),
+                "the closing disclosure must count both elided groups")
+        for i in 1...12 {
+            #expect(text.contains("**Lot 6\(i) D 199 group \(i)** (20 documents)"),
+                    "group \(i)'s header and exact count must survive the budget")
+        }
+    }
+
+    // MARK: - The edited topic sentence (Phase 0 — the missing writer's route)
+
+    /// The exporter reads the EDITED value, never the stored note — the rule
+    /// `TripPacketTopicSentence`'s doc comment states and nothing exercised until now.
+    @Test("An edited topic sentence replaces the seeded research question in the drafts")
+    func editedTopicOverridesSeed() {
+        var model = oracleModel(researchQuestion: "US policy toward Berlin, 1948")
+        model.topicSentence.edited = "The airlift's supply arithmetic, June-December 1948."
+        let text = exporter(model: model).export()
+        #expect(text.contains("Topic: The airlift's supply arithmetic, June-December 1948."))
+        #expect(!text.contains("Topic: US policy toward Berlin, 1948"),
+                "the stored project note must never reach the draft once an edit exists")
     }
 }
