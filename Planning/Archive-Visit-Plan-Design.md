@@ -179,7 +179,17 @@ unchanged.
 sentence (Phase 0's editor — the missing `edited` writer), the repository's targets summarized
 with their priorities, unresolved citations quoted verbatim as help-me-locate items, and the
 consultation framing ("seeking further advice") the owner named. One draft per repository in the
-filtered set.
+filtered set — **and each draft carries its own Copy affordance**, because a draft's entire
+purpose is to be pasted into an email to that one archivist; a draft reachable only inside a
+grouped document must be carved out by hand every time.
+
+**Export scoping (owner question, 2026-08-26).** The share surface carries a **repository scope**:
+**All repositories** (default — one artifact, per-repository sections, the researcher's own master
+reference) or **any single repository** — a self-contained artifact holding that facility's (a)
+links, its (b) targets, its (c) draft, and the coverage report, which is plan-level and travels
+with **every** export regardless of scope (the honesty block is not divisible). The exporter
+already builds per-repository sections, so a scoped export is a render filter, not a second
+pipeline. No one divides an export by hand.
 
 ### 3a. The seven chapters, decided (owner, 2026-08-26)
 
@@ -392,6 +402,10 @@ URL are both real `VerifiedFact`s.
    allows"?" / destructive "Delete Tier").
 3. **1g renders the inquiry email lowercase** where the fact table stores
    `Archives2reference@nara.gov` — moot in implementation, which reads the table.
+4. **1g draws the unscoped artifact only** (two share buttons over the whole plan). The
+   repository-scope menu on the share surface and the per-draft Copy affordance (§3c, added on
+   the owner's export-scoping question) are **additive to 1g at implementation** — the delivered
+   `.dc.html` stays as delivered; this plan governs.
 
 ## 8. What v3 does not change
 
