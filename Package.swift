@@ -1089,7 +1089,7 @@ let package = Package(
         // MARK: - EarlyEraNERControl
 
         /// The `NLTagger` control detector for the #234 R-1 early-era person harvest — the free
-        /// baseline (~1–2 h over the 268-volume scope) that a hosted LLM detector has to beat
+        /// baseline (measured ~8 min over the 267-volume scope) that a hosted LLM detector has to beat
         /// before it earns a sweep costing days. Reads the R-0 text layer and the `marked/` layer
         /// written by `tools/semantic-harvest/harvest_ner.py`, writes the same `detected/` shape,
         /// and is scored beside the LLM stores by `tools/semantic-harvest/score_detections.py`.

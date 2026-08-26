@@ -5,7 +5,7 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #920. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, plus #901's by-catch).
+Last updated after PR #924. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, M-2 graph #920, F-2 document #921, M-4 3a #922, M-4 1b #923, plus #901's by-catch).
 
 ---
 
@@ -174,7 +174,15 @@ with the constraint that makes each one bigger than it looks:
 guide doors are shipped. What remains is the **re-captures themselves**, which are the owner's by
 standing convention, plus the manual caption corrections that depend on them.
 
-> **Owner decision 2026-08-16: the re-captures are deliberately held.** Wave 2 changed the shape of
+> **Owner decision 2026-08-16: the re-captures were deliberately held.** *(Superseded 2026-08-23 —
+> see the note below.)* Wave 2 changed the shape of
+
+…and immediately after that block:
+
+> **Lifted 2026-08-23/24.** The hold ended with issue **#1081**, whose owner decision treats *every*
+> committed capture as stale and lists all 13 live `[SCREENSHOT` placeholders (11 iOS, 2 macOS) plus
+> every referenced embed. `Plan-Of-Record-2026-08-23.md` §4 records the capture lane as **unblocked
+> 2026-08-24**. What remains here under W-2 is the *prep* — the shot list — not the hold.
 > five surfaces (Browse and Research two-pane, the concordance viewport, the Search window's token
 > row and its new titlebar), and #900 will change a sixth. Capturing now would produce a second
 > stale set — which is X-8, the finding that made P-1 look real, repeated on purpose. **Screenshots

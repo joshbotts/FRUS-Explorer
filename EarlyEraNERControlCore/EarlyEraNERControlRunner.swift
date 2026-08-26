@@ -365,7 +365,7 @@ public enum EarlyEraNERControlRunner {
         }
 
         if totalMentions > 0 && totalOverlap == 0 {
-            // Not reachable on real input: the editors marked 253,919 names in this scope, and a
+            // Not reachable on real input: the editors marked 245,747 names in this scope, and a
             // detector that agreed with none of them read a different corpus than the marked
             // layer describes. Loud, because the run otherwise looks like a success.
             generatorLog("!! WARNING: \(totalMentions) mentions and NOT ONE overlaps an editor "

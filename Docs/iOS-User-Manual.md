@@ -75,7 +75,7 @@ The first launch walks you through a short setup. The backdrop is a **word cloud
 
 | Option | Description |
 |--------|-------------|
-| **Corpus** | All 552 volumes in the bundled catalogue (about 3.3 GB; downloading takes a while depending on your connection and free storage) |
+| **Corpus** | All 552 volumes in the bundled catalog (about 3.3 GB; downloading takes a while depending on your connection and free storage) |
 | **Subseries** | One publication era — e.g., *1969–1976* (Nixon/Ford) or *1977–1980* (Carter) |
 | **Volume** | One specific volume, chosen from a grouped picker |
 
@@ -99,7 +99,7 @@ Fifteen minutes, one document, most of the core workflow. This walkthrough assum
 
 2. **Read without clutter.** The document toolbar carries a single control: the **Research-rail toggle** (a `doc.text.magnifyingglass` button). With the rail hidden you are in **Read mode** — a clean page, where tapping near the left or right screen edge turns to the previous or next document in the volume, like paging through a book (Section 4.4).
 
-3. **Highlight a passage.** Select a sentence with your finger or Apple Pencil. A dark pill — the **floating selection bar** — appears just below the selection. Tap one of its four **colour dots** and the passage is highlighted in that colour, permanently and across your devices. There is no separate highlight mode to enter or leave.
+3. **Highlight a passage.** Select a sentence with your finger or Apple Pencil. A dark pill — the **floating selection bar** — appears just below the selection. Tap one of its four **color dots** and the passage is highlighted in that color, permanently and across your devices. There is no separate highlight mode to enter or leave.
 
 4. **Attach a note.** With text selected, tap **Note** on the same bar and type a thought. The note is saved to this document, filed under your active project, and searchable later.
 
@@ -156,12 +156,12 @@ Below the tiles sit four expandable accordions — **Summary** (AI summaries, Se
 
 Select any passage in the document body and a dark pill appears just below it with the actions that operate on a selection:
 
-- Four **colour dots** — tap one to highlight the selection in that colour (Section 9.1).
+- Four **color dots** — tap one to highlight the selection in that color (Section 9.1).
 - **Excerpt** — capture the selection as a verbatim quotation into a collection (Section 12.4).
 - **Look Up** — run a NARA Catalog lookup on the selected text (Section 14.2).
 - **Note** — attach a research note (Section 9.2).
 
-For a selection inside a footnote, the colour dots and Excerpt are disabled; Look Up and Note remain available.
+For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available.
 
 ### 4.4 Read Mode and Research Mode
 
@@ -211,7 +211,7 @@ Everything in this manual works on iPhone; the presentation differs in a few con
 
 ### 4.9 Discovery Tips
 
-A few of the app's most useful controls are also its least visible — the Research-rail button is a single unlabelled glyph, and the page-turn edges are invisible by design. The first few times you reach one, a small tip appears beside it saying what it does: the Research button, the edge zones, the binoculars menu's four readings of a result set, and the fact that facet rows are filters. Each tip retires the moment you use the control it points at, and none of them block what you were doing. To bring them back after dismissing them, use **Show Tips Again** in **Settings → Reading & Search → Display**.
+A few of the app's most useful controls are also its least visible — the Research-rail button is a single unlabeled glyph, and the page-turn edges are invisible by design. The first few times you reach one, a small tip appears beside it saying what it does: the Research button, the edge zones, the binoculars menu's four readings of a result set, and the fact that facet rows are filters. Each tip retires the moment you use the control it points at, and none of them block what you were doing. To bring them back after dismissing them, use **Show Tips Again** in **Settings → Reading & Search → Display**.
 
 ---
 
@@ -232,17 +232,17 @@ Downloads queue; progress appears in the indexing banner (Section 4.8) and in Se
 ### 5.1a Side-Loaded Volumes
 
 **Sideload XML File…** exists for volumes you obtained somewhere other than the published
-catalogue — a pre-release copy, a corrected file, a volume you archived yourself. A side-loaded
+catalog — a pre-release copy, a corrected file, a volume you archived yourself. A side-loaded
 volume is a full citizen almost everywhere: it appears in Browse under its own subseries with a
 real title (the app reads the volume's own TEI header, with the same parser that built the
-catalogue), it is searched, indexed, and browsable like any download.
+catalog), it is searched, indexed, and browsable like any download.
 
 Four things are deliberately different, and each is the honest consequence of the file not being
-the catalogue's:
+the catalog's:
 
 - Its row in Browse carries a **Side-loaded** label, and subseries counts list side-loaded
   volumes separately — so the published count always matches the published series.
-- Citations from it carry a note instead of a history.state.gov link: the app has no catalogue
+- Citations from it carry a note instead of a history.state.gov link: the app has no catalog
   record, so it **cannot confirm the document is published**, and a citation that claims less is
   safer than one that claims wrongly.
 - **Check for Corrections** skips it — there is no published copy to compare against.
@@ -275,7 +275,7 @@ The **Browse** tab navigates the series by its own structure: subseries (publica
 The root of the Browse tab opens with a **search field** over all 552 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series:
 
 - **Subseries** — the classic era-by-era hierarchy (Section 6.1a).
-- **All Volumes** — one catalogue of every volume (Section 6.1b).
+- **All Volumes** — one catalog of every volume (Section 6.1b).
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
 - **Archives** — volumes filed by where their documents came from (Section 6.1g).
@@ -287,7 +287,7 @@ Below the grid, **Your sets** holds the collections you assemble yourself — **
 
 Tap **Subseries** for the era directory, then a subseries — *1969–1976*, say — to see its volumes; tap a volume for its table of contents, each document labeled with number, heading, and date. Long volume titles wrap onto a second line rather than truncating. A toggle in the Browse toolbar limits the list to **downloaded volumes only** — useful when you want to see exactly what's available offline, on a flight or in an archive basement. Subseries and volume rows now show a **document count** for every volume — even ones you haven't downloaded — alongside the publication year and the download/index badges.
 
-### 6.1b The All Volumes Catalogue
+### 6.1b The All Volumes Catalog
 
 **All Volumes** lists the whole series in one place, with a search field and a control that arranges it four ways:
 
@@ -298,7 +298,7 @@ Tap **Subseries** for the era directory, then a subseries — *1969–1976*, say
 
 The counts are FRUS document divs from the app's bundled index; a search inside a volume can return a few more rows, because prose sections such as prefaces are searchable but aren't numbered documents.
 
-[SCREENSHOT: All Volumes catalogue — the segmented Title/Published/Era/Length control with decade headers in Published order.]
+[SCREENSHOT: All Volumes catalog — the segmented Title/Published/Era/Length control with decade headers in Published order.]
 
 ### 6.1c Administrations
 
@@ -320,8 +320,8 @@ A **scope** is a set of volumes you assemble yourself — *Cold War Berlin*, *my
 
 You can now build scopes right in Browse:
 
-- **Tap a scope** for its volumes; **the pencil** (or its long-press menu) opens the editor — rename it, remove volumes with the red minus, or **Add Volumes…** through the All Volumes catalogue with a checkmark on each chosen volume. Removing a volume never deletes it from your device.
-- **Long-press any volume row anywhere in Browse** — a subseries list, the catalogue, an administration's or editor's volumes — for *Add to "«your latest scope»"*, *Add to Scope…* (existing members are checkmarked; adding one again does nothing), or *New Scope from Volume…*, which creates a scope and opens its editor.
+- **Tap a scope** for its volumes; **the pencil** (or its long-press menu) opens the editor — rename it, remove volumes with the red minus, or **Add Volumes…** through the All Volumes catalog with a checkmark on each chosen volume. Removing a volume never deletes it from your device.
+- **Long-press any volume row anywhere in Browse** — a subseries list, the catalog, an administration's or editor's volumes — for *Add to "«your latest scope»"*, *Add to Scope…* (existing members are checkmarked; adding one again does nothing), or *New Scope from Volume…*, which creates a scope and opens its editor.
 - **Save as Scope…** in any axis volume list's toolbar captures that whole slice — the Truman administration's volumes, an editor's volumes — as a scope, with the name pre-filled.
 - **Browse Within This Scope** (on a scope's long-press menu) narrows the whole subseries hierarchy to the scope's volumes, with an amber **"Browsing within: …"** banner and a one-tap ✕ to clear. The filter is honest about edge cases: a scope with nothing to show, or one deleted on another device, shows an explanation and *nothing* — never the whole corpus wearing a scope's name.
 
@@ -352,7 +352,7 @@ The two lenses sit **beside** each other on purpose: the app has no reliable map
 
 ### 6.1h Clusters
 
-The **Clusters** door browses the corpus the way a language model read it: 179 groups of documents whose language reads alike, computed from the text itself rather than chosen by an editor. This is the same grouping the **semantic map** (Section 15.6) draws as coloured regions — here it is a browsable list, largest cluster first.
+The **Clusters** door browses the corpus the way a language model read it: 179 groups of documents whose language reads alike, computed from the text itself rather than chosen by an editor. This is the same grouping the **semantic map** (Section 15.6) draws as colored regions — here it is a browsable list, largest cluster first.
 
 Each row shows the cluster's **label** — its four most distinctive sampled terms, such as *nanking · shanghai · hankow · chinese* — its document count, and a small **era histogram** showing when its volumes fall. Three honesty rules are printed right on the screen, and they matter: the labels are **sampled terms, not subject headings** (read them as a hint at what a group is about, never a claim about every document in it); about **28% of the corpus belongs to no cluster** and cannot be reached from this list; and the era bars reflect each **volume's coverage era**, not each document's own date.
 
@@ -372,13 +372,13 @@ Where Section 6.2 shows the topics *one volume* is most characteristic of, the *
 
 Each row shows the topic, its `Category · Sub-category`, and its reach — how many documents and volumes carry it.
 
-**Those figures describe the whole series, not your library.** A topic can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. So a topic's own page shows both numbers, labelled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device*. If the last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a topic your library may be full of.
+**Those figures describe the whole series, not your library.** A topic can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. So a topic's own page shows both numbers, labeled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device*. If the last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a topic your library may be full of.
 
 The topic's page also lists its **Covering volumes** — complete membership across the series, including volumes you have not downloaded. Long lists preview the first few, with **Show all N volumes** to disclose the rest; tap any volume to open it in the browser.
 
 **Find documents on this topic** runs a search filtered to that one topic. That filter is finer than the topic-area rows in the Facets panel (Section 7.5): an area such as *Warfare · General* holds about five topics, and this narrows to one. Both can be active at once, and each gets its own chip so you can remove either.
 
-**All «area» topics** (for example *All Cold War topics*) goes back to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbours without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 5 topics* — with a ✕ to return to the full index.
+**All «area» topics** (for example *All Cold War topics*) goes back to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbors without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 5 topics* — with a ✕ to return to the full index.
 
 Reach it three ways: **Browse ▸ Topics** (beside People), the **Browse this topic in the index** button on any topic chip's pivot sheet, or **Browse all topics** in the Subjects section of a search's Facets panel.
 
@@ -539,7 +539,7 @@ A document's **source note** — the archival provenance statement the volume pr
 
 ### 8.2 Cross-References That Cannot Be Followed
 
-Not every printed reference has somewhere to go: occasionally a volume cites a page, document, or volume that does not exist in the digital corpus. References that a corpus-wide validation dataset confirms cannot be followed render in **muted grey with a dotted underline and a small dagger (†)** rather than posing as working links — the printed text itself is preserved. Tapping one opens an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. (The corpus-wide list of these is exportable — Section 17.6.)
+Not every printed reference has somewhere to go: occasionally a volume cites a page, document, or volume that does not exist in the digital corpus. References that a corpus-wide validation dataset confirms cannot be followed render in **muted gray with a dotted underline and a small dagger (†)** rather than posing as working links — the printed text itself is preserved. Tapping one opens an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. (The corpus-wide list of these is exportable — Section 17.6.)
 
 ### 8.3 Where Navigation Takes You
 
@@ -601,9 +601,9 @@ Your annotations are a personal layer of analysis over the primary sources — a
 
 ### 9.1 Highlights
 
-Select a passage (finger or Apple Pencil) and tap one of the four **colour dots** on the floating selection bar — yellow, green, blue, or pink. The highlight appears immediately as a colored overlay in the text. There is no highlight mode to enter; selection *is* the gesture. Highlights survive re-renders and display-preference changes because their positions are tracked by stable text offsets, not on-screen coordinates.
+Select a passage (finger or Apple Pencil) and tap one of the four **color dots** on the floating selection bar — yellow, green, blue, or pink. The highlight appears immediately as a colored overlay in the text. There is no highlight mode to enter; selection *is* the gesture. Highlights survive re-renders and display-preference changes because their positions are tracked by stable text offsets, not on-screen coordinates.
 
-Many researchers assign meanings to the colours — evidence for chapter 2 in yellow, historiographic leads in green — and the Research tab's **By Highlight Color** grouping (9.4) then works as a filing system. Highlights on a document can later be annotated inline in exports, or frozen as quotable **excerpts** in a collection (Section 12.4).
+Many researchers assign meanings to the colors — evidence for chapter 2 in yellow, historiographic leads in green — and the Research tab's **By Highlight Color** grouping (9.4) then works as a filing system. Highlights on a document can later be annotated inline in exports, or frozen as quotable **excerpts** in a collection (Section 12.4).
 
 ### 9.2 Research Notes
 
@@ -731,11 +731,11 @@ Selections append in the order you picked them; adding a document already presen
 From the manager's **add** menu, insert editorial structure anywhere in the order (the same menu also offers **Plan an Archive Visit…**, which generates a research trip packet over the collection's documents — Section 14.8; it stays disabled until the collection has documents):
 
 - **Section headings** group the documents beneath them ("Opening Moves", "The Crisis Deepens") and become headings in the export and its table of contents. Sections **nest to three levels** — parts containing chapters containing sub-sections. Long-press a heading for **Indent** / **Outdent** (plus **Rename**, **Delete Heading Only** — contents stay, sub-headings move up a level — and **Delete Section**, which removes everything in it after confirming). Rows indent to show structure; each heading's chevron collapses its section while you work (display only); dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
-- **Prose blocks** are your connecting commentary, written in a rich-text editor — bold, italic, underline, colour, and hyperlinks from the formatting bar above the keyboard — and preserved through every export. This is where a course reader's head-of-section framing lives.
+- **Prose blocks** are your connecting commentary, written in a rich-text editor — bold, italic, underline, color, and hyperlinks from the formatting bar above the keyboard — and preserved through every export. This is where a course reader's head-of-section framing lives.
 
 ### 12.4 Excerpts
 
-An **excerpt** is a frozen verbatim quotation from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). Because the excerpt stores the exact passage, it renders even when the source volume isn't downloaded. Three ways to create one: **Add Highlighted Passages…** from the add menu (pick from your highlights on the collection's documents, several at once); select a passage while reading and tap **Excerpt** on the floating selection bar; or tap **Insert as Excerpt** on any highlight row in a document's inspector. Excerpt rows move and delete like prose blocks, but the quoted text itself is never edited — it stays exactly as the source prints it.
+An **excerpt** is a frozen verbatim quotation from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's color as an accent bar). Because the excerpt stores the exact passage, it renders even when the source volume isn't downloaded. Three ways to create one: **Add Highlighted Passages…** from the add menu (pick from your highlights on the collection's documents, several at once); select a passage while reading and tap **Excerpt** on the floating selection bar; or tap **Insert as Excerpt** on any highlight row in a document's inspector. Excerpt rows move and delete like prose blocks, but the quoted text itself is never edited — it stays exactly as the source prints it.
 
 ### 12.5 Apparatus Blocks
 
@@ -769,7 +769,7 @@ Composition is **saved on the collection** — it always exports the same way, i
 - **Default body depth** — full text, **AI summary only** (Section 13), or a compact **index/outline** (citation, date, notes — no body).
 - **Include footnotes** and **Include source note** — two independent toggles.
 - **Table-of-contents label style** — formatted citation, or header and dateline.
-- **Include highlights** — annotates your highlights inline: coloured `<mark>` spans in HTML, background shading in PDF, highlighted runs in DOCX (whose limited palette renders blue as cyan and pink as magenta).
+- **Include highlights** — annotates your highlights inline: colored `<mark>` spans in HTML, background shading in PDF, highlighted runs in DOCX (whose limited palette renders blue as cyan and pink as magenta).
 - **Include research notes** — notes render below each document's body (deselect individual notes in the inspector).
 - **Include word cloud** — prepend a frequency overview (PDF and HTML).
 - **Summary prompt** — which prompt to use when the body depth is summary-only.
@@ -838,7 +838,7 @@ The app ships a standard summarization prompt, and **Settings → Research → S
 
 ### 13.3 Summaries in Exports
 
-Choosing **Summary only** as a collection's body depth (Section 12.7) generates summaries on demand for any included document that lacks one for the selected prompt — a compact briefing-style export. Every generated summary in an exported collection — a summary-only body or an AI-drafted headnote — is labelled as AI-generated content attributed to Apple Intelligence, in HTML, PDF, DOCX, and the live preview alike, so readers of your artifact always know which passages a model wrote. (A headnote you wrote or edited yourself carries no such label — the attribution follows the true author.)
+Choosing **Summary only** as a collection's body depth (Section 12.7) generates summaries on demand for any included document that lacks one for the selected prompt — a compact briefing-style export. Every generated summary in an exported collection — a summary-only body or an AI-drafted headnote — is labeled as AI-generated content attributed to Apple Intelligence, in HTML, PDF, DOCX, and the live preview alike, so readers of your artifact always know which passages a model wrote. (A headnote you wrote or edited yourself carries no such label — the attribution follows the true author.)
 
 ### 13.4 Background Summarization
 
@@ -874,7 +874,7 @@ Source Explorer classifies each note and applies the most precise resolution ava
 - **Repositories outside the National Archives** — the Library of Congress Manuscript Division, the National Defense University, the Army's Center of Military History, the Hoover Institution, the Minnesota Historical Society, and a tail of university libraries — get no catalog query, because the catalog has no record of them. Instead the panel names the institution, says what it holds and where, and links to its finding aids. Two repositories no longer exist under the names FRUS printed, which is worth knowing before you search: the **Naval Historical Center** is now the **Naval History and Heritage Command** (redesignated 1 December 2008, Navy Archives at the Washington Navy Yard), and the **U.S. Army Military History Institute** is now the **U.S. Army Heritage and Education Center** at Carlisle Barracks. Searching under the printed names finds nothing, so the panel says so outright.
 - **CIA records** link to the CREST page; foreign-archive and previously-published notes display their parsed citation.
 
-**Free-text lookup.** Select any text in a document body — a lot number, a decimal identifier, an archival keyword — and tap **Look Up** on the floating selection bar for a NARA Catalog query pre-populated with your selection, with a choice of search strategies. When your selection is inside a footnote, the lookup reads the whole footnote and offers any archival citations it recognises there under **Detected in This Footnote** — handy when the citation you want spans more than you selected.
+**Free-text lookup.** Select any text in a document body — a lot number, a decimal identifier, an archival keyword — and tap **Look Up** on the floating selection bar for a NARA Catalog query pre-populated with your selection, with a choice of search strategies. When your selection is inside a footnote, the lookup reads the whole footnote and offers any archival citations it recognizes there under **Detected in This Footnote** — handy when the citation you want spans more than you selected.
 
 ### 14.3 Classification Chips
 
@@ -900,7 +900,7 @@ FRUS Explorer ships a corpus-wide authority of the **~4,400 archival collections
 
 A **Collection** record shows two kinds of counts, deliberately distinct: the *series-wide* citing-volume list comes from the bundled authority and is independent of what you have downloaded, while **In Your Library** figures are always computed from your own indexed volumes ("N documents in M of your indexed volumes"), with an Archival Neighbors action for the local documents. Below that, three sections answer questions the citing-volume list alone cannot:
 
-- **Related Collections** — the collections cited alongside this one in the same volumes' source lists, ranked by *overlap coefficient* (the shared count divided by the smaller citing-volume list, so the handful of umbrella records doesn't head every list in the series — on raw shared count, the "Central Files" cluster, cited in 157 volumes, would top roughly one collection in three). Each row states the shared-volume count, draws a small meter, and opens that collection's own record — so you can follow a paper circuit, S/S–NSC files to Presidential Correspondence to the Whitman File, without going back to the list. Two thresholds keep it honest: a collection needs at least two citing volumes to have a list, and a related collection at least two shared — one shared volume is a coincidence of compilation, not a neighbourhood.
+- **Related Collections** — the collections cited alongside this one in the same volumes' source lists, ranked by *overlap coefficient* (the shared count divided by the smaller citing-volume list, so the handful of umbrella records doesn't head every list in the series — on raw shared count, the "Central Files" cluster, cited in 157 volumes, would top roughly one collection in three). Each row states the shared-volume count, draws a small meter, and opens that collection's own record — so you can follow a paper circuit, S/S–NSC files to Presidential Correspondence to the Whitman File, without going back to the list. Two thresholds keep it honest: a collection needs at least two citing volumes to have a list, and a related collection at least two shared — one shared volume is a coincidence of compilation, not a neighborhood.
 - **Cited Over Time** — the citing volumes on a coverage-era axis, with a sentence generated from the chart itself: *enters the record with the 1948–1950 volumes, peaks across the 1958–1968 volumes, fades after the 1969–1976 volumes*. The sentence claims only what the bars show — a collection cited once per era has no peak and is not given one, and one still at its height in the last era shown does not "fade."
 - **Divided at NARA** — a FRUS citation names a *lot file*, and the National Archives later distributed some lots across several catalog series; the citation cannot say which series holds a given document. Where the bundled index knows a lot was divided, this section lists **every** claiming series with its NAID, record group, coverage dates, and HMS/MLR entry numbers, and notes that the single catalog link above points at just one of them. Offline; no key involved. If you're about to request a divided lot at College Park, this section is the difference between one pull slip and the right several.
 
@@ -917,7 +917,7 @@ The packet's chapters:
 1. **Cover and checklist** — how many archival groups and documents, and the pre-arrival checklist. A visit date is optional, deliberately: the packet is most useful *before* a trip is booked, so without a date every deadline prints relative ("4 weeks before you arrive"), and the escalation criteria that need extra notice — documents dated 1960 or later, State Department record groups, lot citations NARA may know under another number — are quoted from NARA's own research-visit guidance.
 2. **Advance inquiry** — a draft email per facility, with the confirmed address and inquiry email for College Park, your project's research question as the editable topic sentence, each resolved series identified the way NARA asks (record group · entry number · series title · NAID, with the catalog link), and — for citations the app could not resolve — a **help-me-locate list quoting each source note verbatim** with its FRUS citation, because NARA's own advice is that poorly described records are resolved by writing ahead, not at the reading-room desk. Presidential-library material gets a confirm-before-you-travel prompt with each library's visit-planning and finding-aid pages instead of a drafted letter — at collection grain the packet cannot name a series, and it never implies a precision the data lacks.
 3. **Pull worksheet** — grouped by facility so its rows can become pull slips, each series headed by the same four-field line, then a per-document roster: FRUS citation, the file or folder designation the note cites, and a **blank Box column** — the packet never invents a box number; boxes are assigned at the pull desk.
-4. **Use these instead of pulling** — records NARA requires you to read digitised or on film, with catalog links (Section 14.5's data, made into an obligation list).
+4. **Use these instead of pulling** — records NARA requires you to read digitized or on film, with catalog links (Section 14.5's data, made into an obligation list).
 5. **Access restrictions** — every cited series with a stated restriction, worst first, by name; and what a **withdrawal notice** in a folder means, with the FOIA / Mandatory Declassification Review route past it.
 6. **Citing what you find** — NARA's own citation forms for the series types in *your* packet, quoted verbatim from its "Citing Foreign Affairs Records" guidance and attributed as NARA's (your publisher's rules govern), each pre-filled with your own file numbers and series titles where the app knows them.
 7. **On the day** — only the facts that don't rot: researcher-card registration, locker and scanner rules, and stamped links to NARA's current-guidance pages for everything that changes (pull schedules deliberately are not printed — a stale schedule is worse than none).
@@ -948,12 +948,12 @@ All open from the Browse tab's **Analysis Tools** menu. Except where noted (Arch
 
 Corpus Analytics charts how often terms appear across your indexed corpus — the fastest way to see when a topic rose or fell in official attention, or to compare two terms against each other. Open it from Analysis Tools, by tapping any word in a word cloud, or via the **Visualize in Corpus Analytics** handoff from a search.
 
-![Corpus Analytics — a term-frequency histogram by year, each bar colour-coded by source volume with a legend (iPhone capture).](screenshots/ios/analytics.png)
+![Corpus Analytics — a term-frequency histogram by year, each bar color-coded by source volume with a legend (iPhone capture).](screenshots/ios/analytics.png)
 
 Enter one or more terms (the full search syntax applies, including quoted phrases) and chart them:
 
 - **Group by** — Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; Subseries and By Volume break the same query down by where in the corpus it appears. On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that slice.
-- **Stacked colour** — the By Year and By Decade charts colour each bar by the volumes contributing the matches, with a legend naming each and the rest folding into a grey "Other" — so you can see *which part of the corpus* drives a term in any period. The number of distinct colours before the fold is configurable (6–12, default 8) from the **Chart colors** menu, with a global default in Settings → Display.
+- **Stacked color** — the By Year and By Decade charts color each bar by the volumes contributing the matches, with a legend naming each and the rest folding into a gray "Other" — so you can see *which part of the corpus* drives a term in any period. The number of distinct colors before the fold is configurable (6–12, default 8) from the **Chart colors** menu, with a global default in Settings → Display.
 - **Raw count or % of documents** — on the By Year and By Decade axes, a normalization toggle divides each period's matches by the number of documents the series published in that period. Because the corpus is far larger in some eras than others, a term can show a rising raw count while its *share* is falling; the normalized view separates "the series grew" from "this topic grew." Quote the normalized number in a paper unless you have a reason not to.
 - **Documents or Occurrences** — a **Measure** picker on the same two axes. *Documents* counts each matching document once; *Occurrences* counts every mention (by word stem, as the axis label notes). The two can move in opposite directions, and the difference is a finding: searching `"Article 43"`, documents fall from 34 in 1948 to 11 in 1949 while occurrences *rise* 77 to 92 — one 1949 document discusses it 54 times. A topic concentrating, not disappearing. The picker is disabled **with a stated reason** wherever no honest count exists: exact-word (`=`) searches, phrases, wildcards, proximity queries, and multi-term comparisons. Occurrences and % of documents are mutually exclusive — occurrences divided by documents is a rate, not a share.
 - **Scope and years** — a **Scope** bar (whole corpus, a subseries, a volume, one of your **My Volume Scopes**, or a **By Detected Topic** facet — each entry with an honest "N of M indexed" count, and disabled when nothing is indexed) and a **year-range** bar narrow every figure; an **Administration** preset sets the year range to a president's term in one tap. The identical scope bar serves Person and Cross-Reference Analytics, and Search shares the same volume scoping — so a chart and a reading list can cover the identical corpus subset.
@@ -967,7 +967,7 @@ Where Analytics charts one term over time, a **word cloud** shows the most frequ
 
 - **Two views.** A packed spiral cloud sizes terms by weight; a **List** view ranks the same terms with exact counts — and is what VoiceOver reads.
 - **Frequency or Distinctive.** *Frequency* sizes words by how often they appear here — which, for most FRUS material, surfaces the vocabulary every volume shares. **Distinctive** compares this scope against a bundled reference of the whole corpus and sizes each word by how much *more* it is used here than across the series, using log-likelihood **keyness**, the corpus-linguistics standard. A line under the control states what the ranking could see — how many of the scope's words were eligible, and the corpus frequency below which a word is *unpriced* (a rare word scores as though the corpus never used it, so a high score on one deserves care). Distinctive shows both a log-likelihood score and an effect size, which answer different questions (the ⓘ popover explains); it lists only words used *more* here than corpus-wide; words occurring fewer than three times in the scope are never ranked; and it is unavailable for the People/Places/Organizations lenses, where no corpus baseline exists. If your word-cloud settings count words differently from the reference (turning off **Hide common diplomatic words** is the usual cause), Distinctive steps aside with an explanation rather than ranking against a mismatched baseline.
-- **Lenses.** Chips narrow the cloud to a kind of term: All terms, People / Places / Organizations (recognised on-device), Topics / Actions / Descriptors (nouns / verbs / adjectives), Concepts (abstract ideas like *sovereignty* or *deterrence*), or Sentiment (positively and negatively charged words, green and red). A scope without enough of a given kind of term says so rather than showing a near-empty cloud.
+- **Lenses.** Chips narrow the cloud to a kind of term: All terms, People / Places / Organizations (recognized on-device), Topics / Actions / Descriptors (nouns / verbs / adjectives), Concepts (abstract ideas like *sovereignty* or *deterrence*), or Sentiment (positively and negatively charged words, green and red). A scope without enough of a given kind of term says so rather than showing a near-empty cloud.
 - **Act on a term.** Tap any word to chart it in Corpus Analytics — the fastest way to tell a passing mention from a sustained concern. The word's menu also offers a scoped chart (within this volume/subseries), **Search for this term**, and **hide** — from just this cloud, in all clouds, or in this lens only (persistent lists managed in Settings → Research → Word Cloud). You can also **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as PNG, PDF, or CSV (15.8).
 - **Collocates.** The Search tab's **Collocates** reading (Section 7.6) is this machinery pointed the other way: not *does X appear near Y* but *what appears near X*. It collects the words within a chosen window (±5 to ±50) of every match across your whole result set and ranks them against the same corpus reference, showing each word's concentration near your term, both raw counts, and whether the reference is deep enough to price it. **Rank by** switches between *Evidence* (log-likelihood) and *Concentration* (the multiple) — they genuinely disagree, and which you want depends on the question.
 - **Tuning and appearance.** Settings → Research → Word Cloud sets minimum word length and count, plural-merging, the classification-marking and diplomatic-boilerplate filters, and your hidden-word lists; an **Appearance** section sets font and packing density (device-local preferences).
@@ -983,7 +983,7 @@ Person Analytics turns the People browser's reconciled identities (Section 6.5) 
 - **Most-Mentioned People** — a ranking of the people named in the most documents within your year range, switchable between chart and table. Who dominated the record under Truman versus détente is one tap of the Administration preset apart.
 - **Mention Trajectories** — add up to five people as chips and plot their mention counts side by side over time (per-year or per-decade; raw counts or share of documents). With exactly two people selected, a **Relationship dynamics** chart appears: how many documents name *both* in each period — a proxy for when their dealings intensified.
 
-**Network** draws a **co-mention ego-network**: a focus person at the centre, surrounded by the people most often mentioned in the same documents, connection strength reflected in the graph. Re-centre on anyone to walk the orbit.
+**Network** draws a **co-mention ego-network**: a focus person at the center, surrounded by the people most often mentioned in the same documents, connection strength reflected in the graph. Re-center on anyone to walk the orbit.
 
 Both modes honour the shared Scope bar; the year range governs the Trends charts, while the Network is narrowed by scope alone. All of it reads your local index and sharpens as you index more. Note for anyone quoting numbers: Person Analytics counts mentions over *dated* documents only, so its absolute counts are not directly comparable with Corpus Analytics — the CSV export says so (15.8).
 
@@ -1010,11 +1010,11 @@ Corpus Analytics tracks terms and Person Analytics tracks people; **Archival Ana
 - **Count by** — **Documents** (published documents drawn from a unit), **Volumes** (volumes that drew on it at all), or **Unprinted pointers** (editorial footnotes pointing at material FRUS did *not* print). All three are correct and give different answers — one lot file supplies 1,063 documents to five volumes, another 624 to ninety-eight. Unprinted pointers is a genuinely different body of evidence, never added to the other two: roughly a thousand collections that supplied documents have no pointers, and about a hundred and eighty appear *only* under pointers. On the classes lens the same count carries a stated caveat — most central-file citations name the file the citing document itself came from, about three in five, so they are counted but are not movement between archives.
 - The **Central Files umbrella** chip: the State Department's central files are cited by 157 volumes and supply over seventeen thousand documents — more than twice the next-largest collection — so its bar would flatten every other one. It is hidden by default, the chart states how many it withheld in the era you're viewing, and one tap shows it.
 
-Above the chart, a line gives the era's own denominator — how many source notes its volumes carry, and how much of that the drawn rows account for (often a small share, and that asymmetry between eras is a finding about the series, not a gap in the app). Bars are coloured by **who holds the records** — Department of State, State lot files, presidential libraries, other institutions — and read across the eras a real historical change appears: State's own files lead the 1950s, the Kennedy and Johnson national security files overtake them in the 1960s, and by the 1970s Nixon's NSC Files supply more than three times what the State central files of the same years do. The documentary record of American foreign relations moves out of the Department and into the White House. Bars are live: a collection opens its full record (Section 14.6), a file number opens Archival Neighbors for that class, and **Show all N units in this era** lifts the twelve-row display cap.
+Above the chart, a line gives the era's own denominator — how many source notes its volumes carry, and how much of that the drawn rows account for (often a small share, and that asymmetry between eras is a finding about the series, not a gap in the app). Bars are colored by **who holds the records** — Department of State, State lot files, presidential libraries, other institutions — and read across the eras a real historical change appears: State's own files lead the 1950s, the Kennedy and Johnson national security files overtake them in the 1960s, and by the 1970s Nixon's NSC Files supply more than three times what the State central files of the same years do. The documentary record of American foreign relations moves out of the Department and into the White House. Bars are live: a collection opens its full record (Section 14.6), a file number opens Archival Neighbors for that class, and **Show all N units in this era** lifts the twelve-row display cap.
 
 **Your Library** asks the same question about *your* volumes, counted from your own index: the provenance composition of every source note you've indexed, the same composition split by era, and your most-cited collections (tapping a row opens Archival Neighbors). The footer states your indexed-volume count against the series total, and that these are *source notes*, not documents.
 
-**Network** puts one collection at the centre and arranges everything co-cited with it in four quadrants by custodian, distance encoding link strength against three dashed guide rings. The layout is deterministic — the same collection always draws the same picture, so two people comparing screens are comparing the same thing. **Link strength** switches between shared volumes and shared documents (different questions, both worth asking); a slider hides weak links; each quadrant draws at most its six strongest partners, with the panel stating how many were held back. The **Central Files** chip can expand that one umbrella circle into the actual decimal classes or subject-numeric groups co-cited with your focus, drawn as rounded squares inside a dashed outline — the shape is the point: a class is a heading inside a filing system, not a body of records, and the two are never drawn alike. Tap a wedge to isolate a custodian; tap a node for what the link is made of; pinch to zoom, drag to pan, double-tap to reset.
+**Network** puts one collection at the center and arranges everything co-cited with it in four quadrants by custodian, distance encoding link strength against three dashed guide rings. The layout is deterministic — the same collection always draws the same picture, so two people comparing screens are comparing the same thing. **Link strength** switches between shared volumes and shared documents (different questions, both worth asking); a slider hides weak links; each quadrant draws at most its six strongest partners, with the panel stating how many were held back. The **Central Files** chip can expand that one umbrella circle into the actual decimal classes or subject-numeric groups co-cited with your focus, drawn as rounded squares inside a dashed outline — the shape is the point: a class is a heading inside a filing system, not a body of records, and the two are never drawn alike. Tap a wedge to isolate a custodian; tap a node for what the link is made of; pinch to zoom, drag to pan, double-tap to reset.
 
 **Flows** asks: when an editor annotated one published document by pointing at another, which archive did the pointer lead to? Choose a **Focus** collection and the view becomes a fan — the focus on the left, destinations on the right, ribbons thickened by reference count. Read one thing before reading a ribbon: **about 95% of these references are footnotes** — a ribbon says *the editors, annotating material from this collection, sent the reader to material from that one*, not that the two archives cite each other; the caveat block states the exact share, computed from the data. A **References** picker switches between two bodies of evidence — **Between printed documents**, and **To unprinted material** (footnotes naming material FRUS did not print, read from three kinds of citation: lot files, presidential-library collections, and the central-file numbers the earlier volumes cite by — the channel whose absence once kept those decades nearly invisible here. Most central-file citations point at the citing document's own file rather than another — about three in five, and closer to three in four before 1946 — so they are counted where a class is ranked but never drawn as movement between archives; the ⓘ states the shares). **Outgoing / Incoming** flips the fan (the two are not mirror images — the heaviest pair in the series runs 449 references one way and 317 the other); nothing is silently dropped (the tail folds into a dashed block that states its size and opens to the full list); coverage is uneven and the gap is itself the finding — only 254 of 552 volumes contribute references, because the cross-reference style these are harvested from postdates 1945.
 
@@ -1024,12 +1024,12 @@ Every Collections and Your Library card offers **View as table** and an **Export
 
 Semantic Analytics tracks none of the above: it measures how the *language* sits. Every document in the series — all 314,483 — is placed on a single map by the shape of its wording, so documents that read alike land near each other whether or not they share a volume, a date, or a citation. Regions are named by the vocabulary that distinguishes them, so you can read the map before you touch it. The placements come from an experimental machine reading of the text — treat the map as a hypothesis generator, not a finding.
 
-- **Colour by** Regions, Era, Downloaded (what is on this device), or **Provenance** — the last showing each volume's plurality source-note category, with carefully stated caveats: it is a volume-level plurality (for 73 of 522 covered volumes the winner holds under half the notes), 55 volumes are "won" by *Other/Unclassified* (meaning the parser could not classify their notes), and volumes resting on ten notes or fewer take their own grey *Too few source notes* colour rather than being folded in.
+- **Color by** Regions, Era, Downloaded (what is on this device), or **Provenance** — the last showing each volume's plurality source-note category, with carefully stated caveats: it is a volume-level plurality (for 73 of 522 covered volumes the winner holds under half the notes), 55 volumes are "won" by *Other/Unclassified* (meaning the parser could not classify their notes), and volumes resting on ten notes or fewer take their own gray *Too few source notes* color rather than being folded in.
 - **Tap a point** to see which document it is; open it if its volume is on this device.
 - **Lasso** a region (the toolbar toggle) and keep everything inside it as a **working corpus** to search within (Section 7.9) — the capture card states how much of the selection this device can actually search, because the map draws all 552 volumes and your index holds fewer.
 - **Pick two poles** — tap a document, *Axis: from here*; tap another, *…to here* — and the plane re-projects onto the axis between those two documents' volumes, with the vertical axis becoming each volume's coverage year: left-to-right for your axis, up-and-down for time.
-- **Scope** (the same chip as everywhere else) does *not* shrink the map: the rest of the corpus stays in grey while the documents in scope keep their colour — so what you are reading is where that segment falls in a layout it played no part in producing. A subseries that lands in one place is a different finding from one that scatters. Mind the grain: every scope resolves to **whole volumes**, so scoping to a detected topic lights every document in the volumes carrying that tag, not the documents about the topic — the line under the chip says "every document in N volumes" for exactly this reason.
-- **Two cautions, stated in the window itself**: the plane preserves *local* similarity only — neighbouring points are meaningfully alike, but distance and direction between far-apart regions mean nothing — and the model was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown.
+- **Scope** (the same chip as everywhere else) does *not* shrink the map: the rest of the corpus stays in gray while the documents in scope keep their color — so what you are reading is where that segment falls in a layout it played no part in producing. A subseries that lands in one place is a different finding from one that scatters. Mind the grain: every scope resolves to **whole volumes**, so scoping to a detected topic lights every document in the volumes carrying that tag, not the documents about the topic — the line under the chip says "every document in N volumes" for exactly this reason.
+- **Two cautions, stated in the window itself**: the plane preserves *local* similarity only — neighboring points are meaningfully alike, but distance and direction between far-apart regions mean nothing — and the model was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown.
 
 ### 15.7 Chronology
 
@@ -1067,7 +1067,7 @@ Alongside the methodology chapters, the Guide carries **About the Series**: four
 - **Production & Timeliness** — how promptly FRUS reaches print: a publication-lag scatter (each volume by print year against the years it took to publish), overlaid with the **evolving timeliness-target step line** — no formal target before 1961, then 15 years (the 1961 presidential directive), 20 (1972), and 30 (the 1985 directive, codified by the 1991 statute) — plus volumes-per-year bars and the series' cumulative growth curve.
 - **Geographic Emphasis** — every volume's editorial place tags resolved to the State Department's six regional bureaus, charted as a stacked share over time: watch emphasis shift from Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa. With overall regional totals and the most-covered countries.
 - **Archival Sourcing** — the provenance mix over coverage decades: the central decimal file giving way to lot files, presidential libraries, and the Central Foreign Policy File; overall composition and note density beside it. A **Categories** filter hides categories with the shares re-basing to what's shown; a **Which collections carried this scope** ranking below the charts names the individual bodies of records the in-scope volumes drew on (reading the archival authority — a different population from the charts above, as its caption says — with State's central files withheld and their size stated, because one undifferentiated record would flatten every other bar).
-- **Administration Profiles** — whose foreign policy the series documents: each dated document attributed to the administration in office when its events took place (Nixon and Ford distinct; Cleveland's two terms separate), with documents per administration and volumes per administration-year coloured by party, coverage spans, and per-administration volume lists with each volume's share. An **Include editorial notes** toggle folds in the range-dated editorial-note documents (attributed by any overlap, so counts are not mutually exclusive — a stated caveat).
+- **Administration Profiles** — whose foreign policy the series documents: each dated document attributed to the administration in office when its events took place (Nixon and Ford distinct; Cleveland's two terms separate), with documents per administration and volumes per administration-year colored by party, coverage spans, and per-administration volume lists with each volume's share. An **Include editorial notes** toggle folds in the range-dated editorial-note documents (attributed by any overlap, so counts are not mutually exclusive — a stated caveat).
 
 **Shared controls**: a **Scope** control (whole series, a subseries, one of your volume scopes — counted at manifest grain here, downloaded or not, since these dashboards read bundled data — or a detected topic), an editable **year range** (with sensible defaults per dashboard), a per-chart **View as table** pop-up (a native Table on iPad) with **Copy** as CSV, and a per-chart **Export** menu offering CSV and figures with the same methods discipline as Section 15.8. Each dashboard carries an **About these figures** note stating exactly what it measures and its limits.
 
@@ -1157,7 +1157,7 @@ Everything above is reference; this chapter is recipes — the features assemble
 3. **Map the terrain before searching.** Skim the relevant volumes' **Top subjects** (6.2), run the era's **word cloud** in Distinctive mode (15.2) to see what vocabulary sets it apart, and open **Chronology** (15.7) over your months to read what was actually crossing the wire.
 4. **Search deliberately.** Use phrases and `NEAR` rather than bags of words (7.2); read the **Query Inspector** once per query so you know what actually ran (7.3); open **Facets** to see the whole match before reading page one (7.5).
 5. **Triage with Checklist Mode** (7.7) — work the result set down to what you'll actually read.
-6. **Mark as you read**: highlights by colour scheme, notes for anything you'd want to find in three months, a tag per emerging theme (Section 9).
+6. **Mark as you read**: highlights by color scheme, notes for anything you'd want to find in three months, a tag per emerging theme (Section 9).
 7. **Build the collection** as your working source base (Section 12), and let **Leads** (10.4) suggest what the pile is missing.
 8. **Cite as you write**: the Cite tile per footnote, or Send to Zotero and let Zotero do the formatting (Section 11).
 9. **Keep the receipts**: your searches are being recorded (17.5), and the **method appendix** (17.6) is ready if the paper needs to defend its source base — or if the seminar asks how you searched.
@@ -1218,7 +1218,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 
 | To do this… | Go here |
 |-------------|---------|
-| Highlight a passage | Select text → a colour dot on the floating selection bar |
+| Highlight a passage | Select text → a color dot on the floating selection bar |
 | Attach a note to a passage | Select text → **Note** on the floating selection bar |
 | Capture a quotation for a collection | Select text → **Excerpt** |
 | Look up selected text in the NARA catalog | Select text → **Look Up** |

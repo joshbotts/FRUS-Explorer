@@ -297,7 +297,10 @@ consulted — not a per-document assertion. Volume-grain, never document-grain.
 
 **`document_subject_refs`** — `(volume_id, document_id, subject)`, where `subject` is an **integer
 position** in a vocabulary that lives outside the database. **`document_subjects`** is the same idea
-folded to 106 coarser `(category, subcategory)` buckets. Neither is interpretable in SQL alone;
+folded to 106 coarser `(category, subcategory)` buckets — and **the two integers index different
+vocabularies and are not interchangeable**: `subject` is a position in the subject vocabulary,
+`bucket` a position in the sorted list of distinct `(category, subcategory)` pairs, resolved
+through `DocumentSubjectStore`'s separate `bucketVocabulary`. Neither is interpretable in SQL alone;
 [§5](#5-resolving-the-coded-columns) shows how to resolve them, and
 [§7.7](#77-subject-tags-are-recall-oriented-candidates) explains what they are worth.
 
@@ -353,7 +356,7 @@ db.executemany("INSERT INTO volumes VALUES (?,?,?,?,?,?)", [
 
 Note the distinction the manifest makes and your prose must keep: **coverage** dates (what the
 volume documents) and **publication** date (when it was printed) are different axes, and they are
-far apart. Measured over the 551 bundled volumes that state both, the median gap between a volume's
+far apart. Measured over the 552 bundled volumes that state both, the median gap between a volume's
 last covered year and its publication year is **27 years**, and the largest is 95. Group by the
 wrong one and a chart of "FRUS documents per decade" becomes a chart of publishing schedules.
 

@@ -1,5 +1,13 @@
 # FRUS Explorer — Editable Static Content
 
+> ⚠️ **SUPERSEDED SNAPSHOT — do not edit, and do not port anything from here.**
+> This is the state of the editable mirror on **2026-08-02**, kept as the record of the owner
+> editorial pass merged in #655. The live mirror is **`Docs/EditableContent.md`**, which has since
+> been rewritten repeatedly — most consequentially by #1078, which recast the Research Guide's
+> pages 5–7 as task contracts and ran an en-US spelling sweep. The British spellings still in this
+> file are therefore *correct as history* and are deliberately left alone. Editing this file has no
+> effect on the app: revisions are mapped back to source by key from the live mirror only.
+
 This file contains the user-facing editorial prose across FRUS Explorer: the About screen,
 the onboarding welcome, the in-app FRUS Research Guide, the Series-analytics dashboards, the
 analytics info popovers and captions, and the explanatory footers in Settings. Edit the text

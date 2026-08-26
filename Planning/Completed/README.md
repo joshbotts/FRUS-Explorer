@@ -83,14 +83,20 @@ the live plan of record (currently `../Plan-Of-Record-2026-08-23.md`), not here.
 - **Shipped one-offs** — `future-unnumbered-PDF-DOCX-highlight-annotation` (its unticked manual
   verification checklist is recorded as P5.4 verification debt in the priorities review).
 
-**Deliberately NOT here** (live at `Planning/` root): the plan of record
-(`Consolidated-Development-Plan-2026-08`), the log (`DEVELOPMENT-PLAN`), the spec, the open
-designs and assessments (vector embeddings, OS-27, lexical similarity, cross-platform,
-PreIndex, `308-Subject-Integration-Design`, `BigPicture-Analytics-CorpusVsSeries`'s postponed
-items, `BigPicture-Pre1910-CentralFiles` + its reference data), the live runbooks
-(`nara-record-group-catalog-runbook`, `352-lot-resolution-runbook`), the QCA assessments that
-still bind the Q tail, `Wave-R-Research-Trail-2026-08` (R-2b), `Eight-Issue-Plan-2026-08`
-(documents the held owner decisions), `Dynamic-Type-Worklist` (open deferrals), the current
-review and trip-packet scope, and the artifact directories
-(`cross-ref-validation/`, `nara-record-group-catalog/`, `source-explorer-export/`,
-`reference/`) that generator defaults point at.
+**Deliberately NOT here** (live at `Planning/` root — verified 2026-08-25): the plan of record
+(`Plan-Of-Record-2026-08-23`), the log (`DEVELOPMENT-PLAN`), the spec, the open designs and
+programs (`Vector-Embeddings-Semantic-Design` — V-0…V-4 shipped, V-5 open;
+`OS27-Semantic-Retrieval-Design` (W-10); `Map-Figure-Export-And-Visual-Outputs` (W-3);
+`People-Early-Era-Program` + `M2-Semantic-Pipeline-Ride-Along` (#234, W-7)), the live runbook
+(`nara-record-group-catalog-runbook`), the cross-platform review package
+(`Cross-Platform-UI-Adversarial-Review/`, whose `STATUS.md` is W-2's only tracker), and the
+artifact directories that generator defaults and live plans point at (`cross-ref-validation/`,
+`nara-record-group-catalog/`, `source-explorer-export/`, `semantic-vectors/`, `semantic-map/`,
+`semantic-spike/`, `early-era-people/`, `reference/`, `external-citation-sample.json`).
+
+Everything else this paragraph used to name is now **in this directory**:
+`Consolidated-Development-Plan-2026-08`, the lexical-similarity, cross-platform-porting and
+PreIndex assessments, `308-Subject-Integration-Design`, `BigPicture-Analytics-CorpusVsSeries`,
+`BigPicture-Pre1910-CentralFiles` + its reference data, `352-lot-resolution-runbook`, both QCA
+assessments, `Wave-R-Research-Trail-2026-08`, `Eight-Issue-Plan-2026-08`, `Dynamic-Type-Worklist`,
+`Archival-Analytics-Adversarial-Review` and the trip-packet scope.

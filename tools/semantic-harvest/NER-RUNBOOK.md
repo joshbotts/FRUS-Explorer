@@ -41,10 +41,10 @@ Every figure sourced; nothing here is re-derived by this runbook.
 | | | source |
 |---|---|---|
 | volumes with no editor person list | **268** (app view) / **267** (TEI rule) | Program doc §1; M1a-Findings "Reconciling two volume counts" |
-| documents in them | **199,246 — 62.9% of the corpus** | Program doc §1 |
+| documents in them | **199,246 — 62.9% of the corpus** (app view); **197,534** in the TEI-rule scope | Program doc §1; §3 |
 | of those, pre-1930 | 82,862 | Program doc §1 |
 | body text in scope | 705 M chars ≈ **~176 M tokens** (51.3% of corpus tokens) | Ride-along §1 |
-| `<persName>` elements already marked | **253,919** — 141,064 `from`, 95,837 `to`, 17,018 untyped | Program doc §3 |
+| `<persName>` elements already marked | **253,919** (app view) — 141,064 `from`, 95,837 `to`, 17,018 untyped; **245,747** located in the TEI-rule scope — 140,504 / 95,247 / 9,996 | Program doc §3; §3's 2026-08-25 note |
 | of those, carrying a link to any identity | **0** | Program doc §3 |
 | distinct name strings / appearing 5+ times | 13,914 / 3,253 | Program doc §3 |
 | **share of person mentions that carry markup** | **~34% pooled**; 66.0% best volume, **12.4% worst**, degrading after 1946 | M1a-Findings |
@@ -67,8 +67,8 @@ of person mentions in these volumes are unmarked and **detection is required, no
 
 One pass of each volume's TEI produces both:
 
-* **The marked layer** — the 253,919 `<persName>` elements the editors already delimit, placed in
-  the R-0 text layer's coordinate space. No model, no server, no LM Studio, no cost. This is M1b's
+* **The marked layer** — the **245,747** `<persName>` elements the editors delimit in this scope, placed in
+  the R-0 text layer's coordinate space (measured 2026-08-25; §1's 253,919 is the 268-volume app view, and §3 reconciles the two to the digit). No model, no server, no LM Studio, no cost. This is M1b's
   input, and it is worth having on disk whatever happens to the detector question.
 * **The detected layer** — candidates over the same text, from either of two detectors that write
   the same shape into their own stores: an LM Studio chat model (§4, priced sample-first, grounded
@@ -116,7 +116,7 @@ TEI defines no `<persName xml:id=…>` anywhere. A different number means the co
 has moved since 2026-08-07, and the script says so on the same line. Investigate before harvesting;
 a scope that silently grew is a harvest of the wrong corpus.
 
-**N-1 expectation: ~253,919 rows** across the scope, split ~141,064 / ~95,837 / ~17,018 by
+**N-1 expectation: 245,747 rows** across the scope, split 140,504 / 95,247 / 9,996 by
 `from` / `to` / untyped, and **zero** carrying a `corresp`. N-0 reads all 552 volumes (3.34 GB) once
 to derive the scope and caches the answer in `scope.json`; N-1 re-reads only the 267 in it. No model
 is in the loop for either, and the printed chars/s and per-volume timing tell you the real clock
@@ -145,7 +145,7 @@ that the pass is reading what M1a read.
 | | |
 |---|---|
 | scope text | 705 M chars ≈ 176 M tokens (at the corpus's measured 4.16 chars/token) |
-| chunks at 3200 chars / 480 overlap | ~230–260 k (mean document is ~3,540 chars, so most are one chunk) |
+| chunks at 3200 chars / 480 overlap | ~230–260 k *(superseded — measured 1.72 chunks/document, so **~339,000**; §4.7)* |
 | system prompt re-sent per chunk | ~191 tokens ⇒ **+~26%** on input |
 | total through the model | ~225 M input + ~16 M generated ≈ **240 M tokens** |
 
@@ -202,10 +202,9 @@ Three things it does not change, and one it makes worse:
    schema adherence, hallucination, and the discipline to copy a name verbatim rather than normalise
    it. At 8B the LLM route cost 60–100× NLTagger's ~1–2 h, so "is it better?" was a question about
    quality at a large price. At 0.5–2 B the gap narrows to roughly 5–20×, and **a small model that
-   merely ties NLTagger has no reason to exist.** Today nothing can tell you which it is, because
-   the control is not built (§5). If a small-model sweep on the Air is the plan, build the control
-   first — it is the cheaper half of the comparison and the one that makes the other half mean
-   something.
+   merely ties NLTagger has no reason to exist.** **Superseded 2026-08-12.** The control is built (§5) and measured: ~8 min over the scope,
+   not 1–2 h, so at 14 B the measured gap is ~21,000× rather than 5–20× (§4.7). What it still
+   cannot tell you is which detector is *better* — that is §6's job, and it is the only open half.
 
 Two levers left unmeasured, both worth checking before a sweep: whether your LM Studio build serves
 **concurrent** requests (on prompts this short, concurrency is likely the largest remaining
@@ -221,7 +220,8 @@ an unknown id to whatever model is loaded, which "works" while writing a fiction
 provenance (measured on the embedding spike, 2026-08-10).
 
 The pilot volumes are M1a's twelve — the same era-stratified sample every existing measurement in
-this program was taken on, and the sample the M2a ground truth will be drawn from:
+this program was taken on. **They are not the M2a sample**: `stage_m2a.py`'s wider draw shares zero
+volumes with them, so a pilot store covers none of the gold documents and scores nothing (§4.8.2, §7).
 
 ```
 cd ~/semantic-harvest
@@ -316,8 +316,7 @@ the misconfiguration is what it corrects; everything about verbatim discipline i
 **Two findings, and only one of them is about the models.**
 
 **(a) The timings measure a misconfiguration, not a model.** §4.1 designs this workload to be 94%
-prompt processing. It ran at **52.8% generation**: 613,375 completion tokens against 548,177 prompt,
-or **~735 generated tokens per chunk** where the correct answer — the models returned ~2 strings per
+prompt processing. It ran at **52.8% generation**: the 1.7 B's 613,375 completion tokens against 548,177 prompt (the 14 B's were 604,373), or **~735 generated tokens per chunk** where the correct answer — the models returned ~2 strings per
 chunk — is roughly 25 tokens of JSON. That is Qwen3's reasoning trace, which is on by default. The
 run therefore became **decode**-bound, which is the one axis the Air is worst on, and inverts §4.2's
 own argument for using it ("this workload barely decodes"). At 733 tokens in 127.68 s the 14 B
@@ -386,7 +385,7 @@ nothing available today can bound it — which is precisely and only what §6 de
 
 #### The cost, decomposed
 
-Two runs over the same 824 chunks with the same 665-token prompts are two equations in two unknowns:
+Two runs over the same 824 chunks with near-identical prompts (665 tokens thinking, 669 no-think — §4.8.2's fixed 4-token template delta) are two equations in two unknowns:
 
 | | |
 |---|---|
@@ -476,8 +475,7 @@ sustained hour).
 saw the same chunks; this store reports **551,473**, and the delta is exactly **4 × 824**. The
 no-think chat template injects an empty think block at a fixed 4 tokens per chunk, so the match
 figure is per *mode*: 548,177 for a thinking store, 551,473 for a no-think one — and the identity
-of the sample is confirmed by the same arithmetic either way. (The Air no-think store should show
-551,473 too; check it before quoting a cross-machine comparison.)
+of the sample is confirmed by the same arithmetic either way. (**Checked 2026-08-26**: summing `prompt_tokens` across `~/frus-ner-raw-pilot-qwen3-14b-nothink` gives exactly 551,473, so both no-think arms are confirmed on the same 824 chunks and the per-mode figure holds.)
 
 **Behaviour is machine-invariant; only the clock moved.** Verbatim discipline is identical against
 its own denominators (3.57% unlocated both sides), mentions per document 20.0 vs 19.9, the §4.8
@@ -518,9 +516,9 @@ is not needed for scoring at all: it is what the scoring verdict authorizes, nev
 
 ## 5. Phase N-3 — the control detector
 
-**Built** (`swift run -c release EarlyEraNERControl`, SPM-only, no `xcodegen`). It is the ~1–2 h
-free baseline §4.2 argues every LLM run has to beat, and it exists so that argument can be checked
-rather than asserted.
+**Built** (`swift run -c release EarlyEraNERControl`, SPM-only, no `xcodegen`). It is the free baseline §4.2 argues every LLM run has to beat — priced there at ~1–2 h and
+**measured at ~8 min over the scope** (§4.7: 9,935 documents in 0.4 min), which is exactly the kind of
+assertion it exists to replace with a measurement.
 
 ```
 swift run -c release EarlyEraNERControl        # from the repo root
@@ -600,9 +598,23 @@ called itself a lower bound. This is the real measurement, on a proper exhaustiv
 ## 7. Phase N-5 — scoring
 
 ```
+**The pilot stores are not scoring inputs.** M2a's volumes share none with M1a's twelve (§4.8.2), so every
+existing `detected/` store — both LLM pilots *and* the control — covers 0 of the 72 gold documents, and the
+scorer scores a detector only over documents it scanned. Give each arm a targeted pass over exactly the gold
+documents first (~90 chunks, ~8 min serial on the Studio):
+
+```
+ONLY_DOCUMENTS=~/frus-m2a/m2a-ground-truth.jsonl OUT_DIR=~/frus-ner-raw-gold-control \
+  swift run -c release EarlyEraNERControl        # the control; the LLM harness needs the same flag added
+```
+
+then score:
+
+```
 GROUND_TRUTH=~/frus-m2a/m2a-ground-truth.jsonl \
-DETECTORS=~/frus-ner-raw-pilot-<model>,~/frus-ner-raw-control \
+DETECTORS=~/frus-ner-raw-gold-<model>,~/frus-ner-raw-gold-control \
 python3 score_detections.py
+```
 ```
 
 One table, one row per detector, plus **the editors' own markup scored as if it were a detector** —
