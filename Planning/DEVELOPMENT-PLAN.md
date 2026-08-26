@@ -8791,3 +8791,44 @@ via `git add -A`; both are untracked again and now gitignored.
 Verified: 4,075 tests — 4,057 passed, 18 env-gated skips, **0 failures**. (An intermediate run
 failed 36 UI tests with the simulator in a Shutdown state; re-run booted, all green — the
 app-host wedge, not the edits.)
+
+## Session 2026-08-26 — Archive Visits Phase 0: the packet stops lying about what it covers
+
+The schema-free phase of `Planning/Archive-Visit-Plan-Design.md` (v3), shipped as decided.
+
+**Project Home's seed is the leads union, by construction.** `engagedDocumentsForPacket()`
+walked `summary.collections` only while its doc comment claimed parity with Suggested Next —
+false since the day it was written, because `ProjectLeadsService.gatherSeed` unions three
+sources (collections ∪ noted documents ∪ focus-tagged documents). The packet now calls the
+SAME `gatherSeed`, so the claim cannot drift again; the gate tests the engaged CONTENT
+(`engagedPacketDocuments.isEmpty`), not whether a collection happens to be attached.
+
+**The collection surfaces hand the sheet the collection, and the sheet resolves membership
+in one place.** New `TripPacketSeed`: `.documents` (Project Home) or `.collection` — smart
+collections resolve through the export's own `CollectionContentResolver.smartRefs` (the
+editor already tells the user "static entries are ignored"; now the packet obeys the same
+rule), and static collections contribute documents AND excerpts through the testable
+`staticSeedDocuments` (sortOrder, first-occurrence dedupe). All three gates admit a
+saved-search collection and an excerpt-only collection; both were orphaned before.
+
+**The topic sentence has its editor.** `TripPacketTopicSentence.edited` was designed
+seeded-and-editable and written by nothing — the project's private research note went into
+the shareable NARA draft verbatim. The sheet now holds the built model, renders through ONE
+path for build and edit, debounces the PDF regeneration, and the caption states the rule:
+the drafts send what you write here, never the stored note.
+
+**Chapter 3 joins the truncation grammar** — it was the one uncapped chapter. Three
+disclosed regimes: 20 rows/group with an exact-count remainder, a 200-row packet budget
+spent in group order (elided groups keep their headers and exact counts), and ≥500-document
+groups elided outright to the finding-aid sentence, with a closing line counting elisions.
+
+**The empty state stopped naming a cause it cannot have.** "None of these documents has an
+indexed source note" was unreachable in that branch (a note-less list builds a real packet
+with help-me-locate items); the three real causes — no documents, no index, smart search
+unavailable — each get their own honest copy.
+
+Tests: 4 new exporter tests (both caps driven through the real emitter with exact-count
+assertions; the 200-budget test pins the row arithmetic), the seed rule pinned against real
+`CollectionEntry` fixtures, the parity suite extended to pin the smart/excerpt gates, the
+one-resolution-path seeding, and Project Home's gatherSeed wiring (with the old attachment
+gate explicitly banned). 45/45 in the affected suites; full run below.

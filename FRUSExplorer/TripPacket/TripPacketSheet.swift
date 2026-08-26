@@ -34,21 +34,80 @@ import CoreText
 ///   1.1 — Session 2026-08-23: #830 — the roster's citations come from the real formatter
 ///          (the data source gains the manifest map), and a PDF share rides beside the
 ///          plain-text one — the SAME string paginated, never a second composition
+///   1.2 — Archive Visits Phase 0: (a) the sheet takes a ``TripPacketSeed`` — a document list,
+///          or a Collection resolved HERE, so a smart (saved-search) collection finally has a
+///          route and excerpt entries count as the documents they quote; one sheet stays the
+///          one place the packet's rules are applied. (b) The inquiry's topic sentence gains
+///          its editor — `TripPacketTopicSentence.edited` was designed for exactly this and
+///          written by nothing; the drafts send what the researcher types here, never the
+///          stored project note. (c) The empty state stopped naming a cause it cannot have:
+///          it is reachable only with an empty reading list or no search index, never by
+///          "no source notes" (that case builds a real packet with a help-me-locate list).
+
+/// What a packet is built over (Phase 0).
+///
+/// The `collection` case exists so that resolution happens INSIDE the one sheet: a smart
+/// collection's membership comes from its saved search (matching export behavior — the editor
+/// itself tells the user "static entries are ignored"), and a static collection contributes its
+/// document entries AND its excerpts, whose `volumeId`/`documentId` provenance is a real
+/// document reference the old filter dropped.
+enum TripPacketSeed {
+    /// An explicit reading list (Project Home's engaged set).
+    case documents([(volumeId: String, documentId: String)])
+    /// A collection, resolved at build time (smart → saved search; static → documents + excerpts).
+    case collection(Collection)
+
+    /// The static-collection seed rule, separated so it is testable: document and excerpt
+    /// entries with non-empty ids, in `sortOrder`, de-duplicated first-occurrence-wins.
+    static func staticSeedDocuments(from entries: [CollectionEntry])
+        -> [(volumeId: String, documentId: String)] {
+        var seen = Set<String>()
+        var out: [(volumeId: String, documentId: String)] = []
+        for entry in entries.sorted(by: { $0.sortOrder < $1.sortOrder })
+        where (entry.entryKind == .document || entry.entryKind == .excerpt)
+            && !entry.volumeId.isEmpty && !entry.documentId.isEmpty {
+            let key = "\(entry.volumeId)/\(entry.documentId)"
+            if seen.insert(key).inserted {
+                out.append((volumeId: entry.volumeId, documentId: entry.documentId))
+            }
+        }
+        return out
+    }
+}
+
 struct TripPacketSheet: View {
 
-    /// The reading list.
-    let documents: [(volumeId: String, documentId: String)]
+    /// What the packet is built over.
+    let seed: TripPacketSeed
     /// Names the packet, and seeds nothing else.
     let title: String
     /// Seeds the inquiry's topic sentence (D8); `nil` yields the placeholder.
     let researchQuestion: String?
 
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+
+    /// Why there is no packet, when there is none — each state names its actual cause.
+    enum UnavailableReason {
+        /// The seed resolved to zero documents.
+        case noDocuments
+        /// `appState.indexingPipeline` is nil — nothing can be read.
+        case indexUnavailable
+        /// A smart collection's saved search could not run (no search service).
+        case smartSearchUnavailable
+    }
 
     @State private var packet: String?
     /// The packet paginated as a PDF, regenerated with the packet itself.
     @State private var packetPDF: URL?
+    /// The built model, held so the topic-sentence edit re-renders WITHOUT a rebuild.
+    @State private var model: TripPacketModel?
+    /// The inquiry topic sentence as typed; committed to `model.topicSentence.edited`.
+    @State private var topicDraft = ""
+    /// Debounces the re-render while typing — the export is cheap, the PDF is not.
+    @State private var topicRenderTask: Task<Void, Never>?
+    @State private var unavailableReason: UnavailableReason?
     @State private var hasDate = false
     @State private var arrival = Date()
     @State private var isBuilding = true
@@ -62,21 +121,46 @@ struct TripPacketSheet: View {
                         defaultValue: "Reading your documents' source notes…"))
                 } else if let packet {
                     ScrollView {
-                        Text(packet)
-                            .font(.system(.footnote, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
+                        VStack(alignment: .leading, spacing: 0) {
+                            topicEditor
+                            Divider()
+                            Text(packet)
+                                .font(.system(.footnote, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                        }
                     }
                 } else {
-                    // Not an error state: a project whose documents carry no indexed source notes
-                    // genuinely has no packet to build, and saying so beats an empty page.
-                    ContentUnavailableView(
-                        String(localized: "packet.empty.title", defaultValue: "Nothing to plan yet"),
-                        systemImage: "doc.text.magnifyingglass",
-                        description: Text(String(
-                            localized: "packet.empty.message",
-                            defaultValue: "None of these documents has an indexed source note, so there is no archival trail to plan a visit around. Index the volumes they come from and try again.")))
+                    // Each unavailable state names its ACTUAL cause. The old single message
+                    // ("none of these documents has an indexed source note") described a state
+                    // this branch cannot be shown in — a no-source-notes reading list builds a
+                    // real packet whose inquiry lists them as help-me-locate items.
+                    switch unavailableReason {
+                    case .indexUnavailable:
+                        ContentUnavailableView(
+                            String(localized: "packet.empty.noIndex.title",
+                                   defaultValue: "The search index isn't ready"),
+                            systemImage: "doc.text.magnifyingglass",
+                            description: Text(String(
+                                localized: "packet.empty.noIndex.message",
+                                defaultValue: "The packet reads source notes from the search index, which isn't available yet. Finish indexing and try again.")))
+                    case .smartSearchUnavailable:
+                        ContentUnavailableView(
+                            String(localized: "packet.empty.smart.title",
+                                   defaultValue: "This collection's search can't run yet"),
+                            systemImage: "doc.text.magnifyingglass",
+                            description: Text(String(
+                                localized: "packet.empty.smart.message",
+                                defaultValue: "This collection's documents come from its saved search, and search isn't available yet. Finish indexing and try again.")))
+                    case .noDocuments, nil:
+                        ContentUnavailableView(
+                            String(localized: "packet.empty.title", defaultValue: "Nothing to plan yet"),
+                            systemImage: "doc.text.magnifyingglass",
+                            description: Text(String(
+                                localized: "packet.empty.noDocuments.message",
+                                defaultValue: "There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.")))
+                    }
                 }
             }
             .navigationTitle(String(localized: "packet.title", defaultValue: "Archive visit"))
@@ -140,33 +224,136 @@ struct TripPacketSheet: View {
         .background(.bar)
     }
 
+    /// The inquiry's topic sentence, editable in place (Phase 0 — the missing
+    /// `TripPacketTopicSentence.edited` writer). The caption states the rule that is the whole
+    /// point: the drafts send what is typed HERE, never the stored project note — the note is
+    /// internal, the draft is an email to reference staff.
+    @ViewBuilder
+    private var topicEditor: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "packet.topic.header", defaultValue: "Inquiry topic sentence"))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            TextField(String(localized: "packet.topic.field", defaultValue: "Topic sentence"),
+                      text: $topicDraft,
+                      prompt: Text(TripPacketTopicSentence.placeholder),
+                      axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(2...5)
+                .onChange(of: topicDraft) { _, _ in scheduleTopicRender() }
+                .onSubmit { applyTopicEdit() }
+            Text(researchQuestion?.isEmpty == false
+                 ? String(localized: "packet.topic.caption.seeded",
+                          defaultValue: "Seeded from your project's research question — edit freely. The drafts send what you write here, never the stored note.")
+                 : String(localized: "packet.topic.caption.unseeded",
+                          defaultValue: "The inquiry drafts send what you write here."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+    }
+
+    /// Debounce the re-render while typing: the export is a cheap string build, the PDF is not.
+    private func scheduleTopicRender() {
+        topicRenderTask?.cancel()
+        topicRenderTask = Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+            applyTopicEdit()
+        }
+    }
+
+    /// Writes the draft into the model's `edited` slot and re-renders — no rebuild, the model
+    /// is already assembled; only the export string and its PDF change.
+    private func applyTopicEdit() {
+        guard var model else { return }
+        let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        model.topicSentence.edited = trimmed.isEmpty ? nil : topicDraft
+        self.model = model
+        render(model)
+    }
+
+    /// One render path for build and edit, so the two cannot compose differently.
+    private func render(_ model: TripPacketModel) {
+        let rendered = TripPacketExporter(model: model, projectName: title,
+                                          arrival: hasDate ? arrival : nil).export()
+        packet = rendered
+        packetPDF = TripPacketPDFRenderer.render(packet: rendered, title: title)
+    }
+
+    /// Resolves the seed to a reading list. A smart collection resolves through the SAME
+    /// resolver its exports use (`CollectionContentResolver.smartRefs`), so the packet and the
+    /// export cannot describe different membership; a static collection contributes documents
+    /// and excerpts through ``TripPacketSeed/staticSeedDocuments(from:)``.
+    private func resolveSeedDocuments() async -> [(volumeId: String, documentId: String)]? {
+        switch seed {
+        case .documents(let docs):
+            return docs
+        case .collection(let collection):
+            if collection.savedSearchId != nil {
+                let resolver = CollectionContentResolver(appState: appState,
+                                                         modelContext: modelContext)
+                guard let refs = try? await resolver.smartRefs(for: collection) else {
+                    unavailableReason = .smartSearchUnavailable
+                    return nil
+                }
+                return refs.sorted { $0.sortOrder < $1.sortOrder }
+                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            }
+            return TripPacketSeed.staticSeedDocuments(from: collection.documentEntries ?? [])
+        }
+    }
+
     private func rebuild() async {
         isBuilding = true
         defer { isBuilding = false }
+        unavailableReason = nil
         guard let pipeline = appState.indexingPipeline else {
             packet = nil
             packetPDF = nil
+            model = nil
+            unavailableReason = .indexUnavailable
+            return
+        }
+        guard let documents = await resolveSeedDocuments() else {
+            packet = nil
+            packetPDF = nil
+            model = nil
+            return   // resolveSeedDocuments set the reason
+        }
+        guard !documents.isEmpty else {
+            packet = nil
+            packetPDF = nil
+            model = nil
+            unavailableReason = .noDocuments
             return
         }
         // The same manifest set CollectionContentResolver batches, keyed once — what lets
         // the roster's citations come from the real formatter rather than the fallback.
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
-        let model = await TripPacketBuilder.build(
+        var built = await TripPacketBuilder.build(
             documents: documents, researchQuestion: researchQuestion,
             dataSource: TripPacketDataSource(
                 pipeline: pipeline,
                 manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
                                         uniquingKeysWith: { first, _ in first })))
-        guard !model.groups.isEmpty || model.triage.unresolvedDocumentCount > 0 else {
+        guard !built.groups.isEmpty || built.triage.unresolvedDocumentCount > 0 else {
+            // Unreachable in practice (a note-less reading list lands in the help-me-locate
+            // branch), kept as a guard: an empty page must never render as a packet.
             packet = nil
             packetPDF = nil
+            model = nil
+            unavailableReason = .noDocuments
             return
         }
-        let rendered = TripPacketExporter(model: model, projectName: title,
-                                          arrival: hasDate ? arrival : nil).export()
-        packet = rendered
-        packetPDF = TripPacketPDFRenderer.render(packet: rendered, title: title)
+        // A rebuild (date toggled, seed re-resolved) must not discard the researcher's edit.
+        let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { built.topicSentence.edited = topicDraft }
+        model = built
+        render(built)
     }
 }
 

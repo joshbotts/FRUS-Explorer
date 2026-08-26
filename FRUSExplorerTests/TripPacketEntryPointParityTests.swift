@@ -151,4 +151,56 @@ struct TripPacketEntryPointParityTests {
         #expect(mac.components(separatedBy: Self.planVisitKey).count - 1 == 1,
                 "Expected the key exactly once in MacCollectionManagerView")
     }
+
+    // MARK: - Phase 0: the smart/excerpt gates and the one resolution path
+
+    /// The three collection gates must admit a saved-search collection and an excerpt-only
+    /// collection — the two membership shapes the old `orderedDocumentKeys.isEmpty` gate
+    /// orphaned. Scoped to the gate expressions, not the files.
+    @Test("All three gates admit smart and excerpt-only collections")
+    func gatesAdmitSmartAndExcerpts() throws {
+        let editor = try Self.source(Self.editor)
+        #expect(editor.components(separatedBy: "linkedSavedSearchId == nil").count - 1 >= 2, """
+            Both size-class gates must test the saved search — a smart collection's membership \
+            resolves at build time, and a gate that only counts static entries re-orphans it.
+            """)
+        let mac = try Self.source(Self.macManager)
+        #expect(mac.contains("collection.savedSearchId == nil"),
+                "the macOS gate must test the saved search like the iOS pair")
+        for (name, text) in [("editor", editor), ("mac", mac)] {
+            #expect(text.contains(".entryKind == .excerpt"), """
+                The \(name) gate must count excerpt entries — they carry real document \
+                provenance, and a collection built from highlighted passages is exactly what a \
+                reader accumulates while reading.
+                """)
+        }
+    }
+
+    /// All three collection surfaces hand the sheet the COLLECTION, so membership resolves in
+    /// one place (smart → the export's own `smartRefs`; static → documents + excerpts). A
+    /// surface that pre-filters its own list is a second place for the rules to diverge.
+    @Test("The collection surfaces seed the sheet with the collection itself")
+    func surfacesSeedTheCollection() throws {
+        let editor = try Self.source(Self.editor)
+        let mac = try Self.source(Self.macManager)
+        #expect(editor.contains("seed: .collection(collection)"))
+        #expect(mac.contains("seed: .collection(collection)"))
+    }
+
+    /// Project Home's packet seed is the SAME `gatherSeed` union the leads engine runs —
+    /// parity by construction, replacing a doc comment that claimed it falsely.
+    @Test("Project Home's packet seed is the leads union, by construction")
+    func projectHomeSeedIsTheLeadsUnion() throws {
+        let home = try Self.source("FRUSExplorer/ProjectContext/ProjectHomeView.swift")
+        #expect(home.contains("ProjectLeadsService.gatherSeed("), """
+            The packet's engaged set must come from the leads engine's own gatherSeed — a \
+            re-implementation of one of its three sources is how the seed silently narrowed \
+            to collections-only the first time.
+            """)
+        #expect(home.contains("seed: .documents(engagedPacketDocuments)"))
+        #expect(home.contains(".disabled(engagedPacketDocuments.isEmpty)"),
+                "the gate must test the engaged CONTENT, not collection attachment")
+        #expect(!home.contains(".disabled(members.isEmpty)"),
+                "the attachment gate is the defect this phase removed")
+    }
 }

@@ -744,13 +744,11 @@ private struct CollectionDetailPane: View {
         }
         .transientToast($addDocumentsToast)
         .sheet(isPresented: $showTripPacket) {
-            // From the ENTRIES, matching `CollectionEditorView` — `orderedDocumentKeys` is a
-            // `[String]` of composite keys and splitting those apart breaks on any id containing "/".
+            // The COLLECTION, matching `CollectionEditorView` — the sheet resolves membership
+            // itself (smart → the export's own `smartRefs`; static → documents + excerpts,
+            // de-duplicated), so the three surfaces cannot describe different sets (Phase 0).
             TripPacketSheet(
-                documents: sortedEntries
-                    .filter { $0.entryKind == .document
-                        && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) },
+                seed: .collection(collection),
                 title: collection.name,
                 researchQuestion: nil)
                 .environment(appState)
@@ -1319,7 +1317,13 @@ private struct CollectionDetailPane: View {
                                  defaultValue: "Plan an Archive Visit…"),
                           systemImage: "building.columns")
                 }
-                .disabled(orderedDocumentKeys.isEmpty)
+                // Content or a saved search — the same rule `canExport` applies (:848) and the
+                // same one the iOS editor's gates now state. Excerpts carry real document
+                // provenance; a smart collection resolves at build time (Phase 0).
+                .disabled(orderedDocumentKeys.isEmpty
+                          && !sortedEntries.contains { $0.entryKind == .excerpt
+                              && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                          && collection.savedSearchId == nil)
                 Divider()
                 Menu {
                     ForEach(CollectionGeneratedBlockType.allCases) { blockType in

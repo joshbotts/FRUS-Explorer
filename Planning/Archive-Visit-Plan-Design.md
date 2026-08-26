@@ -317,9 +317,13 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
 
 ## 6. Phasing, revised
 
-- **Phase 0 — unchanged.** The Tier A step-1 fixes (seed/gate/smart/excerpts, the topic-sentence
-  editor, a minimal chapter-3 cap on the *existing* exporter so ephemeral packets stop being
-  unbounded meanwhile). No schema. Ships now.
+- ~~**Phase 0.**~~ **SHIPPED 2026-08-26** — the Tier A step-1 fixes: the Project Home seed is
+  `gatherSeed`'s union by construction with a content gate; the three collection surfaces hand
+  the sheet the collection and `TripPacketSeed` resolves membership in one place (smart → the
+  export's own `smartRefs`; static → documents + excerpts, deduplicated); the topic-sentence
+  editor writes the never-written `edited`; chapter 3 joined the truncation grammar
+  (20/group · 200/packet · ≥500 elision, all disclosed); the empty states name their actual
+  causes. No schema.
 - **Phase 1 — the pipeline + the narrowed exporter.** Batched `externalCitations(for:)` (today
   per-document only, `IndexingPipeline.swift:6087`); the two-channel builder; **target minting**
   (keys as §2) with restriction/substitute markers folded in; the narrowed (a)/(b)/(c) exporter
