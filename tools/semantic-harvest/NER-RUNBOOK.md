@@ -126,6 +126,16 @@ If the marked totals come out far from those figures, stop and reconcile before 
 are the one part of this program that is already measured, so they are the cheapest possible check
 that the pass is reading what M1a read.
 
+> **Measured 2026-08-25 (Studio): 245,747 rows over 197,534 docs in 3.6 min — and the ~253,919
+> expectation above is the app-view figure, not this scope's.** The Program doc's census counts
+> the 268-volume app view; the TEI rule swaps out the 1873 correspondents pair (2,988 + 3,927
+> elements) and swaps in frus1941-43 (312). Exact to the digit: 253,919 − 2,988 − 3,927 + 312 =
+> **247,316** raw elements in the TEI-rule scope, of which the store locates **245,747** (99.4%)
+> in document body text — the 1,569 remainder is front-matter placement plus nested-element
+> de-duplication, both designed exclusions. Both corpus copies (`~/frus-volumes` and
+> `Development/frus/volumes`) carry identical per-volume counts on all 267, so this is a counting
+> rule difference, not corpus drift. A future N-1 should land on 245,747, not 253,919.
+
 ---
 
 ## 4. Phase N-2 — the detector pilot
@@ -399,7 +409,7 @@ Recorded because a wrong lean stated confidently is worth more as a correction t
 
 1. **The Studio pilot.** Same `SEED`, `SAMPLE_DOCS`, no-think, one variable. Plausibly 2–4× on a
    compute-bound prefill workload; at 3× that is 76 → ~25 days. `machine` is already in the
-   manifest, so the two stores are self-distinguishing.
+   manifest, so the two stores are self-distinguishing. **Done 2026-08-25 — measured 4.1×, §4.8.2.**
 2. **Concurrency.** §4.2 calls it "likely the largest remaining throughput factor" and the harness
    still sends one chunk at a time. On a prefill-bound workload it is now the biggest untested
    lever, and it is a harness change rather than a hardware one.
@@ -438,12 +448,71 @@ into a store whose name says what changed, since the toggle itself is not in the
 
 ```
 OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink        # the Air, done 2026-08-12
-OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink-studio # the machine arm, §4.8 sequencing item 1
+OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink-studio # the Studio arm, done 2026-08-25 (§4.8.2)
 ```
 
 everything else — `VOLUMES`, `SAMPLE_DOCS=40`, `SEED=234` — held identical, or it is not the same
 480 documents and the before/after is not a comparison. This is the procedure for **every** further
 arm, the Studio included: one variable, same sample, a store named for what moved.
+
+### 4.8.2 The Studio arm, measured (2026-08-25, Mac Studio / M1 Max, 64 GB)
+
+Run per §4.8.1: same twelve volumes, `SAMPLE_DOCS=40`, `SEED=234`, no-think (the probe read 37
+completion tokens before the run — recorded here because the manifest cannot record the server-side
+toggle), the same Q8_0 GGUF, `OUT_DIR=~/frus-ner-raw-pilot-qwen3-14b-nothink-studio`. One variable
+moved and the store proves it: **824 chunks**, `truncated` **0**, `unparsable` **0**.
+
+| arm (Qwen3 14 B no-think) | mentions | novel | unlocated | s/chunk | wall | extrapolated to the scope |
+|---|---|---|---|---|---|---|
+| Air (M5, 32 GB — §4.8) | 9,533 | 93% | 3.6% (238/6,667) | 19.27 | 265 min | ~76 days |
+| **Studio (M1 Max, 64 GB)** | 9,590 | 92.9% | 3.6% (239/6,699) | **4.68** | **64 min** | **~18.4 days** |
+
+**The machine bought 4.1×** — the top of §4.8's predicted 2–4× band, and the shape of the
+prediction held: compute-bound prefill on wider silicon, plus a throttle asymmetry the band could
+not price (the Air's 19.27 s/chunk is an average over 4.4 fanless hours; the Studio's 4.68 is one
+sustained hour).
+
+**The prompt-token check, corrected.** §4.7 offers 548,177 as the figure that confirms two stores
+saw the same chunks; this store reports **551,473**, and the delta is exactly **4 × 824**. The
+no-think chat template injects an empty think block at a fixed 4 tokens per chunk, so the match
+figure is per *mode*: 548,177 for a thinking store, 551,473 for a no-think one — and the identity
+of the sample is confirmed by the same arithmetic either way. (The Air no-think store should show
+551,473 too; check it before quoting a cross-machine comparison.)
+
+**Behaviour is machine-invariant; only the clock moved.** Verbatim discipline is identical against
+its own denominators (3.57% unlocated both sides), mentions per document 20.0 vs 19.9, the §4.8
+markup ratio 100.1% vs 100.3%. The +57 mentions / +32 returned strings between the stores is §4.6's
+non-determinism doing what it said (batching and cache state, across an OS and an LM Studio build)
+— which is why any quoted figure names the run that produced it.
+
+**No prefill/decode decomposition from this arm alone**: the §4.8 method needs two runs on one
+machine with different generation lengths, and the only candidate second run is the 29-hour
+thinking arm, which is not worth re-buying for a decomposition.
+
+Sequencing after this: item 1 is done and the full sweep prices at **~18 days of continuous Studio
+time** — 4× cheaper than the Air's, still weeks rather than the overnight tier §4.2 once imagined.
+What remains is unchanged in kind: **concurrency** (item 2, probed below) and **M2a** (item 3, the
+critical path) — the annotation sitting is the only missing input to `score_detections.py`.
+
+**Concurrency, probed server-side (2026-08-25, Studio).** Eight real R-0 chunks through the
+harness's own `detect_chunk`, same set at 1/2/4/8 threads against the LM Studio server: **2.28× /
+3.92× / 4.33×**, all statuses ok, serial baseline 4.3 s/chunk (consistent with the pilot's 4.68).
+LM Studio batches; **the knee is 4 workers** (8 buys 0.4× more while mean latency rises 3.7 →
+5.6 s). At ~3.9× the full sweep re-prices from ~18.4 days to **~4.7** — but this is an 8-chunk
+burst, not a sustained run, so the honest re-price is a §4.8.1-procedure pilot arm re-run with a
+`WORKERS=4` harness (same 824 chunks, one variable, ~16 min). The harness still sends one chunk at
+a time; the change it needs is a per-volume thread pool whose results merge back in chunk order,
+selftest-pinned to write a byte-identical store at any width.
+
+**Two scoring facts found while staging (2026-08-25), both worth knowing before planning arms.**
+The staged M2a volumes (6 per band, drawn from the whole band pools) share **zero volumes** with
+M1a's twelve — §4.3's "the sample the M2a ground truth will be drawn from" did not survive
+`stage_m2a.py`'s wider draw, so the existing pilot stores cover **0 of the 72 gold documents** and
+contribute nothing to scoring (the scorer scores a detector only over documents it scanned).
+Scoring the LLM route therefore needs a **targeted pass over exactly the gold documents** — ~90
+chunks, ~8 min serial on the Studio — which in turn needs `ONLY_DOCUMENTS` support in
+`harvest_ner.py` (the control already has it; the harness does not). Consequently the full sweep
+is not needed for scoring at all: it is what the scoring verdict authorizes, never its input.
 
 ---
 
@@ -656,6 +725,15 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
+  1.3 — 2026-08-25: the Studio arm lands (§4.8.2): 4.1× the Air over the same 824 chunks, the
+        full sweep re-priced at ~18.4 days, behaviour machine-invariant (3.6% unlocated and ~20
+        mentions/doc on both machines). Corrects §4.7's prompt-token expectation for no-think
+        stores — the no-think template adds exactly 4 tokens per chunk, so 551,473, not 548,177,
+        is the match figure for that mode. §4.8 sequencing item 1 marked done; concurrency and
+        the M2a sitting are what remain. Same day: N-0/N-1 ran on the Studio (scope 267 exact;
+        marked layer 245,747 rows, reconciled to the digit against the app-view census — see the
+        §3 note) and the M2a sample is STAGED at ~/frus-m2a (72 docs, 18 per band, 92 seeded
+        spans, zero skips) awaiting the sitting. Still un-keyed, so §0's rule is unchanged.
   1.2 — 2026-08-11: the control detector is BUILT (§5, `EarlyEraNERControl`), and M2a is now
         stageable, collectable and scoreable (§6–7, `stage_m2a.py` / `score_detections.py`) — the
         sample is annotated by editing bracketed text so offsets are derived rather than typed,
