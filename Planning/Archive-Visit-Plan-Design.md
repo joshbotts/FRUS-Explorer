@@ -360,6 +360,16 @@ merits); orphaned targets = report coverage (§3c); priority tiers user-defined,
   re-opened on another device renders the same artifact, and a researcher who wants the crib for a
   lot-file trip but not a library one does not have to remember to flip a global setting.
 
+## 7a. The UI design handoff
+
+The Claude Design brief for these surfaces is `Archive-Visit-Design-Handoff/README.md` — nine
+artboards (1a list · 1b targets · 1c tiers · 1d documents · 1e picker + three-way add · 1f
+deliverables · 1g artifact + inquiry editor · 1h coverage report · 1i Settings), written to the
+fidelity of the Archival Analytics handoff. It names the shipped components each surface mirrors
+(`WorkingCorporaView` for the list grammar, `CollectionEntryInspector`'s override pickers,
+`CollectionPickerSheet` for the picker, the Wave-B filter chips), quotes the copy that must
+survive verbatim, and carries the ●/○ convention so no illustrative number is hard-coded.
+
 ## 8. What v3 does not change
 
 The persistence verdicts against plan-as-Collection, device-local storage and the ephemeral tray;
