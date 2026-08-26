@@ -27,6 +27,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-3, the link render path
+///   1.1 — Archive Visits Phase 1: the visit-day-card test left with its chapter (ch7
+///          dropped); the confirm-prompt test reads the whole export, since the prompt is
+///          now its own section rather than part of the inquiry
 @Suite("Repository link rendering (#830 T-3)")
 struct RepositoryLinkRenderTests {
 
@@ -178,43 +181,23 @@ struct RepositoryLinkRenderTests {
     // MARK: - What reaches the page
 
     /// D11's other half: the ask, beside the page that answers it. A library never resolves to a
-    /// facility heading (D3), so `Group.facts` is the ONLY lookup that can reach it.
+    /// facility heading (D3), so `Target.facts` is the ONLY lookup that can reach it.
     @Test("A library's link reaches the confirm-before-you-travel prompt")
     func libraryLinkReachesTheConfirmPrompt() {
         let model = TripPacketModel.build(
             groups: [(key: "nixon", label: "Nixon Presidential Materials, NSC Files",
                       category: .presidentialLibrary, repository: "Nixon Presidential Materials",
-                      resolution: nil, documents: TripPacketExporterTests.refs(40))],
+                      lotAsPrinted: nil, resolution: nil,
+                      documents: TripPacketExporterTests.refs(40))],
             documentYears: [1971], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
-            researchQuestion: nil, facts: { _ in nil })
-        let text = TripPacketExporter(model: model, projectName: "P", arrival: nil).inquiryDrafts
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        let text = TripPacketExporter(model: model, projectName: "P").export()
 
         #expect(text.contains("Confirm before you travel"))
         #expect(text.contains("nixonlibrary.gov"), """
             The library's own page did not reach the prompt. D11 reduced this chapter from a \
             drafted letter to an ask beside the page that answers it — without the link it is \
             only the ask.
-            """)
-    }
-
-    /// Chapter 7 negates pull times, the 5:15 cutoff and the specialist window as printed facts
-    /// (T-0 §3.2) *in favour of links*. Negating them and then printing nothing would leave the
-    /// card thinner than either design intended.
-    @Test("The visit-day card links what it refuses to assert")
-    func visitDayCardLinksWhatItWillNotAssert() {
-        let model = TripPacketModel.build(
-            groups: [(key: "cdf", label: "Central Decimal File", category: .centralDecimalFile,
-                      repository: "National Archives", resolution: nil,
-                      documents: TripPacketExporterTests.refs(10))],
-            documentYears: [1948], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
-            researchQuestion: nil, facts: { _ in nil })
-        let card = TripPacketExporter(model: model, projectName: "P", arrival: nil).visitDayCard
-
-        #expect(card.contains("archives.gov"))
-        #expect(card.contains("must be obtained in person"), "day-0 registration is confirmed (D15)")
-        #expect(!card.contains("Check whether you need to register"), """
-            The old hedge survived. The owner confirmed research cards ARE obtained on arrival, so \
-            this is a statement now, and a hedge beside a confirmed fact reads as doubt about it.
             """)
     }
 }

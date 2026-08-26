@@ -16,125 +16,292 @@ import Foundation
 
 // MARK: - TripPacketExporter
 
-/// Renders a ``TripPacketModel`` as the researcher's packet (#830 T-2).
+/// Renders a ``TripPacketModel`` as the Archive Visit packet — the three core deliverables the
+/// design narrowed the artifact to (Archive-Visit-Plan-Design §3), in repository-grouped order:
+///
+/// - **(a) Repository visit-planning links** — ``RepositoryFactTable``'s per-facility link pairs,
+///   rendered once per repository. This, not prose, is how the app "points users toward
+///   repository-specific guidance."
+/// - **(b) The target list** — one row per research target under its repository, carrying the
+///   consultation metadata (the A3 records line, the claimant-aware access line, NARA's no-box
+///   rule on central-file targets) and **every seeding itemized by claim**: drawn-from seedings
+///   quote the source note's file designation, pointed-at seedings quote the footnote citation
+///   verbatim with its anchor and its `Ibid.` disclosure. Counts never sum across claims (§3d).
+/// - **(c) The inquiry email, per repository** — chapter 2's machinery, now central: letterhead,
+///   the editable topic sentence, the records of interest, A5's verbatim help-me-locate items for
+///   both channels, and the divided-lot questions (§3a: a divided lot IS a question).
+///
+/// The plan-level **coverage report** (§3c) travels with every export regardless of scope — it is
+/// the one honest home for the facts that no longer have a chapter: the substitute denominators
+/// and the layered-digitization warning, the restriction claimants measured vs unmeasured, the
+/// refs channel's reach, and the pre-1946 filing-practice explainer.
 ///
 /// ## Plain text, deliberately
-/// Chapter 2's inquiry draft is an **email a researcher sends to NARA reference staff**, so it has
-/// to survive being pasted into a mail client. The whole packet is therefore plain text rather than
-/// attributed strings or HTML: one format, no lossy step between what is reviewed and what is sent.
-/// (The PDF share renders THIS string paginated — same content, never a second composition.)
+/// The inquiry draft is an **email a researcher sends to reference staff**, so it has to survive
+/// being pasted into a mail client. The whole packet is therefore plain text rather than
+/// attributed strings or HTML: one format, no lossy step between what is reviewed and what is
+/// sent. (The PDF share renders THIS string paginated — same content, never a second composition.)
 ///
 /// ## English, deliberately — the packet's language policy (#830)
 /// Every string in this type is a raw literal, and that is a decision rather than a gap. The
-/// packet is a document addressed to United States archives: chapter 2 is an email to NARA
-/// reference staff, chapters 4 and 6 quote NARA's own English guidance verbatim (an attributed
-/// quotation must not be translated), and the checklist quotes the research-visit FAQ. A
-/// localized packet would send NARA a letter in the researcher's UI language and translate
-/// quotations out of their attributability — so the EXPORTED document stays English by design,
-/// like `HTMLCollectionExporter`'s content, while everything the app itself shows around it
-/// (`TripPacketSheet`, the entry points) is localized as usual.
+/// packet is a document addressed to United States archives: the inquiry is an email to reference
+/// staff, and the appendix quotes NARA's own English guidance verbatim (an attributed quotation
+/// must not be translated). A localized packet would send NARA a letter in the researcher's UI
+/// language — so the EXPORTED document stays English by design, like `HTMLCollectionExporter`'s
+/// content, while everything the app itself shows around it is localized as usual.
 ///
-/// ## Every chapter can be empty, and none of them lies about it
-/// The packet is generated before a trip is booked, from a project that may cite records the app
-/// cannot place. So each chapter has a defined behaviour when its input is missing, and none of
-/// them is "omit silently": an unplaceable group is reported as needing confirmation, an
-/// unconfirmed fact is left out with the surrounding sentence adjusted, and a chapter with nothing
-/// in it says so.
+/// ## Every section can be empty, and none of them lies about it
+/// The packet is generated before a trip is booked, from a reading list that may cite records the
+/// app cannot place. So each section has a defined behaviour when its input is missing, and none
+/// of them is "omit silently": an unplaceable target is reported as needing confirmation, an
+/// unconfirmed fact is left out with the surrounding sentence adjusted, and the coverage report
+/// prints unconditionally.
+///
+/// ## Scoping (§3, export-scoping amendment)
+/// `facilityScope` renders one repository's self-contained slice — its links, its targets, its
+/// draft — as a render filter over the same sections, never a second pipeline. The coverage
+/// report still describes the WHOLE plan, and says so, because the honesty block is not divisible.
 ///
 /// ## What it refuses to print
-/// Anything in ``RepositoryFactTable`` without a `verifiedDate`. As of 2026-08-22 that is the NACP
-/// appointment policy, every presidential library, and the whole non-NARA tail. The exporter reads
-/// `printable` rather than `value`, so this is a property of the data path and not of the copy.
+/// Anything in ``RepositoryFactTable`` without a `verifiedDate`. The exporter reads `printable`
+/// rather than `value`, so this is a property of the data path and not of the copy.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2, chapters 1-3, 5-7
 ///   1.1 — Session 2026-08-22: #830 T-3, chapter 4 (mandatory substitutes, A6)
-///   1.2 — Session 2026-08-23: #830 — the data-starved chapters get their data: chapter 2
-///          prints A3's four-field records line and A5's verbatim unresolved notes, chapter 3
-///          gains the per-document roster (FRUS citation · file/folder · blank Box), chapter 5
-///          names its series, discloses its truncation and carries A10's withdrawal-notice/
-///          FOIA/MDR explainer, and chapter 6 prints the worked examples transcribed from the
-///          deposited "Citing Foreign Affairs Records" (D13/D17), pre-filled from the packet
-///   1.3 — Archive Visits Phase 0: chapter 3's roster joins the packet's truncation grammar —
-///          it was the one uncapped chapter (every row of every group, unbounded). Three
-///          disclosed regimes: 20 rows per group with an exact-count remainder line; a
-///          ~200-row packet budget after which rosters elide to their counts; and a ≥500-
-///          document group whose roster is elided outright — a list that size belongs to a
-///          finding aid, and rostering it would bury the worksheet's usable groups.
+///   1.2 — Session 2026-08-23: #830 — the data-starved chapters get their data
+///   1.3 — Archive Visits Phase 0: chapter 3's roster joins the truncation grammar
+///   2.0 — Archive Visits Phase 1: the seven-chapter packet inverts into the narrowed
+///          (a)/(b)/(c) artifact (§3). Chapters 1, 3 and 7 dropped; chapter 4 folds to
+///          per-seeding markers and chapter 5 to per-target access lines, their homeless
+///          facts landing in the coverage report; chapter 6 becomes an opt-in appendix
+///          (default off) with the Example-8 gate fixed to "any non-central-file target"
 struct TripPacketExporter {
 
     /// The packet to render.
     let model: TripPacketModel
-    /// The project's name, for the cover.
+    /// The plan's name, for the header.
     let projectName: String
-    /// The visit date, when the researcher has one (D5).
-    let arrival: Date?
-    /// Injected so the export is deterministic under test.
-    var calendar: Calendar = .current
+    /// When non-nil, render only this facility's slice — the export-scoping amendment.
+    /// The value is a `ResearchFacility.chapterHeading`.
+    var facilityScope: String? = nil
+    /// Whether to append the citation-crib appendix (§3a: opt-in, default off).
+    var includeCitationCrib: Bool = false
+    /// When the export was generated, for the header's snapshot caveat. Optional so tests
+    /// stay deterministic without injecting a calendar.
+    var generatedOn: Date? = nil
+    /// How many documents seeded the plan, and how many this device could read — the seed
+    /// half of the coverage report, in the resolver's both-numbers grammar. `nil` when the
+    /// caller has no seed accounting (the model cannot know it: an unreadable document
+    /// never reached the builder).
+    var seededDocumentCount: Int? = nil
+    var resolvedDocumentCount: Int? = nil
     /// The curated repository facts, injected so tests drive the real table rather than a mirror.
     ///
     /// **Two lookups, because the packet genuinely has two key spaces.** A facility section is
-    /// headed by a place (`National Archives at College Park`) and looks its row up here; a library
-    /// in the confirm-prompt is a REPOSITORY the corpus cites, and reads the row the model already
-    /// resolved onto its group. Neither can serve the other: `Department of State` folds to itself,
-    /// not to a NARA facility, so a group-keyed lookup would never reach the College Park row.
+    /// headed by a place (`National Archives at College Park`) and looks its row up here; a
+    /// library in the confirm-prompt is a REPOSITORY the corpus cites, looked up by the name the
+    /// citation used (`row(for:)` canonicalizes either). Neither can serve the other: `Department
+    /// of State` folds to itself, not to a NARA facility.
     var factTable: RepositoryFactTable = .current
 
     /// The whole packet.
     func export() -> String {
-        [cover, inquiryDrafts, pullWorksheet, mandatorySubstitutes, restrictionTriage,
-         citationCrib, visitDayCard]
-            .joined(separator: "\n\n")
+        var sections = [header]
+        for facility in orderedFacilities(in: scopedTargets) {
+            sections.append(facilitySection(facility))
+        }
+        sections.append(inquiryDrafts)
+        if facilityScope == nil, !unplacedTargets.isEmpty {
+            sections.append(confirmBeforeYouTravel)
+        }
+        sections.append(coverageReport)
+        if includeCitationCrib { sections.append(citationCrib) }
+        return sections.joined(separator: "\n\n")
     }
 
-    // MARK: - Chapter 1: cover and checklist
+    // MARK: - The targets in scope
 
-    /// Cover, counts, and the pre-arrival checklist with its A4 escalation.
-    var cover: String {
-        var out = ["# Research trip packet: \(projectName)", ""]
-        out.append("\(model.groups.count) archival groups · "
-                   + "\(model.groups.reduce(0) { $0 + $1.documentCount }) documents")
-        if let arrival {
-            out.append("Visit: \(arrival.formatted(date: .long, time: .omitted))")
-        } else {
-            // D5: the packet is most useful BEFORE the trip is booked, so a missing date is a
-            // normal state and the checklist below prints relatively.
-            out.append("No visit date set — deadlines below are relative to your arrival.")
-        }
-        out.append("")
-        out.append("## Before you go")
-        out.append(model.checklist.standingSentence)
-        out.append("")
-        for item in model.checklist.items {
-            out.append("- [ ] " + item.line(arrival: arrival, calendar: calendar))
-        }
-        if !model.needingConfirmation.isEmpty {
+    /// The targets this export renders — the whole plan, or one facility's slice.
+    var scopedTargets: [TripPacketModel.Target] {
+        guard let facilityScope else { return model.targets.filter(\.canHeadChapter) }
+        return model.targets.filter { $0.facility.chapterHeading == facilityScope }
+    }
+
+    /// Targets no repository can serve — the confirm-prompt set (D11), reported rather than
+    /// dropped: a collection the packet cannot place is exactly what the reader must ring
+    /// ahead about.
+    var unplacedTargets: [TripPacketModel.Target] {
+        model.targets.filter { !$0.canHeadChapter }
+    }
+
+    // MARK: - Header
+
+    /// Title, the claim-separated counts, and the snapshot caveat.
+    var header: String {
+        var out = ["# Archive visit packet: \(projectName)", ""]
+        if let facilityScope {
+            out.append("Scoped to \(facilityScope) — one repository's slice of the plan. The "
+                       + "coverage report below still describes the whole plan.")
             out.append("")
-            let n = model.needingConfirmation.count
-            out.append("- [ ] Confirm the location of "
-                       + (n == 1 ? "1 collection" : "\(n) collections")
-                       + " this packet could not place — see \"Confirm before you travel\".")
         }
+        let targets = scopedTargets
+        let facilities = orderedFacilities(in: targets)
+        let drawnDocuments = Set(targets.flatMap { $0.drawnFrom.map(\.id) }).count
+        let footnotes = targets.reduce(0) { $0 + $1.pointedAt.count }
+        // Two counts, never summed: a document published FROM a file and a footnote that
+        // CITES one are different assertions (§3d), and a single total would erase that.
+        var counts = "\(targets.count) research target\(targets.count == 1 ? "" : "s")"
+        if !facilities.isEmpty {
+            counts += " across \(facilities.count) "
+                + (facilities.count == 1 ? "repository" : "repositories")
+        }
+        if drawnDocuments > 0 {
+            counts += " · drawn from \(drawnDocuments) document\(drawnDocuments == 1 ? "" : "s")"
+        }
+        if footnotes > 0 {
+            counts += " · cited by \(footnotes) footnote\(footnotes == 1 ? "" : "s")"
+        }
+        out.append(counts)
+        out.append("")
+        var caveat = ""
+        if let generatedOn {
+            caveat += "Generated \(Self.stampFormatter.string(from: generatedOn)). "
+        }
+        caveat += "Series resolutions and access statuses are this app's bundled snapshot of "
+            + "NARA's catalog — confirm against the live catalog and with reference staff "
+            + "before you travel."
+        out.append(caveat)
         return out.joined(separator: "\n")
     }
 
-    // MARK: - Chapter 2: inquiry drafts
+    // MARK: - Deliverables (a) + (b): one section per repository
 
-    /// The advance-inquiry draft, plus D11's confirm-prompt for anything unplaceable.
+    /// A facility's visit-planning links and its target rows.
+    func facilitySection(_ facility: String) -> String {
+        var out = ["## \(facility)", ""]
+        // Deliverable (a): the curated link pairs, worst-freshness rule applied per link
+        // (D12). Only ever `printable` — an unverified link is omitted, never printed
+        // undated (D7). A facility without a curated row simply has no links block.
+        if let row = factTable.row(for: facility) {
+            let links = Self.linkLines(row.links)
+            if !links.isEmpty {
+                out.append("Plan your visit:")
+                for line in links { out.append("- \(line)") }
+                out.append("")
+            }
+        }
+        for target in scopedTargets where target.facility.chapterHeading == facility {
+            out.append(contentsOf: targetRows(target))
+        }
+        while out.last == "" { out.removeLast() }
+        return out.joined(separator: "\n")
+    }
+
+    /// Deliverable (b): one target's row — metadata, then its seedings itemized by claim.
+    func targetRows(_ target: TripPacketModel.Target) -> [String] {
+        var out = ["### \(target.label)", ""]
+        out.append(Self.claimCounts(target))
+        if let line = target.recordsLine {
+            out.append(line)
+            if let url = target.resolution?.catalogURL { out.append(url) }
+        }
+        out.append(contentsOf: Self.restrictionLines(target.restriction))
+        if Self.isCentralFileTarget(target) {
+            // §3a's one crib fold: NARA's guidance asks that central-file citations carry
+            // no box number, so the row says so once rather than leaving a blank column
+            // to be misread as missing data.
+            out.append("No box numbers, on purpose: NARA's citation guidance asks that "
+                       + "central-file citations carry none; boxes are assigned at the pull "
+                       + "desk from NARA's own finding aids.")
+        }
+
+        // The drawn-from claim: documents PUBLISHED from this unit, each with its FRUS
+        // link and the file designation its source note cites — chapter 3's one unique
+        // payload, moved to the seeding row it always belonged on (§3a).
+        if !target.drawnFrom.isEmpty {
+            out.append("")
+            out.append("Published from this file:")
+            let shown = target.drawnFrom.prefix(Self.seedingRowLimit)
+            for document in shown {
+                var line = "  - \(document.citation)"
+                if let designation = document.fileDesignation { line += " — file \(designation)" }
+                out.append(line)
+                out.append("    " + FRUSCanonicalURL.string(volumeId: document.volumeId,
+                                                            documentId: document.documentId))
+                // Chapter 4's fold: the substitute marker at the grain the match actually
+                // has — this document's citation landed in a digitized range or filmed
+                // roll, so it is read that way rather than pulled (A6 is an obligation).
+                if let naIds = model.substitutes.matchesByDocument[document.id],
+                   let first = naIds.first {
+                    let title = substituteTitlesByNaId[first] ?? "NAID \(first)"
+                    var marker = "    Digitized or filmed — use \(title) (NAID \(first)) "
+                        + "instead of pulling"
+                    if naIds.count > 1 {
+                        marker += "; \(naIds.count - 1) further "
+                            + (naIds.count == 2 ? "unit claims" : "units claim")
+                            + " this document — NARA's digitization is layered, so check "
+                            + "which covers it"
+                    }
+                    out.append(marker + ".")
+                }
+            }
+            if target.drawnFrom.count > shown.count {
+                let n = target.drawnFrom.count - shown.count
+                out.append("  …and \(n) more document\(n == 1 ? "" : "s") — the app carries "
+                           + "the full list.")
+            }
+        }
+
+        // The pointed-at claim: footnotes citing this unit, unprinted — quoted verbatim,
+        // the packet's discipline (A5; #784's safety verdict rests on reading the words).
+        if !target.pointedAt.isEmpty {
+            out.append("")
+            out.append("Cited in footnotes, not printed — FRUS's editors point at this file "
+                       + "without publishing from it:")
+            let shown = target.pointedAt.prefix(Self.seedingRowLimit)
+            for seeding in shown {
+                out.append("  - \(seeding.citation), footnote \(seeding.footnoteNumber)")
+                out.append("    Cited as: \(seeding.rawText)")
+                if seeding.inherited {
+                    // An inherited citation is the PREVIOUS footnote's assertion of the
+                    // unit; hiding that would put words in this footnote's mouth.
+                    out.append("    (The file is inherited from the preceding footnote's "
+                               + "citation — this note cites it as \"Ibid.\".)")
+                }
+                out.append("    " + FRUSCanonicalURL.string(volumeId: seeding.volumeId,
+                                                            documentId: seeding.documentId))
+            }
+            if target.pointedAt.count > shown.count {
+                let n = target.pointedAt.count - shown.count
+                out.append("  …and \(n) more citation\(n == 1 ? "" : "s") — the app carries "
+                           + "the full list.")
+            }
+        }
+        out.append("")
+        return out
+    }
+
+    // MARK: - Deliverable (c): inquiry drafts
+
+    /// The advance-inquiry draft, one per facility.
     ///
     /// One draft per facility, because A3 asks for one agency or a group of closely related
-    /// agencies per inquiry and A2 requires sending to **only one address**. A packet that produced
-    /// a single letter naming three repositories would violate both.
+    /// agencies per inquiry and A2 requires sending to **only one address**. A packet that
+    /// produced a single letter naming three repositories would violate both.
     var inquiryDrafts: String {
         var out = ["## Advance inquiry", ""]
 
-        let placeable = model.groups.filter(\.canHeadChapter)
+        let placeable = scopedTargets
         if placeable.isEmpty {
-            out.append("No group in this packet resolved to a facility, so there is no inquiry to "
-                       + "draft. The collections below still need confirming before you travel.")
+            out.append("No target in this packet resolved to a facility, so there is no inquiry "
+                       + "to draft."
+                       + (facilityScope == nil && !unplacedTargets.isEmpty
+                          ? " The collections below still need confirming before you travel."
+                          : ""))
         }
         for facility in orderedFacilities(in: placeable) {
-            let groups = placeable.filter { $0.facility.chapterHeading == facility }
+            let targets = placeable.filter { $0.facility.chapterHeading == facility }
             out.append("### \(facility)")
             if let row = factTable.row(for: facility) {
                 // Only ever `printable` — an unverified fact is omitted, never printed undated (D7).
@@ -164,18 +331,19 @@ struct TripPacketExporter {
             out.append("Topic: \(model.topicSentence.forExport)")
             out.append("")
             out.append("Records of interest:")
-            for group in groups.prefix(12) {
-                out.append("  - \(group.label) (\(group.documentCount) documents)")
+            for target in targets.prefix(Self.recordsOfInterestLimit) {
+                out.append("  - \(target.label) (\(Self.claimCounts(target)))")
                 // A3's four fields — RG · entry · series title · NAID — in NARA's own
                 // format, with the catalog link, whenever the citation resolved. This is
                 // what the effective-inquiry spec asks the records be identified by.
-                if let line = group.recordsLine {
+                if let line = target.recordsLine {
                     out.append("    \(line)")
-                    if let url = group.resolution?.catalogURL { out.append("    \(url)") }
+                    if let url = target.resolution?.catalogURL { out.append("    \(url)") }
                 }
             }
-            if groups.count > 12 {
-                out.append("  - …and \(groups.count - 12) further groups, listed in the pull worksheet.")
+            if targets.count > Self.recordsOfInterestLimit {
+                let n = targets.count - Self.recordsOfInterestLimit
+                out.append("  - …and \(n) further target\(n == 1 ? "" : "s"), listed above.")
             }
             // A5: every source note whose citation reached no NARA series appears VERBATIM,
             // with its FRUS citation, as a help-me-locate item — because NARA's own FAQ
@@ -184,302 +352,250 @@ struct TripPacketExporter {
             // FRUS prints "do not always carry over into use by the National Archives"
             // (both quoted from the deposited research-visit FAQ). The consultation desk
             // is the day-of fallback; this is the advance route.
-            let unresolved = groups.filter { $0.category == .lotFile && $0.resolution == nil }
-            if !unresolved.isEmpty {
+            let unresolvedDrawn = targets.filter {
+                $0.form == .lotFile && $0.resolution == nil && !$0.drawnFrom.isEmpty
+            }
+            if !unresolvedDrawn.isEmpty {
                 out.append("")
                 out.append("Please help me locate the following. FRUS cites them as printed "
                            + "below; this file designation may be one that did not carry over "
                            + "into use by the National Archives:")
-                for group in unresolved {
-                    out.append("  - \(group.label) (\(group.documentCount) documents)")
-                    for document in group.documents.prefix(Self.unresolvedNoteLimit) {
+                for target in unresolvedDrawn {
+                    out.append("  - \(target.label) (\(Self.claimCounts(target)))")
+                    for document in target.drawnFrom.prefix(Self.unresolvedNoteLimit) {
                         out.append("      \(document.citation)")
                         out.append("      Cited as: \(document.sourceNote)")
                     }
                     // Disclose a truncation rather than trailing off — the reader is
                     // pasting this into an email and must know the list is partial.
-                    if group.documents.count > Self.unresolvedNoteLimit {
-                        let n = group.documents.count - Self.unresolvedNoteLimit
+                    if target.drawnFrom.count > Self.unresolvedNoteLimit {
+                        let n = target.drawnFrom.count - Self.unresolvedNoteLimit
                         out.append("      …and \(n) further "
                                    + (n == 1 ? "citation" : "citations")
-                                   + " from the same file, listed in the pull worksheet.")
+                                   + " from the same file, in the target list above.")
                     }
                 }
             }
-            out.append("")
-        }
-
-        // D11: libraries get A12's actual ask, not a drafted letter. At collection grain the packet
-        // can name neither series nor NAID, so a letter would imply a precision the data lacks.
-        if !model.needingConfirmation.isEmpty {
-            out.append("### Confirm before you travel")
-            out.append("These collections could not be placed at a facility from the data this app "
-                       + "holds. NARA's own advice is to write, phone or email ahead to confirm the "
-                       + "materials are at that location before you travel.")
-            out.append("")
-            for group in model.needingConfirmation {
-                out.append("  - \(group.label) (\(group.documentCount) documents)")
-                if case .confirmBeforeTravelling(let named) = group.facility {
-                    out.append("    Cited as \(named). Records centres transfer their holdings, so "
-                               + "ask staff where these records are now.")
-                }
-                // D11's other half: the ask, beside the page that answers it. `facts` is the row
-                // the MODEL resolved for this group's repository — the one lookup that reaches a
-                // library, since a library never resolves to a facility heading (D3) and so never
-                // reaches the facility-keyed lookup above.
-                if let row = group.facts {
-                    for line in Self.linkLines(row.links) { out.append("    \(line)") }
-                }
+            // The pointed-at channel's help-me-locate: files FRUS's editors cite in
+            // footnotes without printing from them, unresolved against the catalog. The
+            // same A5 rule, applied to the other claim — with the claim stated, because
+            // "the editors cite it" is a different warrant than "the document came from it".
+            let unresolvedPointed = targets.filter {
+                $0.form == .lotFile && $0.resolution == nil
+                    && $0.drawnFrom.isEmpty && !$0.pointedAt.isEmpty
             }
-        }
-        return out.joined(separator: "\n")
-    }
-
-    // MARK: - Chapter 3: pull worksheet
-
-    /// Group → documents, with a blank box column for the reading room.
-    ///
-    /// `numberingNote` is deliberately absent: D10 dropped it, because the app-reachable count is
-    /// **1 of 622** series and the ordering instruction a researcher needs is the
-    /// RG / entry / series / box line this worksheet already prints.
-    var pullWorksheet: String {
-        var out = ["## Pull worksheet", ""]
-        // A6 asks substitutes to lead. The chapter numbering puts them after this table, so the
-        // table defers to them explicitly — and generally rather than per row, because a substitute
-        // is range-grain and a worksheet row is group-grain, so naming the affected rows here would
-        // assert a correspondence the data does not support.
-        if !model.substitutes.isEmpty {
-            out.append("Some of these records are digitized or on film and must be read that way — "
-                       + "see \"Use these instead of pulling\" before writing slips.")
-            out.append("")
-        }
-        if model.groups.isEmpty {
-            out.append("No archival groups — this project's documents carry no resolvable source notes.")
-            return out.joined(separator: "\n")
-        }
-        // GROUPED BY FACILITY, and that is not formatting. A worksheet is carried into a reading
-        // room and its rows become pull slips; one flat table mixing College Park with a
-        // presidential library invites a researcher to request material that is a plane ride away.
-        let placeable = model.groups.filter(\.canHeadChapter)
-        // The roster caps (Archive Visits Phase 0). Chapter 3 was the one uncapped chapter —
-        // fine at collection grain, unbounded at unit grain (measured: p99 = 506 documents per
-        // archival unit, max 17,606) — so it joins the packet's disclosed-truncation grammar.
-        // The budget is spent in group order; a group past the budget keeps its header and its
-        // exact count, because a group that silently vanished would read as absent from the
-        // archives rather than elided from the page.
-        var rosterRowsRemaining = Self.rosterRowBudget
-        var elidedGroups = 0
-        for facility in orderedFacilities(in: placeable) {
-            out.append("### \(facility)")
-            for group in placeable where group.facility.chapterHeading == facility {
+            if !unresolvedPointed.isEmpty {
                 out.append("")
-                out.append("**\(group.label)** (\(group.documentCount) documents)")
-                // The scope's series line: title · entry · NAID → Catalog link · dates —
-                // the same composed A3 line the inquiry prints, so the two chapters cannot
-                // disagree about how a series is identified.
-                if let line = group.recordsLine {
-                    out.append("\(line)")
-                    if let url = group.resolution?.catalogURL { out.append("\(url)") }
+                out.append("FRUS's editors also cite the following files in footnotes without "
+                           + "printing documents from them. The citations are quoted as printed; "
+                           + "these designations too may not have carried over:")
+                for target in unresolvedPointed {
+                    out.append("  - \(target.label) (\(Self.claimCounts(target)))")
+                    for seeding in target.pointedAt.prefix(Self.unresolvedNoteLimit) {
+                        out.append("      \(seeding.citation), footnote \(seeding.footnoteNumber)")
+                        out.append("      Cited as: \(seeding.rawText)")
+                    }
+                    if target.pointedAt.count > Self.unresolvedNoteLimit {
+                        let n = target.pointedAt.count - Self.unresolvedNoteLimit
+                        out.append("      …and \(n) further "
+                                   + (n == 1 ? "citation" : "citations")
+                                   + " of the same file, in the target list above.")
+                    }
                 }
+            }
+            // §3a: a divided lot routes into the inquiry AS A QUESTION, because that is what
+            // it is — NARA's catalog holds several correct answers, and only an archivist
+            // can say which series serves this reader's records.
+            let divided = targets.filter { $0.restriction?.isDivided == true }
+            if !divided.isEmpty {
                 out.append("")
-                if group.documents.count >= Self.rosterElisionThreshold {
-                    // A roster this size belongs to a finding aid, not a worksheet.
-                    out.append("All \(group.documentCount) documents cite this file — too many "
-                               + "to roster here. Work from the series' own finding aid at the "
-                               + "pull desk; the app's Sources view lists every document.")
-                    elidedGroups += 1
-                    continue
-                }
-                let rows = min(group.documents.count,
-                               min(Self.rosterRowsPerGroupLimit, rosterRowsRemaining))
-                guard rows > 0 else {
-                    out.append("\(group.documentCount) documents — roster elided; this "
-                               + "worksheet caps at \(Self.rosterRowBudget) rows. The app's "
-                               + "Sources view carries the full roster.")
-                    elidedGroups += 1
-                    continue
-                }
-                // The per-document roster: FRUS citation · the file/folder designation the
-                // note cites · a blank Box column for the reading room. The box is blank by
-                // design — the packet never fabricates a box number; boxes are assigned at
-                // the pull desk from NARA's own finding aids.
-                out.append("| FRUS citation | File / folder | Box |")
-                out.append("|---|---|---|")
-                for document in group.documents.prefix(rows) {
-                    out.append("| \(document.citation) | \(document.fileDesignation ?? "") | |")
-                }
-                rosterRowsRemaining -= rows
-                if group.documents.count > rows {
-                    out.append("… and \(group.documents.count - rows) more documents — the "
-                               + "app's Sources view carries this group's full roster.")
+                out.append("Questions:")
+                for target in divided {
+                    guard let restriction = target.restriction else { continue }
+                    var question = "  - NARA's catalog lists \(restriction.claimantCount) series "
+                        + "claiming \(target.label)"
+                    if restriction.unmeasuredClaimantCount > 0 {
+                        question += ", \(restriction.unmeasuredClaimantCount) with no recorded "
+                            + "access status"
+                    }
+                    question += " — which should I consult for the records above, and is it open?"
+                    out.append(question)
                 }
             }
             out.append("")
         }
-        if elidedGroups > 0 {
-            out.append("\(elidedGroups) group\(elidedGroups == 1 ? "'s roster was" : "s' rosters were") "
-                       + "elided above — every group still shows its exact document count.")
-            out.append("")
-        }
-        if !model.needingConfirmation.isEmpty {
-            out.append("### Location not confirmed")
-            out.append("")
-            out.append("Do not take these to a reading room until you have confirmed where they are.")
-            out.append("")
-            out.append("| Group | Documents | Box |")
-            out.append("|---|---:|---|")
-            for group in model.needingConfirmation {
-                out.append("| \(group.label) | \(group.documentCount) | |")
+        while out.last == "" { out.removeLast() }
+        return out.joined(separator: "\n")
+    }
+
+    // MARK: - Confirm before you travel
+
+    /// D11: libraries and unplaceable collections get A12's actual ask, not a drafted letter.
+    /// At collection grain the packet can name neither series nor NAID, so a letter would imply
+    /// a precision the data lacks.
+    var confirmBeforeYouTravel: String {
+        var out = ["### Confirm before you travel"]
+        out.append("These collections could not be placed at a facility from the data this app "
+                   + "holds. NARA's own advice is to write, phone or email ahead to confirm the "
+                   + "materials are at that location before you travel.")
+        out.append("")
+        for target in unplacedTargets {
+            out.append("  - \(target.label) (\(Self.claimCounts(target)))")
+            if case .confirmBeforeTravelling(let named) = target.facility {
+                out.append("    Cited as \(named). Records centres transfer their holdings, so "
+                           + "ask staff where these records are now.")
+            }
+            // D11's other half: the ask, beside the page that answers it. `facts` is the
+            // curated row for the REPOSITORY the citation named — a library never resolves
+            // to a facility heading (D3), so it never reaches the facility sections' lookup.
+            if let row = target.facts {
+                for line in Self.linkLines(row.links) { out.append("    \(line)") }
             }
         }
         return out.joined(separator: "\n")
     }
 
-    // MARK: - Chapter 4: mandatory substitutes
+    // MARK: - The coverage report (§3c)
 
-    /// Records NARA requires be read online or on film rather than pulled (A6).
-    ///
-    /// The rule is quoted and attributed, not paraphrased: it is an obligation the reading room
-    /// enforces, so a pull slip written against a filmed record is a slip that gets declined. That
-    /// is why this chapter sits before the access triage rather than reading as a convenience list.
-    ///
-    /// **The coverage sentence is not boilerplate and always prints**, including — especially — when
-    /// the chapter is empty. The app sees two routes, both narrow (digitised decimal ranges reach
-    /// 2.9% of decimal citations, concentrated in the WWI file; the M862 rolls reach 1906–1910
-    /// only). An empty chapter with no caveat would read as a clearance to pull everything, which
-    /// is the exact error A6 exists to prevent.
-    var mandatorySubstitutes: String {
-        var out = ["## Use these instead of pulling", ""]
-        out.append("NARA's research-visit guidance states the rule as an obligation: "
-                   + "\"Researchers must use microfilm and online resources when those options are "
-                   + "available.\"")
-        out.append("")
+    /// The plan-level honesty block — one home for every fact whose chapter folded, stated in
+    /// true denominators. **Prints unconditionally and travels with every export**, scoped or
+    /// not: an empty channel with no caveat would read as a clearance, which is the exact
+    /// error the folded chapters existed to prevent.
+    var coverageReport: String {
+        var out = ["## What this packet covers", ""]
 
-        let substitutes = model.substitutes
-        if substitutes.isEmpty {
-            out.append(substitutes.coverageNote)
-            return out.joined(separator: "\n")
-        }
-
-        let rows = substitutes.rows
-        let shown = rows.prefix(Self.substituteRowLimit)
-        for row in shown {
-            var line = "  - \(row.title) — \(row.documentCount) "
-                + (row.documentCount == 1 ? "document" : "documents")
-                + " (\(row.route.label), NAID \(row.naId)"
-            if row.objectCount > 0 { line += ", \(row.objectCount) images" }
-            line += ")"
-            out.append(line)
-            if let url = row.catalogURL { out.append("    \(url.absoluteString)") }
-            if !row.isSoleClaimant {
-                out.append("    More than one digitized unit claims these documents — NARA's "
-                           + "digitization is layered, so check this one covers yours.")
+        // The seed, in the resolver's both-numbers grammar: how much of what the reader
+        // asked for this device could actually read.
+        if let seeded = seededDocumentCount, let resolved = resolvedDocumentCount {
+            if resolved < seeded {
+                out.append("This packet drew on \(resolved) of \(seeded) seeded documents — "
+                           + "the rest are in volumes not indexed on this device, so nothing "
+                           + "below speaks for them.")
+            } else {
+                out.append("All \(seeded) seeded document\(seeded == 1 ? " was" : "s were") "
+                           + "read on this device.")
             }
         }
-        // Disclose a truncation rather than trailing off. A list that silently stopped would read
-        // as complete, and the reader would pull the records it did not mention.
-        if rows.count > shown.count {
-            out.append("")
-            out.append("\(rows.count - shown.count) further "
-                       + (rows.count - shown.count == 1 ? "unit is" : "units are")
-                       + " not listed here; the full set is in Source Explorer.")
+
+        // The targets, split honestly: resolved / cited-but-unresolved / unplaceable.
+        let all = model.targets
+        let resolved = all.filter { $0.resolution != nil }.count
+        let unplaced = unplacedTargets.count
+        var targetsLine = "\(all.count) research target\(all.count == 1 ? "" : "s"): "
+            + "\(resolved) resolve\(resolved == 1 ? "s" : "") to a NARA series"
+        if unplaced > 0 {
+            targetsLine += "; \(unplaced) could not be placed at any repository and "
+                + (unplaced == 1 ? "is" : "are") + " listed under \"Confirm before you travel\""
+                + (facilityScope == nil ? "" : " in the full-plan export")
+        }
+        out.append(targetsLine + ".")
+        if let facilityScope {
+            let excluded = all.filter {
+                $0.canHeadChapter && $0.facility.chapterHeading != facilityScope
+            }.count
+            if excluded > 0 {
+                out.append("This export renders only \(facilityScope); \(excluded) "
+                           + "target\(excluded == 1 ? "" : "s") at other repositories "
+                           + (excluded == 1 ? "is" : "are") + " not shown here.")
+            }
         }
         out.append("")
-        out.append(substitutes.coverageNote)
+
+        // The pointed-at channel's reach. References of this kind sit on a small minority
+        // of documents corpus-wide, so a thin list must read as sparse data, never as a
+        // failed scan — and on a pre-1946 reading list the emptiness is the filing practice.
+        let refs = model.referenceCoverage
+        if refs.documentsScanned > 0 {
+            out.append("Footnote references were scanned on \(refs.documentsScanned) "
+                       + "document\(refs.documentsScanned == 1 ? "" : "s"); "
+                       + "\(refs.documentsWithReferences) "
+                       + (refs.documentsWithReferences == 1 ? "carries" : "carry")
+                       + " at least one reference to a lot file or library collection.")
+            if refs.documentsWithReferences == 0, model.seededSpanPredates1946 {
+                out.append("For records before 1946 that is the filing practice, not a gap: "
+                           + "lot files and presidential libraries are a post-war practice, "
+                           + "and earlier footnotes cite central decimal files — which this "
+                           + "packet already covers through the documents' own source notes.")
+            } else {
+                out.append("References of this kind exist on a small minority of FRUS "
+                           + "documents, so a short list is expected and not a failure to look.")
+            }
+            out.append("")
+        }
+
+        // Chapter 4's homeless facts (§3a): the obligation quote, the denominators, the
+        // partial-digitization count, the layered-digitization warning, and the closing
+        // citation rule. The rule is quoted and attributed, not paraphrased — it is an
+        // obligation the reading room enforces, so a pull slip written against a filmed
+        // record is a slip that gets declined.
+        if !model.substitutes.rows.isEmpty {
+            out.append("NARA's research-visit guidance states the substitute rule as an "
+                       + "obligation: \"Researchers must use microfilm and online resources "
+                       + "when those options are available.\" The affected documents are "
+                       + "marked on their targets above.")
+        }
+        out.append(model.substitutes.coverageNote)
+        if model.substitutes.rows.contains(where: { !$0.isSoleClaimant }) {
+            out.append("More than one digitized unit claims some of these documents — NARA's "
+                       + "digitization is layered, so check that the unit named on a document's "
+                       + "line covers it.")
+        }
+        if !model.substitutes.rows.isEmpty {
+            // From NARA's "Citing Foreign Affairs Records": the substitute changes the
+            // citation, and a reader who only records the URL cannot reconstruct the
+            // reference.
+            out.append("When you cite a digitized or filmed record, NARA's guidance asks for "
+                       + "the microfilm publication number, and for online records \"the "
+                       + "elements noted above, not just the URL\".")
+        }
         out.append("")
-        // From NARA's "Citing Foreign Affairs Records": the substitute changes the citation, and a
-        // reader who only records the URL cannot reconstruct the reference.
-        out.append("When you cite one of these, NARA's guidance asks for the microfilm publication "
-                   + "number, and for online records \"the elements noted above, not just the URL\".")
-        return out.joined(separator: "\n")
-    }
 
-    /// How many substitute rows print before the chapter discloses a remainder.
-    private static let substituteRowLimit = 20
-
-    /// How many roster rows a single chapter-3 group prints before its remainder line.
-    /// Matches the 12/8/20 truncation grammar the other chapters ship (Phase 0, decided 20).
-    static let rosterRowsPerGroupLimit = 20
-    /// The whole worksheet's roster-row budget, spent in group order (Phase 0, decided 200).
-    static let rosterRowBudget = 200
-    /// A group at or past this many documents elides its roster outright — a list that size
-    /// belongs to a finding aid, and the group keeps its records line and exact count.
-    static let rosterElisionThreshold = 500
-
-    // MARK: - Chapter 5: restriction triage
-
-    /// What may not be readable, worst first (D4).
-    var restrictionTriage: String {
-        var out = ["## Access restrictions", ""]
+        // Chapter 5's plan-level line, and the claimant grain the per-target lines rest on.
         let triage = model.triage
-        if triage.isEmpty {
-            out.append("Nothing to report: no cited series and no unplaced documents.")
-            return out.joined(separator: "\n")
-        }
-        let flagged = triage.needingAdvanceContact
-        if flagged.isEmpty {
-            out.append("Every series this packet cites is recorded as unrestricted. Availability "
-                       + "still depends on the records themselves — confirm with staff.")
-        } else {
-            out.append("\(flagged.count) of \(triage.rows.count) cited series "
-                       + (flagged.count == 1 ? "carries" : "carry")
-                       + " a restriction or no stated status. A closed series cannot be pulled, so "
-                       + "raise these in your inquiry rather than on arrival.")
-            out.append("")
-            let shown = flagged.prefix(Self.triageRowLimit)
-            for row in shown {
-                let status = row.accessStatus ?? "No status recorded"
-                // The series NAME leads when the resolution carried one — a bare NAID is a
-                // number the reader cannot act on; the NAID rides along for the pull slip.
-                let name = row.seriesTitle.map { "\($0) — NAID \(row.naId)" } ?? "NAID \(row.naId)"
-                out.append("  - \(name) — \(status) (\(row.documentCount) documents)")
-                if !row.accessRestrictions.isEmpty {
-                    out.append("    \(row.accessRestrictions.joined(separator: "; "))")
-                }
+        if !triage.isEmpty {
+            let flagged = triage.needingAdvanceContact
+            if flagged.isEmpty {
+                out.append("Every series this packet cites is recorded as unrestricted. "
+                           + "Availability still depends on the records themselves — confirm "
+                           + "with staff.")
+            } else {
+                out.append("\(flagged.count) of \(triage.rows.count) cited series "
+                           + (flagged.count == 1 ? "carries" : "carry")
+                           + " a restriction or no stated status — each affected target's row "
+                           + "states it, worst covered status first. A closed series cannot be "
+                           + "pulled, so raise these in your inquiry rather than on arrival.")
             }
-            // Disclose a truncation rather than trailing off (the chapter-4 rule). The
-            // dropped tail here would be CLOSED SERIES on a large project — precisely what
-            // this chapter exists to surface before someone books a flight.
-            if flagged.count > shown.count {
-                out.append("")
-                let n = flagged.count - shown.count
-                out.append("\(n) further flagged "
-                           + (n == 1 ? "series is" : "series are")
-                           + " not listed here. Every cited series' status is on its NARA "
-                           + "catalog page; raise the full set in your inquiry.")
+            let unmeasured = model.targets.reduce(0) {
+                $0 + ($1.restriction?.unmeasuredClaimantCount ?? 0)
+            }
+            if unmeasured > 0 {
+                out.append("Across divided lots, \(unmeasured) claimant "
+                           + (unmeasured == 1 ? "series carries" : "series carry")
+                           + " no recorded access status — absence of a ruling, not openness.")
+            }
+            if triage.unresolvedDocumentCount > 0 {
+                let n = triage.unresolvedDocumentCount
+                out.append((n == 1 ? "1 document cites" : "\(n) documents cite")
+                           + " no series this app could resolve, so nothing is known about "
+                           + (n == 1 ? "its" : "their") + " access.")
             }
         }
-        if triage.unresolvedDocumentCount > 0 {
-            out.append("")
-            let n = triage.unresolvedDocumentCount
-            out.append((n == 1 ? "1 document cites" : "\(n) documents cite")
-                       + " no series this app could resolve, so nothing is known about "
-                       + (n == 1 ? "its" : "their") + " access. Not covered by the list above.")
-        }
-        // A10's second half: what the slip of paper where a document used to be MEANS, and
-        // that a remedy exists. Explanatory rather than procedural — it names no time or
-        // place, so it rots slowly (the T-0 walkthrough's reason for keeping it) — and it
-        // matters before the trip: with restricted series in the reading list, the reader
-        // should know the remedy exists before deciding the trip is worth taking.
-        out.append("")
-        out.append("If a folder you pull holds a withdrawal notice where a document should be, "
-                   + "the document was removed as classified or otherwise restricted — it is "
-                   + "not lost. The notice identifies what was withdrawn, and you can request "
-                   + "a declassification review of it under FOIA or through Mandatory "
-                   + "Declassification Review (MDR); ask the reference desk how to file either. "
-                   + "Copies of previously classified documents may carry declassification "
-                   + "stamps — record them, since they are part of the document's history.")
+        while out.last == "" { out.removeLast() }
         return out.joined(separator: "\n")
     }
 
-    /// How many flagged triage rows print before the chapter discloses a remainder.
-    private static let triageRowLimit = 20
+    // MARK: - Truncation grammar
 
-    /// How many verbatim unresolved citations print per group in the inquiry's
-    /// help-me-locate list before it defers to the pull worksheet.
-    private static let unresolvedNoteLimit = 8
+    /// How many seedings a target's per-claim list prints before its remainder line.
+    /// Matches the packet's 12/8/20 grammar — the 8 tier, like the verbatim-notes cap.
+    static let seedingRowLimit = 8
+    /// How many targets the inquiry's records-of-interest list names before deferring.
+    static let recordsOfInterestLimit = 12
+    /// How many verbatim unresolved citations print per target in the inquiry's
+    /// help-me-locate lists before they defer to the target list.
+    static let unresolvedNoteLimit = 8
 
-    // MARK: - Chapter 6: citation crib
+    // MARK: - Appendix: citation crib (opt-in, §3a)
 
     /// NARA's citation guidance, **attributed and not ratified** (D13).
     ///
@@ -557,10 +673,14 @@ struct TripPacketExporter {
     /// the document carries — the same by-the-number rule the catalog client documents.
     var cribExamples: [CribExample] {
         var out: [CribExample] = []
-        let centralGroups = model.groups.filter {
-            $0.category == .centralDecimalFile || $0.category == .centralForeignPolicyFile
-        }
-        let designations = centralGroups.flatMap(\.documents).compactMap(\.fileDesignation)
+        // ALL the plan's targets, not just the placeable ones: a library the packet cannot
+        // place still yields records the researcher will cite. A facility scope narrows it,
+        // like every other section.
+        let targets = facilityScope == nil
+            ? model.targets
+            : model.targets.filter { $0.facility.chapterHeading == facilityScope }
+        let centralTargets = targets.filter(Self.isCentralFileTarget)
+        let designations = centralTargets.flatMap(\.drawnFrom).compactMap(\.fileDesignation)
 
         // Decimal: date-form suffixes (`/12-854`) get NARA's Example 5; consecutive
         // numbering gets Example 2. One example, chosen by what the packet actually holds.
@@ -593,16 +713,18 @@ struct TripPacketExporter {
                 ]))
         }
 
-        // Lot files and every other non-central entry: NARA's own note says Example 8 "also
-        // serves as a model that can be followed for all other records entries other than
-        // those of the Department of State central files". Pre-filled from the first
-        // RESOLVED lot — series title, entry, record group — when the packet has one.
-        let lotGroups = model.groups.filter { $0.category == .lotFile }
-        if !lotGroups.isEmpty {
+        // Every non-central target: NARA's own note says Example 8 "also serves as a model
+        // that can be followed for all other records entries other than those of the
+        // Department of State central files" — so the gate is "not a central-file target",
+        // not "a lot file" (§3a fixed the live defect: the old gate skipped collections and
+        // raw targets NARA's note plainly covers). Pre-filled from the first RESOLVED
+        // non-central target — series title, entry, record group — when the packet has one.
+        let nonCentral = targets.filter { !Self.isCentralFileTarget($0) }
+        if !nonCentral.isEmpty {
             var prefill = ["⟨Sender⟩ to ⟨recipient⟩, ⟨Type⟩, ⟨date⟩, file ⟨folder title⟩, "
                            + "⟨series title⟩, Entry ⟨entry number⟩, RG ⟨record group⟩: "
                            + "⟨record group title⟩, U.S. National Archives."]
-            if let resolved = lotGroups.first(where: { $0.resolution != nil }),
+            if let resolved = nonCentral.first(where: { $0.resolution != nil }),
                let resolution = resolved.resolution {
                 let entries = resolution.seriesHmsMlrEntryNumbers ?? resolution.hmsMlrEntryNumbers
                 prefill.append("For \(resolved.label): "
@@ -660,38 +782,60 @@ struct TripPacketExporter {
             + "RG 353, USNA.",
     ]
 
-    // MARK: - Chapter 7: visit-day card
+    // MARK: - Shared renderers
 
-    /// What does not rot (T-0 §3.2).
-    ///
-    /// Pull times, the 5:15 cutoff, the consultation area's floor and hours and the Wednesday
-    /// specialist window are all **negated** — one person's calendar is the fastest-rotting claim
-    /// available, and a trip booked around a slot that no longer exists is a trip lost. Two of
-    /// A14's four room rules fail A14's own "changes packing or planning" test and are also absent.
-    var visitDayCard: String {
-        var out = ["## On the day", ""]
-        // Day-0 registration: CONFIRMED by the owner 2026-08-22, so it is asserted rather than
-        // hedged. The rider is the useful half — the card itself must be collected in person, but
-        // much of the process can be finished beforehand, which changes how long day 0 takes.
-        out.append("- A researcher ID card must be obtained in person when you arrive. Several of "
-                   + "the steps can be completed in advance — do them before you travel, and allow "
-                   + "time on arrival for the rest.")
-        out.append("- Lockers are provided; laptops, cameras and flatbed or overhead scanners are "
-                   + "allowed. Auto-feed and hand-held scanners and personal copiers are not.")
-        out.append("- NARA staff cannot undertake research for you, but a consultation desk and "
-                   + "dedicated foreign-affairs reference staff exist — ask at the reference desk.")
-        out.append("- Records that are digitized or on microfilm must be used in those forms where "
-                   + "they are available.")
-        // The pages that answer what this card deliberately does not assert (T-0 §3.2: pull times,
-        // the 5:15 cutoff, the consultation area's hours and the Wednesday specialist window are
-        // all negated as printed facts precisely because they rot).
-        let links = Self.linkLines(factTable.row(for: ResearchFacilityResolver.collegePark)?.links ?? [])
-        if !links.isEmpty {
-            out.append("")
-            out.append("Hours, pull schedules and room rules change. Check before you travel:")
-            for line in links { out.append("- \(line)") }
+    /// The claim-separated counts line — "drawn from 3 documents · cited by 2 footnotes",
+    /// NEVER "5" (§3d: counts do not sum across claims, because a document published from a
+    /// file and a footnote citing one are different assertions).
+    static func claimCounts(_ target: TripPacketModel.Target) -> String {
+        var parts: [String] = []
+        if !target.drawnFrom.isEmpty {
+            let n = target.drawnFrom.count
+            parts.append("drawn from \(n) document\(n == 1 ? "" : "s")")
         }
-        return out.joined(separator: "\n")
+        if !target.pointedAt.isEmpty {
+            let n = target.pointedAt.count
+            parts.append("cited by \(n) footnote\(n == 1 ? "" : "s")")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// The claimant-aware access line (§3a) — one line, never a badge.
+    static func restrictionLines(_ restriction: TripPacketModel.TargetRestriction?) -> [String] {
+        guard let restriction else { return [] }
+        if restriction.worstCoveredStatus.isEmpty {
+            // Divided, nothing measured: "several series, none measured" is itself the
+            // question, and the inquiry carries it.
+            return ["Access: NARA divides this lot across \(restriction.claimantCount) series "
+                    + "and records an access status for none of them — ask reference staff "
+                    + "which series holds these records and whether it is open."]
+        }
+        if restriction.claimantCount > 1 {
+            var line = "Access: \(restriction.worstCoveredStatus)"
+            if let series = restriction.claimantSeriesTitle {
+                line += " — the status of \(series), one of \(restriction.claimantCount) series "
+                    + "claiming this lot"
+            } else {
+                line += " — the worst status among \(restriction.claimantCount) series claiming "
+                    + "this lot"
+            }
+            if restriction.unmeasuredClaimantCount > 0 {
+                let n = restriction.unmeasuredClaimantCount
+                line += "; \(n) claimant\(n == 1 ? " carries" : "s carry") no recorded status"
+            }
+            return [line + "."]
+        }
+        return ["Access: \(restriction.worstCoveredStatus)."]
+    }
+
+    /// Whether a target is a central-file target — the no-box rule's gate, and the crib's.
+    static func isCentralFileTarget(_ target: TripPacketModel.Target) -> Bool {
+        target.category == .centralDecimalFile || target.category == .centralForeignPolicyFile
+    }
+
+    /// Substitute-unit titles by NAID, for the per-seeding markers.
+    private var substituteTitlesByNaId: [String: String] {
+        Dictionary(uniqueKeysWithValues: model.substitutes.rows.map { ($0.naId, $0.title) })
     }
 
     // MARK: - Links
@@ -720,7 +864,8 @@ struct TripPacketExporter {
         }
     }
 
-    /// ISO-8601 dates for link stamps — see rule 3 on ``linkLines(_:asOf:)``.
+    /// ISO-8601 dates for link stamps and the header's generation stamp — see rule 3 on
+    /// ``linkLines(_:asOf:)``.
     private static let stampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -729,11 +874,11 @@ struct TripPacketExporter {
         return formatter
     }()
 
-    /// Facilities in the order their groups appear, de-duplicated — so the packet's chapter order
-    /// follows how much of the reading each facility holds.
-    private func orderedFacilities(in groups: [TripPacketModel.Group]) -> [String] {
+    /// Facilities in the order their targets appear, de-duplicated — the model sorts targets
+    /// facility-first, so the packet's section order is alphabetical by facility.
+    private func orderedFacilities(in targets: [TripPacketModel.Target]) -> [String] {
         var seen = Set<String>()
-        return groups.compactMap { $0.facility.chapterHeading }
+        return targets.compactMap { $0.facility.chapterHeading }
             .filter { seen.insert($0).inserted }
     }
 }

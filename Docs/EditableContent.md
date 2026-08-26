@@ -602,7 +602,7 @@ The app is built so that what you publish from it can be checked. Every quotatio
 
 **When the Trail Leaves the Series**
 
-When you are ready to follow source notes or footnotes past the published series to the shelves at College Park or a presidential library, FRUS Explorer can help you plan research visits. Documents you select seed a visit and research plan. The app's research trip packet resolves each document's source note against National Archives data to flag access-restriction warnings for still-classified collections, draft advance inquiries to an archivist, and even begin preparing pull slips.
+When you are ready to follow source notes or footnotes past the published series to the shelves at College Park or a presidential library, FRUS Explorer can help you plan research visits. Documents you select seed a visit and research plan. The app's research trip packet resolves each document's source note and outward-pointing footnotes against National Archives data to flag access-restriction warnings for still-classified collections, draft advance inquiries to an archivist, and identify each record the way NARA asks you to request it.
 
 <!-- section-id: manual -->
 

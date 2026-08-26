@@ -6116,6 +6116,56 @@ public actor IndexingPipeline {
         return results
     }
 
+    /// Every external citation for a reading list, keyed `"volumeId/documentId"` — the batched
+    /// sibling of ``externalCitations(volumeId:documentId:)``, mirroring
+    /// ``documentSourcesByKey(_:)``'s chunked IN-clause so a 2,000-document packet is a handful
+    /// of statements rather than 2,000 (Archive Visits Phase 1; the query shape W-18 named).
+    ///
+    /// Rows keep the per-document ORDER BY (`note_ordinal, citation_index`) — the reading order
+    /// the Unprinted Material section renders and the packet's verbatim contexts quote.
+    public func externalCitationsByKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: [ExternalCitation]] {
+        guard !docs.isEmpty else { return [:] }
+        let chunkSize = 499
+        let allKeys = docs.map { "\($0.volumeId)/\($0.documentId)" }
+        var result: [String: [ExternalCitation]] = [:]
+        for chunk in stride(from: 0, to: allKeys.count, by: chunkSize)
+                .map({ Array(allKeys[$0..<min($0 + chunkSize, allKeys.count)]) }) {
+            let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
+            let sql = """
+                SELECT volume_id || '/' || document_id,
+                       anchor, repository, collection, lot_file, lot_file_norm, file_id,
+                       inherited, raw_text, note_ordinal, decimal_class
+                FROM external_citations
+                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                ORDER BY volume_id, document_id, note_ordinal, citation_index
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, key) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let key = auxColumnString(stmt, 0),
+                      let anchor = auxColumnString(stmt, 1),
+                      let rawText = auxColumnString(stmt, 8) else { continue }
+                result[key, default: []].append(ExternalCitation(
+                    anchor: anchor,
+                    repository: auxColumnString(stmt, 2),
+                    collection: auxColumnString(stmt, 3),
+                    lotFile: auxColumnString(stmt, 4),
+                    lotFileNorm: auxColumnString(stmt, 5),
+                    fileId: auxColumnString(stmt, 6),
+                    inherited: sqlite3_column_int(stmt, 7) != 0,
+                    rawText: rawText,
+                    noteOrdinal: Int(sqlite3_column_int(stmt, 9)),
+                    decimalClass: auxColumnString(stmt, 10)))
+            }
+        }
+        return result
+    }
+
     /// How many documents in the indexed corpus point at one archival unit through a footnote,
     /// and how many volumes they sit in (#784).
     ///

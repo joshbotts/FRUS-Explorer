@@ -492,13 +492,11 @@ enum CollectionGeneratedBlocks {
         return rows
     }
 
-    /// The grouping key for a source record: the structured fields when any is present,
-    /// else the raw note text (so distinct unrecognized citations never merge).
-    /// The grouping key, shared with the trip packet (#830 T-2) so a packet group IS a Sources
-    /// block group rather than merely resembling one.
-    static func tripPacketGroupKey(for record: SourceRecord) -> String { groupKey(for: record) }
-
-    /// The display label, shared with the trip packet for the same reason.
+    /// The display label, shared with the trip packet (#830 T-2) so a packet target reads
+    /// like a Sources-block group. The grouping KEY is no longer shared: Archive Visits
+    /// Phase 1 moved the packet to form-aware unit-grain keys (`TripPacketBuilder.targetKey`),
+    /// because this block's key rides the per-document file identifier for central files —
+    /// document grain, which is right for a per-volume outline and wrong for a research target.
     static func tripPacketLabel(for record: SourceRecord) -> String { label(for: record) }
 
     private static func groupKey(for record: SourceRecord) -> String {

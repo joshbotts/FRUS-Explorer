@@ -90,6 +90,9 @@ enum SubstituteRoute: String, Sendable, Equatable, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-3, chapter 4
+///   1.1 — Archive Visits Phase 1: ``matchesByDocument`` + ``CitedFile/documentKey``, so the
+///          packet's per-target seeding lines can mark a digitised document at the grain the
+///          match actually has (per citation, never per target)
 struct MandatorySubstitutes: Equatable, Sendable {
 
     /// One scan or roll the reader must use in place of a pull.
@@ -133,6 +136,17 @@ struct MandatorySubstitutes: Equatable, Sendable {
     /// Counted and stated, never tabled — see the type's rule 2.
     let partiallyDigitizedCount: Int
 
+    /// Which substitute units each document landed in — `volumeId/documentId` → sorted NAIDs.
+    ///
+    /// Added for Archive Visits Phase 1: the packet's target rows list SEEDING documents, and a
+    /// seeding whose record is digitised should say so on its own line rather than leaving the
+    /// reader to cross-reference the substitutes note by hand. Keyed per document because that is
+    /// the grain the match actually has — a substitute is a range or roll a *citation* lands in,
+    /// so mapping it to a whole target would assert coverage of documents that were never tested.
+    /// Only documents whose ``CitedFile/documentKey`` was supplied appear; a `nil` key is counted
+    /// in the aggregate figures but cannot be marked.
+    var matchesByDocument: [String: [String]] = [:]
+
     /// Whether there is any substitute to print.
     var isEmpty: Bool { rows.isEmpty }
 
@@ -171,11 +185,15 @@ struct MandatorySubstitutes: Equatable, Sendable {
         let identifier: String?
         /// The document's year, where the index knows it.
         let year: Int?
+        /// The citing document, as `volumeId/documentId` — the key ``matchesByDocument`` reports
+        /// under. Optional so the aggregate figures never depend on it (Phase 1).
+        let documentKey: String?
 
         /// Memberwise, spelled out so call sites read as pairs rather than as positional tuples.
-        init(identifier: String?, year: Int?) {
+        init(identifier: String?, year: Int?, documentKey: String? = nil) {
             self.identifier = identifier
             self.year = year
+            self.documentKey = documentKey
         }
     }
 
@@ -219,6 +237,7 @@ struct MandatorySubstitutes: Equatable, Sendable {
         var tested = 0
         var withSubstitute = 0
         var partial = 0
+        var matchesByDocument: [String: [String]] = [:]
 
         for file in citedFiles {
             guard let identifier = file.identifier else { continue }
@@ -227,6 +246,7 @@ struct MandatorySubstitutes: Equatable, Sendable {
             tested += 1
 
             var hit = false
+            var hitNaIds: [String] = []
             let inNumericalFileEra = file.year.map { (1906...1910).contains($0) } ?? false
             let isDecimal = CentralFilesIndex.isDecimalFileForm(trimmed)
 
@@ -240,6 +260,7 @@ struct MandatorySubstitutes: Equatable, Sendable {
                         meta[roll.naId] = (roll.title, .microfilmRoll,
                                            rolls?.scan(forNaId: roll.naId)?.objectCount ?? 0)
                         if matched.count > 1 { ambiguous.insert(roll.naId) }
+                        hitNaIds.append(roll.naId)
                     }
                     hit = !matched.isEmpty
                 }
@@ -251,6 +272,7 @@ struct MandatorySubstitutes: Equatable, Sendable {
                     counts[range.naId, default: 0] += 1
                     meta[range.naId] = (range.title, .digitizedRange, range.objectCount)
                     hit = true
+                    hitNaIds.append(range.naId)
                 case .multipleRanges(let claimants):
                     // Every claimant counts. Collapsing to the narrowest would assert a
                     // resolution the catalogue does not make.
@@ -258,6 +280,7 @@ struct MandatorySubstitutes: Equatable, Sendable {
                         counts[range.naId, default: 0] += 1
                         meta[range.naId] = (range.title, .digitizedRange, range.objectCount)
                         ambiguous.insert(range.naId)
+                        hitNaIds.append(range.naId)
                     }
                     hit = !claimants.isEmpty
                 case .classDigitizedButSerialNotCovered:
@@ -269,7 +292,12 @@ struct MandatorySubstitutes: Equatable, Sendable {
 
             // Counted per DOCUMENT, not per row: a citation claimed by three overlapping ranges is
             // one document that need not be pulled, not three.
-            if hit { withSubstitute += 1 }
+            if hit {
+                withSubstitute += 1
+                if let key = file.documentKey {
+                    matchesByDocument[key, default: []].append(contentsOf: hitNaIds)
+                }
+            }
         }
 
         let built = counts.compactMap { naId, count -> Row? in
@@ -287,6 +315,8 @@ struct MandatorySubstitutes: Equatable, Sendable {
         return MandatorySubstitutes(rows: built,
                                     documentsTested: tested,
                                     documentsWithSubstitute: withSubstitute,
-                                    partiallyDigitizedCount: partial)
+                                    partiallyDigitizedCount: partial,
+                                    matchesByDocument: matchesByDocument
+                                        .mapValues { Array(Set($0)).sorted() })
     }
 }
