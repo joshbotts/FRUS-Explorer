@@ -17,147 +17,6 @@ import Foundation
 import SwiftData
 @testable import FRUSExplorer
 
-// MARK: - AdvanceNoticeFlagTests
-
-/// Pins the A4 flag engine (#830 T-1, decision D9).
-///
-/// Version history:
-///   1.0 — Session 2026-08-22: #830 T-1
-@Suite("A4 advance-notice flags (#830 T-1)")
-struct AdvanceNoticeFlagTests {
-
-    /// D9's central call: the sensitive-agency criterion is a CONSTANT, not a flag. It fires on
-    /// 81.4% of notes, and a chip lit on every row costs the two informative chips their salience.
-    @Test("Only the two discriminating criteria are flags")
-    func onlyDiscriminatingCriteriaAreFlags() {
-        #expect(AdvanceNoticeFlag.allCases.count == 2)
-        #expect(Set(AdvanceNoticeFlag.allCases) == [.recentRecords, .unresolvedLotCitations])
-        #expect(!AdvanceNoticeFlags.standingSentence.isEmpty, """
-            The sensitive-agency criterion must still be stated — A4 requires the packet to quote \
-            WHICH criterion fired, and D9 moves this one to a standing sentence rather than \
-            deleting it.
-            """)
-        #expect(AdvanceNoticeFlags.standingSentence.contains("State, Defense"), """
-            The standing sentence must quote the FAQ's own list rather than paraphrase it.
-            """)
-    }
-
-    /// An unknown date is not a recent one.
-    @Test("Documents with no year cannot trip the date test")
-    func unknownYearsDoNotTripTheDateTest() {
-        let flags = AdvanceNoticeFlags.evaluate(documentYears: [nil, nil, 1948], unresolvedLotCount: 0)
-        #expect(flags.flags.isEmpty)
-        #expect(flags.recentDocumentCount == 0, """
-            A document with no year counted as recent. An unknown date is not a late one, and \
-            inferring otherwise would escalate a lead time on no evidence.
-            """)
-    }
-
-    /// NARA's wording is "the 1960s and later", so 1960 itself counts.
-    @Test("The threshold includes 1960")
-    func thresholdIncludes1960() {
-        #expect(AdvanceNoticeFlags.evaluate(documentYears: [1959], unresolvedLotCount: 0).flags.isEmpty)
-        let flags = AdvanceNoticeFlags.evaluate(documentYears: [1960], unresolvedLotCount: 0)
-        #expect(flags.flags == [.recentRecords])
-        #expect(flags.recentDocumentCount == 1)
-    }
-
-    @Test("Unresolved lot citations raise their own flag")
-    func unresolvedLotsFlag() {
-        let flags = AdvanceNoticeFlags.evaluate(documentYears: [1948], unresolvedLotCount: 7)
-        #expect(flags.flags == [.unresolvedLotCitations])
-        #expect(flags.unresolvedLotCount == 7)
-    }
-
-    /// Each flag must quote NARA's criterion, per A4.
-    @Test("Every flag quotes the criterion that produced it")
-    func flagsQuoteTheirCriterion() {
-        for flag in AdvanceNoticeFlag.allCases {
-            #expect(!flag.quotedCriterion.isEmpty, "\(flag.rawValue) quotes nothing")
-        }
-        #expect(AdvanceNoticeFlag.unresolvedLotCitations.quotedCriterion.contains("do not always carry over"))
-    }
-}
-
-// MARK: - TripChecklistTests
-
-/// Pins D5's two lead-time forms.
-///
-/// Version history:
-///   1.0 — Session 2026-08-22: #830 T-1
-@Suite("Trip checklist lead times (#830 T-1)")
-struct TripChecklistTests {
-
-    private var calendar: Calendar {
-        var c = Calendar(identifier: .gregorian)
-        c.timeZone = TimeZone(secondsFromGMT: 0)!
-        return c
-    }
-
-    /// The packet must be useful BEFORE the trip is booked — requiring a date would gate the
-    /// packet on the decision it exists to inform.
-    @Test("Without a visit date the same rows print relatively")
-    func relativeFormWithoutADate() {
-        let checklist = TripChecklist.build(
-            flags: .evaluate(documentYears: [1948], unresolvedLotCount: 0))
-        #expect(!checklist.items.isEmpty)
-        for item in checklist.items {
-            let line = item.line(arrival: nil, calendar: calendar)
-            #expect(line.contains("before you arrive"), """
-                "\(line)" is not in the relative form. D5 requires the checklist to work with no \
-                visit date at all.
-                """)
-        }
-    }
-
-    /// With a date, the same rows resolve to real deadlines.
-    @Test("With a visit date the rows print absolute deadlines")
-    func absoluteFormWithADate() throws {
-        let arrival = try #require(calendar.date(from: DateComponents(year: 2026, month: 10, day: 1)))
-        let checklist = TripChecklist.build(
-            flags: .evaluate(documentYears: [1948], unresolvedLotCount: 0))
-        let inquiry = try #require(checklist.items.first { $0.id == "inquiry" })
-        let line = inquiry.line(arrival: arrival, calendar: calendar)
-        #expect(line.contains("by "), "\(line) is not in the absolute form")
-        #expect(!line.contains("before you arrive"))
-    }
-
-    /// The rows and the escalation are the SAME in both forms — that is what makes this a
-    /// presentation choice rather than two features.
-    @Test("The two forms carry identical rows")
-    func bothFormsCarryTheSameRows() throws {
-        let arrival = try #require(calendar.date(from: DateComponents(year: 2026, month: 10, day: 1)))
-        let checklist = TripChecklist.build(
-            flags: .evaluate(documentYears: [1961], unresolvedLotCount: 3))
-        let withDate = checklist.items.map(\.id)
-        let withoutDate = checklist.items.map(\.id)
-        #expect(withDate == withoutDate)
-        _ = checklist.items.map { $0.line(arrival: arrival, calendar: calendar) }
-        #expect(checklist.items.contains { $0.escalatedBy == .recentRecords })
-        #expect(checklist.items.contains { $0.escalatedBy == .unresolvedLotCitations })
-    }
-
-    /// The most urgent lead time reads first.
-    @Test("Rows sort by lead time, longest first")
-    func rowsSortByLeadTime() {
-        let checklist = TripChecklist.build(
-            flags: .evaluate(documentYears: [1965], unresolvedLotCount: 2))
-        let leads = checklist.items.map(\.leadDays)
-        #expect(leads == leads.sorted(by: >), "got \(leads)")
-        #expect(leads.first == 42, "an A4 escalation must lead the list")
-    }
-
-    /// D9's standing sentence rides the checklist, printed once.
-    @Test("The standing sentence is present and unconditional")
-    func standingSentenceIsUnconditional() {
-        let quiet = TripChecklist.build(flags: .evaluate(documentYears: [1900], unresolvedLotCount: 0))
-        #expect(quiet.standingSentence == AdvanceNoticeFlags.standingSentence, """
-            The sensitive-agency sentence must print even when no flag fires — it is true of \
-            essentially every project, and making it conditional would imply the quiet case is exempt.
-            """)
-    }
-}
-
 // MARK: - RepositoryFactTableTests
 
 /// Pins D7's per-fact verification and the empty-table-that-still-builds shape.
@@ -281,19 +140,24 @@ struct RepositoryFactTableTests {
 
 // MARK: - TripPacketModelTests
 
-/// Pins the assembled packet (#830 T-1).
+/// Pins the assembled packet (#830 T-1; targets since Archive Visits Phase 1).
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
+///   2.0 — Archive Visits Phase 1: the checklist and advance-notice suites left with their
+///          chapters; new coverage for target assembly (channel merge under one claim-free
+///          key, form detection from the builder's key prefixes, the claimant-aware
+///          restriction rule, and the pre-1946 flag)
 @Suite("Trip packet model (#830 T-1)")
 struct TripPacketModelTests {
 
     private func group(_ key: String, category: SourceProvenanceCategory?, repository: String?,
-                       naId: String? = nil, count: Int = 1)
+                       naId: String? = nil, count: Int = 1, lotAsPrinted: String? = nil)
         -> (key: String, label: String, category: SourceProvenanceCategory?,
-            repository: String?, resolution: ArchivalResolution?,
+            repository: String?, lotAsPrinted: String?, resolution: ArchivalResolution?,
             documents: [TripPacketModel.Group.DocumentRef]) {
         (key: key, label: key, category: category, repository: repository,
+         lotAsPrinted: lotAsPrinted,
          resolution: naId.map { naId in
              ArchivalResolution(naId: naId,
                                 catalogURL: "https://catalog.archives.gov/id/\(naId)",
@@ -312,7 +176,7 @@ struct TripPacketModelTests {
         let model = TripPacketModel.build(
             groups: [group("truman", category: .presidentialLibrary, repository: "Truman Library")],
             documentYears: [1948], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
-            researchQuestion: nil, facts: { _ in nil })
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
         let only = model.groups[0]
         #expect(only.facility == .unknown)
         #expect(!only.canHeadChapter, """
@@ -372,9 +236,9 @@ struct TripPacketModelTests {
                 "whitespace is not a topic")
     }
 
-    /// The A4 flags and the triage both reach the assembled model.
-    @Test("Flags and triage assemble into the packet")
-    func flagsAndTriageAssemble() {
+    /// The triage reaches the assembled model, and a resolved series' facility is NARA's own.
+    @Test("Triage assembles into the packet")
+    func triageAssembles() {
         let model = TripPacketModel.build(
             groups: [group("s", category: .lotFile, repository: nil, naId: "123", count: 5)],
             documentYears: [1948, 1972], unresolvedLotCount: 4, unresolvedDocumentCount: 9,
@@ -383,12 +247,138 @@ struct TripPacketModelTests {
                 accessStatus: "Restricted - Fully", accessRestrictions: ["FOIA (b)(1) National Security"],
                 useStatus: nil, useRestrictions: [], extent: nil,
                 referenceUnit: "National Archives at College Park - Textual Reference",
-                findingAids: [], years: nil) })
-        #expect(model.flags.flags == [.recentRecords, .unresolvedLotCitations])
+                findingAids: [], years: nil) },
+            claimants: { _ in nil })
         #expect(model.triage.rows.first?.severity == .fully)
         #expect(model.triage.unresolvedDocumentCount == 9)
-        #expect(model.checklist.items.contains { $0.escalatedBy == .recentRecords })
         #expect(model.groups[0].facility == .derived(facility: "National Archives at College Park"))
+    }
+
+    // MARK: - Target assembly (Archive Visits Phase 1)
+
+    /// Both channels land under one claim-free key: a unit drawn from AND pointed at becomes
+    /// ONE target with the two claims itemized inside it, never merged into one count.
+    @Test("A unit cited in both channels becomes one target with claims kept apart")
+    func channelsMergeUnderOneKey() {
+        let seeding = TripPacketModel.RefSeeding(
+            volumeId: "v9", documentId: "d9", citation: "FRUS 1950 I, Document 9",
+            footnoteNumber: 2, rawText: "Not printed. (Lot 62 D 1, CF 1)", inherited: false)
+        let model = TripPacketModel.build(
+            groups: [group("lot|62D1", category: .lotFile, repository: nil, naId: "123",
+                           count: 3, lotAsPrinted: "62 D 1")],
+            documentYears: [1950], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil },
+            references: [(key: "lot|62D1", form: .lotFile, label: "Lot 62 D 1",
+                          repository: nil, lotAsPrinted: "62 D 1", seedings: [seeding])],
+            claimants: { _ in nil })
+        #expect(model.targets.count == 1, "the shared key must merge, not duplicate")
+        let target = model.targets[0]
+        #expect(target.drawnFrom.count == 3)
+        #expect(target.pointedAt == [seeding])
+        #expect(target.form == .lotFile)
+    }
+
+    /// A pointed-at-only unit mints its own target — the "beyond FRUS" case the channel
+    /// exists for — with an empty drawn-from list, never a fabricated one.
+    @Test("A pointed-at-only unit mints a target of its own")
+    func pointedAtOnlyMintsTarget() {
+        let seeding = TripPacketModel.RefSeeding(
+            volumeId: "v9", documentId: "d9", citation: "FRUS 1950 I, Document 9",
+            footnoteNumber: 1, rawText: "Truman Library, PSF, not printed.", inherited: false)
+        let model = TripPacketModel.build(
+            groups: [], documentYears: [], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil },
+            references: [(key: "coll|Truman Library|PSF", form: .collection,
+                          label: "Truman Library, PSF", repository: "Truman Library",
+                          lotAsPrinted: nil, seedings: [seeding])],
+            claimants: { _ in nil })
+        #expect(model.targets.count == 1)
+        #expect(model.targets[0].drawnFrom.isEmpty)
+        #expect(model.targets[0].pointedAt == [seeding])
+        #expect(model.targets[0].form == .collection)
+        #expect(model.targets[0].facts?.id == "Truman Library", """
+            A pointed-at library target must reach its curated row the same way a drawn-from \
+            group does — D11's ask needs the link beside it.
+            """)
+    }
+
+    /// The claimant-aware restriction rule (§3a): worst COVERED status with its series named
+    /// and the unmeasured counted; divided-with-nothing-measured is a line of its own; a lot
+    /// with one claimant and no measurement gets silence, not a guess.
+    @Test("The restriction line states the worst covered status at claimant grain")
+    func restrictionRuleIsClaimantAware() {
+        let claimants: [LotClaimant] = [
+            LotClaimant(naId: "1", title: "Open Series", recordGroup: "59",
+                        hmsMlrEntryNumbers: nil, dateRange: nil, evidence: "controlNumber"),
+            LotClaimant(naId: "2", title: "Closed Series", recordGroup: "59",
+                        hmsMlrEntryNumbers: nil, dateRange: nil, evidence: "controlNumber"),
+            LotClaimant(naId: "3", title: "Unmeasured Series", recordGroup: "59",
+                        hmsMlrEntryNumbers: nil, dateRange: nil, evidence: "controlNumber"),
+        ]
+        let facts: (String) -> SeriesFactsIndex.Facts? = { naId in
+            let status = ["1": "Unrestricted", "2": "Restricted - Fully"][naId]
+            return status.map { SeriesFactsIndex.Facts(
+                accessStatus: $0, accessRestrictions: [], useStatus: nil, useRestrictions: [],
+                extent: nil, referenceUnit: nil, findingAids: [], years: nil) }
+        }
+        let divided = TripPacketModel.restriction(
+            form: .lotFile, resolution: nil, lotAsPrinted: "60 D 1",
+            facts: facts, claimants: { _ in claimants })
+        #expect(divided?.worstCoveredStatus == "Restricted - Fully",
+                "the worst MEASURED status leads, whatever order the claimants arrive in")
+        #expect(divided?.claimantSeriesTitle == "Closed Series",
+                "the status must name the series it belongs to — it is not the lot's status")
+        #expect(divided?.claimantCount == 3)
+        #expect(divided?.unmeasuredClaimantCount == 1)
+        #expect(divided?.isDivided == true)
+
+        let nothingMeasured = TripPacketModel.restriction(
+            form: .lotFile, resolution: nil, lotAsPrinted: "60 D 2",
+            facts: { _ in nil }, claimants: { _ in Array(claimants.prefix(2)) })
+        #expect(nothingMeasured?.worstCoveredStatus == "", """
+            A divided lot with nothing measured is itself worth a line — "several series, \
+            none measured" is the question the inquiry carries.
+            """)
+        #expect(nothingMeasured?.worstSeverity == .unknown)
+
+        let single = TripPacketModel.restriction(
+            form: .lotFile, resolution: nil, lotAsPrinted: "60 D 3",
+            facts: { _ in nil }, claimants: { _ in [claimants[2]] })
+        #expect(single == nil, "one claimant, nothing measured: silence beats a guess")
+    }
+
+    /// Targets sort facility-first, label-second — stable and deterministic, since Phase 1
+    /// has no user tiers yet.
+    @Test("Targets sort by facility, then label")
+    func targetsSortByFacilityThenLabel() {
+        let model = TripPacketModel.build(
+            groups: [
+                group("truman", category: .presidentialLibrary, repository: "Truman Library"),
+                group("lot|b", category: .lotFile, repository: nil),
+                group("lot|a", category: .lotFile, repository: nil),
+            ],
+            documentYears: [], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        #expect(model.targets.map(\.key) == ["lot|a", "lot|b", "truman"], """
+            The placeable lots sort by label under their shared facility; the unplaceable \
+            library sorts last (no facility heading).
+            """)
+    }
+
+    /// The pre-1946 flag: set only when every KNOWN year predates 1946 and at least one is
+    /// known — the coverage report's licence for the filing-practice sentence.
+    @Test("seededSpanPredates1946 requires known, uniformly pre-1946 years")
+    func preWarFlagRules() {
+        func build(_ years: [Int?]) -> Bool {
+            TripPacketModel.build(
+                groups: [], documentYears: years, unresolvedLotCount: 0,
+                unresolvedDocumentCount: 0, researchQuestion: nil,
+                facts: { _ in nil }, claimants: { _ in nil }).seededSpanPredates1946
+        }
+        #expect(build([1914, 1915, nil]))
+        #expect(!build([1914, 1948]), "one post-war year defeats the claim")
+        #expect(!build([nil, nil]), "no known year is no evidence of a pre-war span")
+        #expect(!build([]))
     }
 
     // MARK: - The collection seed rule (Archive Visits Phase 0)

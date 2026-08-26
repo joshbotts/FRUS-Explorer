@@ -529,7 +529,7 @@ Switch the active project from the menu bar (**Research ▸ Switch Project**) or
 
 Clicking a lead, a recently visited document, or a note opens it in whichever document window you used last — and if no document window is open at all (Project Home is its own window, so you can close the main one and keep working), a new one opens. The click always goes somewhere.
 
-Beside the Collections section header sits **Plan a Visit**, which generates a **research trip packet** (Section 14.8) over the project's engaged documents — the same set that seeds the leads engine — with the project's research question as the inquiry's topic sentence. It stays disabled until the project has documents.
+Beside the Collections section header sits **Plan a Visit**, which generates an **Archive Visit packet** (Section 14.8) over the project's engaged documents — the same set that seeds the leads engine — with the project's research question as the inquiry's topic sentence. It stays disabled until the project has documents.
 
 ---
 
@@ -589,7 +589,7 @@ The window has no permanent sidebar; you switch collections from the **collectio
 
 | Control | What it does |
 |---------|--------------|
-| **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts), an **Apparatus ▸** submenu of the five generated blocks, and **Plan an Archive Visit…** — the research trip packet over this collection's documents (14.8) |
+| **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts), an **Apparatus ▸** submenu of the five generated blocks, and **Plan an Archive Visit…** — the Archive Visit packet over this collection's documents (14.8) |
 | **Sort** | Re-order documents chronologically, in one of two modes (12.4) |
 | **⚙ Collection** | The collection-settings popover — name, private working note, title-page front matter, composition presets and settings (12.6) |
 | **Export…** | The export sheet — format + destination (12.9) |
@@ -819,23 +819,25 @@ Lot-file lookups — and the presidential-library citations the bundled catalog 
 
 When a source note records the original document's classification markings (*"Secret; Nodis"*, or *"No classification marking"*), the app separates them from the archival citation and shows them as a quiet capsule chip — in the Source Explorer window, next to the source footnote in the reading view, and on search results. The chip is historical metadata about how the record was originally handled, not a property of the published, declassified text — a distinction students in particular should hear once.
 
-### 14.8 The Research Trip Packet
+### 14.8 The Archive Visit Packet
 
-Everything this chapter teaches document by document, the **trip packet** assembles in one pass: pick a set of documents, and the app reads their printed source notes, resolves them against the bundled NARA data, and generates a seven-chapter planning document for an archive visit, in a sheet sized for reading (620×640 minimum). Reach it from **Project Home ▸ Plan a Visit** (built over the project's engaged documents, Section 10.4) or from a collection's **＋ Add** menu ▸ **Plan an Archive Visit…** in the Collections window (Section 12.1).
+Everything this chapter teaches document by document, the **Archive Visit packet** assembles in one pass: pick a set of documents, and the app reads their printed source notes *and* their editorial footnotes, resolves both against the bundled NARA data, and generates a repository-grouped planning document, in a sheet sized for reading (620×640 minimum). Reach it from **Project Home ▸ Plan a Visit** (built over the project's engaged documents, Section 10.4) or from a collection's **＋ Add** menu ▸ **Plan an Archive Visit…** in the Collections window (Section 12.1).
 
-The packet's chapters:
+The packet is organized around **research targets** — the archival units you would actually ask an archivist about: a central-file class (`762.00`), a lot file, a library collection. Each target itemizes the documents that seeded it **by claim**, kept deliberately apart: documents *published from* the file (with the file or folder designation their source note cites), and footnotes that *cite* the file without FRUS printing from it (quoted verbatim, with a note when the file was inherited from a preceding footnote's "*Ibid.*"). The two counts never merge into one number, because they are different kinds of evidence. Every seeding links to its document on history.state.gov.
 
-1. **Cover and checklist** — how many archival groups and documents, and the pre-arrival checklist. A visit date is optional, deliberately: the packet is most useful *before* a trip is booked, so without a date every deadline prints relative ("4 weeks before you arrive"), and the escalation criteria that need extra notice — documents dated 1960 or later, State Department record groups, lot citations NARA may know under another number — are quoted from NARA's own research-visit guidance.
-2. **Advance inquiry** — a draft email per facility, with the confirmed address and inquiry email for College Park, your project's research question as the editable topic sentence, each resolved series identified the way NARA asks (record group · entry number · series title · NAID, with the catalog link), and — for citations the app could not resolve — a **help-me-locate list quoting each source note verbatim** with its FRUS citation, because NARA's own advice is that poorly described records are resolved by writing ahead, not at the reading-room desk. Presidential-library material gets a confirm-before-you-travel prompt with each library's visit-planning and finding-aid pages instead of a drafted letter — at collection grain the packet cannot name a series, and it never implies a precision the data lacks.
-3. **Pull worksheet** — grouped by facility so its rows can become pull slips, each series headed by the same four-field line, then a per-document roster: FRUS citation, the file or folder designation the note cites, and a **blank Box column** — the packet never invents a box number; boxes are assigned at the pull desk.
-4. **Use these instead of pulling** — records NARA requires you to read digitized or on film, with catalog links.
-5. **Access restrictions** — every cited series with a stated restriction, worst first, by name; and what a **withdrawal notice** in a folder means, with the FOIA / Mandatory Declassification Review route past it.
-6. **Citing what you find** — NARA's own citation forms for the series types in *your* packet, quoted verbatim from its "Citing Foreign Affairs Records" guidance and attributed as NARA's (your publisher's rules govern), each pre-filled with your own file numbers and series titles where the app knows them.
-7. **On the day** — only the facts that don't rot: researcher-card registration, locker and scanner rules, and stamped links to NARA's current-guidance pages for everything that changes (pull schedules deliberately are not printed — a stale schedule is worse than none).
+What the packet delivers, grouped by repository:
 
-Two honesty rules run through every chapter: an institutional fact nobody has verified is **omitted, never printed undated**, and availability is never promised — the packet says "confirm with staff" where confirmation is the truth. **Share** exports the packet as plain text (the inquiry drafts survive pasting into a mail client); **Share as PDF** exports the same text paginated for printing. The packet is generated in English by design — its letters address U.S. archives staff and its quotations are NARA's own words.
+1. **Visit-planning links** — each repository's own visit-planning and finding-aid pages, every link carrying the date it was last checked.
+2. **The target list** — one row per target with the consultation metadata: the records line staff ask you to quote (record group · entry number · series title · NAID · years, with the catalog link); an access line wherever NARA records a restriction — for a lot NARA divided across several catalog series, the line names the worst *measured* status, the series it belongs to, and how many claimant series carry no recorded status, because a divided lot has more than one answer; a per-document marker wherever a cited record is digitized or filmed and must be read in that form instead of pulled; and, on central-file targets, NARA's own rule that central-file citations carry no box number.
+3. **The advance inquiry** — a draft email per facility, with the confirmed address and inquiry email for College Park and your project's research question as the editable topic sentence. Citations the app could not resolve appear as **help-me-locate lists quoting each citation verbatim** — source notes and footnote citations each under their own ask, because NARA's own advice is that poorly described records are resolved by writing ahead, not at the reading-room desk — and a divided lot becomes a **question for the archivist**, which is what it is. Each facility's draft has its own **Copy** in the Options menu, ready to paste into an email. Presidential-library material gets a confirm-before-you-travel prompt with each library's pages instead of a drafted letter — at collection grain the packet cannot name a series, and it never implies a precision the data lacks.
 
-[SCREENSHOT: the trip packet sheet in the Collections window — the date toggle, a generated packet, and the Share buttons.]
+A **coverage report** closes every export: how many targets resolved, how far the footnote scan reached (on a pre-1946 reading list an empty footnote channel is the filing practice, not a gap — lot files and presidential libraries are post-war practice), the digitized-substitute denominators, and how much of the restriction picture is actually measured.
+
+The **Options** menu can also scope the export to a **single repository** — a self-contained artifact for one archivist, with the coverage report still describing the whole plan — and can append NARA's citation forms for your packet's series types ("Citing Foreign Affairs Records", quoted verbatim and attributed as NARA's; your publisher's rules govern). The appendix is off by default.
+
+Two honesty rules run through every section: an institutional fact nobody has verified is **omitted, never printed undated**, and availability is never promised — the packet says "confirm with staff" where confirmation is the truth. **Share** exports the packet as plain text (the inquiry drafts survive pasting into a mail client); **Share as PDF** exports the same text paginated for printing. The packet is generated in English by design — its letters address U.S. archives staff and its quotations are NARA's own words.
+
+[SCREENSHOT: the Archive Visit sheet in the Collections window — a generated packet with a target's two claim lists visible, the Options menu open showing the repository scope, and the Share buttons.]
 
 ---
 
@@ -1107,12 +1109,12 @@ Quantitative or quasi-quantitative claims about the record ("mentions of X colla
 
 Before travel to College Park or a presidential library:
 
-1. **Generate the trip packet** (14.8): from Project Home click **Plan a Visit**, or in the Collections window use **＋ Add ▸ Plan an Archive Visit…**. This automates what used to be this recipe's first six steps — the packet resolves every source note, drafts the advance inquiries, builds the pull worksheet with the RG / entry / series / NAID lines staff ask you to quote, flags restricted series and mandatory substitutes, and cribs NARA's citation forms for your series types.
+1. **Generate the Archive Visit packet** (14.8): from Project Home click **Plan a Visit**, or in the Collections window use **＋ Add ▸ Plan an Archive Visit…**. This automates what used to be this recipe's first six steps — the packet resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
 2. Add a **NARA API key** first (14.6) so lot-file lookups run at full precision before the packet is built.
 3. Read the packet's **Access restrictions** chapter before booking anything — a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
 4. Send the **advance inquiry** well ahead (the checklist says how far), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.
 5. For anything you want to dig into beyond the packet: **Divided at NARA** (14.5) lists every claiming series for a divided lot; **Archival Neighbors** windows (14.3) — one per source, side by side — show what else came from the same boxes; **Unprinted pointers** in Archival Analytics (15.5) maps what the editors cited but did not print; and the **outside-NARA repositories** (14.1) cover holdings elsewhere.
-6. Build a **Source dossier** collection (12.6) of your target documents and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's pull worksheet (shared as PDF) rides beside it.
+6. Build a **Source dossier** collection (12.6) of your target documents and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's target list (shared as PDF) rides beside it.
 
 ### 18.4 Building a Course Reader
 

@@ -248,6 +248,26 @@ struct MandatorySubstitutesTests {
         #expect(result.documentsWithSubstitute == 1)
     }
 
+    /// Phase 1's fold input: `matchesByDocument` records each matched document's units, and
+    /// only for files that carried a document key — a key-less file still counts in the
+    /// aggregate but cannot be marked.
+    @Test("matchesByDocument records matched units per document key")
+    func matchesByDocumentRecordsMatches() {
+        let ranges = SubstituteFixtures.ranges(
+            SubstituteFixtures.range("612", 1, 500, naId: "A", title: "Range A"))
+        let result = SubstituteFixtures.build([
+            .init(identifier: "612/23", year: 1950, documentKey: "v1/d1"),
+            .init(identifier: "612/24", year: 1950),
+            .init(identifier: "999.99/1", year: 1950, documentKey: "v1/d3"),
+        ], ranges: ranges)
+        #expect(result.matchesByDocument == ["v1/d1": ["A"]], """
+            Only the keyed, matched document may appear: the key-less match is unmarkable and \
+            the unmatched document has nothing to mark.
+            """)
+        #expect(result.documentsWithSubstitute == 2,
+                "the key-less match still counts in the aggregate")
+    }
+
     /// An empty chapter must say the app saw two routes only — silence would read as a clearance
     /// to pull everything, which is the error A6 exists to prevent.
     @Test("The coverage note refuses to imply nothing is digitised")
@@ -310,28 +330,35 @@ struct MandatorySubstitutesTests {
     }
 }
 
-// MARK: - MandatorySubstitutesChapterTests
+// MARK: - MandatorySubstitutesFoldTests
 
-/// Pins what chapter 4 actually prints (#830 T-3).
+/// Pins the chapter-4 fold (#830 T-3; Archive Visits Phase 1).
+///
+/// The standalone chapter is gone: the rows became per-seeding markers on the target list, and
+/// the four facts with no row to sit on — the denominators, the partial-digitization count, the
+/// layered warning, the citation rule — landed in the coverage report (§3a). This suite pins
+/// that landing.
 ///
 /// Version history:
-///   1.0 — Session 2026-08-22: #830 T-3
-@Suite("Chapter 4 export (#830 T-3)")
-struct MandatorySubstitutesChapterTests {
+///   1.0 — Session 2026-08-22: #830 T-3 (as `MandatorySubstitutesChapterTests`)
+///   2.0 — Archive Visits Phase 1: re-pinned from the deleted chapter to the fold
+@Suite("Substitutes fold (#830 T-3 / Phase 1)")
+struct MandatorySubstitutesFoldTests {
 
-    /// A model whose chapter-4 aggregate is injected, so the exporter is driven by a known value
-    /// rather than by whatever the bundled indexes happen to hold.
+    /// A model whose substitutes aggregate is injected, so the exporter is driven by a known
+    /// value rather than by whatever the bundled indexes happen to hold.
     private func model(substitutes: MandatorySubstitutes) -> TripPacketModel {
         TripPacketModel.build(
-            groups: [(key: "cdf", label: "Central Decimal File 763.72",
-                      category: .centralDecimalFile, repository: nil,
+            groups: [(key: "class|763.72", label: "Central Decimal File 763.72",
+                      category: .centralDecimalFile, repository: nil, lotAsPrinted: nil,
                       resolution: nil, documents: TripPacketExporterTests.refs(4))],
             documentYears: [1918],
             unresolvedLotCount: 0,
             unresolvedDocumentCount: 0,
             researchQuestion: nil,
             facts: { _ in nil },
-            substitutes: { _ in substitutes })
+            substitutes: { _ in substitutes },
+            claimants: { _ in nil })
     }
 
     private func rows(_ count: Int) -> [MandatorySubstitutes.Row] {
@@ -342,88 +369,49 @@ struct MandatorySubstitutesChapterTests {
         }
     }
 
-    @Test("The chapter is part of the export, between the worksheet and the triage")
-    func chapterIsInTheExport() {
+    /// The rule is NARA's obligation, quoted — not the app's advice, paraphrased — and it
+    /// prints whenever any document actually has a substitute.
+    @Test("The A6 rule is quoted and attributed when substitutes exist")
+    func ruleIsQuoted() {
         let substitutes = MandatorySubstitutes(rows: rows(1), documentsTested: 4,
                                                documentsWithSubstitute: 1,
                                                partiallyDigitizedCount: 0)
         let text = TripPacketExporter(model: model(substitutes: substitutes),
-                                      projectName: "P", arrival: nil).export()
-        guard let chapter = text.range(of: "## Use these instead of pulling"),
-              let worksheet = text.range(of: "## Pull worksheet"),
-              let triage = text.range(of: "## Access restrictions") else {
-            Issue.record("a chapter heading is missing from the export")
-            return
-        }
-        #expect(worksheet.lowerBound < chapter.lowerBound)
-        #expect(chapter.lowerBound < triage.lowerBound)
-    }
-
-    /// The rule is NARA's obligation, quoted — not the app's advice, paraphrased.
-    @Test("The A6 rule is quoted and attributed")
-    func ruleIsQuoted() {
-        let substitutes = MandatorySubstitutes(rows: [], documentsTested: 0,
-                                               documentsWithSubstitute: 0,
-                                               partiallyDigitizedCount: 0)
-        let chapter = TripPacketExporter(model: model(substitutes: substitutes),
-                                         projectName: "P", arrival: nil).mandatorySubstitutes
-        #expect(chapter.contains(
+                                      projectName: "P").export()
+        #expect(text.contains(
             "\"Researchers must use microfilm and online resources when those options are available.\""))
     }
 
-    /// An empty chapter that said nothing would read as a clearance to pull everything.
-    @Test("An empty chapter still prints its coverage caveat")
-    func emptyChapterStillCaveats() {
+    /// An empty result that said nothing would read as a clearance to pull everything — the
+    /// coverage caveat prints unconditionally.
+    @Test("An empty substitutes result still prints its coverage caveat")
+    func emptyResultStillCaveats() {
         let substitutes = MandatorySubstitutes(rows: [], documentsTested: 6,
                                                documentsWithSubstitute: 0,
                                                partiallyDigitizedCount: 0)
-        let chapter = TripPacketExporter(model: model(substitutes: substitutes),
-                                         projectName: "P", arrival: nil).mandatorySubstitutes
-        #expect(chapter.contains("two routes"))
-        #expect(chapter.contains("Confirm with staff"))
+        let text = TripPacketExporter(model: model(substitutes: substitutes),
+                                      projectName: "P").export()
+        #expect(text.contains("two routes"))
+        #expect(text.contains("Confirm with staff"))
+        #expect(!text.contains("Researchers must use microfilm"),
+                "no substitute exists, so quoting the obligation would point at nothing")
     }
 
-    /// A list that silently stopped would read as complete, and the reader would pull the records
-    /// it did not mention. (Chapter 5 once truncated without disclosing; both chapters now
-    /// carry the disclosure, and each is pinned by its own test.)
-    @Test("Truncation past the row limit is disclosed")
-    func truncationIsDisclosed() {
-        let substitutes = MandatorySubstitutes(rows: rows(23), documentsTested: 30,
-                                               documentsWithSubstitute: 23,
-                                               partiallyDigitizedCount: 0)
-        let chapter = TripPacketExporter(model: model(substitutes: substitutes),
-                                         projectName: "P", arrival: nil).mandatorySubstitutes
-        #expect(chapter.contains("3 further units are not listed"))
-    }
-
-    /// A6 asks substitutes to lead. The numbering puts them after the worksheet, so the worksheet
-    /// defers explicitly — and only when there is something to defer to.
-    @Test("The worksheet defers to the chapter, and only when it exists")
-    func worksheetDefersOnlyWhenSubstitutesExist() {
-        let withRows = MandatorySubstitutes(rows: rows(1), documentsTested: 4,
-                                            documentsWithSubstitute: 1, partiallyDigitizedCount: 0)
-        let sheet = TripPacketExporter(model: model(substitutes: withRows),
-                                       projectName: "P", arrival: nil).pullWorksheet
-        #expect(sheet.contains("before writing slips"))
-
-        let none = MandatorySubstitutes(rows: [], documentsTested: 4,
-                                        documentsWithSubstitute: 0, partiallyDigitizedCount: 0)
-        let plain = TripPacketExporter(model: model(substitutes: none),
-                                       projectName: "P", arrival: nil).pullWorksheet
-        #expect(!plain.contains("before writing slips"))
-    }
-
-    /// The link is the Catalog record, the form NARA's own worked example prints — never the raw
-    /// `.tif` or whole-roll `.pdf` the artifacts carry, neither of which is a usable citation
-    /// target in a printed packet.
-    @Test("Rows link the Catalog record")
-    func rowsLinkTheCatalogRecord() {
-        let substitutes = MandatorySubstitutes(rows: rows(1), documentsTested: 4,
-                                               documentsWithSubstitute: 1,
-                                               partiallyDigitizedCount: 0)
-        let chapter = TripPacketExporter(model: model(substitutes: substitutes),
-                                         projectName: "P", arrival: nil).mandatorySubstitutes
-        #expect(chapter.contains("https://catalog.archives.gov/id/N0"))
-        #expect(!chapter.contains(".tif"))
+    /// The marker rides only the documents that matched — a target-level flag would assert
+    /// coverage of documents that were never tested (§3a's grain argument).
+    @Test("The seeding marker names the unit, at document grain")
+    func markerIsPerDocument() {
+        let substitutes = MandatorySubstitutes(
+            rows: rows(1), documentsTested: 4, documentsWithSubstitute: 1,
+            partiallyDigitizedCount: 0,
+            matchesByDocument: ["frus1948v02/d2": ["N0"]])
+        let text = TripPacketExporter(model: model(substitutes: substitutes),
+                                      projectName: "P").export()
+        let markers = text.components(separatedBy: "Digitized or filmed — use Range 0 (NAID N0)")
+        #expect(markers.count == 2, "exactly one document matched, so exactly one marker")
+        let markedLine = text.components(separatedBy: "FRUS 1948 II, Document 2")[1]
+            .components(separatedBy: "FRUS 1948 II, Document 3")[0]
+        #expect(markedLine.contains("instead of pulling"),
+                "the marker must sit under the matched document's own seeding row")
     }
 }

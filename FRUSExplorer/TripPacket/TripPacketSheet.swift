@@ -14,6 +14,11 @@
 
 import SwiftUI
 import CoreText
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 // MARK: - TripPacketSheet
 
@@ -24,10 +29,10 @@ import CoreText
 /// They feed the same VIEW too — a second presenter would be a second place for the packet's
 /// honesty rules to be applied differently, and those rules are the whole point of the feature.
 ///
-/// ## The visit date is optional here, not merely nullable
-/// D5: a packet is most useful *before* the trip is booked. The date picker is opt-in, and with no
-/// date the checklist prints relative lead times. Nothing about the packet is withheld for want of
-/// a date.
+/// ## Scoping is a render filter, never a rebuild
+/// The repository scope and the citation-appendix toggle re-run the exporter over the model
+/// already in hand (the export-scoping amendment: "a scoped export is a render filter, not a
+/// second pipeline"). Only the seed changing rebuilds.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
@@ -43,6 +48,11 @@ import CoreText
 ///          stored project note. (c) The empty state stopped naming a cause it cannot have:
 ///          it is reachable only with an empty reading list or no search index, never by
 ///          "no source notes" (that case builds a real packet with a help-me-locate list).
+///   1.3 — Archive Visits Phase 1: the visit-date bar leaves with chapter 1 (its checklist
+///          was the only reader of the date); the share surface gains the repository scope
+///          (§3's export-scoping amendment), each facility's inquiry draft gains its own
+///          Copy (a draft's whole purpose is to be pasted into one email), and the citation
+///          appendix becomes an opt-in toggle, default off (§3a)
 
 /// What a packet is built over (Phase 0).
 ///
@@ -108,8 +118,11 @@ struct TripPacketSheet: View {
     /// Debounces the re-render while typing — the export is cheap, the PDF is not.
     @State private var topicRenderTask: Task<Void, Never>?
     @State private var unavailableReason: UnavailableReason?
-    @State private var hasDate = false
-    @State private var arrival = Date()
+    /// The repository scope — `nil` renders the whole plan (the default and the master
+    /// reference); a facility name renders that repository's self-contained slice.
+    @State private var facilityScope: String?
+    /// Whether the NARA citation-guidance appendix is included (§3a: opt-in, default off).
+    @State private var includeCitationCrib = false
     @State private var isBuilding = true
 
     var body: some View {
@@ -167,10 +180,12 @@ struct TripPacketSheet: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .safeAreaInset(edge: .top) { dateBar }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                }
+                if model != nil {
+                    ToolbarItem(placement: .secondaryAction) { optionsMenu }
                 }
                 if let packet {
                     ToolbarItem(placement: .primaryAction) {
@@ -193,35 +208,69 @@ struct TripPacketSheet: View {
                 }
             }
             .task { await rebuild() }
-            .onChange(of: hasDate) { _, _ in Task { await rebuild() } }
-            .onChange(of: arrival) { _, _ in Task { await rebuild() } }
+            // Scope and appendix are render filters over the model already in hand — the
+            // export-scoping amendment's whole point. Only the seed changing rebuilds.
+            .onChange(of: facilityScope) { _, _ in if let model { render(model) } }
+            .onChange(of: includeCitationCrib) { _, _ in if let model { render(model) } }
         }
         #if os(macOS)
         .frame(minWidth: 620, minHeight: 640)
         #endif
     }
 
-    /// The optional visit date (D5) — opt-in, and captioned so its absence reads as a choice.
+    /// The facilities the built model can scope or draft for, in section order.
+    private var facilities: [String] {
+        guard let model else { return [] }
+        var seen = Set<String>()
+        return model.targets.compactMap(\.facility.chapterHeading)
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// The export options: the repository scope (the export-scoping amendment — a
+    /// single-repository export is a self-contained artifact, so no one divides one by
+    /// hand), each facility's own Copy for its inquiry draft, and the citation appendix.
     @ViewBuilder
-    private var dateBar: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle(isOn: $hasDate) {
-                Text(String(localized: "packet.date.toggle", defaultValue: "I have a visit date"))
-                    .font(.callout)
+    private var optionsMenu: some View {
+        Menu {
+            Picker(String(localized: "packet.scope.picker", defaultValue: "Repository"),
+                   selection: $facilityScope) {
+                Text(String(localized: "packet.scope.all", defaultValue: "All repositories"))
+                    .tag(String?.none)
+                ForEach(facilities, id: \.self) { facility in
+                    Text(facility).tag(String?.some(facility))
+                }
             }
-            if hasDate {
-                DatePicker(String(localized: "packet.date.label", defaultValue: "Arriving"),
-                           selection: $arrival, displayedComponents: .date)
-            } else {
-                Text(String(localized: "packet.date.caption",
-                            defaultValue: "Deadlines will be relative — this packet is meant to help you decide whether to go."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if !facilities.isEmpty {
+                Section(String(localized: "packet.copyDraft.section",
+                               defaultValue: "Copy inquiry draft")) {
+                    ForEach(facilities, id: \.self) { facility in
+                        Button(facility) { copyDraft(for: facility) }
+                    }
+                }
             }
+            Toggle(String(localized: "packet.appendix.crib",
+                          defaultValue: "Include NARA citation guidance"),
+                   isOn: $includeCitationCrib)
+        } label: {
+            Label(String(localized: "packet.options", defaultValue: "Options"),
+                  systemImage: "slider.horizontal.3")
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(.bar)
+    }
+
+    /// Copies one facility's inquiry draft to the pasteboard — a draft's entire purpose is
+    /// to be pasted into an email to that one archivist, so it must not need carving out of
+    /// the grouped document by hand.
+    private func copyDraft(for facility: String) {
+        guard let model else { return }
+        var exporter = TripPacketExporter(model: model, projectName: title)
+        exporter.facilityScope = facility
+        let draft = exporter.inquiryDrafts
+        #if os(iOS)
+        UIPasteboard.general.string = draft
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(draft, forType: .string)
+        #endif
     }
 
     /// The inquiry's topic sentence, editable in place (Phase 0 — the missing
@@ -275,10 +324,13 @@ struct TripPacketSheet: View {
         render(model)
     }
 
-    /// One render path for build and edit, so the two cannot compose differently.
+    /// One render path for build, edit, scope, and appendix, so no pair can compose differently.
     private func render(_ model: TripPacketModel) {
-        let rendered = TripPacketExporter(model: model, projectName: title,
-                                          arrival: hasDate ? arrival : nil).export()
+        var exporter = TripPacketExporter(model: model, projectName: title)
+        exporter.facilityScope = facilityScope
+        exporter.includeCitationCrib = includeCitationCrib
+        exporter.generatedOn = Date()
+        let rendered = exporter.export()
         packet = rendered
         packetPDF = TripPacketPDFRenderer.render(packet: rendered, title: title)
     }
@@ -340,7 +392,7 @@ struct TripPacketSheet: View {
                 pipeline: pipeline,
                 manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
                                         uniquingKeysWith: { first, _ in first })))
-        guard !built.groups.isEmpty || built.triage.unresolvedDocumentCount > 0 else {
+        guard !built.targets.isEmpty || built.triage.unresolvedDocumentCount > 0 else {
             // Unreachable in practice (a note-less reading list lands in the help-me-locate
             // branch), kept as a guard: an empty page must never render as a packet.
             packet = nil
@@ -349,10 +401,13 @@ struct TripPacketSheet: View {
             unavailableReason = .noDocuments
             return
         }
-        // A rebuild (date toggled, seed re-resolved) must not discard the researcher's edit.
+        // A rebuild must not discard the researcher's edit.
         let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { built.topicSentence.edited = topicDraft }
         model = built
+        // A re-resolved seed can lose the scoped facility; falling back to the whole plan
+        // beats rendering an empty slice under a stale heading.
+        if let scope = facilityScope, !facilities.contains(scope) { facilityScope = nil }
         render(built)
     }
 }

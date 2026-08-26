@@ -8832,3 +8832,42 @@ assertions; the 200-budget test pins the row arithmetic), the seed rule pinned a
 `CollectionEntry` fixtures, the parity suite extended to pin the smart/excerpt gates, the
 one-resolution-path seeding, and Project Home's gatherSeed wiring (with the old attachment
 gate explicitly banned). 45/45 in the affected suites; full run below.
+
+## Session 2026-08-26 — Archive Visits Phase 1: targets, both channels, the narrowed packet
+
+The pipeline-and-exporter phase of `Planning/Archive-Visit-Plan-Design.md`, shipped as decided;
+W-18 delivered inside it and struck in the plan of record.
+
+**The research target is the working grain.** `TripPacketModel` 2.0 assembles both channels
+under claim-free, form-aware keys (§2b): decimal citations fold to their CLASS
+(`SourceNoteParser.decimalClassLocation` — the Sources block's key rides the per-document file
+identifier and minted ~25 "targets" for a 30-document pre-1950 project), lots fold by
+`lotFileNorm` (the same normalizer `external_citations` stores, so the two channels merge
+exactly), libraries key `coll|repository|collection`, and unparsed notes stay distinct on their
+raw text. A unit cited both ways is ONE target with the claims itemized inside it and counts
+that never sum (§3d) — the stronger form of the #783 separation, at evidence grain.
+
+**The pointed-at channel exists.** `IndexingPipeline.externalCitationsByKey` batches the
+reading list through `external_citations` (the `documentSourcesByKey` shape); the builder
+requires a `TripPacketReferenceDataSource` refinement so no data source can silently lack the
+query; class anchors are filtered (#784's own scope), `Ibid.` rows disclose inheritance, and
+`ReferenceCoverage` carries the both-numbers pair so a thin channel reads as sparse data — with
+the measured pre-1946 filing-practice sentence when the emptiness is the era's own.
+
+**The seven-chapter packet inverted into (a)/(b)/(c).** Chapters 1/3/7 deleted with their
+types (`TripChecklist`, `AdvanceNoticeFlags`) and suites; ch4 folded to per-seeding markers
+(`MandatorySubstitutes.matchesByDocument`, keyed per document because that is the grain the
+match has); ch5 folded to the claimant-aware access line (worst COVERED status, its series
+named, unmeasured claimants counted — never one claimant's status as the lot's) plus the
+divided-lot question in the inquiry; ch6 is an opt-in appendix, default off, with the
+Example-8 gate fixed to "any non-central target". The homeless facts landed in the coverage
+report, which prints unconditionally and travels with every export. The sheet lost the visit
+date with chapter 1 and gained the repository scope (a render filter, per the amendment) and
+per-draft Copy; the Mac Source Explorer gained the Unprinted Material box through the iOS
+view's own pointer type and join.
+
+**Verification.** 87 tests across the 8 packet suites pass (iPhone 16e — the iPhone 17 device
+wedged with the known `Busy`/preflight launch failure; a device switch was the fix, per the
+recorded ladder); both app targets build clean. Manuals' §14.8 rewritten for the new artifact;
+the guide's one falsified clause ("begin preparing pull slips") corrected in mirror and source
+together.

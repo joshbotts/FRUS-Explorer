@@ -324,12 +324,18 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
   editor writes the never-written `edited`; chapter 3 joined the truncation grammar
   (20/group · 200/packet · ≥500 elision, all disclosed); the empty states name their actual
   causes. No schema.
-- **Phase 1 — the pipeline + the narrowed exporter.** Batched `externalCitations(for:)` (today
-  per-document only, `IndexingPipeline.swift:6087`); the two-channel builder; **target minting**
-  (keys as §2) with restriction/substitute markers folded in; the narrowed (a)/(b)/(c) exporter
-  with deliverable/appendix toggles defaulted per §3b — this *is* W-18's delivery, in the revised shape; the
-  Mac Unprinted Material port. Ephemeral (collection-seeded) packets get the narrowed artifact
-  with all-targets-included defaults — no plan object needed yet.
+- ~~**Phase 1 — the pipeline + the narrowed exporter.**~~ **SHIPPED 2026-08-26** — batched
+  `IndexingPipeline.externalCitationsByKey`; the two-channel builder behind a
+  `TripPacketReferenceDataSource` refinement; **target minting** under the §2b form-aware keys
+  (`TripPacketBuilder.targetKey` / `referenceKey`; the Sources block keeps its own key, the
+  divergence documented at both seams) with the §3a folds — per-seeding substitute markers via
+  `MandatorySubstitutes.matchesByDocument` + `CitedFile.documentKey`, the claimant-aware
+  per-target access line, the central-file no-box line, the fixed Example-8 gate; the narrowed
+  (a)/(b)/(c) exporter with the whole-plan coverage report, the repository scope and the
+  per-draft Copy on the sheet, the crib as an opt-in appendix (ephemeral packets default it
+  off per §3b); the Mac Unprinted Material port (reusing the iOS view's own pointer type and
+  join). W-18 delivered in this shape and struck in the plan of record. Chapters 1/3/7 deleted
+  (`TripChecklist`/`AdvanceNoticeFlags` removed with their tests). No schema.
 - **Phase 2 — the @Model** (unchanged: ~8 identifiers, blob per §2, boards the reserved W-4+W-5
   promotion, honest holding state).
 - **Phase 3 — the surfaces + the plan editor** (revised: the target-grain editor of §4, plus the
