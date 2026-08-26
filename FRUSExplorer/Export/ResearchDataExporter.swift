@@ -50,6 +50,11 @@ import SwiftData
 ///          only "predates the field". Until now the one export offered as a COMPLETE copy of the
 ///          researcher's data was the single surface where machine and human text arrived
 ///          indistinguishable, while every other export path labelled it
+///   6.0 — Archive Visits Phase 2: `archiveVisits` — each plan's header, its seeded documents
+///          with their contribution flags, its tier definitions, and **every stored target
+///          state including orphans** (a stored row whose key no longer derives is still the
+///          user's work). Never the derived packet, which is a rendering and not data. Defaults
+///          to empty in the tolerant decoder, so version-5-and-earlier files still decode
 struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataExporter.currentFormatVersion`.
@@ -93,6 +98,12 @@ struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Every recorded collection export, oldest first.
     var exportHistory: [ExportHistoryEntryExport] = []
+
+    // MARK: - Archive visits (format version 6)
+
+    /// Every archive visit plan — header, seeds, tiers, and all stored target state, orphans
+    /// included. Empty on files written before the feature existed.
+    var archiveVisits: [ArchiveVisitPlanExport] = []
 }
 
 // MARK: - ResearchDataEnvelope + backward-compatible decoding
@@ -110,6 +121,7 @@ extension ResearchDataEnvelope {
         case exportedForProjectName, exportedForProjectResearchQuestion
         case notes, tags, tagAssignments, highlights, collections, prompts, projects, summaries
         case readingHistory, searchHistory, exportHistory
+        case archiveVisits
     }
 
     /// Decodes an envelope, tolerating files written before the trail existed.
@@ -124,8 +136,9 @@ extension ResearchDataEnvelope {
     /// semantically "none recorded" should not have to be `nil` to say so, hence `decodeIfPresent
     /// … ?? []` instead.
     ///
-    /// Only the three trail arrays are tolerant. Everything else stays required, so a truncated or
-    /// corrupt file still fails loudly rather than decoding into a plausible-looking empty backup.
+    /// Only the three trail arrays and the archive-visits array (format 6) are tolerant.
+    /// Everything else stays required, so a truncated or corrupt file still fails loudly rather
+    /// than decoding into a plausible-looking empty backup.
     ///
     /// `encode(to:)` remains synthesized — this initializer lives in an extension precisely so the
     /// memberwise initializer survives for ``ResearchDataExporter/makeEnvelope(modelContext:includeGeneratedSummaries:activeProjectId:)``.
@@ -157,6 +170,9 @@ extension ResearchDataEnvelope {
         exportHistory =
             try container.decodeIfPresent([ExportHistoryEntryExport].self,
                                           forKey: .exportHistory) ?? []
+        archiveVisits =
+            try container.decodeIfPresent([ArchiveVisitPlanExport].self,
+                                          forKey: .archiveVisits) ?? []
     }
 }
 
@@ -381,6 +397,56 @@ struct SearchHistoryEntryExport: Codable, Equatable, Sendable {
     var renderedExpression: String?
 }
 
+// MARK: - ArchiveVisitPlanExport
+
+/// Export DTO mirroring `ArchiveVisitPlan`, with its seeds, tiers, and stored target state
+/// (format version 6).
+///
+/// Carries the user's WORK, never the derived packet: the rendered artifact is a rendering,
+/// re-derivable from these seeds against any index, and freezing one into the backup would
+/// present a stale rendering as data. `tiers` reuses `ArchiveVisitTier` directly — it is
+/// already the pure `Codable` value the plan stores — and `deliverables` exports the RESOLVED
+/// toggles rather than the raw blob, so a reader needs no knowledge of the app's defaults.
+struct ArchiveVisitPlanExport: Codable, Equatable, Sendable {
+    var id: UUID
+    var name: String
+    var inquiryText: String?
+    var projectIds: [UUID]
+    var tiers: [ArchiveVisitTier]
+    var deliverables: ArchiveVisitDeliverables
+    var documents: [ArchiveVisitDocumentExport]
+    /// Every stored per-target state row — **orphans included**: a row whose key no longer
+    /// derives from the seeds is still the user's tier and note.
+    var targets: [ArchiveVisitTargetExport]
+    var createdAt: Date?
+    var lastModified: Date?
+}
+
+// MARK: - ArchiveVisitDocumentExport
+
+/// Export DTO mirroring `ArchiveVisitDocument` — one seed with its contribution flags.
+struct ArchiveVisitDocumentExport: Codable, Equatable, Sendable {
+    var id: UUID
+    var documentKey: String
+    var includeSource: Bool
+    var includeExternalRefs: Bool
+    var createdAt: Date?
+    var lastModified: Date?
+}
+
+// MARK: - ArchiveVisitTargetExport
+
+/// Export DTO mirroring `ArchiveVisitTarget` — one stored target state.
+struct ArchiveVisitTargetExport: Codable, Equatable, Sendable {
+    var id: UUID
+    var targetKey: String
+    var tierId: UUID?
+    var included: Bool
+    var userNote: String?
+    var createdAt: Date?
+    var lastModified: Date?
+}
+
 // MARK: - ExportHistoryEntryExport
 
 /// Export DTO mirroring `ExportHistoryEntry` — one recorded collection export (Wave R-5).
@@ -450,8 +516,9 @@ enum ResearchDataExporter {
     /// while a v3 file means the format could not carry it. The bump to 5 is the same argument once
     /// more, and a sharper one: summary `authorship` is never `nil` in a file this build writes, so
     /// the version is the *only* thing that distinguishes an unattributed old export from a new
-    /// one.)
-    static let currentFormatVersion = 5
+    /// one. The bump to 6 carries Archive Visits: an empty v6 `archiveVisits` array means the
+    /// user had no plans, while a v5 file means the format could not carry them.)
+    static let currentFormatVersion = 6
 
     /// Builds an envelope from the current contents of `modelContext`.
     ///
@@ -488,6 +555,12 @@ enum ResearchDataExporter {
             FetchDescriptor<SearchHistoryEntry>(sortBy: [SortDescriptor(\.executedAt)]))
         let exportHistory = try modelContext.fetch(
             FetchDescriptor<ExportHistoryEntry>(sortBy: [SortDescriptor(\.exportedAt)]))
+
+        // Archive visits (format version 6). Sorted by name-then-id so the file is
+        // deterministic, like the trail fetches above.
+        let archiveVisits = try modelContext.fetch(
+            FetchDescriptor<ArchiveVisitPlan>(sortBy: [SortDescriptor(\.name),
+                                                       SortDescriptor(\.createdAt)]))
 
         let highlightsByNoteId = Dictionary(grouping: highlights, by: \.noteId)
 
@@ -647,6 +720,45 @@ enum ResearchDataExporter {
                     collectionName: export.collectionName,
                     projectId: export.projectId,
                     exportedAt: export.exportedAt
+                )
+            },
+            archiveVisits: archiveVisits.map { plan in
+                ArchiveVisitPlanExport(
+                    id: plan.id,
+                    name: plan.name,
+                    inquiryText: plan.inquiryText,
+                    projectIds: plan.projectIds,
+                    tiers: plan.tiers,
+                    deliverables: plan.deliverables,
+                    documents: (plan.documents ?? [])
+                        .sorted { $0.documentKey < $1.documentKey }
+                        .map { document in
+                            ArchiveVisitDocumentExport(
+                                id: document.id,
+                                documentKey: document.documentKey,
+                                includeSource: document.includeSource,
+                                includeExternalRefs: document.includeExternalRefs,
+                                createdAt: document.createdAt,
+                                lastModified: document.lastModified
+                            )
+                        },
+                    // EVERY stored row, orphans included: whether a key still derives from the
+                    // seeds is a render-time question this export deliberately does not ask.
+                    targets: (plan.targets ?? [])
+                        .sorted { $0.targetKey < $1.targetKey }
+                        .map { target in
+                            ArchiveVisitTargetExport(
+                                id: target.id,
+                                targetKey: target.targetKey,
+                                tierId: target.tierId,
+                                included: target.included,
+                                userNote: target.userNote,
+                                createdAt: target.createdAt,
+                                lastModified: target.lastModified
+                            )
+                        },
+                    createdAt: plan.createdAt,
+                    lastModified: plan.lastModified
                 )
             }
         )

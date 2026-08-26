@@ -8871,3 +8871,45 @@ wedged with the known `Busy`/preflight launch failure; a device switch was the f
 recorded ladder); both app targets build clean. Manuals' §14.8 rewritten for the new artifact;
 the guide's one falsified clause ("begin preparing pull slips") corrected in mirror and source
 together.
+
+## Session 2026-08-26 — Archive Visits Phase 2: the schema, held honestly until its deploy
+
+The @Model phase of `Planning/Archive-Visit-Plan-Design.md` — three CloudKit record types,
+child-model-per-target per the owner's §2a conflict-grain decision, boarding the reserved
+W-4+W-5 Production promotion.
+
+**The types.** `ArchiveVisitPlan` (name, inquiry text, project ids, tiers and deliverable
+toggles as blobs), `ArchiveVisitDocument` (one seed with its two contribution flags), and
+`ArchiveVisitTarget` (the state OVERLAY — a row exists only when the user gave that target a
+tier, note, or exclusion; an untouched target derives at render time and stores nothing). Both
+children carry a reserved `stateData` evolution column (the `SavedSearch.parametersData`
+pattern), so future per-row properties cost no further deploy.
+
+**Derived child ids are the multi-device story.** SwiftData under CloudKit cannot declare
+uniqueness and `DuplicateRecordCleanup` groups by id — so a child id is a namespace hash over
+`planId | key` (SHA-256, RFC-4122 shape, version nibble 8), making two devices' independent
+minting of the same row a COLLAPSIBLE duplicate rather than an invisible one. The function is
+pinned by fixture, because changing it would orphan every existing row's identity.
+
+**Two blobs, both decoding tolerantly by hand.** Tiers (`ArchiveVisitTier`: id · optional
+label · order; new plans start with none) and deliverable toggles ((a)/(b)/(c) on, crib off —
+per-plan by owner decision). The toggles' decoder is hand-written `decodeIfPresent ?? default`
+per field: synthesized Decodable ignores defaults, so a future toggle would otherwise make
+every stored blob undecodable and silently reset every plan through the accessor's `try?`.
+
+**Registration, all test-pinned.** `frusModelTypes` (the R-7 gate fired as designed and its
+printed literal was pasted; the 32 identifiers hold in `identifiersAwaitingDeploy` with the
+owner's deploy checklist in the comment — baseline count and digest unchanged, so
+`installed − awaiting` still describes Production); `ResetInventory.erased` in
+children → plan → Project order; `ModelModificationStamper`; `DuplicateRecordCleanup` (children
+via `dedupeSimple`, the plan with Collection-style child re-parenting); the Data & Recovery
+Contents row and the erase-warning inventory (new localization keys, per the standing
+mint-anew rule); `ResearchDataExporter` format 6 — each plan whole, orphan target rows
+included, never the derived packet.
+
+**Verification.** 47 tests across the five schema suites (the new `ArchiveVisitPlanTests`
+plus the four pinning suites) pass; the new suite drives the real dedupe, the real stamper,
+and the real exporter rather than mirrors. Manuals' export/Contents sentences extended.
+The owner's remaining step is the one no test can verify: exercise each type once on a
+Development build signed into iCloud, then Dashboard → Deploy Schema Changes to Production —
+batched with W-4+W-5 per the timing decision.

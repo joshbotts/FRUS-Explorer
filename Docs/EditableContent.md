@@ -1701,11 +1701,13 @@ Every cross-reference in the printed FRUS volumes that points to a document, pag
 
 <!-- Wave R-5, NEW key (`settings.export.json.footer` listed six things; the file now carries seven). The research trail is named explicitly rather than folded into "your research data" because it is the part a reader would not assume was in there — and the part they may want to check before sharing the file, since it includes the text of every search they ran. -->
 
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections JSON section footer | key: settings.export.json.footer.trail | shared: iOS+macOS (single edit point — hosted by Data & Recovery on both) -->
+<!-- Archive Visits Phase 2, NEW key (`…json.footer.trail` listed seven things; the file now also carries archive visit plans). -->
 
-One JSON file with your notes, tags, highlights, collections, custom prompts, and projects. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported.
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections JSON section footer | key: settings.export.json.footer.visits | shared: iOS+macOS (single edit point — hosted by Data & Recovery on both) -->
 
-<!-- END SOURCE: settings.export.json.footer.trail -->
+One JSON file with your notes, tags, highlights, collections, custom prompts, projects, and archive visit plans. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported.
+
+<!-- END SOURCE: settings.export.json.footer.visits -->
 
 #### Erase Everything — warning
 
@@ -1739,11 +1741,13 @@ Export your research data first if you might want it back.
 
 #### Erase All Data — what exactly goes
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1300–1301 | key: settings.erase.warning.inventory -->
+<!-- Archive Visits Phase 2, NEW key (`…warning.inventory` under-stated the reach once the reset began deleting archive visit plans — the same fault each predecessor key was minted to fix). -->
 
-This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone.
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | key: settings.erase.warning.inventory.visits -->
 
-<!-- END SOURCE: settings.erase.warning.inventory -->
+This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, archive visit plans, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone.
+
+<!-- END SOURCE: settings.erase.warning.inventory.visits -->
 
 ---
 

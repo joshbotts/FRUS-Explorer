@@ -59,6 +59,11 @@ extension ModelContainer {
     ///          in Production unmirrored rather than being removed. See
     ///          `CloudKitSchemaInventory.deployedIdentifierCount` for what that does to the
     ///          baseline's meaning.
+    ///   1.8 — Archive Visits Phase 2: `ArchiveVisitPlan` + `ArchiveVisitDocument` +
+    ///          `ArchiveVisitTarget` — three new CloudKit record types (the persistent archival
+    ///          research plan, child-model-per-target per the design's §2a conflict-grain
+    ///          decision). Boards the reserved W-4+W-5 Production promotion; held in
+    ///          `identifiersAwaitingDeploy` until then.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -113,6 +118,13 @@ extension ModelContainer {
             // `CloudKitSchemaInventory.recordTypeCount`, which is derived and cannot drift —
             // restating it in prose is what `CodingStandards`' stale-count audit exists to catch.
             WorkingCorpus.self,
+            // Archive Visits Phase 2 — THREE new CloudKit record types (the persistent archival
+            // research plan: parent + seeded documents + per-target state overlay; see
+            // Archive-Visit-Plan-Design §2/§2a). Boards the reserved W-4+W-5 promotion: deploy
+            // the schema to Production before shipping, per the note above.
+            ArchiveVisitPlan.self,
+            ArchiveVisitDocument.self,
+            ArchiveVisitTarget.self,
         ]
     }
 

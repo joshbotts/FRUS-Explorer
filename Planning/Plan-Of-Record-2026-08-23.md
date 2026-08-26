@@ -103,7 +103,7 @@ deliverable is a scoping verdict, not code.
 | VoiceOver on-device pass (adoption shipped, #979) | quality |
 | Screenshot captures — **unblocked 2026-08-24**: the reconciled list exists as **#1081** (13 live placeholders), and its owner decision treats every committed capture as stale | #1081 |
 | Release habits: `Scripts/check_repository_links.py --stamp`; eyeball the 3 owner-asserted URLs (JFK ×2, LBJ) | each release |
-| CloudKit Production promotion for the W-4+W-5 fields (one Dashboard step, batched) | Tier B |
+| CloudKit Production promotion for the W-4+W-5 fields (one Dashboard step, batched) — **now also carrying Archive Visits Phase 2's three record types / 32 identifiers** (shipped 2026-08-26 into `identifiersAwaitingDeploy`, per the owner's schema-timing decision; the checklist is written into that list's comment). Until this promotion runs, plans stay device-local-in-effect: Production rejects their records and the app says so at launch and in Settings ▸ Data & Recovery ▸ iCloud Schema | Tier B |
 
 ## 5. Closed as unplanned in this wave decision
 
