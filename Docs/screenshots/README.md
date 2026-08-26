@@ -6,11 +6,20 @@ Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has
 > **Note:** the manuals were rewritten and renumbered in August 2026 (first-time graduate-student
 > audience; the iOS manual is now iPad-first and embeds the `ipad/` captures). The `§N.N` section
 > pointers in the **historical** lists further down refer to the pre-rewrite layout. The
-> **current shot list, keyed to the new numbering, is the next section** — work from it. The
+> Replace the blockquote with: "> **Owner decision, 2026-08-23 (issue #1081): every committed capture is treated as stale.** The 31 files on disk date from the build 26–42 era and the UI has moved under all of them. Nothing on disk is presumed current: every slot a manual or the repo README references gets a fresh capture, every placeholder gets a first capture, and the unreferenced files get deleted rather than refreshed. **Issue #1081 is the shared tick-list; this file is the how.** The **Capture conventions** section below still applies in full. Everything between here and it — the tiered shot list and the historical \"Captured\" / \"Remaining\" / \"New since build NN\" sections — is kept for its staging notes only; its 🔄/keep triage is superseded, and its `§N.N` pointers refer to the pre-rewrite manual layout." Then retitle line 13 to "## Staging notes (superseded triage — see #1081 for the tick-list)" and drop the "Tier 1 — holes in the shipped manuals" / "Tier 2" / "Tier 3" framing to plain "Staging notes — …" headings. The
 > rewrite also wired in `macos/person-analytics-trends` and `macos/research`, which were
 > previously captured but unused.
 
-## Shot list for the rewritten manuals (capture pass 2026-08-19/20)
+> **Superseded 2026-08-23 — work from issue #1081, not from the tier list below.** #1081
+> ("Screenshot checklist — current manuals and README") is the shared tick-list, keyed to the
+> current manuals and the README, and carries the owner decision that **every committed capture is
+> treated as stale**: the 31 files on disk date from the build 26–42 era, so every referenced slot
+> gets a fresh capture, every placeholder a first one, and the unreferenced files are deleted rather
+> than refreshed. That retires this file's 🔄/keep triage and its Tier 1/2/3 split. **This file
+> remains the *how*** — simulators, status-bar override, macOS window-capture methods, the
+> Series-Analytics offline convention — and those conventions still apply unchanged.
+
+## Shot list for the rewritten manuals (capture pass 2026-08-19/20) — SUPERSEDED, see #1081
 
 Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new shot · 🔄 re-capture
 (existing file shows retired UI). Two rules keep the wiring cheap:
@@ -26,7 +35,7 @@ Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new sho
 |------|-----|-------------------|
 | 🆕 `ipad/research-rail.png` | iOS §4.2 placeholder | Document open on iPad (landscape) with the Research rail as the trailing inspector: RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Sources · Graph · Related · Share), and the Summary/Notes/Tags/Collections accordions beside the text |
 | 🆕 `ipad/stage-manager.png` | iOS §4.5 placeholder | Stage Manager: a document window beside a Related Documents (or Archival Neighbors) window, main window behind |
-| 🔄 `macos/toolbar.png` | macOS §4.1 | The current trailing five: Search, Browse, **Analytics ▾**, **My Research ▾**, Research-rail toggle, with the centred `volumeId/documentId` title. (The older note below about separate Person/Cross-Reference Analytics *buttons* predates the menu consolidation — they now live inside Analytics ▾) |
+| 🔄 `macos/toolbar.png` | macOS §4.1 | The current trailing five: Search, Browse, **Analytics ▾**, **My Research ▾**, Research-rail toggle, with the centered `volumeId/documentId` title. (The older note below about separate Person/Cross-Reference Analytics *buttons* predates the menu consolidation — they now live inside Analytics ▾) |
 | 🔄 `macos/research-strip.png` | macOS §4.2 | The Research rail beside a document — tile grid + accordions (filename kept for continuity) |
 | 🔄 `macos/document.png` | macOS §4.3 | The reading view under the current toolbar (rail closed is fine) |
 
@@ -60,7 +69,7 @@ No image exists on that platform today; each gets wired in on arrival.
   of the analytics window exists on either platform).
 - 🆕 `ipad/archival-analytics.png` and `macos/archival-analytics.png` — §15.5, Collections mode:
   an era ranking with the Central Files umbrella chip visible.
-- 🆕 `ipad/semantic-map.png` and `macos/semantic-map.png` — §15.6, Regions colouring with labels
+- 🆕 `ipad/semantic-map.png` and `macos/semantic-map.png` — §15.6, Regions coloring with labels
   and the caveat line beneath the map.
 - 🆕 `ipad/word-cloud.png` and `macos/word-cloud.png` — §15.2, ideally in **Distinctive** mode
   with the eligibility line under the control visible.
@@ -71,9 +80,7 @@ No image exists on that platform today; each gets wired in on arrival.
 
 ### Housekeeping from the rewrite
 
-- `ios/browse-corpus.png`, `ios/search-results.png`, `ios/document-view.png`, and
-  `ios/settings.png` are **no longer embedded in either manual** (superseded by `ipad/` shots or
-  by the Settings rewrite). Keep, refresh, or ignore them — nothing references them.
+- Replace with: "`ios/browse-corpus.png`, `ios/search-results.png`, `ios/settings.png` and `ipad/browse.png` are embedded by nothing and are **slated for deletion**, not refresh (#1081 §7). `ios/document-view.png` is no longer in either manual but is still the repo `README.md`'s third hero image — #1081 §6 leaves it as an open choice: re-shoot it for the README, or swap that slot for a current shot (the semantic map or the Browse root) and delete the file."
 - The four `ios/` files still embedded are exactly the Tier-2 stand-ins above.
 - Known-hard items are unchanged and stay out of the tiers: the macOS Chronology **hover
   magnifier** (capture problem documented below) and the **Live Activity / Dynamic Island**
@@ -107,7 +114,7 @@ No image exists on that platform today; each gets wired in on arrival.
 **iPad (`ipad/`)** — `browse` (portrait split view), `sidebar-landscape` (landscape adaptive
 sidebar), `document` (landscape reading view), `search-results`.
 
-**macOS (`macos/`)** — `browser` (Corpus Browser with the People button), `people-list` (the People
+Add to the macOS sentence, after `source-explorer`: "`cross-reference-graph` (a document's reference graph; embedded at macOS manual §8.5 and as a repo-README hero)".
 sheet's alphabetical list) and `people-detail` (the "Kissinger, Henry A." reconciled-identity detail
 sheet) — both wired into §4.4 — `search`, `document` (full-window reading view), `analytics`,
 `chronology`, `collections` (**STALE — slated for re-capture**; see Remaining), and `research` (the
@@ -118,7 +125,7 @@ open), `saved-searches` (§5.5, the Search window's saved-search list), `source-
 RG-59 source resolved to a NARA Catalog entry), and `analytics-table` (§13.2, Corpus Analytics in
 Table mode).
 
-> **macOS People browser (behaviour difference, investigated and resolved).** An earlier capture
+> **macOS People browser (behavior difference, investigated and resolved).** An earlier capture
 > attempt showed the macOS People browser with "Kissinger" split four ways and some `*`-prefixed
 > names, while iOS showed one unified identity. Root cause: a **stale rollup observed mid-rebuild** —
 > the Mac's `person_rollup` was from an older (pre-authority) build, and the version-7 reconsolidation
@@ -165,10 +172,7 @@ chart, set a date range longer than 8 years that stays under the 5,000-document 
 - **App Store listing** — the product page.
 - **Feature flows not in the core pass** — embedded browser sheet, Research tab, Collections editor
   with documents, Citation Lookup, AI summary panel (Apple Intelligence, device-only),
-  cross-reference graph, Source Explorer, **Person Analytics** (Trends + Network modes; iOS Browse →
-  Analysis Tools → Person Analytics; macOS `frus.personAnalytics` window), **Cross-Reference
-  Analytics** (iOS Analysis Tools → Cross-Reference Analytics; macOS `frus.crossRefAnalytics`
-  window), the **consolidated macOS Collections ribbon** (Add ▾ · Sort by Date ▾ · View ▾ ·
+  Rewrite the bullet to name only the platform-and-surface pairs with no file: "**Feature flows not in the core pass** — embedded browser sheet, Research tab, Collections editor with documents, Citation Lookup, AI summary panel (Apple Intelligence, device-only), and, on **iOS/iPadOS only**, the cross-reference graph, Source Explorer, Person Analytics and Cross-Reference Analytics. On macOS all four of those are already committed (`cross-reference-graph`, `source-explorer`, `person-analytics-trends`, `person-analytics-network`), as is `collections-ribbon` — all stale per #1081, but present." (Add ▾ · Sort by Date ▾ · View ▾ ·
   Export…), and the two-mode **Sort-by-Date menu** (Across the Whole Collection / Within Each
   Section) on both the macOS ribbon and the iOS/iPad Collections toolbar.
 
@@ -223,7 +227,7 @@ Settings (it is in the main window's status bar). Both are real gaps, recorded i
 The build-27 feature set adds the analytics surfaces and Collections polish below. **Several of
 these have since been captured** — `macos/person-analytics-trends`, `macos/person-analytics-network`,
 `macos/series-production`, `macos/collections-ribbon` are committed, and `macos/collections` has been
-re-captured — so treat the ticks in issue #106 as authoritative over this list. Legend: 🆕 new
+re-captured — Replace with: "so treat the tick-list in issue **#1081** as authoritative over this list (#1081 supersedes #106)".. Legend: 🆕 new
 shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture to surface a new state.
 
 **iPhone (`ios/`)**
@@ -236,7 +240,7 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
 - 🆕 `series-archival` — Series Analytics: **Archival Sourcing** (provenance-mix-over-decades chart,
   overall composition, note density by decade). Offline.
 - 🆕 `series-administrations` — Series Analytics: **Administration Profiles** (docs-per-administration
-  coloured by party, per-administration volume list with document proportions, editorial-notes
+  colored by party, per-administration volume list with document proportions, editorial-notes
   toggle). Offline.
 - 🆕 `person-analytics-trends` — **Person Analytics**, Trends mode (most-mentioned people by era +
   multi-person mention-trajectory comparison). Browse → Analysis Tools → Person Analytics.
@@ -294,7 +298,7 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
 - 🆕 `analytics-figure-heatmap` (§13.7) — **the exported file itself, not a window capture**: from
   Cross-Reference Analytics, export the volume-to-volume heat matrix via Figure (PNG)…. The plate
   renders the whole grid at once with **each cell's count printed**, the shading legend, and the
-  caption strip — all three must stay visible. The matrix shades with the **system accent colour**,
+  caption strip — all three must stay visible. The matrix shades with the **system accent color**,
   so capture under the default accent for a reproducible figure.
 - 🆕 `collections-ribbon` — the consolidated Collections manager ribbon: Add ▾ (Documents / Section
   Heading / Note Block / Passages / Apparatus) · Sort by Date ▾ · View ▾ (Composition / Front Matter
@@ -305,9 +309,6 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
   collection note + old 10-button toolbar — has been replaced). The new shot must show the
   consolidated four-control ribbon and the collapsed "Add a note" affordance (collection note not yet
   added).
-- 🔄 `toolbar` (§3.1) — **RE-CAPTURE**: the existing shot predates build 27 and does not show the two
-  new right-side buttons (**Person Analytics** and **Cross-Reference Analytics**). The new shot must
-  include them alongside the existing Search, Graph, Info, Research, Collections, Corpus, Analytics,
-  and Chronology buttons.
+- Replace the bullet with: "🔄 `toolbar` — **RE-CAPTURE**: the committed shot predates the toolbar consolidation. The current trailing set is Search, Browse, **Analytics ▾**, **My Research ▾**, and the Research-rail toggle, with the centered `volumeId/documentId` title (macOS manual §4.1). Person Analytics and Cross-Reference Analytics are items *inside* Analytics ▾, not buttons." And in "## Captured", shorten the parenthetical to "(**STALE**; predates the toolbar consolidation)".
 - ⚙️ `analytics` (re-capture optional) — existing term-frequency chart showing the new "% of
   documents" normalization toggle enabled.

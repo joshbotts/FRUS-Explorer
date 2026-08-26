@@ -8742,3 +8742,52 @@ bare `Ibid.` yields zero candidates); the first action is writing a measurement 
 running one. **New row W-7a** captures the engineering #1083 unblocked *before* the keyings:
 `ONLY_DOCUMENTS` and a `WORKERS` pool in `harvest_ner.py`, the former already implemented in
 the Swift control and present in no Python file under `tools/semantic-harvest/`.
+
+## Session 2026-08-26 — The doc residue, found from the tree rather than from a list
+
+#1083's PR body listed the residue it knew about and noted that NER-RUNBOOK §2 was *not* on
+that list. This pass therefore searched the tree: four lenses over the #234 docs, CLAUDE.md,
+the tester-facing docs, and the planning artifacts. **61 items, 57 of them certain** — 28 that
+would mislead a session, 21 wrong-but-harmless, 12 cosmetic.
+
+**The measured layer, everywhere it is stated.** The runbook's §2 (what the marked layer *is*)
+and §3 (the N-1 operational self-check, "if the totals come out far from these, stop and
+reconcile") both still carried the 268-volume app-view census. Re-measured over the 267
+`~/frus-ner-raw/marked/*.head.json` files: **245,747 mentions over 197,534 documents, split
+140,504 `from` / 95,247 `to` / 9,996 untyped**, and the split sums to the total. The untyped
+figure was the one that mattered — 9,996 against a stated ~17,018, off by 41% rather than by
+rounding, because the 1873 correspondents pair the TEI rule excludes was overwhelmingly
+untyped.
+
+**A check #1083 left owed is now closed.** That PR said the Air no-think store *should* report
+551,473 prompt tokens and instructed a reader to check before quoting a cross-machine
+comparison. Summing `prompt_tokens` across `~/frus-ner-raw-pilot-qwen3-14b-nothink` gives
+exactly **551,473**, so both no-think arms are confirmed on the same 824 chunks and the
+per-mode figure holds.
+
+**Three defects in agent-proposed text, caught by reading the diff**: a duplicated
+`| documents in them |` table row, a doubled "or" across a line break, and a claim that the
+Air store had been checked — which turned out to be *true* and was rewritten to say how it was
+checked rather than merely that it was.
+
+**Two files that needed a marker rather than an edit.** `Planning/source-explorer-export/`
+gained a README: its summary records `generated: 2026-07-29` and nothing about which artifacts
+it resolved against, while the bundled `central-files-index.json` and `collection-authority.json`
+are both 2026-08-19 (1,065 lot files, 4,429 collections) — so every outcome it tallies was
+computed against an older, smaller index. `Docs/2026-08-02 EditableContent.md` gained a
+SUPERSEDED banner: it is a 177 KB snapshot of the mirror from #655, and its British spellings
+are correct *as history*, which is why they are deliberately left alone.
+
+**The en-US sweep of #1078 was incomplete and is now finished.** It covered the mirror, the
+source strings, the README and both TestFlight docs — but never the two user manuals, which
+held **89** British spellings between them (36 `colour`, 16 `catalogue`, 8 `grey`, 7 `centre`,
+plus `neighbour`/`labelled`/`recognise`/`digitised`). 95 fixed across the manuals and the
+screenshots README, every context checked first for proper nouns.
+
+**Also corrected**: two scratch files (`tools/semantic-harvest/manifest.json`, a byte-identical
+782 KB duplicate of the bundled manifest, and `probe.txt`) were committed by accident in #1084
+via `git add -A`; both are untracked again and now gitignored.
+
+Verified: 4,075 tests — 4,057 passed, 18 env-gated skips, **0 failures**. (An intermediate run
+failed 36 UI tests with the simulator in a Shutdown state; re-run booted, all green — the
+app-host wedge, not the edits.)

@@ -78,3 +78,11 @@ __pycache__/
 # carries the same placements behind a header — committing both stores the same 1.89MB twice.
 # Regenerate with tools/semantic-map/build_layout.py (~15 min) when the packer needs it.
 Planning/semantic-map/layout.bin
+
+# Scratch inputs/outputs of the semantic-harvest tooling, kept beside the scripts for convenience.
+# `manifest.json` here is a working COPY of FRUSExplorer/Resources/manifest.json (the harvesters
+# take a manifest path); `probe.txt` is one document's text dumped by a probe run. Both were
+# committed by accident in #1084 and untracked again immediately — neither belongs in the repo:
+# the manifest duplicates a tracked resource byte for byte, and the probe output is a scratch file.
+tools/semantic-harvest/manifest.json
+tools/semantic-harvest/probe.txt

@@ -131,7 +131,8 @@ never reads (`xml:id="correspondents"`, no `subtype`), and `frus1941-43` contrib
 back-of-book subject-index headings to the People browser as if they were people.
 
 ### M1b — reconcile the marked-up names
-Cluster the 253,919 `persName` strings into identities, anchored on POCOM where the from/to +
+Cluster the marked layer's **245,747** `persName` mentions into identities (§3's 253,919 is the 268-volume
+app-view census; the harvest runs the 267-volume TEI rule — NER-RUNBOOK §3 reconciles the two), anchored on POCOM where the from/to +
 date constraint resolves, and on the existing `person_rollup` where a name already exists there.
 Emit derived entries in a **synthetic-ref namespace** distinct from editor `xml:id`s (rules
 documented in the archived plan), force-merge only, never auto-splitting a reconciled identity.
@@ -141,12 +142,14 @@ NER over running prose in the early-era volumes, with adversarial review. M1a se
 question: roughly two-thirds of person mentions carry no markup, so detection is not optional.
 
 **The R-1 harvest has a runbook and a harness: `tools/semantic-harvest/NER-RUNBOOK.md`**
-(2026-08-11), driven by `harvest_ner.py`. Its scope pass and its **marked layer** — the 253,919
-`<persName>` mentions of §3, placed in the R-0 text's coordinate space — need no model and are
-M1b's input. Its detector layer is deliberately sampled: a full LM-Studio sweep prices at ~5–8 days
-of continuous Studio time for an 8B-class model, or 8–42 h for a 0.5–2 B one, against NLTagger's
-~1–2 h — and no ground truth exists to say whether any of them earns it. The cheaper the model, the
-more the comparison collapses toward the free control that is still unbuilt. Nothing it produces may
+(2026-08-11), driven by `harvest_ner.py`. Its scope pass and its **marked layer** — **245,747** located `<persName>` mentions over the 267-volume
+TEI-rule scope (§3's 253,919 is the 268-volume app view) — need no model and are M1b's input. Its detector
+layer is deliberately sampled, and the estimates that argued for sampling have since been measured: the
+shortlisted Qwen3 14 B runs at 4.68 s/chunk on the Studio, pricing a full sweep at **~18.4 days** (~4.7 with
+the probed 4-worker pool), while Qwen3 1.7 B is disqualified on verbatim-copy discipline. The free `NLTagger`
+control is **built** (`EarlyEraNERControl`) and measured at **~8 min** over the same scope. The sweep is not a
+scoring input: M2a is staged but un-keyed, and scoring needs a targeted pass over the gold documents only
+(NER-RUNBOOK §4.7–4.8.2, §7). Nothing it produces may
 ship until M2a is keyed.
 
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling

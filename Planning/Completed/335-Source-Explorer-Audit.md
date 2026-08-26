@@ -188,7 +188,7 @@ RG 59, so the keyed pass literally could not have resolved them. Now `Lot M–88
 **The keyed harvest itself is the owner's run** — `Planning/352-lot-resolution-runbook.md` has the
 exact command sequence (with the wholesale-overwrite, cache-hit-masking, and enrichment-wipe
 gotchas the recon surfaced), the 16 fileUnit cache files to delete so the wrong hits re-validate,
-and the ranked reference list (`Planning/source-explorer-export/missed-lots-ranked.tsv`, 573 lots).
+and the ranked reference list (`Planning/source-explorer-export/missed-lots-ranked.tsv` — 573 lots when this audit was written; regenerated to **581** rows in #563 on 2026-07-29, of which **56 are already answered** by the 2026-08-19 lot index — see that directory's README before curating from it).
 
 **Item 2 (fold the volume-sources lot map into central-files)** is deferred to **#372**: worth ~2
 records (the "fallback rescued 2 of 15,340" is an offline export-diagnostic figure, not an app

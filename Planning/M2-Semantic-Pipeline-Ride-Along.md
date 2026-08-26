@@ -1,6 +1,6 @@
 # M2 riding the semantic-vectors pipeline — assessment, plan, and generation cost
 
-**Status:** planning, unbuilt. Answers the owner's 2026-08-07 question: *can M2 (early-era person
+**Status:** partly executed — V-0 (2026-08-10), V-1 + R-0 and the whole V-lane through V-4 (PRs #867–#883, artifacts bundled 2026-08-16), and R-1's scope + marked layers (Studio, 2026-08-25) have run; M2a is staged and un-keyed; R-1's detector arm, R-2, R-3 and R-4 are unbuilt. The measured figures live in `tools/semantic-harvest/NER-RUNBOOK.md` and supersede §4's estimates where they disagree — see the note on §4.2. Answers the owner's 2026-08-07 question: *can M2 (early-era person
 detection, `Planning/People-Early-Era-Program.md`) ride along the vector-embeddings work scoped in
 `Planning/Vector-Embeddings-Semantic-Design.md`?*
 **Verdict: yes — they share a corpus pass, a pipeline discipline, a hardware window, and one
@@ -166,7 +166,16 @@ PCA→UMAP→HDBSCAN over 317 k × 256-d: tens of minutes on either machine's CP
 
 | Detector | **M1 Max Studio** | **M5 MacBook Air** | Note |
 |---|---|---|---|
-| Apple `NLTagger` (CPU) | **~1–2 h** | ~1.5–3 h | Near-free control; quality on 19th-c prose unmeasured — that is what M2a is for |
+| Apple `NLTagger` (CPU) | **~8 min** (measured 2026-08-12: 0.4 min over the 12 pilot volumes / 9,935 docs, extrapolated to the 197,534-doc scope) | ~8–15 min | The free control; **built** as the `EarlyEraNERControl` SPM target. Quality on 19th-c prose is still what M2a decides |
+
+…and add beneath the table:
+
+> **Measured, 2026-08-12/25 (NER-RUNBOOK §4.7–§4.8, §SS4.8.2).** This table's estimates are
+> superseded where they disagree: the control is ~8 min, not ~1–2 h, and the gap to a chat model is
+> ~21,000×, not the "5–20×" this section assumed. The surviving LLM arm (Qwen3 14 B no-think) runs
+> 19.27 s/chunk on the Air (~76 days) and 4.68 s/chunk on the Studio (~18.4 days serial, ~4.7 days
+> at 4 workers). Also strike "The NLTagger control needs a Swift harness and is still unbuilt" from
+> the §3 R-1 row — it shipped as `EarlyEraNERControl`.
 | spaCy `en_core_web_trf` (125 M) | ~3–6 h | ~3–9 h | |
 | GLiNER-medium (~205 M, span scoring ≈ 2× encoder cost) | **~5–9 h** | ~5–16 h | Zero-shot labels fit the domain-shift problem best |
 

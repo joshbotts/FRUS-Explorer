@@ -73,9 +73,9 @@ public enum DetectorError: Error, CustomStringConvertible {
 
 /// Apple's `NLTagger` as the free control detector for #234 R-1.
 ///
-/// This is the baseline every LLM run has to beat: the ride-along prices it at ~1–2 h over the
-/// whole 268-volume scope against days for a chat model, so a hosted detector that merely ties it
-/// has no reason to exist. `NER-RUNBOOK.md` §4.2 makes that argument; this type is what lets
+/// This is the baseline every LLM run has to beat: the ride-along priced it at ~1–2 h over the
+/// 267-volume scope and it measured at ~8 min (NER-RUNBOOK.md §4.7), against ~18 days for the
+/// shortlisted 14 B chat model (§4.8.2), so a hosted detector that merely ties it has no reason to exist. `NER-RUNBOOK.md` §4.2 makes that argument; this type is what lets
 /// anyone check it.
 ///
 /// The tagger walk is deliberately the same one `WordCloudKit` already runs corpus-wide —

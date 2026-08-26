@@ -5,7 +5,9 @@ Two layers over the same single pass of each volume's TEI:
 
   * the MARKED layer — every <persName> the editors already delimit, placed in the
     R-0 text layer's coordinate space. Free, deterministic, no model, no server.
-    This is M1b's input (measured: 253,919 mentions across the 268 no-list volumes).
+    This is M1b's input (measured 2026-08-25: 245,747 mentions located over the
+    267-volume TEI-rule scope this script derives; 253,919 is the 268-volume app-view
+    census — NER-RUNBOOK.md §3 reconciles the two to the digit).
   * the DETECTED layer — candidate mentions from an LM Studio chat model over the
     same text, grounded by exact-substring location. Optional (DETECT=llm), priced
     sample-first: see NER-RUNBOOK.md for why no full LLM sweep is scheduled.

@@ -1,6 +1,8 @@
 # Vector Embeddings & Semantic Similarity — Precomputed-Corpus Design
 
-**Status:** design recommendations, unreviewed. No code. Every number sourced from this repo's own
+**Status:** executed design — **V-0…V-4 shipped** (V-0 2026-08-10; V-1 2026-08-12; V-2 #867; V-2b + V-3 #868/#869; V-4 #870–#883; storage UI #900, download controls #926), artifacts bundled 2026-08-16 (314,483 documents, 179 map clusters). **V-5 is the only open phase, and its live document is `Planning/semantic-vectors/V5-Query-Encoder-Assessment.md`** — the Plan of Record's W-9 sequences from that file, not this one. §10's open questions are all decided in shipping form: 256 dims, Tier 1 bundled (10.23 MB), app-owned shard repo as host, chunk vectors discarded, the map in Analytics. Kept at the Planning root as the design record behind a program still being re-entered; archive it to `Completed/` once W-9 closes. Every number sourced from this repo's own
+
+(and in §9, stamp the three rows: V-2 "— **done** 2026-08-13 (#867)", V-3 "— **done** (#868, follow-ups #869) — ships experimental at weight 0", V-4 "— **done** (#870–#883); Tier-0 layout built by `tools/semantic-map/build_layout.py`".)
 measured documents is cited; every external claim about models/APIs that has not been exercised
 against a real toolchain is marked **[U]** unverified.
 **Owner ask (2026-08-03):** bundled semantic indexing driving a semantic proximity axis for

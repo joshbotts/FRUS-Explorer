@@ -245,8 +245,14 @@ and asserts per volume that it sees exactly the R-0 documents and text this one 
 the layer the vectors were actually computed from, which is what makes a mention offset and a chunk
 span the same coordinate for R-2. With Phase 3 done there is no window conflict left.
 
-The M2a ground-truth sample still does not exist, so nothing R-1 produces may enter an artifact —
-the runbook's §0 and §5 carry that rule. The adversarial-review tier gets its harness after
+The M2a ground-truth sample is **staged but un-keyed** (72 documents at `~/frus-m2a`), so nothing R-1 produces
+may enter an artifact — the runbook's §0 and §6 carry that rule. The adversarial-review tier gets its harness after
+detection counts and M2a precision exist. Note for planning: GLiNER and spaCy do not run in LM Studio — the
+LM-Studio-native detection route is structured-output chat NER, which is priced sample-first. NER-RUNBOOK.md
+§4.7–4.8.2 replaced §4.2's estimates with measurements: the shortlisted Qwen3 14 B prices a full sweep at ~18.4
+days of Studio time (Qwen3 1.7 B is out on verbatim-copy discipline), against the `NLTagger` control's measured
+~8 min. The control **is built** (`swift run -c release EarlyEraNERControl`), runs inside the repo, and needs
+nothing from either runbook. The adversarial-review tier gets its harness after
 detection counts and M2a precision exist. Note for planning: GLiNER and spaCy do not run in LM
 Studio — the LM-Studio-native detection route is structured-output chat NER, which is priced
 sample-first. NER-RUNBOOK.md §4.2 puts a full sweep at ~5–8 days for an 8B-class model on the
