@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body { margin:0; background:#1b1b1e; }
+  a { color:#007AFF; text-decoration:none; }
+  a:hover { color:#409cff; }
+</style>
+</helmet>
+<section style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;padding:48px 56px 96px;color:#d5d5da">
+
+  <div style="max-width:1240px;margin-bottom:40px">
+    <div style="font-size:24px;font-weight:650;color:#f2f2f5;letter-spacing:-.01em">Archive Visits — the archival research plan (#830 successor)</div>
+    <div style="font-size:12.5px;color:#9a9aa2;margin-top:8px;line-height:1.6">Implements <span style="font-family:ui-monospace,Menlo,monospace">Archive-Visit-Plan-Design.md</span> v3 (fully decided). Chrome mirrors stock iOS/iPadOS/macOS SwiftUI — implement with native components (<span style="font-family:ui-monospace,Menlo,monospace">List</span> inset-grouped, <span style="font-family:ui-monospace,Menlo,monospace">.bordered</span>/<span style="font-family:ui-monospace,Menlo,monospace">.controlSize(.small)</span> menu chips, <span style="font-family:ui-monospace,Menlo,monospace">ContentUnavailableView</span>, alerts with <span style="font-family:ui-monospace,Menlo,monospace">TextField</span>), not these pixels. <span style="color:#c9c9cf">● measured — reuse as stated</span> · <span style="color:#c9c9cf">○ illustrative — computed at render time, never hard-coded</span>. Plain labels on screen; precise definitions live in each surface's ⓘ popover (<span style="font-family:ui-monospace,Menlo,monospace">FeatureInfoButton</span>, drawn open once in <a href="#1b">1b</a>). The honesty rule is inherited whole: a partial figure states both numbers; incomplete coverage renders orange, complete renders secondary.</div>
+    <div style="display:flex;align-items:stretch;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <div style="flex:1;min-width:210px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">THE GRAIN</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5">The research target, not the document. One archival unit under one claim — <b>drawn from</b> or <b>pointed at</b>. Targets are a state overlay: a row is stored only once it has a tier, a note, or an exclusion; everything else derives at render time.</div>
+      </div>
+      <div style="flex:1;min-width:210px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">THREE DELIVERABLES</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5"><b>(a)</b> repository visit-planning links — built, 11 facilities ● · <b>(b)</b> repository-filtered, tier-grouped target list with consultation metadata · <b>(c)</b> per-repository inquiry email drafts. Four of the packet's seven chapters are gone.</div>
+      </div>
+      <div style="flex:1;min-width:210px;border:1px solid #34343a;border-radius:10px;padding:10px 12px;background:#232327">
+        <div style="font:600 11px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">VOCABULARY</div>
+        <div style="font-size:12px;color:#b9b9c0;margin-top:4px;line-height:1.5"><b>Archive Visit</b> (never "collection" — that word is already two things) · <b>Plan a Visit / Add to Archive Visit…</b> · <b>research target</b> · <b>priority tier</b> (unlabeled reads "Priority 1") · <b>Unprioritized</b>, implicit and always last.</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#88888f;margin-top:10px;line-height:1.55">The app's job is FRUS, not NARA: it presents FRUS-derived data in the form most useful for planning and for consulting an archivist, and points at repository guidance rather than reproducing it. Persistent, CloudKit-synced, seedable from anywhere a researcher meets archival provenance.</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:44px;align-items:flex-start">
+
+  <!-- ══ 1a · Archive Visits list ══ -->
+  <div id="1a" data-screen-label="1a Archive Visits list" style="width:470px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1a</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Archive Visits list — iOS Research tab · macOS window</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <span style="color:#007AFF;font-size:14px">‹ Research</span>
+        <div style="flex:1;text-align:center;font-size:17px;font-weight:600;margin-left:-64px">Archive Visits</div>
+      </div>
+      <div style="padding:14px 16px 18px;position:relative">
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 14px">
+            <div style="font-size:16px;color:#1c1c1e">Vietnam escalation, 1964–1965</div>
+            <div style="font-size:12px;color:#85858B;margin-top:3px">23 targets · 3 repositories · Modified Aug 21 ○</div>
+            <div style="font-size:11px;color:#B0B0B6;margin-top:2px">Seeded from &ldquo;Vietnam escalation&rdquo; ●</div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px;background:rgba(0,122,255,.06)">
+            <div style="font-size:16px;color:#1c1c1e">Berlin crisis pulls</div>
+            <div style="font-size:12px;color:#85858B;margin-top:3px">9 targets · 2 repositories · Modified Aug 14 ○</div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px">
+            <div style="font-size:16px;color:#1c1c1e">Untitled Archive Visit</div>
+            <div style="font-size:12px;color:#FF9500;margin-top:3px">31 of 44 documents indexed on this device ○</div>
+            <div style="font-size:11px;color:#B0B0B6;margin-top:2px">Seeded from &ldquo;Suez, October 1956&rdquo; ●</div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:8px">
+            <span style="width:20px;height:20px;border-radius:50%;background:#007AFF;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1">+</span>
+            <span style="font-size:16px;color:#007AFF">New Archive Visit</span>
+          </div>
+        </div>
+        <div style="position:absolute;left:200px;top:96px;width:230px;background:rgba(250,250,252,.99);border-radius:13px;box-shadow:0 10px 34px rgba(0,0,0,.28),0 0 0 0.5px rgba(0,0,0,.08);overflow:hidden;z-index:2">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;font-size:15px;color:#1c1c1e">Rename<span style="color:#3a3a3c;font-size:13px">✎</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.2)"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;font-size:15px;color:#1c1c1e">Duplicate<span style="color:#3a3a3c;font-size:13px">⧉</span></div>
+          <div style="height:7px;background:rgba(120,120,128,.12)"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;font-size:15px;color:#FF3B30">Delete<span style="font-size:13px">🗑</span></div>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:#6D6D72;line-height:1.5;padding:0 4px">An Archive Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-start">
+      <div style="flex:1;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.35);color:#000;padding:14px;text-align:center">
+        <div style="font-size:13px;font-weight:600">Rename Archive Visit</div>
+        <div style="margin-top:8px;border:0.5px solid rgba(60,60,67,.3);border-radius:6px;padding:5px 8px;font-size:12.5px;text-align:left;background:rgba(120,120,128,.06)">Berlin crisis pulls<span style="border-left:1px solid #007AFF;margin-left:1px"></span></div>
+        <div style="display:flex;margin-top:10px;border-top:0.5px solid rgba(60,60,67,.25);margin:10px -14px 0"><span style="flex:1;padding:8px 0;color:#007AFF;font-size:13px;border-right:0.5px solid rgba(60,60,67,.25)">Cancel</span><span style="flex:1;padding:8px 0;color:#007AFF;font-size:13px;font-weight:600">Save</span></div>
+      </div>
+      <div style="flex:1.2;background:#F2F2F7;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.35);color:#000;padding:18px 14px;text-align:center">
+        <div style="font-size:26px;color:#B0B0B6">🗄</div>
+        <div style="font-size:14px;font-weight:600;margin-top:4px">No Archive Visits</div>
+        <div style="font-size:11.5px;color:#85858B;margin-top:4px;line-height:1.45;text-wrap:pretty">An Archive Visit turns documents' source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.</div>
+        <div style="margin-top:10px;background:#fff;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;text-align:left"><span style="width:18px;height:18px;border-radius:50%;background:#007AFF;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1">+</span><span style="font-size:14px;color:#007AFF">New Archive Visit</span></div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">Mirror <span style="font-family:ui-monospace,Menlo,monospace">WorkingCorporaView</span>, not <span style="font-family:ui-monospace,Menlo,monospace">CollectionListView</span> — same row anatomy (.body name, .caption line, .caption2/.tertiary provenance), rename <span style="font-family:ui-monospace,Menlo,monospace">.alert</span> + <span style="font-family:ui-monospace,Menlo,monospace">TextField</span> committing through <span style="font-family:ui-monospace,Menlo,monospace">rename(to:)</span> so <span style="font-family:ui-monospace,Menlo,monospace">lastModified</span> moves (CloudKit last-writer-wins). Empty name renders ● "Untitled Archive Visit". <b>Duplicate</b> names the copy ● <span style="font-family:ui-monospace,Menlo,monospace">"%@ copy"</span> — <span style="font-family:ui-monospace,Menlo,monospace">Collection.duplicate(in:)</span>'s grammar under a NEW localization key. <b>Create</b> is the end-of-list row, never a nav-bar + (S-3b's recorded reason). Delete = swipe + menu, confirmation names what goes; cascade is explicit — <span style="font-family:ui-monospace,Menlo,monospace">.nullify</span> inverses do not cascade under CloudKit. Orange caption is <span style="font-family:ui-monospace,Menlo,monospace">WorkingCorpusResolver</span>'s both-numbers grammar. Hosts: iOS Research tab · macOS <span style="font-family:ui-monospace,Menlo,monospace">frus.archiveVisits</span> window; empty state keeps the New row reachable.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1b · Plan editor: Targets ══ -->
+  <div id="1b" data-screen-label="1b Plan editor Targets" style="width:860px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1b</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Plan editor · Targets — the core screen. Both platforms.</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="font-size:17px;font-weight:600">Vietnam escalation, 1964–1965</div>
+        <div style="flex:1"></div>
+        <div style="display:inline-flex;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;font-size:13px;line-height:1">
+          <span style="background:#fff;border-radius:7px;padding:4px 12px;font-weight:600;box-shadow:0 1px 2.5px rgba(0,0,0,.15)">Targets</span>
+          <span style="padding:4px 12px">Documents</span>
+        </div>
+        <span style="color:#007AFF;font-size:15px">ⓘ</span>
+        <span style="color:#007AFF;font-size:15px">⬆</span>
+        <span style="color:#007AFF;font-size:15px;font-weight:600">Done</span>
+      </div>
+      <div style="padding:16px 18px 18px">
+        <div style="height:0;position:relative;z-index:2"><div style="width:330px;background:rgba(250,250,252,.99);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.22),0 0 0 0.5px rgba(0,0,0,.06);padding:12px 14px;position:absolute;right:56px;top:-4px"><span style="position:absolute;top:-5px;right:26px;width:10px;height:10px;background:rgba(250,250,252,.99);transform:rotate(45deg)"></span><div style="font-size:13px;font-weight:600;color:#000">About research targets</div><div style="font-size:12px;color:#3a3a3c;margin-top:5px;line-height:1.55">A target is one archival unit under one claim. <b>Drawn from</b>: the document was published from this file — its own source note. <b>Pointed at</b>: the document's footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index. Corpus-wide, ~21 source-note groups arise per 30 documents ● (25 pre-1950, 14 post-1950); footnote references to unprinted material exist on ≲6% of documents ●.</div></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Repository</span><span style="font-weight:500">All</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Tier</span><span style="font-weight:500">All</span><span style="color:#85858B;font-size:9px">⌄</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,122,255,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1"><span style="color:#85858B;font-size:12px">Claim</span><span style="font-weight:600;color:#007AFF">Drawn from</span><span style="color:#007AFF;font-size:11px">×</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);border-radius:8px;padding:5px 9px;font-size:13px;line-height:1">Included only</span>
+          <span style="flex:1"></span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.12);color:#007AFF;border-radius:8px;padding:5px 11px;font-size:13px;font-weight:500;line-height:1">Priority tiers…</span>
+        </div>
+        <div style="margin-top:12px;padding:9px 12px;background:rgba(120,120,128,.08);border-radius:8px;font-size:12.5px;color:#3a3a3c;line-height:1.5"><span style="font-weight:600">23 targets ○ across 3 repositories ○.</span> <span style="color:#B36B00">38 of 51 seeding documents indexed on this device ○</span> — targets from unindexed documents may be missing below.</div>
+
+        <div style="margin-top:16px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:650;color:#6D6D72;text-transform:uppercase;letter-spacing:.03em">National Archives at College Park</div>
+          <span style="font-size:12px;color:#007AFF">Planning a research visit (NARA) ●</span>
+          <span style="font-size:12px;color:#007AFF">Before you visit College Park ●</span>
+          <span style="font-size:12px;color:#007AFF">Records of the Department of State ●</span>
+        </div>
+
+        <div style="margin-top:8px;font-size:11px;font-weight:650;color:#85858B;text-transform:uppercase;letter-spacing:.04em">Day one · priority tier</div>
+        <div style="margin-top:6px;border:0.5px solid rgba(60,60,67,.18);border-radius:10px;overflow:hidden">
+          <div style="padding:10px 12px;background:rgba(0,122,255,.04)">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="color:#007AFF;font-size:11px;margin-top:4px">⌄</span>
+              <div style="flex:1">
+                <div style="font-size:14.5px;font-weight:600;color:#1c1c1e">Vietnam Working Group Files: Lot 67 D 54</div>
+                <div style="font-size:11.5px;color:#85858B;margin-top:2px;font-variant-numeric:tabular-nums">RG 59 · Entry A1 5408 ○ · Vietnam Working Group Files, 1963–66 · NAID 2669261 ○ · 1963–1966 ○</div>
+                <div style="font-size:12px;color:#3a3a3c;margin-top:3px">drawn from 3 · pointed at by 2 ○</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(60,60,67,.25);border-radius:7px;padding:4px 8px;font-size:12px;color:#007AFF;font-weight:500;line-height:1">Day one <span style="font-size:9px;color:#85858B">⌄</span></span>
+              <span style="width:40px;height:24px;border-radius:12px;background:#34C759;position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span>
+            </div>
+            <div style="margin-left:21px;margin-top:9px;border-left:2px solid rgba(0,122,255,.25);padding-left:12px">
+              <div style="font-size:11px;font-weight:650;color:#005ec4;text-transform:uppercase;letter-spacing:.04em">Drawn from — 3 documents ○</div>
+              <div style="margin-top:5px;font-size:12px;line-height:1.5"><span style="color:#007AFF">1964–1968 vol. I, doc 87 ○</span><div style="color:#3a3a3c;font-style:italic;margin-top:1px">&ldquo;Source: Department of State, Vietnam Working Group Files: Lot 67 D 54, Courses of Action. Top Secret.&rdquo; ○</div></div>
+              <div style="margin-top:6px;font-size:12px;line-height:1.5"><span style="color:#007AFF">1964–1968 vol. I, doc 88 ○</span> <span style="color:#85858B">— Ibid. ⌄ inherits doc 87's source note</span></div>
+              <div style="margin-top:4px;font-size:11.5px;color:#007AFF;font-weight:500">Show 1 more drawn-from seeding ○</div>
+              <div style="margin-top:9px;font-size:11px;font-weight:650;color:#7a5200;text-transform:uppercase;letter-spacing:.04em">Pointed at — 2 footnotes ○</div>
+              <div style="margin-top:5px;font-size:12px;line-height:1.5"><span style="color:#007AFF">1964–1968 vol. I, doc 92, footnote 3 ○</span><div style="color:#3a3a3c;font-style:italic;margin-top:1px">&ldquo;A memorandum of this conversation is in the Vietnam Working Group Files: Lot 67 D 54, Meetings with the President. Not printed.&rdquo; ○</div></div>
+              <div style="margin-top:6px;font-size:12px;line-height:1.5"><span style="color:#007AFF">1964–1968 vol. II, doc 213, footnote 1 ○</span><div style="color:#3a3a3c;font-style:italic;margin-top:1px">&ldquo;Not printed; a copy is ibid., Courses of Action.&rdquo; ○ <span style="color:#85858B;font-style:normal">— Ibid. ⌄ resolves through doc 213's own citation chain</span></div></div>
+            </div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.15)"></div>
+          <div style="padding:10px 12px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="color:#85858B;font-size:11px;margin-top:4px">›</span>
+              <div style="flex:1">
+                <div style="font-size:14.5px;color:#1c1c1e"><span style="font-weight:600">POL 27 VIET S</span> <span style="color:#3a3a3c;font-size:13px">— Military operations · South Vietnam ○</span></div>
+                <div style="font-size:11.5px;color:#85858B;margin-top:2px;font-variant-numeric:tabular-nums">RG 59 · Central Files 1964–66 · NAID 302021 ○</div>
+                <div style="font-size:12px;color:#3a3a3c;margin-top:3px">drawn from 14 · pointed at by 9 ○</div>
+                <div style="font-size:12px;color:#005ec4;margin-top:3px">⇄ Substitute: part of this file range is scanned — read online or on film instead of pulling ○</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(60,60,67,.25);border-radius:7px;padding:4px 8px;font-size:12px;color:#007AFF;font-weight:500;line-height:1">Day one <span style="font-size:9px;color:#85858B">⌄</span></span>
+              <span style="width:40px;height:24px;border-radius:12px;background:#34C759;position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;font-size:11px;font-weight:650;color:#85858B;text-transform:uppercase;letter-spacing:.04em">Unprioritized</div>
+        <div style="margin-top:6px;border:0.5px solid rgba(60,60,67,.18);border-radius:10px;overflow:hidden">
+          <div style="padding:10px 12px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="color:#85858B;font-size:11px;margin-top:4px">›</span>
+              <div style="flex:1">
+                <div style="font-size:14.5px;font-weight:600;color:#1c1c1e">S/S Files: Lot 70 D 48</div>
+                <div style="font-size:11.5px;color:#85858B;margin-top:2px">RG 59 · no series resolved — routed into the inquiry draft as a locate question ○</div>
+                <div style="font-size:12px;color:#3a3a3c;margin-top:3px">pointed at by 4 ○</div>
+                <div style="font-size:12px;color:#B36B00;margin-top:3px">⚠ Worst covered status: Restricted–Partly, as claimed by S/S-NSC Files (Lot 72 D 316) ○ · 9 of 13 claimant series unmeasured ● — divided lot; asked in the inquiry draft</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(60,60,67,.25);border-radius:7px;padding:4px 8px;font-size:12px;color:#007AFF;font-weight:500;line-height:1">Set tier <span style="font-size:9px;color:#85858B">⌄</span></span>
+              <span style="width:40px;height:24px;border-radius:12px;background:rgba(120,120,128,.32);position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:650;color:#6D6D72;text-transform:uppercase;letter-spacing:.03em">Lyndon B. Johnson Presidential Library</div>
+          <span style="font-size:12px;color:#007AFF">Plan a research visit ●</span>
+          <span style="font-size:12px;color:#007AFF">Finding aids — what is held ●</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;font-weight:650;color:#85858B;text-transform:uppercase;letter-spacing:.04em">Unprioritized</div>
+        <div style="margin-top:6px;border:0.5px solid rgba(60,60,67,.18);border-radius:10px;overflow:hidden">
+          <div style="padding:10px 12px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="color:#85858B;font-size:11px;margin-top:4px">›</span>
+              <div style="flex:1">
+                <div style="font-size:14.5px;font-weight:600;color:#1c1c1e">National Security File, Country File, Vietnam</div>
+                <div style="font-size:11.5px;color:#85858B;margin-top:2px">Library collection — confirm holdings and access with the library before travel</div>
+                <div style="font-size:12px;color:#3a3a3c;margin-top:3px">drawn from 6 ○</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(60,60,67,.25);border-radius:7px;padding:4px 8px;font-size:12px;color:#007AFF;font-weight:500;line-height:1">Set tier <span style="font-size:9px;color:#85858B">⌄</span></span>
+              <span style="width:40px;height:24px;border-radius:12px;background:#34C759;position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span>
+            </div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.15)"></div>
+          <div style="padding:10px 12px;background:rgba(120,120,128,.05)">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="color:#B0B0B6;font-size:11px;margin-top:4px">›</span>
+              <div style="flex:1">
+                <div style="font-size:14.5px;color:#85858B">Meeting Notes File</div>
+                <div style="font-size:11.5px;color:#B0B0B6;margin-top:2px">Stored target — no longer derives from this plan's current seeds. Kept with your tier and notes; it never deletes itself.</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(60,60,67,.18);border-radius:7px;padding:4px 8px;font-size:12px;color:#85858B;font-weight:500;line-height:1">Priority 1 <span style="font-size:9px">⌄</span></span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid rgba(60,60,67,.12);padding-top:10px;font-size:12px;color:#85858B"><span style="color:#007AFF">ⓘ</span> Claim definitions, target population, and why counts never sum — in the info popover above.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">Sections by repository; headers carry that facility's (a) links verbatim from <span style="font-family:ui-monospace,Menlo,monospace">RepositoryFactTable</span> (College Park's three ●, each library's D16 pair ●; a link renders only with a <span style="font-family:ui-monospace,Menlo,monospace">verifiedDate</span>). Within a section, group by tier, Unprioritized last. Filter chips use the Wave-B <span style="font-family:ui-monospace,Menlo,monospace">ViewThatFits</span> one-row/stacked grammar from <span style="font-family:ui-monospace,Menlo,monospace">ArchivalAnalyticsView</span>. Records line composes through <span style="font-family:ui-monospace,Menlo,monospace">TripPacketModel.recordsLine</span> — one formatter, never two. Claim counts NEVER summed. <b>Restriction is a line, not a badge</b>: worst covered status + the series it belongs to + unmeasured claimant count (● 123 divided lots shipped, one claimed by up to 13 series), routed into (c). Expanded rows quote the verbatim reference context — source note for drawn-from, footnote citation with anchor for pointed-at, <span style="font-family:ui-monospace,Menlo,monospace">Ibid.</span> rows disclosing inheritance; claim groups visibly distinct; elision uses the shipped 12/8/20 truncation grammar with exact counts. In-app the document link navigates; in export it is the short citation + history.state.gov URL. States not drawn: no seeds → <span style="font-family:ui-monospace,Menlo,monospace">ContentUnavailableView</span>; seeds but no derived targets → say which half is missing; fewer indexed volumes → the orange summary line above.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1c · Tier management ══ -->
+  <div id="1c" data-screen-label="1c Tier management" style="width:420px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1c</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Priority tiers — create, rename, reorder, delete</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="flex:1;text-align:center;font-size:17px;font-weight:600">Priority Tiers</div>
+        <span style="color:#007AFF;font-size:15px;font-weight:600;position:absolute;right:16px">Done</span>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:15px;color:#1c1c1e;flex:1">Day one</span><span style="font-size:12px;color:#85858B">7 targets ○</span><span style="color:#C7C7CC;font-size:13px;letter-spacing:1px">☰</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:15px;color:#1c1c1e;flex:1">If time allows</span><span style="font-size:12px;color:#85858B">6 targets ○</span><span style="color:#C7C7CC;font-size:13px;letter-spacing:1px">☰</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:50%;background:#007AFF;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1">+</span><span style="font-size:15px;color:#007AFF">Add a priority tier</span></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#6D6D72;line-height:1.5;padding:0 4px">Targets without a tier stay in Unprioritized, always listed last. An unlabeled tier reads &ldquo;Priority 1&rdquo;.</div>
+        <div style="margin-top:14px;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.22);padding:14px;text-align:center;max-width:280px;margin-left:auto;margin-right:auto">
+          <div style="font-size:13px;font-weight:600">Delete &ldquo;If time allows&rdquo;?</div>
+          <div style="font-size:11.5px;color:#85858B;margin-top:4px;line-height:1.45">Its 6 targets ○ move to Unprioritized. Nothing is removed from the plan.</div>
+          <div style="display:flex;margin:10px -14px 0;border-top:0.5px solid rgba(60,60,67,.25)"><span style="flex:1;padding:8px 0;color:#007AFF;font-size:13px;border-right:0.5px solid rgba(60,60,67,.25)">Cancel</span><span style="flex:1;padding:8px 0;color:#FF3B30;font-size:13px;font-weight:600">Delete Tier</span></div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">Any number of tiers, user-named, reordered with standard <span style="font-family:ui-monospace,Menlo,monospace">EditButton</span>/drag affordances. A NEW plan starts with <b>no tiers</b> and only the "Add a priority tier" control — a researcher who never prioritizes pays nothing. Deleting a tier drops members to Unprioritized and the confirmation says so.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1d · Plan editor: Documents ══ -->
+  <div id="1d" data-screen-label="1d Plan editor Documents" style="width:560px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1d</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Plan editor · Documents — the seed list</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="font-size:17px;font-weight:600">Vietnam escalation, 1964–1965</div>
+        <div style="flex:1"></div>
+        <div style="display:inline-flex;background:rgba(120,120,128,.16);border-radius:9px;padding:2px;font-size:13px;line-height:1">
+          <span style="padding:4px 12px">Targets</span>
+          <span style="background:#fff;border-radius:7px;padding:4px 12px;font-weight:600;box-shadow:0 1px 2.5px rgba(0,0,0,.15)">Documents</span>
+        </div>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:11px 14px">
+            <div style="font-size:14px;color:#1c1c1e;line-height:1.35">Draft Memorandum From the Assistant Secretary of Defense (McNaughton)</div>
+            <div style="font-size:11.5px;color:#85858B;margin-top:2px">1964–1968 vol. I, doc 87 ○</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-size:13px;color:#1c1c1e;flex:1">Archival source</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#85858B">Default (On) <span style="font-size:9px">⌃⌄</span></span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:13px;color:#1c1c1e;flex:1">Unprinted references <span style="color:#85858B">· 3 references ○</span></span><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#85858B">Default (On) <span style="font-size:9px">⌃⌄</span></span></div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px">
+            <div style="font-size:14px;color:#1c1c1e;line-height:1.35">Telegram From the Embassy in Vietnam to the Department of State</div>
+            <div style="font-size:11.5px;color:#85858B;margin-top:2px">1964–1968 vol. I, doc 92 ○</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-size:13px;color:#1c1c1e;flex:1">Archival source</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#85858B">Default (On) <span style="font-size:9px">⌃⌄</span></span></div>
+            <div style="font-size:12px;color:#85858B;margin-top:6px">No unprinted references in this document's footnotes ●</div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px">
+            <div style="font-size:14px;color:#1c1c1e;line-height:1.35">The Secretary of State to the Ambassador in France</div>
+            <div style="font-size:11.5px;color:#85858B;margin-top:2px">1901, doc 411 ○</div>
+            <div style="font-size:12px;color:#85858B;margin-top:8px">This document carries no source note ●</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:13px;color:#1c1c1e;flex:1">Unprinted references <span style="color:#85858B">· 1 reference ○</span></span><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#85858B">Default (On) <span style="font-size:9px">⌃⌄</span></span></div>
+          </div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="flex:1">
+                <div style="font-size:14px;color:#1c1c1e;line-height:1.35">Memorandum of a Conversation, White House</div>
+                <div style="font-size:11.5px;color:#85858B;margin-top:2px">1964–1968 vol. II, doc 40 ○</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:6px;background:rgba(255,149,0,.16);color:#8a5a00;font-size:11px;font-weight:600">contributes nothing</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-size:13px;color:#1c1c1e;flex:1">Archival source</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#85858B">Off <span style="font-size:9px">⌃⌄</span></span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:13px;color:#1c1c1e;flex:1">Unprinted references <span style="color:#85858B">· 2 references ○</span></span><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#85858B">Off <span style="font-size:9px">⌃⌄</span></span></div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#6D6D72;line-height:1.5;padding:0 4px">Each document contributes through two switches: its own source note (drawn from) and its footnotes' citations to unprinted material (pointed at). References beyond FRUS exist on about 6% of documents ● — where a half is absent, the control is a caption, never a dead toggle.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">The two contribution controls reuse <span style="font-family:ui-monospace,Menlo,monospace">CollectionEntryInspector</span>'s shipped Default/On/Off <span style="font-family:ui-monospace,Menlo,monospace">overridePicker</span> grammar (menu picker; "Default" states the effective value). Sparsity is a design constraint (≲6% ●): absent references → ● "No unprinted references in this document's footnotes"; absent source note (pre-1906 by design) → ● "This document carries no source note". Both halves off → the "contributes nothing" warning chip.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1e · Add to Archive Visit ══ -->
+  <div id="1e" data-screen-label="1e Add to Archive Visit picker" style="width:700px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1e</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Add to Archive Visit — the picker, the three-way choice, the cohort disclosure</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <div style="width:340px;background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+        <div style="display:flex;align-items:center;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14);position:relative">
+          <span style="color:#007AFF;font-size:14px">Cancel</span>
+          <div style="flex:1;text-align:center;font-size:16px;font-weight:600;margin-left:-40px;padding-left:40px">Add to Archive Visit</div>
+        </div>
+        <div style="padding:12px 16px 16px">
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(120,120,128,.12);border-radius:9px;padding:6px 9px;font-size:13px;color:#85858B">⌕ Search Archive Visits</div>
+          <div style="margin-top:10px;padding:7px 10px;background:rgba(0,122,255,.08);border-radius:8px;font-size:11.5px;color:#005ec4;line-height:1.45">Adding: archival source + 3 unprinted references ○ — from Source Explorer, &ldquo;Vietnam Working Group Files&rdquo; section ○</div>
+          <div style="margin-top:10px;background:#fff;border-radius:10px;overflow:hidden">
+            <div style="padding:10px 14px;display:flex;align-items:center;gap:8px">
+              <div style="flex:1"><div style="font-size:15px;color:#1c1c1e">Vietnam escalation, 1964–1965</div><div style="font-size:12px;color:#85858B;margin-top:2px">23 targets ○</div></div>
+              <span style="color:#34C759;font-size:17px">✓</span>
+            </div>
+            <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+            <div style="padding:10px 14px"><div style="font-size:15px;color:#1c1c1e">Berlin crisis pulls</div><div style="font-size:12px;color:#85858B;margin-top:2px">9 targets ○</div></div>
+            <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+            <div style="padding:11px 14px;display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:50%;background:#007AFF;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1">+</span><span style="font-size:15px;color:#007AFF">New Archive Visit</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+        <div style="background:#fff;border-radius:13px;box-shadow:0 10px 34px rgba(0,0,0,.35);overflow:hidden;color:#1c1c1e;width:300px">
+          <div style="padding:8px 14px;font-size:11px;color:#85858B;background:rgba(120,120,128,.06)">Source Explorer · section menu — the three-way choice</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:14px">Add archival source<span style="color:#3a3a3c;font-size:12px">🗄</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.2)"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:14px">Add unprinted references (3 ○)<span style="color:#3a3a3c;font-size:12px">↗</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.2)"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:14px">Add both<span style="color:#3a3a3c;font-size:12px">⧉</span></div>
+        </div>
+        <div style="background:#fff;border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.35);color:#000;padding:14px;text-align:center;width:272px">
+          <div style="font-size:13px;font-weight:600">Add these targets?</div>
+          <div style="font-size:11.5px;color:#85858B;margin-top:4px;line-height:1.45">Archival Neighbors currently shows 12 of 214 units ○ for this scope.</div>
+          <div style="display:flex;flex-direction:column;margin:10px -14px 0;border-top:0.5px solid rgba(60,60,67,.25)">
+            <span style="padding:8px 0;color:#007AFF;font-size:13px;font-weight:600;border-bottom:0.5px solid rgba(60,60,67,.25)">Add the 12 shown ○</span>
+            <span style="padding:8px 0;color:#007AFF;font-size:13px;border-bottom:0.5px solid rgba(60,60,67,.25)">Add all 214 ○</span>
+            <span style="padding:8px 0;color:#007AFF;font-size:13px">Cancel</span>
+          </div>
+        </div>
+        <div style="border:1px solid #34343a;border-radius:10px;background:#232327;padding:10px 12px;font-size:11.5px;color:#b9b9c0;line-height:1.6"><span style="font:600 10px ui-monospace,Menlo,monospace;color:#8ab4f8;letter-spacing:.06em">ADD CONTROL APPEARS ON</span><br><b style="color:#dcdce2">Source Explorer</b> — section-local, three-way (left) · <b style="color:#dcdce2">Archival Neighbors</b> — in the shared content core, so all three hosts (sheet, macOS window, Stage Manager) carry it · <b style="color:#dcdce2">Archival Analytics</b> — beside "Show Archival Neighbors", routed <i>through</i> neighbors so the count is disclosed first · <b style="color:#dcdce2">Project Home</b> — "Plan a Visit" create-or-open from the leads union + explicit "Re-seed from project", never a live mirror · <b style="color:#dcdce2">Collections</b>.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><span style="font-family:ui-monospace,Menlo,monospace">PlanPickerSheet</span> clones <span style="font-family:ui-monospace,Menlo,monospace">CollectionPickerSheet</span>: searchable list, New row, dedupe guard, checkmark + auto-dismiss, medium/large detents on iOS, plain VStack body on macOS. It carries a <b>preset scope</b> and a <b>basis string</b> recording how the seed was made (the blue banner). Before adding a large cohort, disclose the count and let the researcher choose the visible set or the full cohort — never add 214 silently.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1f · Deliverables ══ -->
+  <div id="1f" data-screen-label="1f Deliverables panel" style="width:420px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1f</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Deliverables — per-plan, not a preference</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="flex:1;text-align:center;font-size:16px;font-weight:600">Export — What to Include</div>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font-size:15px;color:#1c1c1e">Repository visit-planning links</div><div style="font-size:11.5px;color:#85858B;margin-top:1px">Each repository's own guidance — 11 facilities curated ●</div></div><span style="width:40px;height:24px;border-radius:12px;background:#34C759;position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font-size:15px;color:#1c1c1e">Target list</div><div style="font-size:11.5px;color:#85858B;margin-top:1px">Tier-grouped, per repository, with each target's seedings</div></div><span style="width:40px;height:24px;border-radius:12px;background:#34C759;position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font-size:15px;color:#1c1c1e">Inquiry email drafts</div><div style="font-size:11.5px;color:#85858B;margin-top:1px">One per repository, edited before sending</div></div><span style="width:40px;height:24px;border-radius:12px;background:#34C759;position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:11px 14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font-size:15px;color:#1c1c1e">Citation crib appendix</div><div style="font-size:11.5px;color:#85858B;margin-top:1px">How to cite what you find, per record type</div></div><span style="width:40px;height:24px;border-radius:12px;background:rgba(120,120,128,.32);position:relative;display:inline-block;flex-shrink:0"><span style="position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span></span></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#6D6D72;line-height:1.5;padding:0 4px">These choices travel with this Archive Visit — they are part of the plan, not an app preference.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">(a), (b), (c) default ON; the citation crib appendix defaults OFF. Stored per plan on <span style="font-family:ui-monospace,Menlo,monospace">ArchiveVisitPlan</span>, synced with it — never <span style="font-family:ui-monospace,Menlo,monospace">@AppStorage</span>.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1g · Artifact preview ══ -->
+  <div id="1g" data-screen-label="1g Artifact preview and share" style="width:560px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1g</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">The artifact — preview, editable topic sentence, share</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <div style="font-size:16px;font-weight:600">Archive Visit — Export</div>
+        <div style="flex:1"></div>
+        <span style="color:#007AFF;font-size:14px">Share</span>
+        <span style="color:#007AFF;font-size:14px">Share as PDF</span>
+        <span style="color:#007AFF;font-size:15px;font-weight:600">Done</span>
+      </div>
+      <div style="padding:14px 16px 6px;background:rgba(249,249,251,.9);border-bottom:1px solid rgba(60,60,67,.1)">
+        <div style="font-size:12px;font-weight:600;color:#6D6D72;text-transform:uppercase;letter-spacing:.03em">Inquiry topic sentence</div>
+        <div style="margin-top:6px;border:1px solid rgba(0,122,255,.4);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.5;background:#fff;color:#1c1c1e">I am researching U.S. decision-making in the escalation of the Vietnam War, June 1964 – July 1965, with particular interest in the Working Group's planning papers.<span style="border-left:1.5px solid #007AFF;margin-left:1px"></span></div>
+        <div style="font-size:11.5px;color:#85858B;margin-top:5px;padding-bottom:8px;line-height:1.45">Seeded from your project's research question — edit freely. <b>The drafts send what you write here</b>, never the stored note.</div>
+      </div>
+      <div style="padding:14px 16px 18px;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.6;color:#3a3a3c;background:#fff">
+        <div>ARCHIVE VISIT — Vietnam escalation, 1964–1965</div>
+        <div>23 targets ○ · 3 repositories ○ · generated Aug 26, 2026 — a snapshot;</div>
+        <div>confirm dated facts at the links.</div>
+        <div style="margin-top:8px">== NATIONAL ARCHIVES AT COLLEGE PARK ==</div>
+        <div>Plan your visit: archives.gov/research/start/research-visit-faqs ●</div>
+        <div style="margin-top:6px">[Day one] Vietnam Working Group Files: Lot 67 D 54</div>
+        <div>&nbsp;&nbsp;RG 59 · Entry A1 5408 ○ · NAID 2669261 ○ · 1963–1966 ○</div>
+        <div>&nbsp;&nbsp;drawn from 3 ○ · pointed at by 2 ○</div>
+        <div>&nbsp;&nbsp;· 1964–1968 vol. I, doc 87 — history.state.gov/…/frus1964-68v01/d87</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;"Source: Department of State, Vietnam Working Group Files:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;Lot 67 D 54, Courses of Action. Top Secret." ○</div>
+        <div style="margin-top:6px">== INQUIRY DRAFT — archives2reference@nara.gov ● ==</div>
+        <div>I am researching U.S. decision-making in the escalation of the</div>
+        <div>Vietnam War, June 1964 – July 1965, with particular interest…</div>
+        <div style="color:#B36B00;margin-top:6px">One citation I cannot yet identify in your catalog: "S/S Files:</div>
+        <div style="color:#B36B00">Lot 70 D 48" ○ — and one divided lot where 9 of 13 claimant</div>
+        <div style="color:#B36B00">series are unmeasured ● — I would appreciate help before my visit.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">Successor to <span style="font-family:ui-monospace,Menlo,monospace">TripPacketSheet</span> — same one-sheet-both-entry-points rule, plain text first (the draft must survive pasting into a mail client), PDF the SAME string paginated. The new piece is the editor for <span style="font-family:ui-monospace,Menlo,monospace">TripPacketTopicSentence</span>, designed for this and never built: the research question is an internal note; the draft is an email to NARA reference staff — <b>the exporter reads the edited value (<span style="font-family:ui-monospace,Menlo,monospace">forExport</span>), never the stored one</b>. With neither seed nor edit, the field shows the shipped placeholder ● ("[Describe your research topic in one or two sentences — narrow and specific…]") and the export flags it as needing attention.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1h · Coverage report ══ -->
+  <div id="1h" data-screen-label="1h Coverage report" style="width:520px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1h</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">The coverage report — always present, both numbers, always</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="padding:16px 18px 18px">
+        <div style="font-size:15px;font-weight:600">What this plan covers</div>
+        <div style="margin-top:10px;font-size:13px;line-height:1.55;font-variant-numeric:tabular-nums">
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:0.5px solid rgba(60,60,67,.12)"><span style="width:118px;color:#85858B;font-size:12px">Targets</span><span style="flex:1;color:#3a3a3c">21 of 23 stored rows ○ derive from the current seeds — 2 kept and labeled, never deleted</span></div>
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:0.5px solid rgba(60,60,67,.12)"><span style="width:118px;color:#85858B;font-size:12px">Documents</span><span style="flex:1;color:#B36B00">38 of 51 seeding documents ○ indexed on this device — targets from the other 13 may be missing</span></div>
+          <div style="display:flex;gap:10px;padding:7px 0;border-bottom:0.5px solid rgba(60,60,67,.12)"><span style="width:118px;color:#85858B;font-size:12px">Substitutes</span><span style="flex:1;color:#3a3a3c">Tested for 14 of 14 file-number seedings ○ · found for 3 ○ · 2 of those only partly digitized ○</span></div>
+          <div style="display:flex;gap:10px;padding:7px 0"><span style="width:118px;color:#85858B;font-size:12px">Restrictions</span><span style="flex:1;color:#B36B00">Access status measured for 4 of 13 claimant series ○ on this plan's one divided lot — 123 divided lots exist series-wide ●</span></div>
+        </div>
+        <div style="margin-top:12px;padding:9px 12px;background:rgba(255,149,0,.08);border-radius:8px;font-size:12px;color:#7a5200;line-height:1.5"><b>If substitutes come back empty:</b> &ldquo;Substitutes tested for 14 of 14 ○ — none found. Scanning coverage is itself partial; this is not a clearance to pull everything.&rdquo; An empty result must never read as absence.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)"><span style="font-family:ui-monospace,Menlo,monospace">WorkingCorpusResolver</span>'s grammar throughout: both numbers even when complete ("14 of 14" tells the reader the test ran everywhere). Complete lines render secondary; partial lines orange. Rendered at the top of the exported artifact and reachable from the plan editor.</div>
+    </sc-if>
+  </div>
+
+  <!-- ══ 1i · Settings ══ -->
+  <div id="1i" data-screen-label="1i Settings Data and Recovery" style="width:420px">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:7px;background:#323238;border:1px solid #48484f;color:#e8e8ec;font:600 11px ui-monospace,Menlo,monospace">1i</span>
+      <span style="font-size:13px;font-weight:600;color:#e4e4e9">Settings ▸ Data &amp; Recovery — counted and erasable</span>
+      <span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:rgba(229,168,59,.14);color:#E5A83B;font:600 10px ui-monospace,Menlo,monospace">#830</span>
+    </div>
+    <div style="background:#F2F2F7;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:#000">
+      <div style="display:flex;align-items:center;padding:12px 16px;background:rgba(249,249,251,.96);border-bottom:1px solid rgba(60,60,67,.14)">
+        <span style="color:#007AFF;font-size:14px">‹ Settings</span>
+        <div style="flex:1;text-align:center;font-size:16px;font-weight:600;margin-left:-58px">Data &amp; Recovery</div>
+      </div>
+      <div style="padding:14px 16px 18px">
+        <div style="font-size:12px;font-weight:600;color:#6D6D72;text-transform:uppercase;letter-spacing:.03em;padding:0 4px">Your research data</div>
+        <div style="margin-top:6px;background:#fff;border-radius:10px;overflow:hidden;font-variant-numeric:tabular-nums">
+          <div style="padding:10px 14px;display:flex;align-items:center"><span style="font-size:15px;color:#1c1c1e;flex:1">Collections</span><span style="font-size:14px;color:#85858B">12 ○</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px;display:flex;align-items:center"><span style="font-size:15px;color:#1c1c1e;flex:1">Projects</span><span style="font-size:14px;color:#85858B">4 ○</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px;display:flex;align-items:center"><span style="font-size:15px;color:#1c1c1e;flex:1">Working Corpora</span><span style="font-size:14px;color:#85858B">3 ○</span></div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px;display:flex;align-items:center;background:rgba(0,122,255,.05)"><span style="font-size:15px;color:#1c1c1e;flex:1">Archive Visits</span><span style="font-size:14px;color:#85858B">3 ○</span></div>
+        </div>
+        <div style="margin-top:14px;font-size:12px;font-weight:600;color:#6D6D72;text-transform:uppercase;letter-spacing:.03em;padding:0 4px">Erase</div>
+        <div style="margin-top:6px;background:#fff;border-radius:10px;overflow:hidden">
+          <div style="padding:10px 14px;font-size:15px;color:#FF3B30">Erase Working Corpora…</div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px;font-size:15px;color:#FF3B30;background:rgba(0,122,255,.05)">Erase Archive Visits…</div>
+          <div style="height:0.5px;background:rgba(60,60,67,.18);margin-left:14px"></div>
+          <div style="padding:10px 14px;font-size:15px;color:#FF3B30">Erase All Research Data…</div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#6D6D72;line-height:1.5;padding:0 4px">Erasing Archive Visits removes the plans, their targets, tiers, and notes on this device and, after sync, on your other devices. Documents and volumes are untouched.</div>
+      </div>
+    </div>
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+    <div style="border:1px dashed rgba(229,168,59,.45);border-radius:8px;padding:8px 10px;color:#d9a445;font-size:11.5px;line-height:1.55;margin-top:10px;background:rgba(229,168,59,.05)">One row in the research-data item counts, one rung in the erase ladder. Deletion cascade is explicit in code — <span style="font-family:ui-monospace,Menlo,monospace">.nullify</span> inverses do not cascade under CloudKit — and the confirmation names what goes.</div>
+    </sc-if>
+  </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAnnotations&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Presentation&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { showAnnotations: this.props.showAnnotations ?? true };
+  }
+}
+</script>
+</body>
+</html>
