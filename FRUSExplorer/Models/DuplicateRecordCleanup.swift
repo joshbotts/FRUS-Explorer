@@ -20,6 +20,12 @@ extension UserTag: DeduplicableRecord {}
 extension Project: DeduplicableRecord {}
 extension CollectionEntry: DeduplicableRecord {}
 extension CustomVolumeScope: DeduplicableRecord {}   // #258 — flat record, dedupeSimple suffices
+// Archive Visits Phase 2 — the two child types carry DERIVED ids (a namespace hash over
+// `planId | key`), so two devices minting state for the same target create the same id
+// deterministically: exactly the duplicate this pass exists to collapse, and the reason the
+// ids are not random (Archive-Visit-Plan-Design §2a).
+extension ArchiveVisitDocument: DeduplicableRecord {}
+extension ArchiveVisitTarget: DeduplicableRecord {}
 
 /// Collapses duplicate user-data records that share the same `id`.
 ///
@@ -65,6 +71,9 @@ enum DuplicateRecordCleanup {
             + dedupeCollections(context: context)
             + dedupeSimple(CollectionEntry.self, context: context)
             + dedupeSimple(CustomVolumeScope.self, context: context)
+            + dedupeArchiveVisitPlans(context: context)
+            + dedupeSimple(ArchiveVisitDocument.self, context: context)
+            + dedupeSimple(ArchiveVisitTarget.self, context: context)
         guard removed > 0 else { return }
         try? context.save()
         // Always-on (not #if DEBUG): deleting synced user records is a destructive,
@@ -144,6 +153,34 @@ enum DuplicateRecordCleanup {
                 for entry in extra.documentEntries ?? [] {
                     entry.collection = keeper
                 }
+                context.delete(extra)
+                deleted += 1
+            }
+        }
+        return deleted
+    }
+
+    /// Collapses `ArchiveVisitPlan` duplicates, re-parenting both child arrays to the keeper
+    /// first — the `dedupeCollections` shape, for the same `.nullify` reason: deleting a
+    /// duplicate without re-parenting would orphan its children.
+    ///
+    /// The keeper is the copy with the most stored state (documents + targets), tie-broken on
+    /// earliest creation, so the richer copy survives. Child rows re-parented onto the keeper
+    /// may then themselves be duplicates by derived id; the two `dedupeSimple` passes that run
+    /// after this in `run(context:)` collapse them in the same launch.
+    private static func dedupeArchiveVisitPlans(context: ModelContext) -> Int {
+        guard let all = try? context.fetch(FetchDescriptor<ArchiveVisitPlan>()) else { return 0 }
+        var deleted = 0
+        for (_, group) in Dictionary(grouping: all, by: \.id) where group.count > 1 {
+            let keeper = group.max { lhs, rhs in
+                let l = (lhs.documents?.count ?? 0) + (lhs.targets?.count ?? 0)
+                let r = (rhs.documents?.count ?? 0) + (rhs.targets?.count ?? 0)
+                if l != r { return l < r }
+                return (lhs.createdAt ?? .distantFuture) > (rhs.createdAt ?? .distantFuture)
+            }!
+            for extra in group where extra.persistentModelID != keeper.persistentModelID {
+                for document in extra.documents ?? [] { document.plan = keeper }
+                for target in extra.targets ?? [] { target.plan = keeper }
                 context.delete(extra)
                 deleted += 1
             }

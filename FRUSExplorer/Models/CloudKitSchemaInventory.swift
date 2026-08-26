@@ -62,6 +62,10 @@ import SwiftData
 ///          ``identifiersAwaitingDeploy`` — the gate fired on the model change, as designed, and
 ///          the deploy has not happened yet. The baseline count and digest are unchanged, which
 ///          is the point: `installed − awaiting` still describes Production.
+///   1.2 — Archive Visits Phase 2: the three plan record types' 32 identifiers added to the
+///          inventory **and** to ``identifiersAwaitingDeploy`` (boarding the reserved W-4+W-5
+///          promotion). Baseline count and digest unchanged — `installed − awaiting` still
+///          describes Production.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -71,6 +75,38 @@ enum CloudKitSchemaInventory {
     /// Do not hand-edit. When the schema changes, `CloudKitSchemaInventoryTests` prints the
     /// replacement list; paste it wholesale so the diff shows exactly what CloudKit gained or lost.
     static let installedIdentifiers: [String] = [
+        "CD_ArchiveVisitDocument",
+        "CD_ArchiveVisitDocument.CD_createdAt",
+        "CD_ArchiveVisitDocument.CD_documentKey",
+        "CD_ArchiveVisitDocument.CD_id",
+        "CD_ArchiveVisitDocument.CD_includeExternalRefs",
+        "CD_ArchiveVisitDocument.CD_includeSource",
+        "CD_ArchiveVisitDocument.CD_lastModified",
+        "CD_ArchiveVisitDocument.CD_plan",
+        "CD_ArchiveVisitDocument.CD_planId",
+        "CD_ArchiveVisitDocument.CD_stateData",
+        "CD_ArchiveVisitPlan",
+        "CD_ArchiveVisitPlan.CD_createdAt",
+        "CD_ArchiveVisitPlan.CD_deliverableTogglesData",
+        "CD_ArchiveVisitPlan.CD_documents",
+        "CD_ArchiveVisitPlan.CD_id",
+        "CD_ArchiveVisitPlan.CD_inquiryText",
+        "CD_ArchiveVisitPlan.CD_lastModified",
+        "CD_ArchiveVisitPlan.CD_name",
+        "CD_ArchiveVisitPlan.CD_projectIds",
+        "CD_ArchiveVisitPlan.CD_targets",
+        "CD_ArchiveVisitPlan.CD_tiersData",
+        "CD_ArchiveVisitTarget",
+        "CD_ArchiveVisitTarget.CD_createdAt",
+        "CD_ArchiveVisitTarget.CD_id",
+        "CD_ArchiveVisitTarget.CD_included",
+        "CD_ArchiveVisitTarget.CD_lastModified",
+        "CD_ArchiveVisitTarget.CD_plan",
+        "CD_ArchiveVisitTarget.CD_planId",
+        "CD_ArchiveVisitTarget.CD_stateData",
+        "CD_ArchiveVisitTarget.CD_targetKey",
+        "CD_ArchiveVisitTarget.CD_tierId",
+        "CD_ArchiveVisitTarget.CD_userNote",
         "CD_Collection",
         "CD_Collection.CD_applyHighlights",
         "CD_Collection.CD_authorLine",
@@ -362,19 +398,51 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build.
+        // Archive Visits Phase 2 — the three plan record types and their 29 fields, boarding
+        // the reserved W-4+W-5 promotion (the owner's schema-timing decision). Until that
+        // deploy, Production rejects records carrying these; the app reports the holding state
+        // at launch and in Settings ▸ Data & Recovery ▸ iCloud Schema. Owner steps: exercise
+        // each type once on a Development build signed into iCloud (create a plan, seed a
+        // document, tier a target — CloudKit creates a record type only when one is first
+        // written, the trap that made #488 possible), then CloudKit Dashboard → Schema →
+        // Deploy Schema Changes to Production; then clear this list, restate the baseline
+        // count + digest the suite prints, and bump `deployedThroughBuild` / `deployedOn`.
         //
-        // Promoted 2026-08-08 (build 40), the SEVENTH promotion:
-        //   `CD_SavedSearch.CD_parametersData` — #756's complete SearchParameters snapshot. ONE
-        //   field rather than the eight the defect would have required, because the whole value is
-        //   archived instead of enumerated: a saved search had been persisting 12 of 20 fields and
-        //   returning the rest as DEFAULTS, so it recalled BROADER than the search the user named,
-        //   silently. Archiving the value makes that drop class unrepresentable — field twenty-one
-        //   is persisted by construction — which is also why this promotion is one identifier and
-        //   not a recurring tax.
-        //
-        //   Seeded, as always, by writing a real record: CloudKit creates a field only when one
-        //   carrying a value for it is first written, and every Save Search writes this one.
+        // (Promoted 2026-08-08, build 40, the SEVENTH promotion: `CD_SavedSearch.CD_parametersData`
+        // — #756's complete SearchParameters snapshot; one archived value instead of eight
+        // enumerated columns, which is what makes the field-drop class unrepresentable.)
+        "CD_ArchiveVisitDocument",
+        "CD_ArchiveVisitDocument.CD_createdAt",
+        "CD_ArchiveVisitDocument.CD_documentKey",
+        "CD_ArchiveVisitDocument.CD_id",
+        "CD_ArchiveVisitDocument.CD_includeExternalRefs",
+        "CD_ArchiveVisitDocument.CD_includeSource",
+        "CD_ArchiveVisitDocument.CD_lastModified",
+        "CD_ArchiveVisitDocument.CD_plan",
+        "CD_ArchiveVisitDocument.CD_planId",
+        "CD_ArchiveVisitDocument.CD_stateData",
+        "CD_ArchiveVisitPlan",
+        "CD_ArchiveVisitPlan.CD_createdAt",
+        "CD_ArchiveVisitPlan.CD_deliverableTogglesData",
+        "CD_ArchiveVisitPlan.CD_documents",
+        "CD_ArchiveVisitPlan.CD_id",
+        "CD_ArchiveVisitPlan.CD_inquiryText",
+        "CD_ArchiveVisitPlan.CD_lastModified",
+        "CD_ArchiveVisitPlan.CD_name",
+        "CD_ArchiveVisitPlan.CD_projectIds",
+        "CD_ArchiveVisitPlan.CD_targets",
+        "CD_ArchiveVisitPlan.CD_tiersData",
+        "CD_ArchiveVisitTarget",
+        "CD_ArchiveVisitTarget.CD_createdAt",
+        "CD_ArchiveVisitTarget.CD_id",
+        "CD_ArchiveVisitTarget.CD_included",
+        "CD_ArchiveVisitTarget.CD_lastModified",
+        "CD_ArchiveVisitTarget.CD_plan",
+        "CD_ArchiveVisitTarget.CD_planId",
+        "CD_ArchiveVisitTarget.CD_stateData",
+        "CD_ArchiveVisitTarget.CD_targetKey",
+        "CD_ArchiveVisitTarget.CD_tierId",
+        "CD_ArchiveVisitTarget.CD_userNote",
     ]
 
     // MARK: - Derived state

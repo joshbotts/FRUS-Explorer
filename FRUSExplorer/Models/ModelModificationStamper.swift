@@ -32,6 +32,11 @@ extension ResearchNote: LastModifiedStamping {}
 extension GeneratedSummary: LastModifiedStamping {}
 extension WorkingCorpus: LastModifiedStamping {}
 extension CustomVolumeScope: LastModifiedStamping {}
+// Archive Visits Phase 2 — all three plan types merge on `lastModified`, and a frozen stamp
+// would let a stale device win every merge (the exact defect this stamper exists for).
+extension ArchiveVisitPlan: LastModifiedStamping {}
+extension ArchiveVisitDocument: LastModifiedStamping {}
+extension ArchiveVisitTarget: LastModifiedStamping {}
 
 // MARK: - ModelModificationStamper
 

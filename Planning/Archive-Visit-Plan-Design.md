@@ -336,8 +336,20 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
   off per §3b); the Mac Unprinted Material port (reusing the iOS view's own pointer type and
   join). W-18 delivered in this shape and struck in the plan of record. Chapters 1/3/7 deleted
   (`TripChecklist`/`AdvanceNoticeFlags` removed with their tests). No schema.
-- **Phase 2 — the @Model** (unchanged: ~8 identifiers, blob per §2, boards the reserved W-4+W-5
-  promotion, honest holding state).
+- ~~**Phase 2 — the @Model.**~~ **SHIPPED 2026-08-26** — the three record types of §2/§2a
+  exactly (`ArchiveVisitPlan` + `ArchiveVisitDocument` + `ArchiveVisitTarget`, 32 CloudKit
+  identifiers; the parenthetical this bullet used to carry — "~8 identifiers, blob" — was v1's
+  shape, superseded by the owner's child-model decision). Derived child ids
+  (`derivedChildId(planId:key:)`, pinned by fixture), tiers and deliverable toggles as
+  tolerant-decoding blobs, `"%@ copy"` duplication under the feature's own key with tier ids
+  preserved and child ids re-derived, explicit cascade delete. Registered everywhere the
+  design mandates: `frusModelTypes` (R-7 gate followed; the 32 identifiers hold in
+  `identifiersAwaitingDeploy` for the W-4+W-5 promotion — the honest holding state),
+  `ResetInventory.erased` (children → plan → Project order), `ModelModificationStamper`,
+  `DuplicateRecordCleanup` (children via `dedupeSimple` on derived ids; the plan re-parents
+  like Collections), the Data & Recovery Contents inventory + erase warning (new keys), and
+  `ResearchDataExporter` format 6 (plan whole — seeds, tiers, toggles, every stored target
+  state including orphans; never the derived packet). No UI surfaces yet — Phase 3.
 - **Phase 3 — the surfaces + the plan editor** (revised: the target-grain editor of §4, plus the
   add flows).
 - **Phase 4 — unit-grain entry UI + the live-index sparsity re-measure.**

@@ -100,6 +100,11 @@ enum ResetInventory {
         CustomVolumeScope.self,
         WorkingCorpus.self,
         ProjectLeadEntry.self,
+        // Archive Visits Phase 2 — children before their plan (`.nullify` relationships), the
+        // plan before Project (raw-UUID `projectIds` reference, same principle as the trio above).
+        ArchiveVisitDocument.self,
+        ArchiveVisitTarget.self,
+        ArchiveVisitPlan.self,
         // Parent last.
         Project.self,
     ]

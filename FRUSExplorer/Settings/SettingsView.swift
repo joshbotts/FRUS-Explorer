@@ -1297,8 +1297,12 @@ struct EraseEverythingView: View {
                 // one — no String Catalog ships, so rewriting a key in place is a silent
                 // collision. The retention is stated too: a promise with an unlisted exception is
                 // the fault this screen keeps repeating.
-                Text(String(localized: "settings.erase.warning.inventory",
-                            defaultValue: "This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
+                // Archive Visits Phase 2 supersedes `…warning.inventory` in turn: the reset now
+                // reaches archive visit plans, and a destructive screen that under-states its
+                // reach is this screen's recurring fault — so the list is extended and, per the
+                // standing rule, the key is minted anew rather than rewritten in place.
+                Text(String(localized: "settings.erase.warning.inventory.visits",
+                            defaultValue: "This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, archive visit plans, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
                     .foregroundStyle(.secondary)
             } header: {
                 Text(String(localized: "settings.erase.header", defaultValue: "What This Removes"))

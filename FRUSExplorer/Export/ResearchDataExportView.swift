@@ -62,6 +62,7 @@ struct DataExportSections: View {
     @Query private var prompts: [SummarizationPrompt]
     @Query private var projects: [Project]
     @Query private var summaries: [GeneratedSummary]
+    @Query private var archiveVisits: [ArchiveVisitPlan]
 
     /// Row counts for the three research-trail tables — see the type's note on why these are not
     /// `@Query`. Refreshed by `prepareJSONExport()`, which is also what writes the file.
@@ -87,6 +88,7 @@ struct DataExportSections: View {
                 LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(collections.count)")
                 LabeledContent(String(localized: "settings.export.prompts", defaultValue: "Custom Prompts"), value: "\(userPromptCount)")
                 LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(projects.count)")
+                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archive Visits"), value: "\(archiveVisits.count)")
                 // Wave R-5. The three trail rows are worded exactly as the History screen's
                 // section headers, so the same recorded thing is not called two different names
                 // in two places. New keys rather than reuse of the `history.section.*` ones: no
@@ -118,9 +120,13 @@ struct DataExportSections: View {
                 // explicitly rather than folded into "your research data" because it is the part
                 // a reader would not assume was in there — and the part they may want to check
                 // before sharing the file, since it includes the text of every search they ran.
+                // Archive Visits Phase 2 mints the key anew once more (`…json.footer.visits`):
+                // the file now carries archive visit plans, and a footer that under-states the
+                // export's contents is the same fault as an erase screen that under-states its
+                // reach.
                 Text(String(
-                    localized: "settings.export.json.footer.trail",
-                    defaultValue: "One JSON file with your notes, tags, highlights, collections, custom prompts, and projects. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported."
+                    localized: "settings.export.json.footer.visits",
+                    defaultValue: "One JSON file with your notes, tags, highlights, collections, custom prompts, projects, and archive visit plans. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported."
                 ))
             }
 

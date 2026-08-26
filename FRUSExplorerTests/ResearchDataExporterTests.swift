@@ -264,6 +264,8 @@ struct ResearchDataExporterTests {
             "highlights", "collections", "prompts", "projects", "summaries",
             // Wave R-5.
             "readingHistory", "searchHistory", "exportHistory",
+            // Archive Visits Phase 2 (format version 6).
+            "archiveVisits",
         ]
         #expect(Set(json.keys) == expectedKeys)
     }
