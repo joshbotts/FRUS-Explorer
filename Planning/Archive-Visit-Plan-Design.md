@@ -1,6 +1,6 @@
 # Archive Visits — the archival research plan (design v3, 2026-08-26)
 
-**Status: OPEN DESIGN — owner decisions pending (§7).** v1 answered the owner's first direction
+**Status: DECIDED — every §7 decision is answered; ready to execute at Phase 0.** v1 answered the owner's first direction
 (seeding surfaces, per-document source/references choice, persistence). **v2 revises it against
 the owner's second direction**, which changed two things v1 got wrong and one it under-scoped:
 
@@ -348,8 +348,17 @@ merits); orphaned targets = report coverage (§3c); priority tiers user-defined,
   seeds, its tier definitions and every stored target state **including orphans**; never the
   derived packet, which is a rendering and not the user's work.
 
-**Still open (small):** whether a duplicated plan's name gets a "copy" suffix or is left for the
-user to rename; and whether the ch6 appendix toggle is per-plan (default) or a global preference.
+**Resolved by the owner, 2026-08-26 (closing the set — no decisions remain open):**
+- **Duplicate naming** — a duplicated plan takes the `"%@ copy"` suffix and keeps it until the user
+  renames it. This is the shipped grammar exactly: `Collection.duplicate(in:)` formats
+  `collection.duplicate.name %@` as `"%@ copy"` over a base that falls back to the untitled name
+  (`Collection.swift:800-807`). Archive Visits reuse the pattern with their own key
+  (`archiveVisit.duplicate.name %@`) — a **new** key rather than the collection's, since reusing
+  another view's localization key is a silent i18n collision.
+- **Citation-crib toggle** — **per-plan**, alongside the (a)/(b)/(c) deliverable toggles in
+  `ArchiveVisitPlan` (§3b), not a global preference. It travels with the plan, so a plan shared or
+  re-opened on another device renders the same artifact, and a researcher who wants the crib for a
+  lot-file trip but not a library one does not have to remember to flip a global setting.
 
 ## 8. What v3 does not change
 
