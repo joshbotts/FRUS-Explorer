@@ -8700,3 +8700,45 @@ Admitted to `Plan-Of-Record-2026-08-23.md` as **W-18**, placed in Tier A directl
 W-1b — #1014's inheritance rule enriches this same table, so the sequencing affinity is real,
 but there is no gate: the table ships today, and the session needs no index bump, no schema
 change, and no new artifact. No code this session.
+
+## Session 2026-08-26 — Post-release cleanup, and the plan refreshed against what shipped
+
+Branch hygiene, a verified baseline, and the three plan rows that would each have cost a
+session.
+
+**Branches: 142 refs assessed, 133 deleted, nothing lost.** The repo squash-merges, so
+`git branch --merged v2` proves nothing — a merged branch's commits are never ancestors of
+v2. Classified by `gh` PR head SHA (tip == `headRefOid` ⇒ nothing pushed after the merge),
+then had four independent lenses try to refute "safe to delete" before executing: reverted
+work (0), wrong merge base (0 — and it verified all 128 merge commits are literally
+ancestors of v2, with the two historically stacked PRs #425/#528 as a negative control),
+post-merge commits (0 content losses), pure content comparison (0). Two apparent losses were
+deliberate moves — files #1076 relocated to `Planning/Completed/`. One remote branch,
+`claude/ner-harvest-studio-status-90e2fc`, held a day-old commit with **no PR** and the whole
+#234 Studio measurement: kept, PR'd (#1083), merged, then deleted. The audit's completeness
+critic found what four branch-focused lenses structurally could not: **two preservation tags
+(`archive/377-project-home-switcher-pr458`, `rescue/498-wip-488-runbook`) exist only on this
+machine**, and the rescue tag is the sole reference to `Planning/488-CloudKit-Capture-Runbook.md`,
+which is in no branch and not in v2. Also: **never `gc --prune` after a mass delete here** —
+`stash@{1}`/`stash@{2}` are reflog-only. Recovery manifest at
+`.git/branch-cleanup-2026-08-25.tsv`. End state: one branch, `v2`, local and remote; two
+worktrees (the stale `vector-embeddings-assessment-f5bb05` removed, clean and merged).
+
+**Baseline at `2ea5c100`: 4,075 tests — 4,057 passed, 18 env-gated skips, 0 failures;
+`FRUSExplorerMac` BUILD SUCCEEDED.** Recorded so the next session starts from a known-good
+tree rather than discovering otherwise.
+
+**The plan of record refreshed — three rows were overtaken, each verified in the tree before
+editing.** W-6 (#106 reconciliation) **shipped on 2026-08-24** as #1081, one day after the
+plan was written, and was never struck — the worst kind of error, because it looks small and
+unblocked and is the row a session would pick first. W-7's sequence ("keyings + harvest →
+score") and gate ("Owner: 2 keyings + the harvest run") put the ~18-day sweep on a scoring
+path that #1083 removed; the gate is now the M2a sitting alone, and the finding extends to
+the free control store, which shares the same 12-volume scope. W-1 told a session to *run*
+`MEASURE_DECIMAL=1` to measure bare-`Ibid.`-after-class — but that harness counts only what
+`classCandidates(inNote:)` returns, which takes a single note (so it cannot see the preceding
+footnote `ibidReach` is measured against) and requires a decimal class inside the clause (so a
+bare `Ibid.` yields zero candidates); the first action is writing a measurement mode, not
+running one. **New row W-7a** captures the engineering #1083 unblocked *before* the keyings:
+`ONLY_DOCUMENTS` and a `WORKERS` pool in `harvest_ner.py`, the former already implemented in
+the Swift control and present in no Python file under `tools/semantic-harvest/`.
