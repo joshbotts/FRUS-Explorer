@@ -360,15 +360,38 @@ merits); orphaned targets = report coverage (§3c); priority tiers user-defined,
   re-opened on another device renders the same artifact, and a researcher who wants the crib for a
   lot-file trip but not a library one does not have to remember to flip a global setting.
 
-## 7a. The UI design handoff
+## 7a. The UI design handoff — DELIVERED and checked in
 
-The Claude Design brief for these surfaces is `Archive-Visit-Design-Handoff/README.md` — nine
-artboards (1a list · 1b targets · 1c tiers · 1d documents · 1e picker + three-way add · 1f
-deliverables · 1g artifact + inquiry editor · 1h coverage report · 1i Settings), written to the
-fidelity of the Archival Analytics handoff. It names the shipped components each surface mirrors
-(`WorkingCorporaView` for the list grammar, `CollectionEntryInspector`'s override pickers,
-`CollectionPickerSheet` for the picker, the Wave-B filter chips), quotes the copy that must
-survive verbatim, and carries the ●/○ convention so no illustrative number is hard-coded.
+The brief (`Archive-Visit-Design-Handoff/README.md`) was answered by the owner-supplied design on
+2026-08-26, now checked in byte-identical beside it: `Archive-Visits.dc.html` + nine artboards
+(1a–1i) + `PROVENANCE.md`. **The `.dc.html` is the copy authority, not the PNGs** (1b is captured
+with its info popover open). Implementation of Phase 3 works from these artboards; the artboard →
+phase mapping is: 1e (Neighbors add control) and the 1g inquiry editor's underlying seam land in
+**Phase 1**; 1i's Settings registration is **Phase 2**; 1a/1b/1c/1d/1f and the rest of 1e/1g/1h
+are **Phase 3**.
+
+## 7b. Check-in assessment (2026-08-26)
+
+**Verdict: conforms to this design.** Verified against the tree and the decided rules, not by
+reading alone: no summed claim counts anywhere in the copy; coverage lines use the both-numbers
+grammar ("38 of 51 seeding documents ○ indexed on this device — targets from the other 13 may be
+missing"); the absent-half captions render as captions, never dead toggles; the orphan row is
+kept and labeled ("Kept with your tier and notes; it never deletes itself"); restriction is a
+line with worst-covered status + the unmeasured claimant count, routed into the inquiry; the
+tier-delete confirmation is drawn; "%@ copy", "Untitled Archive Visit", and the topic-sentence
+placeholder match the shipped strings; and the two ●-marked institutional facts in 1g were
+checked against `RepositoryFactTable` — `Archives2reference@nara.gov` and the research-visit-faqs
+URL are both real `VerifiedFact`s.
+
+**Three annotation-level flags, none blocking:**
+1. **1b's filter chip is a mock-state artifact** — "Claim: Drawn from ✕" is drawn active while
+   pointed-at rows still show. Do not infer filter semantics from the capture; the filter's
+   behavior is this document's (§4).
+2. **The plan-delete confirmation is specified in the 1a annotation ("confirmation names what
+   goes") but not drawn.** Reuse the drawn tier-delete dialog's grammar (1c: "Delete "If time
+   allows"?" / destructive "Delete Tier").
+3. **1g renders the inquiry email lowercase** where the fact table stores
+   `Archives2reference@nara.gov` — moot in implementation, which reads the table.
 
 ## 8. What v3 does not change
 
