@@ -1,4 +1,4 @@
-# Archive Visits — the archival research plan (design v2, 2026-08-26)
+# Archive Visits — the archival research plan (design v2.1, 2026-08-26)
 
 **Status: OPEN DESIGN — owner decisions pending (§7).** v1 answered the owner's first direction
 (seeding surfaces, per-document source/references choice, persistence). **v2 revises it against
@@ -16,7 +16,10 @@ the owner's second direction**, which changed two things v1 got wrong and one it
    repository-filtered, priority-grouped target list with consultation metadata, (c) a draft
    inquiry email per repository.
 
-Everything cited was verified against tree `979aa413`.
+Everything cited was verified against tree `979aa413`. **v2.1** (same day) folds in the
+owner's three refinements: per-target seeding links + reference context in deliverable (b),
+which resolves the W-18 claims question (§3, §7.4-resolved); and user-defined priority
+tiers, unlimited and optionally labeled (§2, §4, §7.2-resolved).
 
 ## 1. What exists today (unchanged from v1)
 
@@ -52,9 +55,16 @@ now carries two levels:**
 
 ```
 PlanDocument { documentKey, includeSource: Bool, includeExternalRefs: Bool }
-PlanTarget   { targetKey: {claim: drawnFrom|pointedAt, identity}, 
-               priority: Int (bucket), included: Bool, userNote: String? }
+PlanTier     { id: UUID, label: String?, order: Int }          // user-defined, any number
+PlanTarget   { targetKey: {claim: drawnFrom|pointedAt, identity},
+               tierId: UUID?, included: Bool, userNote: String? }
 ```
+
+Tiers are **plan-scoped and user-defined** — create, rename, reorder, delete, any number, labels
+optional (an unlabeled tier renders by its position, "Priority 1"). `tierId == nil` is the
+implicit **Unprioritized** group, which always exists and always sorts last; deleting a tier
+drops its members there, disclosed. A new plan starts with no tiers — every target Unprioritized,
+one visible "Add a priority tier" control — so casual use pays nothing for the feature.
 
 Per-document flags control **what a document contributes** (the v1 three-way choice, unchanged at
 add time); per-target state controls **how each resulting target is treated** — include, priority
@@ -79,13 +89,23 @@ represented in the filtered plan. This — not prose — is how the app "points 
 repository-specific guidance."
 
 **(b) The target list.** Filtered by repository (UI filter; the export groups by repository),
-grouped by the user's priority buckets, one row per included target carrying the consultation
+grouped by the user's priority tiers, one row per included target carrying the consultation
 metadata: the records line (RG · entry number · series title · NAID · years), HMS/MLR where
-resolved, the **claim** ("drawn from N documents in this plan" / "pointed at by the footnotes of
-N documents"), the citing FRUS citations (compactly), and two markers folded down from v1's
-chapters: **restriction status** (RestrictionTriage's data as a per-target flag, not a chapter)
-and **digitized/filmed substitute** (MandatorySubstitutes' data likewise). A target that resolves
-to nothing renders its raw citation verbatim and routes to (c) — the A5 help-me-locate rule,
+resolved, and two markers folded down from v1's chapters: **restriction status**
+(RestrictionTriage's data as a per-target flag, not a chapter) and **digitized/filmed
+substitute** (MandatorySubstitutes' data likewise).
+
+**Each target itemizes its seeding, by claim.** For every FRUS document that seeded the target: a
+**link to the document** (in-app, the row navigates; in the text/PDF export, the short citation
+plus its history.state.gov URL — the same link grammar the composer already resolves in reverse)
+and the **reference context** that document provides — for a drawn-from seeding, the source note
+as printed ("Source: Department of State, Conference Files: Lot 60 D 627, CF 1"); for a
+pointed-at seeding, the footnote citation verbatim with its footnote anchor, and `inherited`
+(`Ibid.`) rows saying so ("cited as 'Ibid., CF 1' — inherited from the preceding footnote's
+citation"). Verbatim context is the packet's existing discipline (A5 quotes unresolved citations
+verbatim; #784's safety verdict rested on reading samples). Per-seeding context lists elide past
+a threshold with exact counts, per the shipped truncation grammar. A target that resolves to
+nothing renders its raw citation verbatim and routes to (c) — the A5 help-me-locate rule,
 unchanged.
 
 **(c) The inquiry email, per repository.** Chapter 2's machinery, now central: the editable topic
@@ -100,13 +120,18 @@ largely subsumed by (b)), substitutes and triage as chapters (ch4/ch5 — folded
 markers), NARA's citation forms (ch6), the visit-day card (ch7). "Customizable" = deliverable and
 appendix toggles on the plan, blob-stored.
 
-**The claims question W-18 forces (§7.4).** W-18 mandated a *separate* per-repository section for
-pointed-at references, "never folded into chapter 3's pull rosters" — written when the roster was
-the artifact. Deliverable (b) is a different artifact: one repository-grouped list whose every row
-**names its claim**. The #783 principle — the two claims never blur — is preserved at the row
-grain, and the pipeline keeps its separate methods regardless. Default: one list, claim-labeled
-rows, with the plan-editor filter able to show either claim alone. Alternative (strict W-18
-reading): two sub-lists per repository.
+**The claims question W-18 forces — resolved by (b)'s reference context (§7.4).** W-18 mandated
+a *separate* per-repository section for pointed-at references, "never folded into chapter 3's
+pull rosters" — written when the roster was the artifact and a folded row would have carried a
+bare, unattributed count. In (b), every seeding is itemized **with its claim and its verbatim
+context**, so the reader sees exactly which kind of assertion each citing document makes — a
+stronger form of the #783 separation than a section split, applied at the evidence grain rather
+than the layout grain. Two rules keep it honest, and both are testable: **counts never sum across
+claims** (a target cited both ways shows "drawn from 3 · pointed at by 2", never "5"), and the
+two claim groups are **visibly distinct within the row** (labeled, contexts itemized under their
+own claim). This also settles the both-ways target: one unit row, claims itemized inside it —
+which is what an archivist consultation wants. The pipeline keeps its separate methods
+regardless; the plan editor's filter can still show either claim alone.
 
 ## 4. The UI, revised
 
@@ -115,8 +140,9 @@ repository (section headers = repositories, with the (a) links in the header), e
 identity, claim, priority control, citing-document count, and the availability-honesty captions
 from v1 (a claim with nothing behind it never renders a dead control). A secondary "Documents"
 tab lists the seeds with their per-document contribution flags (v1's two pickers) — this is where
-"this document's references: off" lives. **Priority buckets**: default three, "Must see / If time
-allows / Background" (§7.2), stored as Int so the vocabulary can grow blob-side.
+"this document's references: off" lives. **Priority tiers**: the §2 user-defined list — add,
+rename (label optional), reorder, delete; targets assign by swipe/context menu or the row's tier
+control; the implicit Unprioritized group holds everything else.
 
 **Add flows are unchanged from v1** (PlanPickerSheet cloning CollectionPickerSheet; Source
 Explorer's section-local add with the three-way choice and the references count; Project Home
@@ -159,14 +185,17 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
 ## 7. Owner decisions (v2; defaults first — v1 decisions not listed here carried unchanged)
 
 1. **Naming** — "Archive Visit" / "Archive Visits" (unchanged from v1).
-2. **Priority vocabulary** — default three fixed buckets, "Must see / If time allows /
-   Background"; alternative: user-defined labels (more UI, blob-free either way).
+2. **Priority vocabulary — RESOLVED (owner, 2026-08-26)**: user-defined tiers, any number,
+   labels optional, plan-scoped; implicit Unprioritized catch-all; new plans start with none.
+   (Open sliver: whether a new plan seeds suggested tier names as placeholders — default no.)
 3. **Target grain** — default: unit-grain targets + per-document contribution flags (§2). The
    finer (document × unit) exclusion grain is deliberately NOT offered — excluding a document's
    contribution is done on the document row.
-4. **Claims presentation** — default: one repository-grouped list with claim-labeled rows
-   (supersedes W-18's separate-section wording for the new artifact; pipeline separation intact);
-   alternative: two sub-lists per repository.
+4. **Claims presentation — RESOLVED (owner, 2026-08-26)**: one repository-grouped list whose
+   rows itemize each seeding with its claim and verbatim reference context (§3). The two
+   testable rules stand in for W-18's section split: counts never sum across claims; claim
+   groups visibly distinct within the row. W-18's plan-of-record row gets a disposition note on
+   approval.
 5. **Appendix disposition** — which of ch1/ch3/ch4-as-chapter/ch5-as-chapter/ch6/ch7 survive as
    opt-in appendices vs are dropped outright. Default: checklist (ch1) and citation forms (ch6)
    as opt-in appendices; pull worksheet, substitutes chapter, triage chapter, visit-day card
