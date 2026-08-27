@@ -349,16 +349,31 @@ struct ArchivalPoolWiringTests {
                 """)
     }
 
-    /// The two anchorless sites the axis never reaches must keep their plain `LIMIT`.
+    /// The anchorless site the axis never reaches must keep its plain `LIMIT`.
+    ///
+    /// `relatedByDecimalClass` used to be on this list. W-17 session 1 removed it BY
+    /// DESIGN: the central-files-named RG-59 route arm anchors it (a document's class
+    /// cohort), so it is dual-use now — the volume-entry finding aid keeps the
+    /// `.alphabetical` default it passes nothing to override, which the second
+    /// assertion pins instead. This is the third time a pin in this file stood in
+    /// front of an intended change; per the file's own rule, the pin moves WITH the
+    /// design and says why.
     @Test("The finding-aid queries are untouched")
     func findingAidsUntouched() throws {
         let source = try Self.pipelineSource()
-        for function in ["relatedByDecimalClass", "collectionNeighbors"] {
+        for function in ["collectionNeighbors"] {
             let start = try #require(source.range(of: "func \(function)")).lowerBound
             let body = source[start...].prefix(3_000)
             #expect(!body.contains("ordering:"),
                     "\(function) is anchorless — alphabetical is its honest presentation")
         }
+        // The dual-use site: its ordering must stay DEFAULTED alphabetical, so the
+        // anchorless volume-entry caller is byte-identical, and only the anchored
+        // class arm (which threads the caller's ordering) can stratify it.
+        let start = try #require(source.range(of: "func relatedByDecimalClass")).lowerBound
+        let body = source[start...].prefix(600)
+        #expect(body.contains("ordering: RelatedPoolOrdering = .alphabetical"),
+                "relatedByDecimalClass serves the finding aid by default and the anchored class arm by explicit request — a non-alphabetical default flips the finding aid silently")
     }
 
     /// The correctness bug, which neither #644 nor #645 named.

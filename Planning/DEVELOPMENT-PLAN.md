@@ -9507,3 +9507,41 @@ measurement), and QueryInspectionTests gains the ratio's own pins — the quotie
 fixture where `contain` runs 3 occurrences across 2 documents, and both nil guards.
 OpenAPI prose repointed at the live definition; the archived Q&CA plan's stale
 "Dispersion | Not shipped" row carries a dated correction.
+
+## Session 2026-08-27H — W-17 session 1: the incumbents that remained, and the store entry point
+
+The owner resolved W-9's gate (favorable leads-or-noise verdict) and promised the
+owner-written query set for the shared evaluation; the tier proceeds. This session is
+W-17's first: the §0.10 incumbents and the FTS5Store entry point.
+
+§0.10's incumbent list was stale on contact: #645 ("seven sites truncate alphabetically")
+was fixed and CLOSED on 2026-08-10 across #649/#654/#806, and #808 had already added the
+CIA route arm — the Tier-E assessment carried the withdrawn doc's 2026-08-02 state
+without re-verifying. What actually remained was three route arms, each shipped with a
+live-index measurement behind it: dotless file numbers (the dot gate that kept OCR junk
+out also excluded the whole pre-1910 Numerical File — case 6775 alone is 99 documents —
+and the dotless class citations, class 320 = 717); RG-59 series (the boundary moved from
+the record group to the series NAME — 1,002 real-series rows routed to nothing while
+"Central Files 1967–69" stays refused as a mega-cohort); central-files-named rows to the
+citation's CLASS (4,409 rows with a stored class routed to nothing; the class lives in
+the raw note, so relatedDocuments gained a rawCitation parameter and
+relatedByDecimalClass gained excluding:/ordering: to serve as the anchored arm); and
+CFPF film segments (P-reels cluster genuinely — P820123 = 41 — where whole identifiers
+almost never repeat). archivalNeighborKey gained the mirror keys the switch owes it,
+including #808's — a pre-existing mirror hole found in passing.
+
+FTS5Store.lexicalCandidates is the §0.12 store entry: column-restricted BM25 OR-query
+over body_text (correctness — an open MATCH partly re-derives the archival axis), df
+ceiling enforced in-store against fts5vocab with one documented asymmetry (pricing is
+table-wide, the MATCH body-only — refusal-leaning, the safe direction), anchor
+deliberately NOT excluded (its row is the ratio's denominator), admitted surface forms
+returned for the chip. Nine SPM tests incl. the column-restriction sentinel.
+
+Two pinned tests moved WITH the design and say why: the .stratified allowlist survived
+by declaring rawCitation before ordering (the pinned call shape), and
+findingAidsUntouched graduated relatedByDecimalClass to dual-use, pinning its
+alphabetical DEFAULT instead — the third time a pin in that file stood in front of an
+intended change. Re-measured per §0.10's instruction, recorded in
+Planning/Lexical-Axis-Addressable-Market-2026-08-27.md: 10,954 documents gain archival
+neighbors only via these arms; the lexical axis's addressable market is 32,956 (12.5%).
+No index bump: every arm is a query-time switch over already-stored columns.

@@ -1068,6 +1068,122 @@ struct ArchivalNeighborsTests {
     }
 }
 
+// MARK: - W17RouteArmsTests
+
+/// The three W-17 session-1 route arms, driven through a real index (the
+/// `ArchivalNeighborsTests` idiom). Every fixture note is a live-index shape verbatim,
+/// so what these tests pin is the corpus's own citations reaching cohorts — not
+/// synthetic strings tuned to the switch.
+///
+/// Version history:
+///   1.0 — W-17 session 1: initial implementation
+@Suite("IndexingPipeline — W-17 route arms (end to end)")
+struct W17RouteArmsTests {
+
+    @Test("Dotless file numbers cohort by their pre-slash location")
+    func dotlessNumericalFile() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1908.xml"),
+                volumeId: "frus1908",
+                documents: [
+                    ("d1", "<head>1. Memo</head><note type=\"source\">File No. 6775/108b.</note><p>First.</p>"),
+                    ("d2", "<head>2. Memo</head><note type=\"source\">File No. 6775/111.</note><p>Second.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">File No. 320/1.</note><p>Third.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1908")
+
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1908", documentId: "d1")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids.contains("d2"), "same Numerical File case (6775) must cohort")
+            #expect(!ids.contains("d3"), "a different case is not a neighbor")
+            #expect(!ids.contains("d1"), "the anchor is excluded")
+            #expect(result.basis == "6775", "basis names the case, not the item")
+        }
+    }
+
+    @Test("An RG-59 series that is not the central files cohorts like any other RG's")
+    func rg59RealSeries() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let conf = "<note type=\"source\">Source: National Archives and Records Administration, RG 59, Conference Files, CF 2449. Confidential.</note>"
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head>\(conf)<p>First.</p>"),
+                    ("d2", "<head>2. Memo</head>\(conf)<p>Second.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">Source: National Archives, RG 84, Moscow Post Files, Box 12. Secret.</note><p>Third.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids.contains("d2"), "same RG-59 series must cohort — the old switch excluded RG 59 wholesale")
+            #expect(!ids.contains("d3"), "a different record group's series is not a neighbor")
+        }
+    }
+
+    @Test("A central-files-named RG-59 series matches on the citation's class, never the series")
+    func rg59CentralFilesNamedSeriesUsesClass() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1961-63v25.xml"),
+                volumeId: "frus1961-63v25",
+                documents: [
+                    ("d1", "<head>1. Memo</head><note type=\"source\">Source: National Archives, RG 59, Central Files, 511.00/9–2861. Confidential.</note><p>First.</p>"),
+                    ("d2", "<head>2. Memo</head><note type=\"source\">Source: National Archives, RG 59, Central Files, 511.00/11–961. Confidential.</note><p>Second.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">Source: National Archives, RG 59, Central Files, 320/1–857. Secret.</note><p>Third.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1961-63v25")
+
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1961-63v25", documentId: "d1")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids.contains("d2"), "same class (511.00) must cohort")
+            #expect(!ids.contains("d3"),
+                    "a different class sharing the 'Central Files' series name must NOT — a series cohort here would span most of an era's corpus")
+            #expect(result.basis?.hasPrefix("511.00") == true,
+                    "the basis is the class the raw citation carries; the parse-level key is nil by design")
+        }
+    }
+
+    @Test("CFPF citations cohort by film segment")
+    func cfpfFilmSegment() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1977-80v01.xml"),
+                volumeId: "frus1977-80v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><note type=\"source\">Source: National Archives, RG 59, Central Foreign Policy File, P820123–0667. Confidential; Nodis.</note><p>First.</p>"),
+                    ("d2", "<head>2. Memo</head><note type=\"source\">Source: National Archives, RG 59, Central Foreign Policy File, P820123–0938. Secret; Nodis.</note><p>Second.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">Source: National Archives, RG 59, Central Foreign Policy File, P840072–1286. Secret.</note><p>Third.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1977-80v01")
+
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1977-80v01", documentId: "d1")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids.contains("d2"), "same P-reel segment (P820123) must cohort")
+            #expect(!ids.contains("d3"), "a different film segment is not a neighbor")
+            #expect(result.basis == "CFPF film P820123")
+        }
+    }
+}
+
 // MARK: - ArchivalPoolStratificationEndToEndTests (#645)
 
 /// The stratified candidate pool, driven through a real index rather than asserted about.

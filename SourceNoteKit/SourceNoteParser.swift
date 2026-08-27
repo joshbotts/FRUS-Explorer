@@ -130,14 +130,94 @@ public enum ParsedSourceNote: Sendable, Equatable {
             return "Lot \(lot)"
         case .naraCollection(_, _, let lot?, _):
             return "Lot \(lot)"
+        // W-17 session 1: the series arm has routed since #217 but never had a key, so
+        // Source Explorer told these documents no matching was possible while the
+        // pipeline matched them (the mirror this property promises had a hole).
+        // Central-files-named RG-59 series stay nil HERE — the parse alone cannot
+        // promise a match for them (the arm needs a class location from the raw
+        // citation), and `archivalNeighborsWithCohort` supplies the class basis when
+        // one resolves.
+        case .naraCollection(let rg, let series?, nil, _)
+            where !Self.seriesNamesCentralFiles(series):
+            return "RG \(rg): \(series)"
         case .presidentialLibrary(let library, let collection, _):
             return "\(library): \(collection)"
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             return fileId.components(separatedBy: "/").first?
                 .trimmingCharacters(in: .whitespaces) ?? fileId
+        // W-17 session 1: the pre-1910 Numerical File and other dotless file numbers
+        // ("File No. 6775/5" — case 6775). Same location rule as the dotted form, admitted
+        // only for the validated shape so OCR junk keeps its nil.
+        case .centralFiles(_, let fileId?):
+            return Self.dotlessFileLocation(of: fileId)
+        // W-17 session 1: a CFPF citation's film segment ("P820123–1320" → film P820123),
+        // the only key the 1973–79 electronic-era notes carry.
+        case .cfpfFile(let fileId?):
+            return Self.cfpfFilmPrefix(of: fileId).map { "CFPF film \($0)" }
+        // #808 routed CIA job numbers but never gave them a key — the same mirror hole
+        // as the series arm, found while extending the switch for W-17.
+        case .ciaCollection(let job?, _, _):
+            return "CIA Job \(job)"
         default:
             return nil
         }
+    }
+
+    /// The pre-slash location of a **dotless** central-files identifier, or `nil` when
+    /// the shape is not a file number.
+    ///
+    /// The routing switch historically required a `.` in the identifier to distinguish
+    /// `862S.01/10–1646` from bare values — which also excluded the entire pre-1910
+    /// Numerical File (`File No. 6775/5`) and the dotless class citations (`320/10512`).
+    /// Measured over the live index (2026-08-27): 4,441 dotless `num/num` rows whose
+    /// pre-slash locations form real cohorts (`320` → 717 documents, case `6775` → 99),
+    /// plus bare all-digit values. The validated admission: the location must start with
+    /// a digit and the identifier must either carry a slash or be digits throughout —
+    /// which keeps the measured OCR junk (`( less than 1 line not declassified )`,
+    /// `/4/63-5/63)`, `012—German`) at `nil`.
+    public static func dotlessFileLocation(of fileId: String) -> String? {
+        let trimmed = fileId.trimmingCharacters(in: .whitespaces)
+        guard let first = trimmed.first, first.isNumber else { return nil }
+        if let slash = trimmed.firstIndex(of: "/") {
+            let location = trimmed[..<slash].trimmingCharacters(in: .whitespaces)
+            guard trimmed.index(after: slash) < trimmed.endIndex,
+                  trimmed[trimmed.index(after: slash)].isNumber,
+                  !location.isEmpty else { return nil }
+            return location
+        }
+        return trimmed.allSatisfy(\.isNumber) && trimmed.count >= 2 ? trimmed : nil
+    }
+
+    /// The film-segment prefix of a CFPF identifier (`P820123–1320` → `P820123`,
+    /// `D780225–0373` → `D780225`), or `nil` when the identifier does not carry the
+    /// P-reel / D-film shape.
+    ///
+    /// The segment is the only cohort key a CFPF citation has — measured over the live
+    /// index (2026-08-27), P-reel segments cluster genuinely (`P820123` → 41 documents)
+    /// while whole-identifier equality almost never repeats (largest: 3).
+    public static func cfpfFilmPrefix(of fileId: String) -> String? {
+        let trimmed = fileId.trimmingCharacters(in: .whitespaces)
+        guard let first = trimmed.first, first == "P" || first == "D" else { return nil }
+        let digits = trimmed.dropFirst().prefix(while: \.isNumber)
+        guard digits.count == 6 else { return nil }
+        let prefix = String(first) + digits
+        // The prefix must be the whole segment: either the identifier ends there or a
+        // dash (the corpus prints an en dash; a plain hyphen also occurs) follows.
+        let rest = trimmed.dropFirst(prefix.count)
+        guard rest.isEmpty || rest.first == "–" || rest.first == "-" else { return nil }
+        return prefix
+    }
+
+    /// Whether a NARA series name names the State central files — the guard the
+    /// indexer's `decimal_class` derivation and the routing switch share, so a series
+    /// cohort can never be minted over "Central Files 1967–69" (a container of most of
+    /// the era's corpus, which the class arm serves at meaningful grain instead).
+    /// "Decimal File" catches the "Central Decimal File 1910–1929" spelling the
+    /// pre-1930 volumes use for the same records.
+    public static func seriesNamesCentralFiles(_ series: String) -> Bool {
+        series.localizedCaseInsensitiveContains("Central Files")
+            || series.localizedCaseInsensitiveContains("Central Foreign Policy")
+            || series.localizedCaseInsensitiveContains("Decimal File")
     }
 }
 
