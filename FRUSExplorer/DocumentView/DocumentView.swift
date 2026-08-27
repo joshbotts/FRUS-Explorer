@@ -264,6 +264,17 @@ struct DocumentView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var notFoundGlyphSize: CGFloat = 44
 
     @State private var vm: DocumentViewModel?
+
+    /// The navigation title: the parsed title once the document loads (derived through the
+    /// index's own `extractHeader`, so a head-nested source note can never ride along — #888),
+    /// else the stored header run through `DocumentHeaderDisplay.trimmedHeader` (a device whose
+    /// index predates the v15 extraction fix can still hold a leaky header until it re-indexes),
+    /// else the document id so the bar is never blank.
+    private var displayTitle: String {
+        if let title = vm?.documentTitle, !title.isEmpty { return title }
+        return entry.header.isEmpty ? entry.documentId
+            : DocumentHeaderDisplay.trimmedHeader(entry.header)
+    }
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
     @State private var activeSheet: DocumentSheet?
     /// Set when a cross-reference targets a document in an undownloaded volume; drives a
@@ -483,12 +494,32 @@ struct DocumentView: View {
         // title for cross-reference targets, which are created with header: "".
         // Falls back to entry.header (known at browse time) or to entry.documentId
         // as a last resort so the navigation bar is never blank.
-        .navigationTitle(vm?.documentTitle ?? (entry.header.isEmpty ? entry.documentId : entry.header))
+        .navigationTitle(displayTitle)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        // #888: the system inline title is single-line and clips a long document title at the
+        // screen edge — the owner's build-43 screenshot shows one running off the right of an
+        // iPad. A `.principal` item replaces the bar's title VIEW (while `.navigationTitle`
+        // above still feeds the back-button menu, Handoff, and the app switcher) and is the
+        // one way to let the title wrap.
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(displayTitle)
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
+                    // The bar proposes a single-line height to its principal view; without
+                    // claiming the wrapped ideal height the Text truncates to one line and the
+                    // second line this item exists for never renders.
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         #endif
         .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
-            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
+            activity.title = entry.header.isEmpty ? entry.documentId
+                : DocumentHeaderDisplay.trimmedHeader(entry.header)
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
             activity.isEligibleForHandoff = true
         }

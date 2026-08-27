@@ -514,17 +514,16 @@ public final class DocumentViewModel {
             personsByRef = pByRef
             termsByRef   = tByRef
 
-            // Extract document title from the first <head> element.
-            // Needed when this DocumentView was created via a cross-reference
-            // (entry.header == "") and must show a meaningful navigation title.
-            for node in ast.nodes {
-                if case .head(let c) = node {
-                    let t = c.map(\.plainText).joined(separator: " ")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !t.isEmpty { documentTitle = t }
-                    break
-                }
-            }
+            // Extract document title from the first <head> element — through the INDEX's own
+            // extractor, not a second walk (#888). This derivation used `plainText`, which
+            // includes head-nested notes, so every 1955+ document's navigation title ran
+            // straight on into its archival source note ("…Embassy in the Soviet Union
+            // Source: Department of State, Central Foreign Policy File…") while the stored
+            // header — measured over all 316,839 rows of the live index — was already clean.
+            // One definition: `extractHeader` excludes footnote subtrees at any depth, and a
+            // title here is now the same string the index would store.
+            let extracted = IndexingPipeline.extractHeader(from: ast.nodes)
+            if !extracted.isEmpty { documentTitle = extracted }
 
             // Resolve the canonical document number from the parsed document (the div's
             // `@n` — the history.state.gov number — with the head-text heuristic as

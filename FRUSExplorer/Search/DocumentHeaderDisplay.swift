@@ -23,14 +23,18 @@ import Foundation
 /// provenance that has its own field. The 2026-08-14 UI review filed both on all three platforms
 /// (Mac M-6, iPad F-21, iPhone P-5).
 ///
-/// **Display-time, deliberately.** The real cure is in header *extraction*, but that is an index
-/// content change — a `currentIndexVersion` bump and a full reindex on every install — and F-21
-/// itself says it is worth its own issue because the same defect pollutes citations and stored
-/// titles. This repair fixes what every reader sees today without costing anyone a reindex, and
-/// the extraction fix supersedes it at the next planned index bump.
+/// **Display-time, deliberately.** When this shipped, the cure was assumed to be in header
+/// *extraction*; #888's close measured otherwise — `extractHeader` has excluded head-nested
+/// notes since v15, and the live index holds ZERO leaky headers across all 316,839 documents.
+/// What actually still leaked was a display-time derivation that bypassed the extractor
+/// (`DocumentViewModel.documentTitle` used `plainText`), fixed at #888 by routing it through
+/// `IndexingPipeline.extractHeader`. ``trimmedHeader(_:)`` remains as the belt for a device
+/// whose index predates the v15 fix and has not re-indexed — a real population until the next
+/// forced bump — and for any stored header reaching a title without a re-parse.
 ///
 /// Version history:
 ///   1.0 — UI review wave 1 (CW-2): initial implementation
+///   1.1 — #888: charter corrected — extraction was already clean; this is the stale-index belt
 enum DocumentHeaderDisplay {
 
     /// Whether the header already begins with this document number, making a separate chip a

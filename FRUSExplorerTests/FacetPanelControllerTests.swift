@@ -287,8 +287,13 @@ struct FacetPanelControllerTests {
         FacetNarrowing.volume("frus1948v03").apply(to: &params)
         #expect(params.volumeIds == ["frus1948v03"])
 
-        FacetNarrowing.person(77).apply(to: &params)
+        FacetNarrowing.person(77, label: "Acheson, Dean").apply(to: &params)
         #expect(params.personRollupId == 77)
+        #expect(params.personLabel == "Acheson, Dean", """
+            #1092: the tapped bucket's name must ride into the parameters, or every chip
+            reading the person filter falls back to "person #77" — a slot number that is
+            renumbered on every rollup rebuild.
+            """)
 
         FacetNarrowing.documentType(.editorialNotesOnly).apply(to: &params)
         #expect(params.documentTypeFilter == .editorialNotesOnly)
@@ -300,7 +305,7 @@ struct FacetPanelControllerTests {
     func personNarrowingClearsTheRef() {
         var params = SearchParameters(keywords: "containment")
         params.personRef = "#p-acheson"
-        FacetNarrowing.person(77).apply(to: &params)
+        FacetNarrowing.person(77, label: nil).apply(to: &params)
         #expect(params.personRollupId == 77)
         #expect(params.personRef == nil, "a stale ref would silently AND with the rollup")
     }
@@ -423,9 +428,33 @@ struct IOSFacetNarrowingTests {
         defer { cleanUp(dir) }
 
         vm.personRefText = "acheson"
-        vm.applyFacetNarrowing(.person(77))
+        vm.applyFacetNarrowing(.person(77, label: "Acheson, Dean"))
         #expect(vm.personRollupId == 77)
         #expect(vm.personRefText.isEmpty, "a stale ref would silently undercount")
+    }
+
+    /// #1092: the chip must say WHO is filtered, not which slot number holds them.
+    @Test("The person chip shows the tapped bucket's name, never the rollup id")
+    func personChipShowsName() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.person(77, label: "Acheson, Dean"))
+        let chip = try #require(vm.activeNarrowings.first { $0.id == "person" })
+        #expect(chip.label == "Acheson, Dean", """
+            A chip reading "person #77" names a slot that is renumbered on every rollup \
+            rebuild — it means nothing to the reader and stops being the same person after \
+            one merge.
+            """)
+        #expect(!chip.label.contains("77"))
+    }
+
+    /// The mapping from a tapped bucket carries the display name into the narrowing.
+    @Test("A people bucket's narrowing carries its label")
+    func peopleBucketCarriesLabel() {
+        let bucket = FacetBucket(key: "77", label: "Acheson, Dean", count: 3)
+        #expect(FacetNarrowing.forBucket(bucket, in: .people)
+                == .person(77, label: "Acheson, Dean"))
     }
 
     @Test("A document-type narrowing sets the shared filter field")
@@ -449,7 +478,7 @@ struct IOSFacetNarrowingTests {
 
         vm.applyFacetNarrowing(.year("1948"))
         vm.applyFacetNarrowing(.volume("frus1948v03"))
-        vm.applyFacetNarrowing(.person(77))
+        vm.applyFacetNarrowing(.person(77, label: "Acheson, Dean"))
         vm.applyFacetNarrowing(.documentType(.documentsOnly))
 
         let ids = Set(vm.activeNarrowings.map(\.id))

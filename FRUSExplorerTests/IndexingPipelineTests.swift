@@ -946,6 +946,42 @@ struct TextExtractionTests {
                 == "595. Memorandum of Discussion at the 187th Meeting Prepared by S. Everett Gleason")
     }
 
+    /// The end-to-end pin for #888: the REAL parser over the real corpus shape, then the real
+    /// extractor — the same call chain `DocumentViewModel` now makes for the navigation title.
+    ///
+    /// The hand-built AST tests above pin the exclusion rule; this one pins that the PARSER
+    /// classifies a head-nested `<note type="source">` as a `.footnote` at all. The fixture is
+    /// `frus1981-88v03` d111's head, condensed — the exact document the owner's build-43
+    /// screenshot showed running past its title into "Source: Department of State, Central
+    /// Foreign Policy File…". The title derivation used `plainText` (notes included) instead
+    /// of this extractor; the stored header, measured over all 316,839 rows of the live index,
+    /// was already clean.
+    @Test("The parsed 1981 head shape yields a source-free title through the full pipeline (#888)")
+    func parsedHeadTitleExcludesSourceNote() async throws {
+        try await withTempDir { dir in
+            let xml = """
+            <TEI><text><body>
+              <div type="document" xml:id="d111" n="111">
+                <head>111. Telegram From the Department of State to the Embassy in the Soviet
+                  Union<note n="1" type="source" xml:id="d111fn1">Source: Department of
+                  State, Central Foreign Policy File, [no film number]. Secret; Immediate;
+                  <gloss target="#t_Nodis_1">Nodis</gloss>.</note>
+                </head>
+                <p>Body.</p>
+              </div>
+            </body></text></TEI>
+            """
+            let url = dir.appendingPathComponent("frus1981-88v03.xml")
+            try Data(xml.utf8).write(to: url)
+            let ast = try await FRUSDocumentParser().parseDocument(documentId: "d111",
+                                                                   volumeURL: url)
+            let nodes = try #require(ast?.nodes)
+            let title = IndexingPipeline.extractHeader(from: nodes)
+            #expect(title == "111. Telegram From the Department of State to the Embassy in the Soviet Union")
+            #expect(!title.contains("Source:"))
+        }
+    }
+
     @Test("extractDocumentNumber returns numeric prefix from head")
     func documentNumberExtraction() {
         let nodes: [FRUSASTNode] = [

@@ -46,8 +46,10 @@ enum FacetNarrowing: Sendable, Equatable {
     case year(String)
     /// Restrict to a single volume.
     case volume(String)
-    /// Restrict to one person rollup.
-    case person(Int)
+    /// Restrict to one person rollup. The label rides along (#1092): `rollup_id` is a slot
+    /// number renumbered on every rebuild, so a chip showing the integer names nothing — and
+    /// the bucket that was tapped already knows the person's display name.
+    case person(Int, label: String?)
     /// Restrict to primary documents or editorial notes.
     case documentType(DocumentTypeFilter)
     /// Restrict to documents carrying one `(category, subcategory)` subject bucket (#308).
@@ -62,7 +64,7 @@ enum FacetNarrowing: Sendable, Equatable {
         case .volumes:
             return .volume(bucket.key)
         case .people:
-            return Int(bucket.key).map { .person($0) }
+            return Int(bucket.key).map { .person($0, label: bucket.label) }
         case .documentType:
             // The aggregate keys on `is_editorial_note`, so "1" is the notes bucket.
             return .documentType(bucket.key == "1" ? .editorialNotesOnly : .documentsOnly)
@@ -86,8 +88,12 @@ enum FacetNarrowing: Sendable, Equatable {
             parameters.dateRange = DateRange(earliest: "\(year)-01-01", latest: "\(year)-12-31")
         case .volume(let volumeId):
             parameters.volumeIds = [volumeId]
-        case .person(let rollupId):
+        case .person(let rollupId, let label):
             parameters.personRollupId = rollupId
+            // #1092: the tapped bucket's display name IS the chip's label; without it every
+            // person-filter surface falls back to "person #N", a slot number that means
+            // nothing and stops being the same person on the next rollup rebuild.
+            parameters.personLabel = label
             // A rollup and a single ref are alternative expressions of the same filter;
             // leaving a stale ref set would AND them and silently return fewer documents
             // than the facet promised.
