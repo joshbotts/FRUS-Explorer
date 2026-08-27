@@ -579,39 +579,319 @@ extension FootnoteCitationScanner {
     /// - Returns: One candidate per clause that yields a class key. A clause naming two classes
     ///   contributes its first, matching `decimalClassLocation`'s own first-match contract.
     public static func classCandidates(inNote note: String) -> [FootnoteClassCandidate] {
-        var found: [FootnoteClassCandidate] = []
-        for clause in clauses(of: note) {
-            guard let key = SourceNoteParser.decimalClassLocation(inCitation: clause) else {
+        clauses(of: note).compactMap { classCandidate(inClause: $0) }
+    }
+
+    /// The class candidate in ONE clause, or `nil` — the per-clause half of
+    /// ``classCandidates(inNote:)``, factored out so the #1014 gap walker reads clauses through
+    /// the identical rule rather than through a second implementation that could drift.
+    static func classCandidate(inClause clause: String) -> FootnoteClassCandidate? {
+        guard let key = SourceNoteParser.decimalClassLocation(inCitation: clause) else {
+            return nil
+        }
+        let lowered = clause.lowercased()
+        let evidence = FootnoteClassCandidate.Evidence(
+            namesRepository: CollectionKeying.centralFilesAnchorSegment(in: clause) != nil,
+            // The same label vocabulary `SourceNoteParser.strippingFileNumberLabel` strips —
+            // matched on the whole clause rather than a leading segment, because in footnote
+            // prose the label sits mid-sentence ("…transmitted in despatch 44, file No.
+            // 711.684/11, not printed").
+            namesFileNumber: lowered.contains("file no") || lowered.contains("file number"),
+            // The class immediately followed by its serial. Matched on the punctuation-collapsed
+            // clause with the SAME helper `decimalClassLocation` applies before it reads a key,
+            // so `501. BC Indonesia/1-2045` is tested in the spelling the key was derived from
+            // rather than the printed one. The key is regex-escaped: it contains dots.
+            carriesSerial: SourceNoteParser.collapsingClassPunctuation(clause).range(
+                of: NSRegularExpression.escapedPattern(for: key) + #"\s*/"#,
+                options: [.regularExpression]) != nil)
+        let refusal: String?
+        if isAbsenceClaim(clause) {
+            refusal = "absenceClaim"
+        } else if namesAPublication(clause) {
+            refusal = "publication"
+        } else {
+            refusal = nil
+        }
+        return FootnoteClassCandidate(
+            classKey: key, clause: clause, evidence: evidence,
+            isSubjectNumeric: CollectionKeying.isSubjectNumericClass(key),
+            refusal: refusal)
+    }
+}
+
+// MARK: - FootnoteIbidGapWalker (#1014, measurement only)
+
+/// The cross-footnote state the #834 measurement deliberately lacked, built to measure — not to
+/// harvest — the bare-`Ibid.` gap #1014 names (W-1).
+///
+/// ## Why `classCandidates` cannot answer the question
+/// `classCandidates(inNote:)` takes a **single note**, so it cannot see the preceding footnote
+/// that ``FootnoteCitationScanner/ibidReach`` is measured against, and it requires a decimal
+/// class **inside the clause**, so a bare `Ibid.` yields zero candidates and is structurally
+/// invisible to it. `FootnoteCitationScanner`'s own `Ibid.` machinery carries lot/library units,
+/// not class keys. This walker is the missing instrument: a document-ordered walk that arms on
+/// class citations and asks, at every bare `Ibid.`, what the printed page's referent would be.
+///
+/// ## What "the printed page's referent" means here, and the one rule under it
+/// `Ibid.` means *the source last cited* — whatever kind of source that was. So the state is a
+/// single "last cited" slot that class candidates and lot/library citations **compete** for, in
+/// clause order, exactly as they compete on the page:
+///
+/// - a bare `Ibid.` whose last-cited is a **lot or library** belongs to the existing channel
+///   (which already inherits it) and is counted as such, never as a gap;
+/// - one whose last-cited is a class candidate the shipped harvest rule **admits** is the gap;
+/// - one whose last-cited is a class the rule **refuses** (subject-numeric, no serial, fails the
+///   schedule, out of the shared vocabulary, inside an absence claim) inherits a key the harvest
+///   would refuse directly — counted apart, because adding these to the gap would price a rule
+///   nobody proposes.
+///
+/// The walker mirrors `FootnoteCitationScanner.scan`'s refusals: an absence clause arms nothing
+/// but a class it *names* is recorded (with its `absenceClaim` refusal), a publication-refused
+/// class clause sets the publication flag instead of arming, and a note with no citations whose
+/// clauses named a publication **clears** the state (refusal 3). Two shadow states price the
+/// constraints: one ignores publication clears (what refusal 3 costs), one ignores the reach cap
+/// (what `ibidReach = 3` costs), and neither ever feeds the gap count.
+///
+/// ## Measurement, not harvest
+/// Nothing here reaches an artifact or an app surface. The admission rule is **injected** by the
+/// caller so this file does not import the schedule; the generator passes the shipped rule
+/// verbatim and re-derives the direct channel as it walks, which doubles as a parity check — the
+/// walker's direct count must equal the artifact's `decimalReferences` over the same corpus.
+///
+/// Version history:
+///   1.0 — Session 2026-08-27: #1014 W-1
+public struct FootnoteIbidGapWalker: Sendable {
+
+    /// What a bare `Ibid.` clause turned out to refer to.
+    public enum Outcome: Sendable, Equatable {
+        /// The gap: the last-cited source is a class the shipped rule admits, within reach.
+        /// `chained` when the state was re-armed by an earlier bare `Ibid.` in the same run.
+        case inheritsAdmittedClass(key: String, distance: Int, chained: Bool)
+        /// The last-cited source is a class the shipped rule refuses; `reason` is the refusal.
+        case inheritsRefusedClass(key: String, reason: String, distance: Int)
+        /// The last-cited source is a lot or library — the existing channel's inheritance.
+        case lastCitedIsArchival
+        /// The last-cited class is farther back than ``FootnoteCitationScanner/ibidReach``.
+        case beyondReach(key: String, distance: Int, admitted: Bool)
+        /// A publication citation cleared the state (refusal 3); without that clear, an
+        /// in-reach class would have been inherited.
+        case blockedByPublication(key: String, admitted: Bool)
+        /// Nothing citable precedes it within this document.
+        case noPriorCitation
+    }
+
+    /// One bare `Ibid.` clause, classified.
+    public struct Observation: Sendable, Equatable {
+        /// The verdict.
+        public let outcome: Outcome
+        /// The bare `Ibid.` clause, verbatim.
+        public let ibidClause: String
+        /// The clause that armed the state, verbatim — empty for ``Outcome/noPriorCitation``.
+        public let armingClause: String
+    }
+
+    /// What one note contributed: its bare-`Ibid.` observations plus the counters the report
+    /// needs from the direct channel.
+    public struct NoteResult: Sendable {
+        /// The bare `Ibid.` clauses, classified, in clause order.
+        public var observations: [Observation] = []
+        /// Class candidates in this note the injected rule ADMITS — the shipped channel's own
+        /// count, re-derived for parity.
+        public var directAdmitted = 0
+        /// Clauses that are an `Ibid.` NOT standing alone but carrying an admitted class of
+        /// their own (`Ibid., Central Files, 684A.86/8–956`) — already harvested; context for
+        /// the `ibidStandsAlone` question #1014 step 2 has to decide.
+        public var explicitIbidAdmitted = 0
+        /// Clauses carrying BOTH an archival anchor and a class candidate — a rule would have
+        /// to choose, so they are disclosed rather than silently resolved.
+        public var ambiguousClauses = 0
+        /// Admitted candidates inside clauses an archival anchor won. The runner counts these in
+        /// `decimalReferences` (its two passes are independent) while this walk gives the clause
+        /// to the archival citation — so the parity claim is `directAdmitted` PLUS this.
+        public var directAdmittedInArchivalClauses = 0
+    }
+
+    /// What the last-cited slot holds.
+    private enum LastCited: Sendable {
+        case classCandidate(FootnoteClassCandidate, ordinal: Int, chained: Bool)
+        case archival(ordinal: Int)
+    }
+
+    /// The shipped harvest rule, injected as a VERDICT: `nil` when the rule admits the
+    /// candidate, else the first failing guard's name in the runner's own guard order
+    /// (`absenceClaim` / `publication` / `subjectNumeric` / `noSerial` / `notComposing` /
+    /// `notInVocabulary`). A closure rather than an import, so this file stays free of the
+    /// schedule; see the type note.
+    private let admissionVerdict: @Sendable (FootnoteClassCandidate) -> String?
+
+    private var lastCited: LastCited?
+    /// Shadow: never cleared by a publication note. Prices refusal 3.
+    private var shadowClass: (candidate: FootnoteClassCandidate, ordinal: Int,
+                              clearedByPublication: Bool)?
+    private var ordinal = -1
+
+    /// Creates a walker with the caller's admission rule.
+    public init(admissionVerdict: @escaping @Sendable (FootnoteClassCandidate) -> String?) {
+        self.admissionVerdict = admissionVerdict
+    }
+
+    /// Whether the injected rule admits `candidate`.
+    private func isAdmitted(_ candidate: FootnoteClassCandidate) -> Bool {
+        admissionVerdict(candidate) == nil
+    }
+
+    /// Resets the state at a document boundary. Deliberately seeds nothing from the document's
+    /// own source note — `FootnoteCitationScanner`'s refusal 4, for the same reason.
+    public mutating func beginDocument() {
+        lastCited = nil
+        shadowClass = nil
+        ordinal = -1
+    }
+
+    /// Walks one **body** footnote in document order.
+    public mutating func scan(note: String) -> NoteResult {
+        ordinal += 1
+        var result = NoteResult()
+        var sawPublicationClause = false
+        var citedInThisNote = false
+
+        for clause in FootnoteCitationScanner.clauses(of: note) {
+            let candidate = FootnoteCitationScanner.classCandidate(inClause: clause)
+
+            if FootnoteCitationScanner.isAbsenceClaim(clause) {
+                // Parity with `scan`: an absence clause yields no citation. But a class it NAMES
+                // is still the page's last-mentioned file, so it arms — carrying its
+                // `absenceClaim` refusal, which keeps it out of the gap count.
+                if let candidate {
+                    arm(candidate, chained: false)
+                    citedInThisNote = true
+                }
                 continue
             }
-            let lowered = clause.lowercased()
-            let evidence = FootnoteClassCandidate.Evidence(
-                namesRepository: CollectionKeying.centralFilesAnchorSegment(in: clause) != nil,
-                // The same label vocabulary `SourceNoteParser.strippingFileNumberLabel` strips —
-                // matched on the whole clause rather than a leading segment, because in footnote
-                // prose the label sits mid-sentence ("…transmitted in despatch 44, file No.
-                // 711.684/11, not printed").
-                namesFileNumber: lowered.contains("file no") || lowered.contains("file number"),
-                // The class immediately followed by its serial. Matched on the punctuation-collapsed
-                // clause with the SAME helper `decimalClassLocation` applies before it reads a key,
-                // so `501. BC Indonesia/1-2045` is tested in the spelling the key was derived from
-                // rather than the printed one. The key is regex-escaped: it contains dots.
-                carriesSerial: SourceNoteParser.collapsingClassPunctuation(clause).range(
-                    of: NSRegularExpression.escapedPattern(for: key) + #"\s*/"#,
-                    options: [.regularExpression]) != nil)
-            let refusal: String?
-            if isAbsenceClaim(clause) {
-                refusal = "absenceClaim"
-            } else if namesAPublication(clause) {
-                refusal = "publication"
-            } else {
-                refusal = nil
+
+            let archival = FootnoteCitationScanner.citations(inClause: clause)
+            if !archival.isEmpty, candidate != nil { result.ambiguousClauses += 1 }
+            if !archival.isEmpty {
+                // The existing channel's territory wins the slot, matching how
+                // `FootnoteCitationScanner` would set `lastArchival` from this clause.
+                if let candidate, isAdmitted(candidate) {
+                    result.directAdmittedInArchivalClauses += 1
+                }
+                lastCited = .archival(ordinal: ordinal)
+                citedInThisNote = true
+                continue
             }
-            found.append(FootnoteClassCandidate(
-                classKey: key, clause: clause, evidence: evidence,
-                isSubjectNumeric: CollectionKeying.isSubjectNumericClass(key),
-                refusal: refusal))
+
+            if let candidate {
+                if isAdmitted(candidate) { result.directAdmitted += 1 }
+                let bareIbid = FootnoteCitationScanner.isIbidClause(clause)
+                    && FootnoteCitationScanner.ibidStandsAlone(clause)
+                if !bareIbid {
+                    if FootnoteCitationScanner.isIbidClause(clause), isAdmitted(candidate) {
+                        result.explicitIbidAdmitted += 1
+                    }
+                    if candidate.refusal == "publication" {
+                        // The clause is a publication citation that happens to contain a
+                        // class-shaped number; the page's referent is the publication.
+                        sawPublicationClause = true
+                    } else {
+                        arm(candidate, chained: false)
+                        citedInThisNote = true
+                    }
+                    continue
+                }
+                // A clause can be BOTH a bare `Ibid.` and yield a candidate only if the key was
+                // read from the box/date tail `ibidStandsAlone` strips — treat it as the bare
+                // `Ibid.` it is and fall through.
+            }
+
+            // BEFORE the bare-`Ibid.` classification, exactly as `scan` tests publications
+            // before `inheritedCitation`: a clause that names a publication and trails off in
+            // `…and ibid` is citing the publication again, and the first corpus run classified
+            // two of them as class inheritances — found by reading the sample file, the same
+            // way both lot/library `Ibid.` defects were found.
+            if FootnoteCitationScanner.namesAPublication(clause) {
+                sawPublicationClause = true
+                continue
+            }
+
+            if FootnoteCitationScanner.isIbidClause(clause),
+               FootnoteCitationScanner.ibidStandsAlone(clause) {
+                let observation = classify(ibidClause: clause)
+                result.observations.append(observation)
+                // The page's referent chains: a second `Ibid.` refers to what the first one
+                // did. Mirrors the scanner re-arming `lastArchival` from an inherited citation.
+                if case .inheritsAdmittedClass = observation.outcome,
+                   case .classCandidate(let candidate, _, _) = lastCited {
+                    arm(candidate, chained: true)
+                    citedInThisNote = true
+                } else if case .inheritsRefusedClass = observation.outcome,
+                          case .classCandidate(let candidate, _, _) = lastCited {
+                    arm(candidate, chained: true)
+                    citedInThisNote = true
+                } else if case .lastCitedIsArchival = observation.outcome {
+                    lastCited = .archival(ordinal: ordinal)
+                    citedInThisNote = true
+                }
+                continue
+            }
         }
-        return found
+
+        // Refusal 3, per note, exactly as `FootnoteCitationScanner.scan` applies it: a note
+        // whose only citation was to a publication invalidates the state. The shadow remembers.
+        if !citedInThisNote, sawPublicationClause {
+            lastCited = nil
+            if var shadow = shadowClass {
+                shadow.clearedByPublication = true
+                shadowClass = shadow
+            }
+        }
+        return result
     }
+
+    /// Arms both the live slot and the shadow.
+    private mutating func arm(_ candidate: FootnoteClassCandidate, chained: Bool) {
+        lastCited = .classCandidate(candidate, ordinal: ordinal, chained: chained)
+        shadowClass = (candidate, ordinal, false)
+    }
+
+    /// Classifies one bare `Ibid.` against the state.
+    private func classify(ibidClause clause: String) -> Observation {
+        switch lastCited {
+        case .archival:
+            return Observation(outcome: .lastCitedIsArchival, ibidClause: clause,
+                               armingClause: "")
+        case .classCandidate(let candidate, let armedOrdinal, let chained):
+            let distance = ordinal - armedOrdinal
+            let admitted = isAdmitted(candidate)
+            if distance > FootnoteCitationScanner.ibidReach {
+                return Observation(
+                    outcome: .beyondReach(key: candidate.classKey, distance: distance,
+                                          admitted: admitted),
+                    ibidClause: clause, armingClause: candidate.clause)
+            }
+            if admitted {
+                return Observation(
+                    outcome: .inheritsAdmittedClass(key: candidate.classKey, distance: distance,
+                                                    chained: chained),
+                    ibidClause: clause, armingClause: candidate.clause)
+            }
+            return Observation(
+                outcome: .inheritsRefusedClass(key: candidate.classKey,
+                                               reason: admissionVerdict(candidate)
+                                                   ?? "notAdmitted",
+                                               distance: distance),
+                ibidClause: clause, armingClause: candidate.clause)
+        case nil:
+            if let shadow = shadowClass, shadow.clearedByPublication,
+               ordinal - shadow.ordinal <= FootnoteCitationScanner.ibidReach {
+                return Observation(
+                    outcome: .blockedByPublication(key: shadow.candidate.classKey,
+                                                   admitted: isAdmitted(shadow.candidate)),
+                    ibidClause: clause, armingClause: shadow.candidate.clause)
+            }
+            return Observation(outcome: .noPriorCitation, ibidClause: clause, armingClause: "")
+        }
+    }
+
 }

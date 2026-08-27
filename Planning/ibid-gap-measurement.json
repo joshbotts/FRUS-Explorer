@@ -1,0 +1,193 @@
+{
+  "bands" : [
+    {
+      "band" : "before 1910",
+      "documentsScanned" : 47718,
+      "footnotesScanned" : 9340,
+      "tally" : {
+        "admittedDistanceHistogram" : {
+
+        },
+        "ambiguousClauses" : 0,
+        "bareIbidClauses" : 78,
+        "beyondReach" : {
+
+        },
+        "beyondReachAdmitted" : 0,
+        "blockedByPublication" : 1,
+        "blockedByPublicationAdmitted" : 0,
+        "chainedInheritances" : 0,
+        "directAdmitted" : 10,
+        "directAdmittedInArchivalClauses" : 0,
+        "distinctInheritedKeys" : 0,
+        "explicitIbidAdmitted" : 0,
+        "inheritsAdmittedClass" : 0,
+        "inheritsRefusedClass" : {
+          "noSerial" : 1
+        },
+        "lastCitedArchival" : 0,
+        "noPriorCitation" : 76,
+        "volumesWithGap" : 0
+      },
+      "volumes" : 81
+    },
+    {
+      "band" : "1910-1945",
+      "documentsScanned" : 130994,
+      "footnotesScanned" : 159371,
+      "tally" : {
+        "admittedDistanceHistogram" : {
+          "0" : 19,
+          "1" : 6,
+          "2" : 1,
+          "3" : 1
+        },
+        "ambiguousClauses" : 0,
+        "bareIbidClauses" : 4921,
+        "beyondReach" : {
+          "4" : 1,
+          "6+" : 1
+        },
+        "beyondReachAdmitted" : 0,
+        "blockedByPublication" : 98,
+        "blockedByPublicationAdmitted" : 38,
+        "chainedInheritances" : 8,
+        "directAdmitted" : 4099,
+        "directAdmittedInArchivalClauses" : 0,
+        "distinctInheritedKeys" : 16,
+        "explicitIbidAdmitted" : 0,
+        "inheritsAdmittedClass" : 27,
+        "inheritsRefusedClass" : {
+          "noSerial" : 78,
+          "notComposing" : 7,
+          "notInVocabulary" : 1,
+          "subjectNumeric" : 2
+        },
+        "lastCitedArchival" : 2,
+        "noPriorCitation" : 4704,
+        "volumesWithGap" : 14
+      },
+      "volumes" : 159
+    },
+    {
+      "band" : "1946 and later",
+      "documentsScanned" : 135767,
+      "footnotesScanned" : 302116,
+      "tally" : {
+        "admittedDistanceHistogram" : {
+          "0" : 407,
+          "1" : 696,
+          "2" : 37,
+          "3" : 2
+        },
+        "ambiguousClauses" : 957,
+        "bareIbidClauses" : 14844,
+        "beyondReach" : {
+          "4" : 8,
+          "5" : 5,
+          "6+" : 5
+        },
+        "beyondReachAdmitted" : 5,
+        "blockedByPublication" : 102,
+        "blockedByPublicationAdmitted" : 48,
+        "chainedInheritances" : 63,
+        "directAdmitted" : 24594,
+        "directAdmittedInArchivalClauses" : 18,
+        "distinctInheritedKeys" : 368,
+        "explicitIbidAdmitted" : 5070,
+        "inheritsAdmittedClass" : 1142,
+        "inheritsRefusedClass" : {
+          "absenceClaim" : 2,
+          "noSerial" : 342,
+          "notComposing" : 293,
+          "notInVocabulary" : 14,
+          "subjectNumeric" : 1212
+        },
+        "lastCitedArchival" : 1529,
+        "noPriorCitation" : 10190,
+        "volumesWithGap" : 99
+      },
+      "volumes" : 312
+    }
+  ],
+  "documentsScanned" : 314479,
+  "footnotesScanned" : 470827,
+  "generated" : "2026-08-27",
+  "overall" : {
+    "admittedDistanceHistogram" : {
+      "0" : 426,
+      "1" : 702,
+      "2" : 38,
+      "3" : 3
+    },
+    "ambiguousClauses" : 957,
+    "bareIbidClauses" : 19843,
+    "beyondReach" : {
+      "4" : 9,
+      "5" : 5,
+      "6+" : 6
+    },
+    "beyondReachAdmitted" : 5,
+    "blockedByPublication" : 201,
+    "blockedByPublicationAdmitted" : 86,
+    "chainedInheritances" : 71,
+    "directAdmitted" : 28703,
+    "directAdmittedInArchivalClauses" : 18,
+    "distinctInheritedKeys" : 380,
+    "explicitIbidAdmitted" : 5070,
+    "inheritsAdmittedClass" : 1169,
+    "inheritsRefusedClass" : {
+      "absenceClaim" : 2,
+      "noSerial" : 421,
+      "notComposing" : 300,
+      "notInVocabulary" : 15,
+      "subjectNumeric" : 1214
+    },
+    "lastCitedArchival" : 1531,
+    "noPriorCitation" : 14970,
+    "volumesWithGap" : 113
+  },
+  "topInheritedKeys" : {
+    "292.51G22" : 9,
+    "293.1111" : 5,
+    "310.2" : 9,
+    "396.1" : 5,
+    "440.002" : 5,
+    "611.35" : 7,
+    "611.4131" : 7,
+    "611.93" : 27,
+    "656.9813" : 6,
+    "684A.85" : 7,
+    "684A.86" : 16,
+    "690D.91" : 24,
+    "690D.91322" : 6,
+    "711.56396" : 13,
+    "735.00" : 9,
+    "740.5" : 12,
+    "747C.00" : 14,
+    "751G.00" : 71,
+    "751G.11" : 6,
+    "751G.5" : 9,
+    "751H.00" : 7,
+    "751J.00" : 110,
+    "751J.5" : 10,
+    "751K.00" : 13,
+    "751S.00" : 8,
+    "762.00" : 36,
+    "762.0221" : 31,
+    "770G.00" : 37,
+    "784A.56" : 7,
+    "790.5" : 22,
+    "790D.00" : 6,
+    "790D.5622" : 7,
+    "792.54" : 6,
+    "793.00" : 21,
+    "793.5" : 8,
+    "835.10" : 6,
+    "840.00" : 8,
+    "840.1901" : 10,
+    "851G.00" : 7,
+    "891.10" : 6
+  },
+  "volumesScanned" : 552
+}

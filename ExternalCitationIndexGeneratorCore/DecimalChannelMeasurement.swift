@@ -393,7 +393,7 @@ public enum DecimalChannelMeasurement {
     /// only the first two: does the key open with a real class digit followed by a real country
     /// number? The subject suffix is deliberately not required, because the shipped subject
     /// vocabulary covers classes 6 and 8 only.
-    public struct ScheduleValidator {
+    public struct ScheduleValidator: Sendable {
         private let classes: Set<String>
         private let countries: Set<String>
 
