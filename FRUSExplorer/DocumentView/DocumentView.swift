@@ -490,6 +490,14 @@ struct DocumentView: View {
             // log read — the duplication this wave exists to remove. Reading history is the trail.
             bootstrapViewModel()
         }
+        // F-19's transient half: a restored window can outrace the boot — `downloadManager` is
+        // nil for the first beats of a relaunch, and `bootstrapViewModel` cannot retry (it
+        // guards on `vm == nil`, and the vm exists from the first attempt). When the manager
+        // arrives, kick the load the gate refused.
+        .onChange(of: appState.downloadManager != nil) { _, hasManager in
+            guard hasManager, loadGate == .awaitingBoot else { return }
+            startLoadIfPossible()
+        }
         // vm.documentTitle is set after the document loads; it provides a real
         // title for cross-reference targets, which are created with header: "".
         // Falls back to entry.header (known at browse time) or to entry.documentId
@@ -612,6 +620,23 @@ struct DocumentView: View {
 
     // MARK: - Bootstrap
 
+    /// Why the document has not started loading, when it has not (iPad review F-19).
+    ///
+    /// The old shape inferred this at render time from "no model and no error" and showed one
+    /// spinner for every cause — including a volume the user deleted, which left a RESTORED
+    /// Stage-Manager window on "Opening document…" forever with no message and no door out.
+    /// Recording the cause is what lets the view say it, and the boot race retry below is what
+    /// lets the transient half heal instead of also spinning forever.
+    private enum LoadGate: Equatable {
+        /// Nothing blocking — loading has been kicked (or is about to be).
+        case open
+        /// `appState.downloadManager` was still nil — the app is booting; retried on arrival.
+        case awaitingBoot
+        /// The volume is not on this device — the honest dead end, stated.
+        case volumeMissing
+    }
+    @State private var loadGate: LoadGate = .open
+
     private func bootstrapViewModel() {
         guard vm == nil else { return }
         let allVolumes = appState.manifestStore.diffResult?.known
@@ -632,8 +657,26 @@ struct DocumentView: View {
             return (try? await pipeline.effectiveIsEditorialNote(
                 volumeId: volumeId, documentId: documentId)) ?? nil
         }
-        guard let dm = appState.downloadManager,
-              dm.isVolumeDownloaded(entry.volumeId) else { return }
+        startLoadIfPossible()
+    }
+
+    /// Kicks the volume load when the gate allows it — callable again when the boot race
+    /// resolves (F-19), which `bootstrapViewModel` cannot be: it is guarded on `vm == nil`
+    /// and the vm exists from the first attempt.
+    private func startLoadIfPossible() {
+        guard let vm, vm.renderModel == nil, !vm.isLoading else { return }
+        // The two causes the one spinner used to hide, now recorded apart: a nil manager is
+        // the app booting (transient — the `.onChange` below retries); an undownloaded volume
+        // is a fact about this device (stated on screen, resolved in Browse).
+        guard let dm = appState.downloadManager else {
+            loadGate = .awaitingBoot
+            return
+        }
+        guard dm.isVolumeDownloaded(entry.volumeId) else {
+            loadGate = .volumeMissing
+            return
+        }
+        loadGate = .open
         let url = dm.volumeURL(for: entry.volumeId)
         // Live-parse the publication year from the volume's TEI XML so the
         // citation tools show the volume's actual print year rather than a
@@ -674,12 +717,29 @@ struct DocumentView: View {
         } else if let model = vm.renderModel {
             documentContent(vm: vm, model: model)
         } else {
-            // No model yet and no error — volume may not be downloaded, or the
-            // initial render frame before bootstrapViewModel() fires. Show a spinner
-            // so the view never appears completely blank to the user.
-            ProgressView(String(localized: "document.initializing",
-                                defaultValue: "Opening document…"))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // F-19: the causes the one spinner used to hide, each stated. A restored
+            // Stage-Manager window whose volume was removed used to sit here forever.
+            switch loadGate {
+            case .volumeMissing:
+                ContentUnavailableView {
+                    Label(String(localized: "document.volumeMissing.title",
+                                 defaultValue: "Volume Not Downloaded"),
+                          systemImage: "arrow.down.circle.dotted")
+                } description: {
+                    Text(String(localized: "document.volumeMissing.detail",
+                                defaultValue: "This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it."))
+                }
+            case .awaitingBoot:
+                // The graph scene's #753 treatment, at the level every presentation shares.
+                BootPlaceholderView(
+                    detail: String(localized: "document.preparing.detail",
+                                   defaultValue: "The document will appear in a moment."))
+            case .open:
+                // The initial render frame before `bootstrapViewModel()` fires.
+                ProgressView(String(localized: "document.initializing",
+                                    defaultValue: "Opening document…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
     }
 

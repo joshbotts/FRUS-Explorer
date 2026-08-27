@@ -311,7 +311,9 @@ struct SecondProjectNudgeModifier: ViewModifier {
                 }
             }
             .onChange(of: appState.pendingSecondProjectNudge) { _, pending in
-                if let pending { nudgeProjectId = pending }   // #757 / L-47
+                // #757 / L-47 — and only when addressed here (F-20): capturing another window's
+                // hand-off would arm this instance's alert alongside the target's.
+                if let pending, isAddressedHere(pending) { nudgeProjectId = pending.payload }
             }
             .alert(
                 String(localized: "project.nudge.secondProject.title", defaultValue: "You have a second project"),
@@ -328,7 +330,7 @@ struct SecondProjectNudgeModifier: ViewModifier {
                     // no way to get it back, since the signal is one-shot.
                     //
                     // The captured value cannot be cleared out from under the action.
-                    let id = nudgeProjectId ?? appState.pendingSecondProjectNudge
+                    let id = nudgeProjectId ?? appState.pendingSecondProjectNudge?.payload
                     hasShown = true
                     if let id { openProjectHome(id) }
                 }
@@ -375,9 +377,26 @@ struct SecondProjectNudgeModifier: ViewModifier {
     /// dismissed by either button) consumes the signal.
     private var nudgePresented: Binding<Bool> {
         Binding(
-            get: { appState.pendingSecondProjectNudge != nil && !hasShown },
+            // F-20: only the addressed window presents. The signal used to be a bare UUID read
+            // by every mounted instance, so an iPad Stage-Manager setup showed the alert in
+            // every open window at once — the finding's exact words. Dismissal still clears the
+            // shared slot: the nudge is one-shot, whichever window answered it.
+            get: { appState.pendingSecondProjectNudge.map(isAddressedHere) == true && !hasShown },
             set: { presented in if !presented { appState.pendingSecondProjectNudge = nil } }
         )
+    }
+
+    /// Whether a nudge hand-off is this instance's to present.
+    ///
+    /// iOS matches the window the project was created in (or the `.anyWindow` wildcard a
+    /// scene-less producer sends); macOS mounts exactly one instance — the Settings window —
+    /// and has no scene id to match, so every hand-off is its own.
+    private func isAddressedHere(_ handoff: Handoff<UUID>) -> Bool {
+        #if os(iOS)
+        return handoff.target == sceneID ?? .anyWindow || handoff.target == .anyWindow
+        #else
+        return true
+        #endif
     }
 
     /// Makes the new project active and opens its Project Home — a fresh window on macOS, a sheet on iOS.

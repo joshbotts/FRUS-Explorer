@@ -193,6 +193,27 @@ CollectionCompositionRows 7 — incl. two fractional `11.5`s — ArchivalNetwork
 PersonCoMentionGraphView 4, CrossReferenceAnalyticsView 3); the graph-canvas ones are likely
 LEAVE-FIXED per the worklist's canvas rule, the rest are ordinary chrome debt.
 
+**CW-12, third program: the iPad probes (iPad W-11 / F-18, F-19, F-20, #657) — RUN at W-2d.**
+
+- **F-18 PROBED, and the feared failure does not exist on iPadOS 26.5.** Driven on the iPad Pro
+  13-inch simulator in Full Screen Apps mode: `supportsMultipleWindows` reports true — **and it
+  is truthful**. The rail-header window button opened a real second fullscreen window (the
+  standalone document scene, reached via the app switcher); the mode changes how windows are
+  ARRANGED, not whether scenes can open. No fallback needed; the scene-table comment now records
+  the probe instead of "unprobed".
+- **F-19 FIXED.** The permanent spinner's two hidden causes are now recorded (`LoadGate`) and
+  stated: a nil `downloadManager` shows the #753 `BootPlaceholderView` and RETRIES when the
+  manager arrives (the old `bootstrapViewModel` could not — it guards on `vm == nil` and the vm
+  exists from the first attempt); a missing volume says "Volume Not Downloaded" with the volume
+  named and the Browse route. Fixed inside `DocumentView`, so every presentation — tab, push,
+  restored Stage-Manager window — shares it.
+- **F-20 FIXED.** `pendingSecondProjectNudge` is a `Handoff<UUID>` addressed to the window the
+  project was created in; the modifier presents only when addressed (macOS's single Settings
+  instance passes through), so a Stage-Manager setup shows the alert once. Dismissal still
+  clears the shared slot — the nudge stays one-shot.
+- **#657 stays owner-lane**: the device backtrace (plan item B-1) cannot be captured from these
+  sessions; the badge mitigation remains "a suspect removed, not a proven fix".
+
 **CW-11 — the rest of the documentation sweep.** The ledger rule is now written (§1a) and the
 guide doors are shipped. What remains is the **re-captures themselves**, which are the owner's by
 standing convention, plus the manual caption corrections that depend on them.

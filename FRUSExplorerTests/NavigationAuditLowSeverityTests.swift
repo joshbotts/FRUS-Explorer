@@ -207,8 +207,11 @@ struct NavigationAuditLowSeverityTests {
             button action has varied across OS releases, so the action could find nil and silently \
             do nothing — with no second chance, since the signal is one-shot (#757 / L-47).
             """)
-        #expect(source.contains("if let pending { nudgeProjectId = pending }"),
-                "…captured in .onChange, not in a binding getter that mutates state")
+        #expect(source.contains("if let pending, isAddressedHere(pending) { nudgeProjectId = pending.payload }"),
+                """
+                …captured in .onChange, not in a binding getter that mutates state — and only \
+                when addressed to this window (F-20), or every instance arms its own alert
+                """)
 
         // And the action must actually prefer the captured value.
         let start = try #require(source.range(of: "project.nudge.secondProject.open"))
