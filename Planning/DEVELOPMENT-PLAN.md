@@ -9044,3 +9044,40 @@ gate tests green; full iOS suite 4,096/4,096. The launch notice and the Settings
 Recovery ▸ iCloud Schema row now report current. With this, Archive Visits plans,
 classification overrides, and saved-search freshness watermarks sync in Production — the
 last owed step of both programs' schema work.
+
+## Session 2026-08-27 — W-8's consular tail, harvested offline: the API key stops being the gate
+
+The assessment ran first (workflow: measured shard + code/plan readers): the bulk RG-59
+shard holds ALL file units for every W-8 tail series, reconciled exactly against the
+`fileUnitCount` NARA states on each series' own record — and the three consular-tail
+series are SINGLE CHRONOLOGICAL RUNS whose file units ARE the volumes, carrying date-range
+titles. The item level the shard lacks is the level these series don't have; it is why
+Consular Despatches (302031, item-grain) had to be keyed in June and why these three don't.
+
+**Generator**: `CONSULAR_TAIL_FROM_HARVEST=1` (keyless, networkless) streams `rg_59.json`
+via `HarvestShardReader` (extended with `seriesAncestorNaId` / `digitalObjectCount` /
+`fileUnitCount` — its own anti-drift rule says extend, never parallel), converts the file
+units through the SAME `CountrySeriesParser`/`CountrySeriesIndexBuilder` the keyed route
+uses (three new `CountrySeriesCategory` cases, `resolutionLevel` fileUnit,
+`isChronologicalRun`), and rewrites the index in place. Completeness = NARA's own count
+from the same shard (7/7, 4/4, 11/11; mismatch fatal); digitized-only via
+`digitalObjectCount > 0` (the `availableOnline=true` parity; all 22 are digitized today —
+the plan's "Consular Instructions only 1801–1834 digitized" has been overtaken by NARA);
+every written roll printed (stdout is the review surface — HARVEST_DIR is one-machine);
+3 offline golden checks; idempotent. Two parser gains: numeric `M/D/YYYY` titles
+(`6/17/1853 - 1/31/1865` — `yearOnly` used to flatten the end to Jan 1, silently
+truncating every range) and the `[through Sept. 1801]` end-only form (naively parsed it
+INVERTED the volume's coverage).
+
+**App**: the mirror gains the three categories + `matchesDate`/`rolls(containingDate:)`
+(the geo-keyed path's `geoKeys.contains` guard would refuse every geo-less volume);
+`CentralFilesClassifier` gains the foreign-consulate-in-the-U.S. cue (previously those
+datelines dead-ended as a U.S. "post" no despatch series serves) and the
+Department-outbound consular pair when the header names a consul — the same honest-
+ambiguity shape as the existing instructions/notes-to pair; both Source Explorer views
+resolve chronological candidates by date alone, and only WITH a date.
+
+Bundle regenerated (+3 series / 22 rolls, generated 2026-08-27). 8 new SPM tests + 8 new
+app tests (classifier cues incl. the "United States Consulate" tokenization trap; bundle
+counts, goldens, honest coverage gaps). Full suites green. W-8's remainder (Domestic/Misc
+Letters, Special Agents — classifier cues undesigned) recorded in the PoR row.

@@ -20,32 +20,48 @@ import Foundation
 /// | `.notesFrom` | item | parent file-unit title (`…the {Demonym} Legation…`) | item title |
 /// | `.notesTo` | fileUnit | own title (`{Country[ and …]}: {dates}`) | own title |
 /// | `.consularDespatches` | item | parent file-unit title (`…U.S. Consuls in {City}, …`) | item title |
+/// | `.consularInstructions` | fileUnit | — (chronological run) | own title, after the last label colon |
+/// | `.notesToForeignConsuls` | fileUnit | — (chronological run) | own title (`6/17/1853 - 1/31/1865`) |
+/// | `.notesFromForeignConsuls` | fileUnit | — (chronological run) | own title |
+///
+/// The three W-8 tail series (Phase 3's remainder) are SINGLE CHRONOLOGICAL RUNS: NARA
+/// arranges them by date alone, their file units ARE the bound volumes, and no geography
+/// exists to key on — `isChronologicalRun` is what tells a consumer to match by date only.
 public enum CountrySeriesCategory: String, Sendable, CaseIterable {
     case despatches = "diplomaticDespatches"
     case instructions = "diplomaticInstructions"
     case notesFrom = "notesFromForeignMissions"
     case notesTo = "notesToForeignMissions"
     case consularDespatches = "consularDespatches"
+    case consularInstructions = "consularInstructions"
+    case notesToForeignConsuls = "notesToForeignConsuls"
+    case notesFromForeignConsuls = "notesFromForeignConsuls"
 
     /// NARA series NAID.
     public var seriesNaId: String {
         switch self {
-        case .despatches:         return "603720"
-        case .instructions:       return "593313"
-        case .notesFrom:          return "594363"
-        case .notesTo:            return "597272"
-        case .consularDespatches: return "302031"
+        case .despatches:              return "603720"
+        case .instructions:            return "593313"
+        case .notesFrom:               return "594363"
+        case .notesTo:                 return "597272"
+        case .consularDespatches:      return "302031"
+        case .consularInstructions:    return "604019"
+        case .notesToForeignConsuls:   return "1076611"
+        case .notesFromForeignConsuls: return "1076629"
         }
     }
 
     /// Human-readable series name for display.
     public var displayName: String {
         switch self {
-        case .despatches:         return "Diplomatic Despatches"
-        case .instructions:       return "Diplomatic Instructions"
-        case .notesFrom:          return "Notes from Foreign Missions"
-        case .notesTo:            return "Notes to Foreign Missions"
-        case .consularDespatches: return "Consular Despatches"
+        case .despatches:              return "Diplomatic Despatches"
+        case .instructions:            return "Diplomatic Instructions"
+        case .notesFrom:               return "Notes from Foreign Missions"
+        case .notesTo:                 return "Notes to Foreign Missions"
+        case .consularDespatches:      return "Consular Despatches"
+        case .consularInstructions:    return "Consular Instructions"
+        case .notesToForeignConsuls:   return "Notes to Foreign Consuls"
+        case .notesFromForeignConsuls: return "Notes from Foreign Consuls"
         }
     }
 
@@ -54,7 +70,21 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
     public var resolutionLevel: String {
         switch self {
         case .despatches, .notesFrom, .consularDespatches: return "item"
-        case .instructions, .notesTo:                      return "fileUnit"
+        case .instructions, .notesTo,
+             .consularInstructions, .notesToForeignConsuls,
+             .notesFromForeignConsuls:                     return "fileUnit"
+        }
+    }
+
+    /// `true` for a series NARA arranges by date alone — no geography exists on its
+    /// volumes, so a resolver must match by date only (`CountryRoll.matchesDate`), never
+    /// through the geo-keyed path, whose `geoKeys.contains` guard would refuse every roll.
+    public var isChronologicalRun: Bool {
+        switch self {
+        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls:
+            return true
+        case .despatches, .instructions, .notesFrom, .notesTo, .consularDespatches:
+            return false
         }
     }
 }
@@ -73,6 +103,8 @@ public struct ParsedCountryRoll: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 2 — Despatches, Instructions, Notes from/to
+///   1.1 — W-8: the three chronological-run consular-tail series (Consular Instructions,
+///         Notes to/from Foreign Consuls) — date-only, file-unit grain
 public enum CountrySeriesParser {
 
     /// Parses a resolution record for `category`. Returns `nil` when the record is not a
@@ -85,7 +117,43 @@ public enum CountrySeriesParser {
         case .notesFrom:          return parseNotesFrom(record)
         case .notesTo:            return parseNotesTo(record)
         case .consularDespatches: return parseConsular(record)
+        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls:
+            return parseChronologicalRun(record)
         }
+    }
+
+    // MARK: Chronological runs (fileUnit; date-only, no geography — W-8 tail)
+
+    /// A chronological-run volume: the date range is the file unit's own title. Forms seen
+    /// on the real records (all 22 file units of the three series):
+    /// - `6/17/1853 - 1/31/1865`, `December 18, 1789 - December 31, 1826` — the bare range
+    /// - `Instructions: October 12, 1801 - February 26, 1817` — a label before a colon
+    /// - `Volume 1: "Despatches to Consuls," Pages 1-109: [through Sept. 1801]` — the date
+    ///   lives in the LAST colon segment (an end-only "through" bound)
+    ///
+    /// The rule: parse the text after the LAST colon when that parses as a date; otherwise
+    /// the whole title. Geography is `[]` by construction — see `isChronologicalRun`.
+    private static func parseChronologicalRun(_ record: CatalogRecord) -> ParsedCountryRoll {
+        var dateText = record.title
+        if let colon = record.title.lastIndex(of: ":") {
+            let tail = String(record.title[record.title.index(after: colon)...])
+                .trimmingCharacters(in: .whitespaces)
+            if HistoricalDateParser.parse(tail) != nil {
+                dateText = tail
+            }
+        }
+        dateText = dateText.trimmingCharacters(in: CharacterSet(charactersIn: "[] "))
+        // "[through Sept. 1801]" is an END bound with an open start — parsed naively the
+        // single date lands as a START, inverting the volume's coverage (a query before
+        // Sept. 1801 would miss it; one after would wrongly hit it).
+        if let r = dateText.range(of: #"^through\s+"#,
+                                  options: [.regularExpression, .caseInsensitive]) {
+            let end = HistoricalDateParser.parse(String(dateText[r.upperBound...]))
+            return ParsedCountryRoll(geoKeys: [], dateRange: end.map {
+                DateRangeISO(startISO: nil, endISO: $0.startISO, plausible: $0.plausible)
+            })
+        }
+        return ParsedCountryRoll(geoKeys: [], dateRange: HistoricalDateParser.parse(dateText))
     }
 
     // MARK: Despatches (item; geo from parent file-unit title)

@@ -221,6 +221,13 @@ public struct CountryRoll: Codable, Sendable, Equatable {
     public func matches(geoKey: String, dateISO: String?) -> Bool {
         guard geoKeys.contains(geoKey) else { return false }
         guard let dateISO else { return true }
+        return matchesDate(dateISO)
+    }
+
+    /// Date-only membership, for a CHRONOLOGICAL-RUN series (W-8): those volumes carry no
+    /// geography at all, so `matches(geoKey:dateISO:)`'s `geoKeys.contains` guard would
+    /// refuse every one of them. A roll must carry at least one date bound to match.
+    public func matchesDate(_ dateISO: String) -> Bool {
         guard startISO != nil || endISO != nil else { return false }
         if let start = startISO, dateISO < start { return false }
         if let end = endISO, dateISO > end { return false }
@@ -233,6 +240,13 @@ public extension CountrySeriesIndex {
     /// `dateISO` is nil), ascending by start date.
     func rolls(geoKey: String, dateISO: String?) -> [CountryRoll] {
         rolls.filter { $0.matches(geoKey: geoKey, dateISO: dateISO) }
+    }
+
+    /// Rolls containing `dateISO`, matched by DATE ALONE — the chronological-run path
+    /// (W-8). A date is required: listing a whole series unfiltered is noise, not a
+    /// resolution.
+    func rolls(containingDate dateISO: String) -> [CountryRoll] {
+        rolls.filter { $0.matchesDate(dateISO) }
     }
 }
 

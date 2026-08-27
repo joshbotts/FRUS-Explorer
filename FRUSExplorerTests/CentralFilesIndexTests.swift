@@ -489,3 +489,57 @@ struct CentralFilesIndexTests {
         #expect(CountryRoll.plausibleDate(nil) == nil)
     }
 }
+
+// MARK: - W-8: the chronological-run consular tail in the bundle
+
+/// The bundled index's three consular-tail series (W-8, harvested OFFLINE from the
+/// record-group shard) and the date-only resolution path they ride.
+struct ConsularTailBundleTests {
+
+    @Test("The bundle carries all three tail series at their NARA-stated volume counts")
+    func bundleCarriesTailSeries() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        // Counts are NARA's own fileUnitCount per series, verified by the offline pass.
+        let expected: [(CentralFilesSeriesCategory, String, Int)] = [
+            (.consularInstructions, "604019", 7),
+            (.notesToForeignConsuls, "1076611", 4),
+            (.notesFromForeignConsuls, "1076629", 11),
+        ]
+        for (category, seriesNaId, rollCount) in expected {
+            let series = try #require(index.series(category: category),
+                                      "\(category.rawValue) missing from the bundle")
+            #expect(series.seriesNaId == seriesNaId)
+            #expect(series.rolls.count == rollCount)
+            // Chronological runs carry NO geography — the reason matchesDate exists.
+            #expect(series.rolls.allSatisfy { $0.geoKeys.isEmpty })
+        }
+    }
+
+    @Test("The tail golden checks resolve through the bundle by date alone")
+    func tailGoldenChecks() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let goldens: [(CentralFilesSeriesCategory, String, String)] = [
+            (.consularInstructions, "1810-05-01", "220862827"),
+            (.notesToForeignConsuls, "1866-01-15", "40038222"),
+            (.notesFromForeignConsuls, "1864-06-01", "216891526"),
+        ]
+        for (category, dateISO, expectedNaId) in goldens {
+            let series = try #require(index.series(category: category))
+            let hits = series.rolls(containingDate: dateISO)
+            #expect(hits.contains { $0.naId == expectedNaId },
+                    "\(category.rawValue) @ \(dateISO) should include \(expectedNaId)")
+        }
+    }
+
+    @Test("A date outside a tail series' coverage resolves to nothing, never to everything")
+    func tailCoverageGapsAreHonest() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        // Consular Instructions' volumes end in 1834 (NARA describes no later volumes) —
+        // an 1890 instruction must miss, not match the whole run.
+        let instructions = try #require(index.series(category: .consularInstructions))
+        #expect(instructions.rolls(containingDate: "1890-06-01").isEmpty)
+        // Notes to Foreign Consuls starts 1853.
+        let notesTo = try #require(index.series(category: .notesToForeignConsuls))
+        #expect(notesTo.rolls(containingDate: "1850-01-01").isEmpty)
+    }
+}

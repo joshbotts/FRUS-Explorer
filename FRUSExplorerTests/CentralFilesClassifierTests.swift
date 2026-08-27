@@ -248,3 +248,74 @@ struct CentralFilesClassifierTests {
         #expect(rolls.contains { $0.naId == "188687259" })
     }
 }
+
+// MARK: - W-8: the chronological-run consular tail
+
+/// The three consular-tail series' classifier cues (W-8): a foreign consulate in the
+/// U.S. is a note FROM a foreign consul; Department outbound whose header names a consul
+/// gains the consular twin of the instructions/notes-to ambiguity. All chronological-run
+/// candidates carry NO geography — they resolve by date alone.
+struct ConsularTailClassifierTests {
+
+    @Test("A foreign consulate in the U.S. → note from a foreign consul, date-only")
+    func classifiesForeignConsulate() {
+        for dateline in ["Consulate-General of Spain, New York, June 5, 1895.",
+                         "Spanish Consulate-General, Washington, June 5, 1895.",
+                         "British Consulate, New York, March 2, 1880."] {
+            let c = CentralFilesClassifier.classify(
+                header: "The Spanish consul to Mr. Olney.",
+                dateline: dateline, chapterCountry: "Spain")
+            #expect(c.map(\.category) == [.notesFromForeignConsuls], "\(dateline)")
+            #expect(c.first?.geoKeys.isEmpty == true)
+            #expect(c.first?.confidence == .high)
+        }
+    }
+
+    @Test("U.S. consulates abroad stay on the consular-despatch path")
+    func usConsulatesUnchanged() {
+        // Every U.S. marker form, including the tokenization trap ("United States
+        // Consulate" — the word before 'consulate' is 'states', not a demonym).
+        for dateline in ["Consulate-General, of the United States, Havana, June 19, 1895.",
+                         "United States Consulate, Amoy, March 2, 1899.",
+                         "American Consulate, Amoy, March 2, 1899.",
+                         "Consulate of the United States at Canton, July 4, 1860."] {
+            #expect(!CentralFilesClassifier.isForeignConsulateDateline(dateline.lowercased()),
+                    "\(dateline)")
+        }
+        // A bare consulate with no marker either way stays on the U.S. path too — the
+        // pre-W-8 behavior, and the honest default for U.S.-published despatches.
+        #expect(!CentralFilesClassifier.isForeignConsulateDateline(
+            "consulate-general, havana, june 19, 1895."))
+    }
+
+    @Test("Department outbound with a consul in the header adds the consular pair")
+    func deptOutboundConsularPair() {
+        let c = CentralFilesClassifier.classify(
+            header: "Mr. Fish to the consul at Havana.",
+            dateline: "Department of State, Washington, July 6, 1873.",
+            chapterCountry: "Spain")
+        #expect(c.map(\.category) == [.instructions, .notesTo,
+                                      .consularInstructions, .notesToForeignConsuls])
+        // The consular pair is date-only: no geography.
+        #expect(c[2].geoKeys.isEmpty && c[3].geoKeys.isEmpty)
+        #expect(c[2].confidence == .medium && c[3].confidence == .medium)
+    }
+
+    @Test("Department outbound, consul header, NO chapter country → only the consular pair")
+    func deptOutboundConsularPairWithoutCountry() {
+        let c = CentralFilesClassifier.classify(
+            header: "Mr. Fish to the consul at Havana.",
+            dateline: "Department of State, Washington, July 6, 1873.",
+            chapterCountry: nil)
+        #expect(c.map(\.category) == [.consularInstructions, .notesToForeignConsuls])
+    }
+
+    @Test("Department outbound without a consul header is unchanged")
+    func deptOutboundUnchangedWithoutConsul() {
+        let c = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Mr. Adams.",
+            dateline: "Department of State, Washington, July 6, 1863.",
+            chapterCountry: "Great Britain")
+        #expect(c.map(\.category) == [.instructions, .notesTo])
+    }
+}

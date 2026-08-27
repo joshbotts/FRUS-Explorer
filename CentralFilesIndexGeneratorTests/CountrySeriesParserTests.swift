@@ -162,3 +162,102 @@ struct CountrySeriesParserTests {
         #expect(CountrySeriesIndexBuilder.plausibleDate(nil) == nil)
     }
 }
+
+// MARK: - Chronological runs (W-8 tail)
+
+/// The three consular-tail series are single chronological runs resolved at FILE-UNIT
+/// grain by date alone — every title form below is a REAL record from the offline
+/// record-group harvest (rg_59.json, read 2026-08-27).
+struct ChronologicalRunParserTests {
+
+    private func parse(_ title: String,
+                       category: CountrySeriesCategory) -> ParsedCountryRoll? {
+        CountrySeriesParser.parse(
+            CatalogRecord(naId: "1", title: title, levelOfDescription: "fileUnit"),
+            category: category)
+    }
+
+    @Test("Notes from Foreign Consuls: bare Month D, YYYY ranges")
+    func notesFromConsulsRange() throws {
+        let parsed = try #require(parse("December 18, 1789 - December 31, 1826",
+                                        category: .notesFromForeignConsuls))
+        #expect(parsed.geoKeys.isEmpty)
+        #expect(parsed.dateRange?.startISO == "1789-12-18")
+        #expect(parsed.dateRange?.endISO == "1826-12-31")
+    }
+
+    @Test("Notes to Foreign Consuls: numeric M/D/YYYY ranges parse at full precision")
+    func notesToConsulsNumericRange() throws {
+        let parsed = try #require(parse("6/17/1853 - 1/31/1865",
+                                        category: .notesToForeignConsuls))
+        #expect(parsed.dateRange?.startISO == "1853-06-17")
+        // The regression this form exists for: yearOnly used to flatten this to 1865-01-01,
+        // silently excluding any date after January 1 from the volume's range.
+        #expect(parsed.dateRange?.endISO == "1865-01-31")
+    }
+
+    @Test("Consular Instructions: a label before the colon is stripped")
+    func consularInstructionsLabeled() throws {
+        let parsed = try #require(parse("Instructions: October 12, 1801 - February 26, 1817",
+                                        category: .consularInstructions))
+        #expect(parsed.dateRange?.startISO == "1801-10-12")
+        #expect(parsed.dateRange?.endISO == "1817-02-26")
+    }
+
+    @Test("Consular Instructions: the Volume-1 through-form yields an end-only bound")
+    func consularInstructionsThroughForm() throws {
+        let parsed = try #require(parse(
+            #"Volume 1: "Despatches to Consuls," Pages 1-109: [through Sept. 1801]"#,
+            category: .consularInstructions))
+        // The date lives in the LAST colon segment; "through Sept. 1801" is an END bound
+        // with an open start — everything up to September 1801 matches, nothing after.
+        let range = try #require(parsed.dateRange)
+        #expect(range.startISO == nil)
+        #expect(range.endISO == "1801-09-01")
+    }
+
+    @Test("Chronological categories resolve only at fileUnit level")
+    func wrongLevelRefused() {
+        let item = CatalogRecord(naId: "1", title: "January 2, 1864 - December 31, 1864",
+                                 levelOfDescription: "item")
+        #expect(CountrySeriesParser.parse(item, category: .notesFromForeignConsuls) == nil)
+    }
+
+    @Test("matchesDate: date-only membership, geo never consulted")
+    func dateOnlyMatch() {
+        let roll = CountryRoll(naId: "40038222", title: "1/31/1865 - 9/29/1868",
+                               geoKeys: [], startISO: "1865-01-31", endISO: "1868-09-29",
+                               catalogURL: "https://catalog.archives.gov/id/40038222")
+        #expect(roll.matchesDate("1866-01-15"))
+        #expect(!roll.matchesDate("1864-12-31"))
+        #expect(!roll.matchesDate("1868-09-30"))
+        // The geo-keyed path REFUSES a geo-less roll — the reason matchesDate exists.
+        #expect(!roll.matches(geoKey: "havana", dateISO: "1866-01-15"))
+        // A roll with no bound at all never matches a dated query.
+        let undated = CountryRoll(naId: "x", title: "?", geoKeys: [],
+                                  startISO: nil, endISO: nil, catalogURL: "u")
+        #expect(!undated.matchesDate("1866-01-15"))
+    }
+
+    @Test("rolls(containingDate:) filters a chronological series by date alone")
+    func seriesDateOnlyLookup() {
+        let series = CountrySeriesIndex(
+            category: CountrySeriesCategory.notesFromForeignConsuls.rawValue,
+            seriesNaId: "1076629", displayName: "Notes from Foreign Consuls",
+            rolls: [
+                CountryRoll(naId: "a", title: "1789-1826", geoKeys: [],
+                            startISO: "1789-12-18", endISO: "1826-12-31", catalogURL: "u"),
+                CountryRoll(naId: "b", title: "1864", geoKeys: [],
+                            startISO: "1864-01-02", endISO: "1864-12-31", catalogURL: "u"),
+            ])
+        #expect(series.rolls(containingDate: "1864-06-01").map(\.naId) == ["b"])
+        #expect(series.rolls(containingDate: "1850-01-01").isEmpty)
+    }
+
+    @Test("isChronologicalRun marks exactly the three tail series")
+    func chronologicalFlag() {
+        let chronological = CountrySeriesCategory.allCases.filter(\.isChronologicalRun)
+        #expect(Set(chronological) == [.consularInstructions, .notesToForeignConsuls,
+                                       .notesFromForeignConsuls])
+    }
+}
