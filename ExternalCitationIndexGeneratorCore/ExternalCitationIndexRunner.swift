@@ -149,6 +149,8 @@ public enum ExternalCitationIndexRunner {
         (\(c.headNestedExcluded) head-nested, \(c.headNestedExcludedWithAnchor) with an anchor)
           references: \(c.referencesFound) found — \(c.lotReferences) lot, \
         \(c.libraryReferences) library, \(c.referencesInherited) inherited via Ibid.
+          decimal:    \(c.decimalReferences) class references, \
+        \(c.decimalReferencesInherited) inherited via Ibid. (#1014)
           refused:    \(c.absenceClaimsRefused) absence claims
           joined:     \(c.referencesJoined) to the authority \
         (\(percent(c.referencesJoined, of: c.referencesFound))), \
@@ -183,6 +185,11 @@ public enum ExternalCitationIndexRunner {
         public let unitId: String?
         /// That collection's display name, or `nil`.
         public let unitName: String?
+        /// The class an inherited decimal reference carries (#1014 W-1b), or `nil` for the
+        /// lot/library rows.
+        public var decimalClass: String?
+        /// The clause that armed the inheritance, or `nil` — the reviewer needs both halves.
+        public var armingClause: String?
     }
 
     // MARK: - The build
@@ -220,11 +227,24 @@ public enum ExternalCitationIndexRunner {
         var byClassPair: [ClassPairKey: Int] = [:]
         var classSourceKeySet: Set<String> = []
         var decimalReferences = 0
+        var decimalReferencesInherited = 0
         var decimalReferencesWithBothEnds = 0
         var decimalSameClassReferences = 0
         var decimalSubjectNumericRefused = 0
         var decimalNotComposingRefused = 0
         var decimalNotInSharedVocabularyRefused = 0
+        // The #1014 parity tripwire: the walker re-derives the direct channel as it walks, and
+        // the two counts must agree EXACTLY — measured 28,703 + 18 = 28,721 over the whole
+        // corpus before the rule shipped. A drift means the inheritance is riding a different
+        // grammar than the direct pass, which is precisely the failure the walker's design
+        // exists to prevent, so it is fatal rather than logged.
+        var walkerDirectDerived = 0
+        // The W-1b verdict closure — the shared shipped chain, so the walker inherits ONLY
+        // what the direct pass would admit. The direct pass keeps its explicit guards because it
+        // prices each refusal separately; the tripwire below keeps the two honest.
+        let admissionVerdict = FootnoteIbidGapWalker.shippedAdmissionVerdict {
+            schedule.composes($0)
+        }
 
         for file in files {
             // An unreadable volume fails the run: a skipped one would shrink every count in the
@@ -255,6 +275,7 @@ public enum ExternalCitationIndexRunner {
             }
 
             var scanner = FootnoteCitationScanner()
+            var ibidWalker = FootnoteIbidGapWalker(admissionVerdict: admissionVerdict)
             for document in DocumentFootnoteExtractor.extract(fromXML: data) {
                 documentsScanned += 1
                 footnotesScanned += document.footnotes.count
@@ -271,7 +292,39 @@ public enum ExternalCitationIndexRunner {
 
                 let before = scanner.absenceBlockedCount
                 scanner.beginDocument()
+                ibidWalker.beginDocument()
                 for note in document.footnotes {
+                    // #1014 W-1b: the bare-`Ibid.` inheritance. The walker walks EVERY note in
+                    // document order (its state is the point), and the harvest takes only the
+                    // observations whose referent the direct pass would have admitted.
+                    let walk = ibidWalker.scan(note: note)
+                    walkerDirectDerived += walk.directAdmitted
+                        + walk.directAdmittedInArchivalClauses
+                    for observation in walk.observations {
+                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
+                        else { continue }
+                        decimalReferences += 1
+                        decimalReferencesInherited += 1
+                        volumesWithReferences.insert(volumeId)
+                        byClassTarget[key, default: [:]][volumeId, default: 0] += 1
+                        if let own = sourceClass[document.documentId] {
+                            decimalReferencesWithBothEnds += 1
+                            classSourceKeySet.insert(own)
+                            if own == key { decimalSameClassReferences += 1 }
+                            byClassPair[ClassPairKey(source: own, target: key), default: 0] += 1
+                        }
+                        if sampleEvery > 0, decimalReferencesInherited % sampleEvery == 1
+                            || sampleEvery == 1 {
+                            samples.append(Sample(
+                                volumeId: volumeId, documentId: document.documentId,
+                                anchor: "centralFileClass",
+                                citation: observation.ibidClause,
+                                inherited: true, unitId: nil, unitName: nil,
+                                decimalClass: key,
+                                armingClause: observation.armingClause))
+                        }
+                    }
+
                     // The decimal channel (#834). A separate pass over the same note rather than
                     // a third `Anchor` case: an Anchor carries a `ParsedSourceNote` the authority
                     // can answer, and a class has no authority record — folding it in would put a
@@ -351,6 +404,16 @@ public enum ExternalCitationIndexRunner {
                 }
                 absenceClaimsRefused += scanner.absenceBlockedCount - before
             }
+        }
+
+        // #1014 W-1b parity tripwire: the walker's re-derived direct channel must equal the
+        // direct pass exactly (inherited references excluded from the comparison — they are the
+        // walker's own contribution). Fatal, not logged: a drift means the inheritance rides a
+        // different grammar than the rule it claims to extend.
+        let directPassAdmitted = decimalReferences - decimalReferencesInherited
+        guard walkerDirectDerived == directPassAdmitted else {
+            throw ExternalCitationError.classParityBroken(
+                walker: walkerDirectDerived, direct: directPassAdmitted)
         }
 
         // A run that joins nothing is a broken lookup, not an empty corpus — and an artifact of
@@ -438,6 +501,7 @@ public enum ExternalCitationIndexRunner {
                 sameUnitReferences: sameUnitReferences,
                 authorityCollectionCount: authorityCollectionCount,
                 decimalReferences: decimalReferences,
+                decimalReferencesInherited: decimalReferencesInherited,
                 decimalReferencesWithBothEnds: decimalReferencesWithBothEnds,
                 decimalSameClassReferences: decimalSameClassReferences,
                 decimalSubjectNumericRefused: decimalSubjectNumericRefused,
@@ -494,6 +558,8 @@ public enum ExternalCitationError: Error, CustomStringConvertible {
     case brokenJoin(targets: Int, pairs: Int, references: Int, volumes: Int)
     /// The decimal channel resolved nothing — a broken rule, not an empty corpus (#834).
     case brokenDecimalChannel(candidates: Int, volumes: Int)
+    /// The `Ibid.` walker's re-derived direct channel disagrees with the direct pass (#1014).
+    case classParityBroken(walker: Int, direct: Int)
 
     public var description: String {
         switch self {
@@ -509,6 +575,14 @@ public enum ExternalCitationError: Error, CustomStringConvertible {
             references across \(volumes) volumes produced no target keys. Measured 2026-08-20 the \
             shipped rule admits tens of thousands corpus-wide, so zero means the rule or the \
             schedule path is broken — check DECIMAL_LABELS first.
+            """
+        case .classParityBroken(let walker, let direct):
+            return """
+            Refusing to write: the Ibid. walker re-derived \(walker) direct class references \
+            where the direct pass admitted \(direct). The two run the same guard chain over the \
+            same clauses and were measured EXACTLY equal corpus-wide (28,721) before #1014 \
+            shipped, so a drift means the inheritance is riding a different grammar than the \
+            rule it claims to extend.
             """
         }
     }

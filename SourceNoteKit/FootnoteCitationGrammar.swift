@@ -619,10 +619,12 @@ extension FootnoteCitationScanner {
     }
 }
 
-// MARK: - FootnoteIbidGapWalker (#1014, measurement only)
+// MARK: - FootnoteIbidGapWalker (#1014)
 
-/// The cross-footnote state the #834 measurement deliberately lacked, built to measure — not to
-/// harvest — the bare-`Ibid.` gap #1014 names (W-1).
+/// The cross-footnote state the #834 measurement deliberately lacked: what a bare `Ibid.`'s
+/// referent is, for the decimal channel. Built as W-1's measurement instrument; **promoted to
+/// the harvest's inheritance engine at W-1b** after the measurement validated it — the corpus
+/// numbers below are the evidence the promotion rests on.
 ///
 /// ## Why `classCandidates` cannot answer the question
 /// `classCandidates(inNote:)` takes a **single note**, so it cannot see the preceding footnote
@@ -652,14 +654,29 @@ extension FootnoteCitationScanner {
 /// constraints: one ignores publication clears (what refusal 3 costs), one ignores the reach cap
 /// (what `ibidReach = 3` costs), and neither ever feeds the gap count.
 ///
-/// ## Measurement, not harvest
-/// Nothing here reaches an artifact or an app surface. The admission rule is **injected** by the
-/// caller so this file does not import the schedule; the generator passes the shipped rule
-/// verbatim and re-derives the direct channel as it walks, which doubles as a parity check — the
-/// walker's direct count must equal the artifact's `decimalReferences` over the same corpus.
+/// ## Three callers, one rule
+/// The admission rule is **injected** by the caller so this file does not import the schedule.
+/// The W-1 measurement (`MEASURE_IBID_GAP=1`) classifies every bare `Ibid.`;
+/// `ExternalCitationIndexRunner` and `IndexingPipeline` harvest ONLY the
+/// ``Outcome/inheritsAdmittedClass(key:distance:chained:)`` observations, with the identical
+/// verdict closure — so a row in the artifact, a row in `external_citations`, and a count in
+/// the measurement report are the same walk over the same clauses. The walker also re-derives
+/// the direct channel as it goes (``NoteResult/directAdmitted`` plus
+/// ``NoteResult/directAdmittedInArchivalClauses``), and the generator makes their sum equalling
+/// the direct pass FATAL rather than assumed — measured exact over 470,827 footnotes
+/// (28,703 + 18 = 28,721) before the rule shipped.
+///
+/// ## What W-1 measured, for the record
+/// 1,169 inheritances (4.1% of the direct channel), 380 keys, 113 volumes; 96.5% at distance
+/// ≤ 1; the reach cap costs 5 admitted references and refusal 3 costs 86; the 1910–1945 band
+/// gains 27 and pre-1910 zero. `ibidStandsAlone` did NOT change: the explicit
+/// `Ibid., Central Files, 684A.86/8–956` form was already harvested (5,070 references),
+/// because the class is in the clause. Full verdict:
+/// `Planning/Ibid-Gap-Measurement-2026-08-27.md`.
 ///
 /// Version history:
-///   1.0 — Session 2026-08-27: #1014 W-1
+///   1.0 — Session 2026-08-27: #1014 W-1 (measurement instrument)
+///   1.1 — Session 2026-08-27: #1014 W-1b — promoted to the harvest's inheritance engine
 public struct FootnoteIbidGapWalker: Sendable {
 
     /// What a bare `Ibid.` clause turned out to refer to.
@@ -733,6 +750,28 @@ public struct FootnoteIbidGapWalker: Sendable {
     /// Creates a walker with the caller's admission rule.
     public init(admissionVerdict: @escaping @Sendable (FootnoteClassCandidate) -> String?) {
         self.admissionVerdict = admissionVerdict
+    }
+
+    /// The SHIPPED admission chain, guard for guard in the runner's own order, with the schedule
+    /// test injected — the one definition all three callers build their verdict from
+    /// (`ExternalCitationIndexRunner`, `IndexingPipeline`, `IbidGapMeasurement`). The chain
+    /// living in three modules was exactly the drift the walker exists to prevent.
+    ///
+    /// - Parameter composes: Whether a key composes under the 1910–1949 schedule — the one guard
+    ///   whose data (the bundled labels artifact) this package deliberately does not read.
+    public static func shippedAdmissionVerdict(
+        composes: @escaping @Sendable (String) -> Bool
+    ) -> @Sendable (FootnoteClassCandidate) -> String? {
+        { candidate in
+            if let refusal = candidate.refusal { return refusal }
+            if candidate.isSubjectNumeric { return "subjectNumeric" }
+            if !candidate.evidence.carriesSerial { return "noSerial" }
+            if !composes(candidate.classKey) { return "notComposing" }
+            if SourceNoteParser.decimalClassKey(candidate.classKey) == nil {
+                return "notInVocabulary"
+            }
+            return nil
+        }
     }
 
     /// Whether the injected rule admits `candidate`.

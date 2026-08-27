@@ -765,7 +765,17 @@ public actor IndexingPipeline {
     ///   make Archival Analytics and the graph disagree about the same footnote.
     ///
     ///   Empty on an existing index until each volume is re-parsed.
-    public static let currentDateIndexVersion: Int = 46
+    /// - v46→47 — #1014 (W-1b): a bare `Ibid.` inherits the central-file class a preceding
+    ///   footnote named, within `ibidReach`, through `FootnoteIbidGapWalker` — the instrument
+    ///   W-1 built and validated against the corpus before the rule shipped (1,169 references,
+    ///   4.1% of the decimal channel; parity with the direct pass EXACT at 28,703 + 18 =
+    ///   28,721). Rows carry `inherited = 1`, the same disclosure the lot/library rows have
+    ///   carried since v38, and the verdict chain is the SHARED
+    ///   `FootnoteIbidGapWalker.shippedAdmissionVerdict` — one definition for this table, the
+    ///   bundled artifact, and the measurement. `ibidStandsAlone` is unchanged: the explicit
+    ///   `Ibid., Central Files, X` form was already harvested, because the class is in the
+    ///   clause. No schema change (the columns all exist); rows appear on re-parse.
+    public static let currentDateIndexVersion: Int = 47
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3964,6 +3974,15 @@ public actor IndexingPipeline {
         // archives, not an editor pointing at unprinted material, and harvesting it would drown
         // the real signal in the volume's own bibliography.
         var footnoteScanner = FootnoteCitationScanner()
+        // #1014 W-1b: the bare-`Ibid.` class inheritance, through the same walker the artifact's
+        // generator runs, with the same shared verdict chain — a row in this table and a
+        // reference in `external-citation-index.json` are the same walk over the same clauses.
+        // The schedule guard degrades exactly as the direct pass above does: a missing labels
+        // artifact refuses rather than admits.
+        var ibidWalker = FootnoteIbidGapWalker(
+            admissionVerdict: FootnoteIbidGapWalker.shippedAdmissionVerdict { [classSchedule] in
+                classSchedule?.composes($0) ?? false
+            })
 
         for astDoc in astDocs {
             let did = astDoc.documentId
@@ -4003,6 +4022,7 @@ public actor IndexingPipeline {
 
             if !astDoc.isFrontMatter {
                 footnoteScanner.beginDocument()
+                ibidWalker.beginDocument()
                 for (ordinal, note) in Self.collectBodyFootnoteTexts(from: astDoc.nodes).enumerated() {
                     var position = 0
                     for citation in footnoteScanner.scan(note: note) {
@@ -4031,6 +4051,24 @@ public actor IndexingPipeline {
                             collection: nil, lotFile: nil, lotFileNorm: nil, fileId: nil,
                             inherited: false, rawText: candidate.clause,
                             decimalClass: candidate.classKey))
+                        position += 1
+                    }
+                    // #1014 W-1b: a bare `Ibid.` whose referent is a class the rule above would
+                    // admit inherits it — `inherited: true`, the same disclosure the lot/library
+                    // rows carry, and the same `citation_index` sequence. The walker sees EVERY
+                    // note (its cross-footnote state is the point), and only the admitted-class
+                    // observations become rows.
+                    for observation in ibidWalker.scan(note: note).observations {
+                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
+                        else { continue }
+                        externalCitationRows.append(ExternalCitationRow(
+                            volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
+                            citationIndex: position,
+                            anchor: "centralFileClass",
+                            repository: "Department of State",
+                            collection: nil, lotFile: nil, lotFileNorm: nil, fileId: nil,
+                            inherited: true, rawText: observation.ibidClause,
+                            decimalClass: key))
                         position += 1
                     }
                 }
