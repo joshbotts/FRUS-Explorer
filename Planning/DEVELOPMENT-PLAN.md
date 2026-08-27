@@ -8959,3 +8959,31 @@ host placement of the Neighbors control, and the retirement of `collection.planV
 the new derivation/overlay suites driving the real builder and exporter. Manuals' §14.8
 reframed for the persistent plan; the My Research help block re-minted `.v3` in mirror and
 source together.
+
+## Session 2026-08-26 — Archive Visits Phase 4: the unit-grain entry, and the number the design owed
+
+The program's last phase: seed a plan from an archival UNIT, and replace the sparsity
+assumption with a measurement.
+
+**The unit-grain entry.** `CollectionDetailView` — the shared unit surface every unit-shaped
+view routes to — gains "Add the N citing documents to an Archive Visit…" beside Show Archival
+Neighbors: the count on the control itself, the citing set fetched through the SAME
+`collectionNeighbors` clause the Neighbors list runs (a second clause would let the control
+and the list describe different sets), limit 20,000 — above every re-measured per-unit
+maximum — with an honest-shortfall basis should a capped fetch ever occur, source-only
+preset, and the picker's banner disclosing the exact count before anything is written.
+
+**The re-measure.** The design session's read of the live index was TCC-blocked; this one
+succeeded (read-only open against the Mac app's store). Over the full 552-volume index
+(316,839 documents): **13,750 documents — 4.3% — carry lot/library footnote references.**
+The ≲6% assumption is confirmed and tightened: 6.2% was the reference-grain figure, 4.3% is
+document grain, the grain every caption speaks. With the deferred class anchor included:
+31,740 (10.0%) — context, not the channel. Unit tails at the shipped §2b grain: max 4,956
+documents per decimal class, 1,063 per lot (the design's 17,606 was a coarser grain).
+
+**The measurement ships.** `IndexingPipeline.externalCitationSparsity()` computes the same
+fact on any device — fixture-tested over a three-document volume where the class-anchor
+document must NOT count, exactly as the packet's channel excludes it — and the editor's
+sparsity captions now state the measured local number ("On this device: N of M indexed
+documents carry such references") beside the corpus figure, corrected from "about 6%" to
+"about 4%".

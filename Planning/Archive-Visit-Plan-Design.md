@@ -372,7 +372,25 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
   Deferred within scope: the 1a "Seeded from …" provenance caption (needs a plan-level field
   the §2 schema does not carry — a `stateData`-style column on the PLAN would board a future
   deploy); per-plan list target-counts render async from the same derivation.
-- **Phase 4 — unit-grain entry UI + the live-index sparsity re-measure.**
+- ~~**Phase 4 — unit-grain entry UI + the live-index sparsity re-measure.**~~ **SHIPPED
+  2026-08-26.** The unit-grain entry lives on `CollectionDetailView` — the shared unit
+  surface every unit-shaped view routes to — as "Add the N citing documents to an Archive
+  Visit…": the count on the control, the citing set fetched through the SAME
+  `collectionNeighbors` clause the Archival Neighbors list runs (limit 20,000 — above every
+  re-measured per-unit maximum), source-only preset, the picker's banner disclosing the
+  exact count before anything is written, and an honest-shortfall basis should a capped
+  fetch ever occur. **The sparsity re-measure finally ran** (the design session's attempt
+  was TCC-blocked; this read succeeded read-only against the live store): over the full
+  552-volume index (316,839 documents), **13,750 documents (4.3%) carry lot/library
+  footnote references** — the ≲6% design assumption CONFIRMED and tightened (6.2% was the
+  reference-grain figure; 4.3% is document grain, the grain every caption speaks). With the
+  deferred class anchor included it is 31,740 (10.0%), which is context, not the channel.
+  Unit-tail re-measures at the shipped §2b grain: max 4,956 documents per decimal class,
+  1,063 per lot — the design's 17,606 was a coarser-grain figure; the 20,000 ceiling clears
+  all of them. `IndexingPipeline.externalCitationSparsity()` now measures the same fact on
+  ANY device (fixture-tested to exclude the class anchor exactly as the channel does), and
+  the editor's sparsity captions state the measured local number beside the corrected ~4%
+  corpus figure.
 
 ## 7. Decisions — resolved and remaining
 

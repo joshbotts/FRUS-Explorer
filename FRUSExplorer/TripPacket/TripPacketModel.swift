@@ -268,7 +268,8 @@ struct TripPacketModel: Equatable, Sendable {
     /// report's denominators; per-seeding markers come from ``MandatorySubstitutes/matchesByDocument``.
     let substitutes: MandatorySubstitutes
     /// The coverage report's refs line: how many seeded documents the pointed-at channel found
-    /// references on, over how many it scanned (references exist on ≲6% of documents
+    /// references on, over how many it scanned (references exist on ~4% of documents —
+    /// measured 2026-08-26 over the full 552-volume index, 13,750 of 316,839
     /// corpus-wide, and a thin channel must read as sparse data, not as a failed scan).
     struct ReferenceCoverage: Equatable, Sendable {
         let documentsWithReferences: Int

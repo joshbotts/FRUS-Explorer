@@ -6199,6 +6199,33 @@ public actor IndexingPipeline {
         return (Int(sqlite3_column_int(stmt, 0)), Int(sqlite3_column_int(stmt, 1)))
     }
 
+    /// The live index's pointed-at sparsity (Archive Visits Phase 4): how many indexed
+    /// documents carry at least one lot or library footnote citation, over every indexed
+    /// document.
+    ///
+    /// The corpus-wide figure (#784: references at the shipped lot+library scope sit on a
+    /// small minority of documents, ≲6%) is an artifact claim about the WHOLE series; this is
+    /// the same measurement over the index this device actually holds, so a sparsity caption
+    /// can state a measured local fact instead of asserting the corpus. The filter matches
+    /// the packet's own channel rule exactly — the class anchor is excluded, as
+    /// `TripPacketBuilder`'s refs loop excludes it — so the number describes the channel the
+    /// captions caption.
+    ///
+    /// - Returns: `(documentsWithReferences, indexedDocuments)` — both numbers, always, per
+    ///   the house coverage grammar. `(0, 0)` on an empty index.
+    public func externalCitationSparsity() throws -> (documentsWithReferences: Int,
+                                                      indexedDocuments: Int) {
+        let refsSQL = """
+            SELECT COUNT(DISTINCT volume_id || '/' || document_id)
+            FROM external_citations WHERE anchor != 'centralFileClass'
+            """
+        let stmt = try auxPrepare(refsSQL)
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return (0, 0) }
+        let withReferences = Int(sqlite3_column_int(stmt, 0))
+        return (withReferences, try documentCacheCount())
+    }
+
     private func auxInsertVolumeSources(_ rows: [VolumeSourceRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
