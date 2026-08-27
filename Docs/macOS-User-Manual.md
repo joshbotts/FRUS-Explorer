@@ -529,7 +529,7 @@ Switch the active project from the menu bar (**Research ▸ Switch Project**) or
 
 Clicking a lead, a recently visited document, or a note opens it in whichever document window you used last — and if no document window is open at all (Project Home is its own window, so you can close the main one and keep working), a new one opens. The click always goes somewhere.
 
-Beside the Collections section header sits **Plan a Visit**, which generates an **Archive Visit packet** (Section 14.8) over the project's engaged documents — the same set that seeds the leads engine — with the project's research question as the inquiry's topic sentence. It stays disabled until the project has documents.
+Beside the Collections section header sits **Plan a Visit** — create-or-open for the project's **Archive Visit** (Section 14.8). A new plan seeds from the project's engaged documents (the same set that seeds the leads engine) with the research question as the inquiry's topic sentence; thereafter the button opens the existing plan, and **Re-seed from Project** in the plan's menu pulls in new engaged documents on request — never automatically.
 
 ---
 
@@ -589,7 +589,7 @@ The window has no permanent sidebar; you switch collections from the **collectio
 
 | Control | What it does |
 |---------|--------------|
-| **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts), an **Apparatus ▸** submenu of the five generated blocks, and **Plan an Archive Visit…** — the Archive Visit packet over this collection's documents (14.8) |
+| **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts), an **Apparatus ▸** submenu of the five generated blocks, and **Add to Archive Visit…** — seeds a plan from this collection's documents (14.8) |
 | **Sort** | Re-order documents chronologically, in one of two modes (12.4) |
 | **⚙ Collection** | The collection-settings popover — name, private working note, title-page front matter, composition presets and settings (12.6) |
 | **Export…** | The export sheet — format + destination (12.9) |
@@ -821,7 +821,9 @@ When a source note records the original document's classification markings (*"Se
 
 ### 14.8 The Archive Visit Packet
 
-Everything this chapter teaches document by document, the **Archive Visit packet** assembles in one pass: pick a set of documents, and the app reads their printed source notes *and* their editorial footnotes, resolves both against the bundled NARA data, and generates a repository-grouped planning document, in a sheet sized for reading (620×640 minimum). Reach it from **Project Home ▸ Plan a Visit** (built over the project's engaged documents, Section 10.4) or from a collection's **＋ Add** menu ▸ **Plan an Archive Visit…** in the Collections window (Section 12.1).
+Everything this chapter teaches document by document, the **Archive Visit** assembles in one pass — and since it is a saved plan, keeps assembling as your library grows. An Archive Visit is a persistent, synced research plan: documents seed it, the app derives **research targets** from their source notes and footnotes, and you prioritize, annotate, and export from the plan. Reach your plans from the **Research menu ▸ Archive Visits** (or the toolbar's My Research menu), and seed them from four surfaces: **Project Home ▸ Plan a Visit** (create-or-open — a new plan seeds from the project's engaged documents; Section 10.4), the Collections window's **＋ Add ▸ Add to Archive Visit…** (Section 12.1), **Source Explorer**'s section menu (per document, with a three-way choice: its archival source, its unprinted references, or both — the reference count shown before you choose), and **Archival Neighbors** (add the documents shown, as archival sources).
+
+The plan editor is a **target list**: targets grouped by repository with each repository's visit-planning links in the header, grouped inside by your own **priority tiers** (create, rename, reorder, and delete any number — deleting a tier moves its targets to Unprioritized and removes nothing), each row expandable to its verbatim seeding contexts. A **Documents** tab lists the seeds with their two contribution switches; a stored target whose key no longer derives from the seeds is kept and labeled, never deleted. Exclusions, tiers, and notes travel to the exported packet.
 
 The packet is organized around **research targets** — the archival units you would actually ask an archivist about: a central-file class (`762.00`), a lot file, a library collection. Each target itemizes the documents that seeded it **by claim**, kept deliberately apart: documents *published from* the file (with the file or folder designation their source note cites), and footnotes that *cite* the file without FRUS printing from it (quoted verbatim, with a note when the file was inherited from a preceding footnote's "*Ibid.*"). The two counts never merge into one number, because they are different kinds of evidence. Every seeding links to its document on history.state.gov.
 
@@ -1109,7 +1111,7 @@ Quantitative or quasi-quantitative claims about the record ("mentions of X colla
 
 Before travel to College Park or a presidential library:
 
-1. **Generate the Archive Visit packet** (14.8): from Project Home click **Plan a Visit**, or in the Collections window use **＋ Add ▸ Plan an Archive Visit…**. This automates what used to be this recipe's first six steps — the packet resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
+1. **Build the Archive Visit** (14.8): from Project Home click **Plan a Visit**, or seed a plan from the Collections window (**＋ Add ▸ Add to Archive Visit…**), Source Explorer, or Archival Neighbors. This automates what used to be this recipe's first six steps — the plan resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, lets you prioritize them into your own tiers, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
 2. Add a **NARA API key** first (14.6) so lot-file lookups run at full precision before the packet is built.
 3. Read the packet's **Access restrictions** chapter before booking anything — a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
 4. Send the **advance inquiry** well ahead (the checklist says how far), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.

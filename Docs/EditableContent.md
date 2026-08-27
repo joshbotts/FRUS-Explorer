@@ -5154,12 +5154,14 @@ Corpus, Person, Cross-Reference, Archival, and Semantic analytics, Chronology, a
 
 <!-- END SOURCE: mainwindow.tools.analytics.menu.help.v3 -->
 
-#### Research window (⌘⌥R), Collections (⇧⌘K), and Complete Hi…
-<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 426–427 | key: mainwindow.tools.myResearch.help.v2 -->
+#### Research window (⌘⌥R), Collections (⇧⌘K), Archive Visits…
+<!-- Archive Visits Phase 3, NEW key (`…help.v2` named three windows; the menu carries four now — the same re-mint `.v2` itself was). -->
 
-Research window (⌘⌥R), Collections (⇧⌘K), and Complete History
+<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | key: mainwindow.tools.myResearch.help.v3 -->
 
-<!-- END SOURCE: mainwindow.tools.myResearch.help.v2 -->
+Research window (⌘⌥R), Collections (⇧⌘K), Archive Visits, and Complete History
+
+<!-- END SOURCE: mainwindow.tools.myResearch.help.v3 -->
 
 #### Open Document
 <!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 809–810 | key: research.action.openDocument.v2 -->

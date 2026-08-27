@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import SwiftData
 import CoreText
 #if os(iOS)
 import UIKit
@@ -53,6 +54,9 @@ import AppKit
 ///          (§3's export-scoping amendment), each facility's inquiry draft gains its own
 ///          Copy (a draft's whole purpose is to be pasted into one email), and the citation
 ///          appendix becomes an opt-in toggle, default off (§3a)
+///   1.4 — Archive Visits Phase 3: the `.plan` seed — derivation through the editor's own
+///          path, topic edits persisting to `plan.inquiryText`, and the 1f deliverables
+///          section writing the plan's stored toggles rather than sheet-local state
 
 /// What a packet is built over (Phase 0).
 ///
@@ -66,6 +70,30 @@ enum TripPacketSeed {
     case documents([(volumeId: String, documentId: String)])
     /// A collection, resolved at build time (smart → saved search; static → documents + excerpts).
     case collection(Collection)
+    /// A persistent Archive Visit plan (Phase 3): seeds resolve through the plan's own
+    /// contribution flags via `ArchiveVisitDerivation` — the same derivation the editor
+    /// renders from — and the sheet's topic edits and deliverable toggles PERSIST to the
+    /// plan rather than living for the sheet's lifetime.
+    case plan(ArchiveVisitPlan)
+
+    /// Resolves a collection to its reading list — the ONE membership rule every surface
+    /// shares (Phase 3 factored it out of the sheet so the add-to-plan flows resolve the
+    /// same set the packet does): smart → the export's own `smartRefs`; static → documents
+    /// + excerpts through ``staticSeedDocuments(from:)``. Returns `nil` when a smart
+    /// collection's search cannot run yet.
+    @MainActor
+    static func resolve(collection: Collection, appState: AppState,
+                        modelContext: ModelContext)
+        async -> [(volumeId: String, documentId: String)]? {
+        if collection.savedSearchId != nil {
+            let resolver = CollectionContentResolver(appState: appState,
+                                                     modelContext: modelContext)
+            guard let refs = try? await resolver.smartRefs(for: collection) else { return nil }
+            return refs.sorted { $0.sortOrder < $1.sortOrder }
+                .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        }
+        return staticSeedDocuments(from: collection.documentEntries ?? [])
+    }
 
     /// The static-collection seed rule, separated so it is testable: document and excerpt
     /// entries with non-empty ids, in `sortOrder`, de-duplicated first-occurrence-wins.
@@ -121,8 +149,15 @@ struct TripPacketSheet: View {
     /// The repository scope — `nil` renders the whole plan (the default and the master
     /// reference); a facility name renders that repository's self-contained slice.
     @State private var facilityScope: String?
-    /// Whether the NARA citation-guidance appendix is included (§3a: opt-in, default off).
-    @State private var includeCitationCrib = false
+    /// The deliverable toggles in force. For an EPHEMERAL packet this is sheet-local state
+    /// (defaults per §3b); for a `.plan` seed it mirrors the plan's stored toggles, and
+    /// every change writes back through ``persistDeliverablesIfPlan()`` so the choice
+    /// travels with the plan (1f: part of the plan, not an app preference).
+    @State private var deliverables = ArchiveVisitDeliverables()
+    /// The plan's stored per-target state, derived alongside the model for a `.plan` seed.
+    @State private var overlay: ArchiveVisitOverlay?
+    /// The plan's seed-coverage numbers, for the 1h documents line.
+    @State private var seedCoverage: (seeded: Int, indexed: Int)?
     @State private var isBuilding = true
 
     var body: some View {
@@ -208,10 +243,14 @@ struct TripPacketSheet: View {
                 }
             }
             .task { await rebuild() }
-            // Scope and appendix are render filters over the model already in hand — the
-            // export-scoping amendment's whole point. Only the seed changing rebuilds.
+            // Scope and deliverables are render filters over the model already in hand — the
+            // export-scoping amendment's whole point. Only the seed changing rebuilds. A plan's
+            // deliverable change also persists (1f).
             .onChange(of: facilityScope) { _, _ in if let model { render(model) } }
-            .onChange(of: includeCitationCrib) { _, _ in if let model { render(model) } }
+            .onChange(of: deliverables) { _, _ in
+                persistDeliverablesIfPlan()
+                if let model { render(model) }
+            }
         }
         #if os(macOS)
         .frame(minWidth: 620, minHeight: 640)
@@ -248,9 +287,28 @@ struct TripPacketSheet: View {
                     }
                 }
             }
-            Toggle(String(localized: "packet.appendix.crib",
-                          defaultValue: "Include NARA citation guidance"),
-                   isOn: $includeCitationCrib)
+            if seededPlan != nil {
+                // 1f: the full per-plan deliverables — what to include travels WITH the plan.
+                Section(String(localized: "packet.deliverables.section",
+                               defaultValue: "What to Include")) {
+                    Toggle(String(localized: "packet.deliverables.links",
+                                  defaultValue: "Repository visit-planning links"),
+                           isOn: $deliverables.includeLinks)
+                    Toggle(String(localized: "packet.deliverables.targets",
+                                  defaultValue: "Target list"),
+                           isOn: $deliverables.includeTargets)
+                    Toggle(String(localized: "packet.deliverables.inquiry",
+                                  defaultValue: "Inquiry email drafts"),
+                           isOn: $deliverables.includeInquiry)
+                    Toggle(String(localized: "packet.appendix.crib",
+                                  defaultValue: "Include NARA citation guidance"),
+                           isOn: $deliverables.includeCitationCrib)
+                }
+            } else {
+                Toggle(String(localized: "packet.appendix.crib",
+                              defaultValue: "Include NARA citation guidance"),
+                       isOn: $deliverables.includeCitationCrib)
+            }
         } label: {
             Label(String(localized: "packet.options", defaultValue: "Options"),
                   systemImage: "slider.horizontal.3")
@@ -315,12 +373,18 @@ struct TripPacketSheet: View {
     }
 
     /// Writes the draft into the model's `edited` slot and re-renders — no rebuild, the model
-    /// is already assembled; only the export string and its PDF change.
+    /// is already assembled; only the export string and its PDF change. For a `.plan` seed the
+    /// edit also PERSISTS to `plan.inquiryText` — the whole reason the plan carries the field:
+    /// the draft survives the sheet, and re-opens identically on another device.
     private func applyTopicEdit() {
         guard var model else { return }
         let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         model.topicSentence.edited = trimmed.isEmpty ? nil : topicDraft
         self.model = model
+        if let plan = seededPlan {
+            plan.inquiryText = trimmed.isEmpty ? nil : topicDraft
+            try? modelContext.save()
+        }
         render(model)
     }
 
@@ -328,33 +392,51 @@ struct TripPacketSheet: View {
     private func render(_ model: TripPacketModel) {
         var exporter = TripPacketExporter(model: model, projectName: title)
         exporter.facilityScope = facilityScope
-        exporter.includeCitationCrib = includeCitationCrib
+        exporter.deliverables = deliverables
+        exporter.overlay = overlay
+        if let seedCoverage {
+            exporter.seededDocumentCount = seedCoverage.seeded
+            exporter.resolvedDocumentCount = seedCoverage.indexed
+        }
         exporter.generatedOn = Date()
         let rendered = exporter.export()
         packet = rendered
         packetPDF = TripPacketPDFRenderer.render(packet: rendered, title: title)
     }
 
+    /// Writes the sheet's deliverable toggles back to the plan (1f: they are part of the
+    /// plan, not an app preference). A no-op for ephemeral packets.
+    private func persistDeliverablesIfPlan() {
+        guard let plan = seededPlan else { return }
+        plan.deliverables = deliverables
+        try? modelContext.save()
+    }
+
+    /// The plan behind a `.plan` seed, or `nil`.
+    private var seededPlan: ArchiveVisitPlan? {
+        if case .plan(let plan) = seed { return plan }
+        return nil
+    }
+
     /// Resolves the seed to a reading list. A smart collection resolves through the SAME
     /// resolver its exports use (`CollectionContentResolver.smartRefs`), so the packet and the
     /// export cannot describe different membership; a static collection contributes documents
-    /// and excerpts through ``TripPacketSeed/staticSeedDocuments(from:)``.
+    /// and excerpts through ``TripPacketSeed/staticSeedDocuments(from:)``. A `.plan` seed never
+    /// reaches this — `rebuild()` derives it through `ArchiveVisitDerivation` instead, so the
+    /// sheet and the plan editor cannot disagree about a plan's targets.
     private func resolveSeedDocuments() async -> [(volumeId: String, documentId: String)]? {
         switch seed {
         case .documents(let docs):
             return docs
+        case .plan:
+            return nil   // unreachable — rebuild() branches before calling this
         case .collection(let collection):
-            if collection.savedSearchId != nil {
-                let resolver = CollectionContentResolver(appState: appState,
-                                                         modelContext: modelContext)
-                guard let refs = try? await resolver.smartRefs(for: collection) else {
-                    unavailableReason = .smartSearchUnavailable
-                    return nil
-                }
-                return refs.sorted { $0.sortOrder < $1.sortOrder }
-                    .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            guard let docs = await TripPacketSeed.resolve(
+                collection: collection, appState: appState, modelContext: modelContext) else {
+                unavailableReason = .smartSearchUnavailable
+                return nil
             }
-            return TripPacketSeed.staticSeedDocuments(from: collection.documentEntries ?? [])
+            return docs
         }
     }
 
@@ -369,6 +451,48 @@ struct TripPacketSheet: View {
             unavailableReason = .indexUnavailable
             return
         }
+        // The same manifest set CollectionContentResolver batches, keyed once — what lets
+        // the roster's citations come from the real formatter rather than the fallback.
+        let manifest = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        let dataSource = TripPacketDataSource(
+            pipeline: pipeline,
+            manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
+                                    uniquingKeysWith: { first, _ in first }))
+
+        // A plan derives through the ONE derivation path the editor renders from, and its
+        // stored toggles and inquiry text load into the sheet's state.
+        if let plan = seededPlan {
+            deliverables = plan.deliverables
+            guard !(plan.documents ?? []).isEmpty else {
+                packet = nil
+                packetPDF = nil
+                model = nil
+                unavailableReason = .noDocuments
+                return
+            }
+            let derived = await ArchiveVisitDerivation.derive(
+                plan: plan,
+                indexedVolumeIds: Set(appState.indexedVolumeIds),
+                dataSource: dataSource)
+            overlay = derived.overlay
+            seedCoverage = (seeded: derived.seededDocumentCount,
+                            indexed: derived.indexedDocumentCount)
+            var planModel = derived.model
+            // A live sheet edit wins over the stored text until committed (the rebuild-
+            // preserves-the-edit rule below); with no live edit, mirror the stored text.
+            let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                planModel.topicSentence.edited = topicDraft
+            } else if topicDraft.isEmpty, let stored = plan.inquiryText, !stored.isEmpty {
+                topicDraft = stored
+            }
+            model = planModel
+            if let scope = facilityScope, !facilities.contains(scope) { facilityScope = nil }
+            render(planModel)
+            return
+        }
+
         guard let documents = await resolveSeedDocuments() else {
             packet = nil
             packetPDF = nil
@@ -382,16 +506,9 @@ struct TripPacketSheet: View {
             unavailableReason = .noDocuments
             return
         }
-        // The same manifest set CollectionContentResolver batches, keyed once — what lets
-        // the roster's citations come from the real formatter rather than the fallback.
-        let manifest = appState.manifestStore.diffResult?.known
-            ?? appState.manifestStore.bundledEntries
         var built = await TripPacketBuilder.build(
             documents: documents, researchQuestion: researchQuestion,
-            dataSource: TripPacketDataSource(
-                pipeline: pipeline,
-                manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
-                                        uniquingKeysWith: { first, _ in first })))
+            dataSource: dataSource)
         guard !built.targets.isEmpty || built.triage.unresolvedDocumentCount > 0 else {
             // Unreachable in practice (a note-less reading list lands in the help-me-locate
             // branch), kept as a guard: an empty page must never render as a packet.

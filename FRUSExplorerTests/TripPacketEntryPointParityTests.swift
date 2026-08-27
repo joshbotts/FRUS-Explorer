@@ -17,28 +17,30 @@ import Foundation
 
 // MARK: - TripPacketEntryPointParityTests
 
-/// Pins the collection route into the trip packet, on every platform (#830).
+/// Pins the Archive Visit entry-point wiring, on every platform (#830; Phase 3).
 ///
-/// ## The defect this exists for, and why the obvious test would have missed it
-/// The collection entry point shipped in T-2 and **never worked on any platform**. The control that
-/// sets `showTripPacket` lived in `iPhoneAddMenu`; the `.sheet` that observes it lived inside
-/// `macBody`. `CollectionEditorView.body` renders `macBody` only under `#if os(macOS)`, so on iOS
-/// the button set a flag nothing watched, and on macOS the presenter had no control to open it.
-/// `iPadAddMenu` and the macOS manager pane had no item at all.
+/// ## The defect class this exists for, and why the obvious test would have missed it
+/// The original collection entry point shipped in T-2 and **never worked on any platform**: the
+/// control that set the presenting flag lived in `iPhoneAddMenu` while the `.sheet` that observed
+/// it lived inside `macBody` — same file, separated by a platform branch, so no same-file check
+/// could catch it, and each platform had only half the wiring. This suite asserts the property
+/// that actually failed: **the presenter must sit in the shared `body`**, above the per-platform
+/// split, so no `#if` can strand it away from its control.
 ///
-/// **A same-file check could not have caught it**, because the setter and the presenter were in the
-/// same file — separated by a platform branch, not by a file boundary. So this suite asserts the
-/// stronger property that actually failed: **the presenter must sit in the shared `body`**, above
-/// the per-platform split, so no `#if` can strand it away from the control.
-///
-/// A UI test would also catch it, and would be better evidence — but it would catch it only on
-/// whichever platform and size class the test happens to run at, and this defect was specifically
-/// one of a *size class* (regular width had no item at all). A source scan covers all six
-/// surface/size combinations at once, which is the shape of the bug.
+/// A UI test would catch these too, but only on whichever platform and size class it runs at,
+/// and the original defect was specifically one of a *size class* (regular width had no item at
+/// all). A source scan covers every surface/size combination at once, which is the shape of the
+/// bug. Each assertion is scoped to a CONTROL, not a file (the source-scan rule).
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-23: #830, the dead collection entry point
-@Suite("Trip packet entry-point parity (#830)")
+///   2.0 — Archive Visits Phase 3: the collection surfaces' verb becomes Add to Archive
+///          Visit (§7.3 — the ephemeral verb was kept only through Phases 1–2), Project
+///          Home becomes create-or-open over the persistent plan, and the new surfaces —
+///          the Research-tab list, the macOS window + menus, the Source Explorer three-way
+///          add on both platforms, and the Neighbors control in the SHARED content core —
+///          are pinned with the same discipline
+@Suite("Archive Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
     private static var repoRoot: URL {
@@ -52,28 +54,22 @@ struct TripPacketEntryPointParityTests {
     private static let editor = "FRUSExplorer/Collections/CollectionEditorView.swift"
     private static let macManager = "FRUSExplorer/Collections/MacCollectionManagerView.swift"
 
-    /// Every surface that offers the action, keyed on the SHARED localization key rather than on
-    /// the visible words — a menu that spelled its own label would be a different bug, and this
-    /// suite is about wiring.
-    private static let planVisitKey = "collection.planVisit"
+    /// Every collection surface offers the action under the SHARED localization key — a menu
+    /// that spelled its own label would be a different bug; this suite is about wiring.
+    private static let addToVisitKey = "collection.addToVisit"
 
-    // MARK: - The presenter must be platform-independent
+    // MARK: - The collection surfaces (the verb swap)
 
-    /// **The exact failure.** `.sheet(isPresented: $showTripPacket)` must appear in the shared
-    /// `body`, not inside `macBody` or `iOSBody`.
-    ///
-    /// Asserted by ORDER rather than by string proximity: `body` is declared before the two
-    /// per-platform bodies, so the presenter's offset must fall between `var body` and whichever
-    /// per-platform body is declared first. That is what makes this test fail on the original code
-    /// — where the presenter sat several hundred lines *after* `private var macBody`.
-    @Test("The collection presenter lives in the shared body, not a per-platform one")
+    /// **The exact failure shape, re-pinned for the successor.** The picker presenter must
+    /// appear in the shared `body`, not inside `macBody` or `iOSBody`.
+    @Test("The collection picker presenter lives in the shared body, not a per-platform one")
     func presenterIsPlatformIndependent() throws {
         let text = try Self.source(Self.editor)
 
         guard let bodyStart = text.range(of: "\n    var body: some View {"),
               let macBody = text.range(of: "\n    private var macBody: some View {"),
               let iOSBody = text.range(of: "\n    private var iOSBody: some View {"),
-              let presenter = text.range(of: ".sheet(isPresented: $showTripPacket)")
+              let presenter = text.range(of: ".sheet(item: $planPickerRequest)")
         else {
             Issue.record("CollectionEditorView no longer declares body / macBody / iOSBody / the presenter — re-derive this test against the new shape rather than deleting it")
             return
@@ -81,22 +77,18 @@ struct TripPacketEntryPointParityTests {
 
         let firstPlatformBody = min(macBody.lowerBound, iOSBody.lowerBound)
         #expect(presenter.lowerBound > bodyStart.lowerBound, """
-            The trip-packet sheet is declared before `var body`. Expected it inside the shared body.
+            The plan-picker sheet is declared before `var body`. Expected it inside the shared body.
             """)
         #expect(presenter.lowerBound < firstPlatformBody, """
-            The trip-packet sheet sits inside a PER-PLATFORM body. That is exactly how this entry \
-            point shipped dead: the presenter was in `macBody`, the control was in `iPhoneAddMenu`, \
-            and `body` renders `macBody` only under `#if os(macOS)` — so neither platform had both \
-            halves. Attach it to the shared `body`.
+            The plan-picker sheet sits inside a PER-PLATFORM body. That is exactly how the
+            original packet entry point shipped dead on every platform — attach it to the
+            shared `body`.
             """)
     }
 
-    // MARK: - Every surface offers the action
-
-    /// The action must be reachable at BOTH size classes on iOS. `iPadAddMenu` had no item, so at
-    /// regular width — every iPad, and the larger iPhones in landscape — a collection could not
-    /// reach the packet at all.
-    @Test("Both iOS add-menus offer Plan an Archive Visit")
+    /// The action must be reachable at BOTH size classes on iOS — the original defect was
+    /// specifically that `iPadAddMenu` had no item at regular width.
+    @Test("Both iOS add-menus offer Add to Archive Visit")
     func bothIOSMenusOfferTheAction() throws {
         let text = try Self.source(Self.editor)
         for menu in ["iPhoneAddMenu", "iPadAddMenu"] {
@@ -109,54 +101,61 @@ struct TripPacketEntryPointParityTests {
             let rest = text[start.upperBound...]
             let end = rest.range(of: "\n    private var ")?.lowerBound ?? rest.endIndex
             let menuBody = rest[..<end]
-            #expect(menuBody.contains(Self.planVisitKey), """
-                \(menu) does not offer the trip packet. Every collection add-menu must, or the \
-                route disappears at one size class — which is how `iPadAddMenu` shipped without it.
+            #expect(menuBody.contains(Self.addToVisitKey), """
+                \(menu) does not offer Add to Archive Visit. Every collection add-menu must, or \
+                the route disappears at one size class.
                 """)
-            #expect(menuBody.contains("showTripPacket = true"),
-                    "\(menu) names the action but sets no state")
+            #expect(menuBody.contains("TripPacketSeed.resolve("), """
+                \(menu)'s action must resolve membership through the ONE shared rule — smart \
+                collections through `smartRefs`, static through `staticSeedDocuments` — or this \
+                surface and the plan describe different sets.
+                """)
         }
     }
 
-    /// macOS edits collections in `MacCollectionManagerView`, not in `CollectionEditorView.macBody`
-    /// (which offers only a Done button). So the macOS route needs its own control AND its own
-    /// presenter, both in that file.
+    /// macOS edits collections in `MacCollectionManagerView`, so the macOS route needs its own
+    /// control AND its own presenter, both in that file.
     @Test("The macOS manager carries both halves of the route")
     func macManagerHasControlAndPresenter() throws {
         let text = try Self.source(Self.macManager)
-        #expect(text.contains(Self.planVisitKey), """
-            MacCollectionManagerView offers no Plan-an-Archive-Visit control. This is the pane \
-            where macOS actually edits a collection — `CollectionEditorView.macBody` has only a \
-            Done button — so without an item here macOS has no collection route to the packet.
+        #expect(text.contains(Self.addToVisitKey), """
+            MacCollectionManagerView offers no Add-to-Archive-Visit control. This is the pane \
+            where macOS actually edits a collection, so without an item here macOS has no \
+            collection route to a plan.
             """)
-        #expect(text.contains("showTripPacket = true"), "the macOS control sets no state")
-        #expect(text.contains(".sheet(isPresented: $showTripPacket)"), """
-            MacCollectionManagerView sets `showTripPacket` but never presents it — the same \
-            half-wired shape that made this entry point dead on every platform.
+        #expect(text.contains("TripPacketSeed.resolve("),
+                "the macOS action must resolve membership through the shared rule")
+        #expect(text.contains(".sheet(item: $planPickerRequest)"), """
+            MacCollectionManagerView sets `planPickerRequest` but never presents it — the same \
+            half-wired shape that made the original entry point dead on every platform.
             """)
-        #expect(text.contains("TripPacketSheet("), "the macOS presenter builds no packet")
+        #expect(text.contains("PlanPickerSheet(request:"), "the macOS presenter builds no picker")
     }
 
-    /// All three surfaces must use one localization key. Three hand-written labels would be three
-    /// places for the menus to disagree about what the action is called.
-    @Test("All three surfaces share one localization key")
+    /// All three surfaces use one localization key — three hand-written labels would be three
+    /// places for the menus to disagree about what the action is called. The RETIRED ephemeral
+    /// verb's key must be gone (§7.3: replaced in Phase 3, not doubled).
+    @Test("All three surfaces share one key, and the retired verb is gone")
     func surfacesShareOneKey() throws {
         let editor = try Self.source(Self.editor)
         let mac = try Self.source(Self.macManager)
-        let occurrences = editor.components(separatedBy: Self.planVisitKey).count - 1
+        let occurrences = editor.components(separatedBy: Self.addToVisitKey).count - 1
         #expect(occurrences == 2, """
             Expected the key exactly twice in CollectionEditorView (iPhone and iPad menus), \
             found \(occurrences).
             """)
-        #expect(mac.components(separatedBy: Self.planVisitKey).count - 1 == 1,
+        #expect(mac.components(separatedBy: Self.addToVisitKey).count - 1 == 1,
                 "Expected the key exactly once in MacCollectionManagerView")
+        for (name, text) in [("editor", editor), ("mac", mac)] {
+            #expect(!text.contains("collection.planVisit"), """
+                The \(name) still carries the retired ephemeral verb. §7.3 kept it only through \
+                Phases 1–2; two verbs for one destination is the drift this suite exists to stop.
+                """)
+        }
     }
 
-    // MARK: - Phase 0: the smart/excerpt gates and the one resolution path
-
-    /// The three collection gates must admit a saved-search collection and an excerpt-only
-    /// collection — the two membership shapes the old `orderedDocumentKeys.isEmpty` gate
-    /// orphaned. Scoped to the gate expressions, not the files.
+    /// The three collection gates keep admitting a saved-search collection and an excerpt-only
+    /// collection — the two membership shapes Phase 0 un-orphaned.
     @Test("All three gates admit smart and excerpt-only collections")
     func gatesAdmitSmartAndExcerpts() throws {
         let editor = try Self.source(Self.editor)
@@ -176,31 +175,101 @@ struct TripPacketEntryPointParityTests {
         }
     }
 
-    /// All three collection surfaces hand the sheet the COLLECTION, so membership resolves in
-    /// one place (smart → the export's own `smartRefs`; static → documents + excerpts). A
-    /// surface that pre-filters its own list is a second place for the rules to diverge.
-    @Test("The collection surfaces seed the sheet with the collection itself")
-    func surfacesSeedTheCollection() throws {
-        let editor = try Self.source(Self.editor)
-        let mac = try Self.source(Self.macManager)
-        #expect(editor.contains("seed: .collection(collection)"))
-        #expect(mac.contains("seed: .collection(collection)"))
-    }
+    // MARK: - Project Home (create-or-open)
 
-    /// Project Home's packet seed is the SAME `gatherSeed` union the leads engine runs —
-    /// parity by construction, replacing a doc comment that claimed it falsely.
-    @Test("Project Home's packet seed is the leads union, by construction")
-    func projectHomeSeedIsTheLeadsUnion() throws {
+    /// Project Home's Plan a Visit is create-or-open over the PERSISTENT plan (§4a/1h): a new
+    /// plan seeds once from the leads union; an existing plan opens regardless of the current
+    /// engaged set. Never a live mirror — re-seeding is the editor's explicit button.
+    @Test("Project Home's Plan a Visit is create-or-open over the persistent plan")
+    func projectHomeIsCreateOrOpen() throws {
         let home = try Self.source("FRUSExplorer/ProjectContext/ProjectHomeView.swift")
         #expect(home.contains("ProjectLeadsService.gatherSeed("), """
-            The packet's engaged set must come from the leads engine's own gatherSeed — a \
+            A NEW plan's seed must come from the leads engine's own gatherSeed — a \
             re-implementation of one of its three sources is how the seed silently narrowed \
-            to collections-only the first time.
+            to collections-only once before.
             """)
-        #expect(home.contains("seed: .documents(engagedPacketDocuments)"))
-        #expect(home.contains(".disabled(engagedPacketDocuments.isEmpty)"),
-                "the gate must test the engaged CONTENT, not collection attachment")
-        #expect(!home.contains(".disabled(members.isEmpty)"),
-                "the attachment gate is the defect this phase removed")
+        #expect(home.contains("projectPlan == nil"),
+                "the gate must admit an existing plan even when the engaged set is empty")
+        #expect(home.contains("ArchiveVisitEditorView(plan:"),
+                "the flow must open the persistent plan's editor, not an ephemeral sheet")
+        #expect(home.contains("addSeeds("),
+                "creation must write seeds through the one shared write path")
+        #expect(!home.contains("TripPacketSheet("), """
+            Project Home still presents the ephemeral packet sheet. Phase 3 made the plan the \
+            route; the packet is exported from the plan's editor.
+            """)
+    }
+
+    // MARK: - The Phase 3 surfaces
+
+    /// The iOS Research tab carries the plan list, pinned beside Project Home, presented as a
+    /// sheet with its own stack (the typed path is a one-deep projection no editor push could
+    /// enter — the Project Home precedent).
+    @Test("The Research tab offers the Archive Visits list")
+    func researchTabOffersTheList() throws {
+        let research = try Self.source("FRUSExplorer/Research/ResearchView.swift")
+        #expect(research.contains("research.sidebar.archiveVisits"),
+                "the sidebar row is missing")
+        #expect(research.contains("showArchiveVisits = true"),
+                "the row names the action but sets no state")
+        #expect(research.contains(".sheet(isPresented: $showArchiveVisits)"),
+                "the flag has no presenter — the half-wired shape again")
+        #expect(research.contains("ArchiveVisitListView()"),
+                "the presenter builds no list")
+    }
+
+    /// The macOS window and both its doors: the scene, the Research command menu, and the
+    /// main-window My Research toolbar menu (whose fronting is separately pinned by
+    /// `MacWindowFrontingTests`).
+    @Test("macOS carries the Archive Visits window and both its doors")
+    func macCarriesWindowAndDoors() throws {
+        let app = try Self.source("FRUSExplorer/App/FRUSExplorerApp.swift")
+        #expect(app.contains("id: \"frus.archiveVisits\""), "the window scene is missing")
+        #expect(app.contains("menu.research.archiveVisits"),
+                "the Research command menu has no Archive Visits item")
+        let main = try Self.source("FRUSExplorer/App/MainWindowView.swift")
+        #expect(main.contains("mainwindow.tools.archiveVisits"),
+                "the My Research toolbar menu has no Archive Visits item")
+    }
+
+    /// Source Explorer's three-way add exists on BOTH platforms — the Mac twin is
+    /// hand-maintained, which is this repo's standing drift hazard.
+    @Test("Source Explorer offers the three-way add on both platforms")
+    func sourceExplorerOffersThreeWayAdd() throws {
+        for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
+                     "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
+            let text = try Self.source(path)
+            for key in ["source.explorer.addVisit.source",
+                        "source.explorer.addVisit.refs %lld",
+                        "source.explorer.addVisit.both"] {
+                #expect(text.contains(key), "\(path) is missing the \(key) option")
+            }
+            #expect(text.contains("PlanPickerSheet(request:"),
+                    "\(path) offers the menu but presents no picker")
+        }
+    }
+
+    /// The Neighbors add control lives in the SHARED content core — before the window host's
+    /// declaration — so all three hosts (iOS sheet, macOS window, Stage Manager) carry it.
+    /// It is ONE honest option over the documents shown (§7.7's resolution): the full cohort
+    /// is never in memory, and its count already reads in the overflow line.
+    @Test("The Neighbors add control is in the shared content core")
+    func neighborsControlIsInTheCore() throws {
+        let text = try Self.source("FRUSExplorer/SourceExplorer/ArchivalNeighborsSheet.swift")
+        guard let control = text.range(of: "archivalNeighbors.addToVisit %lld"),
+              let windowHost = text.range(of: "struct ArchivalNeighborsWindowView") else {
+            Issue.record("the control or the window host is gone — re-derive this test")
+            return
+        }
+        #expect(control.lowerBound < windowHost.lowerBound, """
+            The add control sits in a HOST rather than in `ArchivalNeighborsContent`. A control \
+            outside the core is missing from the macOS and Stage-Manager windows — the exact \
+            reason the design put it in the core.
+            """)
+        #expect(!text.contains("Add all"), """
+            A full-cohort add appeared. The cohort documents are never in memory (the loaders \
+            cap at 30), so an "Add all N" control would either lie or silently re-query — §7.7 \
+            resolved this to one honest option over the documents shown.
+            """)
     }
 }

@@ -659,7 +659,7 @@ In the Research tab, filter notes, tags, and highlights to a specific project wh
 
 **Project Home** suggests documents related to the ones you have already gathered under the project, ranked by the same signals as Related Documents (Section 8.5). Each lead shows the document's header, how many of your project's documents it relates to, and a few lines of what it actually says — its summary if it has one, otherwise its opening text — so you can judge it without opening it. A lead whose volume isn't indexed on this device shows the header alone. Leads are the closest thing the app has to a research assistant: gather ten documents under a project and it will tell you what else belongs in the pile.
 
-Beside the Collections section header sits **Plan a Visit**, which generates an **Archive Visit packet** (Section 14.8) over the project's engaged documents — the same set that seeds the leads engine — with the project's research question as the inquiry's topic sentence. It stays disabled until the project has documents.
+Beside the Collections section header sits **Plan a Visit** — create-or-open for the project's **Archive Visit** (Section 14.8). A new plan seeds from the project's engaged documents (the same set that seeds the leads engine) with the research question as the inquiry's topic sentence; thereafter the button opens the existing plan, and **Re-seed from Project** in the plan's menu pulls in new engaged documents on request — never automatically.
 
 ---
 
@@ -728,7 +728,7 @@ Selections append in the order you picked them; adding a document already presen
 
 ### 12.3 Section Headings and Prose
 
-From the manager's **add** menu, insert editorial structure anywhere in the order (the same menu also offers **Plan an Archive Visit…**, which generates an Archive Visit packet over the collection's documents — Section 14.8; it stays disabled until the collection has documents):
+From the manager's **add** menu, insert editorial structure anywhere in the order (the same menu also offers **Add to Archive Visit…**, which seeds a plan from the collection's documents — Section 14.8; it stays disabled until the collection has documents):
 
 - **Section headings** group the documents beneath them ("Opening Moves", "The Crisis Deepens") and become headings in the export and its table of contents. Sections **nest to three levels** — parts containing chapters containing sub-sections. Long-press a heading for **Indent** / **Outdent** (plus **Rename**, **Delete Heading Only** — contents stay, sub-headings move up a level — and **Delete Section**, which removes everything in it after confirming). Rows indent to show structure; each heading's chevron collapses its section while you work (display only); dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
 - **Prose blocks** are your connecting commentary, written in a rich-text editor — bold, italic, underline, color, and hyperlinks from the formatting bar above the keyboard — and preserved through every export. This is where a course reader's head-of-section framing lives.
@@ -910,7 +910,9 @@ A free API key from the National Archives (**Settings → System → Connections
 
 ### 14.8 The Archive Visit Packet
 
-Everything this chapter teaches document by document, the **Archive Visit packet** assembles in one pass: pick a set of documents, and the app reads their printed source notes *and* their editorial footnotes, resolves both against the bundled NARA data, and generates a repository-grouped planning document. Reach it from **Project Home ▸ Plan a Visit** (built over the project's engaged documents, Section 10.4) or from a collection's add menu ▸ **Plan an Archive Visit…** (Section 12.3).
+Everything this chapter teaches document by document, the **Archive Visit** assembles in one pass — and since it is a saved plan, keeps assembling as your library grows. An Archive Visit is a persistent, synced research plan: documents seed it, the app derives **research targets** from their source notes and footnotes, and you prioritize, annotate, and export from the plan. Reach your plans from the **Research tab ▸ Archive Visits** (beside Project Home), and seed them from four surfaces: **Project Home ▸ Plan a Visit** (create-or-open — a new plan seeds from the project's engaged documents; Section 10.4), a collection's add menu ▸ **Add to Archive Visit…** (Section 12.3), **Source Explorer**'s section menu (per document, with a three-way choice: its archival source, its unprinted references, or both — the reference count shown before you choose), and **Archival Neighbors** (add the documents shown, as archival sources).
+
+The plan editor is a **target list**: targets grouped by repository with each repository's visit-planning links in the header, grouped inside by your own **priority tiers** (create, rename, reorder, and delete any number — deleting a tier moves its targets to Unprioritized and removes nothing), each row expandable to its verbatim seeding contexts. A **Documents** tab lists the seeds with their two contribution switches; a stored target whose key no longer derives from the seeds is kept and labeled, never deleted. Exclusions, tiers, and notes travel to the exported packet.
 
 The packet is organized around **research targets** — the archival units you would actually ask an archivist about: a central-file class (`762.00`), a lot file, a library collection. Each target itemizes the documents that seeded it **by claim**, kept deliberately apart: documents *published from* the file (with the file or folder designation their source note cites), and footnotes that *cite* the file without FRUS printing from it (quoted verbatim, with a note when the file was inherited from a preceding footnote's "*Ibid.*"). The two counts never merge into one number, because they are different kinds of evidence. Every seeding links to its document on history.state.gov.
 
@@ -1178,7 +1180,7 @@ Quantitative or quasi-quantitative claims about the record ("mentions of X colla
 
 Before travel to College Park or a presidential library:
 
-1. **Generate the Archive Visit packet** (14.8): from Project Home tap **Plan a Visit**, or from a collection's add menu **Plan an Archive Visit…**. This automates what used to be this recipe's first six steps — the packet resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
+1. **Build the Archive Visit** (14.8): from Project Home tap **Plan a Visit**, or seed a plan from a collection's add menu (**Add to Archive Visit…**), Source Explorer, or Archival Neighbors. This automates what used to be this recipe's first six steps — the plan resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, lets you prioritize them into your own tiers, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
 2. Add a **NARA API key** first (14.7) so lot-file lookups run at full precision before the packet is built.
 3. Read the packet's **Access restrictions** chapter before booking anything — a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
 4. Send the **advance inquiry** well ahead (the checklist says how far), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.
@@ -1227,7 +1229,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 | Tag a document | Research rail → **Tags** accordion |
 | Add a document to a collection | Research rail → **Collections** accordion |
 | Get a citation / BibTeX / RIS | Research rail → **Cite** tile |
-| Plan an archive visit | Project Home → **Plan a Visit**, or a collection's add menu → **Plan an Archive Visit…** (14.8) |
+| Plan an archive visit | Research tab → **Archive Visits**; seed from Project Home, a collection, Source Explorer, or Archival Neighbors (14.8) |
 | Send a document to Zotero | Research rail → **Share** tile |
 | Summarize a document | Research rail → **Summary** accordion |
 | See a document's archival source | Research rail → **Sources** tile |

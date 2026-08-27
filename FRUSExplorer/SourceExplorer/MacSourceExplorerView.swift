@@ -147,6 +147,8 @@ struct MacSourceExplorerView: View {
     /// (#829a; ported from iOS by Archive Visits Phase 1 — the type and its join are the
     /// iOS view's own, so the two surfaces cannot resolve a pointer differently).
     @State private var unprintedPointers: [SourceExplorerView.UnprintedPointer] = []
+    /// The Add-to-Archive-Visit picker (Phase 3) — presented from the toolbar's three-way menu.
+    @State private var planPickerRequest: PlanPickerRequest?
 
     @Environment(\.openURL)  private var openURL
     @Environment(AppState.self) private var appState
@@ -167,6 +169,10 @@ struct MacSourceExplorerView: View {
         .sheet(item: $collectionDetailRecord) { record in
             CollectionDetailSheet(record: record)
                 .environment(appState)
+        }
+        // Archive Visits Phase 3: the picker for the toolbar's add menu.
+        .sheet(item: $planPickerRequest) { request in
+            PlanPickerSheet(request: request)
         }
     }
 
@@ -228,6 +234,54 @@ struct MacSourceExplorerView: View {
         ToolbarItem {
             FeatureInfoButton.sourceExplorer
         }
+
+        // Archive Visits Phase 3: the same three-way add the iOS section header carries.
+        ToolbarItem {
+            Menu {
+                if let volumeId = documentVolumeId, let docId = documentId {
+                    if hasSourceNote {
+                        Button {
+                            presentPlanPicker(volumeId: volumeId, documentId: docId,
+                                              includeSource: true, includeExternalRefs: false)
+                        } label: {
+                            Label(String(localized: "source.explorer.addVisit.source",
+                                         defaultValue: "Add archival source"),
+                                  systemImage: "archivebox")
+                        }
+                    }
+                    if !unprintedPointers.isEmpty {
+                        Button {
+                            presentPlanPicker(volumeId: volumeId, documentId: docId,
+                                              includeSource: false, includeExternalRefs: true)
+                        } label: {
+                            Label(String(format: String(
+                                localized: "source.explorer.addVisit.refs %lld",
+                                defaultValue: "Add unprinted references (%lld)"),
+                                Int64(unprintedPointers.count)),
+                                  systemImage: "arrow.up.right")
+                        }
+                    }
+                    if hasSourceNote && !unprintedPointers.isEmpty {
+                        Button {
+                            presentPlanPicker(volumeId: volumeId, documentId: docId,
+                                              includeSource: true, includeExternalRefs: true)
+                        } label: {
+                            Label(String(localized: "source.explorer.addVisit.both",
+                                         defaultValue: "Add both"),
+                                  systemImage: "plus.square.on.square")
+                        }
+                    }
+                }
+            } label: {
+                Label(String(localized: "source.explorer.addVisit",
+                             defaultValue: "Add to Archive Visit"),
+                      systemImage: "building.columns")
+            }
+            .help(String(localized: "source.explorer.addVisit.help",
+                         defaultValue: "Seed an Archive Visit from this document's archival claims"))
+            .disabled(documentVolumeId == nil || documentId == nil
+                      || (!hasSourceNote && unprintedPointers.isEmpty))
+        }
     }
 
     // MARK: - Left Column
@@ -272,6 +326,7 @@ struct MacSourceExplorerView: View {
                     unprintedBox
                 }
             }
+
             .padding(16)
         }
         .background(Color(nsColor: .windowBackgroundColor))
@@ -1549,6 +1604,17 @@ struct MacSourceExplorerView: View {
                     citation: $0, record: SourceExplorerView.resolve($0, authority: authority))
             }
         }.value
+    }
+
+    /// Presents the Add-to-Archive-Visit picker over this document (Phase 3).
+    private func presentPlanPicker(volumeId: String, documentId: String,
+                                   includeSource: Bool, includeExternalRefs: Bool) {
+        planPickerRequest = PlanPickerRequest(
+            documents: [(volumeId: volumeId, documentId: documentId)],
+            includeSource: includeSource,
+            includeExternalRefs: includeExternalRefs,
+            basis: String(localized: "archiveVisit.basis.sourceExplorer",
+                          defaultValue: "from Source Explorer"))
     }
 
     private func load() async {

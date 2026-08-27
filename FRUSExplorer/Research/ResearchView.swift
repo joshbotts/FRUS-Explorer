@@ -142,6 +142,9 @@ struct ResearchView: View {
     @State private var projectHomePath: [DocumentBrowserEntry] = []
     /// Whether the Research Guide sheet is up (UI review F-14).
     @State private var showResearchGuide = false
+    /// Presents the Archive Visits list (Phase 3, §4a) — a sheet, like Project Home, to stay
+    /// clear of the typed navigation path.
+    @State private var showArchiveVisits = false
     #endif
 
     /// The active project, if one is selected (Global Context = nil).
@@ -232,6 +235,24 @@ struct ResearchView: View {
                     // this window's id — Project Home's hand-offs target THIS window on iPad multi-window.
                     .environment(\.sceneID, sceneID)
                 }
+            }
+            // Archive Visits Phase 3 (§4a): the plan list, a sheet with its OWN untyped stack —
+            // the same decoupling Project Home uses, because the Research tab's typed
+            // `researchNavigationPath` is a one-deep projection no editor push could enter.
+            .sheet(isPresented: $showArchiveVisits) {
+                NavigationStack {
+                    ArchiveVisitListView()
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button(String(localized: "research.projectHome.done",
+                                              defaultValue: "Done")) {
+                                    showArchiveVisits = false
+                                }
+                            }
+                        }
+                }
+                .environment(appState)
+                .environment(\.sceneID, sceneID)
             }
             // UI review F-14. `ResearchGuideView` already provides its own chrome — the same
             // presentation Settings ▸ About uses — so this is the identical sheet, one tap from the
@@ -430,6 +451,29 @@ struct ResearchView: View {
                         } icon: {
                             Image(systemName: "square.grid.2x2")
                         }
+                    }
+                }
+            }
+            // Archive Visits Phase 3 (§4a): the plan list, pinned beside Project Home —
+            // research-workspace furniture, not a corpus axis. Project-independent, so it
+            // renders in Global Context too (unlike the Project Home row above).
+            Section {
+                Button {
+                    showArchiveVisits = true
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(String(localized: "research.sidebar.archiveVisits",
+                                        defaultValue: "Archive Visits"))
+                                .foregroundStyle(.primary)
+                            Text(String(localized: "research.sidebar.archiveVisits.caption",
+                                        defaultValue: "Plans for consulting the records behind your documents"))
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    } icon: {
+                        Image(systemName: "building.columns")
                     }
                 }
             }

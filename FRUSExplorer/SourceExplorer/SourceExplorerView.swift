@@ -137,6 +137,10 @@ struct SourceExplorerView: View {
     @Environment(\.openURL) private var openURL
     @Environment(AppState.self) private var appState
 
+    /// The Add-to-Archive-Visit picker (Phase 3, artboard 1f) — presented from the section
+    /// menu with the three-way contribution choice already made.
+    @State private var planPickerRequest: PlanPickerRequest?
+
     /// Whether the document actually carries an archival source note. When `false` (chiefly
     /// pre-1906 documents, which carry none), the explorer leads with the country-series
     /// classification heuristic rather than presenting an "unrecognized note" parse failure.
@@ -208,6 +212,10 @@ struct SourceExplorerView: View {
             // for any future host that keeps this view alive across documents.
             .task(id: loadIdentity) {
                 await load()
+            }
+            // Archive Visits Phase 3: the picker for the section-local add menu above.
+            .sheet(item: $planPickerRequest) { request in
+                PlanPickerSheet(request: request)
             }
         }
         #if os(macOS)
@@ -299,8 +307,14 @@ struct SourceExplorerView: View {
                 }
             }
         } header: {
-            Text(String(localized: "source.explorer.unprinted.header",
-                        defaultValue: "Unprinted Material"))
+            HStack {
+                Text(String(localized: "source.explorer.unprinted.header",
+                            defaultValue: "Unprinted Material"))
+                Spacer()
+                // The same menu as the Source Note header — here for the document with
+                // pointers but NO source note, which otherwise has no add door at all.
+                if !hasSourceNote { addToVisitMenu }
+            }
         } footer: {
             Text(String(localized: "source.explorer.unprinted.footer",
                         defaultValue: "Archival units this document's footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from."))
@@ -364,8 +378,7 @@ struct SourceExplorerView: View {
     // MARK: - Raw Note Section
 
     private var rawNoteSection: some View {
-        Section(String(localized: "source.explorer.rawNote.header",
-                       defaultValue: "Source Note")) {
+        Section {
             VStack(alignment: .leading, spacing: 6) {
                 Text(rawSourceNote)
                     .font(.callout)
@@ -377,7 +390,77 @@ struct SourceExplorerView: View {
                     ClassificationChip(marking: marking)
                 }
             }
+        } header: {
+            HStack {
+                Text(String(localized: "source.explorer.rawNote.header",
+                            defaultValue: "Source Note"))
+                Spacer()
+                // Archive Visits Phase 3 (1f): the section-local three-way add. Lives on the
+                // note's own header because this is where both claims meet — the note is the
+                // drawn-from claim, the footnote pointers below are the pointed-at one.
+                addToVisitMenu
+            }
         }
+    }
+
+    /// The three-way Add-to-Archive-Visit menu (artboard 1f): archival source, unprinted
+    /// references (with the count — sparsity is disclosed at add time), or both. An option
+    /// with nothing behind it is absent, not dead. Hidden entirely when the host passed no
+    /// document identity.
+    @ViewBuilder
+    private var addToVisitMenu: some View {
+        if let volumeId = documentVolumeId, let docId = documentId {
+            Menu {
+                if hasSourceNote {
+                    Button {
+                        presentPlanPicker(volumeId: volumeId, documentId: docId,
+                                          includeSource: true, includeExternalRefs: false)
+                    } label: {
+                        Label(String(localized: "source.explorer.addVisit.source",
+                                     defaultValue: "Add archival source"),
+                              systemImage: "archivebox")
+                    }
+                }
+                if !unprintedPointers.isEmpty {
+                    Button {
+                        presentPlanPicker(volumeId: volumeId, documentId: docId,
+                                          includeSource: false, includeExternalRefs: true)
+                    } label: {
+                        Label(String(format: String(
+                            localized: "source.explorer.addVisit.refs %lld",
+                            defaultValue: "Add unprinted references (%lld)"),
+                            Int64(unprintedPointers.count)),
+                              systemImage: "arrow.up.right")
+                    }
+                }
+                if hasSourceNote && !unprintedPointers.isEmpty {
+                    Button {
+                        presentPlanPicker(volumeId: volumeId, documentId: docId,
+                                          includeSource: true, includeExternalRefs: true)
+                    } label: {
+                        Label(String(localized: "source.explorer.addVisit.both",
+                                     defaultValue: "Add both"),
+                              systemImage: "plus.square.on.square")
+                    }
+                }
+            } label: {
+                Label(String(localized: "source.explorer.addVisit",
+                             defaultValue: "Add to Archive Visit"),
+                      systemImage: "building.columns")
+                    .font(.caption)
+            }
+        }
+    }
+
+    /// Presents the picker over this one document, under the chosen contribution scope.
+    private func presentPlanPicker(volumeId: String, documentId: String,
+                                   includeSource: Bool, includeExternalRefs: Bool) {
+        planPickerRequest = PlanPickerRequest(
+            documents: [(volumeId: volumeId, documentId: documentId)],
+            includeSource: includeSource,
+            includeExternalRefs: includeExternalRefs,
+            basis: String(localized: "archiveVisit.basis.sourceExplorer",
+                          defaultValue: "from Source Explorer"))
     }
 
     // MARK: - Provenance Section

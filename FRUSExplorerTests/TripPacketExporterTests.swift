@@ -495,7 +495,7 @@ struct TripPacketExporterTests {
     @Test("The opt-in crib attributes, quotes the deposited examples, and pre-fills")
     func cribAttributesWhenEnabled() {
         var withCrib = exporter()
-        withCrib.includeCitationCrib = true
+        withCrib.deliverables.includeCitationCrib = true
         let text = withCrib.export()
         #expect(text.contains("governed by your publisher"))
         #expect(text.contains("reports that guidance as NARA's rather than prescribing it"))
@@ -528,7 +528,7 @@ struct TripPacketExporterTests {
             documentYears: [1950], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
             researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
         var withCrib = exporter(model: model)
-        withCrib.includeCitationCrib = true
+        withCrib.deliverables.includeCitationCrib = true
         let text = withCrib.export()
         #expect(text.contains("also serves as a model"), """
             The old gate was `category == .lotFile`, which skipped collections and raw \
