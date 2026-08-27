@@ -26,12 +26,15 @@ import SwiftData
 /// cascades over children and a full swipe with no confirmation would destroy a hand-built
 /// plan in one gesture.
 ///
-/// Hosted inside a `NavigationStack` by both platforms (the iOS Research-tab sheet and the
-/// macOS `frus.archiveVisits` window); row taps and creation both route through
-/// `.navigationDestination(item:)` so a freshly created plan opens immediately.
+/// Hosted inside a `NavigationStack` by the iOS Research-tab sheet; row taps and creation
+/// both route through `.navigationDestination(item:)` so a freshly created plan opens
+/// immediately. The macOS `frus.archiveVisits` window no longer hosts this list — it is
+/// `MacArchiveVisitManagerView`, the Collections window's flat-pane shape (UI pass).
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 3: initial implementation
+///   1.1 — UI pass: iOS-only (the Mac window moved to `MacArchiveVisitManagerView`);
+///         counts through `.formatted()`.
 struct ArchiveVisitListView: View {
 
     @Environment(AppState.self) private var appState
@@ -140,11 +143,10 @@ struct ArchiveVisitListView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if indexed < seeds.count {
-                    // The both-numbers grammar, orange when incomplete (1a / WorkingCorpora).
-                    Text(String(format: String(
-                        localized: "archiveVisit.coverage %lld %lld",
-                        defaultValue: "%lld of %lld documents indexed on this device"),
-                        Int64(indexed), Int64(seeds.count)))
+                    // The both-numbers grammar, orange when incomplete (1a / WorkingCorpora);
+                    // counts grouped — a unit-grain seed can run to 20,000 documents.
+                    Text(String(localized: "archiveVisit.coverage.v2",
+                                defaultValue: "\(indexed.formatted()) of \(seeds.count.formatted()) documents indexed on this device"))
                         .font(.caption)
                         .foregroundStyle(Color.orange)
                 }
@@ -195,8 +197,8 @@ struct ArchiveVisitListView: View {
             parts.append(derived)
         } else {
             let count = (plan.documents ?? []).count
-            parts.append(String(format: String(localized: "archiveVisit.list.docCount %lld",
-                                               defaultValue: "%lld documents"), Int64(count)))
+            parts.append(String(localized: "archiveVisit.list.docCount.v2",
+                                defaultValue: "\(count.formatted()) documents"))
         }
         if let modified = plan.lastModified {
             parts.append(String(format: String(localized: "archiveVisit.list.modified %@",

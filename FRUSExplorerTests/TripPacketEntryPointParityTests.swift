@@ -295,4 +295,67 @@ struct TripPacketEntryPointParityTests {
             resolved this to one honest option over the documents shown.
             """)
     }
+
+    // MARK: - The macOS window shape (UI pass)
+
+    /// The macOS Archive Visits window is the Collections window's shape — a flat pane with
+    /// a toolbar plan picker and a Manage sheet — NOT the iOS push-navigation shell (which
+    /// put a back chevron and an iOS header inside a Mac singleton window, the owner-reported
+    /// defect the UI pass fixed).
+    @Test("The macOS window hosts the Mac manager, not the iOS push shell")
+    func macWindowHostsTheManager() throws {
+        let app = try Self.source("FRUSExplorer/App/FRUSExplorerApp.swift")
+        // Scope to the Archive Visits Window block: from its scene id to the next Window/MARK.
+        let sceneRange = try #require(app.range(of: "id: \"frus.archiveVisits\""))
+        let after = app[sceneRange.upperBound...]
+        let blockEnd = after.range(of: ".defaultSize")?.lowerBound ?? after.endIndex
+        let block = after[..<blockEnd]
+        #expect(block.contains("MacArchiveVisitManagerView()"),
+                "the window scene no longer hosts the Mac manager root")
+        #expect(!block.contains("NavigationStack"), """
+            The Archive Visits window wraps its content in a NavigationStack again. That is \
+            the iOS push shell — a back chevron in a Mac singleton window — which the UI pass \
+            replaced with the Collections window's flat-pane + toolbar-picker shape.
+            """)
+
+        let manager = try Self.source("FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift")
+        #expect(manager.contains("ToolbarItem(placement: .navigation) { planPickerMenu }"),
+                "the manager lost its toolbar plan picker — the window's only switcher")
+        #expect(manager.contains("MacManageArchiveVisitsSheet("),
+                "the manager presents no Manage sheet — rename/delete become unreachable")
+        #expect(manager.contains("deleteWithChildren(in:"), """
+            The Manage sheet's delete must run the explicit cascade — the `.nullify` \
+            relationships orphan every child row under a bare delete (§4a).
+            """)
+    }
+
+    /// The editor's citation surfaces parse the formatter's Markdown instead of printing
+    /// literal underscores — `CitationFormatter` wraps series titles in `_…_` BY DESIGN for
+    /// copy/export, so any raw `Text(citation)` renders the markers.
+    @Test("Editor citations render Markdown, never literal underscores")
+    func editorCitationsRenderMarkdown() throws {
+        let editor = try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift")
+        #expect(editor.contains("AttributedString(markdownBody: doc.citation)"),
+                "the drawn-from seeding row renders the raw citation string again")
+        #expect(!editor.contains("Text(doc.citation)"), """
+            A raw Text(citation) reappeared in the editor. A plain String in Text does not \
+            parse Markdown, so the series title prints with literal underscores — route it \
+            through AttributedString(markdownBody:).
+            """)
+        // The Documents-tab row label is the header + volume title, never the publication
+        // citation (export-grade verbosity, and the Markdown trap again).
+        #expect(editor.contains("facts?.header ?? seed.documentKey"),
+                "the Documents-tab row lost its header-first label anatomy")
+    }
+
+    /// The measured-sparsity counts go through `.formatted()` — the shipped build printed
+    /// "13750 of 316839" beside a static sentence that grouped its own digits.
+    @Test("Sparsity counts are grouped")
+    func sparsityCountsAreGrouped() throws {
+        let editor = try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift")
+        #expect(editor.contains("sparsity.withReferences.formatted()"),
+                "the measured-sparsity line stopped formatting its counts")
+        #expect(!editor.contains("archiveVisit.info.sparsity.measured %lld"),
+                "the old ungrouped %lld sparsity key came back")
+    }
 }

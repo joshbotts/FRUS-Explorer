@@ -1116,18 +1116,17 @@ struct FRUSExplorerApp: App {
         // it was previously declared here AND on the toolbar button, a duplicate key equivalent.
 
         // MARK: - Archive Visits Window
-        // Archive Visits Phase 3 (§4a): the plan list + editor, a singleton so it joins the
-        // Window menu; pushes ride its own untyped stack.
+        // Archive Visits Phase 3 (§4a); rebuilt in the UI pass to the Collections window's
+        // shape: a flat pane with a toolbar plan picker and a Manage sheet — the iOS
+        // push-navigation shell put a back chevron in a Mac singleton window.
         Window(String(localized: "archiveVisit.window.title", defaultValue: "Archive Visits"),
                id: "frus.archiveVisits") {
-            NavigationStack {
-                ArchiveVisitListView()
-            }
-            .environment(appState)
-            .modelContainer(modelContainer)
-            .task { await bootSearchInfrastructureOnce() }
+            MacArchiveVisitManagerView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
-        .defaultSize(width: 760, height: 640)
+        .defaultSize(width: 900, height: 640)
 
         // MARK: - Research Note Composer Window (UI audit C1)
         //

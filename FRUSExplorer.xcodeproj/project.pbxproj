@@ -326,6 +326,7 @@
 		42157C64CC18CA076697FDB1 /* ProjectLeadSnippetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE8BD60968BA412108108F78 /* ProjectLeadSnippetTests.swift */; };
 		421AE5B2BAAF70224901CEDD /* CloudKitSchemaInventoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5B76CB7F496D16CC557F41 /* CloudKitSchemaInventoryTests.swift */; };
 		424A38E0255D7A5F6609C6BE /* FacetPanelControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3071533CEB37BF4076CEB42 /* FacetPanelControllerTests.swift */; };
+		42636713C536108409B2DF7C /* MacArchiveVisitManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AAA2F3A944F8B353BCE3B9D /* MacArchiveVisitManagerView.swift */; };
 		42D28CE4FF272178BEB3E191 /* SearchNearHighlightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C1AFE40CEF473CBD3D87F6 /* SearchNearHighlightTests.swift */; };
 		43271775F9297C6E750B28AD /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
@@ -1273,6 +1274,7 @@
 		F6B3BA8663CB1C1F2508B916 /* SemanticRetrievalKernel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE384E9A3E55ED8D2D5029C /* SemanticRetrievalKernel.swift */; };
 		F6D82127CD1F52C7CDF5414F /* semantic-shards-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 20D2BFC7D56840E42449E62E /* semantic-shards-manifest.json */; };
 		F7106E5C59A8C9A0962F5187 /* ChartDataInspectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4359D21C639BBE0B733EFD /* ChartDataInspectorTests.swift */; };
+		F7DE5FD7C26F257F67804E6C /* MacArchiveVisitManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AAA2F3A944F8B353BCE3B9D /* MacArchiveVisitManagerView.swift */; };
 		F84CE0985E081E567F742C51 /* AdministrationIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34273EB0038A273F9448F13 /* AdministrationIndexView.swift */; };
 		F88944029645D394050A9863 /* OnboardingScopeResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6F6E75F0CD5BAFE1E444533 /* OnboardingScopeResolverTests.swift */; };
 		F8994677EDFB6B751A37B0A3 /* PromptDuplicateCollapseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 382F172DF742B2442BC3D57E /* PromptDuplicateCollapseTests.swift */; };
@@ -1695,6 +1697,7 @@
 		69F92256A5FDF107B5ACD773 /* BackgroundSummarizationRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationRequest.swift; sourceTree = "<group>"; };
 		6A3807C69C5FBF4EE379B748 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		6A3F68E6417D30946C5FAABE /* ResearchDataExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchDataExportView.swift; sourceTree = "<group>"; };
+		6AAA2F3A944F8B353BCE3B9D /* MacArchiveVisitManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacArchiveVisitManagerView.swift; sourceTree = "<group>"; };
 		6AC41AC343DCCD10189A89AB /* BrowseCorporaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseCorporaTests.swift; sourceTree = "<group>"; };
 		6AE3C1692EE4BEA75C7DC777 /* ZoteroAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroAPITests.swift; sourceTree = "<group>"; };
 		6B1FCB97482B12E177439C04 /* ChronologyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChronologyView.swift; sourceTree = "<group>"; };
@@ -3082,6 +3085,7 @@
 				0C1F32D23D8F24B515FFECA7 /* ArchiveVisitDerivation.swift */,
 				08E86995CD346F23B14CE7F5 /* ArchiveVisitEditorView.swift */,
 				B17F0EC71699B2BA9AC633BC /* ArchiveVisitListView.swift */,
+				6AAA2F3A944F8B353BCE3B9D /* MacArchiveVisitManagerView.swift */,
 				8853393D4E566B64BB3805C3 /* MandatorySubstitutes.swift */,
 				9010BB194C99C7627F55722B /* PlanPickerSheet.swift */,
 				8480B32AB12EF106863CE31E /* RepositoryFactTable.swift */,
@@ -3849,6 +3853,7 @@
 				FF7528CE3E231F72C5C9D5CD /* LocalVolumeCatalog.swift in Sources */,
 				2F822D369E4DEF216B4F1762 /* LotClaimantsIndex.swift in Sources */,
 				3B4B51808E83DD5A39F450B5 /* LotResolutionAcceptance.swift in Sources */,
+				F7DE5FD7C26F257F67804E6C /* MacArchiveVisitManagerView.swift in Sources */,
 				BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */,
 				0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */,
 				664B8BFCE95C146A4416D33A /* MacDocumentTitle.swift in Sources */,
@@ -4322,6 +4327,7 @@
 				9B6C24B94E565D1687D31163 /* LocalVolumeCatalog.swift in Sources */,
 				F2A1466FC65DA4EAF3BFCEED /* LotClaimantsIndex.swift in Sources */,
 				8CF602D696D83050CDBBEFE0 /* LotResolutionAcceptance.swift in Sources */,
+				42636713C536108409B2DF7C /* MacArchiveVisitManagerView.swift in Sources */,
 				19A2E99993AE1FB57687B79B /* MacCollectionManagerView.swift in Sources */,
 				4E3992CD09A928945B2AC08C /* MacCorpusBrowserWindow.swift in Sources */,
 				77117DE4267259E7D2B23B0A /* MacDocumentTitle.swift in Sources */,

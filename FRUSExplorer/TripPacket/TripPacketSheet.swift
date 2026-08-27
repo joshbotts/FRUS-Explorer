@@ -211,7 +211,7 @@ struct TripPacketSheet: View {
                     }
                 }
             }
-            .navigationTitle(String(localized: "packet.title", defaultValue: "Archive visit"))
+            .navigationTitle(String(localized: "packet.title", defaultValue: "Archive Visit"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -569,7 +569,7 @@ enum TripPacketPDFRenderer {
         let safeName = title.components(separatedBy: CharacterSet(charactersIn: "/\\:"))
             .joined(separator: "-")
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Archive visit — \(safeName).pdf")
+            .appendingPathComponent("Archive Visit — \(safeName).pdf")
         guard let consumer = CGDataConsumer(url: url as CFURL),
               let context = CGContext(consumer: consumer, mediaBox: &pageRect, nil) else {
             return nil
