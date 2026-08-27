@@ -36,6 +36,10 @@ import SwiftData
 ///   1.0 — Session 96: initial implementation
 ///   Session 09: `subjectTagIdsCSV` is retained-but-inert (document-level subject
 ///         tags retired); round-trip stays lossless for CloudKit stability.
+///   1.1 — W-5 (#266): `freshnessData` (the run watermark behind "new results since you last
+///         ran this") + `lastModified` (the record joins `LastModifiedStamping`, so a
+///         CloudKit merge finally has a tiebreaker newer than `createdAt`). Two new CloudKit
+///         identifiers — deploy per R-7.
 @Model final class SavedSearch {
 
     // MARK: - Identity
@@ -97,6 +101,13 @@ import SwiftData
     /// When this saved search was created. Optional for CloudKit schema compatibility.
     var createdAt: Date?
 
+    /// When this record last changed — the CloudKit merge tiebreaker (W-5 / #266).
+    ///
+    /// `SavedSearch` predates `ModelModificationStamper` and never carried one, so a stale
+    /// copy on a second device could win every merge. Kept current by the save-time stamper
+    /// (the model joins `LastModifiedStamping`); `nil` on rows written before this build.
+    var lastModified: Date?
+
     // MARK: - Initializer
 
     /// Creates a `SavedSearch` from live `SearchParameters` state.
@@ -128,6 +139,7 @@ import SwiftData
         self.personRef = parameters.personRef ?? ""
         self.sortOrder = "relevance"
         self.createdAt = .now
+        self.lastModified = .now
         // The complete snapshot (#756). Encoding cannot realistically fail for this value type, and
         // a nil here degrades to exactly the old behaviour rather than losing the record.
         self.parametersData = try? JSONEncoder().encode(parameters)
@@ -157,6 +169,39 @@ import SwiftData
     /// any older build on another device can read, so a record saved here still recalls (partially,
     /// as before) on a device that has not updated.
     var parametersData: Data?
+
+    // MARK: - Freshness watermark (W-5 / #266)
+
+    /// The last-run watermark, JSON-archived — when this search was last recalled, how many
+    /// results it matched then, and how many volumes were indexed on the device that ran it.
+    ///
+    /// One blob rather than three columns for the same reason as ``parametersData``: a future
+    /// field costs nothing here, while every scalar column is its own CloudKit identifier and
+    /// deploy (R-7). SYNCED deliberately (the owner's W-5 watermark decision): the badge means
+    /// "new since you last ran this search *anywhere*", so running a search on the Mac clears
+    /// the phone's badge too. `nil` = never recorded (records written before this build, and
+    /// searches saved but not yet re-run) — surfaces show no badge rather than a fake zero.
+    var freshnessData: Data?
+
+    /// The decoded watermark, or `nil` when none was ever recorded or the blob does not parse.
+    var freshness: SavedSearchFreshness? {
+        guard let freshnessData else { return nil }
+        return try? JSONDecoder().decode(SavedSearchFreshness.self, from: freshnessData)
+    }
+
+    /// Records a run of this search: stamps the watermark with now, the run's match count,
+    /// and the device's indexed-volume count. Pass `matchCount: nil` from a hand-off site
+    /// that never learns the count (the sidebar shortcuts) — `lastRunAt` still advances and
+    /// the baseline is CLEARED, not kept: the user just saw the current results, so the old
+    /// baseline would keep claiming "+N" about results already seen. The freshness evaluator
+    /// backfills a nil baseline with the current count (showing no badge for that cycle).
+    func recordRun(matchCount: Int?, indexedVolumeCount: Int?) {
+        let mark = SavedSearchFreshness(
+            lastRunAt: .now,
+            matchCountAtLastRun: matchCount,
+            indexedVolumeCountAtLastRun: indexedVolumeCount)
+        freshnessData = try? JSONEncoder().encode(mark)
+    }
 
     // MARK: - Round-trip
 
@@ -208,5 +253,50 @@ import SwiftData
             documentTypeFilter:  docType,
             personRef: personRef.isEmpty ? nil : personRef
         )
+    }
+}
+
+// MARK: - SavedSearchFreshness
+
+/// The `SavedSearch` run watermark (W-5 / #266): when the search was last run, what it
+/// matched then, and how many volumes were indexed on the device that ran it.
+///
+/// `indexedVolumeCountAtLastRun` is context for the surfaces, not part of the verdict math:
+/// a "+12 since last run" caption after six new volumes indexed is growth of the library, not
+/// of the archive — a surface may choose to say so.
+///
+/// Every field is optional and the decoder is hand-written per-field-tolerant (`try?` around
+/// each), so a blob written by a build with more fields — or a corrupted one — degrades to
+/// whatever still parses rather than discarding the whole watermark.
+///
+/// Version history:
+///   1.0 — W-5 (#266): initial implementation
+struct SavedSearchFreshness: Codable, Equatable, Sendable {
+    /// When the search was last recalled and run. `nil` never happens in a freshly-recorded
+    /// mark, but survives decoding a partial blob.
+    var lastRunAt: Date?
+    /// The exact match count that run reported (`searchCount` — uncapped), the baseline the
+    /// "+N since last run" delta is computed against. `nil` when the last run came through a
+    /// hand-off site that never learns the count; the freshness evaluator backfills it.
+    var matchCountAtLastRun: Int?
+    /// How many volumes were indexed on the device at that run.
+    var indexedVolumeCountAtLastRun: Int?
+
+    init(lastRunAt: Date?, matchCountAtLastRun: Int?, indexedVolumeCountAtLastRun: Int?) {
+        self.lastRunAt = lastRunAt
+        self.matchCountAtLastRun = matchCountAtLastRun
+        self.indexedVolumeCountAtLastRun = indexedVolumeCountAtLastRun
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case lastRunAt, matchCountAtLastRun, indexedVolumeCountAtLastRun
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        lastRunAt = try? container.decodeIfPresent(Date.self, forKey: .lastRunAt)
+        matchCountAtLastRun = try? container.decodeIfPresent(Int.self, forKey: .matchCountAtLastRun)
+        indexedVolumeCountAtLastRun = try? container.decodeIfPresent(
+            Int.self, forKey: .indexedVolumeCountAtLastRun)
     }
 }

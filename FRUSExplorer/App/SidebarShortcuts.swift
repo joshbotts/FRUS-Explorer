@@ -54,6 +54,8 @@ struct SidebarShortcuts: View {
     @Environment(AppState.self) private var appState
     /// Addresses the hand-off to this window, so a second iPad window does not also react.
     @Environment(\.sceneID) private var sceneID
+    /// Saves the W-5 run watermark stamped by ``run(_:)``.
+    @Environment(\.modelContext) private var modelContext
 
     /// Most recently used first — the same order the Saved Searches surface presents.
     @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearches: [SavedSearch]
@@ -68,6 +70,10 @@ struct SidebarShortcuts: View {
     /// reach. Five is what fits the measured void without crowding it.
     private static let displayLimit = 5
 
+    /// W-5 (#266): per-record new-result counts for the displayed saved searches. A missing
+    /// key means no badge.
+    @State private var freshCounts: [UUID: Int] = [:]
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if !savedSearches.isEmpty {
@@ -79,7 +85,8 @@ struct SidebarShortcuts: View {
                             shortcutRow(saved.name.isEmpty
                                         ? String(localized: "sidebar.savedSearch.untitled",
                                                  defaultValue: "Untitled search")
-                                        : saved.name) {
+                                        : saved.name,
+                                        freshCount: freshCounts[saved.id]) {
                                 run(saved)
                             }
                         }
@@ -103,6 +110,31 @@ struct SidebarShortcuts: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 12)
+        // W-5 (#266): evaluate freshness for the visible saved searches, sequentially and
+        // cancellably — same shape as SavedSearchesView, over at most `displayLimit` rows.
+        // The identity includes each watermark blob, so a run's stamp re-triggers this.
+        .task(id: freshnessIdentity) { await evaluateFreshness() }
+    }
+
+    /// Identity for the evaluation task: the displayed records plus their watermark blobs.
+    private var freshnessIdentity: [String] {
+        savedSearches.prefix(Self.displayLimit).map { "\($0.id)|\($0.freshnessData?.hashValue ?? 0)" }
+    }
+
+    /// Evaluates the displayed rows one at a time, publishing counts as they arrive.
+    private func evaluateFreshness() async {
+        for saved in savedSearches.prefix(Self.displayLimit) {
+            guard !Task.isCancelled else { return }
+            let id = saved.id
+            let count = await SavedSearchFreshnessEvaluator.newResultCount(
+                for: saved, service: appState.searchService, context: modelContext)
+            guard !Task.isCancelled else { return }
+            if let count {
+                freshCounts[id] = count
+            } else {
+                freshCounts.removeValue(forKey: id)
+            }
+        }
     }
 
     /// One titled group of shortcuts.
@@ -124,9 +156,13 @@ struct SidebarShortcuts: View {
         }
     }
 
-    /// One shortcut. `isActive` marks the project the app is currently working in.
+    /// One shortcut. `isActive` marks the project the app is currently working in;
+    /// `freshCount` (W-5 / #266) puts the NEW capsule in the trailing slot — the exact
+    /// count travels in the accessibility label, since the caption a wider row carries
+    /// would crowd this one.
     private func shortcutRow(_ title: String,
                              isActive: Bool = false,
+                             freshCount: Int? = nil,
                              action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 6) {
@@ -135,6 +171,13 @@ struct SidebarShortcuts: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: 0)
+                if let freshCount {
+                    SavedSearchNewBadge()
+                        .accessibilityLabel(String(format: String(
+                            localized: "sidebar.savedSearch.fresh.a11y %@",
+                            defaultValue: "%@ new results since last run"),
+                            freshCount.formatted()))
+                }
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.caption)
@@ -156,6 +199,12 @@ struct SidebarShortcuts: View {
     /// `openTab` — rather than reaching into the Search tab directly, so a saved search behaves
     /// exactly like the existing Saved Searches surface and addresses only this scene.
     private func run(_ saved: SavedSearch) {
+        // W-5 (#266): this is a hand-off — the Search tab runs the query and this row never
+        // learns the count — so the stamp advances `lastRunAt` with a nil count baseline,
+        // which the freshness evaluator backfills on the surface's next appearance.
+        saved.recordRun(matchCount: nil,
+                        indexedVolumeCount: appState.indexedVolumeIds.count)
+        try? modelContext.save()
         appState.openSearch(saved.searchParameters, from: sceneID)
         appState.openTab(.search, from: sceneID)
     }

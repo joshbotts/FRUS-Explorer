@@ -27,6 +27,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 96: initial implementation
+///   1.1 — W-5 (#266): freshness — rows carry a NEW capsule and an exact "+N since last
+///         run" caption when the search matches more than it did at its last run.
+///         Evaluated sequentially from a cancellable task (a cold filtered count can take
+///         seconds; fanning out one per row at once would contend the index).
 struct SavedSearchesView: View {
 
     // MARK: - Input
@@ -54,6 +58,9 @@ struct SavedSearchesView: View {
 
     @State private var renaming: SavedSearch? = nil
     @State private var renameText: String = ""
+    /// W-5 (#266): per-record new-result counts. A missing key means "no badge" — never
+    /// run, nothing new, or not yet evaluated.
+    @State private var freshCounts: [UUID: Int] = [:]
 
     // MARK: - Body
 
@@ -65,6 +72,10 @@ struct SavedSearchesView: View {
             iOSBody
             #endif
         }
+        // Re-evaluates when the set changes or any watermark is stamped (a run through
+        // `onSelect` updates `freshnessData`, which changes this identity). The backfill a
+        // first pass performs restarts the task once; the second pass writes nothing.
+        .task(id: freshnessIdentity) { await evaluateFreshness() }
         .alert(
             String(localized: "savedSearches.rename.title", defaultValue: "Rename"),
             isPresented: Binding(
@@ -226,13 +237,27 @@ struct SavedSearchesView: View {
 
     private func row(for search: SavedSearch) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(search.name)
-                .font(.body)
+            HStack(spacing: 6) {
+                Text(search.name)
+                    .font(.body)
+                if freshCounts[search.id] != nil {
+                    SavedSearchNewBadge()
+                }
+            }
             if !search.queryText.isEmpty {
                 Text(search.queryText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+            }
+            if let fresh = freshCounts[search.id] {
+                // The count is exact (`searchCount`, uncapped) — which is what licenses
+                // printing a number here rather than a vague "new results".
+                Text(String(format: String(localized: "savedSearches.row.fresh %@",
+                                           defaultValue: "+%@ since last run"),
+                            fresh.formatted()))
+                    .font(.caption)
+                    .foregroundStyle(Color.accentColor)
             }
         }
         .padding(.vertical, 2)
@@ -241,5 +266,49 @@ struct SavedSearchesView: View {
         // row Button is `.buttonStyle(.plain)`, which hit-tests only opaque content).
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+
+    // MARK: - Freshness (W-5 / #266)
+
+    /// Identity for the evaluation task: the record set plus each watermark blob, so a
+    /// stamp or backfill re-triggers evaluation while a plain re-render does not.
+    private var freshnessIdentity: [String] {
+        savedSearches.map { "\($0.id)|\($0.freshnessData?.hashValue ?? 0)" }
+    }
+
+    /// Evaluates every row SEQUENTIALLY, publishing counts as they arrive; cancelled
+    /// mid-list when the identity changes or the sheet dismisses.
+    private func evaluateFreshness() async {
+        for search in savedSearches {
+            guard !Task.isCancelled else { return }
+            let id = search.id
+            let count = await SavedSearchFreshnessEvaluator.newResultCount(
+                for: search, service: appState.searchService, context: modelContext)
+            guard !Task.isCancelled else { return }
+            if let count {
+                freshCounts[id] = count
+            } else {
+                freshCounts.removeValue(forKey: id)
+            }
+        }
+    }
+}
+
+// MARK: - SavedSearchNewBadge
+
+/// The NEW capsule a fresh saved search carries (W-5 / #266) — `ProjectHomeView`'s lead
+/// capsule grammar, shared here because two surfaces (this sheet and the sidebar
+/// shortcuts) would otherwise hand-maintain twins.
+///
+/// Version history:
+///   1.0 — W-5 (#266): initial implementation
+struct SavedSearchNewBadge: View {
+    var body: some View {
+        Text(String(localized: "savedSearches.row.new", defaultValue: "NEW"))
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(Capsule().fill(Color.accentColor.opacity(0.18)))
+            .foregroundStyle(Color.accentColor)
     }
 }

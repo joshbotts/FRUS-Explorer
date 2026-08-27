@@ -148,7 +148,9 @@ When a document is open, its toolbar carries a **single control**: the **Researc
 | **Related** | A ranked list of the documents most related to this one (Section 8.5) |
 | **Share** | Zotero send, Zotero-file export, and citation sharing (Section 11) |
 
-Below the tiles sit four expandable accordions — **Summary** (AI summaries, Section 13), **Notes**, **Tags**, and **Collections** (Sections 9 and 12). On iPad the rail header also carries an **Open in New Window** icon for Stage Manager (Section 4.5).
+Below the tiles sit four expandable accordions — **Summary** (AI summaries, Section 13), **Notes**, **Tags**, and **Collections** (Sections 9 and 12) — and, at the bottom, a compact **Classification** block. On iPad the rail header also carries an **Open in New Window** icon for Stage Manager (Section 4.5).
+
+**Classification** shows whether the app treats what you're reading as a *document* or an *editorial note*, and lets you correct it. FRUS's own tagging is occasionally wrong — a substantive document marked as an editorial note, or the reverse — and because the app trusts that tagging, the mistake reaches the type badge, search's document-type filter, counts, and exports. **Reclassify as Document…** / **Reclassify as Editorial Note…** records your correction: the body restyles immediately, every filter and badge follows it on all your devices, and the block then shows what FRUS tags it as so the disagreement stays visible. The correction is fully reversible — **Restore FRUS's Classification** here, or manage all of your corrections (with per-row Undo) under **Settings → Search → Classification Corrections…**. One caveat the confirmation dialog also states: the bundled series-analytics dashboards are computed from the published corpus and cannot see your corrections.
 
 `[SCREENSHOT: iPad document view with the Research rail open as a trailing inspector — the RESEARCH header, the 3×2 tile grid, and the Summary/Notes/Tags/Collections accordions beside the document text]`
 
@@ -504,6 +506,8 @@ Checklist Mode is a per-session working aid: it isn't saved, resets on relaunch,
 ### 7.8 Saved Searches
 
 **•••** → **Save this search** stores the current query *and its complete filter state* — person filter, tag selections, volume scope, project scope, whether front matter was included. **Saved searches** in the same menu lists and re-runs them; they sync across your devices. A saved search can also drive a *smart collection* (Section 12.10).
+
+Once you have run a saved search, the app watches it for you: when the index has grown so that the search now matches more than it did at your last run, its row shows a **NEW** capsule and an exact **"+N since last run"** count. Re-running the search clears the badge — on every device, since your last run syncs with the search. The iPad sidebar's Saved Searches shortcuts carry the same capsule. A search you have never run shows no badge (there is nothing to compare against), and results *disappearing* — say, after removing a volume — is deliberately not flagged as "new".
 
 ### 7.9 Working Corpora
 
@@ -1146,7 +1150,7 @@ A collection can carry the same appendix, narrowed to the project it was exporte
 |------|--------------|-----------------|
 | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — iCloud is untouched |
 | **Reset This Device** | Clears downloaded volumes and the search index | Volumes and index only; iCloud data survives |
-| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project, and recorded session — plus saved searches, working corpora, volume scopes, leads, and person-identity corrections — on every device |
+| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project, and recorded session — plus saved searches, working corpora, volume scopes, archive visit plans, leads, and person-identity and document-classification corrections — on every device |
 
 ---
 

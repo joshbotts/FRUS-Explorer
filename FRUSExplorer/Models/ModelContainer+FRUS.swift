@@ -64,6 +64,9 @@ extension ModelContainer {
     ///          research plan, child-model-per-target per the design's §2a conflict-grain
     ///          decision). Boards the reserved W-4+W-5 Production promotion; held in
     ///          `identifiersAwaitingDeploy` until then.
+    ///   1.9 — W-4 (#279): `DocumentClassificationOverride` — one new CloudKit record type
+    ///          (the user's reversible document-vs-editorial-note reclassifications). Boards
+    ///          the same reserved promotion; held in `identifiersAwaitingDeploy` until then.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -125,6 +128,10 @@ extension ModelContainer {
             ArchiveVisitPlan.self,
             ArchiveVisitDocument.self,
             ArchiveVisitTarget.self,
+            // W-4 (#279) — NEW CloudKit record type (document-classification overrides).
+            // Boards the same reserved W-4+W-5 promotion: deploy the schema to Production
+            // before shipping, per the note above.
+            DocumentClassificationOverride.self,
         ]
     }
 

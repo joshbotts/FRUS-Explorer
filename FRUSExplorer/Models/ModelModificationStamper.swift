@@ -37,6 +37,10 @@ extension CustomVolumeScope: LastModifiedStamping {}
 extension ArchiveVisitPlan: LastModifiedStamping {}
 extension ArchiveVisitDocument: LastModifiedStamping {}
 extension ArchiveVisitTarget: LastModifiedStamping {}
+// W-5 (#266) — `SavedSearch` predated the stamper and carried no `lastModified` at all, so a
+// CloudKit merge fell to `createdAt`: frozen at save time, letting a stale copy win. The field
+// exists now (a schema deploy, R-7) and every mutation — a rename, a freshness stamp — bumps it.
+extension SavedSearch: LastModifiedStamping {}
 
 // MARK: - ModelModificationStamper
 

@@ -90,6 +90,10 @@ struct ProjectHomeView: View {
     // signal for direct tag assignments (so tagging a document recomputes the focus-tag seed).
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @Query private var allTagAssignments: [DocumentTagAssignment]
+    /// #279 / W-4: the user's classification corrections. A `ProjectLeadEntry`'s
+    /// `isEditorialNote` is a snapshot taken when the lead surfaced (dismissed leads never
+    /// refresh), so the lead row consults these live before trusting it.
+    @Query private var classificationOverrides: [DocumentClassificationOverride]
     // Archive Visits Phase 3: the project's plan, resolved by in-memory `projectIds` filter
     // (the file's standing rule — the contains-predicate is unreliable in SwiftData).
     @Query(sort: \ArchiveVisitPlan.lastModified, order: .reverse)
@@ -686,8 +690,20 @@ struct ProjectHomeView: View {
                      defaultValue: "Related to 1 of your documents")
             : String(localized: "project.home.leads.related.other",
                      defaultValue: "Related to \(n) of your documents")
-        guard lead.isEditorialNote else { return related }
+        guard effectiveIsEditorialNote(for: lead) else { return related }
         return related + " · " + String(localized: "project.home.leads.editorial", defaultValue: "Editorial note")
+    }
+
+    /// The lead's editorial-note flag with the user's classification corrections applied
+    /// (#279 / W-4): an override for the lead's document wins over the lead's own snapshot,
+    /// which was taken when the lead surfaced and can be stale.
+    private func effectiveIsEditorialNote(for lead: ProjectLeadEntry) -> Bool {
+        if let override = classificationOverrides.first(where: {
+            $0.volumeId == lead.volumeId && $0.documentId == lead.documentId
+        }) {
+            return override.isEditorialNote
+        }
+        return lead.isEditorialNote
     }
 
     /// A lead surfaced within the last week reads as new.

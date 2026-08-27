@@ -66,6 +66,13 @@ import SwiftData
 ///          inventory **and** to ``identifiersAwaitingDeploy`` (boarding the reserved W-4+W-5
 ///          promotion). Baseline count and digest unchanged — `installed − awaiting` still
 ///          describes Production.
+///   1.3 — W-4 (#279): `DocumentClassificationOverride`'s 7 identifiers added to the inventory
+///          **and** to ``identifiersAwaitingDeploy`` (the same reserved promotion). Baseline
+///          count and digest unchanged — `installed − awaiting` still describes Production.
+///   1.4 — W-5 (#266): `CD_SavedSearch.CD_freshnessData` + `CD_SavedSearch.CD_lastModified`
+///          added to the inventory **and** to ``identifiersAwaitingDeploy`` — the promotion
+///          block this reservation was named for is now complete (32 + 7 + 2 = 41
+///          identifiers awaiting one deploy). Baseline count and digest unchanged.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -170,6 +177,13 @@ enum CloudKitSchemaInventory {
         "CD_CustomVolumeScope.CD_lastModified",
         "CD_CustomVolumeScope.CD_name",
         "CD_CustomVolumeScope.CD_volumeIds",
+        "CD_DocumentClassificationOverride",
+        "CD_DocumentClassificationOverride.CD_createdAt",
+        "CD_DocumentClassificationOverride.CD_documentId",
+        "CD_DocumentClassificationOverride.CD_id",
+        "CD_DocumentClassificationOverride.CD_isEditorialNote",
+        "CD_DocumentClassificationOverride.CD_parsedIsEditorialNote",
+        "CD_DocumentClassificationOverride.CD_volumeId",
         "CD_DocumentHighlight",
         "CD_DocumentHighlight.CD_colorTag",
         "CD_DocumentHighlight.CD_createdAt",
@@ -264,7 +278,9 @@ enum CloudKitSchemaInventory {
         "CD_SavedSearch.CD_dateRangeStart",
         "CD_SavedSearch.CD_documentTypeFilterRaw",
         "CD_SavedSearch.CD_excludedTermsCSV",
+        "CD_SavedSearch.CD_freshnessData",
         "CD_SavedSearch.CD_id",
+        "CD_SavedSearch.CD_lastModified",
         "CD_SavedSearch.CD_name",
         "CD_SavedSearch.CD_parametersData",
         "CD_SavedSearch.CD_personRef",
@@ -443,6 +459,22 @@ enum CloudKitSchemaInventory {
         "CD_ArchiveVisitTarget.CD_targetKey",
         "CD_ArchiveVisitTarget.CD_tierId",
         "CD_ArchiveVisitTarget.CD_userNote",
+        // W-4 (#279) — the document-classification override record type and its six fields,
+        // boarding the same reserved promotion. Owner step: reclassify one document once on a
+        // Development build signed into iCloud before deploying, so CloudKit creates the type.
+        "CD_DocumentClassificationOverride",
+        "CD_DocumentClassificationOverride.CD_createdAt",
+        "CD_DocumentClassificationOverride.CD_documentId",
+        "CD_DocumentClassificationOverride.CD_id",
+        "CD_DocumentClassificationOverride.CD_isEditorialNote",
+        "CD_DocumentClassificationOverride.CD_parsedIsEditorialNote",
+        "CD_DocumentClassificationOverride.CD_volumeId",
+        // W-5 (#266) — two new fields on the existing SavedSearch record type: the run
+        // watermark behind the freshness badge, and the `lastModified` merge tiebreaker the
+        // record never had. Owner step: run one saved search on a Development build signed
+        // into iCloud before deploying, so CloudKit materialises both fields.
+        "CD_SavedSearch.CD_freshnessData",
+        "CD_SavedSearch.CD_lastModified",
     ]
 
     // MARK: - Derived state

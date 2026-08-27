@@ -2192,8 +2192,18 @@ struct FRUSExplorerApp: App {
                     )
                 }
 
+                // #279 / W-4: replay the user's document-classification overrides into the
+                // index, the same way summaries and notes are replayed — a re-index restores
+                // the parsed TEI value (deliberately: upstream fixes must keep propagating
+                // for every non-overridden document), so overrides re-assert at boot. Nearly
+                // free in the steady state: the update is value-guarded per row.
+                let overrides = await MainActor.run {
+                    DocumentClassificationOverrideStore.snapshot(context: container.mainContext)
+                }
+                try? await pipeline.applyClassificationOverrides(overrides)
+
                 #if DEBUG
-                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes pushed to FTS5")
+                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes, \(overrides.count) classification overrides pushed to FTS5")
                 #endif
             }
         }

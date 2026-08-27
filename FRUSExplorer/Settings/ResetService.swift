@@ -97,6 +97,8 @@ enum ResetInventory {
         // #746 additions — all CloudKit-synced user data that survived every previous reset.
         SavedSearch.self,
         PersonClusterOverride.self,
+        // W-4 (#279) — the user's document-classification corrections are research data too.
+        DocumentClassificationOverride.self,
         CustomVolumeScope.self,
         WorkingCorpus.self,
         ProjectLeadEntry.self,

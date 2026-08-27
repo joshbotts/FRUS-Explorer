@@ -26,6 +26,10 @@ extension CustomVolumeScope: DeduplicableRecord {}   // #258 — flat record, de
 // ids are not random (Archive-Visit-Plan-Design §2a).
 extension ArchiveVisitDocument: DeduplicableRecord {}
 extension ArchiveVisitTarget: DeduplicableRecord {}
+// W-4 (#279) — flat record, dedupeSimple suffices. Ids are random, so this collapses only a
+// CloudKit re-import of the SAME record; two devices overriding the same document mint two
+// records with different ids, which the apply order resolves (newest assertion applied last).
+extension DocumentClassificationOverride: DeduplicableRecord {}
 
 /// Collapses duplicate user-data records that share the same `id`.
 ///
@@ -74,6 +78,7 @@ enum DuplicateRecordCleanup {
             + dedupeArchiveVisitPlans(context: context)
             + dedupeSimple(ArchiveVisitDocument.self, context: context)
             + dedupeSimple(ArchiveVisitTarget.self, context: context)
+            + dedupeSimple(DocumentClassificationOverride.self, context: context)
         guard removed > 0 else { return }
         try? context.save()
         // Always-on (not #if DEBUG): deleting synced user records is a destructive,

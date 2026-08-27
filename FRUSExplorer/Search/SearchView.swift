@@ -549,7 +549,14 @@ struct SearchView: View {
                 .sheet(isPresented: $showSavedSearches) {
                     SavedSearchesView { saved in
                         vm.applyParameters(saved.searchParameters)
-                        Task { await runSearch() }
+                        Task {
+                            await runSearch()
+                            // W-5 (#266): stamp the run watermark AFTER the search completes —
+                            // see the macOS sibling in SearchSheet for the reasoning.
+                            saved.recordRun(matchCount: vm.totalMatchCount,
+                                            indexedVolumeCount: appState.indexedVolumeIds.count)
+                            try? modelContext.save()
+                        }
                     }
                     .modelContainer(modelContext.container)
                     // #338 step 2: publish this window's scene id into the sheet so

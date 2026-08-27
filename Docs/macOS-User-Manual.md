@@ -144,7 +144,9 @@ The **Research rail** (⌘⇧R) is the per-document research surface, a trailing
 | **Related** | The Related Documents window — a ranked list of the documents most related to this one (Section 8.5) |
 | **Share** | Zotero send, Zotero-file export, and citation sharing (Section 11) |
 
-Below the tiles sit four expandable accordions — **Summary** (AI summaries, Section 13), **Notes**, **Tags**, and **Collections** (Sections 9 and 12).
+Below the tiles sit four expandable accordions — **Summary** (AI summaries, Section 13), **Notes**, **Tags**, and **Collections** (Sections 9 and 12) — and, at the bottom, a compact **Classification** block.
+
+**Classification** shows whether the app treats what you're reading as a *document* or an *editorial note*, and lets you correct it. FRUS's own tagging is occasionally wrong, and because the app trusts it, the mistake reaches the type badge, search's document-type filter, counts, and exports. **Reclassify as Document…** / **Reclassify as Editorial Note…** records your correction: the body restyles immediately, every filter and badge follows it on all your devices, and the block then shows what FRUS tags it as so the disagreement stays visible. Fully reversible — **Restore FRUS's Classification** here, or manage every correction (with per-row Undo) under **Settings → Search → Classification Corrections…**. One caveat the confirmation dialog also states: the bundled series-analytics dashboards are computed from the published corpus and cannot see your corrections.
 
 **Highlighting is not a rail button.** To highlight, **select text in the document body**: the **floating selection bar** (a dark pill) appears at the selection with four color dots — click one to save the highlight — plus **Excerpt**, **Look Up**, and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available. The same bar, with the same behavior, appears on iPad and iPhone.
 
@@ -394,6 +396,8 @@ Checklist Mode is a per-session working aid: not saved, reset on relaunch, re-an
 ### 7.8 Saved Searches
 
 The **bookmark** button beside the search field saves the current query with all its active filters (a dialog names it); the filled bookmark button opens your **Saved Searches** panel, where one click re-runs any of them — right-click a row to rename it, delete it, or open it in the Word Cloud. Saved searches sync across your devices and can drive *smart collections* that resolve at export time (Section 12.8).
+
+Once you have run a saved search, the app watches it: when the index has grown so the search now matches more than it did at your last run, its row shows a **NEW** capsule and an exact **"+N since last run"** count. Re-running clears the badge on every device — your last run syncs with the search. A search you have never run shows no badge, and results *disappearing* (say, after removing a volume) is deliberately not flagged as "new".
 
 ![The saved-searches list, opened from the filled bookmark button — one click re-runs any saved query.](screenshots/macos/saved-searches.png)
 
@@ -1077,7 +1081,7 @@ A collection can carry the same appendix, narrowed to the project it was exporte
 |------|--------------|-----------------|
 | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — iCloud is untouched |
 | **Reset This Device** | Clears downloaded volumes and the search index | Volumes and index only; iCloud data survives |
-| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project, and recorded session — plus saved searches, working corpora, volume scopes, leads, and person-identity corrections — on every device |
+| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project, and recorded session — plus saved searches, working corpora, volume scopes, archive visit plans, leads, and person-identity and document-classification corrections — on every device |
 
 ---
 

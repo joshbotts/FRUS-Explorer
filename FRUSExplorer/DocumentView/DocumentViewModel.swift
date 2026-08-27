@@ -389,6 +389,20 @@ public final class DocumentViewModel {
     /// Volume manifest entry used for citation generation. `nil` when not found in manifest.
     public let volumeEntry: VolumeManifestEntry?
     private let parser: FRUSDocumentParser
+
+    /// Resolves the document's EFFECTIVE editorial-note classification — the index value with
+    /// any user override applied (#279 / W-4). Injected by the hosting view (it holds the
+    /// pipeline); `nil` leaves the TEI's own shape untouched.
+    public var effectiveClassificationLookup:
+        ((_ volumeId: String, _ documentId: String) async -> Bool?)?
+
+    /// The TEI parse's own classification of this document — what FRUS printed. Set by `load`.
+    public private(set) var parsedIsEditorialNote: Bool?
+
+    /// The classification the document renders under — the override when one exists, else
+    /// the parse. The header badge reads THIS, not the in-flight entry flag (which defaults
+    /// `false` at many construction sites). Set by `load`.
+    public private(set) var effectiveIsEditorialNote: Bool?
     /// Person mention store for "Find all mentions" feature. Optional — `nil` if the
     /// database could not be opened at boot or in test contexts that don't need it.
     private let personMentionStore: PersonMentionStore?
@@ -467,10 +481,25 @@ public final class DocumentViewModel {
                 terms = sqlTerms
             }
 
-            guard let ast = try await astResult else {
+            guard var ast = try await astResult else {
                 loadError = DocumentLoadError.documentNotFound(entry.documentId)
                 isLoading = false
                 return
+            }
+
+            // #279 / W-4 (owner decision: the override restyles the body, not only the
+            // metadata). The parse's own shape is recorded first — it is the restore value
+            // and the "FRUS tags this as…" line — then the EFFECTIVE classification (the
+            // index column, which the override replay keeps current) reshapes the AST:
+            // unwrap the editorial-note container for an overridden-to-document, wrap the
+            // body for an overridden-to-note. Idempotent when nothing is overridden.
+            parsedIsEditorialNote = ast.isShapedAsEditorialNote
+            if let lookup = effectiveClassificationLookup,
+               let effective = await lookup(entry.volumeId, entry.documentId) {
+                effectiveIsEditorialNote = effective
+                ast = ast.applyingClassificationOverride(isEditorialNote: effective)
+            } else {
+                effectiveIsEditorialNote = ast.isShapedAsEditorialNote
             }
 
             // Build lookup tables
