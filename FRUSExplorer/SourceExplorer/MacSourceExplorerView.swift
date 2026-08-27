@@ -914,12 +914,12 @@ struct MacSourceExplorerView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-        case .previouslyPublished:
+        case .previouslyPublished(let citation):
+            // W-11: the shared guidance block — publication family, extracted
+            // designation, verified outbound link, or the generic copy when the
+            // grammar declines. One definition with the iOS panel.
             GroupBox(header) {
-                Text(String(localized: "source.explorer.published.note",
-                            defaultValue: "This document was previously published. Consult the cited publication for the original source."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                PublishedSourceGuidanceView(citation: citation)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 

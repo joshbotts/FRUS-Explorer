@@ -6,15 +6,22 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
-"""The trip packet's link checker (#830, decisions D12/D19).
+"""The trip packet's link checker (#830, decisions D12/D19; extended for W-11).
 
 An OWNER-RUN release-checklist step, like notarize.sh beside it — never CI. It reads
-every `RepositoryLink(url:...)` out of FRUSExplorer/TripPacket/RepositoryFactTable.swift
-(the table is Swift source, not JSON, by design), fetches each URL, and reports. With
-`--stamp` it rewrites the table's `confirmed` date to today WHEN AND ONLY WHEN every
-checkable link passed — D12's "explicit stamp flag writes today's date onto the rows
-that pass" (the table stamps all rows with one owner-confirmation date, so a partial
-pass stamps nothing rather than muddying which rows were checked).
+every `RepositoryLink(url:...)` out of the link tables listed in TABLES (Swift source,
+not JSON, by design) — the trip packet's RepositoryFactTable and W-11's
+PublishedSourceLinkTable — fetches each URL, and reports. With `--stamp` it rewrites
+each table's `confirmed` date to today WHEN AND ONLY WHEN every checkable link in THAT
+table passed — D12's "explicit stamp flag writes today's date onto the rows that pass".
+Each table carries one owner-confirmation date for all its rows, so a partial pass
+stamps nothing in that table rather than muddying which rows were checked; the stamp
+verdict is per table, because one table's dead link says nothing about the other's
+rows.
+
+W-11 host note: archive.org can answer a first fetch with a transient TLS handshake
+timeout (measured 2026-08-27) — retry an `error` verdict there before reading it as
+dead.
 
 THE REDIRECT RULE IS LOAD-BEARING (D12): NARA reorganises its site, and a dead deep
 link characteristically 301s to a section index that answers 200. A checker that greps
@@ -43,8 +50,16 @@ import urllib.request
 from datetime import date, timezone, datetime
 from pathlib import Path
 
-TABLE = Path(__file__).resolve().parent.parent / \
-    "FRUSExplorer/TripPacket/RepositoryFactTable.swift"
+_REPO = Path(__file__).resolve().parent.parent
+
+# (path, anti-vacuity floor). The floor is each table's shipping link count: a parse
+# well under it is a broken parse, and a broken parse reporting "all clear" is the one
+# failure mode a checker must not have. RepositoryFactTable ships 23 links (3 NACP +
+# 10×2 libraries); PublishedSourceLinkTable ships 3 (TS and EAS share the LoC guide).
+TABLES = [
+    (_REPO / "FRUSExplorer/TripPacket/RepositoryFactTable.swift", 20),
+    (_REPO / "FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift", 3),
+]
 
 # Hosts that 403 every automated fetch, real and invented paths alike (D19's measured
 # vocabulary). A 403 here is "owner-asserted", never "dead".
@@ -103,19 +118,17 @@ def stamp_confirmed(text: str, today: date) -> str:
         count=1)
 
 
-def main() -> int:
-    stamp = "--stamp" in sys.argv
-    text = TABLE.read_text(encoding="utf-8")
+def check_table(table: Path, floor: int, stamp: bool) -> int:
+    """Check one table; returns 0 clean / 1 dead links / 2 broken parse."""
+    text = table.read_text(encoding="utf-8")
     links = links_in_table(text)
-    # The anti-vacuity floor: the shipping table declares 23 links (3 NACP + 10×2
-    # libraries). A parse well under that is broken, and a broken parse reporting "all
-    # clear" is the one failure mode a checker must not have.
-    if len(links) < 20:
-        print(f"REFUSED: only {len(links)} links parsed from {TABLE} — the shipping "
-              "table declares 23, so the parse is broken, not the table small.")
+    if len(links) < floor:
+        print(f"REFUSED: only {len(links)} links parsed from {table} — the shipping "
+              f"table declares at least {floor}, so the parse is broken, not the "
+              "table small.")
         return 2
 
-    print(f"{len(links)} links declared in {TABLE.name} "
+    print(f"{len(links)} links declared in {table.name} "
           f"(checked {datetime.now(timezone.utc).date().isoformat()})\n")
     needs_review = 0
     failed = 0
@@ -142,19 +155,28 @@ def main() -> int:
     print()
     print(f"ok {len(links) - needs_review - failed - asserted} · "
           f"needs review {needs_review} · owner-asserted {asserted} · dead {failed}")
-    print("A 200 proves the URL resolves, not that the page still says what the packet "
-          "claims about it — read anything you have not read since the last stamp.")
 
     if stamp:
         if failed or needs_review:
-            print("\nNOT STAMPED: the table carries one owner-confirmation date for all "
-                  "rows, and a partial pass would muddy which were checked. Fix or review "
-                  "the failures, then re-run --stamp.")
-            return 1
-        TABLE.write_text(stamp_confirmed(text, date.today()), encoding="utf-8")
-        print(f"\nStamped `confirmed` to {date.today().isoformat()} in {TABLE.name}. "
-              "Re-run the test suite: RepositoryLinkRenderTests pins the stamp's shape.")
-    return 1 if failed else 0
+            print(f"\nNOT STAMPED ({table.name}): the table carries one "
+                  "owner-confirmation date for all rows, and a partial pass would muddy "
+                  "which were checked. Fix or review the failures, then re-run --stamp.")
+        else:
+            table.write_text(stamp_confirmed(text, date.today()), encoding="utf-8")
+            print(f"\nStamped `confirmed` to {date.today().isoformat()} in {table.name}. "
+                  "Re-run the test suite: RepositoryLinkRenderTests pins the stamp's shape.")
+    return 1 if failed or (stamp and needs_review) else 0
+
+
+def main() -> int:
+    stamp = "--stamp" in sys.argv
+    worst = 0
+    for table, floor in TABLES:
+        worst = max(worst, check_table(table, floor, stamp))
+        print()
+    print("A 200 proves the URL resolves, not that the page still says what the packet "
+          "claims about it — read anything you have not read since the last stamp.")
+    return worst
 
 
 if __name__ == "__main__":
