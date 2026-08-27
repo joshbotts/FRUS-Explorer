@@ -41,9 +41,12 @@ the live plan of record (currently `../Plan-Of-Record-2026-08-23.md`), not here.
   remain registered as `SURVEY_SERIES` targets in CLAUDE.md); the discharged lot runbook
   (`352-lot-resolution-runbook.md` — its recurring operations live in CLAUDE.md's generator
   entries); and #834's frozen measurement record (`Decimal-Channel-Measurement-2026-08-20.md`
-  + its two JSONs — #1014's live instrument is the in-code `MEASURE_DECIMAL=1` harness, which
+  + its two JSONs — the live instrument is the in-code `MEASURE_DECIMAL=1` harness, which
   mints fresh copies at the Planning root) plus the superseded `external-citations/` sample
-  (the current baseline is `../external-citation-sample.json`).
+  (the current baseline is `../external-citation-sample.json`). #1014's frozen record joined
+  it at the issue's close, 2026-08-27 (`Ibid-Gap-Measurement-2026-08-27.md` + its two JSONs —
+  the W-1 verdict that retired the ~2,600 extrapolation at 1,169 and the numbers W-1b shipped
+  against; the live instrument is `MEASURE_IBID_GAP=1`, same fresh-copies convention).
 
 - **The browse-axes program (#1051, 3 files — moved 2026-08-23)** — the program completed
   B-1…B-7 (PRs #1060, #1064–#1069) plus the #1070 regression fix (#1071):

@@ -672,7 +672,7 @@ extension FootnoteCitationScanner {
 /// gains 27 and pre-1910 zero. `ibidStandsAlone` did NOT change: the explicit
 /// `Ibid., Central Files, 684A.86/8–956` form was already harvested (5,070 references),
 /// because the class is in the clause. Full verdict:
-/// `Planning/Ibid-Gap-Measurement-2026-08-27.md`.
+/// `Planning/Completed/Ibid-Gap-Measurement-2026-08-27.md`.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-27: #1014 W-1 (measurement instrument)
