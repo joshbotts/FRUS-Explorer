@@ -65,6 +65,13 @@ import simd
 ///   1.1 — V-4: promoted with the map into Semantic Analytics. On-demand drawing replaces the
 ///         free-running 60 fps loop, and the pipeline is compiled once per process rather than once
 ///         per view-struct initialisation. Main-actor-isolated, which the redraw path requires.
+///   1.2 — W-3 (#1007): the offscreen export path. `draw(in:)`'s encoding half is extracted into
+///         `encode(into:buffer:uniforms:)` — ONE encode path, two callers — and
+///         `renderOffscreen(pixelSize:supersample:clearColor:)` renders the same corpus through the
+///         same pipeline into a private texture and reads it back as a `CGImage`. The offscreen
+///         call builds its OWN uniforms (aspect from the export texture, point size scaled to the
+///         export height) and never touches the stored view state, so the restore guarantee is
+///         structural rather than procedural.
 @MainActor
 final class SemanticMapRenderer: NSObject, MTKViewDelegate {
 
@@ -140,6 +147,12 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// `SemanticMapSurfaceTests` asserts they agree because nothing else does.
     static let pixelFormat: MTLPixelFormat = .bgra8Unorm
 
+    /// The map's background — ONE definition, shared by the on-screen view's `clearColor` and the
+    /// offscreen export's pass descriptor (W-3). The shader's scope treatment was tuned against
+    /// this dark ground (see the ghost-alpha notes in the shader source); an export cleared to
+    /// anything else would change what the ghosted points read as.
+    static let backgroundClearColor = MTLClearColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1)
+
     /// The device the pipeline was built on; the MTKView must be given the same one.
     let device: MTLDevice
     private let queue: MTLCommandQueue
@@ -206,6 +219,12 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     private(set) var aspect: Float = 1 { didSet { setNeedsRedraw() } }
     /// The viewport in points, for converting a gesture's translation into grid units.
     private(set) var viewportPoints = CGSize(width: 600, height: 600)
+    /// The live drawable's size in PIXELS, recorded alongside `aspect` — the reference the
+    /// offscreen export scales `pointSize` against (W-3, Trap 1): Metal reads `[[point_size]]`
+    /// in pixels of the render target, so an export at plate resolution must scale the sprite
+    /// by exportHeight / this height or the plate draws dramatically sparser than the screen.
+    /// The 600-point default only ever applies to a renderer no view has attached to (tests).
+    private(set) var drawablePixelSize = CGSize(width: 600, height: 600)
 
     /// A view held without keeping it alive.
     private final class WeakView {
@@ -528,6 +547,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
         aspect = Float(size.width / size.height)
+        drawablePixelSize = size
         #if os(macOS)
         let factor = view.window?.backingScaleFactor ?? 2
         #else
@@ -576,18 +596,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             centre: centre, scale: scale, pointSize: pointSize, alpha: 1.0,
             scopeActive: isScoped ? 1 : 0)
 
-        if let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) {
-            if let pointBuffer, pointCount > 0 {
-                encoder.setRenderPipelineState(pipeline)
-                encoder.setVertexBuffer(pointBuffer, offset: 0, index: 0)
-                encoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)
-                encoder.setVertexBuffer(paletteBuffer, offset: 0, index: 2)
-                // ONE draw call for the entire corpus. If this is fast enough, the design's
-                // level-of-detail machinery becomes an optimisation rather than a prerequisite.
-                encoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: pointCount)
-            }
-            encoder.endEncoding()
-        }
+        encode(into: descriptor, buffer: buffer, uniforms: &uniforms)
 
         // GPU timestamps, not wall time around `commit`: the command buffer has barely begun when
         // `commit` returns, so a CPU-side measurement here would report the encode cost and call it
@@ -607,6 +616,138 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         #endif
         buffer.present(drawable)
         buffer.commit()
+    }
+
+    /// Encodes the point pass into a descriptor — the ONE encode path (W-3 / #1007).
+    ///
+    /// `draw(in:)` calls it with the view's descriptor and presents; `renderOffscreen` calls it
+    /// with a descriptor over its own texture and blits out. A figure produced by a second,
+    /// export-only draw path would not be a picture of what the reader saw — it would be a
+    /// picture of a nearby program — which is the same one-definition rule `SemanticMapCamera`
+    /// states for the projection.
+    ///
+    /// Encodes an empty pass when there are no points, exactly as `draw(in:)` always has: the
+    /// clear colour reaches the surface only if a pass is encoded.
+    private func encode(into descriptor: MTLRenderPassDescriptor,
+                        buffer: MTLCommandBuffer,
+                        uniforms: inout Uniforms) {
+        if let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) {
+            if let pointBuffer, pointCount > 0 {
+                encoder.setRenderPipelineState(pipeline)
+                encoder.setVertexBuffer(pointBuffer, offset: 0, index: 0)
+                encoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: 1)
+                encoder.setVertexBuffer(paletteBuffer, offset: 0, index: 2)
+                // ONE draw call for the entire corpus. If this is fast enough, the design's
+                // level-of-detail machinery becomes an optimisation rather than a prerequisite.
+                encoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: pointCount)
+            }
+            encoder.endEncoding()
+        }
+    }
+
+    // MARK: - Offscreen rendering (W-3 / #1007)
+
+    /// Renders the current map state into a private texture and reads it back as a `CGImage` —
+    /// the capability `SemanticMapExport`'s "No figure, deliberately" refusal waited on.
+    ///
+    /// ## The four traps this signature exists to close (design §3)
+    /// - **Point size is in pixels of the render target**, so the sprite is scaled by
+    ///   `textureHeight / drawablePixelSize.height` — the dot subtends the same fraction of the
+    ///   plate as it did of the screen. Unscaled, a 3000-pixel plate rendered with the reader's
+    ///   on-screen `pointSize` is dramatically sparser and still perfectly plausible.
+    /// - **Aspect comes from the export texture**, via a locally built `Uniforms` — the stored
+    ///   `aspect`/`pointSize`/`camera` are never written, so the on-screen view cannot be left
+    ///   holding export geometry.
+    /// - **Anti-aliasing is supersampling, not MSAA**: sample count is part of the pipeline
+    ///   state, and a figure drawn by a pipeline the on-screen map never uses is not evidence of
+    ///   what the reader saw. Render at `supersample`× and downsample in CoreGraphics.
+    /// - **Readback is blit-to-shared-buffer** (`.private` render target → `MTLBlitCommandEncoder`
+    ///   → `.storageModeShared` buffer), the uniform path across Apple Silicon and Intel; the
+    ///   `CGImage` is `.byteOrder32Little` + `.premultipliedFirst` because the pipeline is
+    ///   `.bgra8Unorm` — wrong order yields a plausible map with red and blue swapped.
+    ///
+    /// - Parameters:
+    ///   - pixelSize: The plate's final size in pixels.
+    ///   - supersample: Oversampling factor (≥1); the texture is this multiple of `pixelSize`.
+    ///   - clearColor: The background. Defaults to the map's own; injectable so a test can clear
+    ///     to a known non-grey colour and assert channel order (Trap 4).
+    /// - Returns: The rendered plate, or `nil` when the texture, encoder, or readback fails.
+    func renderOffscreen(pixelSize: CGSize,
+                         supersample: Int = 2,
+                         clearColor: MTLClearColor = SemanticMapRenderer.backgroundClearColor) -> CGImage? {
+        let factor = max(1, supersample)
+        let width = Int(pixelSize.width.rounded()) * factor
+        let height = Int(pixelSize.height.rounded()) * factor
+        guard width > 0, height > 0 else { return nil }
+
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: Self.pixelFormat, width: width, height: height, mipmapped: false)
+        textureDescriptor.usage = [.renderTarget, .shaderRead]
+        textureDescriptor.storageMode = .private
+        guard let texture = device.makeTexture(descriptor: textureDescriptor) else { return nil }
+
+        let pass = MTLRenderPassDescriptor()
+        pass.colorAttachments[0].texture = texture
+        pass.colorAttachments[0].loadAction = .clear
+        pass.colorAttachments[0].storeAction = .store
+        pass.colorAttachments[0].clearColor = clearColor
+
+        // The export's OWN uniforms: aspect from the texture (Trap 2), point size scaled to the
+        // texture height (Trap 1). The stored view state is read, never written.
+        var uniforms = Uniforms(
+            centre: centre,
+            scale: camera.scale(aspect: Float(width) / Float(height)),
+            pointSize: pointSize * Float(height) / Float(max(1, drawablePixelSize.height)),
+            alpha: 1.0,
+            scopeActive: isScoped ? 1 : 0)
+
+        guard let buffer = queue.makeCommandBuffer() else { return nil }
+        encode(into: pass, buffer: buffer, uniforms: &uniforms)
+
+        // Blit into a shared buffer with 256-byte-aligned rows (the safe row alignment for a
+        // texture→buffer copy on every device family this app runs on).
+        let bytesPerRow = ((width * 4 + 255) / 256) * 256
+        guard let readback = device.makeBuffer(length: bytesPerRow * height,
+                                               options: .storageModeShared),
+              let blit = buffer.makeBlitCommandEncoder() else { return nil }
+        blit.copy(from: texture,
+                  sourceSlice: 0, sourceLevel: 0,
+                  sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                  sourceSize: MTLSize(width: width, height: height, depth: 1),
+                  to: readback,
+                  destinationOffset: 0,
+                  destinationBytesPerRow: bytesPerRow,
+                  destinationBytesPerImage: bytesPerRow * height)
+        blit.endEncoding()
+        buffer.commit()
+        buffer.waitUntilCompleted()
+
+        let data = Data(bytes: readback.contents(), count: bytesPerRow * height)
+        guard let provider = CGDataProvider(data: data as CFData),
+              let full = CGImage(
+                width: width, height: height,
+                bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: bytesPerRow,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue
+                    | CGBitmapInfo.byteOrder32Little.rawValue),
+                provider: provider, decode: nil,
+                shouldInterpolate: false, intent: .defaultIntent)
+        else { return nil }
+        guard factor > 1 else { return full }
+
+        // Downsample to the plate size — free anti-aliasing through the exact shipping pipeline.
+        let finalWidth = width / factor
+        let finalHeight = height / factor
+        guard let context = CGContext(
+            data: nil, width: finalWidth, height: finalHeight,
+            bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return full }
+        context.interpolationQuality = .high
+        context.draw(full, in: CGRect(x: 0, y: 0, width: finalWidth, height: finalHeight))
+        return context.makeImage()
     }
 
     #if DEBUG

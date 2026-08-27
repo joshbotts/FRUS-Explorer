@@ -28,21 +28,26 @@ import Foundation
 /// `volume title · Doc id` is the honest ceiling"), and CLAUDE.md writes the same posture for
 /// `resolved-edge-index.json`. A table that invented a title would be inventing evidence.
 ///
-/// ## No figure, deliberately
-/// Manual §13.9 promises every analytics chart a figure *or* its data, and this ships the data
-/// half only. That is a refusal, not an omission, and the reason is structural: the map is a
-/// Metal point-sprite pass inside an `MTKView`, and the app's figure path
-/// (`AnalyticsFigureExporter`) drives `ImageRenderer` over a SwiftUI view — which captures the
-/// SwiftUI layer tree, not a `CAMetalLayer` drawable, and would render the map as a blank plate.
-/// The two real routes are an offscreen Metal pass into a private texture, or reading back
-/// `currentDrawable.texture` (which this view cannot do: `MTKView.framebufferOnly` defaults to
-/// true and nothing in the repo clears it, and it would capture the visible viewport at screen
-/// resolution rather than a publication plate). Either is a Metal work item, not an adoption, and
-/// `AnalyticsSectionExportControl` already supports a CSV-only surface by construction — omit
-/// `exportFigure` and the PNG/PDF items do not exist.
+/// ## The figure, and how it is assembled (W-3 / #1007 — this section replaces the old
+/// "No figure, deliberately" refusal, whose justification expired when the offscreen pass shipped)
+/// Manual §13.9 promises every analytics chart a figure *or* its data; this surface now ships
+/// both. `ImageRenderer` still cannot capture a `CAMetalLayer` drawable — that fact did not
+/// change. What changed is that `SemanticMapRenderer.renderOffscreen` renders the SAME corpus
+/// through the SAME pipeline into a private texture and hands back a `CGImage`. The figure is
+/// then a composite: the point layer is Metal, the region labels and plate chrome are SwiftUI
+/// (`SemanticMapFigureContent` inside `AnalyticsFigureCanvas`), and the two are composited
+/// rather than one being reimplemented in the other — text shaping stays out of shaders, and
+/// the point pass stays out of `Canvas`. Both layers derive their geometry from ONE export
+/// rectangle, which is what keeps a label on its region at every plate size. The plate is a
+/// dark map inset in the light figure canvas, deliberately: the shader's scope treatment was
+/// tuned against the dark ground, and a light-background map would be a design change wearing
+/// an export option's clothes.
 ///
 /// Version history:
 ///   1.0 — CW-7a (UI review M-20 / F-28): regions CSV + provenance
+///   1.1 — W-3 (#1007): the figure — `figureTitle`/`sliceDescription` parameters on
+///         ``provenance(index:scopeLabel:scopedDocumentCount:lensLabel:indexedVolumeCount:figureTitle:sliceDescription:)``,
+///         and the refusal section above rewritten as the assembly description
 enum SemanticMapExport {
 
     // MARK: - Provenance
@@ -62,13 +67,21 @@ enum SemanticMapExport {
     ///   - lensLabel: The colour lens in effect when the table was taken.
     ///   - indexedVolumeCount: Volumes this device can actually open.
     /// - Returns: The provenance block.
+    /// - Parameters (figure additions, W-3):
+    ///   - figureTitle: Overrides the default regions-table title — the FIGURE passes
+    ///     "Semantic map", because it is a picture of the map, not of the table.
+    ///   - sliceDescription: Non-nil when the export shows a SLICE. It leads the caveats,
+    ///     because a slice figure omits its region labels (a region's centre belongs to the map
+    ///     plane, not the slice) and without this sentence the reader has no way to know why.
     static func provenance(index: SemanticMapArtifacts.MapIndex,
                            scopeLabel: String?,
                            scopedDocumentCount: Int?,
                            lensLabel: String,
-                           indexedVolumeCount: Int) -> AnalyticsProvenance {
+                           indexedVolumeCount: Int,
+                           figureTitle: String? = nil,
+                           sliceDescription: String? = nil) -> AnalyticsProvenance {
         AnalyticsProvenance(
-            figureTitle: String(localized: "semanticMap.export.title",
+            figureTitle: figureTitle ?? String(localized: "semanticMap.export.title",
                                 defaultValue: "Semantic map regions"),
             axisLabel: String(localized: "semanticMap.export.axis",
                               defaultValue: "Documents"),
@@ -82,7 +95,8 @@ enum SemanticMapExport {
             corpusStatement: corpusStatement(index: index,
                                              scopedDocumentCount: scopedDocumentCount,
                                              indexedVolumeCount: indexedVolumeCount),
-            extraCaveats: caveats(index: index, lensLabel: lensLabel))
+            extraCaveats: (sliceDescription.map { [$0] } ?? [])
+                + caveats(index: index, lensLabel: lensLabel))
     }
 
     /// The corpus sentence, which has to say two different numbers that are easy to conflate: what
