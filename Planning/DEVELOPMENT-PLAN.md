@@ -9298,3 +9298,29 @@ parser over the real 1981 head shape), the chip test driving the real
 
 Full iOS suite 4,131 green; Mac scheme builds. No artifact, no index version, no
 CloudKit deploy.
+
+## Session 2026-08-27 — W-2a: the sliced map survives Handoff
+
+The first of the cross-platform review's four owed items (W-2): the semantic map's slice
+poles now travel with the F-28 Handoff activity, gated on the `requestedPoles` deferral
+the `AppActivityTypes` comment demanded. `setPole` on an unready model used to
+half-apply — the missing-centroid branch rolled back the pole it had just set and posted
+`semanticMap.axis.noSummary`, a confident diagnosis of the wrong cause, since during a
+load a centroid is missing because NOTHING has loaded. A completed pair arriving before
+`prepare()` is now REMEMBERED (`requestedPoles`) and re-applied by the view's `.task`
+beside the deferred-reveal retry, with `poles` cleared so the axis card never sits
+half-drawn; the index-independent same-volume refusal deliberately stays ABOVE the
+deferral, because it is the one refusal a reader can legitimately hit before the load
+ends — three ungated tests pin that grammar and they run unchanged.
+
+`SemanticMapRequest` gains `axisNegativeVolumeID`/`axisPositiveVolumeID`: both poles or
+neither (a lone pole is a gesture in progress, not an analysis), carried through the
+hand-written `userInfo` (whose three-key shape had already silently dropped the focus
+fields — poles get real keys), through window identity (two slices are two windows, the
+type's own scope/reveal rule), and through the continuation dedupe key (without it a
+sliced and an unsliced continuation of one scope would dedupe to one). Older payloads
+decode with nils. Volume ids are stable across artifact generations, so no digest
+travels with them — the difference from `focusClusterID`.
+
+3 new tests (pole deferral end-to-end Metal-gated; userInfo pair rule + old-payload
+decode; window identity); 94 tests across the five map suites green.

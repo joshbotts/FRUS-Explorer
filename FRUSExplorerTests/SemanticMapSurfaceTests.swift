@@ -997,6 +997,39 @@ struct SemanticMapSurfaceTests {
         #expect(renderer.isScoped)
     }
 
+    /// The pole twin of the scope deferral above (W-2). Before it, `setPole` during the load
+    /// HALF-applied: the missing-centroid branch rolled the pole back and posted
+    /// `semanticMap.axis.noSummary` — a confident diagnosis of the wrong cause — so a Handoff
+    /// continuation could never carry an axis.
+    @MainActor
+    @Test("Poles requested before the map loads are applied when it arrives",
+          .enabled(if: semanticMapHasMetal))
+    func polesRequestedBeforeLoadAreApplied() async throws {
+        await BundledSemanticMap.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let negative = try #require(index.volumes.first?.volumeID)
+        let positive = try #require(index.volumes.last?.volumeID)
+        try #require(negative != positive)
+
+        let model = SemanticMapModel()
+        model.setPole(volumeID: negative, isPositive: false, yearForVolume: { _ in 1900 })
+        model.setPole(volumeID: positive, isPositive: true, yearForVolume: { _ in 1950 })
+        #expect(model.poles.negative == nil && model.poles.positive == nil,
+                "nothing can be resolved before the artifact is read")
+        #expect(model.slice == nil)
+        #expect(model.axisNotice == nil,
+                "a load in progress is not a diagnosis — no refusal message may show yet")
+        #expect(model.requestedPoles.negative == negative)
+        #expect(model.requestedPoles.positive == positive)
+
+        await model.prepare(lens: .cluster, eraForVolume: { _ in nil }, isDownloaded: { _ in false })
+        model.applyRequestedPolesIfNeeded(yearForVolume: { _ in 1950 })
+        #expect(model.poles.negative == negative)
+        #expect(model.poles.positive == positive)
+        #expect(model.slice != nil, "the deferred axis was dropped rather than applied")
+        #expect(model.requestedPoles.negative == nil && model.requestedPoles.positive == nil)
+    }
+
     /// An out-of-scope point is drawn as ground, so it must not be pickable or lassoable. Both
     /// scans take the same mask; if either ignored it, the map would hand back a document the reader
     /// had excluded — and a lasso would build a working corpus out of ghosts.
@@ -1530,6 +1563,39 @@ struct SemanticMapHandoffTests {
         let restored = try #require(SemanticMapRequest.from(userInfo: ["lens": "notALens"]))
         #expect(restored.lensRawValue == "notALens")
         #expect(SemanticMapLens(rawValue: restored.lensRawValue) == nil)
+    }
+
+    @Test("Slice poles survive the userInfo round trip, and only as a pair")
+    func polesRoundTrip() throws {
+        // W-2 (the F-28 remainder): a sliced map continues sliced. Both poles or neither —
+        // a lone pole cannot draw a slice, only a half-finished axis card.
+        let sliced = SemanticMapRequest(volumeIDs: nil, scopeLabel: nil, lensRawValue: "cluster",
+                                        axisNegativeVolumeID: "frus1969v12",
+                                        axisPositiveVolumeID: "frus1981-88v03")
+        let restored = try #require(SemanticMapRequest.from(userInfo: sliced.userInfo))
+        #expect(restored.axisNegativeVolumeID == "frus1969v12")
+        #expect(restored.axisPositiveVolumeID == "frus1981-88v03")
+
+        let lonePole = SemanticMapRequest(volumeIDs: nil, scopeLabel: nil,
+                                          lensRawValue: "cluster",
+                                          axisNegativeVolumeID: "frus1969v12")
+        #expect(lonePole.userInfo["axisNegative"] == nil,
+                "a half-picked axis is a gesture in progress, not an analysis to hand off")
+        // And an old payload with no pole keys decodes with nils, not a failure.
+        let old = try #require(SemanticMapRequest.from(userInfo: ["lens": "cluster"]))
+        #expect(old.axisNegativeVolumeID == nil && old.axisPositiveVolumeID == nil)
+    }
+
+    @Test("Poles are part of the window identity")
+    func polesKeyTheWindow() {
+        // Two maps sliced along different axes are two windows — the same rule this type
+        // documents for scopes and reveals. Without it, opening a second slice would focus the
+        // first window and silently do nothing.
+        let flat = SemanticMapRequest.wholeCorpus
+        var sliced = SemanticMapRequest.wholeCorpus
+        sliced.axisNegativeVolumeID = "frus1969v12"
+        sliced.axisPositiveVolumeID = "frus1981-88v03"
+        #expect(flat != sliced)
     }
 
     /// **The test that would have caught the whole feature being dead.**

@@ -127,6 +127,16 @@ final class SemanticMapModel {
         return scope == nil && !ids.isEmpty
     }
 
+    /// Poles asked for before the artifact was ready (W-2, the F-28 slice-poles deferral).
+    ///
+    /// `setPole` before `prepare()` used to half-apply: the missing-centroid branch rolled the
+    /// pole back and posted `semanticMap.axis.noSummary` — a confident diagnosis of the wrong
+    /// cause, since during a load a centroid is missing because NOTHING has loaded, not because
+    /// the build lacks that volume's summary. Remembering the request instead is what lets a
+    /// Handoff continuation carry poles at all; the view re-applies after `prepare()` the same
+    /// way it retries a deferred reveal.
+    private(set) var requestedPoles: (negative: String?, positive: String?) = (nil, nil)
+
     /// What the reader has scoped the map to, when they have.
     ///
     /// **A scope narrows the map without shrinking it.** Out-of-scope documents stay on screen as
@@ -726,6 +736,20 @@ final class SemanticMapModel {
                 defaultValue: "An axis runs between two volumes, and both of these documents are in the same one. Pick a document from a different volume as the second end.")
             return
         }
+        // A completed pair before the artifact is ready is REMEMBERED, not resolved (W-2, the
+        // F-28 remainder). During the load a centroid is missing because NOTHING has loaded, so
+        // every message below would name a cause it cannot know — and the noSummary branch used
+        // to fire here, telling a Handoff reader their build "has no language summary" for a
+        // volume it simply had not read yet. `poles` is cleared so the axis card does not sit
+        // half-drawn while the load runs; the view re-applies after `prepare()`, beside its
+        // deferred-reveal retry, and the refusals then run with knowable causes.
+        // The same-volume refusal stays ABOVE this guard on purpose: it is index-independent,
+        // and deferring it would swallow the one refusal a reader can hit before the load ends.
+        guard index != nil else {
+            requestedPoles = (negativeID, positiveID)
+            poles = (nil, nil)
+            return
+        }
         // **Two causes, two messages.** These were one branch with one sentence, and that sentence
         // named a cause it could not know: a volume the artifact carries no summary for was reported
         // to the reader as two volumes being "too alike", which is a confident diagnosis of the
@@ -755,8 +779,30 @@ final class SemanticMapModel {
     /// - Parameter yearForVolume: A volume's coverage midpoint.
     func clearSlice(yearForVolume: (String) -> Int?, reapplyLens: (() -> Void)? = nil) {
         poles = (nil, nil)
+        requestedPoles = (nil, nil)
         axisNotice = nil
         setSlice(axis: nil, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
+    }
+
+    /// Applies poles remembered from before the artifact was ready, once it is.
+    ///
+    /// The view calls this after `prepare()`, beside its deferred-reveal retry. Each pole goes
+    /// back through ``setPole(volumeID:isPositive:yearForVolume:reapplyLens:)`` so the three
+    /// refusals — same volume, no summary, too alike — run now that their causes are knowable,
+    /// with their honest notices.
+    func applyRequestedPolesIfNeeded(yearForVolume: (String) -> Int?,
+                                     reapplyLens: (() -> Void)? = nil) {
+        let (negative, positive) = requestedPoles
+        guard negative != nil || positive != nil, index != nil else { return }
+        requestedPoles = (nil, nil)
+        if let negative {
+            setPole(volumeID: negative, isPositive: false,
+                    yearForVolume: yearForVolume, reapplyLens: reapplyLens)
+        }
+        if let positive {
+            setPole(volumeID: positive, isPositive: true,
+                    yearForVolume: yearForVolume, reapplyLens: reapplyLens)
+        }
     }
 
     /// Lays the corpus out along a semantic axis, or returns it to the map's own plane.
@@ -1238,7 +1284,13 @@ struct SemanticMapSpikeView: View {
         .userActivity(AppActivityTypes.semanticMap,
                       element: SemanticMapRequest(volumeIDs: scopeVolumeIds,
                                                   scopeLabel: scopeLabel,
-                                                  lensRawValue: lens.rawValue)) { request, activity in
+                                                  lensRawValue: lens.rawValue,
+                                                  // Only a COMPLETE axis travels — a lone pole
+                                                  // is a gesture in progress, not an analysis.
+                                                  axisNegativeVolumeID: model.slice != nil
+                                                      ? model.poles.negative : nil,
+                                                  axisPositiveVolumeID: model.slice != nil
+                                                      ? model.poles.positive : nil)) { request, activity in
             activity.title = request.scopeLabel
                 ?? String(localized: "semanticAnalytics.title", defaultValue: "Semantic Analytics")
             activity.userInfo = request.userInfo
@@ -1275,6 +1327,11 @@ struct SemanticMapSpikeView: View {
             model.apply(lens: lens, eraForVolume: eraForVolume, isDownloaded: isDownloaded,
                         provenanceForVolume: provenanceForVolume)
             applyContinuedRequestIfNeeded()
+            // Honour poles the map was not ready for (W-2) — the same shape as the reveal
+            // retry below, and before it, because a reveal centres a document at whatever
+            // positions the points then hold and a slice moves every one of them.
+            model.applyRequestedPolesIfNeeded(yearForVolume: yearForVolume,
+                                              reapplyLens: applyLens)
             // **And then honour a reveal the map was not ready for.** Driven from the MODEL's
             // memory, not from `continued`, because measurement showed `continued` is nil again by
             // now: the request arrives, `reveal` defers, prepare finishes, and the caller's copy has
@@ -1333,6 +1390,17 @@ struct SemanticMapSpikeView: View {
             lens = restored
         }
         applyScope(continued.volumeIDs, label: continued.scopeLabel)
+        // The sender's axis, before any reveal: a slice re-lays every point, so a document
+        // centred first would move. Both poles or nothing — see the request's own doc. Arriving
+        // before `prepare()` is safe: `setPole` now defers to `requestedPoles` and the `.task`
+        // retries after the artifact loads.
+        if let negative = continued.axisNegativeVolumeID,
+           let positive = continued.axisPositiveVolumeID {
+            model.setPole(volumeID: negative, isPositive: false,
+                          yearForVolume: yearForVolume, reapplyLens: applyLens)
+            model.setPole(volumeID: positive, isPositive: true,
+                          yearForVolume: yearForVolume, reapplyLens: applyLens)
+        }
         // The reveal comes last, and after the scope on purpose: `applyScope` moves the camera to
         // frame the scope, so revealing first would centre the document and then be overruled.
         var outcome: SemanticMapModel.RevealOutcome?
