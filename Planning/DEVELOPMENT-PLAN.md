@@ -9376,3 +9376,29 @@ MacTextScalingAuditTests is the regrowth guard: zero-literal pinned on the conve
 files, and the two carve-outs pinned PRESENT so the allowlist cannot go vacuous. The
 ~37 sites accrued in 7 untracked files since the worklist are recorded in STATUS.md as
 named debt, not silently absorbed. Full iOS suite 4,137 green; Mac builds.
+
+## Session 2026-08-27 — W-2d: the iPad probes — one finding dissolved, two fixed
+
+CW-12's iPad half (W-11). F-18 was PROBED rather than patched, and the probe dissolved
+it: on the iPad Pro 13-inch simulator in Full Screen Apps mode, `supportsMultipleWindows`
+reports true — and it is TRUTHFUL. The rail-header window button opened a real second
+fullscreen window (the standalone document scene, reached via the app switcher); the
+mode governs window ARRANGEMENT, not whether scenes can open. The feared silent no-op
+does not occur on iPadOS 26.5, no fallback is needed, and the scene-table comment now
+records the measurement instead of "unprobed".
+
+F-19 is fixed at the level every presentation shares: `DocumentView` records WHY a load
+cannot start (`LoadGate`) instead of inferring "no model, no error" into one eternal
+spinner. A nil `downloadManager` is the app booting — the #753 `BootPlaceholderView`
+shows and an `.onChange` retry kicks the load when the manager arrives, which
+`bootstrapViewModel` could not do (it guards on `vm == nil`, and the vm exists from the
+first attempt). A missing volume is a fact about the device — stated, with the volume
+named and the Browse route given. A restored Stage-Manager window whose volume was
+removed used to sit on "Opening document…" forever.
+
+F-20 is fixed with the machinery the finding itself pointed at: the second-project
+nudge is a `Handoff<UUID>` addressed to the window the project was created in, and the
+modifier presents only when addressed (macOS's single Settings instance passes
+through) — one alert, where the user just acted, instead of one per open window.
+Dismissal still clears the shared slot; the nudge stays one-shot. #657's device
+backtrace remains owner-lane. Full iOS suite 4,137 green; Mac builds.

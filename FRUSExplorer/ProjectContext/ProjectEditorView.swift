@@ -43,6 +43,9 @@ struct ProjectEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
+    /// The window this editor is presented in — the second-project nudge is addressed to it
+    /// (F-20), so a multi-window iPad shows the alert once, where the user just acted.
+    @Environment(\.sceneID) private var sceneID
     /// The once-ever gate for the second-project nudge (#377 Phase 5), read here so the signal is
     /// set ONLY when the nudge would actually show — never left stale after it has already fired.
     @AppStorage("frus.hasShownSecondProjectNudge") private var hasShownSecondProjectNudge = false
@@ -301,7 +304,10 @@ struct ProjectEditorView: View {
             let projectCount = (try? modelContext.fetch(FetchDescriptor<Project>()).count) ?? 0
             if SecondProjectNudge.shouldNudge(projectCount: projectCount,
                                               alreadyShown: hasShownSecondProjectNudge) {
-                appState.pendingSecondProjectNudge = project.id
+                // F-20: addressed to the window this editor is in, so a Stage-Manager setup
+                // shows the alert once, where the user just acted — not in every open window.
+                appState.pendingSecondProjectNudge = Handoff(target: sceneID ?? .anyWindow,
+                                                             payload: project.id)
             }
         }
         onSaved?()

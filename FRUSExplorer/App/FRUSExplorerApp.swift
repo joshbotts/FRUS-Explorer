@@ -64,12 +64,15 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// declared once and referenced from both platform regions.
 ///
 /// **iOS auxiliary scenes (12)** — all `WindowGroup`; windowed multitasking only — and note
-/// `supportsMultipleWindows` is plist-derived, NOT strictly "Stage Manager" (an iPad in Full
-/// Screen Apps mode may still report true — unprobed; #241 review). `openWindow` is a no-op
-/// where it is false, so every caller keeps a sheet/inline fallback:
+/// `supportsMultipleWindows` is plist-derived, NOT strictly "Stage Manager". **PROBED (W-2d,
+/// F-18, iPadOS 26.5 simulator): in Full Screen Apps mode the flag reports true — and it is
+/// TRUTHFUL.** `openWindow` opened a real second fullscreen window (the standalone document
+/// scene, reached via the app switcher), so the feared silent no-op does not occur there; the
+/// mode changes how windows are ARRANGED, not whether scenes can open. `openWindow` remains a
+/// no-op where the flag is false (iPhone), so every caller keeps a sheet/inline fallback:
 /// | Scene                           | Type          | State source                                     |
 /// |---------------------------------|---------------|--------------------------------------------------|
-/// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; CONTENT dead-ends in a permanent spinner when the volume is gone or boot loses the race (#323) |
+/// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; content states its cause honestly since W-2d/F-19 (boot race retries; a missing volume says so) — was a permanent spinner (#323) |
 /// | (`SourceExplorerRequest`)       | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentSourceNote`-reading id scene) |
 /// | (`GraphWindowRequest`)          | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentGraphEntry`-reading id scene) |
 /// | (`WordCloudScope`)              | WindowGroup   | Value-based — the Word Cloud window (#752 / M-31) |

@@ -1053,7 +1053,11 @@ final class AppState {
     /// `ProjectEditorView.saveProject`; the nudge host (iOS `MainTabView` / macOS Settings) presents
     /// a one-time "open Project Home?" prompt for it and clears it. Transient (never persisted) —
     /// the *once-only* gate is the `@AppStorage("frus.hasShownSecondProjectNudge")` flag at the host.
-    var pendingSecondProjectNudge: UUID? = nil
+    // F-20 (iPad review): a Handoff, not a bare UUID — the bare signal was addressed app-wide,
+    // so an iPad Stage-Manager setup showed the alert in EVERY open window. The target routes it
+    // to the window the project was created in; `.anyWindow` serves the macOS Settings host,
+    // which mounts one modifier and has no scene id to match.
+    var pendingSecondProjectNudge: Handoff<UUID>? = nil
 
     /// Cross-window hand-off into the Collections manager: the id of a collection
     /// another surface wants selected there.
