@@ -562,7 +562,7 @@ struct MacSearchWindowView: View {
 
                 TextField("Search documents, notes, summaries…", text: $searchVM.queryText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 14))
+                    .font(.title3)
                     .focused($queryFieldFocused)
                     .onSubmit { searchVM.submitSearch() }
 
@@ -596,7 +596,7 @@ struct MacSearchWindowView: View {
                 searchVM.showTips.toggle()
             } label: {
                 Label("Tips", systemImage: "questionmark.circle")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(searchVM.showTips ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
@@ -615,7 +615,7 @@ struct MacSearchWindowView: View {
                            defaultValue: "Find by Citation"),
                     systemImage: "doc.text.magnifyingglass"
                 )
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(Color.secondary)
             }
             .buttonStyle(.plain)
@@ -634,7 +634,7 @@ struct MacSearchWindowView: View {
                 showSaveSearchSheet = true
             } label: {
                 Image(systemName: "bookmark")
-                    .font(.system(size: 12))
+                    .font(.callout)
                     .foregroundStyle(Color.secondary)
             }
             .buttonStyle(.plain)
@@ -653,7 +653,7 @@ struct MacSearchWindowView: View {
                 showSavedSearches = true
             } label: {
                 Image(systemName: "bookmark.fill")
-                    .font(.system(size: 12))
+                    .font(.callout)
                     .foregroundStyle(Color.secondary)
             }
             .buttonStyle(.plain)
@@ -759,7 +759,7 @@ struct MacSearchWindowView: View {
     private var scopeRow: some View {
         HStack(spacing: 6) {
             Text("Search in")
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
 
             ScopeChip(label: "Documents",   isOn: $searchVM.scopeDocuments)
@@ -1017,7 +1017,7 @@ struct MacSearchWindowView: View {
             // set the query is actually confined to, which is the stronger narrowing of the two.
             if let caption = filterRowCaption {
                 Text(caption)
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .italic()
                     .foregroundStyle(.tertiary)
                     .fixedSize()
@@ -1057,7 +1057,7 @@ struct MacSearchWindowView: View {
 
             Button { clearFilter(token.field) } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 7, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(Color.accentColor)
             }
             .buttonStyle(.plain)
@@ -1087,10 +1087,10 @@ struct MacSearchWindowView: View {
     private func filterTokenBody(_ token: SearchFilterToken) -> some View {
         HStack(spacing: 4) {
             Text(token.field.displayName)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(token.value)
-                .font(.system(size: 11, weight: .medium))
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(Color.accentColor)
             if canOpenEditor(for: token.field) {
                 Image(systemName: "chevron.down")
@@ -1133,9 +1133,9 @@ struct MacSearchWindowView: View {
             }
         } label: {
             HStack(spacing: 3) {
-                Image(systemName: "plus").font(.system(size: 9))
+                Image(systemName: "plus").font(.caption2)
                 Text(String(localized: "search.token.add", defaultValue: "Filter"))
-                    .font(.system(size: 11))
+                    .font(.subheadline)
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, 9)
@@ -1311,15 +1311,15 @@ struct MacSearchWindowView: View {
             HStack(spacing: 3) {
                 if searchVM.activeFilterSummary != nil {
                     Image(systemName: "line.3.horizontal.decrease.circle.fill")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(Color.accentColor)
                 } else {
                     Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 Text("Advanced…")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(searchVM.activeFilterSummary != nil
                         ? Color.accentColor : Color.secondary)
             }
@@ -1447,7 +1447,7 @@ struct MacSearchWindowView: View {
         HStack {
             if searchVM.isSearching {
                 ProgressView().controlSize(.small)
-                Text("Searching…").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("Searching…").font(.subheadline).foregroundStyle(.secondary)
             } else if !searchVM.queryText.isEmpty {
                 resultCountLabel
             }
@@ -1467,14 +1467,14 @@ struct MacSearchWindowView: View {
             Divider().frame(height: 14)
 
             HStack(spacing: 4) {
-                Text("Sort").font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text("Sort").font(.subheadline).foregroundStyle(.tertiary)
 
                 ForEach(SearchSortOrder.allCases, id: \.self) { order in
                     Button {
                         searchVM.sortOrder = order
                     } label: {
                         Text(order.label)
-                            .font(.system(size: 11))
+                            .font(.subheadline)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
                             .background(
@@ -1530,25 +1530,25 @@ struct MacSearchWindowView: View {
         HStack(spacing: 6) {
             if loaded == 0 {
                 Text("No results")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             } else if let corpusClause, loaded <= searchVM.pageSize {
                 Text("\(loaded.formatted()) in this corpus · \(corpusClause)")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             } else if let corpusClause {
                 Text("\(start)–\(end) of \(loaded.formatted()) in this corpus · \(corpusClause)")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             } else if let total, loaded <= searchVM.pageSize {
                 Text("\(loaded) of \(total.formatted()) result\(total == 1 ? "" : "s")")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             } else if let total {
                 Text("\(start)–\(end) of \(loaded.formatted()) loaded · \(total.formatted()) total")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             } else if loaded <= searchVM.pageSize {
                 Text("\(loaded) loaded · total unavailable")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             } else {
                 Text("\(start)–\(end) of \(loaded.formatted()) loaded · total unavailable")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             }
 
             // "narrowed from N" (R-1). Shown only while the facet panel is open, because that
@@ -1558,13 +1558,13 @@ struct MacSearchWindowView: View {
                let total, pre > total {
                 Text(String(localized: "search.narrowedFrom",
                             defaultValue: "· narrowed from \(pre.formatted())"))
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
             if truncated {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 9))
+                    .font(.caption2)
                     .foregroundStyle(.orange)
                     .help(
                         total.map {
@@ -1590,7 +1590,7 @@ struct MacSearchWindowView: View {
                     openSearchInAnalytics()
                 } label: {
                     Label("Visualize in Corpus Analytics", systemImage: "chart.bar.xaxis")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.caption2.weight(.medium))
                 }
                 .buttonStyle(.borderless)
                 .help(String(localized: "search.analytics.help",
@@ -1638,12 +1638,12 @@ struct MacSearchWindowView: View {
         if let name = searchVM.filterVM?.appliedWorkingCorpusName {
             HStack(spacing: 6) {
                 Image(systemName: "tray.full.fill")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 Text(String(format: String(localized: "search.corpusScope.label %@",
                                            defaultValue: "Inside “%@”"), name))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: 8)
@@ -1652,7 +1652,7 @@ struct MacSearchWindowView: View {
                     searchVM.applyAdvancedFilters()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -1691,16 +1691,16 @@ struct MacSearchWindowView: View {
             let total  = searchVM.totalMatchCount?.formatted()
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 1) {
                     // The warning must survive an unavailable count — that combination is
                     // exactly the case that used to render as "complete".
                     Text(total.map { "Showing \(loaded) of \($0) matches" }
                          ?? "Showing the first \(loaded) matches — the total is unavailable")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                     Text("Narrow your search with a date range, volume filter, or more specific terms to load every match.")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
@@ -1724,11 +1724,11 @@ struct MacSearchWindowView: View {
             if hidden > 0 {
                 HStack(spacing: 6) {
                     Image(systemName: "checklist")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(String(format: String(localized: "search.checklist.hiddenBanner %lld",
                                               defaultValue: "%lld reviewed hidden"), Int64(hidden)))
-                        .font(.system(size: 11))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
@@ -1756,7 +1756,7 @@ struct MacSearchWindowView: View {
     private var pageSizePicker: some View {
         HStack(spacing: 4) {
             Text("Show")
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
             Menu {
                 ForEach(MacSearchViewModel.pageSizeOptions, id: \.self) { size in
@@ -1764,7 +1764,7 @@ struct MacSearchWindowView: View {
                 }
             } label: {
                 Text("\(searchVM.pageSize)")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -1922,7 +1922,7 @@ struct MacSearchWindowView: View {
                 if searchVM.currentPage > 0 { searchVM.currentPage -= 1 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             }
             .buttonStyle(.plain)
             .disabled(searchVM.currentPage == 0)
@@ -1936,7 +1936,7 @@ struct MacSearchWindowView: View {
             ))
 
             Text("Page \(searchVM.currentPage + 1) of \(searchVM.totalPages)")
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
 
@@ -1946,7 +1946,7 @@ struct MacSearchWindowView: View {
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
             }
             .buttonStyle(.plain)
             .disabled(searchVM.currentPage >= searchVM.totalPages - 1)
@@ -1967,7 +1967,7 @@ struct MacSearchWindowView: View {
     private var tipsPanel: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Search tips")
-                .font(.system(size: 10, weight: .medium))
+                .font(.caption2.weight(.medium))
                 .foregroundStyle(.tertiary)
                 .textCase(.uppercase)
                 .kerning(0.7)
@@ -2232,12 +2232,12 @@ private struct SearchResultRow: View {
                         result.header, number: result.documentNumber)
                      ? result.volumeId
                      : "\(result.volumeId) · Doc \(result.documentNumber ?? result.documentId)")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(Color.accentColor)
 
                 if result.isEditorialNote {
                     Text("editorial note")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
                         .background(Color.purple.opacity(0.1))
@@ -2246,7 +2246,7 @@ private struct SearchResultRow: View {
                 }
                 if result.isFrontMatter {
                     Text("front matter")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
                         .background(Color.teal.opacity(0.1))
@@ -2264,14 +2264,14 @@ private struct SearchResultRow: View {
 
                 if let dateline = result.dateline {
                     Text(dateline)
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                 }
             }
 
             Text(DocumentHeaderDisplay.trimmedHeader(result.header))
-                .font(.system(size: 13, weight: .medium))
+                .font(.body.weight(.medium))
                 .lineLimit(2)
 
             // TEI-derived snippet (~1000 chars of surrounding context each side, from
@@ -2279,7 +2279,7 @@ private struct SearchResultRow: View {
             // the global default, or this window's Result Preview override — so readers can
             // widen or tighten the preview just as on iOS.
             SnippetView(snippet: result.snippet)
-                .font(.system(size: 12))
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)
                 .lineLimit(SearchDefaults.effectiveSnippetLineCount(global: globalSnippetLines, override: snippetOverride))
@@ -2289,7 +2289,7 @@ private struct SearchResultRow: View {
                 HStack(spacing: 4) {
                     ForEach(result.userTagIds.prefix(3), id: \.self) { tagId in
                         Text("◆ \(tagName(for: tagId))")
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
                             .background(Color.accentColor.opacity(0.08))
@@ -2336,7 +2336,7 @@ private struct SnippetView: View {
                 let highlighted = String(remainder[openRange.upperBound..<closeRange.lowerBound])
                 var span = AttributedString(highlighted)
                 span.swiftUI.foregroundColor = Color.yellow
-                span.swiftUI.font = .system(size: 12, weight: .medium)
+                span.swiftUI.font = .callout.weight(.medium)
                 result += span
 
                 remainder = String(remainder[closeRange.upperBound...])
@@ -2358,7 +2358,7 @@ private struct ScopeChip: View {
     var body: some View {
         Button { isOn.toggle() } label: {
             Text(label)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
                 .background(isOn ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
@@ -2386,14 +2386,14 @@ private struct FilterChip: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Text(label).font(.system(size: 11)).foregroundStyle(.tertiary)
+            Text(label).font(.subheadline).foregroundStyle(.tertiary)
 
             if isActive, let value {
                 HStack(spacing: 3) {
-                    Text(value).font(.system(size: 11)).foregroundStyle(Color.accentColor)
+                    Text(value).font(.subheadline).foregroundStyle(Color.accentColor)
                     Button { onClear() } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.caption2.weight(.bold))
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
@@ -2416,7 +2416,7 @@ private struct FilterChip: View {
                 )
             } else {
                 Text("any")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.quaternary)
                     .italic()
             }
@@ -2434,15 +2434,15 @@ private struct TipItem: View {
         HStack(alignment: .top, spacing: 4) {
             if let code {
                 Text(code)
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.system(.caption2, design: .monospaced))
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(Color.secondary.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 3))
                     .foregroundStyle(.secondary)
-                Text("—").font(.system(size: 10)).foregroundStyle(.tertiary)
+                Text("—").font(.caption2).foregroundStyle(.tertiary)
             }
-            Text(description).font(.system(size: 10)).foregroundStyle(.tertiary)
+            Text(description).font(.caption2).foregroundStyle(.tertiary)
         }
     }
 }

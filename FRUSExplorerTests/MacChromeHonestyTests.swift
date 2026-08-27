@@ -150,3 +150,63 @@ struct MacChromeHonestyTests {
         #expect(label.contains("Doc 475"))
     }
 }
+
+// MARK: - Mac W-11 · text scaling holds its ground
+
+/// The macOS text-scaling conversion's regrowth guard (Mac W-11 / M-5, shipped in W-2c).
+///
+/// ## What was converted, and why a guard rather than a memory
+/// M-5 deferred "262 fixed-point text sites" in six macOS chrome files. Re-measured at W-2c,
+/// 150 of them had already evaporated in the Settings/History consolidations — and SearchSheet
+/// had GROWN by 13, because the convention existed and nothing enforced it. The remaining 112
+/// were converted to semantic styles by the macOS column of `FRUSTheme`'s table (macOS resolves
+/// the same styles smaller than iOS, so the iOS column would have shrunk the chrome). This
+/// suite is what stops the file list re-growing after the pass.
+///
+/// ## The two survivors are pinned as EXACTLY present, not merely tolerated
+/// A ceiling alone goes vacuous when a refactor deletes the carve-out sites; asserting them
+/// present keeps the allowlist honest.
+@Suite("Mac text scaling (W-11)")
+struct MacTextScalingAuditTests {
+
+    private static var repoRoot: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    /// Lines carrying a fixed-point text size — a numeric literal inside `system(size:`.
+    /// A scaled metric (`system(size: FRUSTheme.cappedGlyphSize(…)`) is not a literal and
+    /// does not count.
+    private static func fixedSizeLines(_ relativePath: String) throws -> [String] {
+        let source = try String(contentsOf: repoRoot.appending(path: "FRUSExplorer/\(relativePath)"),
+                                encoding: .utf8)
+        return source.components(separatedBy: .newlines).filter {
+            $0.range(of: #"system\(size:\s*[0-9]"#, options: .regularExpression) != nil
+        }
+    }
+
+    @Test("The converted files carry no fixed-point text sites beyond the two carve-outs")
+    func convertedFilesStayConverted() throws {
+        // Zero-literal files: a new `.font(.system(size: N))` here is the debt returning —
+        // use the macOS column of FRUSTheme's size→style table instead.
+        for file in ["App/SupportingViews.swift", "App/SearchSheet.swift",
+                     "Settings/FRUSSettingsView.swift", "App/HistoryWindowView.swift"] {
+            let lines = try Self.fixedSizeLines(file)
+            #expect(lines.isEmpty, """
+                \(file) gained a fixed-point text site after the W-11 conversion: \
+                \(lines.first ?? ""). Fixed sizes ignore the user's text-size setting — convert \
+                by the macOS column of FRUSTheme's table (11 → .subheadline, 12 → .callout, \
+                13 → .body, ≤10 → .caption2), chaining .weight() where the site had one.
+                """)
+        }
+
+        // The two documented carve-outs, pinned as present so the allowlist cannot go vacuous:
+        // the width-budgeted monospaced identity pill, and the chevron centred in a fixed
+        // 34×34 hit circle. Each is LEAVE-FIXED with its reason at the site.
+        let main = try Self.fixedSizeLines("App/MainWindowView.swift")
+        #expect(main.count == 1, "MainWindowView allows exactly the monospaced pill: \(main)")
+        #expect(main.first?.contains("design: .monospaced") == true)
+        let reader = try Self.fixedSizeLines("App/MacDocumentView.swift")
+        #expect(reader.count == 1, "MacDocumentView allows exactly the 34×34 chevron: \(reader)")
+        #expect(reader.first?.contains("weight: .semibold") == true)
+    }
+}

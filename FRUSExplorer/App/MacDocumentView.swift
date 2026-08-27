@@ -896,13 +896,13 @@ struct MacDocumentView: View {
         HStack(spacing: 8) {
             if let docNum = entry.documentNumber {
                 Text("Document \(docNum)")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 Text("·")
                     .foregroundStyle(.tertiary)
             }
             Text(entry.volumeId)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
             if vm.effectiveIsEditorialNote ?? entry.isEditorialNote {
                 EditorialNoteBadge()
@@ -927,6 +927,9 @@ struct MacDocumentView: View {
                 navigationPath.append(target)
             } label: {
                 Image(systemName: edge == .leading ? "chevron.left" : "chevron.right")
+                    // LEAVE-FIXED (Mac W-11): the chevron is centred in a fixed 34×34 hit
+                    // circle; a scaled glyph would clip against it. The worklist's
+                    // glyph-inside-a-fixed-shape carve-out.
                     .font(.system(size: 15, weight: .semibold))
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(.black.opacity(0.05)))
@@ -981,7 +984,7 @@ struct MacDocumentView: View {
                         "Doc \(prev.documentNumber ?? prev.documentId)",
                         systemImage: "chevron.left"
                     )
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -998,7 +1001,7 @@ struct MacDocumentView: View {
             // count (it read 0 for every volume), so that phrasing was always wrong;
             // the identifier alone is the part that's actually useful here.
             Text(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
 
             Spacer()
@@ -1011,7 +1014,7 @@ struct MacDocumentView: View {
                         "Doc \(next.documentNumber ?? next.documentId)",
                         systemImage: "chevron.right"
                     )
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .labelStyle(TrailingIconLabelStyle())
                 }
                 .buttonStyle(.bordered)
