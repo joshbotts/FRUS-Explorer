@@ -381,16 +381,26 @@ struct RelatedDocumentsContent: View {
     }
 
     /// - Parameter claimedKey: The reload identity this pass belongs to.
+    ///
+    /// Covers BOTH vocabulary-evidenced axes since W-17 session 2: the lexical axis's chip
+    /// wants exactly the same thing — the distinctive terms the pair actually shares, in
+    /// the anchor's own spelling — so one `SemanticSharedTerms` call over the union of
+    /// scored rows serves both, and the label is written under each axis that scored the
+    /// row. A second terms machine would be a second vocabulary to drift.
     private func attachSemanticEvidence(claimedKey: String) async {
-        let semanticRows = rows.filter { $0.axisScores[.semanticSimilarity] != nil }
-        guard !semanticRows.isEmpty else { return }
+        let vocabularyAxes: [SimilarityAxis] = [.semanticSimilarity, .lexicalSimilarity]
+        let scoredRows = rows.filter { row in
+            vocabularyAxes.contains { row.axisScores[$0] != nil }
+        }
+        guard !scoredRows.isEmpty else { return }
         let terms = await SemanticSharedTerms.sharedTerms(
-            anchor: request.anchor, candidates: semanticRows.map(\.key), appState: appState)
+            anchor: request.anchor, candidates: scoredRows.map(\.key), appState: appState)
         guard !terms.isEmpty, !Task.isCancelled, lastLoadedKey == claimedKey else { return }
         for index in rows.indices {
             guard let found = terms[rows[index].key], !found.isEmpty else { continue }
-            rows[index].axisEvidenceLabel[.semanticSimilarity] =
-                found.joined(separator: "\u{1F}")
+            for axis in vocabularyAxes where rows[index].axisScores[axis] != nil {
+                rows[index].axisEvidenceLabel[axis] = found.joined(separator: "\u{1F}")
+            }
         }
     }
 
@@ -445,7 +455,7 @@ struct RelatedDocumentsContent: View {
                             axis: axis,
                             value: Binding(get: { weights[axis] }, set: { weights[axis] = $0 }),
                             // Only this surface explains the semantic axis — see AxisWeightRow.caption.
-                            caption: axis == .semanticSimilarity ? semanticAxisCaption : nil,
+                            caption: axisCaption(for: axis),
                             onCommit: {
                                 persistedWeights = weights   // one write per drag, not per tick
                                 weightReloadToken += 1       // re-rank once the drag settles
@@ -502,6 +512,26 @@ struct RelatedDocumentsContent: View {
     /// Two states, because the useful sentence differs. At zero the reader needs to know what
     /// turning it on would buy and what it costs in confidence; above zero they need to know that
     /// their judgement of the results is the thing being collected.
+    /// The per-axis explanatory caption, or `nil` for the axes that need none. The two
+    /// experimental axes carry theirs where the slider is — the V-3 rule.
+    private func axisCaption(for axis: SimilarityAxis) -> String? {
+        switch axis {
+        case .semanticSimilarity: return semanticAxisCaption
+        case .lexicalSimilarity: return lexicalAxisCaption
+        default: return nil
+        }
+    }
+
+    /// The lexical axis's on-surface cost disclosure (W-17 §0.12): the query runs over
+    /// the LOCAL index, so what it can find depends on what this device has indexed.
+    private var lexicalAxisCaption: String {
+        weights[.lexicalSimilarity] == 0
+            ? String(localized: "related.weights.lexical.off",
+                     defaultValue: "Off. Raise it to also match documents that reuse this one's distinctive wording. Experimental; searches only the volumes indexed on this device, so results vary with your library.")
+            : String(localized: "related.weights.lexical.on",
+                     defaultValue: "Matches share this document's distinctive wording. Searches only the volumes indexed on this device, so results vary with your library.")
+    }
+
     private var semanticAxisCaption: String {
         weights[.semanticSimilarity] == 0
             ? String(localized: "related.weights.semantic.off",

@@ -4894,6 +4894,27 @@ Matches carry a “Semantic match” score. Press and hold one — or right-clic
 
 <!-- END SOURCE: related.weights.semantic.on -->
 
+#### Similar-wording axis name (W-17)
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | key: related.axis.lexical | shared: iOS+macOS (single edit point) -->
+
+Similar wording (experimental)
+
+<!-- END SOURCE: related.axis.lexical -->
+
+#### Similar-wording axis caption while off
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | key: related.weights.lexical.off | shared: iOS+macOS (single edit point) -->
+
+Off. Raise it to also match documents that reuse this one's distinctive wording. Experimental; searches only the volumes indexed on this device, so results vary with your library.
+
+<!-- END SOURCE: related.weights.lexical.off -->
+
+#### Similar-wording axis caption when the weight is raised
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | key: related.weights.lexical.on | shared: iOS+macOS (single edit point) -->
+
+Matches share this document's distinctive wording. Searches only the volumes indexed on this device, so results vary with your library.
+
+<!-- END SOURCE: related.weights.lexical.on -->
+
 
 ### 13.6 Settings ▸ Volumes & Storage ▸ Semantic Vectors
 

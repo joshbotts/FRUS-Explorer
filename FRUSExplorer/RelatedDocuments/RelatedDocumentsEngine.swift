@@ -135,6 +135,9 @@ enum RelatedDocumentsEngine {
         // engine's merge, and this generator's records come from the same `document_cache` rows as
         // the others', so ordering changes nothing except which equivalent copy is kept.
         SemanticSimilarityGenerator(),
+        // Same record-merge argument as the semantic axis above (W-17 session 2); both skip
+        // generation entirely at their default weight 0.
+        LexicalSimilarityGenerator(),
     ]
 
     /// The rankers over the generated candidates.

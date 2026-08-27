@@ -444,7 +444,7 @@ The window tracks every document you open in the current session; the toolbar's 
 
 ### 8.4 Related Documents
 
-A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Click the **Related** tile in the Research rail for a ranked list of the indexed documents most related to the one you're reading, combining seven signals:
+A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Click the **Related** tile in the Research rail for a ranked list of the indexed documents most related to the one you're reading, combining eight signals:
 
 | Signal | What it connects |
 |--------|------------------|
@@ -455,6 +455,7 @@ A cross-reference tells you what a document *cites*; **Related Documents** tells
 | **Shared people** | The same reconciled identities mentioned in both |
 | **Shared topics** | The same detected topics, weighted so a rare topic counts for more than a common one |
 | **Semantic similarity** | *Experimental, and off until you move its slider.* Language that reads alike, whether or not the words match |
+| **Similar wording** | *Experimental, and off until you move its slider.* Documents that reuse this one's distinctive vocabulary, found live in your local index — so results vary with which volumes this device has indexed. Rows name the shared terms they matched on |
 
 Each row shows the document's header, volume, and dateline, plus **"why related" icon chips** naming the contributing signals, strongest first — the same icons the weights panel uses. A chip states only what its signal can honestly report: **cited 3×** for cross-references; for archival provenance, the container and its size — **Lot 54 D 270 · 1 of 1,063** — because sharing a six-document lot file is a finding and sharing one of seven thousand is a filing-cabinet coincidence. (Those two *find* candidates rather than scoring them, so no percentage; date, corpus proximity, shared people, shared topics, and semantic similarity report percentages, which for them are real measures.) A shared-topics chip names the topics themselves — **topics: Berlin blockade, Economic sanctions** — most distinctive first, because two documents sharing *Berlin blockade* is a finding and two sharing *War* is not.
 

@@ -46,15 +46,17 @@ struct DocumentKeyTests {
 /// Verifies the axis catalogue and the generator/scorer role split.
 struct SimilarityAxisTests {
 
-    @Test("all six axes are present")
+    @Test("all eight axes are present")
     func allCases() {
-        #expect(SimilarityAxis.allCases.count == 7)   // + semanticSimilarity (V-3)
+        // + semanticSimilarity (V-3), + lexicalSimilarity (W-17 session 2)
+        #expect(SimilarityAxis.allCases.count == 8)
     }
 
-    @Test("archival provenance, cross-reference and semantic similarity are the generators")
+    @Test("the four generators are archival, cross-reference, semantic and lexical")
     func generatorSplit() {
         let generators = SimilarityAxis.allCases.filter(\.isGenerator)
-        #expect(Set(generators) == [.archivalProvenance, .crossReference, .semanticSimilarity])
+        #expect(Set(generators) == [.archivalProvenance, .crossReference,
+                                    .semanticSimilarity, .lexicalSimilarity])
     }
 
     /// V-3 ships the semantic axis opt-in, and the reason is not caution about the ranker: the

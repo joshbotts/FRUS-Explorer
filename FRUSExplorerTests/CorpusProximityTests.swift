@@ -486,6 +486,8 @@ struct CorpusProximityTests {
                 // reordering would read here as a rename — which is the one thing the test exists
                 // to catch, because a renamed token ships as a silent zero weight.
                 "semanticSimilarity",
+                // W-17 session 2, appended under the same rule.
+                "lexicalSimilarity",
             ])
         }
 
