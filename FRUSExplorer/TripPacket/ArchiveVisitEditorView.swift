@@ -62,6 +62,10 @@ struct ArchiveVisitEditorView: View {
     @State private var tab: Tab = .targets
     @State private var derived: ArchiveVisitDerivation.Derived?
     @State private var seedFacts: [String: SeedFacts] = [:]
+    /// The live index's pointed-at sparsity (Phase 4): documents with lot/library footnote
+    /// references over all indexed documents — the measured local fact the sparsity
+    /// captions state beside the corpus-wide claim. `nil` until measured.
+    @State private var sparsity: (withReferences: Int, indexed: Int)?
     @State private var isDeriving = true
     /// Bumped on every plan mutation; the derivation task re-runs on it.
     @State private var revision = 0
@@ -243,9 +247,20 @@ struct ArchiveVisitEditorView: View {
                             defaultValue: "A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document's footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index."))
                     .font(.callout)
                 Text(String(localized: "archiveVisit.info.sparsity",
-                            defaultValue: "Footnote references to unprinted material exist on about 6% of documents, so a thin pointed-at list is expected — sparse data, not a failed scan."))
+                            defaultValue: "Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                if let sparsity, sparsity.indexed > 0 {
+                    // Phase 4: the measured local fact, in the both-numbers grammar —
+                    // beside the corpus claim, never replacing it (the two describe
+                    // different populations).
+                    Text(String(format: String(
+                        localized: "archiveVisit.info.sparsity.measured %lld %lld",
+                        defaultValue: "On this device: %lld of %lld indexed documents carry such references."),
+                        Int64(sparsity.withReferences), Int64(sparsity.indexed)))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding()
         }
@@ -754,11 +769,19 @@ struct ArchiveVisitEditorView: View {
                         documentRow(seed)
                     }
                 } footer: {
-                    Text(String(localized: "archiveVisit.documents.footer",
-                                defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes' citations to unprinted material (pointed at). References beyond FRUS exist on about 6% of documents — where a half is absent, the control is a caption, never a dead switch."))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(localized: "archiveVisit.documents.footer",
+                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes' citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch."))
+                        if let sparsity, sparsity.indexed > 0 {
+                            Text(String(format: String(
+                                localized: "archiveVisit.info.sparsity.measured %lld %lld",
+                                defaultValue: "On this device: %lld of %lld indexed documents carry such references."),
+                                Int64(sparsity.withReferences), Int64(sparsity.indexed)))
+                        }
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -911,6 +934,15 @@ struct ArchiveVisitEditorView: View {
             plan: plan,
             indexedVolumeIds: Set(appState.indexedVolumeIds),
             dataSource: dataSource)
+
+        // Phase 4: the live sparsity measure — one query, refreshed with every derivation
+        // so the caption tracks the index it describes.
+        if let measured = try? await pipeline.externalCitationSparsity() {
+            sparsity = (withReferences: measured.documentsWithReferences,
+                        indexed: measured.indexedDocuments)
+        } else {
+            sparsity = nil
+        }
 
         // The Documents tab's per-seed facts: which halves exist, through the same two
         // batched queries the builder runs — so the captions and the packet cannot disagree.

@@ -115,6 +115,14 @@ struct CollectionDetailView: View {
     @State private var neighborsTarget: CollectionNeighborsTarget? = nil
     #endif
 
+    /// The Add-to-Archive-Visit picker over this unit's citing documents (Phase 4 — the
+    /// unit-grain entry). Presented only after the full citing set is fetched, so the
+    /// picker's banner discloses the exact count before anything is written. Both
+    /// platforms — this view is the shared unit surface.
+    @State private var planPickerRequest: PlanPickerRequest? = nil
+    /// Guards the citing-set fetch against double-taps while it runs.
+    @State private var isFetchingPlanSeeds = false
+
     /// Maximum alias forms shown in the Overview section.
     private static let aliasDisplayCap = 6
 
@@ -164,6 +172,12 @@ struct CollectionDetailView: View {
         }
         .navigationTitle(String(localized: "collection.detail.title",
                                 defaultValue: "Collection"))
+        // Phase 4: the unit-grain picker — both platforms; this view is the shared
+        // unit surface (hosted by the iOS sheet and the macOS Source Explorer window).
+        .sheet(item: $planPickerRequest) { request in
+            PlanPickerSheet(request: request)
+                .environment(appState)
+        }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $neighborsTarget) { target in
@@ -301,6 +315,21 @@ struct CollectionDetailView: View {
                     }
                     .accessibilityHint(String(localized: "collection.detail.neighbors.hint",
                                               defaultValue: "Lists your indexed documents drawn from this collection"))
+                    // Archive Visits Phase 4 — the UNIT-GRAIN entry: seed a plan from every
+                    // indexed document drawn from this unit, the count disclosed on the
+                    // control itself and again on the picker's banner before anything is
+                    // written (the unit tail is real: p99 = 506 citing documents, max
+                    // 17,606 — nothing that size may be added silently).
+                    Button {
+                        Task { await fetchCitingDocumentsForPlan(expected: stats.documentCount) }
+                    } label: {
+                        Label(String(format: String(
+                            localized: "collection.detail.addToVisit %lld",
+                            defaultValue: "Add the %lld citing documents to an Archive Visit…"),
+                            Int64(stats.documentCount)),
+                              systemImage: "building.columns")
+                    }
+                    .disabled(isFetchingPlanSeeds)
                 } else {
                     Text(String(localized: "collection.detail.local.empty",
                                 defaultValue: "Nothing in your index cites this collection yet. Index more of its citing volumes to surface documents."))
@@ -323,6 +352,50 @@ struct CollectionDetailView: View {
             Text(String(localized: "collection.detail.local.footer",
                         defaultValue: "Counted from your own indexed volumes — the series-wide list below is independent of what you have downloaded."))
         }
+    }
+
+    // MARK: - Unit-grain seeding (Archive Visits Phase 4)
+
+    /// The citing-set fetch ceiling — above the measured per-unit maximum (17,606), so the
+    /// fetch is whole in practice; the guard below still discloses a shortfall rather than
+    /// letting a capped list present itself as the unit.
+    private static let planSeedFetchCeiling = 20_000
+
+    /// Fetches every indexed document drawn from this unit — the SAME match clause the
+    /// Archival Neighbors list runs (`collectionNeighbors`, built from the record's own
+    /// fields), with the limit raised past the corpus's per-unit maximum — and presents the
+    /// picker over the whole set, source-only preset (these documents are DRAWN FROM the
+    /// unit; that is the claim a unit-grain seed makes).
+    private func fetchCitingDocumentsForPlan(expected: Int) async {
+        guard let pipeline = appState.indexingPipeline, !isFetchingPlanSeeds else { return }
+        isFetchingPlanSeeds = true
+        defer { isFetchingPlanSeeds = false }
+        guard let result = try? await pipeline.collectionNeighbors(
+            lotFileNorm: record.lotFileNorm,
+            repository: record.repository,
+            recordGroup: record.recordGroup,
+            names: [record.name] + record.aliases,
+            limit: Self.planSeedFetchCeiling) else { return }
+        guard !result.documents.isEmpty else { return }
+        // The honest-shortfall guard: unreachable while the ceiling clears the corpus
+        // maximum, but a capped fetch must never present itself as the whole unit.
+        let basis: String
+        if result.totalCount > result.documents.count {
+            basis = String(format: String(
+                localized: "archiveVisit.basis.unit.partial %lld %lld %@",
+                defaultValue: "the first %lld of %lld documents citing “%@”"),
+                Int64(result.documents.count), Int64(result.totalCount), record.name)
+        } else {
+            basis = String(format: String(
+                localized: "archiveVisit.basis.unit %@",
+                defaultValue: "the documents citing “%@”"), record.name)
+        }
+        planPickerRequest = PlanPickerRequest(
+            documents: result.documents.map { (volumeId: $0.volumeId,
+                                               documentId: $0.documentId) },
+            includeSource: true, includeExternalRefs: false,
+            basis: basis,
+            suggestedName: record.name)
     }
 
     // MARK: - Related collections (#762-A)

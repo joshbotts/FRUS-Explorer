@@ -361,6 +361,44 @@ struct ExternalCitationTests {
         }
     }
 
+    /// The Phase 4 sparsity measure, driven over a real fixture index: three documents,
+    /// where one carries a lot footnote (counts), one carries ONLY a decimal-class
+    /// footnote (must NOT count — the class anchor is outside the packet's channel, and
+    /// counting it would overstate the sparsity the captions caption), and one carries no
+    /// footnotes at all.
+    @Test("externalCitationSparsity counts lot/library documents over all indexed documents")
+    func sparsityCountsChannelDocumentsOnly() async throws {
+        try await withTempDir { dir in
+            let xml = """
+            <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+              <div type="document" xml:id="d1" n="1">
+                <note type="source">Source: Department of State, Central Files, 611.41/3–553.</note>
+                <head>A memorandum</head>
+                <p>Body.<note n="1" xml:id="d1fn1">A copy is in Department of State, S/S – NSC Files: Lot 63 D 351.</note></p>
+              </div>
+              <div type="document" xml:id="d2" n="2">
+                <note type="source">Source: Department of State, Central Files, 611.41/3–553.</note>
+                <head>A telegram</head>
+                <p>Body.<note n="1" xml:id="d2fn1">Telegram 1345 from Moscow, March 5, 763.72/9732.</note></p>
+              </div>
+              <div type="document" xml:id="d3" n="3">
+                <note type="source">Source: Department of State, Central Files, 611.41/3–553.</note>
+                <head>A letter</head>
+                <p>Body with no footnotes.</p>
+              </div>
+            </body></text></TEI>
+            """
+            let pipeline = try await index(xml, in: dir)
+            let measured = try await pipeline.externalCitationSparsity()
+            #expect(measured.indexedDocuments == 3)
+            #expect(measured.documentsWithReferences == 1, """
+                Only d1's lot citation is in the packet's channel — d2's class citation is \
+                the anchor the channel excludes, and counting it would report a sparsity the \
+                captions do not describe.
+                """)
+        }
+    }
+
     @Test("A footnote naming two units writes both")
     func keepsEveryCitationInANote() async throws {
         try await withTempDir { dir in

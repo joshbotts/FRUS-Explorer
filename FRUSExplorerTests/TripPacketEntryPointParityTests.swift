@@ -249,6 +249,29 @@ struct TripPacketEntryPointParityTests {
         }
     }
 
+    /// The unit-grain entry (Phase 4): the shared collection detail — the surface every
+    /// unit-shaped view routes to — offers the citing-documents add, count on the control,
+    /// fetching through the SAME `collectionNeighbors` clause the Neighbors list runs (a
+    /// second clause would let the control and the list describe different sets), with the
+    /// ceiling above the corpus's per-unit maximum and a shortfall basis rather than a
+    /// silent cap.
+    @Test("The collection detail offers the unit-grain add")
+    func collectionDetailOffersUnitGrainAdd() throws {
+        let text = try Self.source("FRUSExplorer/SourceExplorer/CollectionDetailView.swift")
+        #expect(text.contains("collection.detail.addToVisit %lld"),
+                "the count-disclosing control is missing")
+        #expect(text.contains("collectionNeighbors("),
+                "the citing set must come from the Neighbors list's own clause")
+        #expect(text.contains("planSeedFetchCeiling = 20_000"), """
+            The fetch ceiling must clear the measured per-unit maximum (17,606) — a lower \
+            ceiling silently truncates the unit.
+            """)
+        #expect(text.contains("archiveVisit.basis.unit.partial %lld %lld %@"),
+                "a capped fetch must disclose itself in the basis, never present as whole")
+        #expect(text.contains("PlanPickerSheet(request:"),
+                "the control offers the add but presents no picker")
+    }
+
     /// The Neighbors add control lives in the SHARED content core — before the window host's
     /// declaration — so all three hosts (iOS sheet, macOS window, Stage Manager) carry it.
     /// It is ONE honest option over the documents shown (§7.7's resolution): the full cohort
