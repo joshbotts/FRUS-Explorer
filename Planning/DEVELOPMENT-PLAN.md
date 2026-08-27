@@ -9182,3 +9182,44 @@ ghost treatment is the shipped shader's (luminance grey at fixed 0.16 alpha), no
 private variant. Determinism is a test, not a claim: the same three-volume sequence
 rendered twice is byte-identical. 5 new tests (ordering incl. undated-volumes-last,
 CSV escaping, provenance lead, GPU determinism/cumulativity, the gated run).
+
+## Session 2026-08-27 — W-1: the bare-`Ibid.` gap, measured — the extrapolation retired
+
+#1014 step 1, as the PoR re-scoped it: WRITE the measurement mode first, because the
+existing harness (`MEASURE_DECIMAL=1`) counts what `classCandidates(inNote:)` returns and
+that function takes a single note — a bare `Ibid.` is structurally invisible to it. The
+instrument is `FootnoteIbidGapWalker` in `SourceNoteKit/FootnoteCitationGrammar.swift`
+(beside `classCandidates`, for the same reason: the clause splitter is internal and a
+mirror would drift): a document-ordered walk whose single *last-cited* slot class
+candidates and lot/library citations compete for in clause order — `Ibid.` means the
+source last cited, whatever kind — with `scan`'s own refusals (absence per clause,
+publications before `Ibid.` resolution, per-note publication invalidation, reach 3) and
+two shadow states that price the reach cap and refusal 3 without feeding the count. The
+shipped admission rule is INJECTED as a verdict closure, mirrored guard-for-guard from
+`ExternalCitationIndexRunner.build`; `classCandidates` was refactored to a per-clause
+helper both callers share. Driven by `MEASURE_IBID_GAP=1` on the generator; report to
+`Planning/ibid-gap-measurement.json`, stratified samples beside it.
+
+**The result: 1,169 references — 4.1% of the 28,721-reference channel — against the
+issue's extrapolated ~2,600 (2.2× the truth), and NOT pre-war: 1910–1945 gains 27
+(0.7%), pre-1910 zero.** 380 distinct keys over 113 volumes, concentrated in the
+Indochina/Germany/China country files (751J.00, 751G.00, 762.00, 611.93); 96.5% of
+inheritances sit in the same or next footnote, the reach cap costs 5 admitted references,
+refusal 3 costs 86. Parity is EXACT: the walker's 28,703 direct admissions + 18 in
+archival-won clauses = the artifact's decimalReferences, to the reference — and
+footnotesScanned matches at 470,827.
+
+Two things the run itself taught. The first sample file caught a REAL defect: a clause
+naming a publication and trailing off in "…and ibid" (frus1948v04/d404, "See Foreign
+Relations, 1944, vol. iv … passim and ibid") classified as a class inheritance — the
+walker tested publications AFTER the bare-`Ibid.` branch where `scan` tests them before.
+Fixed to mirror `scan`'s order, pinned by a test, re-run: the third `Ibid.` defect in
+this program found by reading samples and found no other way. And the explicit form
+(`Ibid., Central Files, 684A.86/8–956`) is already harvested — 5,070 references — so
+step 2's `ibidStandsAlone` question answers itself: the refusal stays, only BARE
+standalone inheritance is missing.
+
+Verdict: GO, owner to confirm before W-1b (grammar change, artifact regen with
+SAMPLE_OUTPUT read, index v46 → 47). Full verdict:
+`Planning/Ibid-Gap-Measurement-2026-08-27.md`. 16 new walker tests; no artifact changed,
+no index version moved, no CloudKit deploy.

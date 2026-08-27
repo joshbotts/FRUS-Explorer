@@ -40,9 +40,23 @@ public enum ExternalCitationIndexRunner {
     /// `Planning/` and touches no bundled artifact. It is a separate mode rather than an extra
     /// output of the build because the two have different denominators and different scopes, and
     /// a run that quietly did both would invite the measurement's numbers into the artifact's
-    /// coverage block.
+    /// coverage block. `MEASURE_IBID_GAP=1` diverts to #1014's bare-`Ibid.` gap measurement, a
+    /// separate mode for the same reason.
     public static func run() throws {
         let env = ProcessInfo.processInfo.environment
+        if env["MEASURE_IBID_GAP"] == "1" {
+            try IbidGapMeasurement.run(
+                volumesDir: URL(fileURLWithPath: env["VOLUMES_DIR"]
+                    ?? "/Users/jbotts/Development/frus/volumes", isDirectory: true),
+                manifestPath: env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json",
+                labelsPath: env["DECIMAL_LABELS"]
+                    ?? "FRUSExplorer/Resources/decimal-class-labels.json",
+                reportPath: env["MEASURE_OUTPUT"] ?? "Planning/ibid-gap-measurement.json",
+                samplePath: env["SAMPLE_OUTPUT"],
+                sampleEvery: Int(env["SAMPLE_EVERY"] ?? "") ?? 25,
+                generated: generatorDateStamp(override: env["GENERATED_DATE"]))
+            return
+        }
         if env["MEASURE_DECIMAL"] == "1" {
             try DecimalChannelMeasurement.run(
                 volumesDir: URL(fileURLWithPath: env["VOLUMES_DIR"]
