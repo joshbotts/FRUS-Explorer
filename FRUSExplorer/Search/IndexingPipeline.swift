@@ -6335,9 +6335,8 @@ public actor IndexingPipeline {
         case .centralFiles, .cfpfFile:
             return SourceNoteParser.decimalClassLocation(inCitation: rawText)
         case .naraCollection(_, let series, _, _):
-            guard let series,
-                  series.localizedCaseInsensitiveContains("Central Files")
-                    || series.localizedCaseInsensitiveContains("Central Foreign Policy")
+            // One definition with the routing switch's guard (W-17 session 1).
+            guard let series, ParsedSourceNote.seriesNamesCentralFiles(series)
             else { return nil }
             return SourceNoteParser.decimalClassLocation(inCitation: rawText)
         default:
@@ -7239,6 +7238,7 @@ public actor IndexingPipeline {
         excludingVolumeId: String? = nil,
         excludingDocumentId: String? = nil,
         scopeVolumeIds: Set<String>? = nil,
+        rawCitation: String? = nil,
         ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let exclude = (excludingVolumeId, excludingDocumentId)
@@ -7254,18 +7254,59 @@ public actor IndexingPipeline {
         case .naraCollection(_, _, let lot?, _):
             raw = try relatedByLotFile(lot, limit: fetchLimit, excluding: exclude, ordering: ordering)
 
-        // Non-RG-59 collection (e.g. RG 84, RG 306) with no lot: same (RG, series).
-        case .naraCollection(let rg, let series?, nil, _) where rg != "59" && rg != "RG-59":
+        // A no-lot collection with a real series name: same (RG, series). RG 59 was
+        // excluded here wholesale until W-17 session 1; the honest boundary is the
+        // SERIES NAME, not the record group — "Central Files 1967–69" is a container of
+        // most of the era's corpus and the class arm below serves it at meaningful
+        // grain, but "RG 59, Conference Files: FRC 83–0068" is as real a series cohort
+        // as any RG 84 post file (measured 2026-08-27: 1,002 RG-59 rows carry a
+        // non-central-files series and routed to nothing).
+        case .naraCollection(let rg, let series?, nil, _)
+            where !ParsedSourceNote.seriesNamesCentralFiles(series):
             raw = try relatedByCollection(recordGroup: rg, series: series,
                                           limit: fetchLimit, excluding: exclude,
                                           ordering: ordering)
 
+        // A central-files-NAMED collection row ("RG 59, Central Files 1967–69,
+        // POL 27 VIET S"): the series is not a cohort, but the citation's class is.
+        // The class location lives in the raw citation, not the parse — measured
+        // 2026-08-27: 4,409 of 5,892 such rows carry a stored `decimal_class`, and all
+        // of them routed to nothing.
+        case .naraCollection(_, let series?, nil, _)
+            where ParsedSourceNote.seriesNamesCentralFiles(series):
+            if let rawCitation,
+               let classLocation = SourceNoteParser.decimalClassLocation(inCitation: rawCitation) {
+                raw = try relatedByDecimalClass(classLocation, limit: fetchLimit,
+                                                excluding: exclude, ordering: ordering)
+            } else {
+                raw = ([], 0)
+            }
+
         case .centralFiles(_, let fileId?) where fileId.contains("."):
-            // Only attempt decimal matching when the identifier contains a period
-            // (distinguishes "862S.01/10-1646" from bare File No. values like "3767/5").
+            // The dotted decimal form ("862S.01/10-1646").
             raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
                                        limit: fetchLimit, excluding: exclude,
                                        ordering: ordering)
+
+        // The dotless file numbers the dot requirement excluded: the pre-1910 Numerical
+        // File ("File No. 6775/5" — case 6775 → 99 documents) and dotless class
+        // citations ("320/10512" — class 320 → 717). Same pre-slash location rule as
+        // the dotted arm; the shape gate keeps the measured OCR junk unrouted.
+        case .centralFiles(_, let fileId?)
+            where ParsedSourceNote.dotlessFileLocation(of: fileId) != nil:
+            raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
+                                       limit: fetchLimit, excluding: exclude,
+                                       ordering: ordering)
+
+        // A CFPF citation's film segment ("P820123–1320" → film P820123) — the only
+        // cohort key the 1973–79 electronic-era notes carry. Measured 2026-08-27:
+        // P-reel segments cluster genuinely (P820123 → 41 documents) while
+        // whole-identifier equality almost never repeats (largest: 3).
+        case .cfpfFile(let fileId?)
+            where ParsedSourceNote.cfpfFilmPrefix(of: fileId) != nil:
+            raw = try relatedByCFPFFilm(
+                prefix: ParsedSourceNote.cfpfFilmPrefix(of: fileId)!,
+                limit: fetchLimit, excluding: exclude, ordering: ordering)
 
         case .presidentialLibrary(let library, let collection, _):
             // Excludes the anchor uniformly (#217): a presidential-library document
@@ -7374,9 +7415,18 @@ public actor IndexingPipeline {
         var result = try relatedDocuments(
             for: parsed, limit: fetchLimit, documentYear: documentYear,
             excludingVolumeId: volumeId, excludingDocumentId: documentId,
+            rawCitation: raw,
             ordering: .stratified
         )
         var basis = parsed.archivalNeighborKey
+        // W-17 session 1: a central-files-named RG-59 collection row matches on the
+        // citation's CLASS, which only the raw note carries — so the parse-level key is
+        // nil by design and the basis is supplied here, where the raw text lives.
+        if basis == nil, result.totalCount > 0,
+           case .naraCollection(_, let series?, nil, _) = parsed,
+           ParsedSourceNote.seriesNamesCentralFiles(series) {
+            basis = SourceNoteParser.decimalClassLocation(inCitation: raw)
+        }
         // #217 reconciliation — widen the document path to the same Phase-4 collection-
         // authority alias fallback the volume-source path runs, so the same collection
         // returns the same OTHER documents whichever surface opened it. Fires only when
@@ -7939,6 +7989,44 @@ public actor IndexingPipeline {
     /// The join key is the NORMALISED job (`SourceNoteParser.jobNumberNorm`): one job is
     /// spelled up to four dash-split ways in the corpus, so a raw-spelling join returns a
     /// fraction of each collection.
+    /// Returns documents from the same CFPF film segment (W-17 session 1).
+    ///
+    /// The indexer stores a CFPF row's series as `"CFPF <identifier>"`
+    /// (`baseDocumentSourceRow`), so the segment match is a prefix over that stored
+    /// form: exact (`CFPF P820123`) or dash-continued (`CFPF P820123–1320`). Both the
+    /// en dash the corpus prints and a plain hyphen are matched. The identifier is
+    /// fixed-width (P/D + six digits), so the prefix cannot swallow a longer segment.
+    private func relatedByCFPFFilm(
+        prefix: String,
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let stored = "CFPF " + prefix
+        let esc = Self.likeEscaped(stored)
+        let ex = exclusion(excluding)
+        let whereClause = """
+            ds.citation_era = 'cfpf'
+            AND (ds.series_name = ? OR ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')\(ex.clause)
+            """
+        let params = [stored, esc + "–%", esc + "-%"] + ex.params
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: params, selectParams: params,
+            limit: limit, ordering: ordering)
+    }
+
     private func relatedByJobNumber(
         _ rawJob: String,
         limit: Int,
@@ -8196,14 +8284,18 @@ public actor IndexingPipeline {
     /// neighbor set for it.
     private func relatedByDecimalClass(
         _ classKey: String,
-        limit: Int
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         guard let key = SourceNoteParser.decimalClassKey(classKey)
                 ?? Self.fallbackClassKey(classKey),
               let patterns = Self.classLeafPatterns(forCanonicalKey: key) else { return ([], 0) }
         let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
             .joined(separator: " OR ")
-        let whereClause = "(\(likes))"
+        let ex = exclusion(excluding)
+        let whereClause = "(\(likes))\(ex.clause)"
+        let params = patterns + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -8218,8 +8310,8 @@ public actor IndexingPipeline {
             """
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
-            countParams: patterns, selectParams: patterns,
-            limit: limit
+            countParams: params, selectParams: params,
+            limit: limit, ordering: ordering
         )
     }
 

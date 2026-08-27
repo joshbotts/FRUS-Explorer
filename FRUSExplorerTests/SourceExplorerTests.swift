@@ -932,16 +932,41 @@ struct ArchivalNeighborMatchingTests {
         #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "611.51/10-1646").supportsArchivalNeighbors)
         #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "611.51/10-1646").archivalNeighborKey == "611.51")
 
-        // nara collection requires a lot
+        // nara collection with a lot keys on the lot
         #expect(ParsedSourceNote.naraCollection(recordGroup: "59", series: "Decimal File", lotFile: "64 D 199", box: nil).supportsArchivalNeighbors)
+    }
+
+    @Test("W-17 route arms expose keys where the switch now matches")
+    func w17RouteArmKeys() {
+        // The pre-1910 Numerical File / dotless file numbers: same pre-slash location
+        // rule as the dotted decimal form.
+        #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "3767/5").archivalNeighborKey == "3767")
+        #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "320/10512").archivalNeighborKey == "320")
+        // A no-lot collection with a real series name keys on (RG, series) — for any
+        // record group, including 59, since W-17 session 1 moved the boundary from the
+        // record group to the series name.
+        #expect(ParsedSourceNote.naraCollection(recordGroup: "84", series: "Moscow Post Files", lotFile: nil, box: nil).archivalNeighborKey == "RG 84: Moscow Post Files")
+        #expect(ParsedSourceNote.naraCollection(recordGroup: "59", series: "Conference Files: FRC 83–0068", lotFile: nil, box: nil).archivalNeighborKey == "RG 59: Conference Files: FRC 83–0068")
+        // The CFPF film segment, both prefix letters.
+        #expect(ParsedSourceNote.cfpfFile(fileIdentifier: "P820123–1320").archivalNeighborKey == "CFPF film P820123")
+        #expect(ParsedSourceNote.cfpfFile(fileIdentifier: "D780225-0373").archivalNeighborKey == "CFPF film D780225")
+        // The CIA job arm has routed since #808; the key closing that mirror hole.
+        #expect(ParsedSourceNote.ciaCollection(jobNumber: "80–00810A", box: nil, description: "DDI files").archivalNeighborKey == "CIA Job 80–00810A")
     }
 
     @Test("unmatchable note types expose no key")
     func unmatchableTypes() {
-        #expect(!ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "3767/5").supportsArchivalNeighbors) // no decimal
+        // A central-files-NAMED series is not a cohort at parse level — the class arm
+        // needs the raw citation, so the parse-level key stays nil and
+        // `archivalNeighborsWithCohort` supplies the class basis when one resolves.
         #expect(!ParsedSourceNote.naraCollection(recordGroup: "59", series: "Decimal File", lotFile: nil, box: nil).supportsArchivalNeighbors)
+        #expect(!ParsedSourceNote.naraCollection(recordGroup: "59", series: "Central Files 1967–69", lotFile: nil, box: nil).supportsArchivalNeighbors)
         #expect(!ParsedSourceNote.previouslyPublished(citation: "FRUS 1958-60, vol. X").supportsArchivalNeighbors)
         #expect(!ParsedSourceNote.unrecognized(rawText: "Source: see footnote 3").supportsArchivalNeighbors)
+        // Measured OCR junk keeps its nil under the dotless shape gate.
+        #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "( less than 1 line not declassified )").archivalNeighborKey == nil)
+        #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "/4/63-5/63)").archivalNeighborKey == nil)
+        // A CFPF identifier without the P/D+6-digit film shape has no segment to key on.
         #expect(ParsedSourceNote.cfpfFile(fileIdentifier: "P-reel 12").archivalNeighborKey == nil)
     }
 }

@@ -448,7 +448,7 @@ A cross-reference tells you what a document *cites*; **Related Documents** tells
 
 | Signal | What it connects |
 |--------|------------------|
-| **Archival provenance** | Drawn from the same lot file, central file, or archival collection (the same keys Archival Neighbors uses) |
+| **Archival provenance** | Drawn from the same lot file, central file — the dotted decimal form, the pre-1910 Numerical File case, or a CFPF film segment — or archival collection (the same keys Archival Neighbors uses) |
 | **Cross-references** | Documents this one cites, and documents that cite it |
 | **Close in date** | Written near the same time |
 | **Corpus proximity** | Where the editors placed the two relative to each other — highest for documents printed side by side or in the same small chapter, easing off through compilation and volume to subseries (a same-volume pair reads between 60% and 100%, not a flat 100%) |
