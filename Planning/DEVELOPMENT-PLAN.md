@@ -9402,3 +9402,27 @@ modifier presents only when addressed (macOS's single Settings instance passes
 through) — one alert, where the user just acted, instead of one per open window.
 Dismissal still clears the shared slot; the nudge stays one-shot. #657's device
 backtrace remains owner-lane. Full iOS suite 4,137 green; Mac builds.
+
+## Session 2026-08-27 — W-2e: the audit recorded, the shot list staged, and a corrupted ledger repaired
+
+The last two W-2 items. The window-fronting audit (Mac W-12) got its first recorded
+re-run since M-1's founding audit: verdict CLEAN — 74 fronting + 27 value sites paired
+both ways against the scene table with empty set-difference, zero bare openWindow(id:).
+Two blind spots are named in `Window-Fronting-Audit-2026-08-27.md` (which also carries
+the per-release procedure): ProjectHomeView's runtime-id fronting is now guarded by
+`projectHomeMappedIdsAreDeclared`, and `openAuxWindow`'s generic value call stays a
+recorded re-check because guarding it means resolving generics in a source scan.
+
+The CW-11 prep is `Docs/screenshots/SHOT-LIST-2026-08.md`: #1081's sweep staged as four
+capture sessions (iPad full-corpus with 17 numbered shots + backlog, fresh-install
+offline, macOS in one sitting with the 18 same-filename re-captures, README heroes)
+with per-shot routes and content contracts, closing with the post-sweep steps
+(deletions, ios→ipad swaps, the X-8 build-number row). Writing it required repairing
+its foundation first: six of the owner's editorial directives had been committed into
+`Docs/screenshots/README.md` as BODY TEXT rather than applied — one had eaten the
+macOS "Captured" sentence's opening line, another spliced the Feature-flows bullet
+mid-sentence. All six were recovered against the pre-#1085 git history and applied as
+the edits they described; zero directive strings remain.
+
+W-2 is fully discharged: five PRs (W-2a poles #1106, W-2b Source Explorer window
+#1107, W-2c text scaling #1108, W-2d iPad probes #1109, W-2e this).

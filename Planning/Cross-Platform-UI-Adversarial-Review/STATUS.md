@@ -214,9 +214,24 @@ LEAVE-FIXED per the worklist's canvas rule, the rest are ordinary chrome debt.
 - **#657 stays owner-lane**: the device backtrace (plan item B-1) cannot be captured from these
   sessions; the badge mitigation remains "a suspect removed, not a proven fix".
 
-**CW-11 — the rest of the documentation sweep.** The ledger rule is now written (§1a) and the
-guide doors are shipped. What remains is the **re-captures themselves**, which are the owner's by
-standing convention, plus the manual caption corrections that depend on them.
+**CW-11 — the rest of the documentation sweep.** The ledger rule is written (§1a), the guide
+doors shipped, and **the W-2 prep is done (W-2e)**: `Docs/screenshots/SHOT-LIST-2026-08.md` stages
+#1081's whole sweep as four capture sessions (iPad full-corpus, fresh-install offline, macOS,
+README heroes) with per-shot routes and content contracts — and `Docs/screenshots/README.md` was
+REPAIRED first: six of the owner's editorial directives had been committed as body text instead of
+applied (one had eaten the macOS "Captured" sentence's opening line, another spliced a bullet
+mid-sentence), recovered from the pre-#1085 git history and applied as edits. What remains is the
+**captures themselves** — the owner's by standing convention — plus the caption corrections that
+depend on them.
+
+**CW-12, second program: the window-fronting audit (Mac W-12 / M-1) — RE-RUN 2026-08-27 (W-2e),
+verdict CLEAN.** 74 fronting sites + 27 value sites paired both ways against the scene table with
+empty set-difference; zero bare `openWindow(id:)`. Two blind spots named, one now guarded
+(`projectHomeMappedIdsAreDeclared` pins the runtime-id mapping; `openAuxWindow`'s generic call
+stays a recorded re-check). Record + per-release procedure:
+`Window-Fronting-Audit-2026-08-27.md`. **With this, W-2's four owed items are all discharged**
+(slice poles W-2a #1106, M-2's Source Explorer half W-2b #1107, CW-12's three programs W-2c/d/e,
+CW-11 prep here).
 
 > **Owner decision 2026-08-16: the re-captures were deliberately held.** *(Superseded 2026-08-23 —
 > see the note below.)* Wave 2 changed the shape of
