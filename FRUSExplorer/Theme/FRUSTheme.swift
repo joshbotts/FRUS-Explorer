@@ -392,6 +392,21 @@ enum FRUSTheme {
     // | 20       | `.title3`    | small headings                               |
     // | 28+      | `.largeTitle`| hero / empty-state glyphs (see below)        |
     //
+    // **macOS chrome uses a DIFFERENT column (Mac W-11).** The table above targets iOS text
+    // styles (`.body` = 17). macOS resolves the same styles smaller (`.body` = 13,
+    // `.callout` = 12, `.subheadline` = 11, `.footnote`/`.caption`/`.caption2` = 10), so
+    // applying the iOS column to a Mac window shrinks its chrome by 1–3 pt across the board.
+    // For `#if os(macOS)` surfaces convert by the macOS defaults instead — the point is to
+    // PRESERVE today's size at the default setting and gain scaling, not to reflow the window:
+    //
+    // | Fixed pt | macOS style    | resolves to |
+    // | 7–10     | `.caption2`    | 10 (a 7–9 pt site gains a point or three — deliberate;
+    // |          |                |     the review called 9 pt micro-labels a defect)
+    // | 11       | `.subheadline` | 11          |
+    // | 12       | `.callout`     | 12          |
+    // | 13       | `.body`        | 13          |
+    // | 14–15    | `.title3`      | 15          |
+    //
     // For a *non-standard* size that must stay proportional to a specific style
     // (e.g. a hero glyph that should track the largest text but at a bespoke point
     // size), declare `@ScaledMetric(relativeTo: .largeTitle) private var glyph: CGFloat = N`

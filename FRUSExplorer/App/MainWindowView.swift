@@ -248,6 +248,9 @@ struct MainWindowView: View {
                 // chevron. (Default `.principal` layout inverts this, overflowing the tools first —
                 // the bug this replaces.) ("Info" removed Session 2026-06-08 — duplicated the rail's Cite.)
                 Text(entry.id)
+                    // LEAVE-FIXED (Mac W-11): the identity pill is width-budgeted (`pillBudget`)
+                    // and monospaced for grid-stable truncation — the worklist's designated
+                    // monospaced-tally carve-out. Scaling it would fight the budget arithmetic.
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -255,7 +258,7 @@ struct MainWindowView: View {
                     .help(entry.header.isEmpty ? entry.documentId : entry.header)
             } else if currentEntry == nil {
                 Text("FRUS Explorer")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.body.weight(.medium))
             }
             // A document is open but the window is too narrow to centre the pill without shoving
             // the tools into overflow → render nothing; the tools win the space.
@@ -472,19 +475,23 @@ private struct DocumentPlaceholderView: View {
     /// Opens the resumed document in this window's stack (#754).
     let onResume: (DocumentBrowserEntry) -> Void
 
+    /// Hero-glyph scaling (Mac W-11): tracks the text-size setting, capped so an
+    /// accessibility size does not blow the empty state off the column.
+    @ScaledMetric(relativeTo: .largeTitle) private var heroGlyphSize: CGFloat = 40
+
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 40))
+                .font(.system(size: FRUSTheme.cappedGlyphSize(heroGlyphSize, base: 40)))
                 .foregroundStyle(.tertiary)
             Text("Select a document to begin")
-                .font(.system(size: 15))
+                .font(.title3)
                 .foregroundStyle(.secondary)
             // ⌘S, not ⌘F: Search moved to ⌘S in #363 #5 and ⌘F became Find in Document. This
             // string kept the old shortcut — the same stale claim #749 corrected in the manual,
             // still wrong in the app itself.
             Text("Use Search (⌘S) or open the Corpus Browser (⇧⌘B)")
-                .font(.system(size: 12))
+                .font(.callout)
                 .foregroundStyle(.tertiary)
 
             // #754: resume the last document read, offered rather than auto-opened.

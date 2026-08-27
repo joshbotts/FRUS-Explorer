@@ -106,7 +106,7 @@ struct SummaryBlockView: View {
                     vm.activeSummaryIndex += 1
                 }
             } label: {
-                Image(systemName: "chevron.left").font(.system(size: 10))
+                Image(systemName: "chevron.left").font(.caption2)
             }
             .buttonStyle(.plain)
             .disabled(vm.activeSummaryIndex >= vm.summaries.count - 1)
@@ -114,13 +114,13 @@ struct SummaryBlockView: View {
             .accessibilityLabel(String(localized: "summary.history.older.a11y", defaultValue: "Older summary"))
 
             Text("\(vm.activeSummaryIndex + 1)/\(vm.summaries.count)")
-                .font(.system(size: 10))
+                .font(.caption2)
                 .foregroundStyle(.tertiary)
 
             Button {
                 if vm.activeSummaryIndex > 0 { vm.activeSummaryIndex -= 1 }
             } label: {
-                Image(systemName: "chevron.right").font(.system(size: 10))
+                Image(systemName: "chevron.right").font(.caption2)
             }
             .buttonStyle(.plain)
             .disabled(vm.activeSummaryIndex <= 0)
@@ -138,14 +138,14 @@ struct SummaryBlockView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 4) {
                     Label("AI summary", systemImage: "sparkles")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                         .textCase(.uppercase)
                         .kerning(0.7)
 
                     if vm.activeSummary != nil {
                         Text("· custom prompt")
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
 
@@ -159,7 +159,7 @@ struct SummaryBlockView: View {
                 if aiAvailable {
                     HStack(spacing: 12) {
                         Button("Change prompt") { showPromptPicker = true }
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .buttonStyle(.plain)
                             .foregroundStyle(.secondary)
                             .popover(isPresented: $showPromptPicker) {
@@ -167,7 +167,7 @@ struct SummaryBlockView: View {
                             }
 
                         Button("Regenerate") { Task { await regenerateSummary() } }
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .buttonStyle(.plain)
                             .foregroundStyle(.secondary)
                             .disabled(vm.isSummarizing)
@@ -181,7 +181,7 @@ struct SummaryBlockView: View {
             // of whether a previous summary exists below it.
             if let error = vm.summarizationError {
                 Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
+                    .font(.callout)
                     .foregroundStyle(.orange)
                     .accessibilityLabel(String(
                         localized: "summary.error.a11y",
@@ -193,16 +193,16 @@ struct SummaryBlockView: View {
             if vm.isSummarizing {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Summarizing…").font(.system(size: 13)).foregroundStyle(.secondary)
+                    Text("Summarizing…").font(.body).foregroundStyle(.secondary)
                 }
             } else if let summary = vm.activeSummary {
                 Text(summary.responseText)
-                    .font(.system(size: 13))
+                    .font(.body)
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
             } else if aiAvailable {
                 Button("Summarize this document") { Task { await regenerateSummary() } }
-                    .font(.system(size: 13))
+                    .font(.body)
                     .buttonStyle(.plain)
                     .foregroundStyle(.tertiary)
             } else {
@@ -212,7 +212,7 @@ struct SummaryBlockView: View {
                     localized: "summary.unavailable.explanation",
                     defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries created on your other devices still appear here via iCloud."
                 ))
-                .font(.system(size: 12))
+                .font(.callout)
                 .foregroundStyle(.tertiary)
             }
         }
@@ -289,7 +289,7 @@ struct StatusBarView: View {
                     .fill(indexedCount > 0 ? Color.green : Color.secondary)
                     .frame(width: 6, height: 6)
                 Text("\(indexedCount) volume\(indexedCount == 1 ? "" : "s") indexed")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
@@ -311,7 +311,7 @@ struct StatusBarView: View {
                 } label: {
                     Label(String(localized: "statusbar.learn.label", defaultValue: "Learn"),
                           systemImage: "book.pages")
-                        .font(.system(size: 11))
+                        .font(.subheadline)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
@@ -536,7 +536,7 @@ struct StatusBarView: View {
                 String(localized: "statusBar.sync.disabled", defaultValue: "Local Only"),
                 systemImage: "icloud.slash"
             )
-            .font(.system(size: 11))
+            .font(.subheadline)
             .foregroundStyle(.orange)
             .help(help)
         } else {
@@ -547,7 +547,7 @@ struct StatusBarView: View {
                     String(localized: "statusBar.sync.enabled", defaultValue: "iCloud Sync"),
                     systemImage: "checkmark.icloud"
                 )
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
                 .help(String(localized: "statusBar.sync.enabled.help",
                              defaultValue: "User data syncs via iCloud across your devices"))
@@ -556,7 +556,7 @@ struct StatusBarView: View {
                 HStack(spacing: 4) {
                     ProgressView().scaleEffect(0.55, anchor: .center).frame(width: 11, height: 11)
                     Text(String(localized: "statusBar.sync.syncing", defaultValue: "Syncing…"))
-                        .font(.system(size: 11))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .help(String(localized: "statusBar.sync.syncing.help",
@@ -567,7 +567,7 @@ struct StatusBarView: View {
                     String(localized: "statusBar.sync.synced", defaultValue: "Synced"),
                     systemImage: "checkmark.icloud"
                 )
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
                 .help(String(localized: "statusBar.sync.synced.help",
                              defaultValue: "iCloud sync completed successfully"))
@@ -584,7 +584,7 @@ struct StatusBarView: View {
                         String(localized: "statusBar.sync.error", defaultValue: "Sync Error"),
                         systemImage: "exclamationmark.icloud"
                     )
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.orange)
                 }
                 .buttonStyle(.plain)
@@ -624,7 +624,7 @@ struct StatusBarView: View {
                     String(localized: "statusBar.sync.zoneMissing", defaultValue: "Zone Missing"),
                     systemImage: "exclamationmark.icloud.fill"
                 )
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.red)
                 // "Settings → Danger Zone" has never existed on this platform; the recovery
                 // ladder lives in Data & Recovery since S-4b. Same destination as the iOS cell.
@@ -638,7 +638,7 @@ struct StatusBarView: View {
                     String(localized: "statusBar.sync.accountIssue", defaultValue: "Not Signed In"),
                     systemImage: "person.crop.circle.badge.exclamationmark"
                 )
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.orange)
                 .help(AppState.accountStatusDescription(status))
             }
@@ -683,10 +683,10 @@ struct StatusBarView: View {
     private func taskLabel(_ task: ActiveTask, showDisclosure: Bool) -> some View {
         HStack(spacing: 6) {
             Image(systemName: task.systemImage)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(task.isSuccess ? Color.green : .secondary)
             Text(task.label)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
             if let progress = task.progress {
                 ProgressView(value: progress)
@@ -695,13 +695,13 @@ struct StatusBarView: View {
                     .tint(.green)
                 if let eta = task.eta {
                     Text(eta)
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }
             if showDisclosure {
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 8))
+                    .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
         }
@@ -755,19 +755,19 @@ private struct MacIndexingQueuePanel: View {
             // Header row
             HStack(spacing: 6) {
                 Image(systemName: "square.and.arrow.down.on.square")
-                    .font(.system(size: 12))
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 Text(String(
                     localized: "indexing.queue.mac.header",
                     defaultValue: "Indexing Queue"
                 ))
-                .font(.system(size: 12, weight: .semibold))
+                .font(.callout.weight(.semibold))
                 Spacer()
                 Text(String(
                     localized: "indexing.queue.mac.position",
                     defaultValue: "Volume \(queuePosition.current) of \(queuePosition.total)"
                 ))
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
             }
@@ -783,7 +783,7 @@ private struct MacIndexingQueuePanel: View {
                             localized: "indexing.queue.mac.finalizing",
                             defaultValue: "Finalizing index — applying optimisations…"
                         ))
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                     } icon: {
                         ProgressView()
                             .progressViewStyle(.circular)
@@ -793,12 +793,12 @@ private struct MacIndexingQueuePanel: View {
                         localized: "indexing.queue.mac.finalizing.detail",
                         defaultValue: "Merging FTS5 segments for \(update.totalDocuments.formatted()) indexed documents. This may take 30–60 seconds."
                     ))
-                    .font(.system(size: 10))
+                    .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text(update.volumeId)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .lineLimit(1)
                         .truncationMode(.middle)
 
@@ -815,13 +815,13 @@ private struct MacIndexingQueuePanel: View {
                                 localized: "indexing.queue.mac.docs",
                                 defaultValue: "\(update.completedDocuments) / \(update.totalDocuments) docs"
                             ))
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
                             Spacer()
                             if let eta = totalETAString {
                                 Text(eta)
-                                    .font(.system(size: 10))
+                                    .font(.caption2)
                                     .foregroundStyle(.tertiary)
                                     .monospacedDigit()
                             }
@@ -843,17 +843,17 @@ private struct MacIndexingQueuePanel: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "clock")
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .foregroundStyle(.tertiary)
                         Text(String(
                             localized: "indexing.queue.mac.remaining",
                             defaultValue: "\(volumeTitles.count) volume\(volumeTitles.count == 1 ? "" : "s") remaining"
                         ))
-                        .font(.system(size: 11))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         Spacer()
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 9))
+                            .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
                 }
@@ -873,10 +873,10 @@ private struct MacIndexingQueuePanel: View {
                         ForEach(volumeTitles.prefix(6), id: \.self) { title in
                             HStack(spacing: 5) {
                                 Image(systemName: "clock")
-                                    .font(.system(size: 9))
+                                    .font(.caption2)
                                     .foregroundStyle(.tertiary)
                                 Text(title)
-                                    .font(.system(size: 10))
+                                    .font(.caption2)
                                     .foregroundStyle(.tertiary)
                                     .lineLimit(1)
                             }
@@ -898,7 +898,7 @@ private struct MacIndexingQueuePanel: View {
                                defaultValue: "Learn about FRUS while you wait →"),
                         systemImage: "book.pages"
                     )
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
@@ -1130,17 +1130,17 @@ struct CitationPopoverView: View {
             // Header
             HStack {
                 Label("Citation", systemImage: "quote.closing")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.callout.weight(.medium))
                 Spacer()
             }
 
             // Document identity
             VStack(alignment: .leading, spacing: 2) {
                 Text("Doc \(effectiveDocumentNumber ?? entry.documentId) · \(entry.volumeId)")
-                    .font(.system(size: 10))
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
                 Text(entry.header)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.callout.weight(.medium))
                     .lineLimit(2)
             }
 
@@ -1192,15 +1192,15 @@ struct CitationPopoverView: View {
                         metaRow("Document no.", docNum)
                     }
                 }
-                .font(.system(size: 11))
+                .font(.subheadline)
             }
 
             // Canonical URL
             if let url = canonicalURL {
                 HStack(spacing: 4) {
-                    Image(systemName: "link").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Image(systemName: "link").font(.caption2).foregroundStyle(.secondary)
                     Text(url)
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -1215,7 +1215,7 @@ struct CitationPopoverView: View {
                     // stripped so the clipboard receives clean text without raw syntax.
                     copyToClipboard(plainTextCitation)
                 } label: {
-                    Label("Copy citation", systemImage: "doc.on.doc").font(.system(size: 11))
+                    Label("Copy citation", systemImage: "doc.on.doc").font(.subheadline)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -1232,7 +1232,7 @@ struct CitationPopoverView: View {
                     Button {
                         copyToClipboard(url)
                     } label: {
-                        Label("Copy URL", systemImage: "link").font(.system(size: 11))
+                        Label("Copy URL", systemImage: "link").font(.subheadline)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -1262,7 +1262,7 @@ struct CitationPopoverView: View {
                         Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
                     }
                 } label: {
-                    Label("Copy as\u{2026}", systemImage: "doc.on.doc").font(.system(size: 11))
+                    Label("Copy as\u{2026}", systemImage: "doc.on.doc").font(.subheadline)
                 }
                 .menuStyle(.button)
                 .buttonStyle(.bordered)
@@ -1415,11 +1415,11 @@ struct DocumentSharePopover: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("Share / Export", systemImage: "square.and.arrow.up")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.callout.weight(.medium))
                 Spacer()
             }
             Text(entry.header)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
             Divider()
@@ -1431,7 +1431,7 @@ struct DocumentSharePopover: View {
                         Task { await sendToZoteroLibrary(vol: vol) }
                     }
                     Text("Adds this document — with your tags and research notes — straight to your Zotero library.")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 actionRow("Export Zotero file (RIS)\u{2026}", systemImage: "doc.badge.arrow.up") {
@@ -1445,14 +1445,14 @@ struct DocumentSharePopover: View {
                 }
                 ShareLink(item: shareMessage(vol: vol)) {
                     Label("Share Citation\u{2026}", systemImage: "square.and.arrow.up")
-                        .font(.system(size: 11))
+                        .font(.subheadline)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             } else {
                 Text("Document metadata isn’t loaded yet.")
-                    .font(.system(size: 11))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
         }
@@ -1485,7 +1485,7 @@ struct DocumentSharePopover: View {
                            busy: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
-                Label(title, systemImage: systemImage).font(.system(size: 11))
+                Label(title, systemImage: systemImage).font(.subheadline)
                 Spacer()
                 if busy { ProgressView().controlSize(.mini) }
             }

@@ -175,6 +175,24 @@ with the constraint that makes each one bigger than it looks:
   (Read-mode paging is hover-only edge chevrons) are what remain, and both genuinely want a Mac in
   front of someone.
 
+**CW-12, first program: macOS text scaling (Mac W-11 / M-5) — CONVERTED at W-2c, and the
+premise re-baselined.** M-5's "262 deferred sites" was exact when written and stale when
+scheduled: 150 had evaporated in the Settings/History consolidations (`FRUSSettingsView` — the
+file M-5 leads with — was at ZERO), while `SearchSheet` had GROWN by 13 because the convention
+existed and nothing enforced it. The real remaining debt was **112 sites in two files**
+(SearchSheet 58, SupportingViews 54) plus 11 in MacDocumentView/MainWindowView. All converted —
+by a **macOS column added to `FRUSTheme`'s table**, because the iOS column (body = 17) resolves
+1–3 pt smaller on macOS and would have shrunk the chrome; the macOS mapping (11 → `.subheadline`,
+12 → `.callout`, 13 → `.body`, ≤10 → `.caption2`, 14–15 → `.title3`) preserves today's sizes at
+the default setting and gains scaling. Two carve-outs stay fixed with their reasons at the site
+(the width-budgeted monospaced identity pill; the chevron in a fixed 34×34 hit circle), and
+`MacTextScalingAuditTests` pins zero-literal on the converted files AND the carve-outs' presence,
+so the list cannot silently regrow. **Recorded debt, not converted here**: ~37 sites accrued
+since the worklist in 7 untracked files (ResearchRailView 7, MacCorpusBrowserWindow 7,
+CollectionCompositionRows 7 — incl. two fractional `11.5`s — ArchivalNetworkView 5, CorpusView 4,
+PersonCoMentionGraphView 4, CrossReferenceAnalyticsView 3); the graph-canvas ones are likely
+LEAVE-FIXED per the worklist's canvas rule, the rest are ordinary chrome debt.
+
 **CW-11 — the rest of the documentation sweep.** The ledger rule is now written (§1a) and the
 guide doors are shipped. What remains is the **re-captures themselves**, which are the owner's by
 standing convention, plus the manual caption corrections that depend on them.

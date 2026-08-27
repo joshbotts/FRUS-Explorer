@@ -9349,3 +9349,30 @@ the graph's volume-hand-off rule: its payload rides `pendingNARALookup`, not a r
 Also fixed while here: the scene-inventory tally (drifted at #1023 — the table said 17
 Windows while the header said 16; it now counts 16 + 11 + Settings and says to trust
 the table). 2 new tests; window-model suites 33 green.
+
+## Session 2026-08-27 — W-2c: macOS text scaling — the premise re-baselined, then the debt paid
+
+CW-12's first program (Mac W-11 / M-5). The scheduled premise did not survive
+measurement: "262 deferred sites" was exact at the worklist's authoring commit and stale
+at scheduling — 150 had evaporated in the Settings/History consolidations
+(FRUSSettingsView, the file M-5 leads with, was at ZERO), while SearchSheet had GROWN by
+13, because the convention existed and nothing enforced it. The remaining 112 sites in
+two files, plus 11 in MacDocumentView/MainWindowView, are now converted.
+
+The one non-mechanical decision: FRUSTheme's size→style table is iOS-calibrated
+(.body = 17), and macOS resolves the same styles 1–3 pt smaller (.body = 13,
+.subheadline = 11, .footnote = 10) — so applying the house table to Mac chrome would
+have shrunk the Search window across the board. A macOS column is added to the table
+(11 → .subheadline, 12 → .callout, 13 → .body, ≤10 → .caption2, 14–15 → .title3),
+preserving today's sizes at the default setting while gaining scaling; weights chain
+through .weight(). The status bar's 11 pt, the seven-branch result-count label, the
+citation popover, and the facet legend's monospaced chip (now
+.system(.caption2, design: .monospaced)) all ride it. Two carve-outs stay fixed with
+reasons at the site: the width-budgeted monospaced identity pill and the chevron
+centred in a fixed 34×34 hit circle. MainWindowView's 40 pt empty-state glyph becomes
+the house @ScaledMetric + cappedGlyphSize shape.
+
+MacTextScalingAuditTests is the regrowth guard: zero-literal pinned on the converted
+files, and the two carve-outs pinned PRESENT so the allowlist cannot go vacuous. The
+~37 sites accrued in 7 untracked files since the worklist are recorded in STATUS.md as
+named debt, not silently absorbed. Full iOS suite 4,137 green; Mac builds.
