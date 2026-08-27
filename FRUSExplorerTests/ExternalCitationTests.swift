@@ -437,6 +437,31 @@ struct ExternalCitationTests {
         }
     }
 
+    @Test("A bare Ibid. inherits a central-file class from the preceding footnote (#1014)")
+    func classInheritsViaBareIbid() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: Department of State, Central Files, 611.41/3–553.",
+                footnotes: [
+                    "Department of State, Central Files, 763.72/9732.",
+                    "Ibid.",
+                ]), in: dir)
+            let citations = try await pipeline.externalCitations(volumeId: "frus1952-54v01",
+                                                                 documentId: "d1")
+                .filter { $0.anchor == "centralFileClass" }
+            #expect(citations.count == 2, "the direct reference and the inherited one")
+            #expect(!citations[0].inherited)
+            #expect(citations[0].decimalClass == "763.72")
+            #expect(citations[1].inherited, """
+                The class came from a bare Ibid., not from a class written in the clause — the \
+                same disclosure the lot/library rows carry, through the same shared walker the \
+                artifact's generator runs.
+                """)
+            #expect(citations[1].decimalClass == "763.72")
+            #expect(citations[1].noteOrdinal == 1)
+        }
+    }
+
     @Test("Ibid. state does not leak from one document into the next")
     func ibidStateResetsBetweenDocuments() async throws {
         try await withTempDir { dir in
@@ -775,6 +800,10 @@ struct DecimalChannelArtifactTests {
         #expect(!index.classTargets.isEmpty)
         #expect(!index.classPairs.isEmpty)
         #expect(index.coverage.decimalReferences > 0)
+        #expect(index.coverage.decimalReferencesInherited > 0, """
+            #1014 W-1b: the bare-Ibid. inheritance shipped, measured at 1,169 references. Zero \
+            here means the regenerated artifact was built without the walker.
+            """)
     }
 
     /// The class vocabulary must be keys the REST OF THE LENS can join to.

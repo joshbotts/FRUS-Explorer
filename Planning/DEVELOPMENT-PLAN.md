@@ -9223,3 +9223,39 @@ Verdict: GO, owner to confirm before W-1b (grammar change, artifact regen with
 SAMPLE_OUTPUT read, index v46 → 47). Full verdict:
 `Planning/Ibid-Gap-Measurement-2026-08-27.md`. 16 new walker tests; no artifact changed,
 no index version moved, no CloudKit deploy.
+
+## Session 2026-08-27 — W-1b: the bare-`Ibid.` inheritance ships, and the walker becomes the rule
+
+#1014 step 2, on the owner's go. The design is the verdict document's, executed without
+drift: `FootnoteIbidGapWalker` — W-1's measurement instrument, already corpus-validated —
+is promoted to the harvest's inheritance engine, and the measurement, the artifact
+generator, and the app's `IndexingPipeline` now build their admission rule from ONE
+shared factory (`FootnoteIbidGapWalker.shippedAdmissionVerdict`, the guard chain with
+the schedule test injected per caller), because the chain living in three modules was
+exactly the drift the walker exists to prevent. `ibidStandsAlone` is untouched, as the
+verdict argued: the explicit `Ibid., Central Files, X` form was already harvested.
+
+The runner gains a FATAL parity tripwire: the walker re-derives the direct channel as it
+walks, and a mismatch with the direct pass throws (`classParityBroken`) rather than
+logging — the two were measured EXACTLY equal (28,703 + 18 = 28,721) before the rule
+shipped, so any drift means the inheritance rides a different grammar than the rule it
+claims to extend. The regenerated artifact confirms it end to end: decimalReferences
+28,721 → **29,890, +1,169 matching the W-1 measurement to the reference**; the new
+`decimalReferencesInherited` coverage field discloses the split; the collection axis is
+byte-identical; and the class vocabulary did not grow (classTargetKeys 4,231, classPairs
+7,760 both unchanged) because an inherited class was by definition directly cited
+nearby — only the weights moved. Inherited pairs: +1,023 two-ended, +699 same-class
+(68%, consistent with the channel's 70%). Artifact samples read per the DoD: 47
+inherited references, every one a genuine same-file `Ibid.`.
+
+App side: `external_citations` gains the inherited class rows (`anchor
+"centralFileClass"`, `inherited = 1`, the same disclosure the lot/library rows have
+carried since v38), continuing the note's `citation_index` sequence; no schema change.
+`currentDateIndexVersion` 46 → 47 in the same commit, with the version-history entry —
+the wave's index-content bump is now spent. App artifact mirror gains the coverage
+field; the flows fixture builder carries the new key.
+
+2 new generator tests (inheritance end-to-end incl. pairs; archival referent blocks
+class inheritance at the index grain), 1 new app pipeline test, the bundled-artifact
+test now pins `decimalReferencesInherited > 0`. Full SPM suite 1,227 green; full iOS
+suite 4,128 green; Mac scheme builds. No `@Model` change, no CloudKit deploy.

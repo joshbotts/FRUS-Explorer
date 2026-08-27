@@ -155,6 +155,11 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
         /// shipped rule: the clause carries a class followed by its document serial
         /// (`793.94/9732`) and the key composes under the 1910-1949 schedule.
         public let decimalReferences: Int
+        /// Of those, the ones whose class came from a bare `Ibid.` inheriting an earlier
+        /// footnote's class (#1014 W-1b) rather than from a class written in the clause. Any
+        /// surface quoting the decimal channel's size beside its rule owes this split, the same
+        /// way the collection axis owes ``referencesInherited``.
+        public let decimalReferencesInherited: Int
         /// Decimal references whose citing document also has a class, so a class pair exists.
         public let decimalReferencesWithBothEnds: Int
         /// Decimal pairs whose two ends are the **same class** — the document restating its own
@@ -184,7 +189,8 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
                     referencesInherited: Int, absenceClaimsRefused: Int, lotReferences: Int,
                     libraryReferences: Int, referencesJoined: Int, referencesWithBothEnds: Int,
                     sameUnitReferences: Int, authorityCollectionCount: Int,
-                    decimalReferences: Int, decimalReferencesWithBothEnds: Int,
+                    decimalReferences: Int, decimalReferencesInherited: Int,
+                    decimalReferencesWithBothEnds: Int,
                     decimalSameClassReferences: Int, decimalSubjectNumericRefused: Int,
                     decimalNotComposingRefused: Int,
                     decimalNotInSharedVocabularyRefused: Int) {
@@ -205,6 +211,7 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
             self.sameUnitReferences = sameUnitReferences
             self.authorityCollectionCount = authorityCollectionCount
             self.decimalReferences = decimalReferences
+            self.decimalReferencesInherited = decimalReferencesInherited
             self.decimalReferencesWithBothEnds = decimalReferencesWithBothEnds
             self.decimalSameClassReferences = decimalSameClassReferences
             self.decimalSubjectNumericRefused = decimalSubjectNumericRefused

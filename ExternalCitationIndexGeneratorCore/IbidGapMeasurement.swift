@@ -156,19 +156,10 @@ public enum IbidGapMeasurement {
         guard !files.isEmpty else { throw GeneratorError.noVolumes(volumesDir.path) }
         generatorLog("[IbidGap] \(files.count) shippable volumes of \(allFiles.count) on disk")
 
-        // The SHIPPED admission rule, guard for guard in the runner's own order — see
-        // `ExternalCitationIndexRunner.build`. Returned as the first failing guard's name so a
-        // refused inheritance can say WHY in the report and the samples.
-        let verdict: @Sendable (FootnoteClassCandidate) -> String? = { candidate in
-            if let refusal = candidate.refusal { return refusal }
-            if candidate.isSubjectNumeric { return "subjectNumeric" }
-            if !candidate.evidence.carriesSerial { return "noSerial" }
-            if !schedule.composes(candidate.classKey) { return "notComposing" }
-            if SourceNoteParser.decimalClassKey(candidate.classKey) == nil {
-                return "notInVocabulary"
-            }
-            return nil
-        }
+        // The SHIPPED admission rule — the shared chain, with this caller's schedule injected.
+        // Returned as the first failing guard's name so a refused inheritance can say WHY in
+        // the report and the samples.
+        let verdict = FootnoteIbidGapWalker.shippedAdmissionVerdict { schedule.composes($0) }
 
         var report = Report()
         report.generated = generated

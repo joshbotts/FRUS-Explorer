@@ -367,6 +367,7 @@ struct ArchivalFlowsUnprintedLayerTests {
                 "referencesJoined": referencesJoined, "referencesWithBothEnds": 90,
                 "sameUnitReferences": 30, "authorityCollectionCount": 4423,
                 "decimalReferences": decimalReferences,
+                "decimalReferencesInherited": 0,
                 "decimalReferencesWithBothEnds": decimalReferences,
                 "decimalSameClassReferences": decimalSameClassReferences,
                 "decimalSubjectNumericRefused": 0,

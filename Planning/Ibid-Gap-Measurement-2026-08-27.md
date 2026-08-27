@@ -1,6 +1,6 @@
 # The bare-`Ibid.` gap, measured — #1014 step 1 (W-1)
 
-**Status:** measurement COMPLETE, 2026-08-27. Instrument: `FootnoteIbidGapWalker`
+**Status:** measurement COMPLETE and the go EXECUTED — W-1b shipped the same day (owner-confirmed): the walker is now the harvest's inheritance engine in both channels, the artifact carries 29,890 decimal references (+1,169, matching this measurement to the reference), and `currentDateIndexVersion` is 47. Measurement record follows as written. Instrument: `FootnoteIbidGapWalker`
 (`SourceNoteKit/FootnoteCitationGrammar.swift`) driven by `MEASURE_IBID_GAP=1
 swift run -c release ExternalCitationIndexGenerator`. Artifacts:
 `Planning/ibid-gap-measurement.json` (the report) and

@@ -576,6 +576,72 @@ struct ExternalCitationIndexRunnerTests {
         #expect(throws: ExternalCitationError.self) { _ = try build(files) }
     }
 
+    @Test("A bare Ibid. inherits the preceding footnote's class, disclosed in coverage (#1014)")
+    func bareIbidInheritsClass() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-ibid-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let files = [
+            // The joinable lot volume the brokenJoin guard requires — the corpus always has one.
+            try volume("frus1952-54v01", documents: [
+                (source: "Source: Department of State, Conference Files: Lot 60 D 627, CF 200.",
+                 footnotes: ["A copy is in Department of State, S/S – NSC Files: Lot 63 D 351."]),
+            ], in: root),
+            // The #1014 shape: a class with its serial, then a bare Ibid. The citing document's
+            // own class (611.41) gives both references a pair.
+            try volume("frus1955-57v02", documents: [
+                (source: "Source: Department of State, Central Files, 611.41/3–553.",
+                 footnotes: [
+                    "Department of State, Central Files, 763.72/9732.",
+                    "Ibid.",
+                 ]),
+            ], in: root),
+        ]
+        let result = try build(files)
+        let coverage = result.index.coverage
+        #expect(coverage.decimalReferences == 2, "one direct, one inherited")
+        #expect(coverage.decimalReferencesInherited == 1, """
+            The inherited half must be disclosed — any surface quoting the channel's size owes \
+            the split, the way the collection axis owes referencesInherited.
+            """)
+        // Both land on the same key, so its per-volume count is 2.
+        let keyIndex = try #require(result.index.classTargetKeys.firstIndex(of: "763.72"))
+        let row = try #require(result.index.classTargets.first { $0.key == keyIndex })
+        #expect(row.counts.reduce(0, +) == 2)
+        // And both pair with the citing document's own class.
+        let sourceIndex = try #require(result.index.classSourceKeys.firstIndex(of: "611.41"))
+        let pair = try #require(result.index.classPairs.first {
+            $0.source == sourceIndex && $0.target == keyIndex
+        })
+        #expect(pair.count == 2)
+    }
+
+    @Test("An Ibid. whose referent is a lot inherits the LOT, never a class from further back")
+    func archivalReferentBlocksClassInheritance() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-arch-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let files = [
+            // The lot source note keeps the brokenJoin guard satisfied (a joined PAIR needs the
+            // citing document's own unit); the class channel's assertions do not need one.
+            try volume("frus1952-54v01", documents: [
+                (source: "Source: Department of State, Conference Files: Lot 60 D 627, CF 200.",
+                 footnotes: [
+                    "Department of State, Central Files, 763.72/9732.",
+                    "A copy is in Department of State, S/S – NSC Files: Lot 63 D 351.",
+                    "Ibid.",
+                 ]),
+            ], in: root),
+        ]
+        let result = try build(files)
+        #expect(result.index.coverage.decimalReferencesInherited == 0, """
+            The Ibid.'s referent is the lot — the source last cited — and the lot channel \
+            already inherits it. A class row here would attribute one footnote to two archives.
+            """)
+        #expect(result.index.coverage.referencesInherited == 1, "the lot inheritance still lands")
+        #expect(result.index.coverage.decimalReferences == 1, "the direct class reference alone")
+    }
+
     @Test("Two builds of the same corpus are byte-identical")
     func isDeterministic() throws {
         let files = try fixtureCorpus()

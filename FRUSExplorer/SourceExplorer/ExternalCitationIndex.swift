@@ -104,6 +104,10 @@ struct ExternalCitationIndex: Decodable, Sendable {
         /// carries a class followed by its document serial and the key composes under the
         /// 1910-1949 schedule. Subject-numeric designators are out of scope by decision.
         let decimalReferences: Int
+        /// Of those, the ones whose class came from a bare `Ibid.` inheriting an earlier
+        /// footnote's class (#1014 W-1b). Any surface quoting the channel's size owes this
+        /// split, the way the collection axis owes ``referencesInherited``.
+        let decimalReferencesInherited: Int
         /// Decimal references whose citing document also has a class, so a class pair exists.
         let decimalReferencesWithBothEnds: Int
         /// Decimal pairs whose two ends are the **same class** — the document restating its own
