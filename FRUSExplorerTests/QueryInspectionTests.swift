@@ -29,8 +29,10 @@ struct QueryInspectionTests {
 
     // MARK: - Fixture
 
-    /// d1 carries *containment* and *europe*; d2 carries *contain*; d3 carries *europe*
-    /// alone. Nothing anywhere carries *formosa* — the empty conjunct.
+    /// d1 carries *containment* and *europe*; d2 carries *contain* twice, so the
+    /// `contain` stem has more occurrences (3) than documents (2) and the dispersion
+    /// ratio is a non-trivial 1.5; d3 carries *europe* alone. Nothing anywhere carries
+    /// *formosa* — the empty conjunct.
     private func makeVolumeXML() -> String {
         """
         <?xml version="1.0"?>
@@ -41,7 +43,7 @@ struct QueryInspectionTests {
         </div>
         <div type="document" xml:id="d2">
           <head>2. Telegram</head>
-          <p>We must contain the threat.</p>
+          <p>We must contain the threat, and contain it quickly.</p>
         </div>
         <div type="document" xml:id="d3">
           <head>3. Report</head>
@@ -234,6 +236,40 @@ struct QueryInspectionTests {
         // d1 (containment) and d2 (contain) both carry the stem.
         #expect(first.corpusDocumentFrequency == 2)
         #expect(first.scopedCount == nil, "the cheap pass must not run a search")
+    }
+
+    @Test("Occurrences ride the same vocabulary row, and dispersion is their quotient")
+    func dispersionIsComputedFromTheVocabularyRow() async throws {
+        // W-16: this ratio is the app's ONE definition of the dispersion statistic —
+        // `FTS5Vocabulary.occurrencesPerDocument` used to define it a second time with
+        // zero callers and was deleted. These pins are what keep the surviving
+        // definition honest.
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let inspection = await inspector.inspect(
+            parameters: SearchParameters(keywords: "containment"), indexedVolumeCount: 1)
+        let first = try #require(inspection.operands.first)
+        // The `contain` stem: once in d1 (containment), twice in d2 (contain, contain).
+        #expect(first.corpusOccurrences == 3)
+        #expect(first.corpusDocumentFrequency == 2)
+        #expect(first.corpusOccurrencesPerDocument == 1.5)
+    }
+
+    @Test("Dispersion is nil, not a division error, when either half is missing")
+    func dispersionGuardsItsDenominator() throws {
+        let operand = try #require(
+            FTS5InlineQueryParser.parseDetailed("containment").operands.first)
+        // No vocabulary row reached (a phrase, an unindexed store): both halves nil.
+        let unresolved = InspectedOperand(
+            operand: operand, stem: nil, scopedCount: nil,
+            corpusDocumentFrequency: nil, corpusOccurrences: nil)
+        #expect(unresolved.corpusOccurrencesPerDocument == nil)
+        // A zero document frequency must never become a division by zero.
+        let unseen = InspectedOperand(
+            operand: operand, stem: "contain", scopedCount: nil,
+            corpusDocumentFrequency: 0, corpusOccurrences: 0)
+        #expect(unseen.corpusOccurrencesPerDocument == nil)
     }
 
     @Test("Scoped counts are exact and agree with the search itself")

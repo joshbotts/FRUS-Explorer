@@ -9487,3 +9487,23 @@ wrong link is worse than none). Display-time over the stored raw note; no index 
 checker-shaped, freshness against the pinned stamp not the wall clock, TS/EAS shared
 destination, end-to-end grammar→table join). Manual's provenance table row split so
 "previously published" states the new behavior.
+
+## Session 2026-08-27G — W-16: one definition of dispersion survives
+
+The delete arm, chosen on a semantic argument: #579 already surfaced the statistic
+(`InspectedOperand.corpusOccurrencesPerDocument`, Query Inspector, 1.5 display
+threshold), and rewiring that pinned, shipped path through the dead `CorpusTermProfile`
+struct would have traded a two-line division for a behavior change — the struct answers
+an unseen term with zero counts where the live path answers nil. So `CorpusTermProfile`,
+`termProfile(for:)` and `termProfiles(for:)` (the last with zero callers of any kind)
+are gone; `indexStem`, `vocabularyEntry`, `tokenize` and `vocabularySize` stay, since
+the live path composes the first two.
+
+The deletion surfaced the real gap: the shipped ratio had NO app-side pins — the only
+dispersion tests anywhere rode the dead struct. Every truth those tests pinned is
+re-pinned over the live primitives in FTS5VocabularyTests (stem-names-the-real-search,
+normalization, occurrences>documents, unseen-term, the two-stemmer alliance
+measurement), and QueryInspectionTests gains the ratio's own pins — the quotient over a
+fixture where `contain` runs 3 occurrences across 2 documents, and both nil guards.
+OpenAPI prose repointed at the live definition; the archived Q&CA plan's stale
+"Dispersion | Not shipped" row carries a dated correction.

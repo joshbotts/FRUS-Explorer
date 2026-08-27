@@ -9,73 +9,15 @@
 import Foundation
 import SQLite3
 
-// MARK: - CorpusTermProfile
-
-/// What the index actually knows about one word the researcher typed.
-///
-/// ## The trap this exists to close
-/// Both source reports name stemming as their most dangerous failure mode, and the
-/// reason is that it is invisible. A search for *containment* silently becomes a search
-/// for `contain`, which also matches *contains*, *containing*, *contained* and
-/// *container* — so a five-figure hit count looks like evidence of a preoccupation when
-/// it is mostly ordinary English. Nothing in the app has ever said so.
-///
-/// ## Why both counts are here
-/// `documentFrequency` and `occurrences` are different numbers and the gap between them
-/// is itself a finding: 200 occurrences across 150 documents is a pattern; 200 across 3
-/// is one memo with a tic. The app's analytics count documents — correctly — but have
-/// never had anything to contrast that against.
-///
-/// ## Scope
-/// Both counts are **corpus-wide over the whole local index**, across every indexed
-/// column, and are *not* narrowed by the user's current filters. Any surface that shows
-/// them must say so; "12,431 documents" without its denominator is exactly the kind of
-/// unbaselined number this workstream exists to stop producing.
-///
-/// Version history:
-///   1.0 — Q-3a: initial implementation
-public struct CorpusTermProfile: Sendable, Equatable {
-
-    /// The word as the researcher typed it, lowercased.
-    public let surfaceForm: String
-
-    /// The term SQLite's own tokenizer produced — the string actually stored in the
-    /// inverted index, and therefore the thing the query really searched for.
-    public let stem: String
-
-    /// How many indexed documents contain this stem at least once, corpus-wide.
-    public let documentFrequency: Int
-
-    /// How many times this stem occurs in total, corpus-wide. Always `>= documentFrequency`.
-    public let occurrences: Int
-
-    /// Creates a profile.
-    public init(surfaceForm: String, stem: String, documentFrequency: Int, occurrences: Int) {
-        self.surfaceForm = surfaceForm
-        self.stem = stem
-        self.documentFrequency = documentFrequency
-        self.occurrences = occurrences
-    }
-
-    /// Whether the tokenizer changed the word — i.e. whether the search that ran was
-    /// broader than the word the researcher typed.
-    ///
-    /// This is the condition worth warning about. `europe → europ` is technically a
-    /// change but matches nothing extra in practice; `containment → contain` is the one
-    /// that misleads. Distinguishing those needs the surface-form map deferred to D-1,
-    /// so callers should treat this as "worth mentioning", not "definitely a problem".
-    public var isStemmed: Bool { stem != surfaceForm }
-
-    /// Average occurrences per matching document — the "one memo with a tic" detector.
-    ///
-    /// Returns `nil` rather than dividing by zero for a term the index has never seen.
-    public var occurrencesPerDocument: Double? {
-        guard documentFrequency > 0 else { return nil }
-        return Double(occurrences) / Double(documentFrequency)
-    }
-}
-
 // MARK: - FTS5Store + Vocabulary
+
+// W-16 (2026-08-27): the `CorpusTermProfile` struct and its `termProfile(for:)` /
+// `termProfiles(for:)` composition used to live here, carrying `occurrencesPerDocument`
+// — the dispersion statistic — with zero app callers. The statistic shipped by a
+// different route (#579): `InspectedOperand.corpusOccurrencesPerDocument` computes the
+// same ratio from this file's `vocabularyEntry(stem:)` counts and the Query Inspector
+// renders it, so the type here was a second definition waiting to drift. The primitives
+// the live path composes — `indexStem(of:)`, `vocabularyEntry(stem:)` — remain below.
 
 extension FTS5Store {
 
@@ -131,32 +73,6 @@ extension FTS5Store {
         sqlite3_bind_text(stmt, 1, stem, -1, FTS5Store.transientDestructor)
         guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
         return (Int(sqlite3_column_int64(stmt, 0)), Int(sqlite3_column_int64(stmt, 1)))
-    }
-
-    /// The full profile for one word the researcher typed: what it became, and what that
-    /// costs in breadth.
-    ///
-    /// Returns `nil` when the word is not a single token. Returns a profile with **zero**
-    /// counts — not `nil` — when the word tokenizes cleanly but the index has never seen
-    /// it, because "your term appears in 0 documents" is a genuine, useful answer and is
-    /// not the same as "this question does not apply".
-    public func termProfile(for surfaceForm: String) throws -> CorpusTermProfile? {
-        let normalized = surfaceForm
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        guard let stem = try indexStem(of: normalized) else { return nil }
-        let entry = try vocabularyEntry(stem: stem)
-        return CorpusTermProfile(
-            surfaceForm: normalized,
-            stem: stem,
-            documentFrequency: entry?.documentFrequency ?? 0,
-            occurrences: entry?.occurrences ?? 0
-        )
-    }
-
-    /// Profiles several words in one call, dropping those that are not single tokens.
-    public func termProfiles(for surfaceForms: [String]) throws -> [CorpusTermProfile] {
-        try surfaceForms.compactMap { try termProfile(for: $0) }
     }
 
     /// The number of distinct terms in the corpus vocabulary.

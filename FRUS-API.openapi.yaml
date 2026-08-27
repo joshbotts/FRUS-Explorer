@@ -1199,7 +1199,7 @@ paths:
         **Current implementation:** `FTS5Connection` creates a persistent
         `fts5vocab('…','row')` companion, `frus_documents_vocab`, at store open
         (Q-3). The shipped API over it is point lookup only —
-        `FTS5Vocabulary.vocabularyEntry(stem:)` and `termProfile(for:)`. There is
+        `FTS5Vocabulary.vocabularyEntry(stem:)` behind `indexStem(of:)`. There is
         no ranked query and no prefix scan, because an `fts5vocab` row table has
         no index behind `doc` or `cnt`: ranking 274,927 stems is a full scan that
         does not warm up. `WHERE term >= ? AND term < ?` is the only cheap local
@@ -1599,8 +1599,9 @@ paths:
           description: |
             `documents` counts matching documents; `occurrences` counts instances;
             `dispersion` reports both plus occurrences-per-document, the statistic
-            `FTS5Vocabulary.occurrencesPerDocument` defines locally and no app
-            surface currently calls.
+            `InspectedOperand.corpusOccurrencesPerDocument` defines locally and the
+            Query Inspector renders above its 1.5 display threshold (#579; the
+            uncalled `FTS5Vocabulary` copy of the definition was deleted in W-16).
         - name: volumeIds
           in: query
           required: false
