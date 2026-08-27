@@ -147,7 +147,6 @@ struct ResearchRailView: View {
     @State private var effectiveIsEditorialNote: Bool?
     @State private var hasClassificationOverride = false
     @State private var parsedIsEditorialNote: Bool?
-    @State private var showReclassifyConfirm = false
     #if os(macOS)
     @State private var showCitePopover = false
     @State private var showSharePopover = false
@@ -214,22 +213,9 @@ struct ResearchRailView: View {
                 tagsAccordion
                 Divider()
                 collectionsAccordion
-                Divider()
-                classificationAccordion
             }
         }
         .task(id: entry.id) { await loadClassification() }
-        .confirmationDialog(
-            reclassifyTitle,
-            isPresented: $showReclassifyConfirm, titleVisibility: .visible
-        ) {
-            Button(reclassifyTitle) { Task { await applyReclassification() } }
-            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
-        } message: {
-            // The anomaly warning #279 requires: what follows the override, what cannot.
-            Text(String(localized: "classification.override.warning",
-                        defaultValue: "The document's body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS's own classification at any time from this panel or from Settings ▸ Search."))
-        }
         .sheet(isPresented: $showTagPicker) {
             UserTagPickerSheet(
                 entry: entry,
@@ -264,7 +250,17 @@ struct ResearchRailView: View {
             // and inserts the WKWebView, it drove a view-graph update loop — 90s of CPU in 101s
             // and a `scene-update` watchdog kill at 10s. This popover is user-initiated, so it
             // cannot present during that reflow.
-            FeatureInfoButton(heading: Self.toolsInfoHeading, items: RailTileCopy.infoItems)
+            // #279 follow-up (owner decision): the classification override control lives
+            // INSIDE this info popover rather than as a rail section — metadata-grade, one
+            // step removed from the everyday research surfaces.
+            FeatureInfoButton(heading: Self.toolsInfoHeading, items: RailTileCopy.infoItems) {
+                ClassificationInfoSection(
+                    effectiveIsEditorialNote: effectiveIsEditorialNote,
+                    hasOverride: hasClassificationOverride,
+                    parsedIsEditorialNote: parsedIsEditorialNote,
+                    reclassifyTitle: reclassifyTitle,
+                    onConfirm: { await applyReclassification() })
+            }
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
             #if os(iOS)
@@ -708,59 +704,6 @@ struct ResearchRailView: View {
 
     // MARK: - Classification (#279 / W-4)
 
-    /// Always-visible (not expandable — two lines): the effective classification, FRUS's own
-    /// tagging when overridden, and the reversible reclassify control. Absent entirely until
-    /// the flag is known, and absent when the document is not indexed (an override could not
-    /// be applied anywhere, so offering one would be a dead control).
-    @ViewBuilder private var classificationAccordion: some View {
-        if let effective = effectiveIsEditorialNote {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Text(String(localized: "panel.classification.title",
-                                defaultValue: "Classification"))
-                        .font(.system(size: 11, weight: .semibold))
-                        .textCase(.uppercase)
-                        .kerning(0.6)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                Text(effective
-                     ? String(localized: "panel.classification.note",
-                              defaultValue: "Editorial note")
-                     : String(localized: "panel.classification.document",
-                              defaultValue: "Document"))
-                    .font(.callout)
-                if hasClassificationOverride, let parsed = parsedIsEditorialNote {
-                    Text(String(format: String(
-                        localized: "panel.classification.overridden %@",
-                        defaultValue: "FRUS tags this as %@ — reclassified by you."),
-                        parsed
-                            ? String(localized: "panel.classification.note.inline",
-                                     defaultValue: "an editorial note")
-                            : String(localized: "panel.classification.document.inline",
-                                     defaultValue: "a document")))
-                        .font(FRUSTheme.captionSmallFont)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Button {
-                    showReclassifyConfirm = true
-                } label: {
-                    Label(reclassifyTitle,
-                          systemImage: hasClassificationOverride
-                              ? "arrow.uturn.backward" : "pencil.and.list.clipboard")
-                        .font(.callout)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, hInset)
-            .padding(.vertical, 10)
-        }
-    }
-
     /// The control's title — the flip, or the restore when an override exists.
     private var reclassifyTitle: String {
         if hasClassificationOverride {
@@ -1082,5 +1025,100 @@ enum RailTileCopy {
     static var infoItems: [FeatureInfoItem] {
         [cite, wordCloud, sources, graph, related, share]
             .map { FeatureInfoItem(title: $0.title, detail: $0.detail) }
+    }
+}
+
+// MARK: - ClassificationInfoSection
+
+/// The classification override control (#279 / W-4), rendered as the FOOTER of the rail's
+/// "Document tools" info popover — the owner's placement decision: the control is
+/// metadata-grade, one step removed from the everyday research surfaces, not a standing
+/// rail section.
+///
+/// Its confirmation dialog attaches HERE, inside the popover content, rather than at the
+/// rail root: dismissing the popover and then presenting from the rail is a race (the
+/// dialog can be dropped while the popover tears down), and staying open means the section
+/// re-renders with the new classification the moment the apply completes — visible
+/// feedback for free. On iPhone the popover adapts to a sheet and the dialog presents over
+/// it; both work.
+///
+/// A value-props view: the rail owns the state (`loadClassification`) and the apply
+/// (`applyReclassification`); this renders and confirms. Absent entirely while the flag is
+/// unknown or the document unindexed — an override could not be applied anywhere, so
+/// offering one would be a dead control.
+///
+/// Version history:
+///   1.0 — #279 follow-up: moved here from the rail's retired Classification section
+private struct ClassificationInfoSection: View {
+
+    /// The indexed value with overrides applied; `nil` = unknown/unindexed (render nothing).
+    let effectiveIsEditorialNote: Bool?
+    /// Whether the user's override exists (drives the restore shape + the disclosure line).
+    let hasOverride: Bool
+    /// FRUS's own (TEI) value, for the "FRUS tags this as…" disclosure.
+    let parsedIsEditorialNote: Bool?
+    /// The action's title — the flip, or the restore when an override exists.
+    let reclassifyTitle: String
+    /// Applies the reclassification (the rail's `applyReclassification`).
+    let onConfirm: () async -> Void
+
+    @State private var showConfirm = false
+
+    var body: some View {
+        if let effective = effectiveIsEditorialNote {
+            Divider()
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "panel.classification.title",
+                            defaultValue: "Classification"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(effective
+                     ? String(localized: "panel.classification.note",
+                              defaultValue: "Editorial note")
+                     : String(localized: "panel.classification.document",
+                              defaultValue: "Document"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if hasOverride, let parsed = parsedIsEditorialNote {
+                    Text(String(format: String(
+                        localized: "panel.classification.overridden %@",
+                        defaultValue: "FRUS tags this as %@ — reclassified by you."),
+                        parsed
+                            ? String(localized: "panel.classification.note.inline",
+                                     defaultValue: "an editorial note")
+                            : String(localized: "panel.classification.document.inline",
+                                     defaultValue: "a document")))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button {
+                    showConfirm = true
+                } label: {
+                    Label(reclassifyTitle,
+                          systemImage: hasOverride
+                              ? "arrow.uturn.backward" : "pencil.and.list.clipboard")
+                        .font(.caption)
+                        .foregroundStyle(Color.accentColor)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            }
+            .confirmationDialog(
+                reclassifyTitle,
+                isPresented: $showConfirm, titleVisibility: .visible
+            ) {
+                Button(reclassifyTitle) { Task { await onConfirm() } }
+                Button(String(localized: "common.cancel", defaultValue: "Cancel"),
+                       role: .cancel) {}
+            } message: {
+                // The anomaly warning #279 requires: what follows the override, what cannot.
+                // `.v2`: the predecessor said "from this panel" when the control was a rail
+                // section — minted anew per the standing no-catalog rule.
+                Text(String(localized: "classification.override.warning.v2",
+                            defaultValue: "The document's body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS's own classification at any time from here or from Settings ▸ Search."))
+            }
+        }
     }
 }
