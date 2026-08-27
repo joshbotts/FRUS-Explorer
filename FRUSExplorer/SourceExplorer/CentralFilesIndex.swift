@@ -225,6 +225,23 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
     case notesFrom = "notesFromForeignMissions"
     case notesTo = "notesToForeignMissions"
     case consularDespatches = "consularDespatches"
+    // W-8: the three chronological-run consular-tail series — resolved by DATE ALONE (their
+    // volumes carry no geography; see `isChronologicalRun`).
+    case consularInstructions = "consularInstructions"
+    case notesToForeignConsuls = "notesToForeignConsuls"
+    case notesFromForeignConsuls = "notesFromForeignConsuls"
+
+    /// `true` for a series NARA arranges by date alone (W-8). Its rolls carry NO geography,
+    /// so a resolver must use `CountrySeriesIndex.rolls(containingDate:)` — the geo-keyed
+    /// path's `geoKeys.contains` guard would refuse every volume.
+    var isChronologicalRun: Bool {
+        switch self {
+        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls:
+            return true
+        case .despatches, .instructions, .notesFrom, .notesTo, .consularDespatches:
+            return false
+        }
+    }
 
     /// Human-readable series name.
     var displayName: String {
@@ -239,6 +256,12 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
                                           defaultValue: "Notes to Foreign Missions")
         case .consularDespatches: return String(localized: "centralFiles.series.consular",
                                           defaultValue: "Consular Despatches")
+        case .consularInstructions: return String(localized: "centralFiles.series.consularInstructions",
+                                          defaultValue: "Consular Instructions")
+        case .notesToForeignConsuls: return String(localized: "centralFiles.series.notesToConsuls",
+                                          defaultValue: "Notes to Foreign Consuls")
+        case .notesFromForeignConsuls: return String(localized: "centralFiles.series.notesFromConsuls",
+                                          defaultValue: "Notes from Foreign Consuls")
         }
     }
 }
@@ -260,6 +283,13 @@ struct CountrySeriesIndex: Codable, Sendable, Equatable {
     /// `dateISO` is nil), ascending by start date.
     func rolls(geoKey: String, dateISO: String?) -> [CountryRoll] {
         rolls.filter { $0.matches(geoKey: geoKey, dateISO: dateISO) }
+    }
+
+    /// Rolls containing `dateISO`, matched by DATE ALONE — the chronological-run path
+    /// (W-8). A date is required: listing a whole series unfiltered is noise, not a
+    /// resolution.
+    func rolls(containingDate dateISO: String) -> [CountryRoll] {
+        rolls.filter { $0.matchesDate(dateISO) }
     }
 }
 
@@ -297,6 +327,19 @@ struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
         // title date and, unguarded, is unsatisfiable (no date is ≥1870 AND ≤1861), so the roll
         // vanishes from every date query. We can't tell which bound is wrong, so fall back to a
         // geography-only match rather than hide the roll.
+        if let start, let end, start > end { return true }
+        if let start, dateISO < start { return false }
+        if let end, dateISO > end { return false }
+        return true
+    }
+
+    /// Date-only membership for a CHRONOLOGICAL-RUN series (W-8): those volumes carry no
+    /// geography, so `matches(geoKey:dateISO:)` would refuse every one. Applies the same
+    /// plausibility and inverted-range guards as the geo-keyed path — one rulebook.
+    func matchesDate(_ dateISO: String) -> Bool {
+        let start = CountryRoll.plausibleDate(startISO)
+        let end = CountryRoll.plausibleDate(endISO)
+        guard start != nil || end != nil else { return false }
         if let start, let end, start > end { return true }
         if let start, dateISO < start { return false }
         if let end, dateISO > end { return false }

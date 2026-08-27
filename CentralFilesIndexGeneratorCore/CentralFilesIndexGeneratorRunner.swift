@@ -51,6 +51,11 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   CACHE_DIR   — raw-page cache directory (default `.cache/central-files`)
 ///   PAGE_SIZE   — rows per request (default 25; try 100 on the first survey run)
 ///   REFRESH     — `1`/`true` to ignore the page cache and re-fetch
+///   CONSULAR_TAIL_FROM_HARVEST — `1`/`true`: offline mode (NO API key, W-8) — build the three
+///     remaining Phase-3 consular-tail series (Consular Instructions 604019, Notes to Foreign
+///     Consuls 1076611, Notes from Foreign Consuls 1076629) from the record-group harvest's
+///     rg_59.json (HARVEST_DIR), verified against NARA's own per-series fileUnitCount, and
+///     rewrite OUTPUT_PATH in place. See ConsularTailFromHarvest.
 ///   SUPPLEMENT_FROM_HARVEST — `1`/`true`: offline mode (NO API key) — resolve the lot files the
 ///                 corpus cites and this index cannot answer, against the 4.5 GB record-group
 ///                 harvest at `HARVEST_DIR`, then exit. Closes #372 item 1b. Env also:
@@ -73,6 +78,8 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   1.1 — #321: PRUNE_FLAGGED_LOTS offline mode
 ///   1.2 — Session 2026-08-19: #372 item 1 — FOLD_VOLUME_SOURCES offline mode
 ///   1.3 — Session 2026-08-19: #372 item 1b — SUPPLEMENT_FROM_HARVEST offline mode
+///   1.4 — W-8: CONSULAR_TAIL_FROM_HARVEST offline mode (the three chronological-run
+///         consular-tail series, keyless)
 public struct CentralFilesIndexGeneratorRunner {
 
     /// NARA series NAID for the 1906–1910 Numerical File.
@@ -889,6 +896,18 @@ public struct CentralFilesIndexGeneratorRunner {
                 outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
                 volumeSourcesPath: env["VOLUME_SOURCES_INDEX"]
                     ?? "FRUSExplorer/Resources/volume-sources-index.json",
+                generated: generatorDateStamp(override: env["GENERATED_DATE"]))
+            return
+        }
+
+        // W-8: the consular-tail series, built OFFLINE from the record-group harvest —
+        // keyless, because the bulk shard is measured complete at file-unit level for the
+        // three chronological-run series (see ConsularTailFromHarvest's header).
+        if ["1", "true", "yes"].contains((env["CONSULAR_TAIL_FROM_HARVEST"] ?? "").lowercased()) {
+            ConsularTailFromHarvest.run(
+                outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
+                harvestDir: env["HARVEST_DIR"]
+                    ?? "/Users/jbotts/Development/nara-record-group-catalog",
                 generated: generatorDateStamp(override: env["GENERATED_DATE"]))
             return
         }

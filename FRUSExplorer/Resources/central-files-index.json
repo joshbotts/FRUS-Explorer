@@ -74903,9 +74903,249 @@
         }
       ],
       "seriesNaId" : "302031"
+    },
+    {
+      "category" : "consularInstructions",
+      "displayName" : "Consular Instructions",
+      "rolls" : [
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220862827",
+          "endISO" : "1817-02-26",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220862827",
+          "startISO" : "1801-10-12",
+          "title" : "Instructions: October 12, 1801 - February 26, 1817"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220863068",
+          "endISO" : "1828-05-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220863068",
+          "startISO" : "1817-03-12",
+          "title" : "Instructions: March 12, 1817 - May 31, 1828"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220863326",
+          "endISO" : "1832-05-09",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220863326",
+          "startISO" : "1828-06-12",
+          "title" : "Instructions: June 12, 1828 - May 9, 1832"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220863558",
+          "endISO" : "1833-06-24",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220863558",
+          "startISO" : "1832-05-14",
+          "title" : "Instructions: May 14, 1832 - June 24, 1833"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220863804",
+          "endISO" : "1834-06-25",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220863804",
+          "startISO" : "1833-06-02",
+          "title" : "Instructions: June 2, 1833 - June 25, 1834"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220863994",
+          "endISO" : "1834-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220863994",
+          "startISO" : "1834-07-02",
+          "title" : "Instructions: July 2, 1834 - December 31, 1834"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/220862758",
+          "endISO" : "1801-09-01",
+          "geoKeys" : [
+
+          ],
+          "naId" : "220862758",
+          "title" : "Volume 1: \"Despatches to Consuls,\" Pages 1-109: [through Sept. 1801]"
+        }
+      ],
+      "seriesNaId" : "604019"
+    },
+    {
+      "category" : "notesToForeignConsuls",
+      "displayName" : "Notes to Foreign Consuls",
+      "rolls" : [
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40038220",
+          "endISO" : "1865-01-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "40038220",
+          "startISO" : "1853-06-17",
+          "title" : "6\/17\/1853 - 1\/31\/1865"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40038222",
+          "endISO" : "1868-09-29",
+          "geoKeys" : [
+
+          ],
+          "naId" : "40038222",
+          "startISO" : "1865-01-31",
+          "title" : "1\/31\/1865 - 9\/29\/1868"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40038226",
+          "endISO" : "1889-11-29",
+          "geoKeys" : [
+
+          ],
+          "naId" : "40038226",
+          "startISO" : "1868-04-14",
+          "title" : "4\/14\/1868 - 11\/29\/1889"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40038227",
+          "endISO" : "1906-02-21",
+          "geoKeys" : [
+
+          ],
+          "naId" : "40038227",
+          "startISO" : "1881-12-21",
+          "title" : "12\/21\/1881 - 2\/21\/1906"
+        }
+      ],
+      "seriesNaId" : "1076611"
+    },
+    {
+      "category" : "notesFromForeignConsuls",
+      "displayName" : "Notes from Foreign Consuls",
+      "rolls" : [
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216888766",
+          "endISO" : "1826-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216888766",
+          "startISO" : "1789-12-18",
+          "title" : "December 18, 1789 - December 31, 1826"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216889331",
+          "endISO" : "1856-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216889331",
+          "startISO" : "1827-01-01",
+          "title" : "January 1, 1827 - December 31, 1856"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216890434",
+          "endISO" : "1863-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216890434",
+          "startISO" : "1857-01-05",
+          "title" : "January 5, 1857 - December 31, 1863"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216891526",
+          "endISO" : "1864-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216891526",
+          "startISO" : "1864-01-02",
+          "title" : "January 2, 1864 - December 31, 1864"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216892280",
+          "endISO" : "1866-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216892280",
+          "startISO" : "1865-01-02",
+          "title" : "January 2, 1865 - December 31, 1866"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216893659",
+          "endISO" : "1869-06-04",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216893659",
+          "startISO" : "1867-01-03",
+          "title" : "January 3, 1867 - June 4, 1869"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216894648",
+          "endISO" : "1876-07-18",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216894648",
+          "startISO" : "1869-06-09",
+          "title" : "June 9, 1869 - July 18, 1876"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216895688",
+          "endISO" : "1881-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216895688",
+          "startISO" : "1876-07-22",
+          "title" : "July 22, 1876 - December 31, 1881"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216896365",
+          "endISO" : "1891-11-20",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216896365",
+          "startISO" : "1882-01-04",
+          "title" : "January 4, 1882 - November 20, 1891"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216897163",
+          "endISO" : "1900-12-31",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216897163",
+          "startISO" : "1892-01-02",
+          "title" : "January 2, 1892 - December 31, 1900"
+        },
+        {
+          "catalogURL" : "https:\/\/catalog.archives.gov\/id\/216897888",
+          "endISO" : "1906-06-27",
+          "geoKeys" : [
+
+          ],
+          "naId" : "216897888",
+          "startISO" : "1901-01-01",
+          "title" : "January 1, 1901 - June 27, 1906"
+        }
+      ],
+      "seriesNaId" : "1076629"
     }
   ],
-  "generated" : "2026-08-19",
+  "generated" : "2026-08-27",
   "lotFiles" : [
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124670",

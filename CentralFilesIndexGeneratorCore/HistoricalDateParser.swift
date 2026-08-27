@@ -45,6 +45,7 @@ public struct DateRangeISO: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 2 — diplomatic-series date ranges
+///   1.1 — W-8: numeric `M/D/YYYY` form (the Notes to/from Foreign Consuls volume titles)
 public enum HistoricalDateParser {
 
     /// Plausible year band for pre-1910 Central Files titles. Years outside flag a typo.
@@ -122,6 +123,11 @@ public enum HistoricalDateParser {
     }
 
     // Tried in priority order; each may leave fields nil.
+    /// Numeric `M/D/YYYY` — the form the Notes to/from Foreign Consuls volumes use
+    /// (`6/17/1853 - 1/31/1865`, W-8). Tried FIRST: the alpha patterns cannot match it, and
+    /// falling through to `yearOnly` used to flatten `1/31/1865` to `1865-01-01`, which
+    /// silently excluded any date after January 1 from a range ending mid-year.
+    private static let numericMDY   = try? NSRegularExpression(pattern: #"\b(\d{1,2})/(\d{1,2})/(\d{4})\b"#)
     private static let monthDayYear = try? NSRegularExpression(pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\s*,?\s*(\d{4})"#)
     private static let monthYear    = try? NSRegularExpression(pattern: #"([A-Za-z]+)\.?\s+(\d{4})"#)
     private static let monthDay     = try? NSRegularExpression(pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\b"#)
@@ -132,6 +138,11 @@ public enum HistoricalDateParser {
         let ns = text as NSString
         let full = NSRange(location: 0, length: ns.length)
 
+        if let m = numericMDY?.firstMatch(in: text, range: full),
+           let month = Int(ns.substring(with: m.range(at: 1))), (1...12).contains(month) {
+            return DateComponents(month: month, day: Int(ns.substring(with: m.range(at: 2))),
+                                  year: correctYear(Int(ns.substring(with: m.range(at: 3)))))
+        }
         if let m = monthDayYear?.firstMatch(in: text, range: full),
            let month = monthNumber(ns.substring(with: m.range(at: 1))) {
             return DateComponents(month: month, day: Int(ns.substring(with: m.range(at: 2))),

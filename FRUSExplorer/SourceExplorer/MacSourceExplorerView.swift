@@ -1459,9 +1459,18 @@ struct MacSourceExplorerView: View {
             let classifications = CentralFilesClassifier.classify(
                 header: documentHeader ?? "", dateline: dateline, chapterCountry: title)
             for classification in classifications {
-                guard let geoKey = classification.geoKeys.first,
-                      let series = index.series(category: classification.category) else { continue }
-                let rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
+                guard let series = index.series(category: classification.category) else { continue }
+                let rolls: [CountryRoll]
+                if classification.category.isChronologicalRun {
+                    // W-8: a chronological run carries no geography — matched by date
+                    // alone, and only WITH a date (an undated query would list the whole
+                    // series, which is noise, not a resolution).
+                    guard let dateISO else { continue }
+                    rolls = series.rolls(containingDate: dateISO)
+                } else {
+                    guard let geoKey = classification.geoKeys.first else { continue }
+                    rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
+                }
                 if !rolls.isEmpty {
                     resolutions.append(CountrySeriesResolution(classification: classification, rolls: rolls))
                 }

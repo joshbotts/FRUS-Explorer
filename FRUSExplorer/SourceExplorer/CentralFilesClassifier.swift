@@ -56,16 +56,34 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 2
+///   1.1 — W-8: the three chronological-run consular-tail series. A foreign consulate in
+///         the U.S. now classifies as a Note FROM a foreign consul (it used to fall into
+///         the U.S.-consulate branch and dead-end on a U.S. city no despatch post serves);
+///         Department outbound whose HEADER names a consul adds the Consular
+///         Instructions / Notes-to-Foreign-Consuls pair — the same shape of honest
+///         ambiguity as the existing Instructions / Notes-to pair, and resolved by date
+///         alone (the three tail series carry no geography).
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
-    /// consular despatch — Phase 3 — or a document with no resolvable country).
+    /// document with no resolvable country and no consular cue).
     static func classify(header: String, dateline: String, chapterCountry: String?) -> [CentralFilesClassification] {
         let dl = dateline.lowercased()
 
-        // Consular despatch (Phase 3) — handled first, because its geography is the post
-        // CITY taken from the dateline ("Consulate-General…, Havana") rather than the FRUS
-        // chapter country. No city → can't resolve.
+        // A FOREIGN consulate in the United States → a note from a foreign consul to the
+        // Department (W-8). Checked before the U.S.-consulate branch: these datelines also
+        // contain "consulate", and the old path extracted their U.S. city as a "post" no
+        // despatch series serves — a dead-end candidate.
+        if isForeignConsulateDateline(dl) {
+            return [CentralFilesClassification(
+                category: .notesFromForeignConsuls, geoKeys: [], confidence: .high,
+                rationale: String(localized: "centralFiles.rationale.noteFromConsul",
+                                  defaultValue: "Dateline is a foreign consulate in the United States — a note from the foreign consul to the Department. The series is a single chronological run, matched by the document's date."))]
+        }
+
+        // Consular despatch (Phase 3) — its geography is the post CITY taken from the
+        // dateline ("Consulate-General…, Havana") rather than the FRUS chapter country.
+        // No city → can't resolve.
         if dl.contains("consulate") || dl.contains("consular") {
             guard let city = consularPostKey(fromDateline: dateline) else { return [] }
             return [CentralFilesClassification(
@@ -76,31 +94,49 @@ enum CentralFilesClassifier {
 
         // Diplomatic series — geography is the FRUS chapter country.
         let geoKeys = chapterCountry.map { GeoKeyNormalizer.keys(from: $0) } ?? []
-        guard !geoKeys.isEmpty else { return [] }
 
         // A U.S. diplomatic mission abroad → a despatch home.
         if containsAny(dl, ["legation of the united states", "embassy of the united states",
                             "american legation", "american embassy",
                             "united states legation", "u. s. legation", "u.s. legation"]) {
+            guard !geoKeys.isEmpty else { return [] }
             return [CentralFilesClassification(
                 category: .despatches, geoKeys: geoKeys, confidence: .high,
                 rationale: String(localized: "centralFiles.rationale.despatch",
                                   defaultValue: "Dateline is a U.S. mission abroad — a despatch to the Department."))]
         }
 
-        // Department of State outbound → an instruction or a note to a foreign mission.
+        // Department of State outbound → an instruction or a note to a foreign mission —
+        // and, when the HEADER names a consul, the consular twin of that same ambiguity
+        // (W-8): to the U.S. consul abroad it is a Consular Instruction; to the foreign
+        // consul in the U.S. it is a note. Both consular series are chronological runs, so
+        // their candidates carry no geography and resolve by date.
         if dl.contains("department of state") {
-            return [
-                CentralFilesClassification(
+            var candidates: [CentralFilesClassification] = []
+            if !geoKeys.isEmpty {
+                candidates.append(CentralFilesClassification(
                     category: .instructions, geoKeys: geoKeys, confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.instruction",
-                                      defaultValue: "Department of State outbound; if the addressee is the U.S. minister abroad, it is an instruction.")),
-                CentralFilesClassification(
+                                      defaultValue: "Department of State outbound; if the addressee is the U.S. minister abroad, it is an instruction.")))
+                candidates.append(CentralFilesClassification(
                     category: .notesTo, geoKeys: geoKeys, confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.noteTo",
-                                      defaultValue: "Department of State outbound; if the addressee is the foreign minister in Washington, it is a note to the legation.")),
-            ]
+                                      defaultValue: "Department of State outbound; if the addressee is the foreign minister in Washington, it is a note to the legation.")))
+            }
+            if header.lowercased().contains("consul") {
+                candidates.append(CentralFilesClassification(
+                    category: .consularInstructions, geoKeys: [], confidence: .medium,
+                    rationale: String(localized: "centralFiles.rationale.consularInstruction",
+                                      defaultValue: "Department of State outbound to a consul; if the addressee is a U.S. consul abroad, it is a consular instruction. Matched by the document's date.")))
+                candidates.append(CentralFilesClassification(
+                    category: .notesToForeignConsuls, geoKeys: [], confidence: .medium,
+                    rationale: String(localized: "centralFiles.rationale.noteToConsul",
+                                      defaultValue: "Department of State outbound to a consul; if the addressee is a foreign consul in the United States, it is a note to the consul. Matched by the document's date.")))
+            }
+            return candidates
         }
+
+        guard !geoKeys.isEmpty else { return [] }
 
         // A foreign legation/embassy in Washington → a note from a foreign mission.
         if dl.contains("washington"), containsAny(dl, ["legation", "embassy"]) {
@@ -159,6 +195,40 @@ enum CentralFilesClassifier {
             }
         }
         return nil
+    }
+
+    /// Whether a lowercased dateline names a FOREIGN consulate in the United States (W-8).
+    ///
+    /// Two conservative cues, both measured against real dateline forms:
+    /// - `consulate[-general] of {X}` where `{X}` is not the United States
+    ///   ("Consulate-General of Spain, New York").
+    /// - `{demonym} consulate` where the demonym is not American/U.S.
+    ///   ("Spanish Consulate-General, Washington").
+    /// A bare "Consulate-General, Havana" carries neither cue and stays on the
+    /// U.S.-consulate-abroad path — exactly the pre-W-8 behavior.
+    static func isForeignConsulateDateline(_ dl: String) -> Bool {
+        guard dl.contains("consul") else { return false }
+        // Any U.S. marker anywhere in the dateline means a U.S. consulate abroad — checked
+        // FIRST, so no per-cue word list has to enumerate the ways "United States" tokenizes
+        // ("United States Consulate" would otherwise read demonym "states").
+        if dl.contains("united states") || dl.contains("american")
+            || dl.contains("u.s.") || dl.contains("u. s.") {
+            return false
+        }
+        // "Consulate[-General] of {X}" — with U.S. markers excluded above, any named X is
+        // a foreign state ("Consulate-General of Spain, New York").
+        if dl.range(of: #"consulate(?:[- ]general)?\s+of\s+\w"#,
+                    options: .regularExpression) != nil {
+            return true
+        }
+        // "{Demonym} Consulate" — a word directly before "consulate" that is not an
+        // article ("Spanish Consulate-General, Washington"). A bare "Consulate-General,
+        // Havana" has no preceding word and stays on the U.S.-consulate path.
+        if let r = dl.range(of: #"(\w+)\s+consulate"#, options: .regularExpression) {
+            let demonym = String(dl[r]).components(separatedBy: " ").first ?? ""
+            return demonym != "the"
+        }
+        return false
     }
 
     private static func containsAny(_ haystack: String, _ needles: [String]) -> Bool {

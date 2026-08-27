@@ -19,6 +19,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-05: #675 / N-8b
 ///   1.1 — Session 2026-08-19: #372 item 1b — `forEachRecord`, the streaming walk
+///   1.2 — W-8: `seriesAncestorNaId` + `digitalObjectCount`, for the consular-tail pass
+///         (added to THIS reader, not a parallel one — the header's anti-drift rule)
 public enum HarvestShardReader {
 
     /// The projection this generator needs.
@@ -31,6 +33,17 @@ public enum HarvestShardReader {
         public let controlNumberNotes: [String]
         public let hmsMlrEntryNumbers: [String]
         public let dateRange: String?
+        /// The NAID of the record's SERIES ancestor, when one exists — how a file unit names
+        /// the series it belongs to (W-8: the consular-tail pass selects file units by it).
+        public let seriesAncestorNaId: String?
+        /// NARA's count of digitized page images on this record. The offline analogue of the
+        /// keyed route's `availableOnline=true` filter: a record with `nil`/`0` here is not
+        /// browsable page by page (W-8).
+        public let digitalObjectCount: Int?
+        /// NARA's own statement of how many file units a SERIES holds — the completeness
+        /// check for any pass that collects a series' file units from the shard (W-8), the
+        /// same self-detecting-truncation rule the record-group harvest itself uses.
+        public let fileUnitCount: Int?
         /// The organisational bodies NARA credits with creating this series (#405).
         ///
         /// Added to **this** reader rather than a second one for the reason its own header gives:
@@ -115,6 +128,7 @@ public enum HarvestShardReader {
             case naId, title, levelOfDescription, recordGroupNumber
             case variantControlNumbers, inclusiveStartDate, inclusiveEndDate, ancestors
             case creators, accessRestriction, useRestriction, findingAids, physicalOccurrences
+            case digitalObjectCount, fileUnitCount
         }
         private struct ControlNumber: Decodable {
             let number: String?
@@ -151,11 +165,15 @@ public enum HarvestShardReader {
         }
         private struct Ancestor: Decodable {
             let recordGroupNumber: String?
+            let naId: String?
+            let levelOfDescription: String?
             init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: K.self)
                 recordGroupNumber = Record.looseString(c, .recordGroupNumber)
+                naId = Record.looseString(c, .naId)
+                levelOfDescription = try? c.decode(String.self, forKey: .levelOfDescription)
             }
-            private enum K: String, CodingKey { case recordGroupNumber }
+            private enum K: String, CodingKey { case recordGroupNumber, naId, levelOfDescription }
         }
 
         /// NARA types the same field differently between the bulk export and the API —
@@ -176,14 +194,16 @@ public enum HarvestShardReader {
             title = (try? c.decode(String.self, forKey: .title)) ?? ""
             levelOfDescription = try? c.decode(String.self, forKey: .levelOfDescription)
 
-            // The record group lives on the record for a series, and on its ancestors otherwise.
+            // The record group lives on the record for a series, and on its ancestors
+            // otherwise. Ancestors are decoded unconditionally (not only when the record
+            // group is missing) because the series ancestor below comes from the same list —
+            // a conditional decode would make one field's presence depend on another's.
+            let ancestors = (try? c.decode([Ancestor].self, forKey: .ancestors)) ?? []
             let own = Record.looseString(c, .recordGroupNumber)
-            if let own {
-                recordGroupNumber = own
-            } else {
-                let ancestors = (try? c.decode([Ancestor].self, forKey: .ancestors)) ?? []
-                recordGroupNumber = ancestors.compactMap(\.recordGroupNumber).first
-            }
+            recordGroupNumber = own ?? ancestors.compactMap(\.recordGroupNumber).first
+            seriesAncestorNaId = ancestors.first { $0.levelOfDescription == "series" }?.naId
+            digitalObjectCount = try? c.decode(Int.self, forKey: .digitalObjectCount)
+            fileUnitCount = try? c.decode(Int.self, forKey: .fileUnitCount)
 
             let controls = (try? c.decode([ControlNumber].self, forKey: .variantControlNumbers)) ?? []
             variantControlNumbers = controls.compactMap(\.number)
