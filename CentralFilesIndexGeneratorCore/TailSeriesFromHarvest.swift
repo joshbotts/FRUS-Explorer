@@ -9,12 +9,15 @@
 import Foundation
 import LotClaimantsIndexGeneratorCore
 
-// MARK: - ConsularTailFromHarvest
+// MARK: - TailSeriesFromHarvest
 
-/// W-8's offline harvest: builds the three remaining Phase-3 consular-tail series —
-/// Consular Instructions (604019), Notes to Foreign Consuls (1076611), Notes from Foreign
-/// Consuls (1076629) — into `central-files-index.json` from the OFFLINE record-group
-/// harvest, with **no `CATALOG_API_KEY` and no network**.
+/// W-8's offline harvest: builds the Phase-3 tail series — Consular Instructions (604019),
+/// Notes to Foreign Consuls (1076611), Notes from Foreign Consuls (1076629), Domestic
+/// Letters (568025), Letters Received (583574), and the two Special Agents series
+/// (876974 / 871874) — into `central-files-index.json` from the OFFLINE record-group
+/// harvest, with **no `CATALOG_API_KEY` and no network**. (Named
+/// `TAIL_FROM_HARVEST` for the one day it covered only the consular three; the
+/// env var is `TAIL_FROM_HARVEST` since the domestic/special-agent remainder joined.)
 ///
 /// ## Why offline can answer what the plan reserved for the keyed API
 /// The plan gated Phase 3 on a keyed survey + harvest because each series' structure was
@@ -58,12 +61,19 @@ import LotClaimantsIndexGeneratorCore
 /// these categories, so any future keyed run refreshes them from the live catalog.
 ///
 /// Version history:
-///   1.0 — W-8: initial implementation
-enum ConsularTailFromHarvest {
+///   1.0 — W-8: initial implementation (the consular three)
+///   1.1 — W-8 remainder: Domestic Letters, Letters Received, both Special Agents series;
+///         renamed from `ConsularTailFromHarvest`; unparseable-date volumes are now
+///         SKIPPED AND PRINTED rather than fatal (Letters Received carries container and
+///         microfilm-publication rows with no volume date), with a >half-skipped refusal
+///         so a garbled re-harvest still fails loudly
+enum TailSeriesFromHarvest {
 
-    /// The three tail categories this pass builds, in output order.
+    /// The tail categories this pass builds, in output order.
     static let tailCategories: [CountrySeriesCategory] = [
         .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls,
+        .domesticLetters, .lettersReceived,
+        .specialAgentsDespatches, .specialAgentsInstructions,
     ]
 
     /// A shard smaller than this many records is a wrong or truncated file, not a harvest.
@@ -87,13 +97,25 @@ enum ConsularTailFromHarvest {
         // "January 2, 1864 - December 31, 1864"
         TailGoldenCheck(category: .notesFromForeignConsuls, dateISO: "1864-06-01",
                         expectedNaId: "216891526"),
+        // "Volume: 1 - Dates: Dec 11, 1784-Nov 28, 1785"
+        TailGoldenCheck(category: .domesticLetters, dateISO: "1785-06-01",
+                        expectedNaId: "29716958"),
+        // "January THRU December 1810"
+        TailGoldenCheck(category: .lettersReceived, dateISO: "1810-06-15",
+                        expectedNaId: "57362782"),
+        // "Volumes 34-36: James H. Blount: 1893" (the Hawaii mission)
+        TailGoldenCheck(category: .specialAgentsDespatches, dateISO: "1893-06-01",
+                        expectedNaId: "213816650"),
+        // "Volume 2: Special Missions: Dec. 30, 1859 - June 28, 1871"
+        TailGoldenCheck(category: .specialAgentsInstructions, dateISO: "1870-01-01",
+                        expectedNaId: "152648809"),
     ]
 
     // MARK: - Run
 
     static func run(outputPath: String, harvestDir: String, generated: String) {
         guard var index = try? CentralFilesIndexWriter.read(from: outputPath) else {
-            print("[CentralFilesIndexGenerator] ✗ CONSULAR_TAIL_FROM_HARVEST: cannot read \(outputPath) — this mode supplements an existing index, never creates one")
+            print("[CentralFilesIndexGenerator] ✗ TAIL_FROM_HARVEST: cannot read \(outputPath) — this mode supplements an existing index, never creates one")
             exit(1)
         }
 
@@ -120,15 +142,15 @@ enum ConsularTailFromHarvest {
                 }
             }
         } catch {
-            print("[CentralFilesIndexGenerator] ✗ CONSULAR_TAIL_FROM_HARVEST: \(error)")
+            print("[CentralFilesIndexGenerator] ✗ TAIL_FROM_HARVEST: \(error)")
             exit(1)
         }
 
         guard scanned >= minimumShardRecords else {
-            print("[CentralFilesIndexGenerator] ✗ CONSULAR_TAIL_FROM_HARVEST: only \(scanned) records in \(shard.path) — a truncated or wrong shard (rg_59 holds ~240,929)")
+            print("[CentralFilesIndexGenerator] ✗ TAIL_FROM_HARVEST: only \(scanned) records in \(shard.path) — a truncated or wrong shard (rg_59 holds ~240,929)")
             exit(1)
         }
-        print("[CentralFilesIndexGenerator] CONSULAR_TAIL_FROM_HARVEST: scanned \(scanned) records in rg_59.json")
+        print("[CentralFilesIndexGenerator] TAIL_FROM_HARVEST: scanned \(scanned) records in rg_59.json")
 
         var newEntries: [CountrySeriesIndex] = []
         for category in tailCategories {
@@ -145,25 +167,57 @@ enum ConsularTailFromHarvest {
                 exit(1)
             }
 
-            let digitized = records.filter { ($0.digitalObjectCount ?? 0) > 0 }
+            var digitized = records.filter { ($0.digitalObjectCount ?? 0) > 0 }
             for skipped in records where (skipped.digitalObjectCount ?? 0) == 0 {
                 print("  – \(category.rawValue): SKIPPED undigitized volume \(skipped.naId) “\(skipped.title)” (the availableOnline parity — no pages to view)")
+            }
+            // A microfilm-publication row ("M179 - Miscellaneous Letters …") describes the
+            // whole series' microcopy, not a volume — as a roll it would date-match the
+            // entire run and shadow every real volume.
+            digitized.removeAll { record in
+                let isMicrofilmRow = record.title.range(
+                    of: #"^[A-Z]{1,2}\d+ - "#, options: .regularExpression) != nil
+                if isMicrofilmRow {
+                    print("  – \(category.rawValue): SKIPPED microfilm-publication row \(record.naId) “\(record.title)”")
+                }
+                return isMicrofilmRow
             }
 
             // Through the SAME parser + builder the keyed route uses — one grammar, no drift.
             let catalogRecords = digitized.map {
                 CatalogRecord(naId: $0.naId, title: $0.title, levelOfDescription: "fileUnit")
             }
-            let result = CountrySeriesIndexBuilder.build(category: category, records: catalogRecords)
+            var result = CountrySeriesIndexBuilder.build(category: category, records: catalogRecords)
+
+            if result.rollsWithoutDate > 0 {
+                // A chronological-run roll with no date bound can never match a query —
+                // dead weight that looks like coverage. Letters Received carries a dateless
+                // container row, so these are SKIPPED AND PRINTED rather than fatal; a run
+                // where parsing failed for more than half the digitized volumes still
+                // refuses, so a garbled re-harvest cannot quietly gut a series.
+                for title in result.sampleNoDate {
+                    print("  – \(category.rawValue): SKIPPED dateless volume “\(title)”")
+                }
+                let dated = result.index.rolls.filter { $0.startISO != nil || $0.endISO != nil }
+                guard dated.count * 2 >= result.index.rolls.count else {
+                    print("  ✗ \(category.rawValue): more than half the digitized volumes (\(result.rollsWithoutDate) of \(result.index.rolls.count)) have no parseable date — refusing")
+                    exit(1)
+                }
+                result = CountrySeriesHarvestResult(
+                    index: CountrySeriesIndex(category: category.rawValue,
+                                              seriesNaId: category.seriesNaId,
+                                              displayName: category.displayName,
+                                              rolls: dated),
+                    totalRecords: result.totalRecords,
+                    resolutionRecords: result.resolutionRecords,
+                    rollsWithoutGeo: result.rollsWithoutGeo,
+                    rollsWithoutDate: result.rollsWithoutDate,
+                    sampleNoGeo: result.sampleNoGeo,
+                    sampleNoDate: result.sampleNoDate)
+            }
 
             guard !result.index.rolls.isEmpty else {
                 print("  ✗ \(category.rawValue): zero rolls built — an empty series entry silently disables the feature, refusing to write")
-                exit(1)
-            }
-            if result.rollsWithoutDate > 0 {
-                // A chronological-run roll with no date bound can never match a query —
-                // dead weight that looks like coverage. All 22 real titles parse today.
-                print("  ✗ \(category.rawValue): \(result.rollsWithoutDate) roll(s) with no parseable date: \(result.sampleNoDate.joined(separator: " | "))")
                 exit(1)
             }
 
@@ -198,7 +252,7 @@ enum ConsularTailFromHarvest {
             }
         }
         guard changed else {
-            print("[CentralFilesIndexGenerator] CONSULAR_TAIL_FROM_HARVEST: index already carries identical entries — nothing to write")
+            print("[CentralFilesIndexGenerator] TAIL_FROM_HARVEST: index already carries identical entries — nothing to write")
             return
         }
         index.countrySeries = countrySeries
@@ -206,9 +260,9 @@ enum ConsularTailFromHarvest {
         do {
             try CentralFilesIndexWriter.write(index, to: outputPath)
             let total = newEntries.map(\.rolls.count).reduce(0, +)
-            print("[CentralFilesIndexGenerator] ✓ CONSULAR_TAIL_FROM_HARVEST: wrote \(newEntries.count) series (\(total) rolls) into \(outputPath)")
+            print("[CentralFilesIndexGenerator] ✓ TAIL_FROM_HARVEST: wrote \(newEntries.count) series (\(total) rolls) into \(outputPath)")
         } catch {
-            print("[CentralFilesIndexGenerator] ✗ CONSULAR_TAIL_FROM_HARVEST: write failed — \(error)")
+            print("[CentralFilesIndexGenerator] ✗ TAIL_FROM_HARVEST: write failed — \(error)")
             exit(1)
         }
     }

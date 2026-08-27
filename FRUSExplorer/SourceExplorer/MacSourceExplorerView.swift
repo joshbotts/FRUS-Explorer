@@ -1484,8 +1484,8 @@ struct MacSourceExplorerView: View {
 
     @ViewBuilder
     private var countrySeriesBox: some View {
-        GroupBox(String(localized: "source.explorer.countrySeries.header",
-                        defaultValue: "Digitized Diplomatic Records (pre-1906)")) {
+        GroupBox(String(localized: "source.explorer.countrySeries.header.v2",
+                        defaultValue: "Digitized Department of State Records (pre-1906)")) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(String(localized: "source.explorer.countrySeries.intro",
                             defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document's date."))

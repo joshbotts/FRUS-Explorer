@@ -56,6 +56,10 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 2
+///   1.2 — W-8 remainder: the domestic and special-agent cues — another executive
+///         department's dateline is a letter RECEIVED; Department outbound addressed to a
+///         cabinet office is a Domestic Letter; a "special agent/commissioner/mission"
+///         phrase routes to the Special Agents series by direction.
 ///   1.1 — W-8: the three chronological-run consular-tail series. A foreign consulate in
 ///         the U.S. now classifies as a Note FROM a foreign consul (it used to fall into
 ///         the U.S.-consulate branch and dead-end on a U.S. city no despatch post serves);
@@ -69,6 +73,39 @@ enum CentralFilesClassifier {
     /// document with no resolvable country and no consular cue).
     static func classify(header: String, dateline: String, chapterCountry: String?) -> [CentralFilesClassification] {
         let dl = dateline.lowercased()
+        let headerL = header.lowercased()
+
+        // A special agent's correspondence (W-8 remainder) — the most specific cue, checked
+        // first: a document naming a special agent/commissioner/mission is filed in the
+        // Special Agents series, not the diplomatic or consular ones its dateline would
+        // otherwise suggest. Direction decides the series: Department outbound is an
+        // instruction TO the agent; anything else is the agent's despatch home.
+        if ["special agent", "special commissioner", "special mission"]
+            .contains(where: { headerL.contains($0) || dl.contains($0) }) {
+            if dl.contains("department of state") {
+                return [CentralFilesClassification(
+                    category: .specialAgentsInstructions, geoKeys: [], confidence: .medium,
+                    rationale: String(localized: "centralFiles.rationale.specialAgentInstruction",
+                                      defaultValue: "Department of State outbound to a special agent — an instruction in the Special Missions volumes. Matched by the document's date."))]
+            }
+            return [CentralFilesClassification(
+                category: .specialAgentsDespatches, geoKeys: [], confidence: .medium,
+                rationale: String(localized: "centralFiles.rationale.specialAgentDespatch",
+                                  defaultValue: "From a special agent of the Department — filed with the agent's mission in Despatches from Special Agents. Matched by the document's date."))]
+        }
+
+        // Another executive department or the President's office writing to State (W-8
+        // remainder): filed in Letters Received (the "Miscellaneous Letters"). The dateline
+        // is the SENDER's office, so direction is not in doubt.
+        if containsAny(dl, ["war department", "navy department", "treasury department",
+                            "post office department", "department of justice",
+                            "department of the interior", "department of agriculture",
+                            "department of commerce", "executive mansion", "white house"]) {
+            return [CentralFilesClassification(
+                category: .lettersReceived, geoKeys: [], confidence: .high,
+                rationale: String(localized: "centralFiles.rationale.letterReceived",
+                                  defaultValue: "Dateline is another executive department — a letter received by the Department of State, filed chronologically. Matched by the document's date."))]
+        }
 
         // A FOREIGN consulate in the United States → a note from a foreign consul to the
         // Department (W-8). Checked before the U.S.-consulate branch: these datelines also
@@ -123,7 +160,7 @@ enum CentralFilesClassifier {
                     rationale: String(localized: "centralFiles.rationale.noteTo",
                                       defaultValue: "Department of State outbound; if the addressee is the foreign minister in Washington, it is a note to the legation.")))
             }
-            if header.lowercased().contains("consul") {
+            if headerL.contains("consul") {
                 candidates.append(CentralFilesClassification(
                     category: .consularInstructions, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.consularInstruction",
@@ -132,6 +169,16 @@ enum CentralFilesClassifier {
                     category: .notesToForeignConsuls, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.noteToConsul",
                                       defaultValue: "Department of State outbound to a consul; if the addressee is a foreign consul in the United States, it is a note to the consul. Matched by the document's date.")))
+            }
+            // Department outbound ADDRESSED to a domestic cabinet office (W-8 remainder):
+            // a Domestic Letter. The office must sit AFTER the header's " to " — the same
+            // phrase BEFORE it is the sender, which is the Letters Received direction and
+            // carries its own dateline cue above.
+            if domesticAddressee(inHeader: headerL) {
+                candidates.append(CentralFilesClassification(
+                    category: .domesticLetters, geoKeys: [], confidence: .medium,
+                    rationale: String(localized: "centralFiles.rationale.domesticLetter",
+                                      defaultValue: "Department of State outbound to a domestic official — filed chronologically in Domestic Letters. Matched by the document's date.")))
             }
             return candidates
         }
@@ -229,6 +276,20 @@ enum CentralFilesClassifier {
             return demonym != "the"
         }
         return false
+    }
+
+    /// Whether a lowercased header addresses a DOMESTIC cabinet office (W-8 remainder) —
+    /// the office phrase must appear AFTER the header's " to " (the addressee half);
+    /// before it, the office is the sender, which is the Letters Received direction.
+    static func domesticAddressee(inHeader headerL: String) -> Bool {
+        guard let toRange = headerL.range(of: " to ") else { return false }
+        let addressee = String(headerL[toRange.upperBound...])
+        return containsAny(addressee, ["secretary of war", "secretary of the navy",
+                                       "secretary of the treasury",
+                                       "secretary of the interior",
+                                       "secretary of agriculture", "secretary of commerce",
+                                       "attorney general", "attorney-general",
+                                       "postmaster general", "postmaster-general"])
     }
 
     private static func containsAny(_ haystack: String, _ needles: [String]) -> Bool {

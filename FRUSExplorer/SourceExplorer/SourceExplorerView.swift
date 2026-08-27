@@ -1056,8 +1056,8 @@ struct SourceExplorerView: View {
                 .padding(.vertical, 2)
             }
         } header: {
-            Text(String(localized: "source.explorer.countrySeries.header",
-                        defaultValue: "Digitized Diplomatic Records (pre-1906)"))
+            Text(String(localized: "source.explorer.countrySeries.header.v2",
+                        defaultValue: "Digitized Department of State Records (pre-1906)"))
         }
     }
 

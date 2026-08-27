@@ -36,6 +36,13 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
     case consularInstructions = "consularInstructions"
     case notesToForeignConsuls = "notesToForeignConsuls"
     case notesFromForeignConsuls = "notesFromForeignConsuls"
+    // W-8 remainder: the domestic and special-agent series — chronological runs too
+    // (Despatches from Special Agents is "rough chronological by date of mission", its
+    // volumes titled by agent names + year spans; still matched by date alone).
+    case domesticLetters = "domesticLetters"
+    case lettersReceived = "lettersReceived"
+    case specialAgentsDespatches = "specialAgentsDespatches"
+    case specialAgentsInstructions = "specialAgentsInstructions"
 
     /// NARA series NAID.
     public var seriesNaId: String {
@@ -48,6 +55,10 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
         case .consularInstructions:    return "604019"
         case .notesToForeignConsuls:   return "1076611"
         case .notesFromForeignConsuls: return "1076629"
+        case .domesticLetters:         return "568025"
+        case .lettersReceived:         return "583574"
+        case .specialAgentsDespatches: return "876974"
+        case .specialAgentsInstructions: return "871874"
         }
     }
 
@@ -62,6 +73,12 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
         case .consularInstructions:    return "Consular Instructions"
         case .notesToForeignConsuls:   return "Notes to Foreign Consuls"
         case .notesFromForeignConsuls: return "Notes from Foreign Consuls"
+        // NARA's own series titles ("Letters Received" is the catalogue's name for what the
+        // literature calls Miscellaneous Letters — the catalogURL lands on that title).
+        case .domesticLetters:         return "Domestic Letters"
+        case .lettersReceived:         return "Letters Received"
+        case .specialAgentsDespatches: return "Despatches from Special Agents"
+        case .specialAgentsInstructions: return "Instructions to Special Agents"
         }
     }
 
@@ -71,8 +88,9 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
         switch self {
         case .despatches, .notesFrom, .consularDespatches: return "item"
         case .instructions, .notesTo,
-             .consularInstructions, .notesToForeignConsuls,
-             .notesFromForeignConsuls:                     return "fileUnit"
+             .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls,
+             .domesticLetters, .lettersReceived,
+             .specialAgentsDespatches, .specialAgentsInstructions: return "fileUnit"
         }
     }
 
@@ -81,7 +99,9 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
     /// through the geo-keyed path, whose `geoKeys.contains` guard would refuse every roll.
     public var isChronologicalRun: Bool {
         switch self {
-        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls:
+        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls,
+             .domesticLetters, .lettersReceived,
+             .specialAgentsDespatches, .specialAgentsInstructions:
             return true
         case .despatches, .instructions, .notesFrom, .notesTo, .consularDespatches:
             return false
@@ -117,19 +137,27 @@ public enum CountrySeriesParser {
         case .notesFrom:          return parseNotesFrom(record)
         case .notesTo:            return parseNotesTo(record)
         case .consularDespatches: return parseConsular(record)
-        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls:
+        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls,
+             .domesticLetters, .lettersReceived, .specialAgentsInstructions:
             return parseChronologicalRun(record)
+        case .specialAgentsDespatches:
+            return parseAgentYearSpan(record)
         }
     }
 
     // MARK: Chronological runs (fileUnit; date-only, no geography — W-8 tail)
 
     /// A chronological-run volume: the date range is the file unit's own title. Forms seen
-    /// on the real records (all 22 file units of the three series):
+    /// on the real records:
     /// - `6/17/1853 - 1/31/1865`, `December 18, 1789 - December 31, 1826` — the bare range
     /// - `Instructions: October 12, 1801 - February 26, 1817` — a label before a colon
     /// - `Volume 1: "Despatches to Consuls," Pages 1-109: [through Sept. 1801]` — the date
     ///   lives in the LAST colon segment (an end-only "through" bound)
+    /// - `Volume: 6 - Dates: Jan 2-Jun 26, 1794` — Domestic Letters' label form
+    /// - `January THRU December 1802` — Letters Received's month-span form (no digits on
+    ///   the left of any separator, so the generic range split cannot see it)
+    /// - `December 1817`, `August Part I, 1873` — Letters Received's single-month volumes,
+    ///   CLOSED to the month's end (an open start-only bound would match every later year)
     ///
     /// The rule: parse the text after the LAST colon when that parses as a date; otherwise
     /// the whole title. Geography is `[]` by construction — see `isChronologicalRun`.
@@ -153,7 +181,77 @@ public enum CountrySeriesParser {
                 DateRangeISO(startISO: nil, endISO: $0.startISO, plausible: $0.plausible)
             })
         }
+        // "{Month} THRU {Month} {year}" / "{Month} - {Month}, {year}" (Letters Received):
+        // both bounds share the year. The generic range split cannot see either form — it
+        // splits only on a separator with DIGITS on both sides, and the left side here is a
+        // bare month name (unhandled, "January - February, 1793" shipped once as an
+        // OPEN-ENDED roll that matched every later date).
+        if let m = firstGroups3(in: dateText,
+                                pattern: #"^([A-Za-z]+)\s*(?:THRU|[-–])\s*([A-Za-z]+),?\s+(\d{4})$"#),
+           let m1 = HistoricalDateParser.monthNumber(m.0), let m2 = HistoricalDateParser.monthNumber(m.1),
+           let year = Int(m.2) {
+            return ParsedCountryRoll(geoKeys: [], dateRange: DateRangeISO(
+                startISO: String(format: "%04d-%02d-01", year, m1),
+                endISO: String(format: "%04d-%02d-%02d", year, m2, monthLength(m2)),
+                plausible: HistoricalDateParser.plausibleYears.contains(year)))
+        }
+        // "{Month} [Part N][,] {year}" — a single-month volume, closed to the month's end.
+        if let m = firstGroups3(in: dateText,
+                                pattern: #"^([A-Za-z]+)(?:\s+Part\s+[IVXL]+)?,?\s+(\d{4})()$"#),
+           let month = HistoricalDateParser.monthNumber(m.0), let year = Int(m.1) {
+            return ParsedCountryRoll(geoKeys: [], dateRange: DateRangeISO(
+                startISO: String(format: "%04d-%02d-01", year, month),
+                endISO: String(format: "%04d-%02d-%02d", year, month, monthLength(month)),
+                plausible: HistoricalDateParser.plausibleYears.contains(year)))
+        }
         return ParsedCountryRoll(geoKeys: [], dateRange: HistoricalDateParser.parse(dateText))
+    }
+
+    // MARK: Special Agents despatches (fileUnit; per-MISSION volumes, all-years span)
+
+    /// A Despatches-from-Special-Agents volume is titled by its agents and their years —
+    /// `Volume 50: Henry White and Samuel R. Gummere: 1905-1906, F.W. Whitridge: 1906` —
+    /// several missions per volume. The volume's coverage is the SPAN of every year named:
+    /// Jan 1 of the earliest through Dec 31 of the latest. (The generic parse would take
+    /// only the text after the last colon — the final agent's years — and lose the rest.)
+    private static func parseAgentYearSpan(_ record: CatalogRecord) -> ParsedCountryRoll {
+        var years: [Int] = []
+        let ns = record.title as NSString
+        if let regex = try? NSRegularExpression(pattern: #"\b(1[6-9]\d{2})\b"#) {
+            for m in regex.matches(in: record.title,
+                                   range: NSRange(location: 0, length: ns.length)) {
+                if let y = Int(ns.substring(with: m.range(at: 1))) { years.append(y) }
+            }
+        }
+        guard let minY = years.min(), let maxY = years.max() else {
+            return ParsedCountryRoll(geoKeys: [], dateRange: nil)
+        }
+        return ParsedCountryRoll(geoKeys: [], dateRange: DateRangeISO(
+            startISO: String(format: "%04d-01-01", minY),
+            endISO: String(format: "%04d-12-31", maxY),
+            plausible: HistoricalDateParser.plausibleYears.contains(minY)
+                && HistoricalDateParser.plausibleYears.contains(maxY)))
+    }
+
+    /// Days in a month — leap-maximal February (29), because these are END bounds: a
+    /// Feb 29 document must not miss its own volume, and the next volume starts in March,
+    /// so overshooting by a day double-matches nothing.
+    private static func monthLength(_ month: Int) -> Int {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][max(1, min(month, 12)) - 1]
+    }
+
+    /// First three capture groups (the third may be empty), or `nil`.
+    private static func firstGroups3(in text: String, pattern: String) -> (String, String, String)? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        let ns = text as NSString
+        guard let m = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
+              m.numberOfRanges > 3 else { return nil }
+        func group(_ i: Int) -> String {
+            m.range(at: i).location == NSNotFound ? "" : ns.substring(with: m.range(at: i))
+        }
+        return (group(1).trimmingCharacters(in: .whitespaces),
+                group(2).trimmingCharacters(in: .whitespaces),
+                group(3).trimmingCharacters(in: .whitespaces))
     }
 
     // MARK: Despatches (item; geo from parent file-unit title)

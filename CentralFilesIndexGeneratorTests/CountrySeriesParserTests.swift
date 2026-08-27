@@ -254,10 +254,93 @@ struct ChronologicalRunParserTests {
         #expect(series.rolls(containingDate: "1850-01-01").isEmpty)
     }
 
-    @Test("isChronologicalRun marks exactly the three tail series")
+    @Test("isChronologicalRun marks exactly the seven tail series")
     func chronologicalFlag() {
         let chronological = CountrySeriesCategory.allCases.filter(\.isChronologicalRun)
         #expect(Set(chronological) == [.consularInstructions, .notesToForeignConsuls,
-                                       .notesFromForeignConsuls])
+                                       .notesFromForeignConsuls, .domesticLetters,
+                                       .lettersReceived, .specialAgentsDespatches,
+                                       .specialAgentsInstructions])
+    }
+}
+
+/// The W-8 remainder's title grammars — every form below is a REAL record from the
+/// offline harvest (rg_59.json, read 2026-08-27).
+struct DomesticAndSpecialAgentParserTests {
+
+    private func parse(_ title: String,
+                       category: CountrySeriesCategory) -> ParsedCountryRoll? {
+        CountrySeriesParser.parse(
+            CatalogRecord(naId: "1", title: title, levelOfDescription: "fileUnit"),
+            category: category)
+    }
+
+    @Test("Domestic Letters: the Volume/Dates label form")
+    func domesticLettersLabelForm() throws {
+        let parsed = try #require(parse("Volume: 1 - Dates: Dec 11, 1784-Nov 28, 1785",
+                                        category: .domesticLetters))
+        #expect(parsed.dateRange?.startISO == "1784-12-11")
+        #expect(parsed.dateRange?.endISO == "1785-11-28")
+        // The year-sharing variant: "Jan 2-Jun 26, 1794" gives the year on one side only.
+        let shared = try #require(parse("Volume: 6 - Dates: Jan 2-Jun 26, 1794",
+                                        category: .domesticLetters))
+        #expect(shared.dateRange?.startISO == "1794-01-02")
+        #expect(shared.dateRange?.endISO == "1794-06-26")
+    }
+
+    @Test("Letters Received: THRU and dash month spans close both bounds")
+    func lettersReceivedMonthSpans() throws {
+        let thru = try #require(parse("July THRU September 1814", category: .lettersReceived))
+        #expect(thru.dateRange?.startISO == "1814-07-01")
+        #expect(thru.dateRange?.endISO == "1814-09-30")
+        // The dash variant shipped once as an OPEN-ENDED roll matching every later date —
+        // the generic split needs digits on both sides and a bare month name has none.
+        let dash = try #require(parse("January - February, 1793", category: .lettersReceived))
+        #expect(dash.dateRange?.startISO == "1793-01-01")
+        #expect(dash.dateRange?.endISO == "1793-02-29")
+    }
+
+    @Test("Letters Received: single-month volumes close to the month's end")
+    func lettersReceivedSingleMonth() throws {
+        let plain = try #require(parse("December 1817", category: .lettersReceived))
+        #expect(plain.dateRange?.startISO == "1817-12-01")
+        // An open start-only bound would match every later year.
+        #expect(plain.dateRange?.endISO == "1817-12-31")
+        let part = try #require(parse("August Part I, 1873", category: .lettersReceived))
+        #expect(part.dateRange?.startISO == "1873-08-01")
+        #expect(part.dateRange?.endISO == "1873-08-31")
+    }
+
+    @Test("Special Agents despatches: the volume's coverage is the span of every year named")
+    func specialAgentYearSpan() throws {
+        let parsed = try #require(parse(
+            "Volume 12: Richard Rush: 1836-1838, Nathaniel Niles: 1841, Aaron Vail: 1838, Benjamin Tappan: 1840-1841, Albert Fitz: 1842; Volume 13: Duff Green: 1843-1845 and 1859-1860",
+            category: .specialAgentsDespatches))
+        // The generic last-colon rule would keep only the FINAL agent's years and lose the
+        // rest — the span parse reads them all.
+        #expect(parsed.dateRange?.startISO == "1836-01-01")
+        #expect(parsed.dateRange?.endISO == "1860-12-31")
+        // An agent row with no years at all yields no range (and the real one, "Edmund
+        // Roberts", is undigitized and filtered before parsing anyway).
+        let none = try #require(parse("Edmund Roberts", category: .specialAgentsDespatches))
+        #expect(none.dateRange == nil)
+    }
+
+    @Test("Instructions to Special Agents ride the existing label-colon grammar")
+    func specialAgentInstructions() throws {
+        let parsed = try #require(parse(
+            "Volume 3: Special Missions: Sept. 11, 1852 - Aug.  31,  1886",
+            category: .specialAgentsInstructions))
+        #expect(parsed.dateRange?.startISO == "1852-09-11")
+        #expect(parsed.dateRange?.endISO == "1886-08-31")
+    }
+
+    @Test("All four new categories are chronological runs at fileUnit grain")
+    func newCategoriesShape() {
+        for c in [CountrySeriesCategory.domesticLetters, .lettersReceived,
+                  .specialAgentsDespatches, .specialAgentsInstructions] {
+            #expect(c.isChronologicalRun)
+            #expect(c.resolutionLevel == "fileUnit")
+        }
     }
 }
