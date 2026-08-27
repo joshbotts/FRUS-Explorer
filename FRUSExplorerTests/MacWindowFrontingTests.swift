@@ -255,6 +255,30 @@ struct MacWindowFrontingTests {
         }
     }
 
+    /// The one fronting call the literal tests cannot see (2026-08-27 audit, blind spot 1):
+    /// `ProjectHomeView.openSurface` fronts a RUNTIME id. A future caller passing an
+    /// unregistered id would fail silently — `bringMacWindowToFront` no-ops on no match and
+    /// an unknown id opens nothing a test can observe.
+    @Test("Every id ProjectHomeView's openSurface can front names a declared scene")
+    func projectHomeMappedIdsAreDeclared() throws {
+        let home = try Self.source("ProjectContext/ProjectHomeView.swift")
+        // The ids are whatever the call sites pass: extract every openSurface("…") literal.
+        var ids: [String] = []
+        for line in home.components(separatedBy: .newlines) {
+            guard let call = line.range(of: "openSurface(\"") else { continue }
+            let tail = line[call.upperBound...]
+            guard let close = tail.firstIndex(of: "\"") else { continue }
+            ids.append(String(tail[..<close]))
+        }
+        #expect(ids.count >= 3, "the surface tiles pass at least collections/research/search")
+
+        let app = try Self.source("App/FRUSExplorerApp.swift")
+        for id in ids {
+            #expect(app.contains("id: \"\(id)\""),
+                    "ProjectHomeView fronts \"\(id)\", which no scene declares — the tap would silently do nothing on macOS. Register the scene or fix the id.")
+        }
+    }
+
     @Test("Complete History… and About front their windows")
     func lowSeveritySitesFront() throws {
         #expect(try Self.source("App/HistoryWindowView.swift")
