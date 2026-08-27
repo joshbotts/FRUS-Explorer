@@ -199,9 +199,15 @@ standing convention, plus the manual caption corrections that depend on them.
   is the only analytics dashboard with no size-class awareness at all. Folding four visible
   segments into a menu costs a tap and the at-a-glance sense that four views exist: **the owner's
   call**, not one to infer.
-- **Semantic map slice poles in Handoff** — needs a `requestedPoles` deferral inside
-  `SemanticMapModel` first; see `AppActivityTypes.semanticMap` for why carrying them without it
-  ships a permanently half-drawn axis card.
+- ~~**Semantic map slice poles in Handoff**~~ — SHIPPED (W-2a): the `requestedPoles` deferral
+  exists (a completed pair arriving before `prepare()` is remembered and re-applied by the view's
+  `.task`, beside the deferred-reveal retry; the index-independent same-volume refusal still fires
+  pre-load), and `SemanticMapRequest` carries `axisNegativeVolumeID`/`axisPositiveVolumeID` — both
+  poles or neither — through Handoff `userInfo`, window identity, and the continuation dedupe key.
+  One discovery en route: the model's missing-centroid branch had started ROLLING BACK the early
+  pole and posting `semanticMap.axis.noSummary` — a confident diagnosis of the wrong cause during
+  a load — so the pre-deferral failure was a wrong message, not merely the half-drawn card the
+  `AppActivityTypes` comment described. That comment is corrected with the fix.
 - ~~Two by-catch items found while driving~~ — **shipped in #901**, and the count was wrong: it was
   *three* missing Done buttons, not two. See §5.
 

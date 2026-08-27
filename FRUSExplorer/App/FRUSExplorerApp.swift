@@ -2571,6 +2571,9 @@ struct FRUSExplorerApp: App {
         guard let request = SemanticMapRequest.from(userInfo: activity.userInfo) else { return }
         let key = "semanticMap|\(request.lensRawValue)|"
             + (request.volumeIDs?.sorted().joined(separator: ",") ?? "all")
+            // Poles are part of the map's identity (W-2): without them here, a sliced and an
+            // unsliced continuation of the same scope would dedupe to one.
+            + "|\(request.axisNegativeVolumeID ?? "-")>\(request.axisPositiveVolumeID ?? "-")"
         guard appState.claimContinuation(key) else { return }
         appState.openSemanticMap(request, from: sceneID)
     }

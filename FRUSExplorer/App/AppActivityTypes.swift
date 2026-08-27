@@ -19,16 +19,13 @@ enum AppActivityTypes {
     /// lens in `userInfo`, so the map the reader built on one device opens the same way on
     /// another.
     ///
-    /// **The slice poles are deliberately not carried, and the reason is a real trap rather than
-    /// laziness.** `SemanticMapModel.setScope` tolerates arriving before the artifact has loaded —
-    /// it stores `requestedScope` and `prepare()` re-applies it — but `setPole` does not: it
-    /// records the pole and then hard-returns when `centroid(forVolume:)` finds no index, leaving
-    /// `poles` populated and `slice` nil. Since the axis card renders on `poles.negative != nil`,
-    /// a continuation that set poles before the map loaded would leave a half-drawn axis card
-    /// naming a pole with no slice, permanently and with no retry — the same "renders and does
-    /// nothing" failure this surface has already shipped once. Carrying poles needs a
-    /// `requestedPoles` deferral inside the model; until that exists, a continued map opens
-    /// unsliced and the reader picks their poles again.
+    /// **The slice poles are carried since W-2, and the deferral that makes it safe exists.**
+    /// They were deliberately excluded before that: `setPole` before the artifact loaded would
+    /// half-apply — roll back the pole it had just set and post `semanticMap.axis.noSummary`, a
+    /// confident diagnosis of the wrong cause — leaving a half-drawn axis card with no retry.
+    /// `SemanticMapModel` now remembers an early pole in `requestedPoles`, exactly as `setScope`
+    /// remembers a scope, and the view re-applies it after `prepare()` beside its deferred-reveal
+    /// retry — so a continued map arrives sliced along the same axis the sender built.
     static let semanticMap = "com.joshbotts.frus-explorer.semanticMap"
 }
 
@@ -100,6 +97,20 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
     /// unfocused rather than landing on whatever re-minted cluster now wears the number.
     var focusClusterDigest: String?
 
+    /// The volume at the axis's low end, when the sender had laid the corpus along a slice
+    /// (W-2 — the F-28 remainder). Volume ids are stable across builds and artifact
+    /// generations, unlike cluster ids, so no digest travels with them.
+    ///
+    /// Part of the window identity like every other field: two maps sliced along different
+    /// axes are two windows. Optional and absent from every older payload, so old
+    /// restorations decode with `nil` unchanged.
+    var axisNegativeVolumeID: String?
+
+    /// The volume at the axis's high end. Meaningful only beside
+    /// ``axisNegativeVolumeID`` — the receiver applies poles only when both are present,
+    /// because a lone pole draws a half-finished axis card and no slice.
+    var axisPositiveVolumeID: String?
+
     /// Creates a request.
     /// - Parameters:
     ///   - volumeIDs: Scope, or `nil` for the whole series.
@@ -107,13 +118,16 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
     ///   - lensRawValue: The colour lens's raw value.
     init(volumeIDs: [String]?, scopeLabel: String?, lensRawValue: String,
          focusDocumentKey: String? = nil,
-         focusClusterID: Int? = nil, focusClusterDigest: String? = nil) {
+         focusClusterID: Int? = nil, focusClusterDigest: String? = nil,
+         axisNegativeVolumeID: String? = nil, axisPositiveVolumeID: String? = nil) {
         self.volumeIDs = volumeIDs
         self.scopeLabel = scopeLabel
         self.lensRawValue = lensRawValue
         self.focusDocumentKey = focusDocumentKey
         self.focusClusterID = focusClusterID
         self.focusClusterDigest = focusClusterDigest
+        self.axisNegativeVolumeID = axisNegativeVolumeID
+        self.axisPositiveVolumeID = axisPositiveVolumeID
     }
 
     /// The unscoped whole-series map at the default lens — what the Browse menu's Semantic
@@ -138,6 +152,8 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
         static let volumeIDs = "volumeIds"
         static let scopeLabel = "scopeLabel"
         static let lens = "lens"
+        static let axisNegative = "axisNegative"
+        static let axisPositive = "axisPositive"
     }
 
     /// The payload to hand to `NSUserActivity.userInfo`.
@@ -149,6 +165,11 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
         var info: [String: Any] = [Key.lens: lensRawValue]
         if let volumeIDs { info[Key.volumeIDs] = volumeIDs }
         if let scopeLabel { info[Key.scopeLabel] = scopeLabel }
+        // Both poles or neither: a lone pole cannot draw a slice, only a half-finished card.
+        if let axisNegativeVolumeID, let axisPositiveVolumeID {
+            info[Key.axisNegative] = axisNegativeVolumeID
+            info[Key.axisPositive] = axisPositiveVolumeID
+        }
         return info
     }
 
@@ -166,6 +187,8 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
         return SemanticMapRequest(
             volumeIDs: userInfo?[Key.volumeIDs] as? [String],
             scopeLabel: userInfo?[Key.scopeLabel] as? String,
-            lensRawValue: lens)
+            lensRawValue: lens,
+            axisNegativeVolumeID: userInfo?[Key.axisNegative] as? String,
+            axisPositiveVolumeID: userInfo?[Key.axisPositive] as? String)
     }
 }
