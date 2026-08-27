@@ -454,6 +454,19 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
         }
     }
 
+    /// The document's cached header line, for a row LABEL (the Archive Visit editor's
+    /// Documents tab) — where the full publication citation is export-grade verbosity and
+    /// its Markdown italics markers would render literally. `nil` when the volume is not
+    /// indexed or the header is empty; callers fall back to the raw key.
+    func documentHeader(volumeId: String, documentId: String) async -> String? {
+        (try? await pipeline.documentHeader(volumeId: volumeId, documentId: documentId)) ?? nil
+    }
+
+    /// The volume's display title from the manifest, for the same row's caption.
+    func volumeTitle(volumeId: String) -> String? {
+        manifestMap[volumeId]?.title
+    }
+
     // Unused by the packet — see the type's note.
     func archivalResolution(recordGroup: String?, lotFile: String?)
         -> CollectionGeneratedBlocks.ArchivalLink? { nil }
