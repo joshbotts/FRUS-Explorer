@@ -9081,3 +9081,34 @@ Bundle regenerated (+3 series / 22 rolls, generated 2026-08-27). 8 new SPM tests
 app tests (classifier cues incl. the "United States Consulate" tokenization trap; bundle
 counts, goldens, honest coverage gaps). Full suites green. W-8's remainder (Domestic/Misc
 Letters, Special Agents — classifier cues undesigned) recorded in the PoR row.
+
+## Session 2026-08-27 — W-8's remainder: the domestic and special-agent series, and the harvest closes
+
+The second offline pass finishes the W-8 tail: Domestic Letters (272 vols, fully
+digitized, `Volume: N - Dates: …` titles), Letters Received (14 of 98 digitized —
+NARA's digitization state, honestly partial), Despatches from Special Agents (22
+per-MISSION volumes titled by agent names + year spans), Instructions to Special
+Agents (4). The mode grows to all seven tail categories and renames to
+`TAIL_FROM_HARVEST` (the consular-only name lived one day).
+
+**Three title grammars, each found by reading real output**: "Month THRU/– Month YYYY"
+spans close BOTH bounds — the dash variant ("January - February, 1793") shipped one
+OPEN-ENDED roll that matched every later date before the fix, because the generic range
+split requires digits on both sides of a separator and a bare month name has none;
+single-month volumes ("December 1817", "August Part I, 1873") close to the month's end
+for the same reason; and agent volumes parse as the span of EVERY year named, because
+the last-colon rule would keep only the final agent's years. Junk-row policy: microfilm-
+publication rows (M179-…) and dateless container rows are skipped AND printed, with a
+>half-skipped-per-series refusal so a garbled re-harvest still fails loudly.
+
+**Classifier**: another executive department's dateline → Letters Received (high; the
+dateline names the sender, so direction is not in doubt); Department outbound whose
+header ADDRESSES a cabinet office (after the " to ", never before it — before is the
+sender) → Domestic Letters; a special-agent/commissioner/mission phrase routes by
+direction and is checked FIRST — Blount's Honolulu despatches would otherwise fall to
+the bare-city diplomatic fallback. Section header re-minted `.v2` ("Digitized Department
+of State Records" — "Diplomatic" stopped covering the section's contents).
+
+Bundle: +4 series / 312 rolls (334 total tail rolls across 7 series). 7 offline goldens;
+11 new tests. Full suites green: 1,209 SPM, 4,113 app. W-8's harvest is CLOSED — the
+PoR row keeps only the two June leftovers.

@@ -230,13 +230,20 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
     case consularInstructions = "consularInstructions"
     case notesToForeignConsuls = "notesToForeignConsuls"
     case notesFromForeignConsuls = "notesFromForeignConsuls"
+    // W-8 remainder: the domestic and special-agent series — chronological runs too.
+    case domesticLetters = "domesticLetters"
+    case lettersReceived = "lettersReceived"
+    case specialAgentsDespatches = "specialAgentsDespatches"
+    case specialAgentsInstructions = "specialAgentsInstructions"
 
     /// `true` for a series NARA arranges by date alone (W-8). Its rolls carry NO geography,
     /// so a resolver must use `CountrySeriesIndex.rolls(containingDate:)` — the geo-keyed
     /// path's `geoKeys.contains` guard would refuse every volume.
     var isChronologicalRun: Bool {
         switch self {
-        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls:
+        case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls,
+             .domesticLetters, .lettersReceived,
+             .specialAgentsDespatches, .specialAgentsInstructions:
             return true
         case .despatches, .instructions, .notesFrom, .notesTo, .consularDespatches:
             return false
@@ -262,6 +269,15 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
                                           defaultValue: "Notes to Foreign Consuls")
         case .notesFromForeignConsuls: return String(localized: "centralFiles.series.notesFromConsuls",
                                           defaultValue: "Notes from Foreign Consuls")
+        case .domesticLetters: return String(localized: "centralFiles.series.domesticLetters",
+                                          defaultValue: "Domestic Letters")
+        // NARA's catalogue title for what the literature calls Miscellaneous Letters.
+        case .lettersReceived: return String(localized: "centralFiles.series.lettersReceived",
+                                          defaultValue: "Letters Received")
+        case .specialAgentsDespatches: return String(localized: "centralFiles.series.specialAgentsDespatches",
+                                          defaultValue: "Despatches from Special Agents")
+        case .specialAgentsInstructions: return String(localized: "centralFiles.series.specialAgentsInstructions",
+                                          defaultValue: "Instructions to Special Agents")
         }
     }
 }

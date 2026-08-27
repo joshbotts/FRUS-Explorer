@@ -319,3 +319,60 @@ struct ConsularTailClassifierTests {
         #expect(c.map(\.category) == [.instructions, .notesTo])
     }
 }
+
+/// The W-8 remainder's cues: domestic and special-agent routing.
+struct DomesticAndSpecialAgentClassifierTests {
+
+    @Test("Another executive department's dateline → Letters Received, date-only")
+    func classifiesLetterReceived() {
+        for dateline in ["War Department, Washington, March 3, 1898.",
+                         "Treasury Department, Washington, July 1, 1885.",
+                         "Navy Department, Washington, May 2, 1861."] {
+            let c = CentralFilesClassifier.classify(
+                header: "The Secretary of War to Mr. Sherman.",
+                dateline: dateline, chapterCountry: "Spain")
+            #expect(c.map(\.category) == [.lettersReceived], "\(dateline)")
+            #expect(c.first?.geoKeys.isEmpty == true)
+            #expect(c.first?.confidence == .high)
+        }
+    }
+
+    @Test("Department outbound to a cabinet office adds the Domestic Letters candidate")
+    func classifiesDomesticLetter() {
+        let c = CentralFilesClassifier.classify(
+            header: "Mr. Sherman to the Secretary of War.",
+            dateline: "Department of State, Washington, March 5, 1898.",
+            chapterCountry: "Spain")
+        #expect(c.map(\.category).contains(.domesticLetters))
+        // The diplomatic pair still rides along — the chapter country resolves.
+        #expect(c.map(\.category).prefix(2) == [.instructions, .notesTo])
+    }
+
+    @Test("The office BEFORE the header's 'to' is the sender, not a domestic addressee")
+    func senderOfficeIsNotAddressee() {
+        // "The Secretary of War to Mr. Sherman" — the office is the SENDER; without the
+        // department dateline cue this is not a Domestic Letter.
+        #expect(!CentralFilesClassifier.domesticAddressee(
+            inHeader: "the secretary of war to mr. sherman."))
+        #expect(CentralFilesClassifier.domesticAddressee(
+            inHeader: "mr. sherman to the secretary of war."))
+    }
+
+    @Test("A special-agent phrase routes by direction, overriding the generic branches")
+    func classifiesSpecialAgents() {
+        // Outbound: an instruction in the Special Missions volumes.
+        let instruction = CentralFilesClassifier.classify(
+            header: "Mr. Webster to Mr. Cushing, Special Commissioner.",
+            dateline: "Department of State, Washington, May 8, 1843.",
+            chapterCountry: "China")
+        #expect(instruction.map(\.category) == [.specialAgentsInstructions])
+        // Inbound: the agent's despatch — even from a dateline the generic fallback would
+        // have called a diplomatic despatch.
+        let despatch = CentralFilesClassifier.classify(
+            header: "Mr. Blount, Special Commissioner, to Mr. Gresham.",
+            dateline: "Honolulu, April 26, 1893.",
+            chapterCountry: "Hawaii")
+        #expect(despatch.map(\.category) == [.specialAgentsDespatches])
+        #expect(despatch.first?.geoKeys.isEmpty == true)
+    }
+}

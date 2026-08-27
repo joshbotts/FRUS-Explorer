@@ -51,11 +51,12 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   CACHE_DIR   — raw-page cache directory (default `.cache/central-files`)
 ///   PAGE_SIZE   — rows per request (default 25; try 100 on the first survey run)
 ///   REFRESH     — `1`/`true` to ignore the page cache and re-fetch
-///   CONSULAR_TAIL_FROM_HARVEST — `1`/`true`: offline mode (NO API key, W-8) — build the three
-///     remaining Phase-3 consular-tail series (Consular Instructions 604019, Notes to Foreign
-///     Consuls 1076611, Notes from Foreign Consuls 1076629) from the record-group harvest's
-///     rg_59.json (HARVEST_DIR), verified against NARA's own per-series fileUnitCount, and
-///     rewrite OUTPUT_PATH in place. See ConsularTailFromHarvest.
+///   TAIL_FROM_HARVEST — `1`/`true`: offline mode (NO API key, W-8) — build the Phase-3
+///     tail series (Consular Instructions 604019, Notes to/from Foreign Consuls
+///     1076611/1076629, Domestic Letters 568025, Letters Received 583574, Special Agents
+///     876974/871874) from the record-group harvest's rg_59.json (HARVEST_DIR), verified
+///     against NARA's own per-series fileUnitCount, and rewrite OUTPUT_PATH in place.
+///     See TailSeriesFromHarvest.
 ///   SUPPLEMENT_FROM_HARVEST — `1`/`true`: offline mode (NO API key) — resolve the lot files the
 ///                 corpus cites and this index cannot answer, against the 4.5 GB record-group
 ///                 harvest at `HARVEST_DIR`, then exit. Closes #372 item 1b. Env also:
@@ -80,6 +81,8 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   1.3 — Session 2026-08-19: #372 item 1b — SUPPLEMENT_FROM_HARVEST offline mode
 ///   1.4 — W-8: CONSULAR_TAIL_FROM_HARVEST offline mode (the three chronological-run
 ///         consular-tail series, keyless)
+///   1.5 — W-8 remainder: the mode grows to the full tail (Domestic Letters, Letters
+///         Received, both Special Agents series) and is renamed TAIL_FROM_HARVEST
 public struct CentralFilesIndexGeneratorRunner {
 
     /// NARA series NAID for the 1906–1910 Numerical File.
@@ -900,11 +903,11 @@ public struct CentralFilesIndexGeneratorRunner {
             return
         }
 
-        // W-8: the consular-tail series, built OFFLINE from the record-group harvest —
-        // keyless, because the bulk shard is measured complete at file-unit level for the
-        // three chronological-run series (see ConsularTailFromHarvest's header).
-        if ["1", "true", "yes"].contains((env["CONSULAR_TAIL_FROM_HARVEST"] ?? "").lowercased()) {
-            ConsularTailFromHarvest.run(
+        // W-8: the tail series, built OFFLINE from the record-group harvest — keyless,
+        // because the bulk shard is measured complete at file-unit level for every
+        // chronological-run tail series (see TailSeriesFromHarvest's header).
+        if ["1", "true", "yes"].contains((env["TAIL_FROM_HARVEST"] ?? "").lowercased()) {
+            TailSeriesFromHarvest.run(
                 outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
                 harvestDir: env["HARVEST_DIR"]
                     ?? "/Users/jbotts/Development/nara-record-group-catalog",

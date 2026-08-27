@@ -531,6 +531,43 @@ struct ConsularTailBundleTests {
         }
     }
 
+    @Test("The four remainder series are in the bundle with their measured roll counts")
+    func remainderSeriesInBundle() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let expected: [(CentralFilesSeriesCategory, String, Int)] = [
+            (.domesticLetters, "568025", 272),
+            (.lettersReceived, "583574", 14),          // 14 of 98 digitized — a partial run
+            (.specialAgentsDespatches, "876974", 22),
+            (.specialAgentsInstructions, "871874", 4),
+        ]
+        for (category, seriesNaId, rollCount) in expected {
+            let series = try #require(index.series(category: category),
+                                      "\(category.rawValue) missing from the bundle")
+            #expect(series.seriesNaId == seriesNaId)
+            #expect(series.rolls.count == rollCount)
+            #expect(series.rolls.allSatisfy { $0.geoKeys.isEmpty })
+            // Every roll is date-closed on BOTH ends except the documented through-form —
+            // an open end would match every later date (the January–February 1793 defect).
+            #expect(series.rolls.allSatisfy { $0.startISO != nil && $0.endISO != nil })
+        }
+    }
+
+    @Test("The remainder golden checks resolve through the bundle by date alone")
+    func remainderGoldenChecks() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let goldens: [(CentralFilesSeriesCategory, String, String)] = [
+            (.domesticLetters, "1785-06-01", "29716958"),
+            (.lettersReceived, "1810-06-15", "57362782"),
+            (.specialAgentsDespatches, "1893-06-01", "213816650"),   // Blount in Hawaii
+            (.specialAgentsInstructions, "1870-01-01", "152648809"),
+        ]
+        for (category, dateISO, expectedNaId) in goldens {
+            let series = try #require(index.series(category: category))
+            #expect(series.rolls(containingDate: dateISO).contains { $0.naId == expectedNaId },
+                    "\(category.rawValue) @ \(dateISO) should include \(expectedNaId)")
+        }
+    }
+
     @Test("A date outside a tail series' coverage resolves to nothing, never to everything")
     func tailCoverageGapsAreHonest() throws {
         let index = try #require(CentralFilesIndexStore.shared)
