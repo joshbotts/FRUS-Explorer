@@ -1840,6 +1840,16 @@ struct GlossDetailSheet: View {
 ///          the lookup view's identity per hand-off so `@State(initialValue:)`
 ///          repopulates the query field (the NARACatalogLookupItem rationale)
 struct SourceExplorerWindowView: View {
+    /// The document whose source note this window shows, when opened by value (M-2 / W-2b).
+    ///
+    /// **Additive by design**, the graph window's rule: `nil` reproduces the tri-mode singleton
+    /// exactly — cold Collections default, NARA hand-off, note-focus signal — so the Window-menu
+    /// door and the NARA route are preserved by construction. A request-backed window is that
+    /// document's OWN note and is deliberately DEAF to the global signals (the `.onChange`
+    /// guards below): reacting to `sourceNoteFocusID` or `pendingNARALookup` here would retarget
+    /// this window to whatever document fired last, which is exactly the cross-wiring M-2 names.
+    var request: SourceExplorerRequest? = nil
+
     @Environment(AppState.self) private var appState
     /// Mint tail for `AppState.openDocument` — when no document host is live, a related-
     /// document tap lands in a fresh standalone document window instead of being dropped.
@@ -1917,6 +1927,19 @@ struct SourceExplorerWindowView: View {
         //
         // Fresh window: `.task` runs once and applies the same precedence (NARA > note > collections).
         .task {
+            // A value-opened window's subject is its request — never the shared globals, and
+            // never the NARA hand-off, which belongs to the valueless window (W-2b).
+            if let request {
+                noteSnapshot = SourceNoteSnapshot(
+                    note: request.rawSourceNote,
+                    year: request.documentYear,
+                    header: request.documentHeader,
+                    dateline: request.documentDateline,
+                    volumeId: request.documentVolumeId,
+                    documentId: request.documentId)
+                mode = .note
+                return
+            }
             // Presentation precedence on a freshly created window (#363): a NARA hand-off wins;
             // otherwise a present source note shows the note segment; otherwise the cold default
             // (`.collections`) stands — never the note segment's "No Document Selected" placeholder.
@@ -1928,8 +1951,10 @@ struct SourceExplorerWindowView: View {
         // sole producer (`lookUpSelectionInNARA`) sets `pendingNARALookup` and does NOT bump
         // `sourceNoteFocusID`, so ONLY this handler fires for a NARA lookup — no race with the note
         // handler below. Snapshot first so flipping the picker to "Source Note" shows THIS document.
-        .onChange(of: appState.pendingNARALookup) { _, request in
-            guard request != nil else { return }
+        .onChange(of: appState.pendingNARALookup) { _, pending in
+            // A request-backed window is one document's note; the NARA hand-off is the
+            // valueless window's to consume (W-2b — see `request`).
+            guard request == nil, pending != nil else { return }
             snapshotSourceNote()
             consumePendingNARALookup()   // → mode = .naraLookup
         }
@@ -1939,6 +1964,9 @@ struct SourceExplorerWindowView: View {
         // id with NO pending NARA, so this handler owns the note path; the `pendingNARALookup == nil`
         // guard is belt-and-suspenders should a future producer ever set both (#363).
         .onChange(of: appState.sourceNoteFocusID) { _, _ in
+            // Same deafness rule: retargeting a per-document window on the global focus
+            // signal is the M-2 cross-wiring this conversion exists to end.
+            guard request == nil else { return }
             snapshotSourceNote()
             if appState.pendingNARALookup == nil, noteSnapshot != nil { mode = .note }
         }

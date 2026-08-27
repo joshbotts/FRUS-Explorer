@@ -888,11 +888,18 @@ struct ResearchRailView: View {
             appState.currentSourceNoteDocumentId = entry.documentId
         }
         appState.bindTool(.sourceExplorer, to: documentHostID)
-        // #369 BUG-8: signal the Source Explorer window to snapshot the note NOW (fresh window via
-        // its `.task`; an already-open window via `.onChange(of: sourceNoteFocusID)`), so it stops
-        // binding the shared globals live and can't be flickered by another window's `loadDocument`.
-        appState.sourceNoteFocusID = UUID()
-        openWindow.fronting(id: "frus.sourceExplorer")
+        // M-2 / W-2b: per-document window, keyed by the request — a second document's Sources is
+        // a second WINDOW rather than a retarget of this one (see ResearchRailView's graph twin).
+        // The `sourceNoteFocusID` bump is gone with the singleton it signalled: a value-backed
+        // window snapshots from its own request, and bumping the global here would retarget the
+        // valueless tri-mode window that the Window menu and the NARA route still own.
+        openWindow(value: SourceExplorerRequest(
+            rawSourceNote: appState.currentSourceNote ?? entry.sourceNote ?? "",
+            documentYear: appState.currentSourceNoteYear,
+            documentHeader: entry.header,
+            documentDateline: entry.dateline,
+            documentVolumeId: entry.volumeId,
+            documentId: entry.documentId))
     }
 
     /// Opens the cross-reference graph window anchored on this document, bound to this
