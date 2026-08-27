@@ -9259,3 +9259,42 @@ field; the flows fixture builder carries the new key.
 class inheritance at the index grain), 1 new app pipeline test, the bundled-artifact
 test now pins `decimalReferencesInherited > 0`. Full SPM suite 1,227 green; full iOS
 suite 4,128 green; Mac scheme builds. No `@Model` change, no CloudKit deploy.
+
+## Session 2026-08-27 — #888 closed by measurement, and #1092's chip learns the name
+
+**#888 (header extraction leaks source notes).** The issue's premise was measured before
+anything was changed, and it did not survive: the LIVE index — all 316,839 documents over
+552 volumes — holds ZERO headers containing "Source:". `extractHeader` has excluded
+head-nested notes recursively since v15, and the owner's build-43 screenshot (the exact
+document: frus1981-88v03 d111) shows the leak in the NAVIGATION TITLE, whose derivation
+in `DocumentViewModel` used `plainText` — notes included — instead of the extractor. So
+the fix is one definition, not a reindex: the title now routes through
+`IndexingPipeline.extractHeader` (the same string the index stores), the `entry.header`
+fallback passes through `DocumentHeaderDisplay.trimmedHeader` (the belt for a device
+whose index predates v15), and NO index bump ships because no parse output changed.
+`DocumentHeaderDisplay`'s charter is corrected in place — it is the stale-index belt,
+not a stopgap awaiting an extraction fix that was already done.
+
+The owner's follow-up in the same instruction: titles must WRAP once clean. The system
+inline nav title is single-line and clips at the screen edge, so the iOS reader gains a
+`.principal` toolbar title (two lines, centered, `fixedSize(horizontal: false,
+vertical: true)` — without claiming the wrapped ideal height the bar proposes one line
+and the Text truncates, which the first build of this session demonstrated).
+`.navigationTitle` still feeds the back-button menu, Handoff, and the app switcher.
+Verified on the simulator against frus1981-88v03 d111 itself: the title reads
+"111. Telegram From the / Department of State to the…" — two lines, no source note.
+Mac's window title reads the (clean, measured) stored header and window chrome cannot
+wrap; unchanged.
+
+**#1092 (person chip shows a numeric id).** `FacetNarrowing.person` carried only the
+rollup id — a slot number renumbered on every rollup rebuild — so the iOS
+`activeNarrowings` chip printed "person #77" and the Mac filter row fell back to the
+same. The tapped bucket already knows the person's display name: the case becomes
+`.person(Int, label: String?)`, both appliers write `personLabel`, and the iOS chip
+prefers it (the Mac label already did). The numeric fallback survives only for a filter
+restored without its label. End-to-end pins: the parser-driven #888 title test (real
+parser over the real 1981 head shape), the chip test driving the real
+`activeNarrowings` emitter, and the bucket→narrowing label mapping.
+
+Full iOS suite 4,131 green; Mac scheme builds. No artifact, no index version, no
+CloudKit deploy.

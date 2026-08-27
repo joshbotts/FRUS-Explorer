@@ -1038,8 +1038,10 @@ final class SearchViewModel {
             // unioning would return more documents than the row promised.
             selectedVolumeIds = [volumeId]
             selectedSubseriesIds = []
-        case .person(let rollupId):
+        case .person(let rollupId, let label):
             personRollupId = rollupId
+            // #1092: carry the tapped bucket's display name, or the chip reads "person #N".
+            personLabel = label
             // Drop any anchor from a previous person: it names someone else, and leaving it would
             // make the next rebind silently re-point this filter back at them.
             personAnchor = nil
@@ -1165,9 +1167,13 @@ final class SearchViewModel {
                               defaultValue: "\(selectedSubseriesIds.count) subseries")))
         }
         if let personRollupId {
+            // #1092: prefer the stored display name — the slot number is meaningless to a
+            // reader and is renumbered on every rollup rebuild (#747). The numeric fallback
+            // survives only for a filter restored without its label.
             out.append(ActiveNarrowing(
                 id: "person",
-                label: String(localized: "search.narrowing.person",
+                label: personLabel
+                    ?? String(localized: "search.narrowing.person",
                               defaultValue: "person #\(personRollupId)")))
         }
         if !selectedUserTagIds.isEmpty {
