@@ -21,6 +21,12 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Q-3a: initial implementation
+///   1.1 — W-16: `CorpusTermProfile` / `termProfile(for:)` deleted (the dispersion
+///         statistic shipped by #579's route instead); every truth these tests pinned
+///         through that wrapper is re-pinned here through the live primitives,
+///         `indexStem(of:)` and `vocabularyEntry(stem:)`. The wrapper's zero-counts-for-
+///         unseen-terms contract retired with it: the live path's answer for an unseen
+///         stem is a missing vocabulary row.
 @Suite("Corpus vocabulary and stem transparency")
 struct FTS5VocabularyTests {
 
@@ -111,27 +117,27 @@ struct FTS5VocabularyTests {
         #expect(stems.count == 1, "expected one stem, got \(stems.sorted())")
     }
 
-    @Test("A profile reports the search that actually ran, not the word typed")
-    func profileNamesTheRealSearch() async throws {
+    @Test("The stem lookup reports the search that actually ran, not the word typed")
+    func stemNamesTheRealSearch() async throws {
         let (store, dir) = try await makeStore()
         defer { cleanUp(dir) }
-        let profile = try #require(try await store.termProfile(for: "containment"))
-        #expect(profile.surfaceForm == "containment")
-        #expect(profile.stem == "contain")
-        #expect(profile.isStemmed, "containment → contain is exactly the case worth warning about")
+        let stem = try #require(try await store.indexStem(of: "containment"))
+        #expect(stem == "contain", "containment → contain is exactly the case worth warning about")
         // Two documents carry the stem: the containment one and the "contain/containing" one.
         // That second document is the trap: it is not about containment policy at all.
-        #expect(profile.documentFrequency == 2)
+        let entry = try #require(try await store.vocabularyEntry(stem: stem))
+        #expect(entry.documentFrequency == 2)
     }
 
     @Test("Case and surrounding whitespace do not change the answer")
-    func profileNormalizesInput() async throws {
+    func stemNormalizesInput() async throws {
         let (store, dir) = try await makeStore()
         defer { cleanUp(dir) }
-        let plain = try #require(try await store.termProfile(for: "containment"))
+        // The unicode61 tokenizer folds case and `indexStem` trims, so every variant of
+        // the word must resolve to the same index term.
         for variant in ["  Containment ", "CONTAINMENT", "ContainMent"] {
-            let profile = try #require(try await store.termProfile(for: variant))
-            #expect(profile == plain, "variant \(variant) profiled differently")
+            #expect(try await store.indexStem(of: variant) == "contain",
+                    "a case or whitespace variant resolved to a different stem")
         }
     }
 
@@ -141,34 +147,23 @@ struct FTS5VocabularyTests {
     func occurrencesDifferFromDocuments() async throws {
         let (store, dir) = try await makeStore()
         defer { cleanUp(dir) }
-        let profile = try #require(try await store.termProfile(for: "containment"))
         // "containment" appears 3× in d0 alone, plus contain/containing in d1.
-        #expect(profile.occurrences > profile.documentFrequency,
+        let stem = try #require(try await store.indexStem(of: "containment"))
+        let entry = try #require(try await store.vocabularyEntry(stem: stem))
+        #expect(entry.occurrences > entry.documentFrequency,
                 "occurrences must exceed documents for a term repeated within a document")
-        let perDoc = try #require(profile.occurrencesPerDocument)
-        #expect(perDoc > 1.0, "the concentration signal is what distinguishes a tic from a pattern")
-    }
-
-    @Test("occurrencesPerDocument is nil rather than a divide-by-zero for an unseen term")
-    func perDocumentIsNilWhenUnseen() async throws {
-        let (store, dir) = try await makeStore()
-        defer { cleanUp(dir) }
-        let profile = try #require(try await store.termProfile(for: "zzzunlikelyterm"))
-        #expect(profile.documentFrequency == 0)
-        #expect(profile.occurrencesPerDocument == nil)
     }
 
     // MARK: - Honest edges
 
-    @Test("A word the index has never seen profiles as zero, not nil")
-    func unseenTermIsZeroNotNil() async throws {
+    @Test("An unseen term tokenizes cleanly but has no vocabulary row")
+    func unseenTermHasNoRow() async throws {
         let (store, dir) = try await makeStore()
         defer { cleanUp(dir) }
-        // "0 documents" is a real answer and must be distinguishable from "this question
-        // does not apply", which is what nil means here.
-        let profile = try #require(try await store.termProfile(for: "zzzunlikelyterm"))
-        #expect(profile.documentFrequency == 0)
-        #expect(profile.occurrences == 0)
+        // The stem exists as a question; the index just has no answer for it. The live
+        // consumer (`InspectedOperand`) carries that as nil counts.
+        let stem = try #require(try await store.indexStem(of: "zzzunlikelyterm"))
+        #expect(try await store.vocabularyEntry(stem: stem) == nil)
     }
 
     @Test("Multi-token input has no single stem and says so")
@@ -176,18 +171,16 @@ struct FTS5VocabularyTests {
         let (store, dir) = try await makeStore()
         defer { cleanUp(dir) }
         #expect(try await store.indexStem(of: "military guarantee") == nil)
-        #expect(try await store.termProfile(for: "military guarantee") == nil)
         // Punctuation that explodes into several terms is the same situation.
         #expect(try await store.indexStem(of: "U.S.S.R.") == nil)
     }
 
-    @Test("Empty and whitespace-only input yield nil rather than a bogus profile")
+    @Test("Empty and whitespace-only input yield nil rather than a bogus stem")
     func emptyInput() async throws {
         let (store, dir) = try await makeStore()
         defer { cleanUp(dir) }
         #expect(try await store.indexStem(of: "") == nil)
         #expect(try await store.indexStem(of: "   ") == nil)
-        #expect(try await store.termProfile(for: "  ") == nil)
     }
 
     @Test("tokenize reports every term a phrase indexes as")
@@ -245,14 +238,12 @@ struct FTS5VocabularyTests {
         // for no good reason. The assertion is the one that matters: whatever SQLite
         // produced is what the index contains, so it is always the lookupable one.
         for word in words {
-            let profile = try #require(try await store.termProfile(for: word))
-            let byStem = try await store.vocabularyEntry(stem: profile.stem)
+            let sqliteStem = try #require(try await store.indexStem(of: word))
+            let byStem = try await store.vocabularyEntry(stem: sqliteStem)
             let bySwift = try await store.vocabularyEntry(stem: PorterStemmer.stem(word))
-            if profile.documentFrequency > 0 {
-                #expect(byStem != nil,
-                        "SQLite's own stem for \(word) must be present in its own vocabulary")
-                if PorterStemmer.stem(word) != profile.stem {
-                    #expect(bySwift == nil || bySwift?.documentFrequency != profile.documentFrequency,
+            if let byStem {
+                if PorterStemmer.stem(word) != sqliteStem {
+                    #expect(bySwift == nil || bySwift?.documentFrequency != byStem.documentFrequency,
                             "the Swift stem for \(word) resolved identically, so this test is not measuring what it claims")
                 }
             }
@@ -262,10 +253,11 @@ struct FTS5VocabularyTests {
         // otherwise the whole premise of sourcing stems from SQLite is unevidenced and
         // this test is decoration. `alliance` is the case, and it is not incidental —
         // it is the central noun of the report this workstream is built to reproduce.
-        let alliance = try #require(try await store.termProfile(for: "alliance"))
-        #expect(alliance.stem == "allianc", "SQLite's stem for alliance changed")
+        let allianceStem = try #require(try await store.indexStem(of: "alliance"))
+        #expect(allianceStem == "allianc", "SQLite's stem for alliance changed")
         #expect(PorterStemmer.stem("alliance") == "alli", "the Swift stem for alliance changed")
-        #expect(alliance.documentFrequency > 0, "the corpus must actually contain alliance")
+        let allianceEntry = try #require(try await store.vocabularyEntry(stem: allianceStem))
+        #expect(allianceEntry.documentFrequency > 0, "the corpus must actually contain alliance")
         #expect(try await store.vocabularyEntry(stem: "alli") == nil,
                 "the Swift stem `alli` must be absent from the index — that absence is the entire reason a stem line cannot be sourced from PorterStemmer")
 
@@ -327,7 +319,8 @@ struct FTS5VocabularyTests {
         try await reopened.insert(document: FTS5Document(
             id: "d1", volumeId: "v1", header: "", bodyText: "containment policy"))
         #expect(try await reopened.vocabularySize() > 0)
-        let profile = try #require(try await reopened.termProfile(for: "containment"))
-        #expect(profile.documentFrequency == 1)
+        let stem = try #require(try await reopened.indexStem(of: "containment"))
+        let entry = try #require(try await reopened.vocabularyEntry(stem: stem))
+        #expect(entry.documentFrequency == 1)
     }
 }

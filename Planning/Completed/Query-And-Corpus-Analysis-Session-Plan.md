@@ -362,7 +362,7 @@ sharply by 1959).
 | Normalisation toggle | **Shipped 2026-07-04 as CA-4** — twenty days *before* this plan asked for it | `AnalyticsNormalizationMode` (`AnalyticsView.swift:36-52`), persisted `@AppStorage` (`:282`), separate compare default (`:288`, routed by `normalizationBinding` `:438-445`), axis gate (`:401-403`), maths `normalizedValue` (`:1541-1545`), axis label, percent axis marks, caption, toolbar picker + compact fold, scoped denominator fetch, export wiring. Documented in both user manuals. |
 | Multi-query overlay | **Shipped as D1 Phase 2 (PR #471)**, and the cap is **5**, not 4 | `committedTerms` (`AnalyticsView.swift:220`), per-term dictionaries (`:223-232`), `maxCompareTerms` (`:414`) |
 | "Say the counts are documents" | **Shipped** at 13 chart sites, `totalFootnote`, the info popover, and the CSV header. The one unlabelled surface was the on-screen table — fixed in PR-A below. | |
-| Dispersion | Not shipped. `occurrencesPerDocument` — the exact statistic, with this rationale in its own doc comment — exists in `FTS5Vocabulary.swift:69-75` with **zero app callers**. | |
+| Dispersion | Not shipped. `occurrencesPerDocument` — the exact statistic, with this rationale in its own doc comment — exists in `FTS5Vocabulary.swift:69-75` with **zero app callers**. *[Correction 2026-08-27, W-16: this row went stale on 2026-07-30 — #579 shipped the statistic as `InspectedOperand.corpusOccurrencesPerDocument`, rendered by the Query Inspector above a 1.5 display threshold. The uncalled `FTS5Vocabulary` copy this row points at was deleted in W-16 so one definition survives.]* | `QueryInspection.swift` |
 
 **Decision R-2-1 is moot.** The overlay reused the axis frame, and the axis picker has since
 moved out of the toolbar into `groupByChip`.
