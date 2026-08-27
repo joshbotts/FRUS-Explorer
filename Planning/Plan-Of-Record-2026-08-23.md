@@ -78,6 +78,17 @@ suggested, not binding; tiers A–E can interleave as owner inputs land.
 
 ### Tier E — backlog admissions (owner disposition, 2026-08-23)
 
+> **Assessed 2026-08-27 — LOE and sessions per item, grounded against the tree:**
+> `Planning/Tier-E-Assessment-2026-08-27.md`. Headline: ~10 sessions clears the tier as
+> written (W-11: 2 · W-12 assess: 1 · W-13: 2 · W-14: 2 · W-15 assess: 1 · W-16: fold-in ·
+> W-17: 2 + 1 shared eval gated on W-9 step 2). Three rows' premises were corrected there:
+> W-16 is STALE (dispersion already surfaced by #579; residue is delete-or-unify), W-13's
+> named sources cannot supply the split as written, and W-12's "taxonomy carries era/region
+> tags" is false (no era tags; region is a non-discriminating subcategory — `dateRange` is
+> the key). The W-15 recon also ran the placeName census the assessment needs: 331,639
+> elements, 99.91% in datelines, zero refs — so `place_mentions` is dateline-origin
+> geography, and P10 needs its own index bump (W-1b's is spent).
+
 Six of the fourteen §6 backlog ideas were admitted to the wave; two are assessments whose
 deliverable is a scoping verdict, not code.
 

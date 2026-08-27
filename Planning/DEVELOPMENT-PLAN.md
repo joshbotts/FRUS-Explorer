@@ -9426,3 +9426,31 @@ the edits they described; zero directive strings remain.
 
 W-2 is fully discharged: five PRs (W-2a poles #1106, W-2b Source Explorer window
 #1107, W-2c text scaling #1108, W-2d iPad probes #1109, W-2e this).
+
+## Session 2026-08-27 — Tier E assessed: ten sessions, three premises corrected, one census run
+
+At the owner's request after W-2 closed: every Tier-E item (W-11…W-17) assessed for
+level of effort and session count, grounded by four parallel reconnaissance passes
+against the tree and the live index rather than against the rows' own text — which
+mattered, because three premises did not survive contact. W-16 is STALE (the dispersion
+statistic already surfaced in the Query Inspector on 2026-07-30 via #579's duplicate
+property; the residue is a fifteen-minute delete-or-unify). W-13's two named sources
+cannot supply the feature as written (ExportHistoryEntry records counts, not document
+identities; ProjectEngagedDocuments discards the per-kind split the sentence needs).
+W-12's founding claim — "the taxonomy already carries era/region tags" — is false: no
+era tags exist, and region is a places subcategory that averages 4.66 of 7 regions per
+volume, so dateRange is the real key.
+
+The W-15 reconnaissance ran the census its assessment needs: 331,639 placeName elements,
+99.91% inside datelines, zero carrying any ref — so place_mentions is dateline-origin
+geography (where documents were written, not what they discuss; 0.09% of placeNames are
+in body text), the name-at-date pairing is free (the authoritative date sits beside the
+place in the same element), the vocabulary is tractable (top 500 strings = 93.2% of
+occurrences), and P10 needs its own index bump since W-1b's is spent. W-11's scale is
+measured at 916 documents with four link rules covering 79.8%. W-17's design is already
+written in the withdrawn-artifact assessment; its evaluation partner (W-9 step 2)
+remains gated on the leads-or-noise verdict.
+
+Full record with per-item session plans and a suggested order:
+Planning/Tier-E-Assessment-2026-08-27.md. PoR Tier-E section annotated with the
+headline. No code changed.
