@@ -803,6 +803,11 @@ struct ArchiveVisitEditorView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
+                // DELIBERATE: the access line renders the PACKET's own English sentence
+                // (`restrictionLines`), unlocalized — it quotes NARA status vocabulary and
+                // must read identically here and in the exported packet (§3a's one-line
+                // rule); a localized mirror would be a second sentence to drift. The claim
+                // counts above localize because they are arithmetic labels, not quotations.
                 ForEach(TripPacketExporter.restrictionLines(target.restriction), id: \.self) {
                     Text($0).font(.caption2).foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
