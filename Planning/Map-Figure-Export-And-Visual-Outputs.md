@@ -1,6 +1,9 @@
 # Offscreen Metal figure export, and the visual-outputs program behind it
 
-**Status:** open design. Written 2026-08-20 against the tree at `claude/visual-elements-marketing-xt23dc`.
+**Status:** §6 Phases 1+2 SHIPPED 2026-08-27 (#1100); §6 Phase 3 SHIPPED 2026-08-27 (the
+frame-sequence harness — see the status block at the end of Phase 3, which carries the measured
+per-frame cost the phase demanded). §7's adjacent ideas remain open, priced, and sequenced below.
+Written 2026-08-20 against the tree at `claude/visual-elements-marketing-xt23dc`.
 
 **Why this document exists.** `SemanticMapExport.swift` ships a deliberate refusal: the map gets the
 data half of Manual §13.9's "every analytics chart a figure *or* its data" and not the figure half.
@@ -256,6 +259,29 @@ tagged volumes, not the documents about nonproliferation — and "on a chart tha
 inside a bar; on a map the reader watches those documents land in regions named `salmon
 constantinople`." Any published animation carries that sentence.
 
+**Status: SHIPPED 2026-08-27.** `SemanticMapFrameSequence` (in `FRUSExplorer/Semantic/Map/`)
+owns ONLY the ordering, the loop, and the sidecars — the mask is `SemanticMapModel.setScope`
+(the same pass the on-screen chip runs) and the frame is `renderOffscreen`, so a frame is a
+picture of what the reader would see, by construction. One cumulative-scope frame per covered
+volume ascending by `dateRange.earliest` (volume id as the total tiebreak), then a closing
+unscoped frame; the model is left unscoped. Hosted exactly where §7.4 predicted — a
+generator-style test in the app test target (`SemanticMapFrameSequenceTests`), gated behind
+`TEST_RUNNER_RENDER_MAP_FRAMES_DIR` (the `TEST_RUNNER_` prefix is load-bearing: a trailing
+KEY=VALUE argument is a build setting and never reaches the test process, and the
+`-only-testing` filter must stop at the suite — a function-level filter matches zero tests
+and reports "passed"). The honesty requirement travels as designed: `animationGrainSentence`
+leads `provenance.txt`, written beside the frames with `frames.csv` (per-frame volume, title,
+coverage start, cumulative counts, measured cost).
+
+**The cost question this phase existed to answer, measured 2026-08-27** (iPhone 16e
+simulator, M-series host, 1920×1080 at supersample 2): 553 frames in 57.6 s — **mean
+103.8 ms, worst 123.9 ms per frame**, mask + upload + render + readback + PNG encode
+together. So driving `setScopeFlags` per frame is ~10 fps offline: not a live animation
+rate, and exactly enough for a harness whose output is assembled into video afterwards
+(`ffmpeg -framerate 12 -i frame-%04d.png -pix_fmt yuv420p map.mp4`). The determinism claim
+is a test, not an assertion: the same three-volume sequence rendered twice is byte-identical,
+frame for frame.
+
 ---
 
 ## 7. The adjacent ideas, and where they sit
@@ -366,4 +392,6 @@ them on anything that shows a count.
    independent, good filler beside the above.
 4. **§7.3** — the two extra corpus lenses, loader only.
 5. **§6 Phase 3 / §7.4** — the animation harnesses, map and word cloud, once Phase 1 exists.
+   *(The map half SHIPPED 2026-08-27 — see Phase 3's status block; the word-cloud half, §7.4,
+   remains open.)*
 6. **§7.3's entity lenses** — its own session, priced as a generator run plus curation.
