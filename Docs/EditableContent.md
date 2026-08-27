@@ -4232,11 +4232,69 @@ Foreign government archives are not indexed in the NARA Catalog. Consult the arc
 
 #### Previously published material
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 788–789 | key: source.explorer.published.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.note | shared: one definition since W-11 — PublishedSourceGuidanceView renders this for BOTH platforms when the citation grammar declines the note -->
 
 This document was previously published. Consult the cited publication for the original source.
 
 <!-- END SOURCE: source.explorer.published.note -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.lookFor -->
+
+*Interpolated with the extracted designation — a series number, an issue date and page, or a president–year–page. Keep the `\(designation)` placeholder.*
+
+Look for \(designation) in this publication.
+
+<!-- END SOURCE: source.explorer.published.lookFor -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.linkStale -->
+
+*Shown under the link button only when the table's verification stamp is older than the freshness window. Interpolated with the stamp date — keep the `\(…)` placeholder.*
+
+Link last verified \(checked.formatted(date: .abbreviated, time: .omitted)).
+
+<!-- END SOURCE: source.explorer.published.linkStale -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.link.treaties -->
+
+Open the U.S. treaties research guide (Library of Congress)
+
+<!-- END SOURCE: source.explorer.published.link.treaties -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.link.bulletin -->
+
+Browse the Bulletin on the Internet Archive
+
+<!-- END SOURCE: source.explorer.published.link.bulletin -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.link.publicPapers -->
+
+Browse the Public Papers on GovInfo
+
+<!-- END SOURCE: source.explorer.published.link.publicPapers -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.family.treatySeries -->
+
+Treaty Series (Department of State)
+
+<!-- END SOURCE: source.explorer.published.family.treatySeries -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.family.eas -->
+
+Executive Agreement Series (Department of State)
+
+<!-- END SOURCE: source.explorer.published.family.eas -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.family.bulletin -->
+
+Department of State Bulletin
+
+<!-- END SOURCE: source.explorer.published.family.bulletin -->
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift | key: source.explorer.published.family.publicPapers -->
+
+Public Papers of the Presidents
+
+<!-- END SOURCE: source.explorer.published.family.publicPapers -->
 
 ---
 

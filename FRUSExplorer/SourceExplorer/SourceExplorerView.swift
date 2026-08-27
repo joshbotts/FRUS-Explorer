@@ -1923,11 +1923,11 @@ struct SourceExplorerView: View {
                 .textSelection(.enabled)
         }
 
+        // W-11: publication family + search guidance + verified outbound link when the
+        // grammar recognizes the citation; the generic consult-the-publication copy
+        // when it does not. One shared view with the macOS GroupBox twin.
         Section {
-            Text(String(localized: "source.explorer.published.note",
-                        defaultValue: "This document was previously published. Consult the cited publication for the original source."))
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            PublishedSourceGuidanceView(citation: citation)
         }
     }
 

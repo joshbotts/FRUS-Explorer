@@ -9454,3 +9454,36 @@ remains gated on the leads-or-noise verdict.
 Full record with per-item session plans and a suggested order:
 Planning/Tier-E-Assessment-2026-08-27.md. PoR Tier-E section annotated with the
 headline. No code changed.
+
+## Session 2026-08-27F — W-11: the previously-published dead end becomes a signposted exit
+
+The `previouslyPublished` panel said "consult the cited publication" and stopped; now,
+for the four publication families that dominate the population, it names the
+publication, extracts what to look for once there, and links a verified digitized run
+or finding aid. `PublishedCitationGrammar` (SourceNoteKit, beside the classifier whose
+`citation` string it decomposes) parses Treaty Series / Executive Agreement Series
+numbers, *Bulletin* issue dates and pages, and *Public Papers* president–year–book–page
+— swept over all 916 published notes in the live index: 726 (79.3%) parse, every one
+with a designation, exactly the assessment's 79.8% prediction. The sweep is why two
+extra shapes exist: an OCR `Treaty Series No: 596:]` and the monthly-issue
+`September 1980, pp. A–C` form, both found by reading the output, both now fixtures.
+
+`PublishedSourceLinkTable` carries three destinations under the trip packet's D12
+stamp discipline (`RepositoryLink`, one `confirmed` date per table, unstamped rows
+never print). HathiTrust — the PoR's suggested host — is ruled out by measurement: it
+403s every automated fetch, so a HathiTrust row could never pass the link checker.
+TS+EAS share the Library of Congress treaties research guide; the *Bulletin* links its
+Internet Archive run (browsable by the issue date the grammar extracts); *Public
+Papers* links GovInfo's GPO digitization (organized president-then-year, the
+designation's order). `check_repository_links.py` now reads BOTH link tables with
+per-table anti-vacuity floors and per-table stamping; the run came back clean (23 + 3,
+zero dead) and the new table's stamp is that run's date. One shared
+`PublishedSourceGuidanceView` mounts in the iOS Section and the macOS GroupBox — the
+hand-maintained-twins rule — and renders the honest generic copy whenever the grammar
+declines (Miller, the *Official Bulletin*, congressional prints, FRUS self-cites: a
+wrong link is worse than none). Display-time over the stored raw note; no index bump.
+
+19 SPM grammar fixtures + 5 app-side structural pins (every family printable, stamp
+checker-shaped, freshness against the pinned stamp not the wall clock, TS/EAS shared
+destination, end-to-end grammar→table join). Manual's provenance table row split so
+"previously published" states the new behavior.
