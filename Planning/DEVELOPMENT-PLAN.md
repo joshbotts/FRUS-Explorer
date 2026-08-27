@@ -9145,3 +9145,40 @@ the live 314,483-point map produced a 2400×2085 plate — dark map inset in the
 canvas, labels on their regions, caption band correct — delivered through the share
 flow. 9 new tests; manuals note the export in §15.6. §6 Phase 3 / §7 remain in the
 design doc for later sessions, as its §9 ordering intends.
+
+## Session 2026-08-27 — W-3 Phase 3: the frame-sequence harness
+
+`Map-Figure-Export-And-Visual-Outputs.md` §6 Phase 3. `SemanticMapFrameSequence` owns
+ONLY the ordering, the loop, and the sidecar files — the mask is `SemanticMapModel.
+setScope` (the same pass the on-screen scope chip runs) and each frame is
+`renderOffscreen`, the one-definition rule again: a frame is a picture of what the
+reader would see, by construction. One cumulative-scope frame per covered volume,
+ascending by `dateRange.earliest` with the volume id as a total tiebreak, then a
+closing unscoped frame; the model is left unscoped, which is the closing frame's own
+state. Hosted where the design's §7.4 note predicted — a generator-style gated test in
+the app test target (a `@MainActor` Metal renderer plus the bundled artifacts cannot be
+a `swift run` generator) — behind `TEST_RUNNER_RENDER_MAP_FRAMES_DIR`. Two invocation
+traps recorded in the doc comment because both bit during this session: the env var
+must wear xcodebuild's `TEST_RUNNER_` prefix IN xcodebuild's environment (a trailing
+KEY=VALUE argument is a build setting and never reaches the test process), and the
+`-only-testing` filter must stop at the suite — the function-level filter matched zero
+tests and reported "passed", exactly the memory's zero-tests trap.
+
+The honesty requirement travels with the frames, as the design mandates: the
+`animationGrainSentence` ("a scope is a set of volumes…") leads `provenance.txt`,
+written beside the frames together with `frames.csv` (volume, title, coverage start,
+cumulative volumes/documents, per-frame cost). The provenance body is
+`SemanticMapExport.provenance`'s own methods block — one definition of the caveats.
+
+The phase's stated question — measure `setScopeFlags` before driving it per frame —
+closes with a number that ships in every run's CSV rather than going stale in a
+comment. Measured this session (iPhone 16e simulator, M-series host, 1920×1080 at
+supersample 2): **553 frames in 57.6 s — mean 103.8 ms, worst 123.9 ms per frame**,
+mask + upload + render + readback + PNG encode together. ~10 fps offline: not a live
+rate, exactly enough for a harness assembled into video afterwards. Frames verified by
+eye: frame 50 shows the small in-scope 19th-century mass in lens colour against the
+ghost haze, frame 400 most of the corpus lit, the closing frame the full map — and the
+ghost treatment is the shipped shader's (luminance grey at fixed 0.16 alpha), not a
+private variant. Determinism is a test, not a claim: the same three-volume sequence
+rendered twice is byte-identical. 5 new tests (ordering incl. undated-volumes-last,
+CSV escaping, provenance lead, GPU determinism/cumulativity, the gated run).
