@@ -62,6 +62,12 @@ struct ResearchRailView: View {
     /// The document whose research surface this rail shows.
     let entry: DocumentBrowserEntry
 
+    /// Called after a classification override is applied or removed (#279 / W-4), so the
+    /// hosting document view can reload its render model — the body's shape follows the
+    /// effective classification, and a stale body beside a fresh badge would be worse than
+    /// either alone.
+    var onClassificationChanged: (() -> Void)? = nil
+
     /// The document view model — the Summary block reads its `activeSummary`.
     let vm: DocumentViewModel
 
@@ -135,6 +141,13 @@ struct ResearchRailView: View {
 
     @State private var showTagPicker = false
     @State private var showAddToCollection = false
+    /// #279 / W-4: the classification block's state — the effective flag (index value,
+    /// overrides applied), whether an override exists, and the parsed (TEI) value it would
+    /// restore to. Loaded per document; nil until known.
+    @State private var effectiveIsEditorialNote: Bool?
+    @State private var hasClassificationOverride = false
+    @State private var parsedIsEditorialNote: Bool?
+    @State private var showReclassifyConfirm = false
     #if os(macOS)
     @State private var showCitePopover = false
     @State private var showSharePopover = false
@@ -150,7 +163,8 @@ struct ResearchRailView: View {
          onAddNote: @escaping () -> Void,
          onEditNote: @escaping (ResearchNote) -> Void,
          onAddNoteToHighlight: @escaping (UUID) -> Void,
-         onOpenTool: @escaping (ResearchRailTool) -> Void = { _ in }) {
+         onOpenTool: @escaping (ResearchRailTool) -> Void = { _ in },
+         onClassificationChanged: (() -> Void)? = nil) {
         self.entry = entry
         self.vm = vm
         self.pendingHighlightLink = pendingHighlightLink
@@ -158,6 +172,7 @@ struct ResearchRailView: View {
         self.onEditNote = onEditNote
         self.onAddNoteToHighlight = onAddNoteToHighlight
         self.onOpenTool = onOpenTool
+        self.onClassificationChanged = onClassificationChanged
         let vId = entry.volumeId
         let dId = entry.documentId
         _documentNotes = Query(
@@ -199,7 +214,21 @@ struct ResearchRailView: View {
                 tagsAccordion
                 Divider()
                 collectionsAccordion
+                Divider()
+                classificationAccordion
             }
+        }
+        .task(id: entry.id) { await loadClassification() }
+        .confirmationDialog(
+            reclassifyTitle,
+            isPresented: $showReclassifyConfirm, titleVisibility: .visible
+        ) {
+            Button(reclassifyTitle) { Task { await applyReclassification() } }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
+        } message: {
+            // The anomaly warning #279 requires: what follows the override, what cannot.
+            Text(String(localized: "classification.override.warning",
+                        defaultValue: "The document's body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS's own classification at any time from this panel or from Settings ▸ Search."))
         }
         .sheet(isPresented: $showTagPicker) {
             UserTagPickerSheet(
@@ -675,6 +704,117 @@ struct ResearchRailView: View {
                 .padding(.vertical, 10)
             }
         }
+    }
+
+    // MARK: - Classification (#279 / W-4)
+
+    /// Always-visible (not expandable — two lines): the effective classification, FRUS's own
+    /// tagging when overridden, and the reversible reclassify control. Absent entirely until
+    /// the flag is known, and absent when the document is not indexed (an override could not
+    /// be applied anywhere, so offering one would be a dead control).
+    @ViewBuilder private var classificationAccordion: some View {
+        if let effective = effectiveIsEditorialNote {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Text(String(localized: "panel.classification.title",
+                                defaultValue: "Classification"))
+                        .font(.system(size: 11, weight: .semibold))
+                        .textCase(.uppercase)
+                        .kerning(0.6)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                Text(effective
+                     ? String(localized: "panel.classification.note",
+                              defaultValue: "Editorial note")
+                     : String(localized: "panel.classification.document",
+                              defaultValue: "Document"))
+                    .font(.callout)
+                if hasClassificationOverride, let parsed = parsedIsEditorialNote {
+                    Text(String(format: String(
+                        localized: "panel.classification.overridden %@",
+                        defaultValue: "FRUS tags this as %@ — reclassified by you."),
+                        parsed
+                            ? String(localized: "panel.classification.note.inline",
+                                     defaultValue: "an editorial note")
+                            : String(localized: "panel.classification.document.inline",
+                                     defaultValue: "a document")))
+                        .font(FRUSTheme.captionSmallFont)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button {
+                    showReclassifyConfirm = true
+                } label: {
+                    Label(reclassifyTitle,
+                          systemImage: hasClassificationOverride
+                              ? "arrow.uturn.backward" : "pencil.and.list.clipboard")
+                        .font(.callout)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, hInset)
+            .padding(.vertical, 10)
+        }
+    }
+
+    /// The control's title — the flip, or the restore when an override exists.
+    private var reclassifyTitle: String {
+        if hasClassificationOverride {
+            return String(localized: "panel.classification.restore",
+                          defaultValue: "Restore FRUS's Classification")
+        }
+        return (effectiveIsEditorialNote ?? false)
+            ? String(localized: "panel.classification.toDocument",
+                     defaultValue: "Reclassify as Document…")
+            : String(localized: "panel.classification.toNote",
+                     defaultValue: "Reclassify as Editorial Note…")
+    }
+
+    /// Loads the classification block's state: the effective flag from the index (overrides
+    /// already applied by the replay), and the stored override when one exists — whose
+    /// `parsedIsEditorialNote` is the TEI's own value; with no override, the column IS the
+    /// parsed value.
+    private func loadClassification() async {
+        guard let pipeline = appState.indexingPipeline else {
+            effectiveIsEditorialNote = nil
+            return
+        }
+        let effective = (try? await pipeline.effectiveIsEditorialNote(
+            volumeId: entry.volumeId, documentId: entry.documentId)) ?? nil
+        let override = DocumentClassificationOverrideStore.override(
+            volumeId: entry.volumeId, documentId: entry.documentId, context: modelContext)
+        effectiveIsEditorialNote = effective
+        hasClassificationOverride = override != nil
+        parsedIsEditorialNote = override?.parsedIsEditorialNote ?? effective
+    }
+
+    /// Applies the flip — or removes the override, restoring FRUS's own value — through the
+    /// store's shared persist-and-apply tail, then reloads this block and asks the host to
+    /// re-render the body.
+    private func applyReclassification() async {
+        guard let pipeline = appState.indexingPipeline,
+              let effective = effectiveIsEditorialNote else { return }
+        if let override = DocumentClassificationOverrideStore.override(
+            volumeId: entry.volumeId, documentId: entry.documentId, context: modelContext) {
+            let restore = override.snapshot
+            DocumentClassificationOverrideStore.remove(override, context: modelContext)
+            await DocumentClassificationOverrideStore.saveAndApply(
+                context: modelContext, pipeline: pipeline, restoring: restore)
+        } else {
+            DocumentClassificationOverrideStore.setOverride(
+                volumeId: entry.volumeId, documentId: entry.documentId,
+                isEditorialNote: !effective,
+                parsedIsEditorialNote: parsedIsEditorialNote ?? effective,
+                context: modelContext)
+            await DocumentClassificationOverrideStore.saveAndApply(
+                context: modelContext, pipeline: pipeline)
+        }
+        await loadClassification()
+        onClassificationChanged?()
     }
 
     /// The shared accordion section header (donated from the old panels' `panelSectionHeader`):

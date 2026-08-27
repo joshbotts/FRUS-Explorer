@@ -455,6 +455,13 @@ struct MacDocumentView: View {
                 // compose a note linked back to the just-created highlight.
                 openNoteComposer(linkedHighlightId: highlightId)
                 highlightCoordinator.pendingHighlightLink = nil
+            },
+            onClassificationChanged: {
+                // #279 / W-4: reload so the body's shape follows the new classification.
+                Task {
+                    guard let dm = appState.downloadManager else { return }
+                    await vm.load(volumeURL: dm.volumeURL(for: entry.volumeId))
+                }
             })
             .frame(width: width)
     }
@@ -897,7 +904,7 @@ struct MacDocumentView: View {
             Text(entry.volumeId)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-            if entry.isEditorialNote {
+            if vm.effectiveIsEditorialNote ?? entry.isEditorialNote {
                 EditorialNoteBadge()
             }
         }
@@ -1049,6 +1056,12 @@ struct MacDocumentView: View {
             personMentionStore: appState.personMentionStore,
             astCache: appState.documentASTCache
         )
+        // #279 / W-4: the effective classification — badge and body shape follow it.
+        vm.effectiveClassificationLookup = { [weak appState] volumeId, documentId in
+            guard let pipeline = appState?.indexingPipeline else { return nil }
+            return (try? await pipeline.effectiveIsEditorialNote(
+                volumeId: volumeId, documentId: documentId)) ?? nil
+        }
 
         await vm.load(volumeURL: volumeURL)
 

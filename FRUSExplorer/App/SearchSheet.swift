@@ -539,7 +539,15 @@ struct MacSearchWindowView: View {
         .sheet(isPresented: $showSavedSearches) {
             SavedSearchesView { saved in
                 searchVM.applyParameters(saved.searchParameters)
-                Task { await searchVM.performSearch(service: appState.searchService) }
+                Task {
+                    await searchVM.performSearch(service: appState.searchService)
+                    // W-5 (#266): stamp the run watermark AFTER the search completes, from the
+                    // exact count this run reported — the baseline the freshness badge is
+                    // computed against. Synced, so running it here clears every device's badge.
+                    saved.recordRun(matchCount: searchVM.totalMatchCount,
+                                    indexedVolumeCount: appState.indexedVolumeIds.count)
+                    try? modelContext.save()
+                }
             }
             .modelContainer(modelContext.container)
         }

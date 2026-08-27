@@ -1741,13 +1741,13 @@ Export your research data first if you might want it back.
 
 #### Erase All Data — what exactly goes
 
-<!-- Archive Visits Phase 2, NEW key (`…warning.inventory` under-stated the reach once the reset began deleting archive visit plans — the same fault each predecessor key was minted to fix). -->
+<!-- W-4 (#279), NEW key (`…inventory.visits` under-stated the reach once the reset began deleting document-classification corrections — the same fault each predecessor key was minted to fix). -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | key: settings.erase.warning.inventory.visits -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | key: settings.erase.warning.inventory.corrections -->
 
-This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, archive visit plans, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone.
+This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, archive visit plans, project leads, and any person-identity or document-classification corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone.
 
-<!-- END SOURCE: settings.erase.warning.inventory.visits -->
+<!-- END SOURCE: settings.erase.warning.inventory.corrections -->
 
 ---
 

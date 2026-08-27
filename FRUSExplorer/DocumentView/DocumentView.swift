@@ -594,6 +594,13 @@ struct DocumentView: View {
             astCache: appState.documentASTCache
         )
         guard let vm else { return }
+        // #279 / W-4: the effective classification (index value, overrides applied) — the
+        // badge and the body's shape both follow it.
+        vm.effectiveClassificationLookup = { [weak appState] volumeId, documentId in
+            guard let pipeline = appState?.indexingPipeline else { return nil }
+            return (try? await pipeline.effectiveIsEditorialNote(
+                volumeId: volumeId, documentId: documentId)) ?? nil
+        }
         guard let dm = appState.downloadManager,
               dm.isVolumeDownloaded(entry.volumeId) else { return }
         let url = dm.volumeURL(for: entry.volumeId)
@@ -1357,7 +1364,16 @@ struct DocumentView: View {
                 pendingHighlightLink = nil
                 activeSheet = .noteEditorForHighlight(highlightId)
             },
-            onOpenTool: { tool in openRailTool(tool, vm: vm) })
+            onOpenTool: { tool in openRailTool(tool, vm: vm) },
+            onClassificationChanged: {
+                // #279 / W-4: the body's shape follows the effective classification, so a
+                // reclassification reloads the render model in place — never a stale body
+                // beside a fresh badge.
+                Task {
+                    guard let dm = appState.downloadManager else { return }
+                    await vm.load(volumeURL: dm.volumeURL(for: entry.volumeId))
+                }
+            })
         // #338 step 2: the rail is presented via `.inspector` (iPad) / `.researchRail` sheet
         // (iPhone) — neither reliably inherits `\.sceneID` (review Finding 1), so publish it
         // explicitly here so the rail's Word Cloud tile addresses its hand-off to THIS window.
@@ -1516,7 +1532,7 @@ struct DocumentView: View {
                     .padding(.top, 12)
                 Divider()
             }
-            if entry.isEditorialNote {
+            if vm.effectiveIsEditorialNote ?? entry.isEditorialNote {
                 EditorialNoteBadge()
                     .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.top, 8)

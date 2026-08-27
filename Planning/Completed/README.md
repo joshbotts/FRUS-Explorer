@@ -53,6 +53,15 @@ the live plan of record (currently `../Plan-Of-Record-2026-08-23.md`), not here.
   mirror). The B-7 clusters gate was resolved by owner direction — the axis shipped as the
   instrument for the build-42 leads-or-noise verdict; see the live plan's §1 addendum.
 
+- **The W-4/W-5 design records (2 files — written 2026-08-26, shipped the same day)** —
+  `W4-Classification-Override-Design.md` (#279: the reversible classification override; the
+  owner's restyle-the-body decision; the replay-not-clobber architecture) and
+  `W5-Saved-Search-Freshness-Design.md` (#266: the synced count-watermark definition of "new";
+  capsule + exact count; `SavedSearch.lastModified`). Written directly here rather than living
+  at the Planning root first: each is the O-4/O-5 one-pager the plan of record owed, recorded
+  as shipped. The batched CloudKit promotion they board (41 identifiers, with Archive Visits
+  Phase 2) remains owed on the live plan's owner ledger.
+
 - **Numbered session plans (01…406)** — the session-by-session build of the app, all delivered.
   Includes the architecture/design records for shipped subsystems
   (`102-DocumentHighlight-Architecture`, `140-147-WebKit-Rendering-Migration`,

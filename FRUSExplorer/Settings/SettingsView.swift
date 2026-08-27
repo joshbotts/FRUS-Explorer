@@ -1301,8 +1301,10 @@ struct EraseEverythingView: View {
                 // reaches archive visit plans, and a destructive screen that under-states its
                 // reach is this screen's recurring fault — so the list is extended and, per the
                 // standing rule, the key is minted anew rather than rewritten in place.
-                Text(String(localized: "settings.erase.warning.inventory.visits",
-                            defaultValue: "This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, archive visit plans, project leads, and any person-identity corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
+                // W-4 (#279) supersedes `…inventory.visits` the same way: the reset now deletes
+                // document-classification corrections too.
+                Text(String(localized: "settings.erase.warning.inventory.corrections",
+                            defaultValue: "This deletes every downloaded volume and the search index. It deletes all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. It also deletes your saved searches, working corpora, custom volume scopes, archive visit plans, project leads, and any person-identity or document-classification corrections you have made. It deletes your whole research trail as well: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. Your app preferences are kept. This cannot be undone."))
                     .foregroundStyle(.secondary)
             } header: {
                 Text(String(localized: "settings.erase.header", defaultValue: "What This Removes"))
@@ -1737,6 +1739,8 @@ struct SearchDefaultsView: View {
     @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries    = true
     @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
     @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
+    /// Presents the classification-corrections manager (#279 / W-4).
+    @State private var showClassificationCorrections = false
 
     /// Whether `scope` is the only search scope still enabled.
     ///
@@ -1813,6 +1817,18 @@ struct SearchDefaultsView: View {
             }
 
             Section {
+                Button {
+                    showClassificationCorrections = true
+                } label: {
+                    Text(String(localized: "settings.search.classificationCorrections",
+                                defaultValue: "Classification Corrections…"))
+                }
+            } footer: {
+                Text(String(localized: "settings.search.classificationCorrections.footer",
+                            defaultValue: "Documents you have reclassified between “document” and “editorial note”. This filter, badges, counts, and exports follow your corrections."))
+            }
+
+            Section {
                 Picker(String(localized: "settings.search.snippet.label",
                               defaultValue: "Snippet length"),
                        selection: $snippetLineCount) {
@@ -1830,6 +1846,9 @@ struct SearchDefaultsView: View {
         #if os(macOS)
         .formStyle(.grouped)
         #endif
+        .sheet(isPresented: $showClassificationCorrections) {
+            ClassificationCorrectionsSheet()
+        }
         // "Search", not "Search Defaults" — S-0 renamed the row that leads here, and a
         // destination whose title disagrees with the row that opened it reads as a wrong turn.
         .navigationTitle(String(localized: "settings.search.title", defaultValue: "Search"))

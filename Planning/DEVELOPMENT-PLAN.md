@@ -8987,3 +8987,48 @@ document must NOT count, exactly as the packet's channel excludes it — and the
 sparsity captions now state the measured local number ("On this device: N of M indexed
 documents carry such references") beside the corpus figure, corrected from "about 6%" to
 "about 4%".
+
+## Session 2026-08-26 — W-4 + W-5: the two schema features, shipped as one deploy block
+
+The owner's stated purpose for pairing them: "so we can proceed with the schema deployments
+as a block." Both were owner-design-gated; a four-question sitting settled O-4 and O-5
+(records: `Planning/Completed/W4-Classification-Override-Design.md` and
+`…/W5-Saved-Search-Freshness-Design.md`), and one answer went against the recommendation —
+W-4 restyles the BODY, not just the metadata.
+
+**W-4 (#279), classification override.** `DocumentClassificationOverride` on the
+`PersonClusterOverride` precedent; the one-seam apply writes `document_cache.
+is_editorial_note` (value-guarded, unindexed column, no trigger), so search's type filter,
+facets, browse, chronology, related, cross-references and the Zotero export all honor an
+override with no per-consumer change — pinned by a test that runs the real
+`SearchService.searchCount` before and after an apply. Replay-not-clobber: the index upsert
+keeps restoring the parsed TEI value by design, so overrides replay at boot and per-volume
+(the summaries/notes pattern), from a set cached on the pipeline actor; `parsedIsEditorialNote`
+stores the restore value. The body restyle is `FRUSDocumentAST.applyingClassificationOverride`
+(wrap/unwrap `.editorialNote`, idempotent), applied in `DocumentViewModel.load`; both hosts'
+badges now read `pipeline.effectiveIsEditorialNote`, which also repairs the
+`DocumentBrowserEntry.isEditorialNote` default-false inconsistency. Surfaces: a rail
+Classification block (reclassify + anomaly-warning dialog + restore; hosts reload their VM so
+the open document restyles), a corrections manager off Settings ▸ Search (value-snapshot
+rows, undo re-fetches by id), and `ProjectHomeView`'s leads consult a live override `@Query`
+before the lead's stale snapshot. Registrations all green: R-7 (+7 identifiers),
+ResetInventory, dedupe, erase-warning key minted anew (`…inventory.corrections`) with the
+EditableContent mirror repointed. **No index-version bump** — the override applies after
+parsing, so the plan's W-1b batching clause was moot.
+
+**W-5 (#266), saved-search freshness.** No index-side timestamp exists, so "new" is a COUNT
+watermark: `searchCount(now) − matchCountAtLastRun`, both exact and uncapped — the
+plan-of-record's floor landmine dissolves rather than being worked around.
+`SavedSearch.freshnessData` (one tolerant-decoding blob, the `parametersData` argument) +
+`lastModified` (the record joins `LastModifiedStamping` — it never had a merge tiebreaker).
+Stamps at the three recall surfaces: both platforms' SavedSearchesView `onSelect` (after the
+run, from `totalMatchCount`) and the sidebar hand-off (`lastRunAt` with the baseline CLEARED
+— the user just saw the results — for the evaluator to backfill silently). Badges: NEW
+capsule (shared `SavedSearchNewBadge`, the lead-capsule grammar) + exact "+N since last run"
+caption; sidebar shows the capsule with the count in the a11y label. Evaluation is
+sequential and cancellable per surface (a cold filtered count can take seconds), re-keyed on
+the watermark blobs so a stamp re-triggers it.
+
+**The deploy block is complete: 41 identifiers** (32 Archive Visits + 7 W-4 + 2 W-5) in
+`identifiersAwaitingDeploy`, one Dashboard step. 24 new tests across three files, all green;
+both registration gates pass.

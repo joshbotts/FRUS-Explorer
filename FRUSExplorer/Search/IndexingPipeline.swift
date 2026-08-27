@@ -1417,6 +1417,11 @@ public actor IndexingPipeline {
         submitSpotlightItems(for: data)
         await stateTracker?.markCompleted(volumeId: volumeId)
         emit(.completed(volumeCount: 1, documentCount: data.documentCache.count))
+        // #279 / W-4: re-assert this volume's classification overrides. The upsert just
+        // restored the parsed TEI values (deliberately — upstream fixes must propagate for
+        // every non-overridden document), so the user's corrections replay on top.
+        try? applyClassificationOverrides(classificationOverrides, volumeId: volumeId)
+
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
             completedDocuments: data.documentCache.count,
@@ -8921,6 +8926,92 @@ public actor IndexingPipeline {
     ///
     /// Logs a warning when the document is not in the cache at all (the write is
     /// then a no-op, matching the previous fetch-then-update behaviour).
+    // MARK: - Classification overrides (#279 / W-4)
+
+    /// Applies the user's document-classification overrides into
+    /// `document_cache.is_editorial_note` — the ONE seam every consumer reads live (search
+    /// and its type filter, facets, browse, chronology, related documents, cross-references,
+    /// the Zotero export), so one pass here honors an override everywhere with no
+    /// per-consumer change.
+    ///
+    /// Value-guarded per row, so the boot replay is nearly free in the steady state; the
+    /// column is UNINDEXED in FTS5, so the update fires no trigger and needs none
+    /// (`updateCacheColumns` documents the same rule for the summary/note columns). A row
+    /// whose volume is not indexed is a SILENT no-op — the override reactivates when the
+    /// volume indexes, per the `PersonClusterOverride` rule — so no warning probe here.
+    ///
+    /// Callers: the launch replay (after the summary/note replay), the per-volume replay
+    /// after `indexVolume` completes (a re-index restores the parsed TEI value by design —
+    /// the upsert keeps propagating upstream fixes for every non-overridden document — so
+    /// the override must be re-asserted), and the override store's persist-and-apply tail.
+    /// The override set cached on this actor for the per-volume replay after `indexVolume`
+    /// — refreshed by every whole-set `applyClassificationOverrides` call (boot, and the
+    /// store's persist-and-apply tail). A synced override arriving from another device
+    /// mid-session reaches this cache at the next boot replay.
+    private var classificationOverrides: [DocumentClassificationOverrideData] = []
+
+    public func applyClassificationOverrides(
+        _ overrides: [DocumentClassificationOverrideData],
+        volumeId: String? = nil
+    ) throws {
+        let relevant: [DocumentClassificationOverrideData]
+        if let volumeId {
+            relevant = overrides.filter { $0.volumeId == volumeId }
+        } else {
+            classificationOverrides = overrides
+            relevant = overrides
+        }
+        guard !relevant.isEmpty else { return }
+        let sql = """
+            UPDATE document_cache SET is_editorial_note = ?
+            WHERE volume_id = ? AND document_id = ? AND is_editorial_note != ?
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for override in relevant {
+            sqlite3_reset(stmt)
+            sqlite3_clear_bindings(stmt)
+            sqlite3_bind_int(stmt, 1, override.isEditorialNote ? 1 : 0)
+            sqlite3_bind_text(stmt, 2, override.volumeId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(stmt, 3, override.documentId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int(stmt, 4, override.isEditorialNote ? 1 : 0)
+            try auxStep(stmt)
+        }
+    }
+
+    /// One document's EFFECTIVE editorial-note flag — the indexed value with any override
+    /// already applied (the replay writes overrides into the column, so this is one read).
+    /// `nil` when the document is not indexed on this device.
+    ///
+    /// The document views resolve the flag here rather than trusting their in-flight
+    /// `DocumentBrowserEntry`, whose `isEditorialNote` defaults to `false` at many
+    /// construction sites — so this read also repairs the badge's pre-existing
+    /// inconsistency at those sites.
+    public func effectiveIsEditorialNote(volumeId: String, documentId: String) throws -> Bool? {
+        let stmt = try auxPrepare(
+            "SELECT is_editorial_note FROM document_cache WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_int(stmt, 0) != 0
+    }
+
+    /// One document's cached header line, for a human-readable label where only the
+    /// `(volumeId, documentId)` anchor is stored (the classification-corrections list).
+    /// `nil` when the document is not indexed or its header is empty.
+    public func documentHeader(volumeId: String, documentId: String) throws -> String? {
+        let stmt = try auxPrepare(
+            "SELECT header FROM document_cache WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW,
+              let cString = sqlite3_column_text(stmt, 0) else { return nil }
+        let header = String(cString: cString).trimmingCharacters(in: .whitespacesAndNewlines)
+        return header.isEmpty ? nil : header
+    }
+
     private func updateCacheColumns(
         volumeId: String,
         documentId: String,

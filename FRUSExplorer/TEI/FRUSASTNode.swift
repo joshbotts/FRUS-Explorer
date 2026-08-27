@@ -82,6 +82,49 @@ public struct FRUSDocumentAST: Sendable {
     }
 }
 
+// MARK: - Classification override (#279 / W-4)
+
+extension FRUSDocumentAST {
+
+    /// Whether this document's AST is SHAPED as an editorial note — the exact rule
+    /// `IndexingPipeline` applies at index time (the first node is `.editorialNote`), kept
+    /// here so the two cannot drift.
+    public var isShapedAsEditorialNote: Bool {
+        guard let first = nodes.first, case .editorialNote = first else { return false }
+        return true
+    }
+
+    /// The AST with a user's classification override applied to its SHAPE (#279, owner
+    /// decision: the override restyles the body, not only the metadata).
+    ///
+    /// - Overriding to a DOCUMENT unwraps the `.editorialNote` container, splicing its
+    ///   children in place, so the body renders as ordinary document prose.
+    /// - Overriding to an EDITORIAL NOTE wraps the whole body in one `.editorialNote`
+    ///   node, exactly the shape the parser produces for `subtype="editorial-note"`.
+    ///
+    /// Idempotent: an override matching the AST's own shape returns the AST unchanged, so
+    /// callers can apply the EFFECTIVE classification unconditionally.
+    public func applyingClassificationOverride(isEditorialNote: Bool) -> FRUSDocumentAST {
+        guard isEditorialNote != isShapedAsEditorialNote else { return self }
+        let newNodes: [FRUSASTNode]
+        if isEditorialNote {
+            newNodes = [.editorialNote(nodes)]
+        } else {
+            newNodes = nodes.flatMap { node -> [FRUSASTNode] in
+                if case .editorialNote(let children) = node { return children }
+                return [node]
+            }
+        }
+        return FRUSDocumentAST(
+            documentId: documentId,
+            nodes: newNodes,
+            dateTimeMin: dateTimeMin,
+            dateTimeMax: dateTimeMax,
+            isFrontMatter: isFrontMatter,
+            printedNumber: printedNumber)
+    }
+}
+
 // MARK: - AST Node
 
 /// A node in the FRUS document abstract syntax tree.
