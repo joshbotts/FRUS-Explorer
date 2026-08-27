@@ -8913,3 +8913,49 @@ and the real exporter rather than mirrors. Manuals' export/Contents sentences ex
 The owner's remaining step is the one no test can verify: exercise each type once on a
 Development build signed into iCloud, then Dashboard → Deploy Schema Changes to Production —
 batched with W-4+W-5 per the timing decision.
+
+## Session 2026-08-26 — Archive Visits Phase 3: the surfaces
+
+The §4/§4a phase of `Planning/Archive-Visit-Plan-Design.md`: the plan list, the target-grain
+editor, and the add flows — the persistent Archive Visit becomes a thing a researcher can see,
+prioritize, and export.
+
+**One derivation path.** `ArchiveVisitDerivation` projects a plan's per-document contribution
+flags into the §5 two-list builder seam (`TripPacketBuilder.build(sourceDocuments:
+referenceDocuments:)` — flags resolved at the boundary, never threaded through the loops),
+joins the stored overlay (tiers, exclusions, notes, orphans), and returns the seed-coverage
+numbers. The editor, the list row's summary, and the export sheet all render from it, so no
+two surfaces can disagree about a plan's targets. The exporter gains `overlay` (tier bracket
+prefixes and ordering within each repository, exclusions filtered AND disclosed, notes on
+rows, the 1h stored-rows line) and per-plan `deliverables` gating — with the coverage report
+exempt, because the honesty block is not optional.
+
+**The surfaces.** `ArchiveVisitListView` mirrors WorkingCorpora/CustomScopes (row anatomy,
+rename alert, orange both-numbers coverage, end-of-list New row, swipe-arms-confirmation
+delete through the explicit cascade); iOS hosts it as a Research-tab sheet beside Project
+Home (the typed path is a one-deep projection no editor push could enter — the Project Home
+precedent), macOS as the `frus.archiveVisits` window with doors in the Research command menu
+and the My Research toolbar menu (help key re-minted `.v3`; the fronting roster grew).
+`ArchiveVisitEditorView` renders targets by repository with the (a) links in section headers,
+tier groups with Unprioritized last, expandable verbatim seedings under the shipped 8-cap,
+restriction lines, orphan rows kept and labeled, the 1d Documents tab whose absent halves are
+captions and never dead toggles, and the 1c tier sheet. The share sheet's `.plan` seed
+persists topic edits to `inquiryText` and the 1f deliverable toggles to the plan.
+
+**The add flows.** Project Home's Plan a Visit is create-or-open (new plans seed once from
+the leads union; Re-seed from Project is the editor's explicit button — never a live mirror);
+the collections verb is REPLACED per §7.3 (`collection.addToVisit`, membership through the
+shared `TripPacketSeed.resolve` so the three surfaces cannot describe different sets); Source
+Explorer carries the three-way section menu on both platforms with the reference count
+disclosed before choosing; Archival Neighbors carries ONE honest option over the documents
+shown, in the shared content core so all three hosts have it — §7.7's resolution over the
+artboard's two-option cohort menu, which would have required re-querying a cohort that is
+never in memory. `PlanPickerSheet` clones CollectionPickerSheet with the contribution banner;
+every add writes through `ArchiveVisitPlan.addSeeds`, whose flags union and never switch off.
+
+**Verification.** 82 tests across the seven packet/plan suites pass, including the rewritten
+entry-point parity suite (now pinning the verb swap, the create-or-open shape, the core-not-
+host placement of the Neighbors control, and the retirement of `collection.planVisit`) and
+the new derivation/overlay suites driving the real builder and exporter. Manuals' §14.8
+reframed for the persistent plan; the My Research help block re-minted `.v3` in mirror and
+source together.

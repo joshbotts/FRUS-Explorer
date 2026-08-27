@@ -282,6 +282,9 @@ struct ArchivalNeighborsContent: View {
     /// branch swap can re-fire it — this absorbs that while still reloading on a real
     /// scope change. `nil` until the first load completes.
     @State private var lastLoadedScope: NeighborScope?
+    /// The Add-to-Archive-Visit picker (Phase 3). In the CORE so all three hosts —
+    /// iOS sheet, macOS window, Stage Manager window — carry the control (design §7.7).
+    @State private var planPickerRequest: PlanPickerRequest?
 
     /// Designated initializer — seeds the `@State` scope from the per-trigger default.
     init(appState: AppState,
@@ -350,10 +353,37 @@ struct ArchivalNeighborsContent: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         }
+                        // Archive Visits Phase 3 — ONE honest option over the documents
+                        // SHOWN (design §7.7's resolution: the full cohort is never in
+                        // memory, and its count already reads in the overflow line above,
+                        // so nothing is added silently). Source-only preset: a neighbor
+                        // list is documents sharing an archival SOURCE.
+                        Button {
+                            planPickerRequest = PlanPickerRequest(
+                                documents: docs.map { (volumeId: $0.volumeId,
+                                                       documentId: $0.documentId) },
+                                includeSource: true, includeExternalRefs: false,
+                                basis: String(format: String(
+                                    localized: "archiveVisit.basis.neighbors %lld",
+                                    defaultValue: "the %lld neighbors shown"),
+                                    Int64(docs.count)))
+                        } label: {
+                            Label(String(format: String(
+                                localized: "archivalNeighbors.addToVisit %lld",
+                                defaultValue: "Add the %lld shown to an Archive Visit…"),
+                                Int64(docs.count)),
+                                  systemImage: "building.columns")
+                                .font(.callout)
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .listStyle(.plain)
                 }
             }
+        }
+        .sheet(item: $planPickerRequest) { request in
+            PlanPickerSheet(request: request)
         }
         // Keyed on pipeline availability **and the selected scope**: a window restored
         // before boot re-runs once the pipeline is assigned, and switching scope re-runs

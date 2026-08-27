@@ -76,6 +76,9 @@ import Foundation
 ///          per-seeding markers and chapter 5 to per-target access lines, their homeless
 ///          facts landing in the coverage report; chapter 6 becomes an opt-in appendix
 ///          (default off) with the Example-8 gate fixed to "any non-central-file target"
+///   2.1 — Archive Visits Phase 3: renders a PLAN — `deliverables` gates the (a)/(b)/(c)
+///          sections per §3b, and `overlay` joins the plan's stored state (tier grouping
+///          within each repository, exclusions, notes, and the stored-rows coverage line)
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -85,8 +88,15 @@ struct TripPacketExporter {
     /// When non-nil, render only this facility's slice — the export-scoping amendment.
     /// The value is a `ResearchFacility.chapterHeading`.
     var facilityScope: String? = nil
-    /// Whether to append the citation-crib appendix (§3a: opt-in, default off).
-    var includeCitationCrib: Bool = false
+    /// The per-plan deliverable toggles (§3b) — (a)/(b)/(c) on by default, the citation
+    /// appendix off. An ephemeral packet renders with the defaults; a plan's stored toggles
+    /// travel with it, so the same plan renders the same artifact on every device.
+    var deliverables: ArchiveVisitDeliverables = ArchiveVisitDeliverables()
+    /// A plan's stored per-target state, joined at render time (Archive Visits Phase 3):
+    /// exclusions filter the rendered targets, tier assignments group and order them within
+    /// each repository (Unprioritized last), notes ride the rows, and the stored-row
+    /// accounting feeds the coverage report. `nil` for an ephemeral packet.
+    var overlay: ArchiveVisitOverlay? = nil
     /// When the export was generated, for the header's snapshot caveat. Optional so tests
     /// stay deterministic without injecting a calendar.
     var generatedOn: Date? = nil
@@ -105,27 +115,33 @@ struct TripPacketExporter {
     /// of State` folds to itself, not to a NARA facility.
     var factTable: RepositoryFactTable = .current
 
-    /// The whole packet.
+    /// The whole packet, gated by the plan's deliverable toggles (§3b). The header and the
+    /// coverage report are not deliverables and always render — the honesty block is not
+    /// optional (§3c).
     func export() -> String {
         var sections = [header]
-        for facility in orderedFacilities(in: scopedTargets) {
-            sections.append(facilitySection(facility))
+        if deliverables.includeLinks || deliverables.includeTargets {
+            for facility in orderedFacilities(in: scopedTargets) {
+                sections.append(facilitySection(facility))
+            }
         }
-        sections.append(inquiryDrafts)
-        if facilityScope == nil, !unplacedTargets.isEmpty {
+        if deliverables.includeInquiry { sections.append(inquiryDrafts) }
+        if deliverables.includeTargets, facilityScope == nil, !unplacedTargets.isEmpty {
             sections.append(confirmBeforeYouTravel)
         }
         sections.append(coverageReport)
-        if includeCitationCrib { sections.append(citationCrib) }
+        if deliverables.includeCitationCrib { sections.append(citationCrib) }
         return sections.joined(separator: "\n\n")
     }
 
     // MARK: - The targets in scope
 
-    /// The targets this export renders — the whole plan, or one facility's slice.
+    /// The targets this export renders — the whole plan, or one facility's slice, minus
+    /// whatever the plan's stored state excludes.
     var scopedTargets: [TripPacketModel.Target] {
-        guard let facilityScope else { return model.targets.filter(\.canHeadChapter) }
-        return model.targets.filter { $0.facility.chapterHeading == facilityScope }
+        let included = model.targets.filter { overlay?.excludedKeys.contains($0.key) != true }
+        guard let facilityScope else { return included.filter(\.canHeadChapter) }
+        return included.filter { $0.facility.chapterHeading == facilityScope }
     }
 
     /// Targets no repository can serve — the confirm-prompt set (D11), reported rather than
@@ -183,7 +199,7 @@ struct TripPacketExporter {
         // Deliverable (a): the curated link pairs, worst-freshness rule applied per link
         // (D12). Only ever `printable` — an unverified link is omitted, never printed
         // undated (D7). A facility without a curated row simply has no links block.
-        if let row = factTable.row(for: facility) {
+        if deliverables.includeLinks, let row = factTable.row(for: facility) {
             let links = Self.linkLines(row.links)
             if !links.isEmpty {
                 out.append("Plan your visit:")
@@ -191,17 +207,38 @@ struct TripPacketExporter {
                 out.append("")
             }
         }
-        for target in scopedTargets where target.facility.chapterHeading == facility {
-            out.append(contentsOf: targetRows(target))
+        // Deliverable (b): the target rows — within a repository, grouped by the plan's
+        // priority tiers in tier order, Unprioritized last (§5: repository → priority),
+        // label-sorted within a tier so the order is deterministic.
+        if deliverables.includeTargets {
+            let targets = scopedTargets
+                .filter { $0.facility.chapterHeading == facility }
+                .sorted {
+                    let l = overlay?.tierOrderIndex(for: $0.key) ?? Int.max
+                    let r = overlay?.tierOrderIndex(for: $1.key) ?? Int.max
+                    if l != r { return l < r }
+                    return $0.label < $1.label
+                }
+            for target in targets {
+                out.append(contentsOf: targetRows(target))
+            }
         }
         while out.last == "" { out.removeLast() }
         return out.joined(separator: "\n")
     }
 
     /// Deliverable (b): one target's row — metadata, then its seedings itemized by claim.
+    /// A plan's tier rides the heading as a bracket prefix ("[Day one] Lot 67 D 54" — the 1g
+    /// grammar), and its note rides the row.
     func targetRows(_ target: TripPacketModel.Target) -> [String] {
-        var out = ["### \(target.label)", ""]
+        let tierPrefix = overlay.flatMap { overlay in
+            overlay.tier(for: target.key).map { "[\(overlay.displayName(for: $0))] " }
+        } ?? ""
+        var out = ["### \(tierPrefix)\(target.label)", ""]
         out.append(Self.claimCounts(target))
+        if let note = overlay?.notes[target.key] {
+            out.append("Note: \(note)")
+        }
         if let line = target.recordsLine {
             out.append(line)
             if let url = target.resolution?.catalogURL { out.append(url) }
@@ -464,17 +501,34 @@ struct TripPacketExporter {
     var coverageReport: String {
         var out = ["## What this packet covers", ""]
 
-        // The seed, in the resolver's both-numbers grammar: how much of what the reader
-        // asked for this device could actually read.
+        // The seeds, in the resolver's both-numbers grammar — both numbers even when
+        // complete, because "51 of 51" tells the reader the test ran everywhere (1h).
         if let seeded = seededDocumentCount, let resolved = resolvedDocumentCount {
+            var line = "\(resolved) of \(seeded) seeding "
+                + (seeded == 1 ? "document" : "documents") + " indexed on this device"
             if resolved < seeded {
-                out.append("This packet drew on \(resolved) of \(seeded) seeded documents — "
-                           + "the rest are in volumes not indexed on this device, so nothing "
-                           + "below speaks for them.")
-            } else {
-                out.append("All \(seeded) seeded document\(seeded == 1 ? " was" : "s were") "
-                           + "read on this device.")
+                let missing = seeded - resolved
+                line += " — targets from the other \(missing) may be missing"
             }
+            out.append(line + ".")
+        }
+
+        // The plan's stored state, when there is one (1h): how many stored rows still derive,
+        // and what the researcher excluded — both disclosed, never silently applied.
+        if let overlay, overlay.storedKeyCount > 0 {
+            let deriving = overlay.storedKeyCount - overlay.orphanKeys.count
+            var line = "\(deriving) of \(overlay.storedKeyCount) stored target "
+                + (overlay.storedKeyCount == 1 ? "row derives" : "rows derive")
+                + " from the current seeds"
+            if !overlay.orphanKeys.isEmpty {
+                let n = overlay.orphanKeys.count
+                line += " — \(n) kept and labeled, never deleted"
+            }
+            out.append(line + ".")
+        }
+        if let overlay, !overlay.excludedKeys.isEmpty {
+            let n = overlay.excludedKeys.count
+            out.append("\(n) target\(n == 1 ? "" : "s") excluded from this export by you.")
         }
 
         // The targets, split honestly: resolved / cited-but-unresolved / unplaceable.
@@ -565,8 +619,13 @@ struct TripPacketExporter {
                            + "states it, worst covered status first. A closed series cannot be "
                            + "pulled, so raise these in your inquiry rather than on arrival.")
             }
-            let unmeasured = model.targets.reduce(0) {
-                $0 + ($1.restriction?.unmeasuredClaimantCount ?? 0)
+            let divided = model.targets.compactMap(\.restriction).filter(\.isDivided)
+            let unmeasured = divided.reduce(0) { $0 + $1.unmeasuredClaimantCount }
+            if !divided.isEmpty {
+                let total = divided.reduce(0) { $0 + $1.claimantCount }
+                out.append("Access status measured for \(total - unmeasured) of \(total) "
+                           + "claimant series across this plan's \(divided.count) divided "
+                           + (divided.count == 1 ? "lot" : "lots") + ".")
             }
             if unmeasured > 0 {
                 out.append("Across divided lots, \(unmeasured) claimant "

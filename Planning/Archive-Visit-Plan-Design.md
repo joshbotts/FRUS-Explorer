@@ -350,8 +350,28 @@ counts (the shipped 12/8/20 truncation grammar), which also answers unit-grain s
   like Collections), the Data & Recovery Contents inventory + erase warning (new keys), and
   `ResearchDataExporter` format 6 (plan whole — seeds, tiers, toggles, every stored target
   state including orphans; never the derived packet). No UI surfaces yet — Phase 3.
-- **Phase 3 — the surfaces + the plan editor** (revised: the target-grain editor of §4, plus the
-  add flows).
+- ~~**Phase 3 — the surfaces + the plan editor.**~~ **SHIPPED 2026-08-26** — the §4/§4a
+  surfaces: `ArchiveVisitListView` (iOS Research tab sheet beside Project Home; macOS
+  `frus.archiveVisits` window with doors in the Research command menu and the My Research
+  toolbar menu; WorkingCorpora row anatomy, CustomScopes create-row + confirmed delete,
+  duplicate/rename/delete per §4a); `ArchiveVisitEditorView` (targets grouped by repository
+  with the (a) links in headers, tier groups with Unprioritized last, expandable verbatim
+  seedings under the 8-cap, restriction lines, orphan rows kept + labeled, the 1d Documents
+  tab with caption-not-dead-toggle sparsity, the 1c tier sheet, the 1b info popover);
+  `PlanPickerSheet` (the 1e clone with contribution banner + basis); the add flows —
+  Project Home create-or-open from the leads union + explicit Re-seed, the collection verb
+  REPLACED per §7.3 (`collection.addToVisit`, membership through the shared
+  `TripPacketSeed.resolve`), Source Explorer's section-local three-way menu on BOTH
+  platforms, Neighbors' one-honest-option in the shared content core (§7.7's resolution —
+  the artboard's two-option cohort menu was declined because the cohort is never in memory
+  and its count already reads in the overflow line). The pipeline side: the §5 two-list
+  builder seam, `ArchiveVisitDerivation` (the ONE derivation path list/editor/sheet share),
+  the exporter's `overlay` (tier prefixes + ordering, exclusions disclosed, notes, the 1h
+  stored-rows line) and per-plan `deliverables` gating with the coverage report exempt; the
+  sheet's `.plan` seed persisting topic edits to `inquiryText` and toggles to the plan.
+  Deferred within scope: the 1a "Seeded from …" provenance caption (needs a plan-level field
+  the §2 schema does not carry — a `stateData`-style column on the PLAN would board a future
+  deploy); per-plan list target-counts render async from the same derivation.
 - **Phase 4 — unit-grain entry UI + the live-index sparsity re-measure.**
 
 ## 7. Decisions — resolved and remaining

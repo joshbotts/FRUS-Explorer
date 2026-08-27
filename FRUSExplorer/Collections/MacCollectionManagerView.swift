@@ -631,10 +631,9 @@ private struct CollectionDetailPane: View {
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights = false
     @State private var showExport = false
-    /// #830: the packet presenter for this collection. macOS had the sheet in
-    /// `CollectionEditorView.macBody` and no control anywhere to open it; this pane is where
-    /// macOS actually edits a collection, so the control and the presenter both belong here.
-    @State private var showTripPacket = false
+    /// #830 / Phase 3: the Add-to-Archive-Visit picker for this collection. This pane is
+    /// where macOS actually edits a collection, so the control and the presenter both live here.
+    @State private var planPickerRequest: PlanPickerRequest?
     /// Composer v2 (§B): the ⚙ Collection settings popover — the metadata / front-matter /
     /// composition surface that replaces the fixed header + inline Composition/Front-Matter
     /// disclosures (which are gone).
@@ -743,14 +742,10 @@ private struct CollectionDetailPane: View {
             .environment(appState)
         }
         .transientToast($addDocumentsToast)
-        .sheet(isPresented: $showTripPacket) {
-            // The COLLECTION, matching `CollectionEditorView` — the sheet resolves membership
-            // itself (smart → the export's own `smartRefs`; static → documents + excerpts,
-            // de-duplicated), so the three surfaces cannot describe different sets (Phase 0).
-            TripPacketSheet(
-                seed: .collection(collection),
-                title: collection.name,
-                researchQuestion: nil)
+        .sheet(item: $planPickerRequest) { request in
+            // Membership resolved through the SAME `TripPacketSeed.resolve` rule the packet
+            // uses, so the three collection surfaces cannot describe different sets.
+            PlanPickerSheet(request: request)
                 .environment(appState)
         }
         .sheet(isPresented: $showAddHighlights) {
@@ -1312,9 +1307,21 @@ private struct CollectionDetailPane: View {
                 Divider()
                 // #830: the macOS half of the collection entry point, absent until now. Reuses the
                 // iOS menus' localization key so the three surfaces cannot state different things.
-                Button { showTripPacket = true } label: {
-                    Label(String(localized: "collection.planVisit",
-                                 defaultValue: "Plan an Archive Visit…"),
+                Button {
+                    Task {
+                        guard let docs = await TripPacketSeed.resolve(
+                            collection: collection, appState: appState,
+                            modelContext: modelContext) else { return }
+                        planPickerRequest = PlanPickerRequest(
+                            documents: docs, includeSource: true, includeExternalRefs: true,
+                            basis: String(format: String(
+                                localized: "archiveVisit.basis.collection %@",
+                                defaultValue: "from the collection “%@”"), collection.name),
+                            suggestedName: collection.name)
+                    }
+                } label: {
+                    Label(String(localized: "collection.addToVisit",
+                                 defaultValue: "Add to Archive Visit…"),
                           systemImage: "building.columns")
                 }
                 // Content or a saved search — the same rule `canExport` applies (:848) and the

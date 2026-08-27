@@ -56,7 +56,7 @@ import Foundation
 @MainActor
 enum TripPacketBuilder {
 
-    /// Builds the packet model for a document set.
+    /// Builds the packet model for a document set — both channels over the same list.
     ///
     /// - Parameters:
     ///   - documents: the reading list — a project's engaged set, or a collection's documents.
@@ -71,9 +71,33 @@ enum TripPacketBuilder {
         researchQuestion: String?,
         dataSource: some TripPacketReferenceDataSource
     ) async -> TripPacketModel {
-        let records = await dataSource.documentSources(for: documents)
-        let dates = await dataSource.dateMetadata(for: documents)
-        let externalCitations = await dataSource.externalCitations(for: documents)
+        await build(sourceDocuments: documents, referenceDocuments: documents,
+                    researchQuestion: researchQuestion, dataSource: dataSource)
+    }
+
+    /// The §5 two-list seam (Archive Visits Phase 3): an Archive Visit plan's per-document
+    /// contribution flags project into TWO document lists — the documents whose own source
+    /// notes feed the drawn-from channel, and the documents whose footnotes feed the
+    /// pointed-at channel. The flags are resolved HERE, at the boundary, never threaded
+    /// through the build loops — #783's separation held at the seam rather than by
+    /// discipline inside it. The one-list entry above is the ephemeral packet's case:
+    /// both lists are the same reading list.
+    static func build(
+        sourceDocuments: [(volumeId: String, documentId: String)],
+        referenceDocuments: [(volumeId: String, documentId: String)],
+        researchQuestion: String?,
+        dataSource: some TripPacketReferenceDataSource
+    ) async -> TripPacketModel {
+        // The seeded set — for the year test and the date lookups. A document contributes its
+        // date whichever channel it feeds, so the pre-1946 flag describes the plan's seeds.
+        var seenKeys = Set<String>()
+        let allDocuments = (sourceDocuments + referenceDocuments).filter {
+            seenKeys.insert("\($0.volumeId)/\($0.documentId)").inserted
+        }
+
+        let records = await dataSource.documentSources(for: sourceDocuments)
+        let dates = await dataSource.dateMetadata(for: allDocuments)
+        let externalCitations = await dataSource.externalCitations(for: referenceDocuments)
 
         let recordsByKey = Dictionary(
             records.map { ("\($0.volumeId)/\($0.documentId)", $0) },
@@ -102,7 +126,7 @@ enum TripPacketBuilder {
         // substitute routes; the document key is what lets the per-seeding markers land.
         var citedFiles: [MandatorySubstitutes.CitedFile] = []
         let parser = SourceNoteParser()
-        for document in documents {
+        for document in sourceDocuments {
             let documentKey = "\(document.volumeId)/\(document.documentId)"
             guard let record = recordsByKey[documentKey] else {
                 continue   // no source note indexed — counted as unresolved below
@@ -170,7 +194,7 @@ enum TripPacketBuilder {
                                   seedings: [TripPacketModel.RefSeeding])] = [:]
         var refOrder: [String] = []
         var documentsWithReferences = 0
-        for document in documents {
+        for document in referenceDocuments {
             let documentKey = "\(document.volumeId)/\(document.documentId)"
             let relevant = (externalCitations[documentKey] ?? [])
                 .filter { $0.anchor != "centralFileClass" }
@@ -208,16 +232,16 @@ enum TripPacketBuilder {
 
         return TripPacketModel.build(
             groups: groups,
-            documentYears: documents.map { document in
+            documentYears: allDocuments.map { document in
                 dates["\(document.volumeId)/\(document.documentId)"]
                     .flatMap { Int($0.dateISO.prefix(4)) }
             },
             citedFiles: citedFiles,
             unresolvedLotCount: unresolvedLots,
-            // Documents whose source note was never indexed. Reported rather than dropped — the
-            // coverage report says so, because a packet silently covering part of a reading list
-            // reads as a clean bill of health for the rest.
-            unresolvedDocumentCount: documents.count - placed,
+            // Source-channel documents whose source note was never indexed. Reported rather than
+            // dropped — the coverage report says so, because a packet silently covering part of a
+            // reading list reads as a clean bill of health for the rest.
+            unresolvedDocumentCount: sourceDocuments.count - placed,
             researchQuestion: researchQuestion,
             references: references,
             // Scanned means the documents handed to this builder: the seed resolver already
@@ -226,7 +250,7 @@ enum TripPacketBuilder {
             // channel reading as sparse data (references sit on a small minority of
             // documents corpus-wide), never as a failed scan.
             referenceCoverage: .init(documentsWithReferences: documentsWithReferences,
-                                     documentsScanned: documents.count))
+                                     documentsScanned: referenceDocuments.count))
     }
 
     // MARK: - Target keys (§2b)

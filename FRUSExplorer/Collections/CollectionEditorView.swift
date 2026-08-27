@@ -182,8 +182,9 @@ struct CollectionEditorView: View {
     @State private var addDocumentsToast: String?
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights  = false
-    /// Presents the research-trip packet for this collection's documents (#830 T-2).
-    @State private var showTripPacket     = false
+    /// Presents the Add-to-Archive-Visit picker over this collection's resolved documents
+    /// (Phase 3 — the ephemeral packet verb this replaced lives on in the plan's own export).
+    @State private var planPickerRequest: PlanPickerRequest?
     @State private var showExport         = false
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
@@ -286,26 +287,14 @@ struct CollectionEditorView: View {
             iOSBody
             #endif
         }
-        // #830: attached to the SHARED body, not to a per-platform one.
-        //
-        // This sheet shipped inside `macBody`'s chain while the only control that sets
-        // `showTripPacket` lives in `iPhoneAddMenu` — so on iOS the button set a flag nothing
-        // observed, and on macOS the presenter had no control to open it. The entry point was dead
-        // on every platform from the day it landed, and no test caught it because nothing
-        // constructs `TripPacketSheet`.
-        //
-        // The other four sheets here are deliberately left as per-platform pairs: they are
-        // pre-existing and each body genuinely has its own copy. This one has a single presenter
-        // precisely so the two halves cannot drift apart again.
-        .sheet(isPresented: $showTripPacket) {
-            // The COLLECTION, not a pre-filtered list: the sheet resolves membership itself —
-            // smart collections through the same `smartRefs` their exports use, static ones
-            // through `TripPacketSeed.staticSeedDocuments` (documents + excerpts, de-duplicated)
-            // — so this surface and the export cannot describe different membership (Phase 0).
-            TripPacketSheet(
-                seed: .collection(collection),
-                title: collection.name,
-                researchQuestion: nil)
+        // #830 / Phase 3: attached to the SHARED body, not to a per-platform one — the
+        // Phase 0 lesson (the ephemeral packet's presenter shipped inside `macBody` while its
+        // control lived in `iPhoneAddMenu`, dead on every platform) holds for its successor.
+        // Membership is resolved through the SAME `TripPacketSeed.resolve` rule the packet
+        // uses (smart → `smartRefs`; static → documents + excerpts, de-duplicated), so this
+        // surface and the export cannot describe different membership.
+        .sheet(item: $planPickerRequest) { request in
+            PlanPickerSheet(request: request)
                 .environment(appState)
         }
         .transientToast($addDocumentsToast)
@@ -1336,10 +1325,20 @@ struct CollectionEditorView: View {
             // #830 T-2: the packet is built from this collection's documents. Disabled with none,
             // rather than hidden, so the action is discoverable before a collection has content.
             Button {
-                showTripPacket = true
+                Task {
+                    guard let docs = await TripPacketSeed.resolve(
+                        collection: collection, appState: appState,
+                        modelContext: modelContext) else { return }
+                    planPickerRequest = PlanPickerRequest(
+                        documents: docs, includeSource: true, includeExternalRefs: true,
+                        basis: String(format: String(
+                            localized: "archiveVisit.basis.collection %@",
+                            defaultValue: "from the collection “%@”"), collection.name),
+                        suggestedName: collection.name)
+                }
             } label: {
-                Label(String(localized: "collection.planVisit",
-                             defaultValue: "Plan an Archive Visit…"),
+                Label(String(localized: "collection.addToVisit",
+                             defaultValue: "Add to Archive Visit…"),
                       systemImage: "building.columns")
             }
             // Content or a saved search — the export sheet's own rule. A smart collection's
@@ -1404,10 +1403,20 @@ struct CollectionEditorView: View {
             // every iPad, and the larger iPhones in landscape — a collection had no route to the
             // packet at all.
             Button {
-                showTripPacket = true
+                Task {
+                    guard let docs = await TripPacketSeed.resolve(
+                        collection: collection, appState: appState,
+                        modelContext: modelContext) else { return }
+                    planPickerRequest = PlanPickerRequest(
+                        documents: docs, includeSource: true, includeExternalRefs: true,
+                        basis: String(format: String(
+                            localized: "archiveVisit.basis.collection %@",
+                            defaultValue: "from the collection “%@”"), collection.name),
+                        suggestedName: collection.name)
+                }
             } label: {
-                Label(String(localized: "collection.planVisit",
-                             defaultValue: "Plan an Archive Visit…"),
+                Label(String(localized: "collection.addToVisit",
+                             defaultValue: "Add to Archive Visit…"),
                       systemImage: "building.columns")
             }
             // Content or a saved search — the export sheet's own rule. A smart collection's

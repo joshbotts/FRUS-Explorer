@@ -396,6 +396,13 @@ struct MainWindowView: View {
                     Label(String(localized: "mainwindow.tools.collections", defaultValue: "Collections"),
                           systemImage: "tray.2")
                 }
+                // Archive Visits (Phase 3, §4a) — like Collections, never routes document
+                // opens, so no provenance bind.
+                Button { openWindow.fronting(id: "frus.archiveVisits") } label: {
+                    Label(String(localized: "mainwindow.tools.archiveVisits",
+                                 defaultValue: "Archive Visits"),
+                          systemImage: "building.columns")
+                }
                 // #652: the History window's second door. Until now it was reachable only from the
                 // menu bar (Research ▸ History ▸ Complete History…), which a reader working with the
                 // mouse never opens — the same discoverability gap #795 records for Archival
@@ -421,10 +428,11 @@ struct MainWindowView: View {
             }
             // Handoff: "My Research menu (▾)" — visible name + the default disclosure chevron.
             .labelStyle(.titleAndIcon)
-            // `.v2`: the string names a third window now, so its meaning changed — reusing the old
-            // key with new text is a silent i18n collision, the failure this repo versions around.
-            .help(String(localized: "mainwindow.tools.myResearch.help.v2",
-                         defaultValue: "Research window (⌘⌥R), Collections (⇧⌘K), and Complete History"))
+            // `.v3`: the string names a fourth window now, so its meaning changed — reusing the
+            // old key with new text is a silent i18n collision, the failure this repo versions
+            // around (`.v2` was minted for the same reason when History joined).
+            .help(String(localized: "mainwindow.tools.myResearch.help.v3",
+                         defaultValue: "Research window (⌘⌥R), Collections (⇧⌘K), Archive Visits, and Complete History"))
 
             Divider().frame(height: 20)
 

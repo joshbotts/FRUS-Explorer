@@ -90,6 +90,10 @@ struct ProjectHomeView: View {
     // signal for direct tag assignments (so tagging a document recomputes the focus-tag seed).
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @Query private var allTagAssignments: [DocumentTagAssignment]
+    // Archive Visits Phase 3: the project's plan, resolved by in-memory `projectIds` filter
+    // (the file's standing rule — the contains-predicate is unreliable in SwiftData).
+    @Query(sort: \ArchiveVisitPlan.lastModified, order: .reverse)
+    private var allArchiveVisits: [ArchiveVisitPlan]
 
     /// Local draft of the research question, loaded from the model on appearance and
     /// saved live on every edit (like the collection editors) — so an in-progress edit
@@ -114,9 +118,9 @@ struct ProjectHomeView: View {
 
     /// Whether the "manage collections" editor sheet is presented (#377 Phase 5 polish).
     @State private var showCollectionsEditor = false
-    /// Presents the research-trip packet over this project's engaged documents (#830 T-2).
-    @State private var showTripPacket = false
-    /// The engaged set the packet is built over — the leads-seed union, cached per project.
+    /// The Archive Visit plan being edited — set by Plan a Visit's create-or-open (Phase 3).
+    @State private var editingPlan: ArchiveVisitPlan?
+    /// The engaged set a NEW plan is seeded from — the leads-seed union, cached per project.
     @State private var engagedPacketDocuments: [(volumeId: String, documentId: String)] = []
 
     /// Whether the focus-tags editor sheet is presented (#377 Phase 3 — tag focus).
@@ -197,15 +201,23 @@ struct ProjectHomeView: View {
         .sheet(isPresented: $showTagsEditor) {
             ProjectFocusTagsEditor(projectId: projectId)
         }
-        .sheet(isPresented: $showTripPacket) {
-            // The engaged set — computed by the SAME gatherSeed call the leads engine makes, so
-            // the packet and Suggested Next describe the same body of work by construction.
-            TripPacketSheet(
-                seed: .documents(engagedPacketDocuments),
-                title: project?.name ?? String(localized: "project.home.planVisit.untitled",
-                                               defaultValue: "This project"),
-                researchQuestion: project?.researchQuestion)
-                .environment(appState)
+        .sheet(item: $editingPlan) { plan in
+            // Phase 3: Plan a Visit is create-or-open over the PERSISTENT plan (§4a / 1h) —
+            // a new plan seeds once from the SAME gatherSeed union the leads engine computes,
+            // and thereafter the plan is the researcher's edit surface (an explicit
+            // "Re-seed from Project" lives in the editor; never a live mirror).
+            NavigationStack {
+                ArchiveVisitEditorView(plan: plan)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(String(localized: "research.projectHome.done",
+                                          defaultValue: "Done")) {
+                                editingPlan = nil
+                            }
+                        }
+                    }
+            }
+            .environment(appState)
         }
     }
 
@@ -276,6 +288,30 @@ struct ProjectHomeView: View {
         engagedPacketDocuments = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
     }
 
+    /// This project's Archive Visit, when one exists.
+    private var projectPlan: ArchiveVisitPlan? {
+        allArchiveVisits.first { $0.projectIds.contains(projectId) }
+    }
+
+    /// Create-or-open (Phase 3, §4a/1h): open the project's existing plan, or create one —
+    /// auto-named from the project, inquiry seeded from its research question, seeds from
+    /// the leads union with both contributions on.
+    private func planVisit(_ project: Project) async {
+        if let existing = projectPlan {
+            editingPlan = existing
+            return
+        }
+        await refreshEngagedPacketDocuments()
+        let plan = ArchiveVisitPlan(name: project.name,
+                                    inquiryText: project.researchQuestion,
+                                    projectIds: [projectId])
+        modelContext.insert(plan)
+        plan.addSeeds(engagedPacketDocuments, includeSource: true,
+                      includeExternalRefs: true, in: modelContext)
+        try? modelContext.save()
+        editingPlan = plan
+    }
+
     /// The project's collections: which ones are attached, plus a "Manage" entry to attach or detach
     /// existing collections. A collection belongs to a project via `Collection.projectIds`, which was
     /// previously set only implicitly (when a collection was created while the project was active);
@@ -293,10 +329,7 @@ struct ProjectHomeView: View {
                 // gate tests that CONTENT, not whether a collection happens to be attached. An
                 // attached-but-empty collection used to enable this button onto an empty packet.
                 Button {
-                    Task {
-                        await refreshEngagedPacketDocuments()
-                        showTripPacket = true
-                    }
+                    Task { await planVisit(project) }
                 } label: {
                     Label(String(localized: "project.home.planVisit",
                                  defaultValue: "Plan a Visit"),
@@ -304,7 +337,9 @@ struct ProjectHomeView: View {
                         .font(.caption)
                 }
                 .buttonStyle(.borderless)
-                .disabled(engagedPacketDocuments.isEmpty)
+                // Enabled by engaged CONTENT — or by an existing plan, which can always be
+                // opened (its seeds are its own; the project's current state no longer gates it).
+                .disabled(engagedPacketDocuments.isEmpty && projectPlan == nil)
                 Button {
                     showCollectionsEditor = true
                 } label: {

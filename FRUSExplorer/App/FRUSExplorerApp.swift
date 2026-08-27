@@ -109,6 +109,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | (`ProjectHomeRequest`)          | WindowGroup   | Project Home — value-based, off the Window menu (#377 Phase 1) |
 /// | `"frus.newProject"`             | WindowGroup   | New Project — marker-value group (#377 Phase 5)  |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
+/// | `"frus.archiveVisits"`          | Window        | Archive Visits — the archival research plans (§4a) |
 /// | (`NoteComposerRequest`)         | WindowGroup   | Note composer — value-based, off the Window menu (#363) |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | (`Settings`)                    | Settings      | Settings scene (`FRUSSettingsView`)              |
@@ -1113,6 +1114,20 @@ struct FRUSExplorerApp: App {
         .defaultSize(width: 1180, height: 760)
         // #363 #2: ⌘⇧K now lives solely on the Research command menu (ResearchMenuContent) —
         // it was previously declared here AND on the toolbar button, a duplicate key equivalent.
+
+        // MARK: - Archive Visits Window
+        // Archive Visits Phase 3 (§4a): the plan list + editor, a singleton so it joins the
+        // Window menu; pushes ride its own untyped stack.
+        Window(String(localized: "archiveVisit.window.title", defaultValue: "Archive Visits"),
+               id: "frus.archiveVisits") {
+            NavigationStack {
+                ArchiveVisitListView()
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
+        }
+        .defaultSize(width: 760, height: 640)
 
         // MARK: - Research Note Composer Window (UI audit C1)
         //
@@ -3508,6 +3523,12 @@ struct ResearchMenuContent: View {
             openWindow.fronting(id: "frus.collections")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
+
+        // Archive Visits Phase 3 (§4a): the plan list's macOS door. No key equivalent — the
+        // Analytics menu's precedent — and no provenance bind (it never routes document opens).
+        Button(String(localized: "menu.research.archiveVisits", defaultValue: "Archive Visits")) {
+            openWindow.fronting(id: "frus.archiveVisits")
+        }
 
         Divider()
 
