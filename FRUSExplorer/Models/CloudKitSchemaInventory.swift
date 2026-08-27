@@ -73,6 +73,11 @@ import SwiftData
 ///          added to the inventory **and** to ``identifiersAwaitingDeploy`` — the promotion
 ///          block this reservation was named for is now complete (32 + 7 + 2 = 41
 ///          identifiers awaiting one deploy). Baseline count and digest unchanged.
+///   1.5 — The EIGHTH promotion ran (2026-08-26): the owner deployed the whole 41-identifier
+///          block to Production in one Dashboard step, after exercising each new type/field
+///          on a Development build. ``identifiersAwaitingDeploy`` cleared; baseline restated
+///          219 → 260 with the digest the suite printed; `deployedThroughBuild` 40 → 43,
+///          `deployedOn` 2026-08-08 → 2026-08-26. Production once again matches this build.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -363,12 +368,16 @@ enum CloudKitSchemaInventory {
     /// The sixth (2026-08-01, build 37) promoted `CD_Collection.CD_includeMethodAppendix`. The
     /// seventh (2026-08-08, build 40) promoted `CD_SavedSearch.CD_parametersData` — one field that
     /// ends the SavedSearch field-drop class outright (#756), rather than the eight columns an
-    /// enumerate-the-fields fix would have cost and re-cost.
-    static let deployedThroughBuild = "40"
+    /// enumerate-the-fields fix would have cost and re-cost. The eighth (2026-08-26, build 43
+    /// line) promoted the reserved batch in one step — 41 identifiers: Archive Visits Phase 2's
+    /// three plan record types (32), W-4's `CD_DocumentClassificationOverride` (7), and W-5's two
+    /// `CD_SavedSearch` fields — the deliberate one-Dashboard-visit block the owner reserved when
+    /// Phase 2 shipped its schema ahead of its deploy.
+    static let deployedThroughBuild = "43"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-08-08"
+    static let deployedOn = "2026-08-26"
 
     /// How many identifiers **this build mirrors that are attested deployed**. Pinned by the
     /// test against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the
@@ -385,13 +394,13 @@ enum CloudKitSchemaInventory {
     /// equality claim about Production's contents. A future ADDITION still needs the full R-7
     /// checklist; a future removal needs only this number and the digest, and must NOT bump
     /// `deployedThroughBuild`, which would assert a promotion that never happened.
-    static let deployedIdentifierCount = 219
+    static let deployedIdentifierCount = 260
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "d1297540c9adacce4e45cc2a3597f09c6e2b6d5cb75d5d6c7fb0c7918bac6de0"
+        "985a84b0212b55219b44668c2d0a5a267c374631244d39a52c8c56263d5938e2"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -414,67 +423,16 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // Archive Visits Phase 2 — the three plan record types and their 29 fields, boarding
-        // the reserved W-4+W-5 promotion (the owner's schema-timing decision). Until that
-        // deploy, Production rejects records carrying these; the app reports the holding state
-        // at launch and in Settings ▸ Data & Recovery ▸ iCloud Schema. Owner steps: exercise
-        // each type once on a Development build signed into iCloud (create a plan, seed a
-        // document, tier a target — CloudKit creates a record type only when one is first
-        // written, the trap that made #488 possible), then CloudKit Dashboard → Schema →
-        // Deploy Schema Changes to Production; then clear this list, restate the baseline
-        // count + digest the suite prints, and bump `deployedThroughBuild` / `deployedOn`.
+        // Empty: Production matches this build. The EIGHTH promotion (2026-08-26, build 43
+        // line) deployed the reserved W-4+W-5 block in one Dashboard step — 41 identifiers:
+        // Archive Visits Phase 2's three plan record types (CD_ArchiveVisitPlan /
+        // CD_ArchiveVisitDocument / CD_ArchiveVisitTarget, 32 identifiers), W-4's
+        // CD_DocumentClassificationOverride (7), and W-5's two CD_SavedSearch fields
+        // (CD_freshnessData, CD_lastModified). Each type/field was exercised on a
+        // Development build signed into iCloud before deploying, per the checklist above.
         //
-        // (Promoted 2026-08-08, build 40, the SEVENTH promotion: `CD_SavedSearch.CD_parametersData`
-        // — #756's complete SearchParameters snapshot; one archived value instead of eight
-        // enumerated columns, which is what makes the field-drop class unrepresentable.)
-        "CD_ArchiveVisitDocument",
-        "CD_ArchiveVisitDocument.CD_createdAt",
-        "CD_ArchiveVisitDocument.CD_documentKey",
-        "CD_ArchiveVisitDocument.CD_id",
-        "CD_ArchiveVisitDocument.CD_includeExternalRefs",
-        "CD_ArchiveVisitDocument.CD_includeSource",
-        "CD_ArchiveVisitDocument.CD_lastModified",
-        "CD_ArchiveVisitDocument.CD_plan",
-        "CD_ArchiveVisitDocument.CD_planId",
-        "CD_ArchiveVisitDocument.CD_stateData",
-        "CD_ArchiveVisitPlan",
-        "CD_ArchiveVisitPlan.CD_createdAt",
-        "CD_ArchiveVisitPlan.CD_deliverableTogglesData",
-        "CD_ArchiveVisitPlan.CD_documents",
-        "CD_ArchiveVisitPlan.CD_id",
-        "CD_ArchiveVisitPlan.CD_inquiryText",
-        "CD_ArchiveVisitPlan.CD_lastModified",
-        "CD_ArchiveVisitPlan.CD_name",
-        "CD_ArchiveVisitPlan.CD_projectIds",
-        "CD_ArchiveVisitPlan.CD_targets",
-        "CD_ArchiveVisitPlan.CD_tiersData",
-        "CD_ArchiveVisitTarget",
-        "CD_ArchiveVisitTarget.CD_createdAt",
-        "CD_ArchiveVisitTarget.CD_id",
-        "CD_ArchiveVisitTarget.CD_included",
-        "CD_ArchiveVisitTarget.CD_lastModified",
-        "CD_ArchiveVisitTarget.CD_plan",
-        "CD_ArchiveVisitTarget.CD_planId",
-        "CD_ArchiveVisitTarget.CD_stateData",
-        "CD_ArchiveVisitTarget.CD_targetKey",
-        "CD_ArchiveVisitTarget.CD_tierId",
-        "CD_ArchiveVisitTarget.CD_userNote",
-        // W-4 (#279) — the document-classification override record type and its six fields,
-        // boarding the same reserved promotion. Owner step: reclassify one document once on a
-        // Development build signed into iCloud before deploying, so CloudKit creates the type.
-        "CD_DocumentClassificationOverride",
-        "CD_DocumentClassificationOverride.CD_createdAt",
-        "CD_DocumentClassificationOverride.CD_documentId",
-        "CD_DocumentClassificationOverride.CD_id",
-        "CD_DocumentClassificationOverride.CD_isEditorialNote",
-        "CD_DocumentClassificationOverride.CD_parsedIsEditorialNote",
-        "CD_DocumentClassificationOverride.CD_volumeId",
-        // W-5 (#266) — two new fields on the existing SavedSearch record type: the run
-        // watermark behind the freshness badge, and the `lastModified` merge tiebreaker the
-        // record never had. Owner step: run one saved search on a Development build signed
-        // into iCloud before deploying, so CloudKit materialises both fields.
-        "CD_SavedSearch.CD_freshnessData",
-        "CD_SavedSearch.CD_lastModified",
+        // (The SEVENTH promotion — 2026-08-08, build 40 — was
+        // `CD_SavedSearch.CD_parametersData`, #756's complete SearchParameters snapshot.)
     ]
 
     // MARK: - Derived state

@@ -9032,3 +9032,15 @@ the watermark blobs so a stamp re-triggers it.
 **The deploy block is complete: 41 identifiers** (32 Archive Visits + 7 W-4 + 2 W-5) in
 `identifiersAwaitingDeploy`, one Dashboard step. 24 new tests across three files, all green;
 both registration gates pass.
+
+## Session 2026-08-26 — The eighth promotion: the 41-identifier block reaches Production
+
+The owner deployed the reserved W-4+W-5+Archive-Visits schema block (one Dashboard step,
+after exercising each new type/field on a Development build signed into iCloud). Repo side,
+per the R-7 checklist's step 5: `identifiersAwaitingDeploy` cleared (its comment now records
+the promotion), the baseline restated **219 → 260** with the digest the suite printed,
+`deployedThroughBuild` 40 → 43, `deployedOn` 2026-08-26, version-history 1.5 added. All 9
+gate tests green; full iOS suite 4,096/4,096. The launch notice and the Settings ▸ Data &
+Recovery ▸ iCloud Schema row now report current. With this, Archive Visits plans,
+classification overrides, and saved-search freshness watermarks sync in Production — the
+last owed step of both programs' schema work.
