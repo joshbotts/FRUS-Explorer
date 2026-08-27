@@ -104,19 +104,32 @@ struct FeatureInfoItem: Identifiable {
 ///         covers editor-tagged people and that pre-WWII volumes carry no person
 ///         tagging; `crossReferenceAnalytics` notes that scoping to a subseries or an
 ///         administration carries a more consistent signal than a corpus-wide scope.
-struct FeatureInfoButton: View {
+///   1.3 — Generic `Footer` slot (owner decision, #279 follow-up): a caller may append a
+///         view below the explanation rows — the Research rail puts the classification
+///         override control there. Every existing caller keeps its shape through the
+///         `Footer == EmptyView` convenience init, where the static factories now live
+///         (a static member of the generic type could not name a concrete Self).
+struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
     /// Optional richer pointer tooltip (macOS `.help`). Defaults to `heading` when nil, so most
     /// callers need not set it; a caller with a more descriptive one-liner (e.g. Corpus Analytics'
-    /// "What do the numbers mean? …") passes it to preserve that hover text. Declared before `items`
-    /// so the synthesized memberwise init keeps both `(heading:items:)` and `(heading:helpText:items:)`
-    /// call shapes valid.
-    var helpText: String? = nil
+    /// "What do the numbers mean? …") passes it to preserve that hover text.
+    var helpText: String?
     /// The titled explanation rows.
     let items: [FeatureInfoItem]
+    /// Content appended below the rows — `EmptyView` for the plain info popover.
+    let footer: Footer
 
     @State private var isPresented = false
+
+    init(heading: String, helpText: String? = nil, items: [FeatureInfoItem],
+         @ViewBuilder footer: () -> Footer) {
+        self.heading = heading
+        self.helpText = helpText
+        self.items = items
+        self.footer = footer()
+    }
 
     var body: some View {
         Button {
@@ -140,10 +153,20 @@ struct FeatureInfoButton: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                footer
             }
             .padding(16)
             .frame(width: 360)
         }
+    }
+
+}
+
+extension FeatureInfoButton where Footer == EmptyView {
+
+    /// The footer-less shape every pre-1.3 caller uses.
+    init(heading: String, helpText: String? = nil, items: [FeatureInfoItem]) {
+        self.init(heading: heading, helpText: helpText, items: items) { EmptyView() }
     }
 
     /// The shared Source Explorer info button, identical on iOS and macOS so the
