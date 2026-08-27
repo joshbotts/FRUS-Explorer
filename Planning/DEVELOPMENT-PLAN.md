@@ -9112,3 +9112,36 @@ of State Records" — "Diplomatic" stopped covering the section's contents).
 Bundle: +4 series / 312 rolls (334 total tail rolls across 7 series). 7 offline goldens;
 11 new tests. Full suites green: 1,209 SPM, 4,113 app. W-8's harvest is CLOSED — the
 PoR row keeps only the two June leftovers.
+
+## Session 2026-08-27 — W-3: the map becomes a figure
+
+`Map-Figure-Export-And-Visual-Outputs.md` §6 Phases 1+2, as sequenced. Phase 1: the
+encoding half of `SemanticMapRenderer.draw(in:)` extracted into `encode(into:buffer:
+uniforms:)` — one encode path, two callers, the same one-definition rule the camera
+states — and `renderOffscreen(pixelSize:supersample:clearColor:)` renders the corpus
+through the SAME pipeline into a private texture, blits to a shared buffer, and wraps
+`.bgra8Unorm` as `.byteOrder32Little` + `.premultipliedFirst`. Better than the design's
+set-and-restore: the offscreen call builds its OWN uniforms (aspect from the texture,
+point size × plateHeight/drawablePixelHeight), so the on-screen state is untouched BY
+CONSTRUCTION. Supersample 2× + CoreGraphics downsample (MSAA would be a second pipeline
+the on-screen map never uses). The clear colour became ONE shared constant
+(`backgroundClearColor`) that the view now reads too.
+
+All six §6 trap tests pass against real GPU renders — blank plate, point-size scaling
+(~4× area at 2× plate), texture-aspect squareness, shader↔label-layer pixel agreement
+(the design's "single highest-value test"), channel order under a red clear, and
+state-untouched. One test-side discovery: a 1-px sprite whose centre lands exactly on a
+pixel boundary rasterizes nothing — a degenerate case the live map never hits (sprites
+are ≥2 px at 2×), fixed by testing at realistic sprite sizes.
+
+Phase 2: `exportMapFigure` derives BOTH layers from one export rectangle (Trap 3's rule
+made structural), composites `SemanticMapFigureContent` (labels verbatim from
+`labelOverlay`'s treatment) into `AnalyticsFigureCanvas`, and delivers through the
+map's existing `SeriesExportBox`. Slice figures carry no region labels — `labelOverlay`'s
+own rule — and the provenance's leading caveat says so (`sliceDescription`). The
+"No figure, deliberately" section is REWRITTEN as the assembly description, per the
+design's instruction. Verified end-to-end on the simulator: Export ▸ Figure (PNG) over
+the live 314,483-point map produced a 2400×2085 plate — dark map inset in the light
+canvas, labels on their regions, caption band correct — delivered through the share
+flow. 9 new tests; manuals note the export in §15.6. §6 Phase 3 / §7 remain in the
+design doc for later sessions, as its §9 ordering intends.

@@ -1215,13 +1215,14 @@ struct SemanticMapSpikeView: View {
                 }
             }
             // UI review M-20 / F-28: the map's exit. CSV only, and the control renders exactly
-            // that — `AnalyticsSectionExportControl` shows PNG/PDF only when handed an
-            // `exportFigure`, so a data-only surface passes nothing and the figure items do not
-            // exist. See `SemanticMapExport` for why a figure is refused rather than deferred.
+            // that — and since W-3 the figure half too: `exportMapFigure` composites the
+            // offscreen Metal point layer with the label layer at export geometry. See
+            // `SemanticMapExport`'s header for how the figure is assembled.
             ToolbarItem {
                 AnalyticsSectionExportControl(
                     isEnabled: BundledSemanticMap.index != nil && !model.clusters.isEmpty,
-                    exportCSV: exportRegionsCSV)
+                    exportCSV: exportRegionsCSV,
+                    exportFigure: exportMapFigure)
                     .accessibilityLabel(String(localized: "semanticMap.export.a11y",
                                                defaultValue: "Export map data"))
             }
@@ -2684,6 +2685,55 @@ struct SemanticMapSpikeView: View {
         exportBox.deliver(table, provenance)
     }
 
+    /// Renders the map as a publication figure (W-3 / #1007): the offscreen Metal point layer
+    /// composited with the region labels, on the analytics figure canvas.
+    ///
+    /// ## One export rectangle (design §3, Trap 3)
+    /// On screen, the Metal pass and the label layer measure the SAME rectangle — in pixels and
+    /// in points — so their agreement is a construction. In export there is no shared rectangle,
+    /// so both are derived here from `mapPoints`: the Metal plate at `mapPoints ×
+    /// AnalyticsFigureExporter.scale` pixels, the labels at `mapPoints` points. Deriving either
+    /// anywhere else re-opens the drift the on-screen design closed.
+    ///
+    /// A slice figure carries NO region labels — the same rule as `labelOverlay`, for the same
+    /// reason — and its provenance says so (`sliceDescription`), because a figure that silently
+    /// lost its region names would leave the reader no way to know why.
+    private func exportMapFigure(_ format: AnalyticsFigureFormat) {
+        guard let index = BundledSemanticMap.index, let renderer = model.renderer else { return }
+        let mapPoints = CGSize(width: AnalyticsFigureExporter.defaultWidth - 56, height: 900)
+        let scale = AnalyticsFigureExporter.scale
+        guard let plate = renderer.renderOffscreen(
+            pixelSize: CGSize(width: mapPoints.width * scale, height: mapPoints.height * scale),
+            supersample: 2) else {
+            exportBox.error = String(localized: "analytics.export.error.render",
+                                     defaultValue: "The figure could not be rendered.")
+            return
+        }
+        let labels = model.slice == nil
+            ? SemanticMapLabelLayout.labels(
+                for: model.labelledClusters, camera: model.camera, size: mapPoints)
+            : []
+        let sliceDescription = model.slice.map { axis in
+            String(format: String(
+                localized: "semanticMap.export.caveat.slice %@ %@",
+                defaultValue: "This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region's center belongs to the map plane, and in the slice its documents sit somewhere else entirely."),
+                axis.negativeLabel, axis.positiveLabel)
+        }
+        let provenance = SemanticMapExport.provenance(
+            index: index,
+            scopeLabel: scopeLabel,
+            scopedDocumentCount: model.scope?.documentCount,
+            lensLabel: lens.displayName,
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            figureTitle: String(localized: "semanticMap.export.figureTitle",
+                                defaultValue: "Semantic map"),
+            sliceDescription: sliceDescription)
+        exportBox.deliverFigure(format, provenance: provenance, chartHeight: mapPoints.height) {
+            SemanticMapFigureContent(plate: plate, plateScale: scale,
+                                     size: mapPoints, labels: labels)
+        }
+    }
+
     // MARK: - Accessibility (UI review F-30)
 
     /// The map's content as a list, for VoiceOver.
@@ -3063,7 +3113,7 @@ struct SemanticMapSurface {
         // Must equal the format the pipeline was built for. Nothing in the compiler links the two,
         // so both sides read one constant and a test asserts they agree.
         view.colorPixelFormat = SemanticMapRenderer.pixelFormat
-        view.clearColor = MTLClearColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1)
+        view.clearColor = SemanticMapRenderer.backgroundClearColor
         if view.device == nil { view.device = MTLCreateSystemDefaultDevice() }
         attach(to: view)
         return view
@@ -3096,3 +3146,43 @@ extension SemanticMapSurface: UIViewRepresentable {
     func updateUIView(_ uiView: MTKView, context: Context) { attach(to: uiView) }
 }
 #endif
+
+
+// MARK: - SemanticMapFigureContent (W-3 / #1007)
+
+/// The figure's map area: the offscreen Metal plate with the region labels drawn over it, both
+/// derived from the ONE export rectangle `exportMapFigure` chose.
+///
+/// The label treatment — `caption2` medium, white, double black shadow — is `labelOverlay`'s,
+/// verbatim: the figure is a picture of what the reader saw, and a label restyled for print
+/// would be a picture of a nearby program. Rendered detached inside `AnalyticsFigureCanvas`,
+/// so everything it draws arrives resolved through its stored properties.
+///
+/// Version history:
+///   1.0 — W-3 (#1007): initial implementation
+private struct SemanticMapFigureContent: View {
+    /// The point layer, rendered offscreen at `size × plateScale` pixels.
+    let plate: CGImage
+    /// The figure raster scale (`AnalyticsFigureExporter.scale`).
+    let plateScale: CGFloat
+    /// The export rectangle in points — the labels' coordinate space.
+    let size: CGSize
+    /// The labels at export geometry; empty for a slice.
+    let labels: [SemanticMapLabel]
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Image(decorative: plate, scale: plateScale)
+            ForEach(labels) { label in
+                Text(label.text)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.9), radius: 2)
+                    .shadow(color: .black.opacity(0.6), radius: 5)
+                    .position(label.position)
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .clipped()
+    }
+}
