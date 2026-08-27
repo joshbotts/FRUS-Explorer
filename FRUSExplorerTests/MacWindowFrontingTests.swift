@@ -223,6 +223,38 @@ struct MacWindowFrontingTests {
                 "the VOLUME graph hand-off must still front by id — it has no request to key on")
     }
 
+    @Test("Source Explorer openings are keyed by document, and the NARA route keeps its id")
+    func sourceExplorerOpensByValue() throws {
+        // M-2's second half (W-2b), the graph's rule verbatim: a document's Sources opens BY
+        // VALUE, so a second document's note is a second WINDOW rather than a retarget of the
+        // first. The rail used to bump `sourceNoteFocusID` and front the singleton — the global
+        // signal IS the cross-wiring M-2 names, so its absence here is the fix.
+        let rail = try Self.source("DocumentView/ResearchRailView.swift")
+        #expect(rail.contains("openWindow(value: SourceExplorerRequest("),
+                "the rail must open a document's Sources BY VALUE — an id-based open would reuse one window and retarget it")
+
+        // The NARA hand-off keeps its id-based fronting deliberately: its payload rides
+        // `pendingNARALookup`, not a document request, and the valueless tri-mode window is the
+        // one that consumes it. The scene keeps an `id` precisely so this and the cold
+        // Window-menu door still have a way in — the graph's volume hand-off rule.
+        let reader = try Self.source("App/MacDocumentView.swift")
+        #expect(reader.contains("openWindow.fronting(id: \"frus.sourceExplorer\")"),
+                "the NARA lookup must still front by id — it has no document request to key on")
+    }
+
+    @Test("Both value-based conversions keep a cold Window-menu door")
+    func coldDoorsExist() throws {
+        // A `WindowGroup(id:for:)` is not auto-listed on the Window menu the way a singleton
+        // `Window` is. #920 promised "the explicit command below" for the graph and never wrote
+        // it, so the cold door was silently gone from the menu — this pins the command group
+        // that finally provides both doors, and fails on the commit that removes either.
+        let app = try Self.source("App/FRUSExplorerApp.swift")
+        for id in ["frus.crossReferenceGraph", "frus.sourceExplorer"] {
+            #expect(app.contains("openWindow.fronting(id: \"\(id)\")"),
+                    "the Window menu must offer a cold door to \(id) — a value-based group is not auto-listed")
+        }
+    }
+
     @Test("Complete History… and About front their windows")
     func lowSeveritySitesFront() throws {
         #expect(try Self.source("App/HistoryWindowView.swift")

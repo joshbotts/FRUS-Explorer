@@ -82,7 +82,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | (`PersonAnalyticsRequest`)      | WindowGroup   | Value-based — Person Analytics (CW-9d), `personAnalyticsScene` |
 /// | (`CrossReferenceAnalyticsRequest`)| WindowGroup | Value-based — Cross-Reference Analytics (CW-9e), `crossReferenceAnalyticsScene` |
 ///
-/// **macOS auxiliary scenes (27)** — 16 singleton `Window`, 10 `WindowGroup`, 1 `Settings`.
+/// **macOS auxiliary scenes (28)** — 16 singleton `Window`, 11 `WindowGroup`, 1 `Settings`.
+/// (The tally drifted once — #1023 added `frus.subjects` to the table without bumping it — so
+/// count the TABLE, not this line, when they disagree.)
 /// `SwiftUI.Window` is `@available(iOS, unavailable)`, which is why no singleton scene below
 /// can port to iPad as-is; each would become a `WindowGroup` (#241 §3):
 /// | Scene ID                        | Type          | Purpose                                          |
@@ -94,7 +96,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.people"`                 | Window        | Cross-volume person index (B5)                   |
 /// | `"frus.subjects"`               | Window        | Cross-volume topic index (#1023)                 |
 /// | `"frus.crossReferenceGraph"`    | WindowGroup   | Cross-reference graph — id-fronted `WindowGroup(id:for:)` since M-2 |
-/// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
+/// | `"frus.sourceExplorer"`         | WindowGroup   | Source explorer — id-fronted `WindowGroup(id:for:)` since W-2b |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
 /// | (`RelatedDocumentsRequest`)     | WindowGroup   | Related Documents — value-based work list (#308 Phase 2b)|
 /// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
@@ -863,7 +865,9 @@ struct FRUSExplorerApp: App {
         // **A nil request is the cold Window-menu state and still works** — the view falls back to
         // the shared slot and then to its volume/document picker, exactly as before. The cost
         // #363 records is real though: a value-based group is NOT auto-listed on the macOS Window
-        // menu, so the explicit command below replaces the door this conversion removes.
+        // menu. #920 promised "the explicit command below" and never wrote it, so the cold door
+        // was gone from the menu until W-2b added `menu.window.coldDoors` — the Window-menu
+        // command group that opens this group's valueless window and Source Explorer's.
         // **An `id` AND a value type.** The id keeps the two openings that have no document to
         // key on — the volume hand-off, and the cold Window-menu door — working exactly as before
         // via `fronting(id:)`, while `openWindow(value:)` mints or focuses a per-document window.
@@ -884,9 +888,24 @@ struct FRUSExplorerApp: App {
         // and corpus graphs were readable.
         .defaultSize(width: 900, height: 640)
 
-        // MARK: - Source Explorer Window
-        Window("Source Explorer", id: "frus.sourceExplorer") {
-            SourceExplorerWindowView()
+        // MARK: - Source Explorer Window (UI review M-2, second half — W-2b)
+        //
+        // **Value-based, so two documents' source notes can be open at once** — the same scene-
+        // count defect the graph window closed, and the half #920 deferred "with a reason": the
+        // cold Window-menu door opens on a working surface by design (#363's cold default is the
+        // standalone Collections browser), and a value-based group is not auto-listed on that
+        // menu. The door is preserved anyway: the group keeps its `id`, and the explicit Window-
+        // menu command below (`menu.window.coldDoors`) opens the valueless window — the same
+        // remedy #920 promised for the graph and never wrote.
+        //
+        // `SourceExplorerRequest` is not new: it has shipped value-based on iPad since #317, so
+        // this is the macOS half of that port. A nil request reproduces the tri-mode singleton
+        // exactly — cold Collections default, NARA hand-off, note-focus signal — while a request-
+        // backed window is that document's OWN note and deliberately deaf to the global signals
+        // (see the guards in `SourceExplorerWindowView`), because reacting to them is precisely
+        // the cross-wiring M-2 names.
+        WindowGroup(id: "frus.sourceExplorer", for: SourceExplorerRequest.self) { $request in
+            SourceExplorerWindowView(request: request)
                 .environment(appState)
                 // Latent, same as the Cross-Reference Graph window above: no `@Query` under
                 // `SourceExplorer/` today.
@@ -1664,6 +1683,26 @@ struct FRUSExplorerApp: App {
                 PrintDocumentMenuItem()
             }
 
+            // W-2b: the cold doors the value-based conversions removed. A `WindowGroup(id:for:)`
+            // is not auto-listed on the Window menu the way a singleton `Window` is, so the graph
+            // (#920) and Source Explorer (this change) each lost their no-context route the moment
+            // they went value-based — #920 promised this command and never wrote it. `fronting(id:)`
+            // opens the group's VALUELESS window: the graph falls back to its picker, Source
+            // Explorer to its Collections browser — both cold defaults documented as load-bearing.
+            // Wrapped in a `Group` with the Help item below because `CommandsBuilder` caps at
+            // ten top-level entries and this group was the eleventh — the Mac build fails with
+            // "extra argument in call" at the LAST entry, which points nowhere near the cause.
+            Group {
+                CommandGroup(before: .windowArrangement) {
+                    Button(String(localized: "menu.window.crossReferenceGraph",
+                                  defaultValue: "Cross-Reference Graph")) {
+                        openWindow.fronting(id: "frus.crossReferenceGraph")
+                    }
+                    Button(String(localized: "menu.window.sourceExplorer",
+                                  defaultValue: "Source Explorer")) {
+                        openWindow.fronting(id: "frus.sourceExplorer")
+                    }
+                }
             // Append a "FRUS Research Guide" item to the Help menu (after the
             // system search field) so the standalone primer is reachable
             // independently of the first-run indexing flow — mirroring the
@@ -1675,6 +1714,7 @@ struct FRUSExplorerApp: App {
                               defaultValue: "FRUS Research Guide")) {
                     openWindow(value: ResearchGuideWindowID())   // #363 #7: value-based guide window
                 }
+            }
             }
 
             // Format menu with the system text-formatting items (Bold/Italic/Underline,

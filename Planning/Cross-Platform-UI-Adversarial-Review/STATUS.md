@@ -136,10 +136,15 @@ sharpest surface. What remains:
   mode-carrying request would be theoretical: the menu could only ever have opened Trends).
   **Cross-Reference Analytics was not covered by that decision and remains a sheet** — it has no
   mode enum of its own, so option 2 has nothing to key on there and only option 1 applies.
-- **M-2, rescoped by measurement.** The word cloud is **out** (app-level, not per-document). The
-  real work is Source Explorer + graph, whose request types already exist from #317's iPad port —
-  so the cost is not the values but `fronting(id:)`, which is id-only across ~20 sites and guarded
-  by a build-failing test, plus the lost macOS Window-menu entry.
+- ~~**M-2, rescoped by measurement.**~~ COMPLETE (graph #920, Source Explorer W-2b). The word
+  cloud stayed out (app-level, not per-document). W-2b's conversion follows the graph's shape —
+  `WindowGroup(id:for:)`, nil request = the #363 tri-mode cold default, the rail opens by value —
+  with one addition the graph needed too: a request-backed window is DEAF to `sourceNoteFocusID`
+  and `pendingNARALookup` (reacting to the global signals is the cross-wiring M-2 names), and the
+  NARA route keeps its id-based fronting because its payload rides `pendingNARALookup`, not a
+  document request. **W-2b also paid #920's unhonoured promise**: "the explicit command below"
+  never existed, so the graph's cold Window-menu door was silently gone — both conversions now
+  share a `CommandGroup(before: .windowArrangement)` cold-door pair, pinned by `coldDoorsExist`.
 - **M-3 needs an owner decision before code**: what keys a Search window that opens empty and is
   typed into? Value-based windows reuse by request equality, and an empty request is the same
   empty request.

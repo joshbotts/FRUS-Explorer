@@ -9324,3 +9324,28 @@ travels with them — the difference from `focusClusterID`.
 
 3 new tests (pole deferral end-to-end Metal-gated; userInfo pair rule + old-payload
 decode; window identity); 94 tests across the five map suites green.
+
+## Session 2026-08-27 — W-2b: Source Explorer joins the value-based windows, and #920's promise is paid
+
+M-2's second half, deferred by #920 "with a reason" — the cold Window-menu door opens on
+a working surface by design (#363's Collections default), and a value-based group is not
+auto-listed on that menu. Both halves of that reason are now handled rather than traded:
+the scene keeps its `id` (the NARA hand-off and the cold door still have a way in), and
+a new `CommandGroup(before: .windowArrangement)` provides explicit Window-menu doors for
+BOTH value-based conversions — which pays a debt reconnaissance found: #920's scene
+comment promised "the explicit command below" for the graph and no such command was ever
+written, so the graph's cold door has been silently missing from the Window menu since
+it merged. The comment is corrected; `coldDoorsExist` pins both doors.
+
+The conversion follows the graph's shape — nil request reproduces the tri-mode singleton
+exactly — with one rule the singleton could not have: a request-backed window is DEAF to
+`sourceNoteFocusID` and `pendingNARALookup`, because reacting to the global signals is
+precisely the cross-wiring M-2 names; the valueless window keeps consuming both. The
+rail's Sources tile opens by value (a second document's note is a second WINDOW) and no
+longer bumps `sourceNoteFocusID` — the bump signalled the singleton it replaced, and
+firing it would retarget the valueless window. The NARA route keeps `fronting(id:)`,
+the graph's volume-hand-off rule: its payload rides `pendingNARALookup`, not a request.
+
+Also fixed while here: the scene-inventory tally (drifted at #1023 — the table said 17
+Windows while the header said 16; it now counts 16 + 11 + Settings and says to trust
+the table). 2 new tests; window-model suites 33 green.
