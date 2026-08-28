@@ -447,8 +447,16 @@ struct SearchView: View {
                 #if os(iOS)
                 .safeAreaInset(edge: .top, spacing: 0) {
                     VStack(spacing: 0) {
+                        searchModePicker
                         searchActionsBar
-                        queryInspectorCard
+                        if vm.searchMode == .meaning {
+                            // The Meaning strip replaces the MATCH inspector: there is no FTS
+                            // expression to show, and the strip carries the route's disclosures.
+                            SemanticModeStrip(disclosure: vm.semanticDisclosure,
+                                              beyondCount: vm.beyondLibraryHits.count)
+                        } else {
+                            queryInspectorCard
+                        }
                         narrowedByRow
                     }
                 }
@@ -548,6 +556,10 @@ struct SearchView: View {
                 }
                 .sheet(isPresented: $showSavedSearches) {
                     SavedSearchesView { saved in
+                        // A SavedSearch archives FTS parameters; running one IS a keyword
+                        // search, whatever mode the picker showed (and its W-5 freshness
+                        // watermark diffs against FTS counts, so it must never run semantic).
+                        vm.searchMode = .keywords
                         vm.applyParameters(saved.searchParameters)
                         Task {
                             await runSearch()
@@ -687,7 +699,19 @@ struct SearchView: View {
     /// `recordSearchHistory` applies its own skip conditions (logging off, empty query,
     /// errored search, or a filter/scope-only re-run of the same query), so calling it after
     /// every execution is correct — the last two entry points above are re-runs by nature.
+    /// Builds the Meaning engine from the booted semantic stack, or `nil` when unavailable.
+    private func makeSemanticBackend() -> SemanticSearchBackend? {
+        guard let searcher = appState.semanticQuerySearcher,
+              let service = appState.searchService else { return nil }
+        return SemanticSearchBackend(
+            searcher: searcher,
+            searchService: service,
+            manifestStore: appState.manifestStore,
+            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
+    }
+
     private func runSearch() async {
+        vm.semanticBackend = makeSemanticBackend()
         await vm.search()
         vm.recordSearchHistory(projectId: appState.activeProjectId,
                                indexedVolumeCount: appState.indexedVolumeIds.count,
@@ -935,7 +959,10 @@ struct SearchView: View {
         // The control had no value at all: with a reading active, the whole results region is
         // replaced while nothing announces which control did it.
         .accessibilityValue(activeReading.title)
-        .disabled(vm.results.isEmpty)
+        // Meaning mode: every reading here is keyword-dependent — concordance and collocates
+        // KWIC-scan for terms, facets aggregate the FTS match — so the door closes whole
+        // rather than opening onto surfaces that would quietly describe a different query.
+        .disabled(vm.results.isEmpty || vm.searchMode == .meaning)
     }
 
     #if os(iOS)
@@ -1142,6 +1169,42 @@ struct SearchView: View {
         }
     }
 
+    /// The engine picker (V-5 hybrid page). Rendered only when the semantic stack booted —
+    /// on a build without it the search surface is exactly what it always was.
+    @ViewBuilder
+    private var searchModePicker: some View {
+        if appState.semanticQuerySearcher != nil {
+            Picker(String(localized: "search.mode.title", defaultValue: "Search by"),
+                   selection: Binding(
+                       get: { vm.searchMode },
+                       set: { newMode in
+                           guard newMode != vm.searchMode else { return }
+                           vm.searchMode = newMode
+                           // Readings and facets are keyword surfaces; leaving one active
+                           // across a mode flip would render it against the other engine's
+                           // results.
+                           showTimeline = false
+                           showConcordance = false
+                           showCollocates = false
+                           showFacetSheet = false
+                           // A standing query re-runs through the newly chosen engine, via
+                           // the one funnel every search entry point must use.
+                           if vm.hasSearched,
+                              !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
+                               Task { await runSearch() }
+                           }
+                       })) {
+                ForEach(SearchMode.allCases, id: \.self) { mode in
+                    Text(mode.label).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+            .background(.bar)
+        }
+    }
+
     private var searchActionsBar: some View {
         HStack(spacing: 20) {
             filterButton
@@ -1316,6 +1379,15 @@ struct SearchView: View {
                 systemImage: "exclamationmark.triangle",
                 description: Text(err)
             )
+        } else if vm.searchMode == .meaning && vm.hasSearched && vm.results.isEmpty {
+            // The Meaning mode's empty surface: the keyword zero-state below diagnoses which
+            // TERM is absent, which is the wrong claim twice over here — and a meaning search
+            // whose matches are all beyond the library is not a zero at all.
+            SemanticMeaningEmptyState(
+                needsModel: vm.semanticNeedsModel,
+                disclosure: vm.semanticDisclosure,
+                beyondHits: vm.beyondLibraryHits,
+                onModelReady: { Task { await runSearch() } })
         } else if vm.hasSearched && vm.results.isEmpty {
             // Q-2: "Try different keywords" is indistinguishable from a typo, a stemming
             // surprise, and a genuine historical absence. Name the conjunct that is empty.
@@ -1479,8 +1551,11 @@ struct SearchView: View {
             // Search → Analytics handoff (Direction B): available for any keyword
             // search so the user can always chart the term's distribution over time.
             // When the result set is capped, it also helps find a date range that
-            // narrows the match set.
-            if !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
+            // narrows the match set. Keyword mode only: the chart plots LEXICAL term
+            // frequency, and a Meaning query is not a term — plotting it would be a
+            // category error wearing a chart.
+            if vm.searchMode == .keywords,
+               !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
                 Button {
                     openSearchInAnalytics()
                 } label: {
@@ -1739,6 +1814,24 @@ struct SearchView: View {
 
     private var resultsList: some View {
         List {
+            resultRows
+            // Meaning mode's beyond-library stratum (#262 rows); empty — and absent — in
+            // Keywords mode by construction (the Section renders nothing when empty).
+            SemanticBeyondLibrarySection(hits: vm.beyondLibraryHits)
+        }
+        #if os(iOS)
+        .listStyle(.plain)
+        #else
+        .listStyle(.inset)
+        #endif
+        // Re-identify the list when the page changes so it scrolls back to the top
+        // instead of retaining the previous page's offset.
+        .id(vm.currentPage)
+    }
+
+    /// The paged result rows — extracted so the List can hold them AND the beyond-library
+    /// section without re-nesting this already-large ForEach.
+    private var resultRows: some View {
             ForEach(vm.pagedResults) { result in
                 Button {
                     openResult(vm.makeEntry(from: result))
@@ -1828,15 +1921,6 @@ struct SearchView: View {
                 }
                 #endif
             }
-        }
-        #if os(iOS)
-        .listStyle(.plain)
-        #else
-        .listStyle(.inset)
-        #endif
-        // Re-identify the list when the page changes so it scrolls back to the top
-        // instead of retaining the previous page's offset.
-        .id(vm.currentPage)
     }
 }
 
@@ -1950,6 +2034,11 @@ private struct SearchResultRow: View {
             }
 
             // Document-type badges
+            // Meaning mode's score, in the shared chip every semantic surface uses. Sits
+            // above the badges so a row that is also an editorial note shows both.
+            if let semanticScore = result.semanticScore {
+                SemanticScoreChip(score: semanticScore)
+            }
             if result.isEditorialNote || result.isFrontMatter {
                 HStack(spacing: 6) {
                     if result.isEditorialNote {

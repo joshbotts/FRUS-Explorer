@@ -7139,6 +7139,107 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Display rows for the Meaning search mode (V-5 hybrid page): the same fields the FTS path's
+    /// `IndexedSearchRow` carries, point-looked-up by key, with TWO deliberate differences.
+    ///
+    /// `bodyText` is a bounded PREFIX (`substr(body_text, 1, 3000)`) rather than the full body:
+    /// the FTS path reads whole bodies because its snippet must find a term anywhere in a mean
+    /// 7,416-character document, while the semantic snippet is prose-first from the FRONT
+    /// (`ProseSnippet` strips the document's own boilerplate and shows what follows), so 3,000
+    /// characters — ten times the snippet budget — is already generous. And `score` is 0: the
+    /// semantic score arrives from the vector funnel, not from SQL, and a zero here is never read.
+    ///
+    /// - Parameter keys: The hits to resolve; a key with no `document_cache` row is absent from
+    ///   the result (the caller renders those as beyond-library rows from the manifest).
+    /// - Returns: `"volumeId/documentId"` → row.
+    func semanticResultRows(
+        forKeys keys: [(volumeId: String, documentId: String)]
+    ) throws -> [String: IndexedSearchRow] {
+        guard !keys.isEmpty else { return [:] }
+        var result: [String: IndexedSearchRow] = [:]
+        let chunkSize = 400
+        var index = 0
+        while index < keys.count {
+            let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
+            index += chunkSize
+            let values = Array(repeating: "(?,?)", count: chunk.count).joined(separator: ",")
+            let sql = """
+                WITH wanted(v, d) AS (VALUES \(values))
+                SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header,
+                       dc.dateline, dc.source_note, substr(dc.body_text, 1, 3000),
+                       dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso
+                FROM document_cache dc
+                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var bind: Int32 = 1
+            for key in chunk {
+                sqlite3_bind_text(stmt, bind, key.volumeId, -1, SQLITE_TRANSIENT_IP); bind += 1
+                sqlite3_bind_text(stmt, bind, key.documentId, -1, SQLITE_TRANSIENT_IP); bind += 1
+            }
+            while try auxStep(stmt) {
+                let row = IndexedSearchRow(
+                    documentId: auxColumnString(stmt, 0) ?? "",
+                    volumeId: auxColumnString(stmt, 1) ?? "",
+                    documentNumber: auxColumnString(stmt, 2),
+                    header: auxColumnString(stmt, 3) ?? "",
+                    dateline: auxColumnString(stmt, 4),
+                    sourceNote: auxColumnString(stmt, 5),
+                    bodyText: auxColumnString(stmt, 6) ?? "",
+                    subjectTagIds: auxColumnString(stmt, 7),
+                    userTagIds: auxColumnString(stmt, 8),
+                    isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
+                    isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
+                    dateISO: auxColumnString(stmt, 11),
+                    score: 0)
+                result["\(row.volumeId)/\(row.documentId)"] = row
+            }
+        }
+        return result
+    }
+
+    /// The full key set matching the current FILTERS, with no text match — the Meaning mode's
+    /// filter intersection (the assessment's `materializeMatchSet` wiring, as keys instead of a
+    /// temp table of rowids).
+    ///
+    /// UNCAPPED on purpose, the facet materialisation's own precedent: an intersection against a
+    /// truncated set silently un-filters everything past the cap. Returns `nil` — filters do not
+    /// constrain — when the parameters emit no SQL conditions, mirroring the facet path's refusal
+    /// to materialise the whole corpus as a "match".
+    ///
+    /// - Parameter filters: The SQL filters, from `SearchService.makeFilters`.
+    /// - Returns: Matching `"volumeId/documentId"` keys, or `nil` for an unfiltered request.
+    func documentKeysMatchingFilters(_ filters: SearchSQLFilters) throws -> Set<String>? {
+        let (whereClause, binds) = Self.filterConditions(filters)
+        guard !whereClause.isEmpty else { return nil }
+        // The LEFT JOIN must stay whenever dates might be referenced: yearKeys and dateRange
+        // filter on `dd.` columns, and `document_dates`' composite primary key means the join
+        // cannot fan rows out (the facet materialisation's own documented reasoning).
+        let sql = """
+            SELECT dc.volume_id, dc.document_id
+            FROM document_cache dc
+            LEFT JOIN document_dates dd
+                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            \(whereClause)
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, bind) in binds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        }
+        var keys: Set<String> = []
+        while try auxStep(stmt) {
+            guard let volumeId = auxColumnString(stmt, 0),
+                  let documentId = auxColumnString(stmt, 1) else { continue }
+            keys.insert("\(volumeId)/\(documentId)")
+        }
+        return keys
+    }
+
     /// Whitespace-collapses `text` and truncates it to `maxLength` at the nearest preceding word
     /// boundary, appending an ellipsis when cut. Returns "" for empty input.
     nonisolated static func snippet(from text: String, maxLength: Int) -> String {

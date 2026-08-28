@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 @testable import RetrievalEvalHarnessCore
+import SemanticVectorsKit
 
 /// The harness's deterministic halves: query parsing and report assembly. The funnel's own
 /// correctness is pinned where it lives — the kernel's external-query parity in
@@ -71,7 +72,7 @@ struct RetrievalEvalHarnessTests {
     /// header → dateline → serial → prose).
     @Test("The modern layout strips header and source note, leaving prose")
     func modernLayoutStripsToProse() {
-        let snippet = EvalSnippet.prose(
+        let snippet = ProseSnippet.prose(
             header: "12. Memorandum of Conversation",
             dateline: "Beijing , February 17–18, 1973, 11:30 p.m.–1:20 a.m.",
             sourceNote: "Source: National Archives, Nixon Presidential Materials, NSC Files, Box 98. Top Secret; Sensitive.",
@@ -86,7 +87,7 @@ struct RetrievalEvalHarnessTests {
 
     @Test("The wartime telegram layout strips citation, header, dateline, received bracket and serial")
     func telegramLayoutStripsChrome() {
-        let snippet = EvalSnippet.prose(
+        let snippet = ProseSnippet.prose(
             header: "The Secretary of State to the Ambassador in China ( Gauss )",
             dateline: "Washington , December 18, 1943 .",
             sourceNote: "151.10/2003a: Telegram",
@@ -101,7 +102,7 @@ struct RetrievalEvalHarnessTests {
 
     @Test("A document that is all boilerplate falls back to the plain prefix, never empty")
     func allBoilerplateFallsBack() {
-        let snippet = EvalSnippet.prose(
+        let snippet = ProseSnippet.prose(
             header: "1. Editorial Note",
             dateline: nil,
             sourceNote: nil,
@@ -113,7 +114,7 @@ struct RetrievalEvalHarnessTests {
     @Test("Truncation lands on a word boundary with an ellipsis")
     func wordBoundaryTruncation() {
         let long = Array(repeating: "word", count: 200).joined(separator: " ")
-        let snippet = EvalSnippet.truncateAtWord(long, limit: 50)
+        let snippet = ProseSnippet.truncateAtWord(long, limit: 50)
         #expect(snippet.hasSuffix("…"))
         #expect(!snippet.dropLast().hasSuffix("wor"), "no mid-word cuts")
         #expect(snippet.count <= 52)
@@ -122,7 +123,7 @@ struct RetrievalEvalHarnessTests {
     @Test("A long bracketed passage is prose, not chrome, and survives")
     func longBracketGroupSurvives() {
         let bracketed = "[" + Array(repeating: "substantive", count: 12).joined(separator: " ") + " text]"
-        let snippet = EvalSnippet.prose(
+        let snippet = ProseSnippet.prose(
             header: "h", dateline: nil, sourceNote: nil,
             body: "h " + bracketed + " and more follows")
         #expect(snippet.hasPrefix("["),

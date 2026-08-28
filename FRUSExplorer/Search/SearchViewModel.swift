@@ -593,6 +593,31 @@ final class SearchViewModel {
 
     /// The keyword text of the search most recently *executed*, trimmed.
     ///
+    // MARK: - Meaning mode (V-5 hybrid page)
+
+    /// Which engine a submitted search runs through. Per-session, defaulting to Keywords —
+    /// see `SearchMode`'s reasoning for why this is deliberately not persisted.
+    var searchMode: SearchMode = .keywords
+
+    /// The Meaning mode's engine, injected by the view once the semantic stack has booted.
+    /// `nil` means the mode is unavailable (a build state) and the picker should not offer it.
+    var semanticBackend: SemanticSearchBackend?
+
+    /// Hits beyond the indexed library from the last Meaning search — rendered under the
+    /// results list by the #262 rule, never mixed into `results` (they have no metadata rows).
+    var beyondLibraryHits: [SemanticSearchBackend.BeyondLibraryHit] = []
+
+    /// The Meaning mode's disclosure counts, or `nil` outside the mode.
+    var semanticDisclosure: SemanticSearchBackend.Disclosure?
+
+    /// Set when a Meaning search found no model on device — the view's cue to show the
+    /// download offer instead of an error.
+    var semanticNeedsModel = false
+
+    /// Whether the last completed run was a Meaning run — frozen with the results so the
+    /// history record describes the search that ran, not the mode the picker shows now.
+    private(set) var lastRunWasSemantic = false
+
     /// Frozen at the top of `search()` rather than read from `keywords` at recording time:
     /// `keywords` is bound live to the `.searchable` field, so a user who keeps typing while
     /// the FTS5 query is in flight would otherwise have the *later* text recorded against the
@@ -600,6 +625,11 @@ final class SearchViewModel {
     private var submittedQuery: String = ""
 
     func search() async {
+        if searchMode == .meaning {
+            await searchMeaning()
+            return
+        }
+        lastRunWasSemantic = false
         let params = searchParameters
         // A person or subject filter is a valid standalone constraint — `SearchService`
         // applies it SQL-side, so "Find all mentions" handoffs (which carry only
@@ -638,6 +668,9 @@ final class SearchViewModel {
                 catch { return nil }
             }()
             results = try await fetched
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            semanticNeedsModel = false
             totalMatchCount = await counted
             // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
             lastRenderedExpression = try? await searchService.matchExpressions(for: params).corpus
@@ -666,6 +699,8 @@ final class SearchViewModel {
             #endif
         } catch {
             results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
             // Cleared with the results, at every site that clears them: a total left over from
             // the previous query is a denominator for a set that no longer exists.
             totalMatchCount = nil
@@ -684,6 +719,84 @@ final class SearchViewModel {
         // this method returns, and that `SearchHistoryEntry` is now the only record of a search —
         // read by the History surface, Project Home, and the derived session log alike.
         // `ResearchTrailMigration` carries the events already written by earlier builds across.
+    }
+
+    /// The Meaning run (V-5 hybrid page). Mirrors `search()`'s bookkeeping contract exactly —
+    /// freeze, flags, version bump AFTER results land, checklist re-anchor — with the engine
+    /// swapped and the FTS-only fields (`totalMatchCount`, the rendered expression) given their
+    /// honest Meaning values: the total is `nil` (a top-K list has no uncapped match count, and
+    /// recording one would poison the SavedSearch freshness watermark, which diffs against a
+    /// later FTS count), and the expression records the route and model instead of an FTS string.
+    private func searchMeaning() async {
+        submittedQuery = keywords.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !submittedQuery.isEmpty else {
+            searchError = String(
+                localized: "search.semantic.error.empty",
+                defaultValue: "Type a question or phrase to search by meaning.")
+            return
+        }
+        guard let backend = semanticBackend else {
+            searchError = String(
+                localized: "search.semantic.error.unavailable",
+                defaultValue: "Searching by meaning is not available in this build.")
+            return
+        }
+        isSearching = true
+        searchError = nil
+        hasSearched = true
+        semanticNeedsModel = false
+        lastRunWasSemantic = true
+        do {
+            let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)
+            results = outcome.results
+            beyondLibraryHits = outcome.beyondLibrary
+            semanticDisclosure = outcome.disclosure
+            totalMatchCount = nil
+            lastFetchLimit = SemanticSearchBackend.hitLimit
+            // Printed in the method appendix's CSV verbatim — the honest record of what ran.
+            lastRenderedExpression =
+                "route=semantic; model=text-embedding-embeddinggemma-300m-qat; "
+                + "top=\(SemanticSearchBackend.hitLimit)"
+            executedSearchVersion &+= 1
+            currentPage = 0
+            if checklistMode {
+                checklistEnabledAt = .now
+                readSinceEnabledKeys.removeAll()
+                markedReviewedKeys.removeAll()
+            }
+        } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
+            results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            totalMatchCount = nil
+            lastRenderedExpression = nil
+            semanticNeedsModel = true
+            executedSearchVersion &+= 1
+        } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
+            results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            totalMatchCount = nil
+            lastRenderedExpression = nil
+            executedSearchVersion &+= 1
+            searchError = String(
+                localized: "search.semantic.error.tooLong",
+                defaultValue: "This search is too long for the model. Try a shorter phrasing.")
+        } catch {
+            results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            totalMatchCount = nil
+            lastRenderedExpression = nil
+            executedSearchVersion &+= 1
+            searchError = String(
+                localized: "search.semantic.error.failed",
+                defaultValue: "Semantic search could not run. Try again.")
+            #if DEBUG
+            print("[SearchView] Meaning search error: \(error)")
+            #endif
+        }
+        isSearching = false
     }
 
     // MARK: - Search History
@@ -730,6 +843,11 @@ final class SearchViewModel {
                 // Rendered in `search()` against these parameters. Deliberately NOT the Query
                 // Inspector, which is debounced view state keyed on the live text.
                 renderedExpression: lastRenderedExpression,
+                // A Meaning run must not be stamped with an FTS-shaped scope signature — the
+                // appendix would decode it into "searched document text" claims. The route
+                // signature has no `mode=` key, so the fails-closed decoder prints it verbatim.
+                signatureOverride: lastRunWasSemantic
+                    ? SearchScopeSignature.semanticRouteSignature : nil,
                 projectId: projectId,
                 hasError: searchError != nil),
             anchor: &historyAnchor,

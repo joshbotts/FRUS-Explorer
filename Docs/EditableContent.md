@@ -2593,7 +2593,7 @@ the container is a finding or a filing-cabinet coincidence.*
 > **Compliance note:** the offer card leads to the consent sheet (§1.4c), whose sentence is the
 > Gemma flow-down. The offer copy itself is editable; the consent sheet's is not a copy edit.
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: offerCard | lines: 223-225 | key: search.semantic.offer.body -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 112-114 | key: search.semantic.offer.body -->
 
 Keyword search found nothing, but the app can also search by what a question means — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
 
@@ -2610,6 +2610,14 @@ Ranked by meaning, not keywords, across the whole series — your exact words ma
 Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more.
 
 <!-- END SOURCE: search.semantic.empty.warming %lld -->
+
+---
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 41-43 | key: search.meaning.strip.base -->
+
+Meaning search (experimental): ranked by what your question means, across the whole series — your exact words may not appear. Front matter and chapter headings are not reachable this way.
+
+<!-- END SOURCE: search.meaning.strip.base -->
 
 ---
 

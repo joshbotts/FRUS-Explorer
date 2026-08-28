@@ -541,6 +541,37 @@ Manage the model under **Settings → Volumes & Storage → Natural-Language Sea
 
 [SCREENSHOT: a zero-result question with the "Search by meaning" offer card; the same search after the model downloaded, showing ranked semantic matches with a Download Volume button on an undownloaded hit.]
 
+### 7.12a Meaning as a First-Class Mode
+
+Beyond the zero-result fallback, **Meaning is a full search mode**: a **Keywords | Meaning**
+control under the search field (present once the semantic stack is available) switches the engine
+your submitted query runs through. In Meaning mode:
+
+- Results arrive **ranked by meaning across the whole series**, as full rows — title, date,
+  a prose excerpt (there are no keywords to highlight, so the snippet shows the document's
+  opening prose), and a **Semantic match · N%** score. Sorting, paging, checklist review, and
+  **Save as Working Corpus** all work as in keyword mode.
+- **Your filters apply** — volume scope, dates, people, subjects, tags are intersected against
+  the semantic matches, and the strip above the results says how many matches they removed.
+  Matches in volumes you have not downloaded are listed separately below the results ("In
+  volumes you have not downloaded"), checked against your volume scope only — the strip
+  discloses that too.
+- **Keyword-only readings close**: concordance, collocates, facets, and Visualize in Corpus
+  Analytics need terms to count, so their doors disable rather than describing a different
+  query. The Query Inspector's MATCH strip is replaced by the Meaning strip, since no FTS
+  expression exists.
+- Recorded searches from Meaning mode carry a **route marker** instead of a keyword scope, and
+  the method appendix states their counts are ranked lists — a semantic zero never prints as
+  "the term is absent."
+- Saved Searches always run as keyword searches, whatever the picker shows — they archive
+  keyword parameters and their freshness badges compare keyword counts.
+
+The mode resets to Keywords each session, deliberately: an experimental engine silently
+remembered across launches would make tomorrow's ordinary search behave inexplicably.
+
+[SCREENSHOT: the Keywords | Meaning control with a Meaning result list — the disclosure strip,
+score chips on rows, and the "In volumes you have not downloaded" section.]
+
 ---
 
 ## 8. Reading Documents

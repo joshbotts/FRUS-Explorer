@@ -9937,3 +9937,66 @@ queue bounded-and-once, and the twin fold holds with both Iran editions adopted.
 gated encoder suite gains the whole product path: store-verified model → encoder →
 searcher → ranked hits. Docs: both manuals gain a Search-by-Meaning section;
 EditableContent gains the offer/caption/warm-up blocks with a compliance note.
+
+## Session 2026-08-28J — the full hybrid search page: Meaning as a first-class mode
+
+The assessment's §2 breakage budget — "larger than the encoder", five itemized breaks —
+answered item by item, on both platforms, in one session. A **Keywords | Meaning**
+segmented control (absent on builds whose semantic stack never booted) switches which
+engine a submitted query runs through.
+
+**The five breaks, and their answers.** (1) *The snippet*: `ProseSnippet` — the eval
+report's prose-first rule — MOVED from the harness into SemanticVectorsKit and shared, so
+Meaning rows show the document's opening prose instead of a bare header; the pipeline's
+new `semanticResultRows(forKeys:)` reads a BOUNDED `substr(body_text,1,3000)` prefix
+rather than whole bodies. (2) *Concordance/Collocates* (+ facets + Visualize-in-Analytics
++ the Mac scope chips): gated off in Meaning mode with the reasoning in comments — each
+needs terms to count, and an open door would describe a different query. (3) *bm25Score*:
+`SearchResult` gains `semanticScore: Double?`; ordering rides `bm25Score = -cosine` so
+every lower-is-better consumer (the date sorts' tie-break, the undated tail) works
+unchanged, display reads the cosine — and a source pin guards the sign, because an
+inversion there fails no other test. (4) *Filters*: the assessment's `materializeMatchSet`
+wiring, as `documentKeysMatchingFilters` — UNCAPPED keys (an intersection against a
+truncated set silently un-filters everything past the cap), nil-for-unfiltered (the facet
+precedent: the whole corpus is not a match set) — intersected against indexed hits;
+volume scope additionally applied to beyond-library hits, everything else disclosed as
+unchecked. (5) *Front matter*: stated in the Meaning strip permanently — structurally
+unreachable, said rather than silently dropped.
+
+**What rides unchanged, verified by recon before a line was written**: sorting, paging,
+checklist review (identity-keyed), Save as Working Corpus (key-generic) — semantic rows
+are full `SearchResult`s. **What is protected**: `totalMatchCount` stays nil on Meaning
+runs (`SavedSearch`'s W-5 freshness watermark diffs `matchCount` against later FTS counts
+— a semantic number there mints phantom "new results" deltas); SavedSearch execution
+FORCES Keywords mode on both platforms (parity-pinned); the history record carries
+`SearchScopeSignature.semanticRouteSignature` via a new writer `signatureOverride` — no
+`mode=` key, so the appendix's fails-closed decoder can never paraphrase a Meaning run as
+"searched document text", and `describe` renders it as honest method prose; the appendix's
+zero-caveat now counts KEYWORD zeros only, with a semantic caveat of its own (a semantic
+zero never claims term absence).
+
+**Shared machinery, one definition each**: `SemanticSearchBackend` (hit→row synthesis,
+both platforms' VMs), `SemanticModeStrip` (the MATCH strip's Meaning replacement — pure
+caption function, every disclosure tested), `SemanticBeyondLibrarySection` (#262 rows in
+the List), `SemanticMeaningEmptyState` (a meaning zero is not a keyword zero; beyond-only
+is not a zero at all), and the s3 fallback REFACTORED onto extracted shared pieces
+(`SemanticModelOfferCard` owning consent/progress/failure, `SemanticUndownloadedRow`,
+`SemanticScoreChip`) so the fallback and the mode cannot drift on copy or terms. The
+fallback mounts only in Keywords mode — mounting it beside the Meaning engine would run
+every query twice.
+
+**Verified live on the sim**: mode picker renders; the Marshall Plan question through
+Meaning mode returns the ranked corpus-wide list under the strip's full disclosure
+(276 unscorable in 111 volumes), with the beyond-library section at count 100 and working
+Download Volume buttons. One visual defect found by looking: the strip rendered TWICE in
+the empty state (host inset + empty state) — deduped. One trap re-walked: a NEW test file
+after the last `xcodegen` builds "successfully" without being compiled, and
+`-only-testing` then runs 0 tests and passes — caught by reading the count, per the
+memory that exists for exactly this.
+
+**Tests**: `HybridSearchModeTests` (filter key set incl. empty-vs-nil semantics, bounded
+display rows, signature rendering + writer override, appendix caveat split, strip
+disclosures, twin-surface parity pins incl. the SavedSearch force and the score-sign
+pin). Full iOS suite 4,189/558 green; SPM 1,273/145 green; Mac build green. Docs: both
+manuals gain the mode section; EditableContent blocks for the strip; the offer-body block
+repointed to its new shared home (the one full-suite failure this session, fixed).

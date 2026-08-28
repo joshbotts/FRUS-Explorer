@@ -421,6 +421,18 @@ The results are ranked across the whole series, ignore your filters (the caption
 
 [SCREENSHOT: the Search window's zero-result state with the semantic matches section beneath the query decomposition.]
 
+### 7.11a Meaning as a First-Class Mode
+
+The Search window carries the same **Keywords | Meaning** control beside the query field (present
+once the semantic stack is available). Meaning mode behaves as on iPad and iPhone: full result
+rows with prose excerpts and **Semantic match · N%** scores; filters intersected (with the strip
+above the results disclosing what they removed, and that beyond-library matches are checked
+against volume scope only); a separate "In volumes you have not downloaded" section with
+Download Volume buttons; sorting, paging, checklist and corpus capture unchanged; the
+keyword-only readings (concordance, collocates, facets) and the "Search in" scope chips closed;
+recorded searches carrying a route marker so the method appendix never misdescribes them. Saved
+Searches always run as keyword searches. The mode resets to Keywords each session.
+
 ---
 
 ## 8. Reading Documents

@@ -280,7 +280,11 @@ struct MacSearchWindowView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 8) {
-                scopeRow
+                // The "Search in" scope chips gate FTS columns; a meaning search reads none
+                // of them, so offering the chips there would be a control wired to nothing.
+                if searchVM.searchMode == .keywords {
+                    scopeRow
+                }
                 // M-4 / design option 3a: the filter chips row and the always-visible Type row
                 // collapse into one token row where only ACTIVE filters take space.
                 filterTokenRow
@@ -290,7 +294,14 @@ struct MacSearchWindowView: View {
 
             Divider()
 
-            queryInspectorStrip
+            if searchVM.searchMode == .meaning {
+                // The Meaning strip replaces the MATCH inspector — no FTS expression exists,
+                // and the strip carries the route's own disclosures.
+                SemanticModeStrip(disclosure: searchVM.semanticDisclosure,
+                                  beyondCount: searchVM.beyondLibraryHits.count)
+            } else {
+                queryInspectorStrip
+            }
 
             sortBar
                 .padding(.horizontal, 16)
@@ -305,6 +316,18 @@ struct MacSearchWindowView: View {
             if searchVM.checklistMode && searchVM.displayedResults.isEmpty && !searchVM.results.isEmpty {
                 // Checklist mode has hidden every result (#189-D).
                 allReviewedEmptyState
+            } else if searchVM.searchMode == .meaning && hasZeroResults {
+                // The Meaning mode's empty surface — the keyword zero-state diagnoses which
+                // TERM is absent, the wrong claim twice over here, and beyond-library-only
+                // matches are not a zero at all. See the iOS twin.
+                SemanticMeaningEmptyState(
+                    needsModel: searchVM.semanticNeedsModel,
+                    disclosure: searchVM.semanticDisclosure,
+                    beyondHits: searchVM.beyondLibraryHits,
+                    onModelReady: {
+                        // Re-fire the standing query through the trigger the executor owns.
+                        searchVM.parametersVersion += 1
+                    })
             } else if hasZeroResults {
                 // macOS had NO zero-result state at all before Q-2: the chain fell through
                 // to `resultsList`, which rendered an empty `List`, and the only zero-result
@@ -450,6 +473,7 @@ struct MacSearchWindowView: View {
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 420)
         }
         .task(id: searchVM.searchTrigger) {
+            searchVM.semanticBackend = makeSemanticBackend()
             await searchVM.performSearch(service: appState.searchService)
             searchVM.recordSearchHistory(projectId: appState.activeProjectId,
                                          indexedVolumeCount: appState.indexedVolumeIds.count,
@@ -552,6 +576,9 @@ struct MacSearchWindowView: View {
         }
         .sheet(isPresented: $showSavedSearches) {
             SavedSearchesView { saved in
+                // A SavedSearch archives FTS parameters and its freshness watermark diffs
+                // against FTS counts — running one is a keyword search by definition.
+                searchVM.searchMode = .keywords
                 searchVM.applyParameters(saved.searchParameters)
                 Task {
                     await searchVM.performSearch(service: appState.searchService)
@@ -571,6 +598,31 @@ struct MacSearchWindowView: View {
 
     private var searchInputRow: some View {
         HStack(spacing: 10) {
+            // The engine picker (V-5 hybrid page); absent on a build whose semantic stack
+            // never booted, leaving the window exactly what it always was.
+            if appState.semanticQuerySearcher != nil {
+                Picker(String(localized: "search.mode.title", defaultValue: "Search by"),
+                       selection: Binding(
+                           get: { searchVM.searchMode },
+                           set: { newMode in
+                               guard newMode != searchVM.searchMode else { return }
+                               searchVM.searchMode = newMode
+                               // Keyword-only surfaces close on a mode flip — see the iOS
+                               // twin. The trigger itself carries the mode, so a standing
+                               // query re-runs through the newly chosen engine.
+                               showTimeline = false
+                               showConcordance = false
+                               showCollocates = false
+                               showFacetPanel = false
+                           })) {
+                    ForEach(SearchMode.allCases, id: \.self) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+            }
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
 
@@ -911,7 +963,8 @@ struct MacSearchWindowView: View {
             .pickerStyle(.segmented)
             // macOS renders a toolbar `Label` icon-only unless the style is forced.
             .labelStyle(.titleAndIcon)
-            .disabled(searchVM.results.isEmpty)
+            // Meaning mode: every reading is keyword-dependent — see the iOS examineMenu gate.
+            .disabled(searchVM.results.isEmpty || searchVM.searchMode == .meaning)
             .help(String(
                 format: String(localized: "search.reading.help %@",
                                defaultValue: "How to read these results. The concordance covers %@; the others cover the whole retained set."),
@@ -1841,13 +1894,25 @@ struct MacSearchWindowView: View {
         }
     }
 
+    /// Builds the Meaning engine from the booted semantic stack, or `nil` when unavailable.
+    private func makeSemanticBackend() -> SemanticSearchBackend? {
+        guard let searcher = appState.semanticQuerySearcher,
+              let service = appState.searchService else { return nil }
+        return SemanticSearchBackend(
+            searcher: searcher,
+            searchService: service,
+            manifestStore: appState.manifestStore,
+            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
+    }
+
     private var resultsList: some View {
         // Selection (UI audit A7) gives the NSTableView-backed List its native
         // arrow-key traversal once focus is in the list (click a row or Tab to it);
         // ↩ opens the selected row via `.onKeyPress` below. The tap gesture keeps
         // the long-standing click-to-open behavior AND records the row as selected,
         // so ↑/↓ continue from the result the user last opened.
-        List(searchVM.pagedResults, id: \.id, selection: $selectedResultId) { result in
+        List(selection: $selectedResultId) {
+            ForEach(searchVM.pagedResults, id: \.id) { result in
             SearchResultRow(result: result, userTags: allUserTags)
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 .listRowSeparator(.visible, edges: .bottom)
@@ -1913,6 +1978,10 @@ struct MacSearchWindowView: View {
                         }
                     }
                 }
+            }
+            // Meaning mode's beyond-library stratum (#262 rows); renders nothing when empty,
+            // which is every Keywords-mode search by construction.
+            SemanticBeyondLibrarySection(hits: searchVM.beyondLibraryHits)
         }
         .listStyle(.plain)
         // ↩ opens the selected result (A7) — same navigation as a row click. Fires
@@ -2266,6 +2335,10 @@ private struct SearchResultRow: View {
                         .background(Color.teal.opacity(0.1))
                         .foregroundStyle(.teal)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                // Meaning mode's score, in the shared chip every semantic surface uses.
+                if let semanticScore = result.semanticScore {
+                    SemanticScoreChip(score: semanticScore)
                 }
                 // Classification chip (Source Explorer Phase 5) — derived from the
                 // result's already-loaded source note; no per-row query.

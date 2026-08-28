@@ -8,7 +8,9 @@
 
 import Foundation
 
-/// The prose-first judging snippet (owner request, 2026-08-27): the report row already shows
+/// The prose-first snippet (owner request, 2026-08-27) — built for the evaluation report's
+/// judging rows and now shared with the app's semantic search results, which face the same
+/// problem for the same reason (no keywords, so nothing to bold): the row already shows
 /// the header, dateline, and key, and FRUS `body_text` OPENS with exactly that boilerplate —
 /// the head, the source-note footnote, the dateline, a despatch serial — so a naive prefix
 /// spends most of its budget re-showing what the row states one line up. This strips the
@@ -27,7 +29,7 @@ import Foundation
 /// A document whose entire early text IS its boilerplate (a stub, a very short note) falls
 /// back to the plain collapsed prefix rather than showing nothing — an empty snippet reads as
 /// "no text", which is a different claim than "nothing but boilerplate".
-public enum EvalSnippet {
+public enum ProseSnippet {
 
     /// Builds the snippet.
     ///
@@ -89,12 +91,12 @@ public enum EvalSnippet {
     }
 
     /// Whitespace-collapsed form: every run of whitespace (newlines included) becomes one space.
-    static func collapse(_ text: String) -> String {
+    public static func collapse(_ text: String) -> String {
         text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     /// Truncates at the last word boundary inside `limit`, appending an ellipsis when cut.
-    static func truncateAtWord(_ text: String, limit: Int) -> String {
+    public static func truncateAtWord(_ text: String, limit: Int) -> String {
         guard text.count > limit else { return text }
         let hardEnd = text.index(text.startIndex, offsetBy: limit)
         let cut = text[..<hardEnd]

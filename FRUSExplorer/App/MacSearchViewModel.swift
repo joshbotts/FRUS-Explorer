@@ -154,10 +154,31 @@ final class MacSearchViewModel {
     /// Triggers a re-search whenever any filter changes. Observed via `searchTrigger`.
     var parametersVersion: Int = 0
 
-    /// Combined token for `.task(id:)` — changes when the submitted query or any
-    /// filter changes. Does **not** change when the user is merely typing in the
-    /// text field; only `submitSearch()` (Return key) updates `submittedQuery`.
-    var searchTrigger: String { "\(submittedQuery)|\(parametersVersion)" }
+    /// Combined token for `.task(id:)` — changes when the submitted query, any filter, or the
+    /// SEARCH MODE changes (a mode flip re-runs the standing query through the other engine).
+    /// Does **not** change when the user is merely typing in the text field; only
+    /// `submitSearch()` (Return key) updates `submittedQuery`.
+    var searchTrigger: String { "\(searchMode.rawValue)|\(submittedQuery)|\(parametersVersion)" }
+
+    // MARK: - Meaning mode (V-5 hybrid page) — the iOS twin's block, mirrored
+
+    /// Which engine a submitted search runs through. Per-session; see `SearchMode`.
+    var searchMode: SearchMode = .keywords
+
+    /// The Meaning mode's engine, injected by `SearchSheet` once the semantic stack has booted.
+    var semanticBackend: SemanticSearchBackend?
+
+    /// Hits beyond the indexed library from the last Meaning search (#262 presentation).
+    var beyondLibraryHits: [SemanticSearchBackend.BeyondLibraryHit] = []
+
+    /// The Meaning mode's disclosure counts, or `nil` outside the mode.
+    var semanticDisclosure: SemanticSearchBackend.Disclosure?
+
+    /// Set when a Meaning search found no model on device — the offer cue, not an error.
+    var semanticNeedsModel = false
+
+    /// Whether the last completed run was a Meaning run — frozen for the history record.
+    private(set) var lastRunWasSemantic = false
 
     /// The parameters a search would run with *right now*, from the live text field.
     ///
@@ -922,6 +943,11 @@ final class MacSearchViewModel {
     /// `results` — preserving the previous result set during the transition rather than
     /// flashing an empty list. `isSearching` is always reset via `defer`.
     func performSearch(service: SearchService?) async {
+        if searchMode == .meaning {
+            await performMeaningSearch()
+            return
+        }
+        lastRunWasSemantic = false
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         // A person filter (single ref or a cross-corpus rollup) or a subject filter is a valid
         // standalone term, so a keyword-less "Find all mentions" handoff runs on it alone.
@@ -992,6 +1018,9 @@ final class MacSearchViewModel {
         do {
             let fetched = try await resultsTask
             results = fetched
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            semanticNeedsModel = false
             lastRenderedExpression = await expressionTask
             executedSearchVersion &+= 1
             // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
@@ -1024,6 +1053,71 @@ final class MacSearchViewModel {
             #if DEBUG
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
+        }
+    }
+
+    /// The Meaning run — `SearchViewModel.searchMeaning`'s macOS twin, with this window's own
+    /// bookkeeping contract (typed `searchError`, cancellation-preserves-results, the
+    /// checklist's query-keyed re-anchor).
+    private func performMeaningSearch() async {
+        let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            totalMatchCount = nil
+            lastRenderedExpression = nil
+            return
+        }
+        guard let backend = semanticBackend else {
+            results = []
+            searchError = SemanticModeError.unavailable
+            return
+        }
+        isSearching = true
+        searchError = nil
+        currentPage = 0
+        semanticNeedsModel = false
+        lastRunWasSemantic = true
+        defer { isSearching = false }
+        if checklistMode, query != lastChecklistAnchorQuery {
+            lastChecklistAnchorQuery = query
+            checklistEnabledAt = .now
+            readSinceEnabledKeys.removeAll()
+            markedReviewedKeys.removeAll()
+        }
+        lastFetchLimit = SemanticSearchBackend.hitLimit
+        do {
+            let outcome = try await backend.run(query: query, parameters: parameters)
+            results = outcome.results
+            beyondLibraryHits = outcome.beyondLibrary
+            semanticDisclosure = outcome.disclosure
+            // nil, not the hit count: the SavedSearch freshness watermark diffs matchCount
+            // against a later FTS count, and a semantic number there mints phantom deltas.
+            totalMatchCount = nil
+            lastRenderedExpression =
+                "route=semantic; model=text-embedding-embeddinggemma-300m-qat; "
+                + "top=\(SemanticSearchBackend.hitLimit)"
+            executedSearchVersion &+= 1
+            if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
+        } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
+            results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            totalMatchCount = nil
+            lastRenderedExpression = nil
+            semanticNeedsModel = true
+            executedSearchVersion &+= 1
+        } catch {
+            guard !(error is CancellationError) else { return }
+            results = []
+            beyondLibraryHits = []
+            semanticDisclosure = nil
+            totalMatchCount = nil
+            lastRenderedExpression = nil
+            executedSearchVersion &+= 1
+            searchError = (error as? SemanticQuerySearcher.SearchUnavailable) == .queryTooLong
+                ? SemanticModeError.tooLong : SemanticModeError.failed
         }
     }
 
@@ -1066,6 +1160,10 @@ final class MacSearchViewModel {
                 parameters: submittedSearchParameters,
                 appliedCorpusId: filterVM?.appliedWorkingCorpusId,
                 renderedExpression: lastRenderedExpression,
+                // See the iOS twin: a Meaning run records the route signature, never an
+                // FTS-shaped scope the appendix would decode into keyword claims.
+                signatureOverride: lastRunWasSemantic
+                    ? SearchScopeSignature.semanticRouteSignature : nil,
                 projectId: projectId,
                 hasError: searchError != nil),
             anchor: &historyAnchor,
@@ -1086,6 +1184,27 @@ final class MacSearchViewModel {
 ///
 /// Version history:
 ///   1.0 — Session 120: added for the empty-scope guard in `performSearch`
+/// The Meaning mode's typed errors, for the window's `Error?`-shaped `searchError`.
+enum SemanticModeError: LocalizedError {
+    case unavailable
+    case tooLong
+    case failed
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailable:
+            return String(localized: "search.semantic.error.unavailable.mac",
+                          defaultValue: "Searching by meaning is not available in this build.")
+        case .tooLong:
+            return String(localized: "search.semantic.error.tooLong.mac",
+                          defaultValue: "This search is too long for the model. Try a shorter phrasing.")
+        case .failed:
+            return String(localized: "search.semantic.error.failed.mac",
+                          defaultValue: "Semantic search could not run. Try again.")
+        }
+    }
+}
+
 enum MacSearchError: LocalizedError {
     /// All three "Search in" scope flags are disabled — there is nothing to search.
     case emptyScope
