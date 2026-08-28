@@ -160,6 +160,15 @@ Apache 2.0. See [LICENSE](LICENSE) for the full license text.
 
 All source files carry the Apache 2.0 license header.
 
+The optional natural-language search feature downloads Google's EmbeddingGemma model at the
+user's request and runs it on-device. The model weights are never part of this repository and
+are not covered by the Apache License: Gemma is provided under and subject to the
+[Gemma Terms of Use](https://ai.google.dev/gemma/terms), including its
+[Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy). The app ships the
+model unmodified (the Q4_0 QAT GGUF build, SHA-256-pinned in the semantic artifacts) and embeds
+[llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) to run it. See [NOTICE](NOTICE) and
+`Planning/semantic-vectors/Gemma-Compliance-Runbook.md`.
+
 ## Contributing
 
 Read [`CLAUDE.md`](CLAUDE.md) for the architecture, build commands, and coding standards, and
