@@ -1585,6 +1585,22 @@ struct FRUSExplorerApp: App {
                                 + "generation — Tier 2 fetch disabled")
                             #endif
                         }
+                        // The query-encoder model store (V-5 s2), pinned to the same artifact's
+                        // modelFileSHA256 — a stored file verified against another generation's
+                        // pin is purged here for the reason the shard purge runs: the family rule
+                        // forbids blending, and 229 MB sitting unusable would still be counted.
+                        let modelStore = SemanticModelStore(
+                            directory: Self.makeSemanticModelDirectory(),
+                            expectedSHA256: semanticIndex.provenance.modelFileSHA256)
+                        let purgedModel = await modelStore.purgeIfPinChanged()
+                        appState.semanticModelStore = modelStore
+                        appState.semanticModelFetcher = SemanticModelFetcher(store: modelStore)
+                        #if DEBUG
+                        if purgedModel {
+                            print("[FRUSExplorer] discarded an encoder model from a previous "
+                                + "generation")
+                        }
+                        #endif
                     }
                     // Before anything can edit a synced model. Cheap: one notification observer.
                     modificationStamper.start(observing: modelContainer.mainContext)
@@ -2701,6 +2717,20 @@ struct FRUSExplorerApp: App {
     static func makeSemanticVectorsDirectory() -> URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let dir = base.appendingPathComponent("FRUSExplorer/SemanticVectors", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    /// Returns (and creates if necessary) the query-encoder model directory (V-5 s2).
+    /// `{Application Support}/FRUSExplorer/SemanticModel/`
+    ///
+    /// Its own directory for the shard directory's reason: the extension sweeps that clean the
+    /// Volumes directory would never touch a `.gguf`, and the shard store's `removeAllShards`
+    /// walks `.vec` files — a 229 MB model inside either directory would survive teardowns that
+    /// believe they emptied it.
+    static func makeSemanticModelDirectory() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("FRUSExplorer/SemanticModel", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

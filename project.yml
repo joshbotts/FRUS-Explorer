@@ -219,6 +219,12 @@ targets:
       # Embed the widget extension so it is installed alongside the app.
       - target: FRUSExplorerWidgets
         embed: true
+      # llama.cpp as a binary xcframework (V-5 s2): the on-device query encoder's runtime.
+      # Built by Scripts/build-llama-xcframework.sh at the PINNED upstream commit the step-4
+      # spike measured; dynamic frameworks, so embed (Xcode re-signs at embed time — the
+      # slices are deliberately built unsigned).
+      - framework: Vendor/llama.xcframework
+        embed: true
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
@@ -324,6 +330,10 @@ targets:
             LSHandlerRank: Owner
             LSItemContentTypes:
               - bottsywattsy.FRUS-Explorer.fruscollection
+    dependencies:
+      # llama.cpp as a binary xcframework (V-5 s2) — see the iOS target's entry.
+      - framework: Vendor/llama.xcframework
+        embed: true
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"

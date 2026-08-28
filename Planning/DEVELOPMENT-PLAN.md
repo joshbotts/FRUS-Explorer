@@ -9801,3 +9801,81 @@ serves pointers, a release asset has a stable direct URL and a 2 GB cap. Both Ge
 liveness-checked before shipping in notices. Docs-only PR — no code, no resources, no
 xcodegen. Next: s2 (encoder store + fetch/consent/storage UI + QueryEncoder actor, with
 the in-app memory measurement riding it).
+
+## Session 2026-08-28H — V-5 s2: the encoder arrives, measured
+
+The session the assessment priced: llama.cpp vendored, the model store/fetch/consent/
+storage UI shipped, the `SemanticQueryEncoder` actor written and ACCEPTED against the
+judged queries, and the in-app memory question — step 4's last open engineering number —
+answered.
+
+**The runtime.** `Vendor/llama.xcframework` (40 MB committed; three slices — iOS device
+7.9 MB, iOS-sim and macOS fat ~16.5 MB each) built by upstream's OWN script at the pinned
+spike commit (`86632248…`, full hash recorded — the short form was nearly committed as an
+invented 40-char hash and is exactly the class of error reading the clone catches),
+trimmed to three platforms by argv, dSYMs STRIPPED (the DWARF files are 78–156 MB, past
+GitHub's 100 MB hard limit) with the three `DebugSymbolsPath` plist keys removed;
+`Scripts/build-llama-xcframework.sh` reproduces it from a clean clone. The dSYMs are
+archived as a release asset for symbolication. First binary-framework dependency in
+project.yml history (`- framework: Vendor/llama.xcframework, embed: true`, both app
+targets).
+
+**The encoder.** `SemanticQueryEncoder` (actor, `FRUSExplorer/Semantic/`), written
+line-for-line from the recon of upstream's embedding example at the pinned commit:
+`LLAMA_LOAD_MODE_MMAP` (there is NO `use_mmap` bool at this commit), pooling and
+attention both UNSPECIFIED so the GGUF's own metadata (mean, non-causal) decides,
+`n_batch = n_ubatch = 2048` because the encode path ASSERT-ABORTS rather than erroring
+when a batch exceeds n_ubatch — so the wrapper refuses over-long queries Swift-side —
+threads set explicitly (the raw-API default is 4, not the CLI's core count), no warmup
+(the first real encode pays the page-in), `llama_decode` routed internally to the
+non-causal encode, `llama_get_embeddings_seq`, L2 in Double. The query prompt is now ONE
+definition — `SemanticQueryPrompt.queryPrefix` in SemanticVectorsKit — and the eval
+harness's primary variant references it, so the harness measures the template the app
+ships by construction. `SemanticQuantization.swift` MOVED from SemanticVectorsGeneratorCore
+into SemanticVectorsKit (needed zero import changes; both SPM dependents already saw the
+kit) so the app-side pipeline runs the generator's own arithmetic.
+
+**The acceptance gate ran, and it caught a real bug.** `QueryEncoderParityTests` (gated
+on `TEST_RUNNER_FRUS_SEMANTIC_MODEL`) drives the encoder over the 25 judged queries
+against a committed CLI-reference fixture (`make_query_parity_fixture.py`, 216 KB). The
+FIRST run returned min cosine **−0.12** — the simulator's paravirtual GPU runs the Metal
+kernels WRONG, not slowly, with no error raised; upstream's own SwiftUI example forces
+CPU on the simulator. With that rule applied (`n_gpu_layers = 0` under
+`targetEnvironment(simulator)` — devices and the Mac keep Metal): min cosine **0.99986**.
+The residual is MEASURED backend arithmetic, not wrapper logic: the CLI disagrees with
+ITSELF between `-ngl 0` and Metal at min 0.99987 over the same queries, so the bar is
+0.999 with both figures in the comment — a logic bug lands orders of magnitude lower.
+
+**The s2 memory number.** Footprint MB, iPhone-16e sim, CPU shape: before 141 → after
+load 349 → after 25 encodes 393 → **after unload 140**. The encoder costs ~250 MB while
+in use and releases COMPLETELY — far under the spike's 639–861 MB CLI ceiling, and
+comfortable at the 3 GB iPadOS floor with load-on-demand + unload, which is the shipped
+shape. The Metal in-app number (devices/Mac) still unmeasured; the CLI ceiling bounds it.
+
+**Distribution, in the runbook's mandatory order.** (1) `frus-semantic-vectors` got its
+Model-weights README section + NOTICE first (commit `fb33b4f`); (2) THEN release
+`encoder-1` with the GGUF (SHA-verified before upload; the served bytes re-downloaded and
+re-verified: 229,093,184 / `5a9e0645…`) and the dSYM archive; (3) the fetcher pins that
+exact URL. `SemanticModelStore` (validate-before-keep, length-then-SHA, `.sha256` sidecar
+so steady-state presence is a stat not a 229 MB hash, absent-marker-is-stale purge —
+the shard store's owner rule) + `SemanticModelFetcher` (delegate-based download with BYTE
+progress — the shard fetcher's no-progress rule explicitly does not carry over at this
+size — cellular gate honoured, foreground transfer disclosed as a trade) + boot wiring
+beside the shard store with a pin-change purge.
+
+**UI + licence surfaces (ordering rule 2's in-app halves).** `SemanticModelSection`
+mounted by BOTH hubs (parity-pinned like #900): status/download/progress/remove rows, and
+the consent sheet whose copy IS the flow-down sentence — documented as a compliance
+surface, echoed in EditableContent.md with a compliance note. About ▸ Legal: On-Device
+Model section (the exact notice sentence + both live links + `GemmaTermsView` rendering
+the bundled `gemma-terms-of-use.txt`, captured verbatim 2026-08-28, page-stated
+last-modified 2026-04-01, degrades to the live link rather than silently empty — iOS
+pushes, macOS opens a nested sheet because FullNoticesView arrives sheet-hosted with no
+NavigationStack), llama.cpp MIT entry, `AboutLinks` + host test + SettingsPaneModel
+keywords.
+
+**SHIP GATE, stated plainly: do NOT cut an App Store build between s2 and s3.** The
+storage section's download button and About's "when you enable natural-language search"
+describe the s3 surface; a build carrying s2 alone would offer a 229 MB download nothing
+uses yet, and the ASC custom EULA (runbook §5, owner-only) must also precede that build's
+review. s3 (the zero-lexical-result semantic surface) is the next session.

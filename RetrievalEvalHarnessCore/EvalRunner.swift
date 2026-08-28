@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SemanticVectorsKit
 
 /// The W-17 session 3 / V-5 §6 shared evaluation runner.
 ///
@@ -51,9 +52,12 @@ public enum EvalRunner {
         }
     }
 
-    /// The three prompt variants, in report order. The first is primary.
+    /// The three prompt variants, in report order. The first is primary — and since the sitting
+    /// settled the question its string is the shared `SemanticQueryPrompt.queryPrefix`, the same
+    /// definition the in-app encoder embeds under, so this harness always measures the template
+    /// the app ships rather than a copy that could drift.
     public static let promptVariants: [(name: String, prefix: String)] = [
-        ("query", "task: search result | query: "),
+        ("query", SemanticQueryPrompt.queryPrefix),
         ("document", "title: none | text: "),
         ("bare", ""),
     ]

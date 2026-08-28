@@ -21,10 +21,10 @@ dissolves for the cost recorded in §6.
 
 | # | Condition (clause map §2) | Surface | Status |
 |---|---|---|---|
-| 4 | NOTICE file carrying the exact sentence | `NOTICE` at the repo root | **DONE (this PR)** |
-| 3 | Prominent modification notices | "distributed unmodified" statement + SHA in `NOTICE`, the artifact-repo README (§3), and the About entry (§4) | NOTICE done; others land with their surfaces |
-| 2 | A copy of the Terms to every recipient | Gemma Terms text bundled in the app's Full Notices screen, plus live links | **s2** (see §4) |
-| 1 | Use-restriction flow-down as an enforceable provision, plus notice to users | (a) custom EULA in App Store Connect — **owner-only**, §5; (b) the download-consent sentence — **s2**, §4; (c) the About notice — **s2**, §4 | open |
+| 4 | NOTICE file carrying the exact sentence | `NOTICE` at the repo root | **DONE (PR #1124)** |
+| 3 | Prominent modification notices | "distributed unmodified" statement + SHA in `NOTICE`, the artifact-repo README (§3), and the About entry (§4) | **DONE (s2)** — all three surfaces live |
+| 2 | A copy of the Terms to every recipient | Gemma Terms text bundled in the app's Full Notices screen (`gemma-terms-of-use.txt` + `GemmaTermsView`), plus live links | **DONE (s2)** |
+| 1 | Use-restriction flow-down as an enforceable provision, plus notice to users | (a) custom EULA in App Store Connect — **owner-only, §5, STILL OPEN**; (b) the download-consent sentence — **DONE (s2)**, `SemanticModelConsentSheet`; (c) the About notice — **DONE (s2)**, `onDeviceModelSection` | in-app halves done; (a) before the carrying build's review |
 
 The exact sentence, verbatim (already in `NOTICE`): *"Gemma is provided under and subject
 to the Gemma Terms of Use found at ai.google.dev/gemma/terms"*. Both URLs verified live
@@ -44,6 +44,11 @@ to the Gemma Terms of Use found at ai.google.dev/gemma/terms"*. Both URLs verifi
    in place before distribution begins is the required order, and early is harmless.
 
 ## 3. The artifact-repo text — ready to paste into `frus-semantic-vectors`
+
+**DONE (s2, 2026-08-28)**: the README section and NOTICE below are live (commit `fb33b4f`),
+pushed BEFORE the `encoder-1` release was created — the GGUF (SHA-verified locally, then the
+served bytes re-verified by download) and the llama.cpp dSYM archive are its two assets. The
+text below stays as the record of what was published.
 
 Two files. First, append to that repo's `README.md`:
 
