@@ -10070,13 +10070,13 @@ the rewiring changed no behavior. Full iOS suite 4,192/559 green; Mac build gree
 **Owner residue**: one attended Mac run — Meaning search, then quit inside three minutes —
 confirms the fix in situ; the probe is the mechanism proof.
 
-## Release 2026-08-28 — TestFlight build 44 (v0.2), both platforms — PREPARED
+## Release 2026-08-28 — TestFlight build 44 (v0.2), both platforms
 
-**The bump is in this branch** (`CURRENT_PROJECT_VERSION` 43 → 44, edited directly in
-`project.yml` ×3 and `project.pbxproj` ×9, no xcodegen — the bump rule). Tag **after** this
-PR merges, at the merge commit, so the tag contains the bump:
-`git tag -a build-44 <merge-sha> -m "<the four facts>" && git push origin build-44` — the
-four facts below, per #949's pattern.
+Tagged **`build-44`** at `c47a9d48` (the #1130 merge commit, which carries the bump —
+`CURRENT_PROJECT_VERSION` 43 → 44, edited directly in `project.yml` ×3 and
+`project.pbxproj` ×9, no xcodegen). Annotated, and carrying the four facts per #949's
+pattern: the headline, the re-index requirement, the CloudKit position, and where the
+tester notes live — `git show build-44` reconstructs the build without archaeology.
 
 **49 commits since `build-43`.** The headline is **search by meaning** (V-5, #1119–#1129):
 the on-device query encoder — llama.cpp vendored at the spiked commit, EmbeddingGemma as a
