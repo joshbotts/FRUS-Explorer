@@ -782,6 +782,39 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - RetrievalEvalHarness
+
+        /// The W-17 session 3 / V-5 §6 shared evaluation harness: runs the owner-written query set
+        /// through the lexical route (the app's own MATCH expression + BM25 over the live index,
+        /// read-only) and the semantic route (LM Studio embed with the SHA-pinned GGUF → the exact
+        /// shipped funnel via `SemanticRetrievalKernel`'s external-query entry point), and writes
+        /// the side-by-side judging report. Offline except the localhost embedding calls.
+        .target(
+            name: "RetrievalEvalHarnessCore",
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "SemanticVectorsKit"),
+                // One definition of truncate / int8 / sign-pack — the generator's own rules.
+                .target(name: "SemanticVectorsGeneratorCore"),
+                // One definition of the search box's MATCH rendering.
+                .target(name: "FTS5Store"),
+            ],
+            path: "RetrievalEvalHarnessCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "RetrievalEvalHarness",
+            dependencies: [.target(name: "RetrievalEvalHarnessCore")],
+            path: "RetrievalEvalHarness",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "RetrievalEvalHarnessTests",
+            dependencies: [.target(name: "RetrievalEvalHarnessCore")],
+            path: "RetrievalEvalHarnessTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - GeneratorKit
 
         /// Reusable utilities shared across the corpus-scanning generators: a deterministic

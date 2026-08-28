@@ -323,6 +323,48 @@ struct SemanticRetrievalKernelTests {
         }
     }
 
+    /// The external-query entry point's parity pin (W-17 session 3 / V-5 §6). The tie-breaks ARE
+    /// the measurement: every recall number describes the row form's exact procedure, so the new
+    /// entry point is pinned to reproduce it bit-for-bit rather than trusted to agree. A corpus
+    /// row's own bytes, fed through the external form with the row excluded by the filter, must
+    /// return the row form's candidate list exactly — order included.
+    @Test("The external-query form reproduces the row form exactly when fed the row's own bytes")
+    func externalQueryParity() throws {
+        let (vectors, patterns) = try Self.randomCorpus(rows: 400)
+        for queryRow in [0, 3, 77, 250, 399] {
+            var bytes = [UInt8](repeating: 0, count: 8)
+            for byte in 0..<8 {
+                bytes[byte] = UInt8((patterns[queryRow] >> (8 * UInt64(7 - byte))) & 0xFF)
+            }
+            for limit in [1, 10, 120, 399] {
+                let viaRow = SemanticRetrievalKernel.hammingCandidates(
+                    queryRow: queryRow, in: vectors, limit: limit)
+                let viaBytes = SemanticRetrievalKernel.hammingCandidates(
+                    queryBits: bytes, in: vectors, limit: limit,
+                    isEligible: { $0 != queryRow })
+                #expect(viaBytes == viaRow, "query \(queryRow) limit \(limit)")
+            }
+        }
+    }
+
+    @Test("An external query excludes no row by itself: its own twin ranks first at distance zero")
+    func externalQueryFindsItsTwin() throws {
+        let (vectors, patterns) = try Self.randomCorpus(rows: 100)
+        var bytes = [UInt8](repeating: 0, count: 8)
+        for byte in 0..<8 { bytes[byte] = UInt8((patterns[42] >> (8 * UInt64(7 - byte))) & 0xFF) }
+        let candidates = SemanticRetrievalKernel.hammingCandidates(
+            queryBits: bytes, in: vectors, limit: 5)
+        #expect(candidates.first == 42,
+                "the row whose bits the query carries is at distance 0 and must rank first")
+    }
+
+    @Test("An external query with the wrong byte width returns nothing rather than trapping")
+    func externalQueryWrongWidth() throws {
+        let (vectors, _) = try Self.randomCorpus(rows: 20)
+        #expect(SemanticRetrievalKernel.hammingCandidates(
+            queryBits: [0x00, 0xFF], in: vectors, limit: 5).isEmpty)
+    }
+
     @Test("The anchor is never its own candidate, and a full request still fills")
     func anchorExcludedAndPoolFills() throws {
         let (vectors, _) = try Self.randomCorpus(rows: 120)

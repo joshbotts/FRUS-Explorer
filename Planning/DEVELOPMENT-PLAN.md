@@ -9571,3 +9571,36 @@ persistence self-extends to the new axis (stored tunings inherit its 0.0 — no 
 row, no CloudKit change, the weights string is the same field). The generator refuses to
 score when its own anchor is absent from the query results — no denominator, no honest
 ratio — rather than inventing a scale.
+
+## Session 2026-08-27J — W-17 session 3: the shared evaluation instrument, built and run
+
+The owner supplied 25 queries (9 research questions, 12 search-box, 4 known-items, a null
+control, a wrong-premise probe; saved verbatim at
+Planning/semantic-vectors/owner-eval-queries-2026-08-27.txt). This session built the
+harness and ran the first sitting.
+
+Provenance before anything else: the pinned GGUF was absent from this machine, so it was
+fetched from the repo whose LFS hash equals the artifact's modelFileSHA256, verified
+locally, imported into LM Studio, and a stored corpus chunk vector was REPRODUCED at
+cosine 1.0 through the same endpoint before a single query ran. The harness re-verifies
+both pins (served id against /v1/models — LM Studio routes unknown ids to whatever is
+loaded — and the GGUF SHA) on every run.
+
+The kernel gained §6's shared prerequisite: hammingCandidates(queryBits:) — an external
+query entering the EXACT shipped funnel, the row form now a wrapper over the extracted
+core, parity PINNED (a row's own bytes reproduce the row form's candidate list exactly,
+order included). The transforms are the generator's own SemanticQuantization; the shards
+were regenerated locally from the raw store (byte-identical repack, 552 files).
+
+First-run findings, all from reading the output: route overlap 14/250 — the two routes
+surface almost entirely different documents; THREE natural-language questions return
+zero lexical results (implicit AND); the semantic route surfaces the Olney note (rank 2)
+and the Feb-1973 Mao memcon (rank 2) where lexical returns nothing or noise; "blood
+telegram" fools BOTH routes — semantic finds Chargé TRUEBLOOD's telegrams, a
+tokenization-shaped failure worth its own line in any verdict; the null control shows
+each route failing differently (semantic: confident outer-space drift; lexical:
+aliens-as-foreigners). Prompt variants agree with the query template on only 63%
+(document) and 54% (bare) of slots — §6's prompt question, now measured.
+
+The judging sitting is the owner's: verdicts.csv ships with the relevant column blank.
+CSUserQuery (W-9 step 1) joins the harness when it is built.

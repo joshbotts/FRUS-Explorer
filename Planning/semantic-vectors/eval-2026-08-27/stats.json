@@ -1,0 +1,254 @@
+{
+  "queries" : [
+    {
+      "lexicalCount" : 1,
+      "query" : 1,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "How did U.S. diplomats engage with host governments about the Emancipation Proclamation?",
+      "variantOverlapBare" : 2,
+      "variantOverlapDocument" : 4
+    },
+    {
+      "lexicalCount" : 1,
+      "query" : 2,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "How did immigration affect U.S. diplomacy with China in the 1880s?",
+      "variantOverlapBare" : 7,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 3,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "How did U.S. diplomats think about Cuban independence before 1898?",
+      "variantOverlapBare" : 8,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 0,
+      "query" : 4,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "known-item",
+      "text" : "Which document related to the Anglo-Venezuelan boundary dispute expanded the Monroe Doctrine?",
+      "variantOverlapBare" : 7,
+      "variantOverlapDocument" : 8
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 5,
+      "routeOverlap" : 1,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Mexican Revolution",
+      "variantOverlapBare" : 6,
+      "variantOverlapDocument" : 5
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 6,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "When did U.S. diplomats realize that Hitler was a serious danger to the United States?",
+      "variantOverlapBare" : 5,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 7,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Intelligence collaboration",
+      "variantOverlapBare" : 7,
+      "variantOverlapDocument" : 8
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 8,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "How did the United States collaborate with Great Britain to conduct economic warfare during World War II?",
+      "variantOverlapBare" : 8,
+      "variantOverlapDocument" : 8
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 9,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Foreign Service reform",
+      "variantOverlapBare" : 6,
+      "variantOverlapDocument" : 8
+    },
+    {
+      "lexicalCount" : 7,
+      "query" : 10,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "What convinced U.S. policymakers that the Soviet Union was no long an ally after World War II?",
+      "variantOverlapBare" : 6,
+      "variantOverlapDocument" : 5
+    },
+    {
+      "lexicalCount" : 0,
+      "query" : 11,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "At what point did U.S. decision makers determine that the Nationalists couldn't prevail in the Chinese Civil War?",
+      "variantOverlapBare" : 6,
+      "variantOverlapDocument" : 4
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 12,
+      "routeOverlap" : 2,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Deposing shah",
+      "variantOverlapBare" : 4,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 13,
+      "routeOverlap" : 5,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Diego Garcia base",
+      "variantOverlapBare" : 5,
+      "variantOverlapDocument" : 9
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 14,
+      "routeOverlap" : 1,
+      "semanticCount" : 10,
+      "tag" : "null control",
+      "text" : "Space aliens",
+      "variantOverlapBare" : 7,
+      "variantOverlapDocument" : 5
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 15,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "wrong-premise probe (the Liberty was attacked, not sunk)",
+      "text" : "U.S.S. Liberty sinking",
+      "variantOverlapBare" : 4,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 16,
+      "routeOverlap" : 1,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "How did Kissinger manage the State Department?",
+      "variantOverlapBare" : 6,
+      "variantOverlapDocument" : 7
+    },
+    {
+      "lexicalCount" : 1,
+      "query" : 17,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "known-item",
+      "text" : "What joke did Mao make about Chinese women?",
+      "variantOverlapBare" : 8,
+      "variantOverlapDocument" : 7
+    },
+    {
+      "lexicalCount" : 0,
+      "query" : 18,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "What medium- and long-term impacts did U.S. policymakers anticipate the Panama Canal Treaty having? What were they right and wrong about?",
+      "variantOverlapBare" : 7,
+      "variantOverlapDocument" : 7
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 19,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Climate diplomacy",
+      "variantOverlapBare" : 2,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 20,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "Window of vulnerability",
+      "variantOverlapBare" : 5,
+      "variantOverlapDocument" : 7
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 21,
+      "routeOverlap" : 3,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "washington naval conference ratios",
+      "variantOverlapBare" : 7,
+      "variantOverlapDocument" : 8
+    },
+    {
+      "lexicalCount" : 6,
+      "query" : 22,
+      "routeOverlap" : 1,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "sussex pledge",
+      "variantOverlapBare" : 2,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 9,
+      "query" : 23,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "\"trust but verify\"",
+      "variantOverlapBare" : 6,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 24,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "",
+      "text" : "persona non grata",
+      "variantOverlapBare" : 0,
+      "variantOverlapDocument" : 6
+    },
+    {
+      "lexicalCount" : 10,
+      "query" : 25,
+      "routeOverlap" : 0,
+      "semanticCount" : 10,
+      "tag" : "known-item by nickname (Archer Blood's April 1971 Dacca dissent cable — the documents never call it that)",
+      "text" : "blood telegram",
+      "variantOverlapBare" : 4,
+      "variantOverlapDocument" : 4
+    }
+  ]
+}
