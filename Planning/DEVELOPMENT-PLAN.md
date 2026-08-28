@@ -9768,3 +9768,36 @@ dictating load-on-demand at the 3 GB floor. Binary cost revised up honestly: ~7 
 guess. llama-embedding's perf block never printed in this build, hence the slope
 method. Remaining before anything ships: the owner's formal Gemma licence read, and
 s2's in-app memory measurement.
+
+## Session 2026-08-28G — the licence gate resolved; the paperwork lands ahead of the weights
+
+The owner asked for a preview of exactly what proceeding under the Gemma Terms changes —
+GitHub, About screen, future constraints — then accepted the whole plan ("i accept all
+of these. proceed."), which resolves the assessment's one non-engineering gate and
+green-lights s2–s3. The clause map's §5 escape-hatch check ran FIRST, before any
+paperwork was written: `google/embeddinggemma-300m` still declares `license: gemma`
+(HF API, lastModified 2025-09-25, untouched since release), and Gemma 4's Apache-2.0
+family (2026-04-02) has no embedding sibling in Google's HF org — so the Terms path
+stands rather than dissolving.
+
+What landed, deliberately AHEAD of any weight distribution (notices must precede
+distribution, and early is harmless): `NOTICE` at the repo root — new file, the repo had
+none — carrying §3.1 condition 4's exact sentence, the unmodified-GGUF statement with
+filename/bytes/SHA, and llama.cpp's MIT notice (© 2023–2026 The ggml authors, read from
+the spike clone's LICENSE, not guessed); the README licence paragraph (weights are not
+part of this repository and not covered by Apache-2.0); and
+`Planning/semantic-vectors/Gemma-Compliance-Runbook.md` — the standing implementation
+document mapping all four §3.1 conditions to their surfaces with deadlines and ordering
+rules (artifact-repo text BEFORE the GGUF upload, since uploading is itself Distribution
+under §1.1(b); About entries + consent sheet + bundled Terms text in the SAME build as
+the fetch path; the ASC custom EULA — owner-only — before that build's review;
+DirectDistribution covered by the in-app consent instead). The runbook carries the
+ready-to-paste verbatim texts: the frus-semantic-vectors README section and NOTICE, both
+About entries with suggested localization keys, the consent-sheet sentence, and the EULA
+clause (Apple-template-plus-one-paragraph). One hosting decision recorded: the GGUF goes
+up as a GitHub RELEASE ASSET on frus-semantic-vectors — a git blob is impossible
+(229 MB > the 100 MB hard limit), LFS has bandwidth quotas and raw.githubusercontent
+serves pointers, a release asset has a stable direct URL and a 2 GB cap. Both Gemma URLs
+liveness-checked before shipping in notices. Docs-only PR — no code, no resources, no
+xcodegen. Next: s2 (encoder store + fetch/consent/storage UI + QueryEncoder actor, with
+the in-app memory measurement riding it).
