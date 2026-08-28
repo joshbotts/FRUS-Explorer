@@ -88,3 +88,52 @@ topical neighbors at all.
    one query class with a zero across the board; a curated alias layer is the only
    plausible fix and is deliberately not scoped here. Surname collision (Trueblood)
    belongs in any semantic-surface disclosure alongside the existing early-era unknown.
+
+---
+
+# Addendum, 2026-08-28: the third route — CSUserQuery, measured and decided
+
+W-9 step 1 asked the smallest question that decides something: with `textContent`
+donated, is Apple's local ranked search good enough here? **Measured: no.** The owner ran
+the seam twice on the Mac (07:33 and 09:28 local, 5.5 and 7.5 hours after the 316,895-item
+re-donation fully processed — the corespotlightd heartbeat confirmed
+request = journaled = processed), macOS 26.6.2, donated schema v2. Both runs are archived
+beside this file; run 2 is merged into `report.md` as the third route.
+
+**The decisive facts, stable across both runs:**
+
+- **Eight queries returned zero rows in both runs — six of the nine research questions,
+  the Mao question, and the quoted phrase.** This is the lexical failure signature on
+  exactly the register where the Gemma route scored 0.65 with rank-1 hits. Zero rows is a
+  retrieval failure no generous judging can rescue.
+- **All three known-items missed by identity in both runs** ("blood telegram" returned an
+  1890s Adee–Pauncefote letter: keyword matching on "blood" + "telegram").
+- The route surfaces almost entirely different documents from both prior routes: of 142
+  rows, only 13 overlap the judged sitting (run 2: 9 relevant / 4 not — the 4 zeros are
+  the null control, where it returned an 1845 constitution for "space aliens"). Where it
+  behaved, it behaved as competent keyword search: all 9 judged-relevant rows are
+  search-box queries. MRR floor 0.119 (unjudged rows counted as misses — a floor, and
+  the zero-row questions bound it regardless).
+- **The keyword rankings churned between runs** (two top-10s replaced wholesale, several
+  reshuffled) while the zero-row questions stayed identically empty — consistent with
+  background index churn that does not touch the structural failure.
+
+**What this decides:** Apple's local semantic search, as reachable through `CSUserQuery`
+over donated `textContent` on this OS build, does **not** clear the P 0.65 / MRR 0.77
+bar — it does not reach it on any register, and on the research-question register it
+fails the same way BM25 does. **V-5's remaining claim therefore does not narrow**: the
+Gemma route stays the only demonstrated answer for natural-language queries over this
+corpus, and the on-device encoder case (V-5 step 4) strengthens — it now has a measured
+three-way comparison behind it. Steps 2–3 of the §6 sequence proceed as planned; the
+donation itself stays shipped (system Spotlight findability improved for every user
+regardless of this verdict).
+
+**Caveats, stated:** ranking quality here is a property of the OS's models and may change
+with OS updates — the JSON stamps the build for exactly that reason. Whether the semantic
+ranking layer was fully engaged for third-party `textContent` on this build is not
+observable from outside, and **the eval machine's Apple Intelligence setting was not
+confirmed** — if the owner finds it was disabled, one further run with it enabled would
+be worth the ten minutes before treating this verdict as final. And 129 of the route's
+rows are documents the sitting never judged — a supplementary sitting could refine its
+precision on the keyword register, but cannot change the zero-row facts that decide the
+verdict.

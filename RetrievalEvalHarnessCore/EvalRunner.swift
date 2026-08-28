@@ -77,6 +77,10 @@ public enum EvalRunner {
     }
 
     /// Runs the evaluation and writes the report artifacts into `outDirectory`.
+    ///
+    /// - Parameter csUserQueryJSON: An optional `CSUserQueryEvalRunner` output file, merged
+    ///   into the report as a third route. Its rows come from the app's own Spotlight run,
+    ///   so this harness only formats them — it never re-executes that route.
     public static func run(
         queriesURL: URL,
         databasePath: String,
@@ -85,6 +89,7 @@ public enum EvalRunner {
         client: LMStudioEmbeddingClient,
         modelFile: URL?,
         outDirectory: URL,
+        csUserQueryJSON: URL? = nil,
         topK: Int = 10
     ) async throws {
         let queries = parseQueries(try String(contentsOf: queriesURL, encoding: .utf8))
@@ -94,9 +99,11 @@ public enum EvalRunner {
         let semantic = try SemanticEvalRoute(
             indexDirectory: indexDirectory, shardsDirectory: shardsDirectory)
         try await client.verify(modelFile: modelFile, pinnedSHA256: semantic.pinnedModelSHA256)
+        let csRoute = try csUserQueryJSON.map(loadCSUserQueryRoute)
 
         var report = ReportBuilder(queryCount: queries.count, model: client.model,
-                                   pinnedSHA: semantic.pinnedModelSHA256)
+                                   pinnedSHA: semantic.pinnedModelSHA256,
+                                   csUserQueryProvenance: csRoute?.provenance)
 
         for query in queries {
             FileHandle.standardError.write(Data("[eval] #\(query.number) \(query.text)\n".utf8))
@@ -112,17 +119,76 @@ public enum EvalRunner {
                        lexicalExpression: expression,
                        lexical: lexicalRows,
                        semanticByVariant: variantRows,
+                       csUserQuery: csRoute?.rows[query.number],
                        display: { lexical.display(volumeId: $0, documentId: $1) })
         }
 
         try FileManager.default.createDirectory(at: outDirectory, withIntermediateDirectories: true)
         try report.markdown.write(to: outDirectory.appendingPathComponent("report.md"),
                                   atomically: true, encoding: .utf8)
-        try report.verdictsCSV.write(to: outDirectory.appendingPathComponent("verdicts.csv"),
-                                     atomically: true, encoding: .utf8)
+        // The verdicts file is the OWNER'S RECORD once judged: a regeneration (new snippet
+        // style, a third route merged) must never blank a filled sitting. Written only when
+        // absent or still blank; otherwise the sitting stands and the skip is logged.
+        let verdictsURL = outDirectory.appendingPathComponent("verdicts.csv")
+        if hasFilledVerdicts(at: verdictsURL) {
+            FileHandle.standardError.write(Data(
+                "[eval] verdicts.csv carries judged rows — left untouched\n".utf8))
+        } else {
+            try report.verdictsCSV.write(to: verdictsURL, atomically: true, encoding: .utf8)
+        }
         try report.statsJSON.write(to: outDirectory.appendingPathComponent("stats.json"),
                                    atomically: true, encoding: .utf8)
         FileHandle.standardError.write(Data("[eval] wrote \(outDirectory.path)\n".utf8))
+    }
+
+    /// Whether an existing verdicts file carries at least one judged row.
+    ///
+    /// Lines are trimmed before the suffix test because a judged sitting comes back from
+    /// the OWNER'S editor, and editors save CRLF: the first version of this guard checked
+    /// `hasSuffix(",1")` against lines ending `,1\r`, declared the sitting blank, and
+    /// overwrote it — the same bare-`\r` failure the merge-audit CSV reader documented,
+    /// striking from the other direction. (The sitting was recoverable from git; the
+    /// lesson is permanent.)
+    static func hasFilledVerdicts(at url: URL) -> Bool {
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return false }
+        return text.split(whereSeparator: \.isNewline).dropFirst().contains { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return trimmed.hasSuffix(",1") || trimmed.hasSuffix(",0")
+        }
+    }
+
+    /// A parsed `CSUserQueryEvalRunner` output: per-query-number rows plus the provenance
+    /// line the report prints (OS build and donated schema version — ranking quality is a
+    /// property of the OS's models, and the report must say which).
+    static func loadCSUserQueryRoute(_ url: URL)
+        throws -> (rows: [Int: [EvalResult]], provenance: String) {
+        struct File: Decodable {
+            struct Query: Decodable {
+                struct Row: Decodable {
+                    let rank: Int?
+                    let volume: String?
+                    let document: String?
+                }
+                let query: Int
+                let results: [Row]
+            }
+            let osVersion: String
+            let spotlightSchemaVersion: Int
+            let generated: String
+            let queries: [Query]
+        }
+        let file = try JSONDecoder().decode(File.self, from: Data(contentsOf: url))
+        var rows: [Int: [EvalResult]] = [:]
+        for query in file.queries {
+            rows[query.query] = query.results.compactMap { row in
+                guard let volume = row.volume, let document = row.document else { return nil }
+                // CSUserQuery exposes no comparable score; rank is the only ordering it
+                // states, carried as a negative so "higher is better" never misreads.
+                return EvalResult(volumeId: volume, documentId: document,
+                                  score: -Double(row.rank ?? 0))
+            }
+        }
+        return (rows, "\(file.osVersion), donated schema v\(file.spotlightSchemaVersion), run \(file.generated)")
     }
 }
 
@@ -136,9 +202,12 @@ public struct ReportBuilder {
     private var csvRows: [String] = ["query,route,rank,volume,document,header,relevant"]
     private var stats: [[String: Any]] = []
     private let header: String
+    private let csUserQueryProvenance: String?
 
     /// Creates a builder.
-    public init(queryCount: Int, model: String, pinnedSHA: String) {
+    public init(queryCount: Int, model: String, pinnedSHA: String,
+                csUserQueryProvenance: String? = nil) {
+        self.csUserQueryProvenance = csUserQueryProvenance
         header = """
         # Retrieval evaluation — the owner-query sitting (W-17 session 3 / W-9 step 2)
 
@@ -175,6 +244,7 @@ public struct ReportBuilder {
         lexicalExpression: String?,
         lexical: [EvalResult],
         semanticByVariant: [String: [EvalResult]],
+        csUserQuery: [EvalResult]? = nil,
         display: (String, String) -> (header: String, dateline: String?, snippet: String)?
     ) {
         let primary = semanticByVariant["query"] ?? []
@@ -184,6 +254,12 @@ public struct ReportBuilder {
         section += rows(lexical, route: "lexical", query: query, display: display)
         section += "\n### Semantic (query prompt)\n\n"
         section += rows(primary, route: "semantic", query: query, display: display)
+        if let csUserQuery {
+            section += "\n### CSUserQuery — Apple's local ranked search"
+            if let csUserQueryProvenance { section += " (\(csUserQueryProvenance))" }
+            section += "\n\n"
+            section += rows(csUserQuery, route: "csuserquery", query: query, display: display)
+        }
 
         let lexicalSet = Set(lexical.map(\.key))
         let primarySet = Set(primary.map(\.key))

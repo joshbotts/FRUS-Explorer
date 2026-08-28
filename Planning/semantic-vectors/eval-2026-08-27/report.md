@@ -67,6 +67,10 @@ not already shown you.
    `frus1863p2/d202` · score 0.5563  
    > Sir: I have to acknowledge the receipt of your despatch of December 6, No. 70. The President’s message, the American diplomatic correspondence of 1862, and Mr. Bright’s Manchester speech, all appearing at the same time, have given a great fillip to the discussions of the American question. The…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 4/10, bare: 2/10.*
 *document variant:* frus1917-72PubDipv06/d81, frus1914/d1, frus1955-57v18/d314, frus1863p2/d202, frus1952-54v03/d807, frus1925v01/d146, frus1862/d105, frus1969-76v28/d48, frus1861/d2, frus1865p3/d9
 *bare variant:* frus1942v02/d177, frus1925v01/d146, frus1958-60v06/d455, frus1917-72PubDipv06/d131, frus1969-76ve06/d28, frus1952-54v08/d5, frus1944v06/d25, frus1861/d2, frus1914-20v01/d490, frus1893/d357
@@ -113,6 +117,39 @@ not already shown you.
 10. **Mr. Wharton to Mr. Tsui .** — Department of State , Washington , December 10, 1892 .  
    `frus1892/d115` · score 0.6131  
    > Sir : I have the honor to acknowledge the reception of your two notes of the respective dates of November 7 and November 11, 1892, concerning the recent legislation of the Congress of the United States “in respect to Chinese subjects” in this country. In the former of these two notes you refer to…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **Mr. Williams to Mr. Seward** — Legation of the United States , Peking, January 31, 1866.  
+   `frus1866p1/d384` · score -1.0000  
+   > Sir : * * * * * I have just been informed by Mr. Vlangaly, the Russian minister, that the Chinese government has extended to Russian ships trading between its open ports and the Russian possessions on the Amoor the same privileges in respect to the payment of tonnage dues that have been granted to…
+2. **Mr. Burlingame to Mr. Seward** — Legation of the United States , Peking , June 20, 1863.  
+   `frus1863p2/d262` · score -2.0000  
+   > Sir: In despatch No. 18 of June 2, 1862, I had the honor to write, “if the treaty powers could agree among themselves to the neutrality of China, and together secure order in the treaty ports, and give their moral support to that party in China, in favor of order, the interests of humanity would be…
+3. **Mr. Williams to Mr. Seward** — Legation of The United States , Peking, August 18, 1866.  
+   `frus1866p1/d407` · score -3.0000  
+   > Sir: When Mr. Knight, the United States vice-consul at Niuchwang, reached this city on the 17th ultimo, he visited all the foreign ministers in order to explain to each of them personally the condition of affairs there, and the importance of securing protection for life and property from the bands…
+4. **Mr. Burlingame to Mr. Seward** — Legation of the United States, Peking, May 21, 1864.  
+   `frus1864p3/d413` · score -4.0000  
+   > Sir : I have the honor to forward the letter and circular (marked A and B) of Sir Frederick Bruce, in relation to the jurisdiction claimed by his government over leased ground at the ports. You will remember that in my despatch No. 36 I gave a history of my efforts against all pretensions of…
+5. **Mr. Seward to Mr. Burlingame** — Department of State , Washington , December 29, 1866 .  
+   `frus1867p1/d378` · score -5.0000  
+   > Sir : I transmit to you herewith the copy of a note For enclosure see Diplomatic Correspondence 1866, vol. 1 page 261 of the 3d ultimo, from Sir Frederick Bruce, relative to the placing of lights and buoys on the coast of the Chinese empire, and asking that this government may co-operate with that…
+6. **Mr. George F. Seward to Mr. Fish .** — Washington, April 22, 1870 . (Received April 30.)  
+   `frus1870/d222` · score -6.0000  
+   > Sir: It is well known that the principles on which our intercourse with China has for many years been conducted have been clearly defined by the mission of Mr. Burlingame, and that this demonstration of them has drawn forth grave remonstrances from the mass of foreigners on the spot. The principles…
+7. **Mr. Williams to Mr. Seward** — Legation of the United States . Peking, January 6, 1866.  
+   `frus1866p1/d382` · score -7.0000  
+   > Sir : I have the honor to acknowledge the receipt of your despatches Nos. 1 and 2. In reference to the directions given in the latter, I only observe that no application for pardon or return to the United States has been made to this legation by any rebel; and so far as I know, there is no American…
+8. **Mr. Burlingame to Mr. Seward** — Legation of the United States, Peking, November 7, 1863.  
+   `frus1864p3/d395` · score -8.0000  
+   > Sir : I have the honor to inform you of the settlement of the most difficul question that has arisen since my arrival in China. You have doubtless heard much of the building in England of war steamers for the Emperor of China, and finally of the sailing of the “Osborn Flotilla.” But unless you were…
+9. **Baron Gerolt to Mr. Seward** — Prussian Legation , Washington , March 11, 1867 .  
+   `frus1867p1/d399` · score -9.0000  
+   > Sir : The royal government has instructed me to get information as to the ground taken up by the United States government in the difference now pending between the French consul at Shanghai on one side, and the representatives of the United States, Great Britain, and Prussia, on the other, in…
+10. **Mr. Bancroft to Mr. Seward.** — Legation of the United States , Berlin , October 3, 1867.  
+   `frus1867p1/d541` · score -10.0000  
+   > Sir : Herewith I enclose to you a copy of my answer to Prince Hohenlohe, and a translation of the same into English. The object of this reply is—-first, to state explicitly my interpretation of his letter as implying a fall recognition of the right of expatriation; secondly, to correct immediately…
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 7/10.*
 *document variant:* frus1889/d87, frus1901/d85, frus1881/d126, frus1888p1/d240, frus1876/d44, frus1892/d114, frus1881/d127, frus1890/d160, frus1892/d100, frus1888p1/d260
@@ -188,6 +225,39 @@ not already shown you.
    `frus1958-60v06/d527` · score 0.6477  
    > SUBJECT Cuban Situation: Meeting with Representatives of the National Foreign Trade Council PARTICIPANTS Representatives of the National Foreign Trade Council: Mr. Harry Pike , H.H. Pike & Co., Chairman of NFTC Cuba Committee Mr. John Akin , Secretary of the NFTC Mr. M.L. Haider , Director of…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **71. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , September 6, 1979, 2351Z  
+   `frus1977-80v23/d71` · score -1.0000  
+   > Subject: Likely Castro Reaction on Soviet Troop Issue. Ref: A) Havana 8038. See Document 66 . 1. S—Entire text. 2. I take it from Secretary’s public statement of Sept 6 that matter of Soviet unit is to be pursued with Amb Dobrynin . Reference is presumably to Vance ’s September 5 press conference.…
+2. **75. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , September 18, 1979, 1424Z  
+   `frus1977-80v23/d75` · score -2.0000  
+   > Subject: (S) Soviet Troops in Cuba. Ref: Havana 8435. Not found. 1. (S—Entire text.) 2. At lunch today Jose Luis Padron indicated “top levels” of GOC were mystified by US intentions in making issue at this time of Soviet unit in Cuba. Conventional wisdom was that US aim was to influence outcome of…
+3. **82. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , October 18, 1979, 1915Z  
+   `frus1977-80v23/d82` · score -3.0000  
+   > Subj: (C) Cubans Complain of U.S. Violations of Hijacking Agreement. 1. (C—Entire text.) 2. Carlos Zamora, Acting Director North American Affairs, called USINT Chief to MINREX Oct 17. Zamora opened by stressing that on de facto basis Cuban side continued scrupulously to adhere to terms of…
+4. **66. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , September 1, 1979, 1432Z  
+   `frus1977-80v23/d66` · score -4.0000  
+   > Subj: (S) Demarche: Soviet Brigade in Cuba. Ref: (A) State 227405 (B) See footnote 1; Document 60 . Havana 8030. See Document 64 . 1. (S—Entire text) 2. Vice Minister Pelegrin Torras received me promptly at 8:30 this morning. I read to him points in Ref (A), i.e. that we knew Soviet unit was here,…
+5. **113. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , July 7, 1980, 1415Z  
+   `frus1977-80v23/d113` · score -5.0000  
+   > Subject: US Gestures To Strengthen Hand Of Moderates. Ref: A) Havana 5218 B) Havana 4844 C) Havana 4980. For telegram 5218, see footnote 8, Document 110 . In telegrams 4844 and 4980 from Havana, June 10 and June 17, the Interests Section forwarded Cuban protest notes regarding alleged U.S.…
+6. **60. Draft Telegram From the Department of State to the U.S. Interests Section in Cuba** — Washington , August 24, 1979  
+   `frus1977-80v23/d60` · score -6.0000  
+   > Subject: Soviet Brigade in Cuba. 1. You should arrange to make following demarche, on August 25 if possible, at highest available level of FonOff: —From a variety of sources, we have received growing evidence which we consider conclusive of the presence of a Soviet brigade in Cuba. —We wish to…
+7. **83. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , November 18, 1979, 0235Z  
+   `frus1977-80v23/d83` · score -7.0000  
+   > Subj: Castro Offers Good Offices. Ref: (A) Havana 10120 (B) State 299655. In telegram 10120 from Havana, November 16, the Interests Section reported that Cuban officials condemned the Iranian decision to take Americans hostage as “irresponsible” and “uncivilized.” (National Archives, RG 59, Central…
+8. **127. Telegram From the Department of State to the U.S. Interests Section in Cuba** — Washington , December 2, 1980, 2230Z  
+   `frus1977-80v23/d127` · score -8.0000  
+   > Eyes only for Wayne Smith from Peter Tarnoff . Subject: Discussion of Orderly Departure Program. Ref: Havana 8201. In telegram 8201 from Havana, November 28, the Interests Section reported that Castro had expressed curiosity about establishing an immigration policy centered around an “orderly…
+9. **100. Telegram From the U.S. Interests Section in Cuba to the Department of State** — Havana , April 29, 1980, 2246Z  
+   `frus1977-80v23/d100` · score -9.0000  
+   > Eyes Only for Assistant Secretary Bowdler . Subject: Cuban Refugee Flow to US. 1. C—Entire text. 2. I have left message with Padron ’s aide that I need to talk to him on urgent basis regarding movement of people to US. Aide promised to get in touch with Padron —who is directing operation at…
+10. **24. Telegram From the Department of State to the U.S. Interests Section in Cuba** — Washington , November 19, 1977, 2331Z  
+   `frus1977-80v23/d24` · score -10.0000  
+   > Subject: Highlights of Cuban Section Chief’s Calls at Dept. 1. Earlier in week Sanchez-Parodi informed CCA he had letter from Castro to Secretary and wished to call on Undersecretary Habib to deliver it. (Letter was simply reply to Secretary’s September communication to Castro expressing…
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 8/10.*
 *document variant:* frus1958-60v06/d623, frus1874/d552, frus1902/d273, frus1930v02/d747, frus1958-60v06/d628, frus1958-60v06/d362, frus1958-60v06/d279, frus1961-63v12/d150, frus1918/d348, frus1898/d637
 *bare variant:* frus1930v02/d747, frus1912/d405, frus1961-63v12/d150, frus1958-60v06/d279, frus1902/d273, frus1898/d713, frus1898/d627, frus1898/d544, frus1874/d552, frus1898/d557
@@ -233,6 +303,39 @@ not already shown you.
 10. **The Ambassador in Mexico ( Daniels ) to the Secretary of State** — Mexico , October 6, 1933 . [Received October 9.]  
    `frus1933v04/d25` · score 0.5995  
    > Sir : I have the honor to enclose a translation of a memorandum which was given to me this afternoon by Doctor Puig, comprising his ideas on the Monroe Doctrine and its amplification at the Montevideo Conference. I am unable to state at this time whether or not this memorandum has the approval of…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **Mr. Burton to Mr. Seward** — Legation of the United States , Bogota , June 5, 1866.  
+   `frus1866p3/d183` · score -1.0000  
+   > Sir : Señor Freyere, accredited by General Prado, envoy extraordinary and minister plenipotentiary of Peru to Colombia, arrived in this capital in January last, for the special purpose of seeking the adhesion of the latter to the alliance of the South Pacific republics against Spain. President…
+2. **Mr. Wilson to Mr. Seward** — Legation of the United States , Caracas, March 21,1867 .  
+   `frus1867p2/d501` · score -2.0000  
+   > Sir: On the 11th instant the Venezuelan congress of 1867 finally assembled, and organized by the election of General Guzman Blanco as president of the senate and José Dolores Landaeta president of the house of deputies. On the succeeding day, the 12th instant, the ministry in a body presented the…
+3. **Mr. Seward to Mr. Motley** — Department of State, Washington , April 30, 1866.  
+   `frus1865p3/d751` · score -3.0000  
+   > Sir : I have the honor to acknowledge the reception of your despatches of the 6th of April, No. 158, and the 10th of April, No. 159. These papers inform me that you have brought my despatches Nos. 167 and 169 to the notice of the imperial government, although not without some hesitation and…
+4. **Mr. Morrell to Mr. Seward .** — Legation of the United States, San José, Costa Rica, May 8, 1868.  
+   `frus1868p2/d212` · score -4.0000  
+   > Sir: I have the honor to transmit herewith copies and translations of the correspondence relative to the visit of the Prussian steam sloop of war Augusta to the bay of Limon, and its object. The documents consist of the letter of Captain Kinderling to the Prussian consul residing here, with…
+5. **Mr. Dickinson to Mr. Seward** — Legation of the United States , Leon, Nicaragua , June 24, 1867 .  
+   `frus1867p2/d436` · score -5.0000  
+   > Sir: I transmit herewith a copy and translation of a note which I have received from the minister for foreign affairs of Nicaragua, complaining that the English residents on the Mosquito coast are governing, instead of being governed by, the Indians of that territory, and setting up various other…
+6. **Mr. Yrisarri to Mr. Seward .** — Brooklyn, September 9, 1862.  
+   `frus1862/d699` · score -6.0000  
+   > The undersigned, minister plenipotentiary of the republics of Guatemala and Salvador, has the honor to acknowledge the receipt of the note of his excellency the Secretary of State of the United States of America, dated the 5th instant, in reply to that from the undersigned of the 26th of last…
+7. **Mr. Seward to Mr. Adams** — Department of State, Washington, December 21, 1864 .  
+   `frus1865p1/d32` · score -7.0000  
+   > Sir: I enclose for your information a copy of a despatch of the 12th ultimo, No. 208, from Charles A. Leas, esq., the United States commercial agent at Belize, in regard to a recent proclamation of Prince Maximilian affecting the British settlement in the Honduras, and relating also to other…
+8. **Mr. Nelson to Mr. Tocornal .** — Legation of the United States , Santiago de Chili February 12, 1864 .  
+   `frus1864p4/d128` · score -8.0000  
+   > Sir: I have perused with the deepest interest the various arguments presented by the republics of Chili and Bolivia in behalf of their respective claims to juris diction over the desert of Atacama, and have most carefully studied the antecedents of the discussion so far as published. It has…
+9. **Mr. Morrell to Mr. Seward .** — Legation of the United States, San José, Costa Rica, May 25, 1868.  
+   `frus1868p2/d214` · score -9.0000  
+   > Sir: Respectfully referring to my dispatch No. 9, dated 8th instant, accompanying copies of correspondence between the Prussian consul and this government in reference to a proposed naval station for the North German Union in the bay of Limon, I have now the honor to inform you that the Prussian…
+10. **Mr. Bigelow to Mr. Seward** — Legation of the United States, Paris, March 14, 1865.  
+   `frus1865p3/d358` · score -10.0000  
+   > Sir: The sudden death of the Duke de Moray, and the prospect of an early termination of the war in the United States, has almost produced a panic in Paris. At no time since the Italian war have the French people appeared so concerned for the future. The markets have all been depressed, in spite of…
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 8/10, bare: 7/10.*
 *document variant:* frus1895p1/d526, frus1895p1/d527, frus1895p1/d529, frus1933v04/d25, frus1912/d1493, frus1964-68v32/d430, frus1914-20v02/d281, frus1894/d820, frus1895p1/d530, frus1929v01/d522
@@ -308,6 +411,39 @@ not already shown you.
    `frus1913/d876` · score 0.5800  
    > Received March 6; communicated to the Ambassador March 17; filed March 21. [Translation.] Palomas, Chihuahua , February 25, 1913 . To the Secretary of State of the United States of North America : The Provisional President of the Revolution of the United Mexican States has ordered me to inform your…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **The American Chargé d’Affaires to the Secretary of State .** — American Embassy , Mexico , November 30, 1912 .  
+   `frus1912/d1393` · score -1.0000  
+   > Sir : Referring to this Embassy’s despatch of August 30th last. No. 1625, Not printed. regarding the claim of Mr. Herbert L. Hall, I have the honor to transmit herewith a copy in translation of a recent note from the Minister for Foreign Affairs in reply to the Embassy’s representations in this…
+2. **The Secretary of State to the Chargé in Mexico ( Summerlin )** — Washington , October 9, 1919 .  
+   `frus1920v03/d281` · score -2.0000  
+   > Sir : The Department acknowledges the receipt of your despatch No. 2406 dated September 17, 1919, Not printed. with which you forwarded the official text and translation of the Presidential Decree of August 30, 1919, See Foreign Relations , 1919, vol. ii , p. 640 . modifying the Presidential Decree…
+3. **Mr. Romero to Mr. Seward** — Washington, December 21, 1866 .  
+   `frus1867p2/d362` · score -3.0000  
+   > My Dear Sir : I have the honor to remit to you various articles from the principal daily papers of Paris, published during the late days of November last, in which there is very ably discussed the important question, Who is the responsible party, in France, for the ill results which the Mexican…
+4. **No. 232. Mr. Foster to Mr. Evarts .** — Legation of the United States , Mexico , July 18, 1877 . (Received August 10.)  
+   `frus1877/d232` · score -4.0000  
+   > Sir : The federal supreme court of Mexico on the 6th instant rendered an important decision, involving, the power of the executive to levy a tax by virtue of the “extraordinary faculties” which it has been the practice of the federal Congress so often to confer upon the executive. The case which…
+5. **Vice Consul Caldera to the Secretary of State .** — American Consulate , Managua , December 26, 1909 .  
+   `frus1910/d771` · score -5.0000  
+   > Sir : I have the honor to report that on the 21st instant the new President, Dr. Jose Madriz, unanimously designated by Zelaya’s Congress, was inaugurated. After the ceremony at the Campo de Marte, the President’s residence and office, Gen. Zelaya moved to his recently built home, called “The House…
+6. **The Consul at Ciudad Juarez ( Dye ) to the Secretary of State** — El Paso, Tex ., March 13, 1929 . [Received March 14—8:50 a.m.]  
+   `frus1929v03/d406` · score -6.0000  
+   > Following from Chihuahua: “March 13, 5 p.m. In reply to Department’s telegram March 11, 6 p.m. Local papers publish telegrams exchanged between General Moseley and Governor of Chihuahua in which Moseley in correct language served notice on Governor that latter would be held responsible for damages…
+7. **Ambassador Willard to the Secretary of State .** — American Embassy , Madrid , January 8, 1914 .  
+   `frus1914/d1336` · score -7.0000  
+   > Minister for Foreign Affairs under date of January 2 writes me: Please let some one translate to you the original telegram I received and please be so good as to renew your recommendations to Washington in behalf of those poor Spaniards so cruelly and persistently persecuted by Mexican rebels.…
+8. **[Untitled]** — American Embassy , Mexico , March 8, 1911 .  
+   `frus1911/d568` · score -8.0000  
+   > Sir : With reference to the Departments telegraphic instruction of February 7 last, directing the embassy to call the attention of the Mexican Government to the fact that Mexican Federal troops had fired upon Dr. Bush, of EI Paso, Tex., while he was attending the wounded in the revolutionary camp…
+9. **The Acting Secretary of State to the American Ambassador .** — Department of State , Washington , October 3, 1912—2 p.m.  
+   `frus1912/d1177` · score -9.0000  
+   > Your September 20 and September 25. The Department is of the opinion that insurrectionary leaders captured in this country can not be surrendered to the Mexican Government on charges arising in connection with or growing out of the present revolutionary disturbances in Mexico, since the extradition…
+10. **Mr. Hay to Mr. Day .** — Department of State , Washington , October 19, 1898 .  
+   `frus1898/d806` · score -10.0000  
+   > The following telegram has been received to-day by Secretary of War: Manila , October 19. Adjutant-General , Washington: Situation Luzon somewhat improved. Influence of Philippinos of education and property not desiring independent government, but hostile to Spain gaining ascendency in…
+
 *Route overlap: 1 of 10 shared. Prompt variants vs primary — document: 5/10, bare: 6/10.*
 *document variant:* frus1916/d815, frus1915/d991, frus1914/d976, frus1865p3/d454, frus1868p2/d332, frus1868p2/d296, frus1878/d390, frus1867p2/d419, frus1911/d479, frus1866p3/d99
 *bare variant:* frus1915/d991, frus1914/d976, frus1929v03/d430, frus1915/d905, frus1917/d1147, frus1929v03/d381, frus1876/d223, frus1911/d479, frus1912/d905, frus1878/d390
@@ -381,6 +517,10 @@ not already shown you.
 10. **The Chargé in Germany ( Kirk ) to the Secretary of State** — Berlin , April 17, 1940—noon . [Received 6:05 p.m.]  
    `frus1940v01/d83` · score 0.5827  
    > For the Secretary and Under Secretary. Within the last few days I have spoken with the representatives in Berlin of practically every neutral country in the immediate or relative proximity of Germany, Italy and Russia. There is not one, who in view of the latest developments, does not fear for his…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 5/10.*
 *document variant:* frus1942v05/d78, frus1936v01/d265, frus1941v01/d725, frus1940v01/d83, frus1934v02/d413, frus1934v02/d407, frus1940v02/d680, frus1937v01/d29, frus1939v01/d156, frus1938v02/d356
@@ -456,6 +596,39 @@ not already shown you.
    `frus1945-50Intel/d17` · score 0.5772  
    > A PLAN FOR U.S. SECRET WORLD-WIDE INTELLIGENCE COVERAGE Secret world-wide intelligence coverage for the benefit of the United States Government must have as its primary objectives the providing to the executive branches of the Government basic data on a world-wide scale upon which plans may be…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **326. Memorandum From the President’s Special Assistant for National Security Affairs ( Cutler ) to the National Security Council** — Washington , April 26, 1957 .  
+   `frus1955-57v11/d326` · score -1.0000  
+   > SUBJECT Interim Report on Antarctica REFERENCES A. NSC 5424/1 See footnote 2, Document 297 . B. NSC 5528 Document 311 . C. NSC Action No. 1500 See footnote 7, Document 313 . 1. In accordance with the President’s directive of March 20, 1957, based on a recommendation from the Secretary of State, the…
+2. **142. Briefing Memorandum From Jeffrey Garten and Curt Farrar of the Policy Planning Staff to Acting Secretary of State Christopher** — Washington , March 28, 1978  
+   `frus1977-80v28/d142` · score -2.0000  
+   > President’s Decision on the Humphrey Bill Yesterday the President made these decisions on the Humphrey Bill. —He endorsed the Bill as a vehicle for legislative mark-up this year. —He agreed to keep the IFI authorities in Treasury for now; on the basis of experience with the new inter-agency…
+3. **66. Memorandum From the Acting Director of the United States Information Agency ( Loomis ) to the President’s Assistant for National Security Affairs ( Kissinger )** — Washington , January 13, 1970  
+   `frus1917-72PubDipv08/d66` · score -3.0000  
+   > SUBJECT PsyWar Operations Against Vietnamese Communists As requested in your memorandum of December 15, 1969, See Document 61 . to the Secretary of Defense and the Director of the U.S. Information Agency, the attached assessment of programs designed to affect morale of the Communists and Communist…
+4. **199. National Security Action Memorandum No. 231** — Washington , March 26, 1963 .  
+   `frus1961-63v18/d199` · score -4.0000  
+   > TO The Secretary of State Chairman, Atomic Energy Commission Director of Central Intelligence SUBJECT Middle Eastern Nuclear Capabilities The President desires, as a matter of urgency, that we undertake every feasible measure to improve our intelligence on the Israeli nuclear program as well as…
+5. **141. Letter From Secretary of Defense Lovett to Secretary of State Acheson** — Washington , November 10, 1952 .  
+   `frus1951-54Iran/d141` · score -5.0000  
+   > Dear Mr. Secretary: In response to a request for advice concerning planned or feasible United States military courses of action in Iran in the event of a successful Tudeh coup, the Joint Chiefs of Staff undertook military planning based on assumptions contained in the request for advice. The…
+6. **251. Telegram From the Ambassador in Vietnam ( Reinhardt ) to the Department of State** — Saigon , August 25, 1955—8 p.m.  
+   `frus1955-57v01/d251` · score -6.0000  
+   > This is a country team message. References: (a) Department telegram circular 559; In the reference telegram, March 23, the respective chiefs of mission were instructed “to have the country team, including representatives from FOA , MAAG (or service attachés), … prepare a report on the possibilities…
+7. **66. National Security Decision Memorandum 318** — Washington , February 25, 1976  
+   `frus1969-76ve03/d66` · score -7.0000  
+   > The President approved continuation of an active U.S. presence in the Antarctic and directed federal agencies to support NSF programs. Washington , February 25, 1976 TO: The Secretary of State The Secretary of the Treasury The Secretary of Defense The Secretary of Interior The Secretary of Commerce…
+8. **The Consul General at Manila ( Steintorf ) to the Secretary of State** — Manila , September 5, 1945—9 a.m. [Received September 5—3:50 a.m.]  
+   `frus1945v06/d911` · score -8.0000  
+   > President Osmeña after conferring with Council of State issued Executive Order No. 65, Sept 3 Official Gazette , vol. 41, No. 6, p. 416. entitled “providing for the provisional release on bail of political prisoners, prior to the institution of the corresponding criminal cases against them,…
+9. **347. Telegram From the Department of State to the Embassy in the United Arab Republic** — Washington , October 19, 1963, 8:14 p.m.  
+   `frus1961-63v18/d347` · score -9.0000  
+   > Following is oral message from President to be delivered by Ambassador when he sees Nasser . A telegram from Bundy for the President, sent through Clifton on October 19, reads as follows: “We’re moving ahead fast to keep Yemen from flaring up again November 4 by keeping UNYOM in business beyond…
+10. **108. Memorandum** — Washington , June 11, 1975 .  
+   `frus1969-76v28/d108` · score -10.0000  
+   > SUBJECT Angola 1. Attached is a paper discussing in a preliminary way what could be done covertly to support a major effort to prevent a Neto takeover in Angola. 2. [ 3½ lines not declassified ] 3. Please do not reproduce these papers and return them when no longer needed. Attachment 1. Covert…
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 8/10, bare: 7/10.*
 *document variant:* frus1977-80v28/d41, frus1950-55Intel/d221, frus1969-76v02/d247, frus1977-80v28/d62, frus1969-76v02/d229, frus1945-50Intel/d35, frus1950-55Intel/d202, frus1945-50Intel/d358, frus1977-80v28/d42, frus1977-80v28/d50
 *bare variant:* frus1977-80v28/d41, frus1977-80v28/d62, frus1977-80v28/d50, frus1950-55Intel/d202, frus1977-80v28/d42, frus1950v04/d156, frus1969-76v02/d247, frus1950-55Intel/d221, frus1977-80v28/d37, frus1945-50Intel/d17
@@ -529,6 +702,10 @@ not already shown you.
 10. **Department of State Policy Statement** — Washington , June 11, 1948 .  
    `frus1948v03/d679` · score 0.6063  
    > s were concise summaries of current United States policy toward a country or region, relations of that country or region with the principal powers, and the issues and trends in that country or region. The statements, which were generally prepared by ad hoc working groups in the responsible bureaus…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 8/10, bare: 8/10.*
 *document variant:* frus1944v03/d19, frus1944Quebec/d110, frus1944v07/d1457, frus1940v03/d84, frus1944v03/d23, frus1940v03/d82, frus1948v03/d679, frus1944v03/d22, frus1944v03/d30, frus1942v01/d142
@@ -604,6 +781,39 @@ not already shown you.
    `frus1969-76v02/d323` · score 0.6392  
    > SUBJECT Task Force Reports As you are aware, a number of the Task Forces’ recommendations relate directly to the organization and operations of the regional bureaus. I have therefore encouraged the officers of EUR to submit comments on those recommendations. A number of the more cogent of these…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **Ambassador Dudley to the Secretary of State .** — American Embassy , Petropolis , May 14, 1908 .  
+   `frus1908/d35` · score -1.0000  
+   > Sir : I have the honor to transmit herewith translation of the message presented by President Penna to the Brazilian Congress at its opening session on the 3d instant. Copies in the original Portuguese will be forwarded as soon as furnished the embassy in pamphlet form. I also inclose a copy and…
+2. **Memorandum by the Deputy Director of the Office of Far Eastern Affairs ( Stanton )** — [ Washington ,] April 28, 1945 .  
+   `frus1945v07/d244` · score -2.0000  
+   > Addressed to the Under Secretary of State (Grew) and the Assistant Secretary of State (Holmes). [ Washington ,] April 28, 1945 . This memorandum has been prepared in the belief that you will want to know of certain developments in regard to Ambassador Hurley’s handling of policy matters affecting…
+3. **No. 354. Mr. Foster to Mr. Frelinghuysen .** — Legation of the United States , Madrid , April 4, 1884 . (Received April 21.)  
+   `frus1884/d354` · score -3.0000  
+   > Sir : It will be seen by the inclosures herewith that steps have at last been taken by the Spanish Government to carry out the long-promised reform in its consular tariff. A commission has been appointed by royal decree to revise the existing consular tariffs with a view to the submission of the…
+4. **Memorandum of Conversation, by Mr. Herbert D. Brewster , Special Assistant to the Chief of the Economic Cooperation Mission to Greece ( Porter )** — [ Athens ,] April 21, 1950 .  
+   `frus1950v05/d152` · score -4.0000  
+   > confidential [ Athens ,] April 21, 1950 . Subject: First Meeting between General Plastiras and Mr. Porter Participants: General N. Plastiras, Prime Minister P. R. Porter, Chief of the ECA Mission Mr. J. Kallerghi, John D. Kallergis, Chef de Cabinet with the rank of Director, Ministry of Foreign…
+5. ****  
+   `frus1958-60v16/d205` · score -5.0000  
+   > Editorial Note On January 12, 1959, Prime Minister Phoui Sananikone addressed a special session of the Lao National Assembly. In an hour-long speech, he recounted the accomplishments of his government since its coming to power in August 1958, described the dangerous situation it now faced because…
+6. **199. Memorandum From the Assistant Secretary of the Treasury for International Affairs ( Mulford ) to the Deputy Secretary of the Treasury ( Darman )** — Washington , undated  
+   `frus1981-88v38/d199` · score -6.0000  
+   > SUBJECT White House Office Of Policy Development’s International Debt Proposal Under a March 3 covering memorandum, Patrick Buchanan sent Shultz a copy of a February 10 memorandum from James Warner to Charles Hobbs. Buchanan explained that the Warner paper “recommending a Bank of Settlements as the…
+7. **The Secretary of State to the Embassy in Italy** — Washington , July 10, 1948—noon.  
+   `frus1948v03/d359` · score -7.0000  
+   > secret urgent Washington , July 10, 1948—noon. 1849. 1) Relationship of proposals outlined Deptel 1747 June 25 Same as telegram 319, p. 563 . to question general Trieste relations with Italy and specifically to Mar 9 foreign exchange and currency agreements exhaustively considered in Dept prior to…
+8. **362. Intelligence Memorandum Prepared in the Central Intelligence Agency** — Washington , December 7, 1967 .  
+   `frus1964-68v26/d362` · score -8.0000  
+   > PHILIPPINE PRESIDENT MARCOS ’ PROBLEMS AT MIDTERM Summary The recent electoral successes of his Nacionalista Party have left President Marcos in a strong political position after two years in office. Increased control at both national and provincial levels should enable him to make greater progress…
+9. **101. Memorandum From Secretary of Defense Laird to President Nixon** — Washington , November 28, 1972 .  
+   `frus1969-76v04/d101` · score -9.0000  
+   > SUBJECT Security Assistance The Secretary of State has forwarded to you a memorandum outlining certain proposals to reorganize and restructure the Security Assistance Program in FY 1974. Document 98 . The purpose of these initiatives is to strengthen the rationale for the program and to permit…
+10. **The Consul at Geneva ( Gilbert ) to the Secretary of State** — Geneva , November 9, 1931—11 p.m. [Received November 10—12:15 p.m.]  
+   `frus1931v03/d378` · score -10.0000  
+   > Consulate’s 290, November 9, noon. In a letter dated November 5 Yoshizawa denies Chinese allegations concerning seizure of salt revenues at Newchwang and encloses the following text of a telegram from Tokyo. “As regards the salt revenue of Newchwang the total annual revenue is about $30,000,000.…
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 8/10, bare: 6/10.*
 *document variant:* frus1977-80v28/d164, frus1969-76v38p2/d158, frus1969-76v38p2/d223, frus1977-80v28/d169, frus1977-80v28/d161, frus1969-76v38p2/d154, frus1969-76v38p2/d144, frus1977-80v28/d181, frus1969-76v02/d323, frus1969-76v02/d339
 *bare variant:* frus1977-80v28/d164, frus1969-76v38p2/d144, frus1977-80v28/d161, frus1977-80v28/d181, frus1969-76v02/d339, frus1969-76v38p2/d223, frus1961-63v25/d55, frus1977-80v28/d169, frus1977-80v28/d167, frus1977-80v28/d180
@@ -669,6 +879,10 @@ not already shown you.
    `frus1981-88v03/d249` · score 0.6256  
    > Response to NSSD 11–82 : U.S. Relations With The USSR INTRODUCTION The record of US-Soviet relations since October, 1917, has been one of tension and hostility, interrupted by short-lived periods of cooperation. The Soviet challenge to U.S. interests has many roots, including: (1) an imperial…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 5/10, bare: 6/10.*
 *document variant:* frus1946v01/d591, frus1981-88v03/d249, frus1948v04/d589, frus1951v04p2/d302, frus1981-88v03/d260, frus1948v01p2/d60, frus1969-76v12/d68, frus1950v04/d701, frus1961-63v09/d324, frus1969-76v01/d41
 *bare variant:* frus1946v01/d591, frus1948v04/d589, frus1951v04p2/d302, frus1981-88v03/d249, frus1948v04/d570, frus1950v04/d701, frus1981-88v03/d260, frus1969-76v01/d41, frus1948v01p2/d60, frus1951v01/d323
@@ -713,6 +927,10 @@ not already shown you.
 10. **The Ambassador in China ( Gauss ) to the Secretary of State** — Chungking , September 28, 1944 . [Received October 24.]  
    `frus1944v06/d453` · score 0.6001  
    > Sir : I have the honor to transmit copies of the following reports prepared by Mr. John S. Service, Second Secretary of Embassy on detail to General Stilwell’s Headquarters, now in Yenan, Shensi (seat of the Chinese Communist regime) as a member of the United States Army Observer Section. (1)…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 4/10, bare: 6/10.*
 *document variant:* frus1948v08/d164, frus1947v07/d616, frus1948v08/d105, frus1948v08/d46, frus1948v08/d122, frus1944v06/d453, frus1946v10/d69, frus1947v07/d591, frus1947v07/d666, frus1955-57v03/d248
@@ -788,6 +1006,12 @@ not already shown you.
    `frus1952-54v10/d301` · score 0.5069  
    > The Ambassador in Iran ( Henderson ) to the Department of State Transmitted in three sections; also sent to London. top secret priority Tehran , February 22, 1953—2 p.m. 3334. 1. Ala , Minister of Court, asked see me this morning. He said he wished discuss “most serious recent development”. On…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **No. 250. Mr. Gibbs to Mr. Evarts .** — Legation of the United States , Lima, Peru , June 12, 1877 . (Received July 9.)  
+   `frus1877/d250` · score -1.0000  
+   > Sir : Since my dispatch No. 159, of 9th instant, an apparent conspiracy to change the government was attempted and has failed. The excitement of the affair of the Huascar and Her Britannic Majesty’s ships Shah and Amethyst had subsided, but a deep feeling remained against the government by charges…
+
 *Route overlap: 2 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 4/10.*
 *document variant:* frus1896/d386, frus1977-80v11p1/d326, frus1952-54v10/d305, frus1952-54v10/d308, frus1951-54Iran/d166, frus1951-54IranEd2/d166, frus1951-54IranEd2/d161, frus1951-54Iran/d161, frus1949v06/d268, frus1977-80v11p1/d219
 *bare variant:* frus1896/d386, frus1977-80v11p1/d326, frus1910/d932, frus1910/d609, frus1885/d569, frus1910/d930, frus1952-54v10/d308, frus1952-54v10/d305, frus1910/d603, frus1910/d898
@@ -860,6 +1084,39 @@ not already shown you.
    > Diego Garcia In Ankara, my British counterpart and I formalized a new side understanding (to the 1976 US – UK Agreement) See footnote 3, Document 126 . on the use of Diego Garcia (attached). Attached but not printed is a June 13 memorandum of conversation detailing Bartholomew ’s discussions with…
 10. **48. Memorandum From the Deputy Secretary of Defense ( Nitze )** — Washington , June 15, 1968 .  
    `frus1964-68v21/d48` · score 0.5441  
+   > MEMORANDUM FOR Chairman, Joint Chiefs of Staff Secretary of the Navy Assistant Secretary of Defense (ISA) SUBJECT Proposal for a Joint US Military Facility on Diego Garcia (U) A JCS memorandum dated 10 April 1968 Document 47 . proposed the establishment of a $44 million joint military facility on…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **No. 878. Mr. Romero to Mr. Bayard .** — Legation of Mexico , Washington , July 19, 1888 . (Received July 20.)  
+   `frus1888p2/d165` · score -1.0000  
+   > Mr. Secretary : Toribio Lozano, a Mexican citizen, born in the State of Nuevo Leon, established in the year 1861, on the Sao Diego ranch, Nueces County, Texas, a sheep farm which he placed in charge of a number of Mexican shepherds. He suffered no further damage to his property for sometime than…
+2. **229. Backchannel Message Tohak74/WH40189 From the President’s Deputy Assistant for National Security Affairs ( Scowcroft ) to the President’s Assistant for National Security Affairs ( Kissinger ) in Jerusalem** — Washington , January 16, 1974, 2107Z .  
+   `frus1969-76ve15p2/d229` · score -2.0000  
+   > Summary: Scowcroft forwarded talking points concerning Diego Garcia and Super Antelope left with him by Cromer that morning. Source: National Archives, Nixon Presidential Materials, NSC Files, Kissinger Office Files, Box 43, HAK Trip Files, HAK Trip—Europe & Mid East, Dec 8–22, 1973, TOHAK 71–124,…
+3. **49. Telegram From the Department of State to the Embassy in the United Kingdom** — Washington , July 3, 1968, 1912Z .  
+   `frus1964-68v21/d49` · score -3.0000  
+   > Subj: US Military Facility on Diego Garcia. Ref: London 8538. Telegram 8538 from London, April 30, reported that in principle the British Government would have no serious problem with the United States undertaking development of military facilities on Diego Garcia under terms of the December 1966…
+4. **98. Telegram 3520 From the Embassy in Sri Lanka to the Department of State and the Mission to the United Nations** — Colombo , September 17, 1976, 1730Z .  
+   `frus1969-76ve08/d98` · score -4.0000  
+   > The Embassy reminded USUN and the Department that attention paid to the small Maldivian delegation to the 31st General Assembly would likely pay dividends. Colombo , September 17, 1976, 1730Z . SUBJECT: Maldivian Delegation to the 31st UNGA 1. Maumoon Abdul Gayoom and Mohamed Musthapha Hussain,…
+5. **148. Record of Meeting** — Washington , July 10, 1968 .  
+   `frus1964-68v21/d148` · score -5.0000  
+   > IRG /NEA 68-27 Washington , July 10, 1968 . INTERDEPARTMENTAL REGIONAL GROUP FOR NEAR EAST AND SOUTH ASIA Record of IRG Meeting—July 10, 1968 The IRG met to consider U.S. policy and future military presence in the Arabian Sea littoral . The discussion was focused on a paper (see IRG /NEA 68-24)…
+6. **106. Memorandum for the Record** — Washington , June 17, 1977, 11–11:20 a.m.  
+   `frus1977-80v18/d106` · score -6.0000  
+   > SUBJECT Meeting with the President on Indian Ocean Arms Control PARTICIPANTS The President Paul Warnke , Director ACDA Zbigniew Brzezinski Gary Sick The President asked Mr. Warnke for a progress report on the CTB negotiations with the Soviets. Reference is to negotiations between the United States…
+7. **229. Backchannel Message Tohak74/WH40189 From the President’s Deputy Assistant for National Security Affairs ( Scowcroft ) to the President’s Assistant for National Security Affairs ( Kissinger ) in Jerusalem** — Washington , January 16, 1974, 2107Z .  
+   `frus1969-76ve15p2Ed2/d229` · score -7.0000  
+   > Summary: Scowcroft forwarded talking points concerning Diego Garcia and Super Antelope left with him by Cromer that morning. Source: National Archives, Nixon Presidential Materials, NSC Files, Kissinger Office Files, Box 43, HAK Trip Files, HAK Trip—Europe & Mid East, Dec 8–22, 1973, TOHAK 71–124,…
+8. **57. Telegram 118250 From the Department of State to the Embassy in the United Kingdom** — Washington , June 18, 1973, 1946Z .  
+   `frus1969-76ve08/d57` · score -8.0000  
+   > The Department discussed the decision to shut down the post at Kagnew Station in Asmara, Ethiopia, and create a communications station and naval facility at Diego Garcia. Washington , June 18, 1973, 1946Z . Subj: Diego Garcia 1. DOD budget constraints led to decision in February 1972 to reduce…
+9. **113. Memorandum From the President’s Assistant for National Security Affairs ( Brzezinski ) to President Carter** — Washington , September 19, 1977  
+   `frus1977-80v18/d113` · score -9.0000  
+   > SUBJECT Indian Ocean Talks The Soviet delegation arrives September 26 for the second round of discussions on Indian Ocean arms limitations. A decision is required on the nature and extent of the proposal which we will present to them. The SCC has met twice in the past month to examine the issues.…
+10. **48. Memorandum From the Deputy Secretary of Defense ( Nitze )** — Washington , June 15, 1968 .  
+   `frus1964-68v21/d48` · score -10.0000  
    > MEMORANDUM FOR Chairman, Joint Chiefs of Staff Secretary of the Navy Assistant Secretary of Defense (ISA) SUBJECT Proposal for a Joint US Military Facility on Diego Garcia (U) A JCS memorandum dated 10 April 1968 Document 47 . proposed the establishment of a $44 million joint military facility on…
 
 *Route overlap: 5 of 10 shared. Prompt variants vs primary — document: 9/10, bare: 5/10.*
@@ -937,6 +1194,39 @@ not already shown you.
    `frus1964-68v34/d55` · score 0.4583  
    > SPACE GOALS AFTER THE LUNAR LANDING Summary Even before the outcome of the moon race has been decided, we face the question of whether to commit ourselves to still more ambitious programs—proceeding with manned exploration of the moon after the initial landing; mounting large-scale scientific…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **The Acting Secretary of State to the Minister in Switzerland ( Harrison )** — Washington , April 7, 1942 .  
+   `frus1942v01/d282` · score -1.0000  
+   > Similar telegram sent on May 14, 1942, to the Minister in Switzerland (No. 1246) for transmission to Swiss representatives in the Far East for communication to American citizens who were to be repatriated on the exchange vessel from Lourenço Marques. Washington , April 7, 1942 . 880. As it now…
+2. **Mr. Adams to Mr. Seward** — Legation of the United States , London , December 11, 1867.  
+   `frus1868p1/d7` · score -2.0000  
+   > Sir: I have the honor to transmit a copy of the London Times of this morning, containing a communication from Mr. Vernon Harcourt, who is well known under the signature of Historicus, and also a leading article in the editorial columns on the subject of the law of expatriation. The mode in which…
+3. **The Consul at Shanghai ( McConaughy ) to the Secretary of State** — Shanghai , August 11, 1949—8 p. m. [Received August 11—11:23 a. m.]  
+   `frus1949v09/d1328` · score -3.0000  
+   > American community deeply apprehensive they may be trapped Shanghai. Apparent impossibility arranging any special flights Hong Kong and inability airlines restore regularly international service while Nationalist air blockade continues virtually rules out air evacuation. No word from either…
+4. **The Secretary of State to All Diplomatic and Consular Officers** — Washington , June 9, 1947—11:30 a.m.  
+   `frus1947v01/d21` · score -4.0000  
+   > A United Nations press release of May 5, 1947, states that a United Nations laissez-passer will be issued to officials in the United Nations Secretariat, including Judges and members of the International Court of Justice, when they are journeying outside the continental limits of the United States…
+5. **Extract from the Constitution of May 23, 1845.** — [ May 23, 1845 .]  
+   `frus1873p1v2/d217` · score -5.0000  
+   > Part I.—Article I . “Spaniards are— “1. All persons born within the dominions of Spain. “2. The children of a Spanish father and mother, though born out of the dominions of Spain. “3. Aliens who have obtained a certificate of naturalization. “4. Those who, without having obtained such certificate,…
+6. **The Ambassador in the United Kingdom ( Kennedy ) to the Secretary of State** — London , October 3, 1939—8 p.m. [Received October 3—6:15 p.m.]  
+   `frus1939v01/d661` · score -6.0000  
+   > Your 1131, September 30. We have been looking into the charges of alleged discrimination against American citizens on American vessels and we are inclined to believe that there is no basis for this accusation. It has been the policy of this Embassy and of the United States Lines throughout the…
+7. **The Acting Secretary of State to the Secretary of the Interior ( Ickes )** — Washington , December 13, 1945 .  
+   `frus1945v06/d909` · score -7.0000  
+   > My Dear Mr. Secretary : The American Consul General at Manila has reported several times since the liberation of the Philippine Islands with regard to discriminations imposed upon the commercial activity of aliens, particularly Chinese, in the Philippines. These reports have related both to the…
+8. **The Consul at Shanghai ( McConaughy ) to the Secretary of State** — Shanghai , August 8, 1949—6 p. m. [Received 7:32 p. m.]  
+   `frus1949v09/d1324` · score -8.0000  
+   > Re Deptel 1502, July 30. APL to date has received about 1300 applications for passage on General Gordon September 15 to San Francisco of which 255 Americans and 1,045 aliens including DP’s. Displaced persons. About 500 applications for passage Hong Kong received with hundreds foreign and Chinese…
+9. **The Secretary of State to the Consul General at Rangoon ( Schnare )** — Washington , February 4, 1942—9 p.m.  
+   `frus1942v01/d192` · score -9.0000  
+   > Your 106, January 31, 1 p.m. Extra space made available by emergency consular certificates issued under discretionary authority given you by Department’s 51, December 20, may be utilized only for American citizens and their accompanying alien spouses and unmarried minor alien children properly…
+10. **The Ambassador in China ( Stuart ) to the Secretary of State** — Nanking , December 9, 1948 . [Received December 9—8:23 a.m.]  
+   `frus1948v08/d847` · score -10.0000  
+   > Evacuation policy as agreed upon by Department, Embassy, and Naval authorities has been that foreign nationals would be accorded facilities on space available basis. Inquiries from foreign diplomatic representatives have been uniformly answered in this sense and this policy has been followed in…
+
 *Route overlap: 1 of 10 shared. Prompt variants vs primary — document: 5/10, bare: 7/10.*
 *document variant:* frus1961-63v25/d383, frus1958-60v02/d442, frus1873p1v2/d213, frus1961-63v25/d367, frus1964-68v11/d145, frus1964-68v34/d55, frus1961-63v25/d430, frus1964-68v11/d128, frus1958-60v02/d461, frus1873p1v2/d303
 *bare variant:* frus1961-63v25/d383, frus1958-60v02/d479, frus1961-63v25/d367, frus1958-60v02/d442, frus1969-76ve01/d265, frus1964-68v34/d55, frus1964-68v11/d145, frus1961-63v25/d365, frus1958-60v03mSupp/d283, frus1961-63v25/d429
@@ -1012,6 +1302,21 @@ not already shown you.
    `frus1917Supp01v01/d214` · score 0.5238  
    > Supplementing telegram 22d, Healdton lights showed name and American flag painted on sides, also flag flying at stern; two torpedoes, one entered amidships at name, other at flag; ship sank in few minutes, three boats lowered, one capsized, drowning occupants; one with 8 reached northern Holland, 1…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **Mr. Seward to Mr. Adams .** — Department of State, Washington, October 27, 1862.  
+   `frus1862/d171` · score -1.0000  
+   > Sir: You will receive herewith the resolutions of the Chambers of Commerce of the State of New York, on the subject of the recent destruction at sea of American vessels near the Azores by pirates, who went forth upon that unlawful errand from British ports and waters. You will judge how far the…
+2. **Mr. Seward to Mr. Adams .** — Department of State, Washington, February 5, 1864.  
+   `frus1864p1/d65` · score -2.0000  
+   > Sir: I enclose copies of the Morning Chronicle, of this city, of yesterday, which contain an article from the Richmond Examiner, of the 25th ultimo, relative to the stranding and destruction of the blockade-runner Vesta, near Wilmington. The article confesses that at least a part of the cargo of…
+3. **Mr. Seward to Mr. Adams .** — Department of State, Washington, January 12, 1864.  
+   `frus1864p1/d38` · score -3.0000  
+   > Sir: I have received, and have submitted to the President, your despatch of December 4, No. 550, which is accompanied by a copy of a note addressed to you by Earl Russell, in reply to the representation you have made concerning a contract by insurgents with British subjects, in which Bermuda was…
+4. **Mr. Marsh to Mr. Seward .** — Legation of the United States , Turin , January 6, 1862.  
+   `frus1862/d467` · score -4.0000  
+   > Sir: At a very early hour yesterday morning I received a telegram from Mr. Perry, of the American legation at Madrid, announcing the arrival of the privateer Sumter at Cadiz, with a number of prisoners taken from American ships captured and destroyed at sea by that vessel. I immediately…
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 4/10.*
 *document variant:* frus1964-68v19/d204, frus1964-68v19/d219, frus1964-68v19/d284, frus1917Supp01v01/d214, frus1916Supp/d411, frus1917Supp01v01/d207, frus1915Supp/d909, frus1915Supp/d615, frus1916Supp/d402, frus1915Supp/d632
 *bare variant:* frus1915Supp/d909, frus1916Supp/d438, frus1916Supp/d308, frus1917Supp01v01/d214, frus1914-20v01/d328, frus1917Supp01v01/d156, frus1916Supp/d414, frus1915Supp/d615, frus1917Supp01v01/d207, frus1915Supp/d632
@@ -1086,6 +1391,39 @@ not already shown you.
    `frus1969-76v38p2/d132` · score 0.6142  
    > “Consensus” Begins at Home It is my perception that only a limited number of officers in the Department of State understand your view of the world, see how the parts of it for which they are responsible fit into the whole, and act accordingly. Moreover, some of those who do understand do not have…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **33. Memorandum From the Director of the Arms Control and Disarmament Agency ( Iklé ) to the President’s Assistant for National Security Affairs ( Kissinger )** — Washington , March 12, 1974 .  
+   `frus1969-76ve14p2/d33` · score -1.0000  
+   > Summary: Iklé , noting that the Soviets might raise the issue of a nuclear test ban during Kissinger ’s upcoming trip to Moscow, recommended that Kissinger raise the “closely interrelated” issue of peaceful nuclear explosions. Iklé also recommended that Kissinger propose informal talks on a…
+2. **77. Backchannel Message From the President’s Assistant for National Security Affairs ( Kissinger ) to the President’s Deputy Assistant for National Security Affairs ( Haig ), Washington, undated** — Washington , undated  
+   `frus1969-76ve13/d77` · score -2.0000  
+   > In reference to the joint communiqué, Kissinger informed Haig that it could be strengthened in terms of scientific and cultural exchanges. He also noted that with regards to South Asia, communication between the United States and China would take place via the Paris channel and that Haig should…
+3. **197. Memorandum From the President’s Assistant for National Security Affairs ( Kissinger ) to President Nixon** — Washington , undated .  
+   `frus1969-76ve15p2/d197` · score -3.0000  
+   > Summary: Kissinger suggested the need for a re-examination of U.S. policy toward Spain. Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files (H-Files), Box H–202, Study Memorandums, 1969–1974, NSSM –193. Secret. Sent for action. Attached but not published is…
+4. **153. Memorandum From Secretary of Defense Laird to the President’s Assistant for National Security Affairs ( Kissinger ), Washington, July 16, 1972** — Washington , July 16, 1972  
+   `frus1969-76ve13/d153` · score -4.0000  
+   > Laird provided information that supported the Joint Chief of Staff’s denial that the U.S. had violated China’s borders and airspace or dropped bombs on Chinese territory. Washington , July 16, 1972 MEMORANDUM FOR: Assistant to the President for National Security Affairs SUBJECT: Alleged Violations…
+5. **99. Letter From Ambassador Galbraith to Secretary of State Designate Kissinger , Washington, September 5, 1973.** — Washington , September 5, 1973  
+   `frus1969-76ve12/d99` · score -5.0000  
+   > Galbraith reported on the situation in Indonesia and asked to remain on as ambassador. Washington , September 5, 1973 Jakarta, Indonesia September 5, 1973 The Honorable Henry A. Kissinger Secretary-Designate Department of State Washington, D. C. Dear Henry: I would like to join the many who cheer…
+6. **10. Memorandum From the President’s Assistant for National Security Affairs ( Kissinger ) and Secretary of the Treasury Shultz to President Nixon** — Washington , April 18, 1973 .  
+   `frus1969-76ve15p2Ed2/d10` · score -6.0000  
+   > Summary: Kissinger and Shultz secured Nixon ’s approval of their strategy for addressing the issue of EC preferential agreements with Spain and Israel. Source: National Archives, Nixon Presidential Materials, NSC Files, Box 322, Subject Files, European Common Market, Vol III Oct 72–Jun 73 (1 of 2).…
+7. **372. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to the Acting Secretary of Defense and the Director of Central Intelligence (Schlesinger), Washington, June 18, 1973.** — Washington , June 18, 1973  
+   `frus1969-76ve12/d372` · score -7.0000  
+   > Kissinger directed the DOD to fund the Thai Special Guerrilla Units during the 1974 fiscal year. Washington , June 18, 1973 THE WHITE HOUSE WASHINGTON June 18, 1973 MEMORANDUM FOR THE ACTING SECRETARY OF DEFENSE [ text not declassified ] SUBJECT: Thai SGU Program, FY 1974 The memorandum of May 10…
+8. **134. Memorandum From the President’s Assistant for National Security Affairs ( Kissinger ) to the Chairman of the Under Secretaries Committee ( Ingersoll ), Washington, September 15, 1975.** — Washington , September 15, 1975  
+   `frus1969-76ve12/d134` · score -8.0000  
+   > Kissinger asked the National Security Council Under Secretaries Committee to prepare a position paper on the organization of U.S.-Indonesian joint consultations. Washington , September 15, 1975 THE WHITE HOUSE WASHINGTON September 15, 1975 MEMORANDUM FOR THE CHAIRMAN, UNDER SECRETARIES COMMITTEE…
+9. **46. Message From the President’s Deputy Assistant for National Security Affairs ( Haig ) to the President’s Assistant for National Security Affairs ( Kissinger ), Washington, October 22, 1971** — Washington , October 22, 1971  
+   `frus1969-76ve13/d46` · score -9.0000  
+   > Haig relayed Assistant to the President Haldeman ’s message that President Nixon wanted his visit to China to last 5 rather than 7 days. Washington , October 22, 1971 BY WIRE October 22, 1971 TO: Henry A. Kissinger FROM: B/ Gen. A. M. Haig, Jr. Haldeman noted Chapin’s message that two alternative…
+10. **28. Memorandum From Secretary of State Kissinger to President Nixon** — Washington , December 24, 1973 .  
+   `frus1969-76v22/d28` · score -10.0000  
+   > SUBJECT Panama Canal Treaty Negotiations Background: Ambassador Bunker ’s recent talks in Panama were highly positive. An entirely new and favorable climate has been created for continuing negotiations. The talks also disclosed a new flexibility on the part of the Panamanians regarding the Canal…
+
 *Route overlap: 1 of 10 shared. Prompt variants vs primary — document: 7/10, bare: 6/10.*
 *document variant:* frus1969-76v38p2/d117, frus1969-76v38p1/d84, frus1969-76v38p2/d139, frus1969-76v01/d80, frus1969-76v38p2/d137, frus1969-76v38p2/d218, frus1969-76v14/d61, frus1969-76v38p1/d25, frus1969-76v13/d95, frus1969-76v38p1/d53
 *bare variant:* frus1969-76v38p2/d117, frus1969-76v38p2/d139, frus1969-76v38p2/d137, frus1969-76v38p1/d84, frus1964-68v33/d16, frus1969-76ve03/d244, frus1969-76v13/d95, frus1969-76v02/d297, frus1969-76v02/d123, frus1969-76ve06/d121
@@ -1134,6 +1472,10 @@ not already shown you.
    `frus1964-68v30/d303` · score 0.4583  
    > THOUGHTS ON CHINA Prologue to the Present The Present Predicament The Most Probable Future Relations with Others The term “madness” has been applied to the present climate in Peking. In some ways it is not inappropriate. But to a Chinese, because of the historical prologue to the present and…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 7/10, bare: 8/10.*
 *document variant:* frus1969-76ve13/d86, frus1969-76v18/d12, frus1969-76v18/d58, frus1969-76v17/d193, frus1964-68v30/d303, frus1955-57v03/d264, frus1969-76v17/d11, frus1949v08/d485, frus1964-68v30/d160, frus1945v07/d224
 *bare variant:* frus1969-76ve13/d86, frus1969-76v18/d12, frus1969-76v18/d58, frus1955-57v03/d264, frus1969-76v17/d193, frus1969-76v18/d124, frus1949v08/d78, frus1969-76v17/d11, frus1945v07/d224, frus1964-68v30/d303
@@ -1178,6 +1520,10 @@ not already shown you.
 10. **223. Internal Transcript of a White House Briefing** — Washington , May 8, 1979, 7:40–9:05 p.m.  
    `frus1977-80v29/d223` · score 0.6603  
    > THE PRESIDENT: I don’t know of a better way to wind up a day of delightful legislative work—(Laughter)—than to discuss the Panama Canal Treaty and its implementation. I would like to start out and say a few words as President and then call on Secretary Alexander to follow me and then General…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 7/10, bare: 7/10.*
 *document variant:* frus1969-76v22/d44, frus1964-68v31/d428, frus1977-80v29/d79, frus1969-76ve10/d533, frus1977-80v29/d3, frus1977-80v01/d67, frus1977-80v29/d89, frus1977-80v29/d20, frus1969-76ve10/d553, frus1969-76ve10/d530
@@ -1253,6 +1599,39 @@ not already shown you.
    `frus1981-88v38/d10` · score 0.4923  
    > SUBJECT Formulating a U.S. Policy toward a Multilateral Political Dialogue on the Functioning of the Market Oriented International Economic System I. Preamble Since the early 1960’s the developing countries (LDCs) have coalesced in a very loose political structure to demand changes in the market…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **113. Memorandum From the Director of the Office of Northeast Asian Affairs ( Parsons ) to the Assistant Secretary of State for Far Eastern Affairs ( Robertson )** — Washington , January 24, 1957 .  
+   `frus1955-57v23p1/d113` · score -1.0000  
+   > SUBJECT Meeting with the Secretary on Japanese Security Arrangements This meeting apparently was not held, as no memorandum of it has been found and there is no mention of it in the Secretary’s appointment book. For your background information in connection with the meeting with the Secretary…
+2. **230. Response to National Security Study Memorandum 129** — Washington , September 13, 1971 .  
+   `frus1969-76v29/d230` · score -2.0000  
+   > [Omitted here are the Table of Contents and Section I, “Statement of US Interest in Yugoslavia.”] II. Near-Term Measures to Strengthen Yugoslavia A. Political 1. What We Have Done and Are Doing The general comments which follow apply to succeeding sections, and the measures discussed of a primarily…
+3. **95. Memorandum From the President’s Assistant for National Security Affairs ( Brzezinski ) to President Carter** — Washington , April 18, 1978  
+   `frus1977-80v13/d95` · score -3.0000  
+   > SUBJECT Summary of April 11, 1978 Meeting on Korea and China I met with Cy and Harold to survey our China and Korea policies. See Document 94 . We are particularly interested in ascertaining your reaction to our discussion on technology transfer summarized below: On Korea. We face considerable…
+4. **91. Defense Intelligence Appraisal Prepared in the Defense Intelligence Agency** — Washington , June 23, 1988  
+   `frus1981-88v24/d91` · score -4.0000  
+   > DIAAPPR 23–88 Washington , June 23, 1988 NORTH AFRICA: MAGHREB DIPLOMACY ( U ) Summary ( C ) North African leaders from Morocco, Algeria, Tunisia, Libya, and Mauritania held their first summit ever on 10 June and pledged to form a committee charged with building a greater Arab Maghreb. See Document…
+5. **314. Telegram From the Department of State to the Embassy in Sweden** — Washington , November 19, 1966, 5:46 p.m.  
+   `frus1964-68v04/d314` · score -5.0000  
+   > At luncheon meeting November 11 Foreign Minister Nilsson assisted by Mr. Bergstrom presented to the Secretary an account of Swedish contacts in Warsaw with North Vietnamese representatives and of the late October visit of Swedish Ambassador Petri to Hanoi and his conversations with the North…
+6. **1. Intelligence Note 195 From the Director of the Bureau of Intelligence and Research ( Hughes ) to Secretary of State Rogers** — Washington , March 19, 1969 .  
+   `frus1969-76ve05p2/d1` · score -6.0000  
+   > Hughes informed the Secretary of the mood shift in the Maghreb caused by the rapprochement between Morocco and Algeria and the new neutralism in both countries. While these changes had produced positive economic results for both nations, the new relationship appeared to have potential drawbacks for…
+7. **166. Memorandum From Admiral Lewis J. Strauss to Former President Eisenhower** — Undated .  
+   `frus1964-68v34/d166` · score -7.0000  
+   > A PROPOSAL FOR OUR TIME Attention to the debates in the United Nations since the end of May must convince the observer that an end to the trouble in the Near East is not in sight. The introduction of a new and dramatic element will be required to establish a climate in which peace can begin to be…
+8. ****  
+   `frus1969-76v01/d6` · score -8.0000  
+   > Editorial Note Richard Nixon offered his perspective on prospects for détente with the Soviet Union in his acceptance speech at the Republican convention in Miami Beach, Florida, on August 8, 1968: “And now to the leaders of the Communist world, we say: After an era of confrontation, the time has…
+9. **303. Memorandum From the Assistant to the President’s Special Assistant for Health Issues ( Fill ) to the President’s Special Assistant for Health Issues ( Bourne )** — Washington , November 30, 1977  
+   `frus1977-80v02/d303` · score -9.0000  
+   > SUBJECT A Thought re Implications of a New International Health Policy If we established as a principle of foreign policy that we would not deny any needy nation international health assistance it would be a first in U.S. history. By establishing this moral principle we would not hesitate to award…
+10. **149. Memorandum From the Chairman of the Interagency Committee on Public Diplomacy and Disarmament ( Bray ) to the President’s Assistant for National Security Affairs ( Brzezinski )** — Washington , September 5, 1978  
+   `frus1977-80v30/d149` · score -10.0000  
+   > I. Background: In your memorandum of June 8, 1978, See Document 134 . you tasked this Committee with developing a public diplomacy initiative focused on arms control and disarmament issues. Our Committee included representatives of the National Security Council, Department of State, Arms Control…
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 2/10.*
 *document variant:* frus1981-88v41/d356, frus1981-88v41/d362, frus1981-88v41/d352, frus1981-88v38/d36, frus1969-76ve01/d325, frus1981-88v41/d358, frus1981-88v41/d373, frus1907p2/d508p, frus1981-88v41/d368, frus1969-76ve01/d306
 *bare variant:* frus1907p2/d508p, frus1981-88v38/d36, frus1969-76ve08/d171, frus1919Parisv03/d11, frus1969-76v37/d31, frus1981-88v01/d149, frus1981-88v41/d367, frus1969-76ve03/d36, frus1969-76ve14p1/d39, frus1969-76ve03/d35
@@ -1326,6 +1705,21 @@ not already shown you.
 10. **173. Memorandum From Victor Utgoff of the National Security Council Staff to the President’s Assistant for National Security Affairs (Brzezinski)** — Washington , February 8, 1980  
    `frus1977-80v04/d173` · score 0.3878  
    > SUBJECT M–X Basing Vulnerability In response to your question as to which is less vulnerable—the racetrack or multiple holes—I think the sheltered road mobile basing system is less vulnerable overall, because it can be made as resistant to nuclear attacks as the multiple holes system, but is far…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **94. Paper Prepared in the Department of State** — Washington , April 16, 1976 .  
+   `frus1969-76ve08/d94` · score -1.0000  
+   > The Sri Lanka policy paper for 1976 recommended that U.S. interests were best served by supporting the status quo. Washington , April 16, 1976 . FINAL DRAFT Sri Lanka Policy Guidance Paper I. Overview A small and poor country, Sri Lanka in the 1970s has faced two broad challenges. Externally, the…
+2. **183. Memorandum From Secretary of Defense Brown to President Carter** — Washington , April 30, 1980  
+   `frus1977-80v04/d183` · score -2.0000  
+   > SUBJECT FB–111B/C Proposal ( U ) ( S ) General Ellis, Commander of the Strategic Air Command, has proposed that we modify 150 F–111As and FB–111s into a new, longer range strategic bomber called the FB–111B/C. He argues that this would strengthen our strategic forces during the “vulnerability…
+3. **91. Letter From the Science Advisor to the President and Director of the White House Office of Science and Technology Policy ( Keyworth ) to President Reagan** — Washington , December 17, 1985  
+   `frus1981-88v44p1/d91` · score -3.0000  
+   > Dear Mr. President, Beginning with your second, foreign-policy debate with Walter Mondale and, again, in many of your public comments before the Geneva talks, your repeated emphasis on “sharing” the fruits of the SDI with the Soviets has prompted me to explore the implications of that concept with…
+4. **70. Memorandum From Henry Nau of the National Security Council Staff to Members of the National Security Council Staff** — Washington , November 25, 1981  
+   `frus1981-88v01/d70` · score -4.0000  
+   > SUBJECT Charges of Foreign Policy Disarray For whatever it is worth, I have set down some thoughts about the charge that Reagan Administration foreign policy is in disarray. I had the benefit of participating in some of the general foreign policy planning activities during the transition. Moreover,…
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 7/10, bare: 5/10.*
 *document variant:* frus1910/d68, frus1952-54v06p2/d1001, frus1958-60v03mSupp/d444, frus1896/d842, frus1868p1/d8, frus1969-76v37/d57, frus1931v02/d248, frus1923v02/d159, frus1977-80v04/d173, frus1977-80v03/d314
@@ -1401,6 +1795,39 @@ not already shown you.
    `frus1922v01/d38` · score 0.5718  
    > Your telegram 390, November 17, 9 p.m. In yesterday’s press appears what purports to be an official announcement of the Japanese position with respect to naval limitation given out by Admiral Baron Kato:—“Because of her geographical position, Japan deems it only fair at the present time that the…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **The Secretary of State to the Chargé in the United Kingdom ( Atherton )** — Washington , August 14, 1935—7 p.m.  
+   `frus1935v01/d95` · score -1.0000  
+   > We have given careful consideration to your 359, August 9, 7 p.m., and your 361, August 10, noon, and desire you to seek an early opportunity to convey to the British Government the following observations: There are proposals made in the memorandum to the French and Italians with regard to tonnage…
+2. **Memorandum by the Chief of the Division of Far Eastern Affairs ( Hornbeck )** — [ Washington ,] May 24, 1934 .  
+   `frus1934v03/d153` · score -2.0000  
+   > Our Diplomatic Position, as of Today, in the Far East, With Special Reference to Naval Conference and Need for Naval Construction 1. There have occurred recently two things of particular importance with regard to our problems in relation to the Far East: (A) The disclosure, in consequence of the…
+3. **The Ambassador in Japan ( Grew ) to the Secretary of State** — Tokyo , December 27, 1934 . [Received January 16, 1935.]  
+   `frus1935v03/d825` · score -3.0000  
+   > Subject: The Importance of American Naval Preparedness in Connection with the Situation in the Far East. Summary of the Situation. Sir : Now that the London Naval Conversations have terminated, See vol. i , pp. 217 ff. I should like to convey to the Department various thoughts in this general…
+4. **The Chargé in Japan ( Neville ) to the Secretary of State** — Tokyo , November 2, 1935 . [Received November 18.]  
+   `frus1931-41v01/d203` · score -4.0000  
+   > Sir : I have the honor to observe that with Japan’s acceptance on October 29 of the British Government’s invitation to participate in the formal naval disarmament conference required by the Treaties, and which is to be held on December 2, next, the attitude of the Japanese Government is one of…
+5. **Memorandum by the Chief of the Division of Western European Affairs ( Castle )** — [ Washington ,] February 22, 1927 .  
+   `frus1927v01/d13` · score -5.0000  
+   > The Secretary : The Italian Ambassador came to my house this afternoon to read me two telegrams from Mussolini with regard to the Italian answer to the Memorandum on naval limitation. In these telegrams Mussolini instructed the Ambassador to see to it that the Italian answer did not create any talk…
+6. **The Ambassador in Great Britain ( Bingham ) to the Secretary of State** — London , June 19, 1934—6 p.m. [Received 7:35 p.m.]  
+   `frus1934v01/d209` · score -6.0000  
+   > For the Secretary and the President from Norman Davis. From what I have been able to learn since my arrival, and particularly as a result of yesterday’s conversation with British, I feel encouraged as does Ambassador Bingham in the possibility of reaching an understanding with the British on the…
+7. **The Ambassador in Japan ( Grew ) to the Secretary of State** — Tokyo , February 1, 1934—5 p.m. [Received February 1—6:24 a.m.]  
+   `frus1934v03/d21` · score -7.0000  
+   > Yesterday in the Diet Foreign Minister Hirota stated in effect: “Japan’s policy toward the second Washington conference The first Washington Conference, from November 1921 to February 1922, dealt with naval armaments and with Far Eastern questions; for correspondence, see Foreign Relations , 1922,…
+8. **The Secretary of State to the Chairman of the American Delegation ( Davis )** — Washington , December 8, 1934—3 p.m.  
+   `frus1934v01/d308` · score -8.0000  
+   > Your 67, December 7, 4 p.m. The trouble with committing ourselves in advance to a resumption of naval conversations at a fixed date is (1) that it ignores Japan’s act of rejecting the principles on which the Treaty of 1922 was based, and (2) that it makes a conference obligatory irrespective of…
+9. **The Secretary of State to the American Delegate ( Wilson )** — Washington , November 12, 1932—1 p.m.  
+   `frus1932v01/d353` · score -9.0000  
+   > For Davis . Rome’s 101, November 8, 3 p.m. I am of course in complete sympathy with your desire to see a long term naval treaty concluded which would obviate the necessity of another naval conference in less than 3 years. But I regard it as a sine qua non of such a treaty that ( a ) it provide…
+10. **The Secretary of State to the Acting Chairman of the American Delegation ( Gibson )** — Washington , June 27, 1932—4 p.m.  
+   `frus1932v01/d157` · score -10.0000  
+   > For Gibson and Davis . Your 278, June 26, 6:00 p.m. I appreciate MacDonald ’s frank confidence as revealed in his conference with you. I am glad that you made clear to him the reasons which had actuated the making of the President’s statement. I concur with your position in respect to the next…
+
 *Route overlap: 3 of 10 shared. Prompt variants vs primary — document: 8/10, bare: 7/10.*
 *document variant:* frus1922v01/d43, frus1929v01/d180, frus1922v01/d44, frus1929v01/d207, frus1929v01/d132, frus1929v01/d144, frus1934v01/d174, frus1931-41v01/d211, frus1929v01/d107, frus1931-41v01/d193
 *bare variant:* frus1929v01/d207, frus1929v01/d180, frus1922v01/d44, frus1929v01/d132, frus1922v01/d43, frus1929v01/d144, frus1922v01/d42, frus1929v01/d107, frus1929v01/d85, frus1934v01/d174
@@ -1462,6 +1889,18 @@ not already shown you.
 10. **The Ambassador in the United Kingdom ( Douglas ) to the Secretary of State** — London , June 11, 1947—10 a.m.  
    `frus1947v01/d388` · score 0.4225  
    > top secret u.s. urgent London , June 11, 1947—10 a.m. 3173. For Acheson from Douglas. In your top secret 2155 of May 17 Supra. you asked for my preliminary views on Empire defense, Bevin’s position and that of the Cabinet as a whole, apparent failure of British Government to supply British press…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **The Ambassador in Germany ( Gerard ) to the Secretary of State** — Berlin , January 16, 1917 . [Received February 6.]  
+   `frus1914-20v01/d656` · score -1.0000  
+   > Dear Mr. Secretary : The nearer I get to the situation the more I consider the President’s peace note an exceedingly wise move. It has made it difficult for the Terrorists here to start anything which will bring Germany in conflict with the U. S. The Chancellor, Zimmermann, Stumm; have all…
+2. **Draft Instructions to the Ambassador in Germany ( Gerard )** — undated  
+   `frus1914-20v01/d509` · score -2.0000  
+   > This paper bears the notation: “Original handed to Prest for his consideration 2:30 pm April 6/16. RL.” See also footnote 34, p. 546 . undated You are instructed to deliver to the Secretary of Foreign Affairs a note reading as follows: On March 24, 1916, at two-fifty p. m. the unarmed steamer…
+3. **The Secretary of State to President Wilson** — Washington , May 10, 1916 .  
+   `frus1914-20v01/d536` · score -3.0000  
+   > My Dear Mr. President : In the submarine controversy we will unavoidably be forced to meet a situation which will arise, if it has not already arisen, and to determine on a course of action. The problem is this: A German submarine torpedoes, without conforming in any way to the rules of…
 
 *Route overlap: 1 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 2/10.*
 *document variant:* frus1952-54v05p2/d135, frus1916Supp/d294, frus1914-20v01/d507, frus1931v01/d156, frus1914-20v01/d523, frus1916Supp/d346, frus1916Supp/d287, frus1914-20v01/d510, frus1916Supp/d308, frus1902/d510
@@ -1533,6 +1972,10 @@ not already shown you.
 10. **78. Letter From Director of Central Intelligence Turner to Secretary of State Vance** — Washington , February 23, 1978  
    `frus1977-80v28/d78` · score 0.4617  
    > Dear Cy: Out of a concern that the discussions between our staffs on the State- CIA “Treaty” See Documents 65 and 77 . may not be progressing as dispassionately as I would hope, and because I am deeply concerned at the recent turn of events, I would like to lay out my views on this critical subject…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+*(no results)*
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 6/10.*
 *document variant:* frus1961-63v07-09mSupp/d121, frus1961-63v06/d44, frus1911/d263, frus1977-80v28/d78, frus1944v02/d885, frus1961-63v10-12mSupp/d488, frus1964-68v11/d12, frus1961-63v11/d141, frus1949v08/d1128, frus1950v03/d697
@@ -1608,6 +2051,39 @@ not already shown you.
    `frus1925v02/d322` · score 0.4374  
    > Sir : With reference to my telegram No. 119 of July 22, 5 p.m. and No. 121 of July 27, 4 p.m., and to the Department’s No. 91 of July 25, 1 p.m., concerning the expulsion by the Italian Government of Mr. George Seldes, correspondent of the Chicago Tribune , I have the honor to report as follows: On…
 
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **The Secretary of State to the Embassy in Honduras** — Washington , June 12, 1954—6:47 p.m.  
+   `frus1952-54v04/d466` · score -1.0000  
+   > Drafted by Mr. Jamison ; signed by Assistant Secretary Holland . secret niact Washington , June 12, 1954—6:47 p.m. 533. OAS case Reference is to the effort of the United States to document a case against Guatemala for presentation to the OAS proving Guatemalan encouragement of Communist…
+2. **Memorandum by the Secretary of State of a Conversation With the British Chargé ( Osborne )** — [ Washington ,] September 7, 1932 .  
+   `frus1932v04/d245` · score -2.0000  
+   > In the course of my conversation with Mr. Osborne on the subject of the German action, See memorandum of September 7, 1932, vol. i , p. 421 . the question of the Far East also came up and he asked me whether we had taken any steps in regard to what should be done when the Lytton Report was…
+3. **The Ambassador in the United Kingdom ( Douglas ) to the Secretary of State** — London , June 3, 1948—1 p. m.  
+   `frus1948v03/d571` · score -3.0000  
+   > secret London , June 3, 1948—1 p. m. 2430. USfic 51 from Utter. The following are our recommendations on the future of Libya: The unity of Libya is not indispensable, although it would doubtless be advantageous economically to the inhabitants. While the Tripolitanians could probably be persuaded to…
+4. **The Secretary of State to the Embassy in Poland** — Washington , April 7, 1950—7 p. m.  
+   `frus1950v04/d560` · score -4.0000  
+   > confidential Washington , April 7, 1950—7 p. m. 169. Re Embtel 399 Mar 15 Supra . and Desp 463 Mar 21. Not printed, but see footnote 3, supra . If no objection, deliver fol Aide-Mémoire to Acting FonMin in reply his communication Mar 15. ( Begin verbatim text ) Reference is made to the Fon…
+5. **355. Memorandum From the Assistant Secretary of State for Near Eastern, South Asian, and African Affairs ( Rountree ) to the Acting Secretary of State** — Washington , August 13, 1957 .  
+   `frus1955-57v13/d355` · score -5.0000  
+   > SUBJECT Proposed Steps in Response to Syrian Government Actions Against the United States Discussion: The Syrian Government over the past several months has been taking an increasingly unfriendly attitude towards the United States and concurrently establishing closer ties with the Soviet Union. It…
+6. **The Officer in Chargé at New Delhi ( Merrell ) to the Secretary of State** — New Delhi , September 4, 1944—4 p.m. [Received 6:30 p.m.]  
+   `frus1944v05/d257` · score -6.0000  
+   > Although there has yet appeared no editorial comment, this morning’s New Delhi press gave renewed prominence to Mr. Phillips’ letter to the President of May 14, and published for the first time the substance of the telegram sent by Sir Olaf Caroe the Foreign Secretary in which he referred to Mr.…
+7. **Memorandum by the Director of the Office of European Affairs ( Hickerson ) to the Under Secretary of State ( Lovett )** — [ Washington ,] December 9, 1948 .  
+   `frus1948v04/d265` · score -7.0000  
+   > secret [ Washington ,] December 9, 1948 . Subject: Reply to Rumanian Note For the text of the Romanian Foreign Ministry note under reference, dated December 7, 1948, see Department of State Bulletin , December 26, 1948, p. 809. Requesting Recall of US Legation Counselor and Military Attaché and…
+8. **The Secretary of State to Minister Russell .** — Department of State , Washington , January 20, 1906 .  
+   `frus1906p2/d532` · score -8.0000  
+   > (Mr. Root states, referring to the department’s telegram December 27 and Mr. Russell’s reply of 29th, that Minister Barrett telegraphs as follows at the request of Colombian minister for foreign affairs: First. The present prefect at Cucuta being persona non grata to the President of Venezuela, the…
+9. ****  
+   `frus1950v04/d273` · score -9.0000  
+   > Editorial Note Minister Heath and the entire Legation staff and their families departed from Sofia by train on the morning of February 24. According to a report by Heath, transmitted in telegram 123, February 26, from Trieste, not printed, the Bulgarian authorities caused no serious problems in…
+10. **The Secretary of State to the Ambassador in Great Britain ( Harvey )** — Washington , February 12, 1923 .  
+   `frus1923v02/d198` · score -10.0000  
+   > Sir : You are requested to deliver to Lord Curzon a note in the following sense, concerning the case of Consul Slater and Vice Consul Brooks whose exequatur and recognition, respectively, were canceled by the British Government: “On behalf of my Government, I have the honor to inform Your Lordship…
+
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 6/10, bare: 0/10.*
 *document variant:* frus1955-57v27/d99, frus1914-20v01/d692, frus1927v03/d136, frus1916Supp/d173, frus1891/d605, frus1899/d403, frus1918Supp01v01/d841, frus1925v02/d322, frus1936v03/d349, frus1955-57v27/d128
 *bare variant:* frus1952-54v15p2/d819, frus1872p2v4/d43, frus1981-88v04/d108, frus1919Parisv03/d3, frus1916/d449, frus1933v03/d384, frus1906p2/d308, frus1909/d435, frus1918/d676, frus1914-20v01/d214
@@ -1682,6 +2158,39 @@ not already shown you.
 10. **The United States Deputy Political Adviser at Allied Force Headquarters ( Byington ) to the Secretary of State** — Caserta , May 8, 1946—5 p.m. [Received May 8—1:10 p.m.]  
    `frus1946v06/d625` · score 0.5122  
    > secret Caserta , May 8, 1946—5 p.m. [Received May 8—1:10 p.m.] 501. Re my 496, May 3, 3 p.m. Not printed; it reported that in general the May Day celebrations in Trieste had passed quietly (800.00B International Red Day/5–346). AFHQ has been informed by XIII Corps that there is increased evidence…
+
+### CSUserQuery — Apple's local ranked search (Version 26.6.2 (Build 25G83), donated schema v2, run 2026-08-28T13:28:00Z)
+
+1. **Mr. Adee to Sir Julian Pauncefote .** — Department of State , Washington , June 20, 1893 .  
+   `frus1894app1/d565` · score -1.0000  
+   > My Dear Sir Julian : I am in receipt of your telegram of to-day, asking, in order that you may cable your Government, exactly what the United States has agreed upon with Germany in reference to Samoa, to the end that precise instructions may be sent to the British naval officers and consul in that…
+2. **The Consul General at Jerusalem ( Pinkerton ) to the Secretary of State** — Jerusalem , June 30, 1941—noon . [Received July 4—3:35 p.m.]  
+   `frus1941v03/d804` · score -2.0000  
+   > Lieutenant General Lavarack, commander of Australian forces in Syria has requested that the following message which General Lavarack’s staff officer states has the approval of General Wilson be sent confidentially to General Dentz through appropriate channels. “The Commander of the Australian…
+3. **Chargé O’Shaughnessy to the Secretary of State .** — American Embassy , Mexico City , April 14, 1914, 11 p.m.  
+   `frus1914/d680` · score -3.0000  
+   > Referring to your No. 747, April 13, 8 p.m. I spent two hours with General Huerta this morning. He said that he [omission] that his first declaration promising an adequate investigation, etc., would close the incident; that Colonel Hinojosa’s action, the result of ignorance and not of animosity,…
+4. ****  
+   `frus1961-63v03/d1` · score -4.0000  
+   > Editorial Note On January 2, 1963, regular army and civil guard forces of the Republic of Vietnam engaged a Viet Cong battalion at the village of Ap Bac in Dinh Tuong province, 35 miles southwest of Saigon in the Mekong Delta. The South Vietnamese forces enjoyed a 4-1 numerical advantage in the…
+5. **The Representative in Rumania ( Berry ) to the Secretary of State** — Bucharest , March 13, 1947—7 p. m. This message was delayed in transmission and was not received in Washington until March 19, 1:56 a. m.  
+   `frus1947v04/d316` · score -5.0000  
+   > top secret Bucharest , March 13, 1947—7 p. m. This message was delayed in transmission and was not received in Washington until March 19, 1:56 a. m. 219. Maniu Juliu Maniu, President of the Rumanian National Peasant Party. in conversation said his party desired to overthrow present Rumanian…
+6. **Mr. Terrell to Mr. Olney .** — Legation of the United States , Constantinople , November 22, 1895 . (Received Dec. 7.)  
+   `frus1895p2/d640` · score -6.0000  
+   > Sir : I have the honor to inclose herewith for your information translation of a letter from Mr. Poche, consular agent at Aleppo, and also copies of letters which were inclosed in Mr. Poche’s communication relating to recent disturbances in the province of Aleppo. I have, etc., A. W. Terrell.…
+7. **The Minister in Guatemala ( McMillin ) to the Acting Secretary of State** — Guatemala , March 16, 1920 . [Received March 17—4:15 a.m.]  
+   `frus1920v02/d621` · score -7.0000  
+   > Legation’s 42. March 15th. Not printed. As a result of shooting which occurred March 11, reported my telegram 38 March 12, both Unionist Party and President earnestly requested diplomatic corps and urging my cooperation act as mediators in an effort to find some solution to present situation and…
+8. **The Minister in the Dominican Republic ( Curtis ) to the Acting Secretary of State** — Santo Domingo , February 24, 1930—11 a.m. [Received 1:30 p.m.]  
+   `frus1930v02/d793` · score -8.0000  
+   > The Vice President has presented his resignation and the Dominican Government promises legislative annullment of all amendments to the electoral law made since 1924. With this information Cabot John Moors Cabot, Third Secretary of Legation. has gone to endeavor to prevent bloodshed between the…
+9. **The Ambassador in Costa Rica ( Davis ) to the Secretary of State** — San José , March 3, 1948—1 p. m.  
+   `frus1948v09/d340` · score -9.0000  
+   > confidential San José , March 3, 1948—1 p. m. 67. Archbishop told me last evening arrangements concluded evacuate Ulate and party at 10 p. m. under his auspices with military protection. Said fearful irregular troops might attack Ulate in disobedience to orders and asked that I lend moral support…
+10. **The Ambassador in Russia ( Francis ) to the Secretary of State** — Archangel , September 9, 1918, 10 p.m. [ Received September 13, 7 a.m. ]  
+   `frus1918Russiav02/d633` · score -10.0000  
+   > After second conference of four hours, supreme government Ministers reinstated and they are, issuing proclamations so announcing and calling off strikes which were general. They demanded court-martial to try Chaplin and his associates but Ambassadors advised against. This point unsettled. I opposed…
 
 *Route overlap: 0 of 10 shared. Prompt variants vs primary — document: 4/10, bare: 4/10.*
 *document variant:* frus1868p1/d194, frus1931v01/d739, frus1931v01/d593, frus1947v08/d844, frus1961-63v04/d283, frus1918Russiav03/d217, frus1952-54Guat/d270, frus1947v08/d839, frus1947v08/d832, frus1925v02/d424

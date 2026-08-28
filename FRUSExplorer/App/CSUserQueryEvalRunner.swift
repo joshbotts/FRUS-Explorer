@@ -28,6 +28,19 @@ import CoreSpotlight
 /// digest, then launch with this seam armed to query. Results from a same-launch query
 /// would measure a half-digested index and call it Apple's answer.
 ///
+/// ## The macOS sandbox constraint (learned live, 2026-08-28)
+/// The Mac app is sandboxed: it CANNOT read a query file from an arbitrary path — the
+/// first Mac run failed with NSCocoaErrorDomain 257 on a repo path that worked fine in
+/// the simulator (which does not enforce the sandbox). Stage the query file INSIDE the
+/// app's container and leave the output default, which already lands there:
+///
+///     cp <repo>/Planning/semantic-vectors/owner-eval-queries-2026-08-27.txt \
+///        ~/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Documents/
+///     FRUS_CSQUERY_EVAL=~/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Documents/owner-eval-queries-2026-08-27.txt \
+///        "<DerivedData>/Build/Products/Debug/FRUS Explorer.app/Contents/MacOS/FRUS Explorer"
+///
+/// The JSON appears beside the query file in the container's Documents.
+///
 /// ## Env
 ///   FRUS_CSQUERY_EVAL      the query file (owner-eval-queries format; arms the seam)
 ///   FRUS_CSQUERY_EVAL_OUT  output JSON path (default: Documents/csuserquery-eval.json)

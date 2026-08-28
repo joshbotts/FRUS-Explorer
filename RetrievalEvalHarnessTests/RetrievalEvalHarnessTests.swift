@@ -129,6 +129,69 @@ struct RetrievalEvalHarnessTests {
                 "only short [Received …]-style groups are chrome; bracketed prose must remain")
     }
 
+    // MARK: - The third route and the sitting's protection
+
+    @Test("A filled verdicts file is recognized and protected; a blank one is not")
+    func filledVerdictsAreProtected() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("verdicts-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("verdicts.csv")
+
+        #expect(!EvalRunner.hasFilledVerdicts(at: url), "a missing file is not a sitting")
+        try "query,route,rank,volume,document,header,relevant\n1,lexical,1,v,d,h,\n"
+            .write(to: url, atomically: true, encoding: .utf8)
+        #expect(!EvalRunner.hasFilledVerdicts(at: url), "blank rows are not a sitting")
+        try "query,route,rank,volume,document,header,relevant\n1,lexical,1,v,d,h,1\n"
+            .write(to: url, atomically: true, encoding: .utf8)
+        #expect(EvalRunner.hasFilledVerdicts(at: url),
+                "one judged row makes it the owner's record — a regeneration must never blank it")
+        // The owner's editor saves CRLF. The first guard checked hasSuffix(",1") against
+        // lines ending ",1\r", declared the sitting blank, and overwrote it — this case is
+        // the regression pin for that live failure.
+        try "query,route,rank,volume,document,header,relevant\r\n1,lexical,1,v,d,h,1\r\n"
+            .write(to: url, atomically: true, encoding: .utf8)
+        #expect(EvalRunner.hasFilledVerdicts(at: url),
+                "a CRLF sitting is still a sitting — this exact miss clobbered the real one once")
+    }
+
+    @Test("A CSUserQuery output file parses into per-query rows with its provenance line")
+    func csUserQueryRouteLoads() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("csq-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("csuserquery.json")
+        try """
+        {"route":"csuserquery","generated":"2026-08-28T11:33:44Z","osVersion":"26.6.2",
+         "spotlightSchemaVersion":2,"topK":10,"queries":[
+           {"query":1,"text":"q1","results":[
+             {"rank":1,"volume":"frus1895p1","document":"d527","title":"Olney"}]},
+           {"query":2,"text":"q2","results":[]}]}
+        """.write(to: url, atomically: true, encoding: .utf8)
+        let route = try EvalRunner.loadCSUserQueryRoute(url)
+        #expect(route.rows[1] == [EvalResult(volumeId: "frus1895p1", documentId: "d527", score: -1)])
+        #expect(route.rows[2] == [])
+        #expect(route.provenance.contains("26.6.2") && route.provenance.contains("schema v2"),
+                "ranking quality is a property of the OS's models; the report must say which")
+    }
+
+    @Test("The merged third route renders its own section under the query")
+    func thirdRouteRenders() {
+        var builder = ReportBuilder(queryCount: 1, model: "m", pinnedSHA: "abc",
+                                    csUserQueryProvenance: "26.6.2, donated schema v2")
+        builder.add(
+            query: .init(number: 1, text: "q", tag: nil),
+            lexicalExpression: "\"q\"",
+            lexical: [],
+            semanticByVariant: [:],
+            csUserQuery: [EvalResult(volumeId: "v", documentId: "d", score: -1)],
+            display: { _, _ in ("Header", nil, "snippet") })
+        #expect(builder.markdown.contains("### CSUserQuery — Apple's local ranked search (26.6.2, donated schema v2)"))
+        #expect(builder.verdictsCSV.contains("1,csuserquery,1,v,d,"))
+    }
+
     @Test("An empty route section says so instead of vanishing")
     func emptyRouteIsStated() {
         var builder = ReportBuilder(queryCount: 1, model: "m", pinnedSHA: "abc123")
