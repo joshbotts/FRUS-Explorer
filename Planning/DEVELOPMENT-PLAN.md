@@ -10000,3 +10000,37 @@ disclosures, twin-surface parity pins incl. the SavedSearch force and the score-
 pin). Full iOS suite 4,189/558 green; SPM 1,273/145 green; Mac build green. Docs: both
 manuals gain the mode section; EditableContent blocks for the strip; the offer-body block
 repointed to its new shared home (the one full-suite failure this session, fixed).
+
+## Session 2026-08-28K — the paste-ready custom EULA, adversarially reviewed
+
+The one owner-only step (runbook §5) now has its text: `App-Store-Custom-EULA.md` — a
+developer-voiced EULA built on Apple's "Instructions for Minimum Terms" (all ten
+provisions), the Standard EULA's substantive sections adapted, and the runbook's Gemma
+flow-down as section 3 — with a do-not-paste instructions preamble carrying the four
+placeholders (three contact fields Apple's instruction 8 requires; governing law
+fill-or-delete) and the ASC procedure.
+
+**The adversarial panel earned its keep.** Four reviewers (minimum-terms audit, Gemma
+flow-down audit, Standard-EULA close-read, code-level fact-check), 30 findings, among
+them: the liability cap was INVERTED (a paying user capped below a free one — fixed to
+greater-of); Apple's third-party-beneficiary enforcement right DIED AT TERMINATION,
+exactly when needed (survival list rebuilt); §10 disclaimed the Developer's own GitHub
+distribution channel (third-party qualifier restored, the list rebuilt); the Apache
+carve-out could be read to swallow the reverse-engineering ban whole (boundary made
+explicit: the App Store copy is governed here, the repository copy by Apache); and the
+fact-checker found the ZOTERO INTEGRATION — the one path that ships research content
+off-device, at the user's request — undisclosed in the data section, plus iCloud sync
+overstated as opt-in (it is on by default) and the NARA/Zotero API keys falsifying the
+no-personal-information sentence. Every §9 claim that survived is pinned to file:line
+evidence in the review (no analytics SDKs; local-only diagnostics; the two
+consent-gated model call sites; the exact About > Legal > Full Notices navigation).
+
+**A closing verification pass** re-audited the revision finding-by-finding: 26 addressed,
+2 moot by the reviewers' own verdicts, and its three owed one-liners were applied — the
+delete-§17-also-edit-§13 instruction, the remove-before-selling clause restored (Apple's
+own words, beating a recorded omission), and the open-source-carve-out removal recorded
+as the third deliberate deviation. The runbook §5 now points at the file as canonical.
+
+What remains owner-only, unchanged in kind but now trivial in effort: fill the four
+placeholders, paste below the cut line into App Store Connect → App Information →
+License Agreement, before the encoder-carrying build is submitted for review.
