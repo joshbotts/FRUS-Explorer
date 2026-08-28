@@ -98,6 +98,10 @@ enum SearchHistoryWriter {
         var appliedCorpusId: UUID?
         /// The FTS5 expression the query compiled to.
         var renderedExpression: String?
+        /// A route-specific scope signature to record INSTEAD of deriving one from
+        /// `parameters` — the Meaning mode's escape from being described as a keyword scope.
+        /// `nil` (the default, and every FTS caller) derives as before.
+        var signatureOverride: String? = nil
         /// The project active at execution.
         var projectId: UUID?
         /// `true` when the search failed — nothing is recorded.
@@ -122,7 +126,8 @@ enum SearchHistoryWriter {
         guard AppState.isResearchLoggingEnabled(in: defaults) else { return .suppressed }
         guard !reading.queryText.isEmpty, !reading.hasError else { return .skipped }
 
-        let signature = SearchScopeSignature.signature(for: reading.parameters)
+        let signature = reading.signatureOverride
+            ?? SearchScopeSignature.signature(for: reading.parameters)
 
         // A re-run of the anchored query: bring the row it wrote up to date rather than adding a
         // second one. Re-fetched by id, because the user can delete it from the History pane

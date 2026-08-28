@@ -11,28 +11,19 @@ import SwiftUI
 // MARK: - SemanticSearchFallbackView
 
 /// The zero-result semantic fallback (V-5 s3) — the narrow first surface the judged sitting
-/// itself recommended: when the lexical expression returns nothing, offer the one route that
-/// answers natural-language questions. Rescued 4 of the sitting's 25 queries outright.
+/// itself recommended: when the KEYWORD search returns nothing, offer the one route that
+/// answers natural-language questions. Rescued 4 of the sitting's 25 queries.
 ///
-/// SHARED by both platforms' search surfaces, the `QueryZeroResultView` precedent: iOS mounts it
-/// under the zero-result branch of `SearchView.resultsSection`, macOS under `SearchSheet`'s
-/// `hasZeroResults` branch. Each host passes its own document-opening closure; everything else —
-/// states, copy, rows — lives here once.
-///
-/// ## What each state claims
-///
-/// - Model absent: an OFFER, not a download — the button opens the same consent sheet the
-///   Settings section uses (`SemanticModelConsentSheet`), because the sheet's sentence is the
-///   Gemma flow-down and no path may download around it.
-/// - Results: corpus-wide, deliberately unfenced (unlike the Related axis) — a hit in a volume
-///   the reader lacks is shown with its manifest title and a download affordance, the
-///   cross-reference graph's #262 presentation. The caption owns two disclosures: filters are
-///   ignored, and candidates without shards were dropped (with the count), never silently.
-/// - Empty: names the warm-up honestly — the match files are downloading, try again — rather
-///   than claiming the corpus holds nothing.
+/// SHARED by both platforms' search surfaces, the `QueryZeroResultView` precedent, and mounted
+/// ONLY in Keywords mode: the Meaning mode (V-5 hybrid page) runs the semantic route as the
+/// primary engine through the view models, and mounting this beside it would run every query
+/// twice. The offer card, consent sheet, score chip, and beyond-library row are the shared
+/// views in `SemanticSearchSharedViews.swift`, so this surface and the Meaning mode cannot
+/// drift on copy or terms.
 ///
 /// Version history:
 ///   1.0 — V-5 s3
+///   1.1 — V-5 hybrid page: offer/consent/row internals extracted to the shared views
 struct SemanticSearchFallbackView: View {
 
     /// The executed query, verbatim (the submitted one, never the live field).
@@ -50,10 +41,9 @@ struct SemanticSearchFallbackView: View {
     private enum Phase: Equatable {
         /// Nothing to show (semantic stack absent, or no query).
         case hidden
-        /// The model is not downloaded; the offer card is up.
+        /// The model is not downloaded; the shared offer card is up (it owns consent,
+        /// progress, and failure internally).
         case offer
-        /// The model download is running (progress read from `appState.semanticModelDownload`).
-        case downloading
         /// The semantic search is running.
         case searching
         /// Ranked hits, resolved for display.
@@ -78,13 +68,12 @@ struct SemanticSearchFallbackView: View {
         let volumeTitle: String
         /// Whether the reader can open it here (indexed = downloaded and rendered).
         let isOpenable: Bool
+        /// Whether the manifest carries a download URL (side-loaded volumes do not).
+        let isDownloadable: Bool
         var id: String { "\(volumeID)/\(documentID)" }
     }
 
     @State private var phase: Phase = .hidden
-    @State private var showingConsent = false
-    /// Volumes whose download this surface has queued, for the queued-state button.
-    @State private var requestedVolumeDownloads: Set<String> = []
 
     var body: some View {
         // A VStack, not a Group, and the distinction is a recorded trap: Group applies
@@ -96,9 +85,9 @@ struct SemanticSearchFallbackView: View {
             case .hidden:
                 EmptyView()
             case .offer:
-                offerCard
-            case .downloading:
-                downloadingCard
+                SemanticModelOfferCard {
+                    Task { await runSearch() }
+                }
             case .searching:
                 searchingRow
             case .results(let hits, let unscored, let unscoredVolumes):
@@ -110,21 +99,12 @@ struct SemanticSearchFallbackView: View {
             }
         }
         .task(id: searchVersion) { await enter() }
-        .sheet(isPresented: $showingConsent) {
-            SemanticModelConsentSheet {
-                showingConsent = false
-                Task { await downloadModelThenSearch() }
-            } onCancel: {
-                showingConsent = false
-            }
-        }
     }
 
     // MARK: - State machine
 
     /// Decides the initial phase for this executed search, and runs the search when it can.
     private func enter() async {
-        requestedVolumeDownloads = []
         guard appState.semanticQuerySearcher != nil,
               !query.trimmingCharacters(in: .whitespaces).isEmpty else {
             phase = .hidden
@@ -136,25 +116,10 @@ struct SemanticSearchFallbackView: View {
             return
         }
         guard status.isPresent else {
-            phase = appState.semanticModelDownload != nil ? .downloading : .offer
+            phase = .offer
             return
         }
         await runSearch()
-    }
-
-    /// The consent sheet said yes: download, then — if the file verified — search immediately,
-    /// so the reader's question is answered by the same gesture that fetched the tool.
-    private func downloadModelThenSearch() async {
-        phase = .downloading
-        await appState.downloadSemanticModel()
-        let status = await appState.semanticModelStatus()
-        if status.isPresent {
-            await runSearch()
-        } else {
-            phase = .failed(status.failure ?? String(
-                localized: "search.semantic.downloadFailed",
-                defaultValue: "The model could not be downloaded. You can try again from the button above, or from Settings."))
-        }
     }
 
     private func runSearch() async {
@@ -196,8 +161,7 @@ struct SemanticSearchFallbackView: View {
             .candidateRecords(forKeys: keys)) ?? [:]
         return hits.map { hit in
             let record = records[DocumentKey(volumeId: hit.volumeID, documentId: hit.documentID)]
-            let volumeTitle = appState.manifestStore.entry(forVolumeId: hit.volumeID)?.title
-                ?? hit.volumeID
+            let entry = appState.manifestStore.entry(forVolumeId: hit.volumeID)
             return ResolvedHit(
                 volumeID: hit.volumeID,
                 documentID: hit.documentID,
@@ -206,59 +170,13 @@ struct SemanticSearchFallbackView: View {
                 dateline: record?.dateline,
                 documentNumber: record?.documentNumber,
                 isEditorialNote: record?.isEditorialNote ?? false,
-                volumeTitle: volumeTitle,
-                isOpenable: record != nil)
+                volumeTitle: entry?.title ?? hit.volumeID,
+                isOpenable: record != nil,
+                isDownloadable: entry?.downloadUrl != nil)
         }
     }
 
     // MARK: - Cards
-
-    /// The offer: what the button does, what it costs, and that a sheet will ask properly.
-    private var offerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label(String(localized: "search.semantic.offer.title",
-                         defaultValue: "Search by meaning (experimental)"),
-                  systemImage: SemanticGlyph.feature)
-                .font(.headline)
-            Text(String(
-                localized: "search.semantic.offer.body",
-                defaultValue: "Keyword search found nothing, but the app can also search by what a question means — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device."))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button {
-                showingConsent = true
-            } label: {
-                Text(String(localized: "search.semantic.offer.button",
-                            defaultValue: "Download Search Model…"))
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!appState.isOnline)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal)
-    }
-
-    /// Byte progress, mirrored from the Settings section's source of truth.
-    private var downloadingCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let progress = appState.semanticModelDownload {
-                ProgressView(value: progress.fraction) {
-                    Text(String(localized: "search.semantic.downloading",
-                                defaultValue: "Downloading the search model…"))
-                }
-            } else {
-                ProgressView {
-                    Text(String(localized: "search.semantic.verifying",
-                                defaultValue: "Verifying the search model…"))
-                }
-            }
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 
     private var searchingRow: some View {
         HStack(spacing: 10) {
@@ -359,7 +277,12 @@ struct SemanticSearchFallbackView: View {
             }
             .buttonStyle(.plain)
         } else {
-            undownloadedRow(hit)
+            SemanticUndownloadedRow(
+                volumeID: hit.volumeID,
+                documentID: hit.documentID,
+                score: hit.score,
+                volumeTitle: hit.volumeTitle,
+                isDownloadable: hit.isDownloadable)
         }
     }
 
@@ -375,63 +298,9 @@ struct SemanticSearchFallbackView: View {
                 Text(hit.volumeTitle).font(.caption).foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
-            scoreChip(hit.score)
+            SemanticScoreChip(score: hit.score)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-    }
-
-    /// The #262 presentation: the volume's title, the document's id, no invented metadata, and
-    /// the way to get it.
-    private func undownloadedRow(_ hit: ResolvedHit) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(String(format: String(
-                localized: "search.semantic.row.undownloaded %@ %@",
-                defaultValue: "Document %1$@ in %2$@"),
-                hit.documentID, hit.volumeTitle))
-                .font(.callout)
-                .multilineTextAlignment(.leading)
-            Text(String(localized: "search.semantic.row.notDownloaded",
-                        defaultValue: "Volume not downloaded — its documents are shown without titles until you download it."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 12) {
-                scoreChip(hit.score)
-                if requestedVolumeDownloads.contains(hit.volumeID) {
-                    Text(String(localized: "search.semantic.row.downloadQueued",
-                                defaultValue: "Download queued"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if appState.manifestStore.entry(forVolumeId: hit.volumeID)?.downloadUrl != nil {
-                    Button {
-                        queueVolumeDownload(hit.volumeID)
-                    } label: {
-                        Text(String(localized: "search.semantic.row.download",
-                                    defaultValue: "Download Volume"))
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!appState.isOnline)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The axis's score presentation, in this surface's own key.
-    private func scoreChip(_ score: Double) -> some View {
-        let percent = Int((min(1.0, max(0.0, score)) * 100).rounded())
-        return Text(String(format: String(
-            localized: "search.semantic.row.score %lld",
-            defaultValue: "Semantic match · %lld%%"), Int64(percent)))
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-    }
-
-    private func queueVolumeDownload(_ volumeID: String) {
-        guard let entry = appState.manifestStore.entry(forVolumeId: volumeID),
-              let downloadManager = appState.downloadManager else { return }
-        requestedVolumeDownloads.insert(volumeID)
-        Task { await downloadManager.enqueueDownload(entry) }
     }
 }

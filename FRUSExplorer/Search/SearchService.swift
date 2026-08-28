@@ -159,6 +159,34 @@ public actor SearchService {
         )
     }
 
+    /// Display rows for the Meaning mode's hits (V-5 hybrid page) — the pipeline's keyed batch,
+    /// through this actor so the two search routes share one entry surface.
+    ///
+    /// - Parameter keys: The semantic hits to resolve.
+    /// - Returns: `"volumeId/documentId"` → row; unindexed keys are absent.
+    public func semanticResultRows(
+        forKeys keys: [(volumeId: String, documentId: String)]
+    ) async throws -> [String: IndexedSearchRow] {
+        try await pipeline.semanticResultRows(forKeys: keys)
+    }
+
+    /// The full key set the current FILTERS admit, for the Meaning mode's intersection.
+    ///
+    /// `nil` means the parameters carry no SQL-expressible filter and nothing constrains.
+    /// Uncapped — see the pipeline method's reasoning.
+    ///
+    /// - Parameter parameters: The current search parameters; only their filters are read.
+    /// - Returns: Matching keys, or `nil` when unfiltered.
+    public func filterKeySet(parameters: SearchParameters) async throws -> Set<String>? {
+        try await pipeline.documentKeysMatchingFilters(makeFilters(from: parameters))
+    }
+
+    /// Splits a stored space-separated tag-id column for a semantic display row — the same rule
+    /// `search` applies to its own rows.
+    public static func tagIds(from raw: String?) -> [String] {
+        splitTagIds(raw)
+    }
+
     /// Deterministically resolves the document carrying the given canonical printed
     /// number in a volume — the lookup path citation matching uses.
     ///

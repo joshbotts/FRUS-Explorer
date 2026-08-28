@@ -169,6 +169,23 @@ struct QueryMethodAppendix: Sendable, Equatable {
         rows.filter { $0.count.displayedTotal == 0 }.count
     }
 
+    /// Whether a row records a Meaning-route search (V-5 hybrid page), by its signature.
+    static func isSemanticRow(_ row: Row) -> Bool {
+        row.scopeSignature?.hasPrefix("route=semantic") == true
+    }
+
+    /// Zero-result rows on the KEYWORD route only — the term-absence caveat's honest scope: a
+    /// semantic zero says nothing about term absence, so counting it there would put a false
+    /// sentence in a method appendix.
+    var keywordZeroResultRowCount: Int {
+        rows.filter { $0.count.displayedTotal == 0 && !Self.isSemanticRow($0) }.count
+    }
+
+    /// Rows recorded from the Meaning route, so the appendix can say what those counts mean.
+    var semanticRowCount: Int {
+        rows.filter { Self.isSemanticRow($0) }.count
+    }
+
     // MARK: - Markdown
 
     /// The appendix as Markdown — a preamble, a table, and the caveats that apply to *this* log.
@@ -317,12 +334,21 @@ struct QueryMethodAppendix: Sendable, Equatable {
             String(localized: "appendix.caveat.snapshot",
                    defaultValue: "Each count is what the search returned when it ran, over the volumes downloaded to that device at that moment. It is not re-run, and it will not match a search run today against a larger index.")
         ]
-        if zeroResultRowCount > 0 {
-            caveats.append(zeroResultRowCount == 1
+        if keywordZeroResultRowCount > 0 {
+            caveats.append(keywordZeroResultRowCount == 1
                 ? String(localized: "appendix.caveat.zero.one",
                          defaultValue: "One of these searches returned nothing. A zero is a finding: it means the term is absent from the volumes indexed at the time, not that it is absent from the FRUS series.")
                 : String(localized: "appendix.caveat.zero.many %lld",
-                         defaultValue: "\(zeroResultRowCount) of these searches returned nothing. A zero is a finding: it means the term is absent from the volumes indexed at the time, not that it is absent from the FRUS series."))
+                         defaultValue: "\(keywordZeroResultRowCount) of these searches returned nothing. A zero is a finding: it means the term is absent from the volumes indexed at the time, not that it is absent from the FRUS series."))
+        }
+        if semanticRowCount > 0 {
+            // The Meaning route's own caveat: its counts are a ranked top-K, not a match total,
+            // and its zeros are not term absence — different claims than the keyword rows make.
+            caveats.append(semanticRowCount == 1
+                ? String(localized: "appendix.caveat.semantic.one",
+                         defaultValue: "One search ran by meaning (on-device model) rather than by keywords. Its count is the size of a ranked list, not a match total, and a zero there does not mean any term is absent.")
+                : String(localized: "appendix.caveat.semantic.many %lld",
+                         defaultValue: "\(semanticRowCount) searches ran by meaning (on-device model) rather than by keywords. Their counts are sizes of ranked lists, not match totals, and zeros there do not mean any term is absent."))
         }
         if floorRowCount > 0 {
             caveats.append(floorRowCount == 1

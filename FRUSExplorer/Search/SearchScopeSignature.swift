@@ -53,6 +53,12 @@ enum SearchScopeSignature {
     ///   may have moved since.
     /// - Returns: a key such as
     ///   `"dates=1949-01-01..1952-12-31;docs=none;front=1;mode=and;notes=1;…"`.
+    /// The Meaning mode's scope signature (V-5 hybrid page). Deliberately carries NO `mode=`
+    /// key: `describe` handles it explicitly below, and any OTHER decoder that only knows the
+    /// keyword grammar fails closed and prints it verbatim rather than paraphrasing a semantic
+    /// run as a keyword scope.
+    static let semanticRouteSignature = "route=semantic;engine=on-device"
+
     static func signature(for parameters: SearchParameters) -> String {
         // Fixed order, written out rather than derived, so a reordering is a visible diff.
         var parts: [String] = []
@@ -153,6 +159,12 @@ enum SearchScopeSignature {
     ///   is the caller's cue to print the raw key: an appendix that guessed would be describing a
     ///   scope the search did not run under, which is worse than an ugly line.
     static func describe(_ signature: String) -> [String]? {
+        // The Meaning route, stated as method rather than decoded as a keyword scope: what the
+        // reader must know is that this was NOT a term search, so a zero is not term absence.
+        if signature.hasPrefix("route=semantic") {
+            return [String(localized: "appendix.scope.semantic",
+                           defaultValue: "ranked by meaning (on-device model), not by keywords — the query's words were not required to appear")]
+        }
         var pairs: [String: String] = [:]
         for part in signature.split(separator: ";") {
             guard let split = part.firstIndex(of: "=") else { return nil }

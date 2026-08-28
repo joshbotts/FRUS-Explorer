@@ -112,7 +112,7 @@ public final class LexicalEvalRoute {
         let dateline = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
         let body = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
         let note = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
-        let snippet = EvalSnippet.prose(
+        let snippet = ProseSnippet.prose(
             header: header, dateline: dateline, sourceNote: note, body: body)
         return (header, dateline, snippet)
     }

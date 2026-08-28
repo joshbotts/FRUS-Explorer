@@ -37,6 +37,27 @@ public enum DocumentTypeFilter: String, Codable, Sendable, Equatable {
 /// (#305). `relevance` keeps the FTS5 BM25 order as returned; the date orders use the structured
 /// `dateISO` value (undated rows last, BM25 tie-break) — see `SearchViewModel.sortedResults` and
 /// `MacSearchViewModel.allSortedResults`.
+/// Which engine a submitted search runs through (V-5 hybrid page).
+///
+/// Per-session state, deliberately not persisted: the readings/facet toggles were de-persisted
+/// by owner decision (#754 / audit L-45), and a mode silently remembered across launches would
+/// make tomorrow's ordinary keyword search behave inexplicably. Every session opens on Keywords.
+enum SearchMode: String, CaseIterable {
+    /// The shipped FTS5 route — BM25, filters, facets, concordance, the works.
+    case keywords
+    /// The semantic route (experimental): the query is embedded on-device and ranked by
+    /// meaning against the whole corpus. Keyword-dependent readings gate off.
+    case meaning
+
+    /// Segment label.
+    var label: String {
+        switch self {
+        case .keywords: return String(localized: "search.mode.keywords", defaultValue: "Keywords")
+        case .meaning:  return String(localized: "search.mode.meaning", defaultValue: "Meaning")
+        }
+    }
+}
+
 enum SearchSortOrder: CaseIterable {
     case relevance
     case dateAscending
@@ -509,7 +530,16 @@ public struct SearchResult: Sendable, Identifiable {
     public let snippet: String
 
     /// BM25 relevance score. Lower (more negative) = more relevant.
+    ///
+    /// For a SEMANTIC row (`semanticScore != nil`) this carries the NEGATED cosine, so the
+    /// lower-is-better convention every consumer assumes — the date sorts' tie-break, the
+    /// undated-tail ordering — holds without a mode branch. The cosine itself is never shown
+    /// from this field; display reads `semanticScore`.
     public let bm25Score: Double
+
+    /// The exact int8 cosine in the pinned semantic space, present only on rows produced by
+    /// the Meaning search mode (V-5 hybrid page). Display-only — ordering rides `bm25Score`.
+    public let semanticScore: Double?
 
     /// Subject tag IDs associated with this document.
     public let subjectTagIds: [String]
@@ -541,6 +571,7 @@ public struct SearchResult: Sendable, Identifiable {
         sourceNote: String? = nil,
         snippet: String,
         bm25Score: Double,
+        semanticScore: Double? = nil,
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
         isEditorialNote: Bool = false,
@@ -555,6 +586,7 @@ public struct SearchResult: Sendable, Identifiable {
         self.sourceNote = sourceNote
         self.snippet = snippet
         self.bm25Score = bm25Score
+        self.semanticScore = semanticScore
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.isEditorialNote = isEditorialNote
