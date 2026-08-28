@@ -318,18 +318,32 @@ struct MacSearchWindowView: View {
                 //
                 // `MacSearchViewModel` has no `hasSearched`; `submittedQuery` is the
                 // equivalent, since only `submitSearch()` sets it.
-                QueryZeroResultView(
-                    inspection: inspectorController.inspection
-                        ?? QueryInspection(expression: nil, operands: [],
-                                           indexedVolumeCount: appState.indexedVolumeIds.count,
-                                           isFilterOnly: false),
-                    emptyConjuncts: inspectorController.emptyConjuncts)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task(id: searchVM.searchTrigger) {
-                        await inspectorController.decomposeZeroResult(
-                            parameters: searchVM.submittedSearchParameters,
-                            service: appState.searchService)
+                // V-5 s3: the semantic fallback mounts BENEATH the decomposition — the shared
+                // view, same as iOS, with the macOS document-opening route injected.
+                ScrollView {
+                    VStack(spacing: 0) {
+                        QueryZeroResultView(
+                            inspection: inspectorController.inspection
+                                ?? QueryInspection(expression: nil, operands: [],
+                                                   indexedVolumeCount: appState.indexedVolumeIds.count,
+                                                   isFilterOnly: false),
+                            emptyConjuncts: inspectorController.emptyConjuncts)
+                            .frame(maxWidth: .infinity)
+                        SemanticSearchFallbackView(
+                            query: searchVM.submittedQuery,
+                            searchVersion: searchVM.executedSearchVersion,
+                            hasActiveFilters: searchVM.activeFilterSummary != nil,
+                            openEntry: { entry in
+                                appState.openDocument(entry, from: .tool(.search),
+                                                      using: openWindow)
+                            })
                     }
+                }
+                .task(id: searchVM.searchTrigger) {
+                    await inspectorController.decomposeZeroResult(
+                        parameters: searchVM.submittedSearchParameters,
+                        service: appState.searchService)
+                }
             } else if showCollocates {
                 CollocationView(
                     scope: resultSetScope,

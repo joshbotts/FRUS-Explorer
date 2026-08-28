@@ -413,6 +413,14 @@ Two reusable kinds of scope, both managed in Settings and both built for reprodu
 
 Any search that returns results offers a **Visualize in Corpus Analytics** banner: your terms and date filter open pre-seeded in the Analytics window, so you can chart the term's distribution and narrow the range before returning to a tighter search (Section 15.1). The relationship runs both ways — clicking a bar or point in Analytics offers **View in Search**, so you can read the documents behind any data point. Moving fluidly between the chart and the documents is the intended rhythm.
 
+### 7.11 Search by Meaning (Experimental)
+
+When a search returns **no results**, the Search window offers the app's experimental semantic route: **Search by meaning**, which ranks documents by what your question means rather than the words it uses, through a language model that runs entirely on this Mac. The first use offers a one-time 229 MB model download (Google's EmbeddingGemma — the offer sheet links the Gemma Terms of Use, and a copy lives in About ▸ Legal); once present, semantic matches appear automatically beneath any zero-result search.
+
+The results are ranked across the whole series, ignore your filters (the caption says so), and include volumes you have not downloaded — those rows show the volume title and a **Download Volume** button rather than pretending to a title the app cannot know. Scoring warms up over a few searches as small per-volume match files download in the background; the caption counts what could not be scored yet. Opening a match routes to a document window like any other search result. The model is managed under **Settings → Volumes & Storage → Natural-Language Search**.
+
+[SCREENSHOT: the Search window's zero-result state with the semantic matches section beneath the query decomposition.]
+
 ---
 
 ## 8. Reading Documents

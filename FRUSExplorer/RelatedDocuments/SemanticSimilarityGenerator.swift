@@ -133,7 +133,24 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
         }
 
         scored.sort { $0.score == $1.score ? $0.row < $1.row : $0.score > $1.score }
-        let top = Array(scored.prefix(limit))
+        // Edition twins fold BEFORE the cut (the V-3 requirement `SemanticEditionTwins`
+        // documents): a reader with both Iran editions indexed would otherwise get the same
+        // document twice at cosine 1.0 in adjacent slots. Streaming — identity is resolved only
+        // until `limit` survivors exist, so the fold costs identity lookups for the kept band,
+        // not the whole pool. The anchor's own twin is folded out explicitly: to the reader it
+        // IS the anchor, reprinted.
+        var seenFoldKeys = Set<String>()
+        var top: [(row: Int, score: Double, volumeID: String, documentID: String)] = []
+        for entry in scored {
+            guard top.count < limit else { break }
+            guard let document = index.document(at: entry.row) else { continue }
+            if SemanticEditionTwins.areTwins(document.volumeID, anchor.volumeId),
+               document.documentID == anchor.documentId { continue }
+            let fold = SemanticEditionTwins.foldKey(
+                volumeID: document.volumeID, documentID: document.documentID)
+            guard seenFoldKeys.insert(fold).inserted else { continue }
+            top.append((entry.row, entry.score, document.volumeID, document.documentID))
+        }
         guard !top.isEmpty else { return .empty }
 
         // Display records come from `document_cache`, which is the fence itself: a key with no row
@@ -142,8 +159,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
         keys.reserveCapacity(top.count)
         var scoreByKey: [DocumentKey: Double] = [:]
         for entry in top {
-            guard let document = index.document(at: entry.row) else { continue }
-            let key = DocumentKey(volumeId: document.volumeID, documentId: document.documentID)
+            let key = DocumentKey(volumeId: entry.volumeID, documentId: entry.documentID)
             guard key != anchor else { continue }
             keys.append(key)
             scoreByKey[key] = entry.score

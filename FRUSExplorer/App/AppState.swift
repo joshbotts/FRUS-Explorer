@@ -748,6 +748,12 @@ final class AppState {
     /// reads as a hang, and a download delegate makes the bytes observable.
     var semanticModelDownload: SemanticModelDownloadProgress?
 
+    /// The typed-query semantic searcher (V-5 s3). `nil` under the same conditions as
+    /// ``semanticModelStore`` — it needs the bundled index, both stores, and the pin. Its
+    /// existence does not imply the model is downloaded; `search` throws `.modelNotDownloaded`
+    /// and the fallback surface offers the download.
+    var semanticQuerySearcher: SemanticQuerySearcher?
+
     /// A model download in flight.
     struct SemanticModelDownloadProgress: Equatable, Sendable {
         /// Bytes received so far.

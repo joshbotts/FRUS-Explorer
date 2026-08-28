@@ -172,6 +172,51 @@ struct QueryEncoderParityTests {
                 "encode-in-place should not cost 2 GB; if it does, the mmap path regressed")
     }
 
+    @Test("The whole product path: store-verified model → encoder → searcher → ranked hits")
+    func searcherEndToEnd() async throws {
+        let path = try #require(EncoderGate.modelPath)
+        await BundledSemanticVectors.prepare()
+        let index = try #require(await MainActor.run(body: { BundledSemanticVectors.index }))
+        let corpus = try #require(await MainActor.run(body: { BundledSemanticVectors.corpusVectors }))
+
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("e2e-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        // The REAL doors, end to end: the model is adopted through the store's verification
+        // (length then SHA), and the searcher loads it only through `verifiedModelURL()`.
+        let modelStore = SemanticModelStore(
+            directory: directory.appendingPathComponent("model"),
+            expectedSHA256: index.provenance.modelFileSHA256)
+        try await modelStore.adoptModel(from: URL(fileURLWithPath: path))
+
+        let shardStore = SemanticShardStore(
+            directory: directory.appendingPathComponent("shards"),
+            provenance: index.provenance,
+            expectedCounts: Dictionary(
+                index.volumes.map { ($0.volumeID, $0.documentCount) },
+                uniquingKeysWith: { first, _ in first }))
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let shard = repoRoot.appendingPathComponent(
+            "Planning/semantic-vectors/shards/frus1895p1.vec")
+        guard FileManager.default.fileExists(atPath: shard.path) else {
+            print("[QueryEncoderE2E] local shards absent; end-to-end skipped")
+            return
+        }
+        try await shardStore.adoptShard(from: shard, for: "frus1895p1")
+
+        let searcher = SemanticQuerySearcher(
+            index: index, corpus: corpus,
+            modelStore: modelStore, shardStore: shardStore,
+            queueShardFetch: { _ in })
+        let results = try await searcher.search(
+            "Which document related to the Anglo-Venezuelan boundary dispute expanded the Monroe Doctrine?")
+        #expect(!results.hits.isEmpty, "the judged query must produce hits through the real encoder")
+        #expect(results.hits.allSatisfy { $0.volumeID == "frus1895p1" })
+    }
+
     /// `phys_footprint` — the figure iOS actually terminates on, not RSS.
     private static func physFootprint() -> Int64 {
         var info = task_vm_info_data_t()

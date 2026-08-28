@@ -9879,3 +9879,61 @@ storage section's download button and About's "when you enable natural-language 
 describe the s3 surface; a build carrying s2 alone would offer a 229 MB download nothing
 uses yet, and the ASC custom EULA (runbook §5, owner-only) must also precede that build's
 review. s3 (the zero-lexical-result semantic surface) is the next session.
+
+## Session 2026-08-28I — V-5 s3: the surface ships, verified live in the simulator
+
+The narrow first surface the judged sitting itself recommended: **semantic matches when
+the lexical search returns nothing** — the register that rescued 4 of 25 queries. This
+session closes the s2 ship gate; the ASC custom EULA (runbook §5, owner-only) is now the
+only step left before the carrying build's review.
+
+**The searcher.** `SemanticQuerySearcher` (actor, `FRUSExplorer/Semantic/`): the judged
+pipeline step for step — `SemanticQueryPrompt.queryPrefix` + encoder → truncate →
+sign-bits → Hamming at the artifact's `rerankPool` → exact int8 against shards — with the
+Related axis's shard rule adopted whole and its argument quoted: a candidate without a
+shard is DROPPED, never Hamming-mixed (two scales, one sort key), and missing volumes are
+queued under `.readerAskedForSemantics` so the surface warms up across uses. TWO
+deliberate departures from the axis: candidates are NOT fenced to the library (corpus-wide
+discovery is the measured value; undownloaded hits render by the cross-ref graph's #262
+rule — manifest title, no invented metadata, Download Volume button), and the drop is
+DISCLOSED (the results caption counts unscored candidates and volumes) rather than
+silent. The embed step is injectable, so the funnel is tested deterministically with the
+committed fixture vectors and no 229 MB model. Encoder lifecycle: load on demand, idle
+unload after 180 s (the measured trade: ~250 MB resident vs ~0.4 s reload).
+
+**Edition twins: the standing V-3 obligation is finally implemented, on BOTH surfaces.**
+Nothing in shipped code suppressed the Iran/IranEd2 cosine-1.0 twins (the recon proved
+it), and a corpus-wide surface hits them at full strength. `SemanticEditionTwins` (kit):
+a STRING rule on the volume id per the assessment's spec, one fold-key definition,
+first-wins folding. Applied in the query searcher and — streaming, so identity resolves
+only for the kept band — in `SemanticSimilarityGenerator`, whose display fence had merely
+been masking the gap for readers holding one edition.
+
+**The shared fallback view** (`SemanticSearchFallbackView`, the `QueryZeroResultView`
+sharing precedent): offer card → the SAME consent sheet Settings uses (no path downloads
+around the flow-down) → byte progress → auto-search on completion → results with the
+experimental banner, score chips in the axis's format, the ignores-your-filters line, and
+the warm-up disclosure. Mounted beneath the zero-result decomposition on BOTH platforms
+(iOS `SearchView`; macOS `SearchSheet` under `hasZeroResults`, opening documents through
+`openDocument(.tool(.search))`). **One recorded trap walked into and out of:** the view's
+phase machine hung at `.hidden` because `.task` was attached to a `Group` whose child was
+an `EmptyView` — Group applies modifiers PER CHILD (the memory literally warns this), so
+the task never fired; a real `VStack` container fixed it, and the comment names the trap.
+
+**Verified live, end to end, in the simulator:** fresh container → zero-result question →
+offer card → consent sheet (the flow-down sentence verbatim) → the real 229 MB download
+with byte progress → auto-search → the warm-up state ("Match files for 140 volumes are
+still downloading…") → re-submit → **ranked semantic matches for "Why did the Marshall
+Plan happen?" led by a document in frus1947v03 — the Marshall Plan volume — at 57%,**
+rendered as the #262 undownloaded row with a working Download Volume button, the caption
+disclosing 276 unscored candidates in 111 volumes (down from 140 as queued shards
+landed between the two searches).
+
+**Tests.** Kit: `SemanticEditionTwinsTests` (real pairs, first-wins, suffix-only rule).
+App: `SemanticQuerySearcherTests` — gated on the regenerated local shards — drive the
+funnel with fixture vectors: the sitting's known-item TRANSFERS (the Anglo-Venezuelan
+query's hits land in frus1895p1 through the real funnel and real shard), missing volumes
+queue bounded-and-once, and the twin fold holds with both Iran editions adopted. The
+gated encoder suite gains the whole product path: store-verified model → encoder →
+searcher → ranked hits. Docs: both manuals gain a Search-by-Meaning section;
+EditableContent gains the offer/caption/warm-up blocks with a compliance note.
