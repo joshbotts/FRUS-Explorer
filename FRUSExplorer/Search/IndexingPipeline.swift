@@ -1921,19 +1921,54 @@ public actor IndexingPipeline {
     }
 
     /// Builds a single `CSSearchableItem` from cached document fields, shared by
-    /// `submitSpotlightItems(for:)` and `rebuildSpotlightIndex()`.
-    private static func makeSearchableItem(
+    /// `submitSpotlightItems(for:)` and `rebuildSpotlightIndex()`. Internal so the test
+    /// suite pins the donated shape against the real builder.
+    ///
+    /// ## `textContent` is the W-9 step 1 field
+    /// `title` + `contentDescription` + `keywords` made documents findable by exact words.
+    /// **`textContent` is the property Apple's on-device semantic search matches against**
+    /// (`CSUserQuery` ranked results, and the system Spotlight UI) — the V-5 assessment
+    /// measured that it was never set, which made the whole capability silently unavailable
+    /// while every donation looked complete. The bound is **3,200 characters — the corpus's
+    /// own chunk size** (`provenance.chunkChars`): the unit the semantic program already
+    /// treats as one span of meaning, and a ceiling that keeps a full-corpus donation's text
+    /// volume around a gigabyte rather than five.
+    static func makeSearchableItem(
         volumeId: String, documentId: String, header: String, bodyText: String
     ) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: .text)
         attrs.title = header.isEmpty ? documentId : header
         attrs.contentDescription = String(bodyText.prefix(300))
         attrs.keywords = [volumeId, documentId]
+        attrs.textContent = String(bodyText.prefix(3_200))
         return CSSearchableItem(
             uniqueIdentifier: "\(volumeId)/\(documentId)",
             domainIdentifier: volumeId,
             attributeSet: attrs
         )
+    }
+
+    /// The donated item shape's version. Bump when `makeSearchableItem` changes what it
+    /// donates; `rebuildSpotlightIndexIfNeeded` re-donates every already-indexed document
+    /// once per bump, because Spotlight only learns a new field through re-submission.
+    ///
+    ///   1 — title / contentDescription / keywords (the original donation)
+    ///   2 — + `textContent` (W-9 step 1)
+    static let currentSpotlightSchemaVersion = 2
+
+    /// UserDefaults key holding the last donated schema version.
+    static let spotlightSchemaVersionKey = "spotlightSchemaVersionApplied"
+
+    /// Re-donates the Spotlight index once per `currentSpotlightSchemaVersion` bump — the
+    /// `applyBrokenRefsIndexIfNeeded` idiom: gated, idempotent, cheap no-op when current.
+    /// The stamp is written only after a successful rebuild, so a failed donation retries
+    /// on the next launch rather than recording a coverage the index does not have.
+    public func rebuildSpotlightIndexIfNeeded() async throws {
+        let applied = UserDefaults.standard.integer(forKey: Self.spotlightSchemaVersionKey)
+        guard applied != Self.currentSpotlightSchemaVersion else { return }
+        try await rebuildSpotlightIndex()
+        UserDefaults.standard.set(Self.currentSpotlightSchemaVersion,
+                                  forKey: Self.spotlightSchemaVersionKey)
     }
 
     /// Rebuilds the on-device Spotlight index from `document_cache`, without

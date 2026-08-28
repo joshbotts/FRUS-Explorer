@@ -9648,3 +9648,28 @@ a shipped search surface should route by register, cheapest integration = semant
 fallback on zero lexical results (rescues 4 of 25 outright); the W-17 axis stays
 experimental at weight 0 — this sitting judged typed queries, not the anchored axis.
 W-17 is COMPLETE.
+
+## Session 2026-08-28B — W-9 step 1: textContent donated, CSUserQuery instrumented
+
+The V-5 assessment's one-line blocker is closed: makeSearchableItem now donates
+attrs.textContent — the property Apple's on-device semantic search matches against —
+bounded at 3,200 characters, the corpus's own chunk size. rebuildSpotlightIndexIfNeeded
+(the applyBrokenRefsIndexIfNeeded idiom: gated, idempotent, stamp-after-success)
+re-donates every indexed document once per donated-shape bump, wired into all three boot
+branches; the shape is pinned by SpotlightDonationTests against the real builder.
+
+The evaluation half is a DEBUG-only launch-environment seam (CSUserQueryEvalRunner,
+the UITestVolumeSeeder pattern): FRUS_CSQUERY_EVAL names a query file, the runner warms
+CSUserQuery.prepare(), runs each query ranked (top 10), and writes JSON the retrieval
+harness can merge as a third route — stamped with the donated schema version and the OS
+build, because ranking quality is a property of the OS's models. Donation and querying
+are deliberately two launches: Spotlight digests textContent in its own time.
+
+Smoke-verified end to end on the simulator with one volume: "Kennedy proposes a meeting
+with Khrushchev" returned exactly document 51 (Letter From President Kennedy to Chairman
+Khrushchev); "nuclear test ban" returned ten on-topic rows; the quoted phrase correctly
+returned nothing from a 1961–63 corpus. What the smoke does NOT establish: quality at
+corpus scale, or whether the sim's ranking is the full semantic stack. That measurement
+is the owner's Mac run (the full library lives there): launch once to re-donate, let
+Spotlight digest, then launch the binary with FRUS_CSQUERY_EVAL pointed at the owner
+query file and hand back the JSON for the three-route report merge.

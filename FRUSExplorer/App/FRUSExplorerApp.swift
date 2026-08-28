@@ -1942,6 +1942,9 @@ struct FRUSExplorerApp: App {
         // Placed before the pipeline is built so the fixture is on disk for the first read.
         #if DEBUG
         UITestVolumeSeeder.seedIfRequested(in: volumesDir)
+        // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
+        // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
+        CSUserQueryEvalRunner.runIfRequested()
         #endif
         let dbURL = Self.makeDatabaseURL()
         appState.indexDirectory = dbURL.deletingLastPathComponent()
@@ -2123,6 +2126,10 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     // #308: populate the subject facet table for any newly indexed volumes.
                     try? await pipeline.applyDocumentSubjectsIfNeeded()
+                    // W-9 step 1: re-donate Spotlight items once per donated-shape bump
+                    // (v2 adds textContent, the field semantic search matches against).
+                    // Gated + idempotent; a no-op when the current shape has been donated.
+                    try? await pipeline.rebuildSpotlightIndexIfNeeded()
                     // Reopen the read-only stores now that the rebuild + WAL checkpoints have
                     // settled — the boot-time connections opened before this Task can be left
                     // stale, blanking cross-reference / person analytics until relaunch (#275).
@@ -2148,6 +2155,10 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     // #308: populate the subject facet table for any newly indexed volumes.
                     try? await pipeline.applyDocumentSubjectsIfNeeded()
+                    // W-9 step 1: re-donate Spotlight items once per donated-shape bump
+                    // (v2 adds textContent, the field semantic search matches against).
+                    // Gated + idempotent; a no-op when the current shape has been donated.
+                    try? await pipeline.rebuildSpotlightIndexIfNeeded()
                     // See the date-reindex branch: reopen the read-only stores post-rebuild (#275).
                     appState.refreshReadOnlyStores()
                     #if DEBUG
@@ -2169,6 +2180,10 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     // #308: populate the subject facet table for any newly indexed volumes.
                     try? await pipeline.applyDocumentSubjectsIfNeeded()
+                    // W-9 step 1: re-donate Spotlight items once per donated-shape bump
+                    // (v2 adds textContent, the field semantic search matches against).
+                    // Gated + idempotent; a no-op when the current shape has been donated.
+                    try? await pipeline.rebuildSpotlightIndexIfNeeded()
                     // Both steps above can mutate the persons rollup / is_broken column even on an
                     // otherwise-normal launch, so reopen the read-only stores here too (#275). When
                     // they were no-ops this is a cheap reconnect with no dashboard open to reload.
