@@ -9673,3 +9673,30 @@ corpus scale, or whether the sim's ranking is the full semantic stack. That meas
 is the owner's Mac run (the full library lives there): launch once to re-donate, let
 Spotlight digest, then launch the binary with FRUS_CSQUERY_EVAL pointed at the owner
 query file and hand back the JSON for the three-route report merge.
+
+## Session 2026-08-28C — W-9 step 1 decided: Apple's local search does not clear the bar
+
+The owner ran the CSUserQuery seam twice on the Mac (07:33 and 09:28, 5.5 and 7.5 hours
+after the corespotlightd heartbeat showed the 316,895-item re-donation fully processed —
+request = journaled = processed). The comparison decided it: EIGHT queries returned zero
+rows in BOTH runs — six of the nine research questions, the Mao question, the quoted
+phrase — the lexical failure signature on exactly the register where the Gemma route
+scored 0.65 with rank-1 hits; all three known-items missed by identity; the keyword
+rankings churned between runs (two top-10s replaced wholesale) while the zeros stayed
+identically empty, so the structural failure is not index churn. Judged overlap: 13 of
+142 rows (run 2: 9/4, all nine relevant rows on the keyword register). Verdict recorded
+in VERDICT.md's addendum: V-5's remaining claim does not narrow; the encoder case
+strengthens; the donation stays shipped. Caveat stated honestly: the machine's Apple
+Intelligence setting was not confirmed.
+
+Harness: CSQUERY_JSON merges the seam's output as a third report route (provenance line
+carrying OS build + donated schema, because ranking quality belongs to the OS's models),
+and verdicts.csv gained a no-clobber guard — which FAILED on first contact and
+overwrote the owner's sitting: the guard checked hasSuffix(",1") against lines ending
+",1\r" — the owner's editor saves CRLF — the same bare-\r failure the merge-audit CSV
+reader documented, striking from the other direction. Restored from git (#1118), the
+guard now trims before testing, and the CRLF case is the regression pin. Two operational
+lessons entered the seam's doc: the macOS sandbox refuses repo paths (stage the query
+file in the app container; the simulator enforces nothing, which is how it slipped
+through), and debug builds put code in FRUS Explorer.debug.dylib (a strings check on the
+stub executable reads empty).

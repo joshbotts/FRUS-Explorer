@@ -46,7 +46,9 @@ do {
             baseURL: URL(string: env["LMS_URL"] ?? "http://localhost:1234")!,
             model: env["MODEL"] ?? "frus-eval/embeddinggemma-300m-qat"),
         modelFile: modelFileEnv.isEmpty ? nil : URL(fileURLWithPath: modelFileEnv),
-        outDirectory: url("OUT", default: "Planning/semantic-vectors/eval-2026-08-27")
+        outDirectory: url("OUT", default: "Planning/semantic-vectors/eval-2026-08-27"),
+        // CSQUERY_JSON: a CSUserQueryEvalRunner output to merge as the third route.
+        csUserQueryJSON: env["CSQUERY_JSON"].map { URL(fileURLWithPath: $0, relativeTo: cwd) }
     )
 } catch {
     FileHandle.standardError.write(Data("RetrievalEvalHarness failed: \(error)\n".utf8))

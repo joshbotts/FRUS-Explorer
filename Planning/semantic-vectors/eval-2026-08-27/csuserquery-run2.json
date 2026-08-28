@@ -1,0 +1,1019 @@
+{
+  "generated" : "2026-08-28T13:28:00Z",
+  "osVersion" : "Version 26.6.2 (Build 25G83)",
+  "queries" : [
+    {
+      "query" : 1,
+      "results" : [
+
+      ],
+      "text" : "How did U.S. diplomats engage with host governments about the Emancipation Proclamation?"
+    },
+    {
+      "query" : 2,
+      "results" : [
+        {
+          "document" : "d384",
+          "rank" : 1,
+          "title" : "Mr. Williams to Mr. Seward",
+          "volume" : "frus1866p1"
+        },
+        {
+          "document" : "d262",
+          "rank" : 2,
+          "title" : "Mr. Burlingame to Mr. Seward",
+          "volume" : "frus1863p2"
+        },
+        {
+          "document" : "d407",
+          "rank" : 3,
+          "title" : "Mr. Williams to Mr. Seward",
+          "volume" : "frus1866p1"
+        },
+        {
+          "document" : "d413",
+          "rank" : 4,
+          "title" : "Mr. Burlingame to Mr. Seward",
+          "volume" : "frus1864p3"
+        },
+        {
+          "document" : "d378",
+          "rank" : 5,
+          "title" : "Mr. Seward to Mr. Burlingame",
+          "volume" : "frus1867p1"
+        },
+        {
+          "document" : "d222",
+          "rank" : 6,
+          "title" : "Mr. George F. Seward to Mr. Fish .",
+          "volume" : "frus1870"
+        },
+        {
+          "document" : "d382",
+          "rank" : 7,
+          "title" : "Mr. Williams to Mr. Seward",
+          "volume" : "frus1866p1"
+        },
+        {
+          "document" : "d395",
+          "rank" : 8,
+          "title" : "Mr. Burlingame to Mr. Seward",
+          "volume" : "frus1864p3"
+        },
+        {
+          "document" : "d399",
+          "rank" : 9,
+          "title" : "Baron Gerolt to Mr. Seward",
+          "volume" : "frus1867p1"
+        },
+        {
+          "document" : "d541",
+          "rank" : 10,
+          "title" : "Mr. Bancroft to Mr. Seward.",
+          "volume" : "frus1867p1"
+        }
+      ],
+      "text" : "How did immigration affect U.S. diplomacy with China in the 1880s?"
+    },
+    {
+      "query" : 3,
+      "results" : [
+        {
+          "document" : "d71",
+          "rank" : 1,
+          "title" : "71. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d75",
+          "rank" : 2,
+          "title" : "75. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d82",
+          "rank" : 3,
+          "title" : "82. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d66",
+          "rank" : 4,
+          "title" : "66. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d113",
+          "rank" : 5,
+          "title" : "113. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d60",
+          "rank" : 6,
+          "title" : "60. Draft Telegram From the Department of State to the U.S. Interests Section in Cuba",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d83",
+          "rank" : 7,
+          "title" : "83. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d127",
+          "rank" : 8,
+          "title" : "127. Telegram From the Department of State to the U.S. Interests Section in Cuba",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d100",
+          "rank" : 9,
+          "title" : "100. Telegram From the U.S. Interests Section in Cuba to the Department of State",
+          "volume" : "frus1977-80v23"
+        },
+        {
+          "document" : "d24",
+          "rank" : 10,
+          "title" : "24. Telegram From the Department of State to the U.S. Interests Section in Cuba",
+          "volume" : "frus1977-80v23"
+        }
+      ],
+      "text" : "How did U.S. diplomats think about Cuban independence before 1898?"
+    },
+    {
+      "query" : 4,
+      "results" : [
+        {
+          "document" : "d183",
+          "rank" : 1,
+          "title" : "Mr. Burton to Mr. Seward",
+          "volume" : "frus1866p3"
+        },
+        {
+          "document" : "d501",
+          "rank" : 2,
+          "title" : "Mr. Wilson to Mr. Seward",
+          "volume" : "frus1867p2"
+        },
+        {
+          "document" : "d751",
+          "rank" : 3,
+          "title" : "Mr. Seward to Mr. Motley",
+          "volume" : "frus1865p3"
+        },
+        {
+          "document" : "d212",
+          "rank" : 4,
+          "title" : "Mr. Morrell to Mr. Seward .",
+          "volume" : "frus1868p2"
+        },
+        {
+          "document" : "d436",
+          "rank" : 5,
+          "title" : "Mr. Dickinson to Mr. Seward",
+          "volume" : "frus1867p2"
+        },
+        {
+          "document" : "d699",
+          "rank" : 6,
+          "title" : "Mr. Yrisarri to Mr. Seward .",
+          "volume" : "frus1862"
+        },
+        {
+          "document" : "d32",
+          "rank" : 7,
+          "title" : "Mr. Seward to Mr. Adams",
+          "volume" : "frus1865p1"
+        },
+        {
+          "document" : "d128",
+          "rank" : 8,
+          "title" : "Mr. Nelson to Mr. Tocornal .",
+          "volume" : "frus1864p4"
+        },
+        {
+          "document" : "d214",
+          "rank" : 9,
+          "title" : "Mr. Morrell to Mr. Seward .",
+          "volume" : "frus1868p2"
+        },
+        {
+          "document" : "d358",
+          "rank" : 10,
+          "title" : "Mr. Bigelow to Mr. Seward",
+          "volume" : "frus1865p3"
+        }
+      ],
+      "text" : "Which document related to the Anglo-Venezuelan boundary dispute expanded the Monroe Doctrine?"
+    },
+    {
+      "query" : 5,
+      "results" : [
+        {
+          "document" : "d1393",
+          "rank" : 1,
+          "title" : "The American Chargé d’Affaires to the Secretary of State .",
+          "volume" : "frus1912"
+        },
+        {
+          "document" : "d281",
+          "rank" : 2,
+          "title" : "The Secretary of State to the Chargé in Mexico ( Summerlin )",
+          "volume" : "frus1920v03"
+        },
+        {
+          "document" : "d362",
+          "rank" : 3,
+          "title" : "Mr. Romero to Mr. Seward",
+          "volume" : "frus1867p2"
+        },
+        {
+          "document" : "d232",
+          "rank" : 4,
+          "title" : "No. 232. Mr. Foster to Mr. Evarts .",
+          "volume" : "frus1877"
+        },
+        {
+          "document" : "d771",
+          "rank" : 5,
+          "title" : "Vice Consul Caldera to the Secretary of State .",
+          "volume" : "frus1910"
+        },
+        {
+          "document" : "d406",
+          "rank" : 6,
+          "title" : "The Consul at Ciudad Juarez ( Dye ) to the Secretary of State",
+          "volume" : "frus1929v03"
+        },
+        {
+          "document" : "d1336",
+          "rank" : 7,
+          "title" : "Ambassador Willard to the Secretary of State .",
+          "volume" : "frus1914"
+        },
+        {
+          "document" : "d568",
+          "rank" : 8,
+          "title" : "[Untitled]",
+          "volume" : "frus1911"
+        },
+        {
+          "document" : "d1177",
+          "rank" : 9,
+          "title" : "The Acting Secretary of State to the American Ambassador .",
+          "volume" : "frus1912"
+        },
+        {
+          "document" : "d806",
+          "rank" : 10,
+          "title" : "Mr. Hay to Mr. Day .",
+          "volume" : "frus1898"
+        }
+      ],
+      "text" : "Mexican Revolution"
+    },
+    {
+      "query" : 6,
+      "results" : [
+
+      ],
+      "text" : "When did U.S. diplomats realize that Hitler was a serious danger to the United States?"
+    },
+    {
+      "query" : 7,
+      "results" : [
+        {
+          "document" : "d326",
+          "rank" : 1,
+          "title" : "326. Memorandum From the President’s Special Assistant for National Security Affairs ( Cutler ) to the National Security Council",
+          "volume" : "frus1955-57v11"
+        },
+        {
+          "document" : "d142",
+          "rank" : 2,
+          "title" : "142. Briefing Memorandum From Jeffrey Garten and Curt Farrar of the Policy Planning Staff to Acting Secretary of State Christopher",
+          "volume" : "frus1977-80v28"
+        },
+        {
+          "document" : "d66",
+          "rank" : 3,
+          "title" : "66. Memorandum From the Acting Director of the United States Information Agency ( Loomis ) to the President’s Assistant for National Security Affairs ( Kissinger )",
+          "volume" : "frus1917-72PubDipv08"
+        },
+        {
+          "document" : "d199",
+          "rank" : 4,
+          "title" : "199. National Security Action Memorandum No. 231",
+          "volume" : "frus1961-63v18"
+        },
+        {
+          "document" : "d141",
+          "rank" : 5,
+          "title" : "141. Letter From Secretary of Defense Lovett to Secretary of State Acheson",
+          "volume" : "frus1951-54Iran"
+        },
+        {
+          "document" : "d251",
+          "rank" : 6,
+          "title" : "251. Telegram From the Ambassador in Vietnam ( Reinhardt ) to the Department of State",
+          "volume" : "frus1955-57v01"
+        },
+        {
+          "document" : "d66",
+          "rank" : 7,
+          "title" : "66. National Security Decision Memorandum 318",
+          "volume" : "frus1969-76ve03"
+        },
+        {
+          "document" : "d911",
+          "rank" : 8,
+          "title" : "The Consul General at Manila ( Steintorf ) to the Secretary of State",
+          "volume" : "frus1945v06"
+        },
+        {
+          "document" : "d347",
+          "rank" : 9,
+          "title" : "347. Telegram From the Department of State to the Embassy in the United Arab Republic",
+          "volume" : "frus1961-63v18"
+        },
+        {
+          "document" : "d108",
+          "rank" : 10,
+          "title" : "108. Memorandum",
+          "volume" : "frus1969-76v28"
+        }
+      ],
+      "text" : "Intelligence collaboration"
+    },
+    {
+      "query" : 8,
+      "results" : [
+
+      ],
+      "text" : "How did the United States collaborate with Great Britain to conduct economic warfare during World War II?"
+    },
+    {
+      "query" : 9,
+      "results" : [
+        {
+          "document" : "d35",
+          "rank" : 1,
+          "title" : "Ambassador Dudley to the Secretary of State .",
+          "volume" : "frus1908"
+        },
+        {
+          "document" : "d244",
+          "rank" : 2,
+          "title" : "Memorandum by the Deputy Director of the Office of Far Eastern Affairs ( Stanton )",
+          "volume" : "frus1945v07"
+        },
+        {
+          "document" : "d354",
+          "rank" : 3,
+          "title" : "No. 354. Mr. Foster to Mr. Frelinghuysen .",
+          "volume" : "frus1884"
+        },
+        {
+          "document" : "d152",
+          "rank" : 4,
+          "title" : "Memorandum of Conversation, by Mr. Herbert D. Brewster , Special Assistant to the Chief of the Economic Cooperation Mission to Greece ( Porter )",
+          "volume" : "frus1950v05"
+        },
+        {
+          "document" : "d205",
+          "rank" : 5,
+          "title" : "d205",
+          "volume" : "frus1958-60v16"
+        },
+        {
+          "document" : "d199",
+          "rank" : 6,
+          "title" : "199. Memorandum From the Assistant Secretary of the Treasury for International Affairs ( Mulford ) to the Deputy Secretary of the Treasury ( Darman )",
+          "volume" : "frus1981-88v38"
+        },
+        {
+          "document" : "d359",
+          "rank" : 7,
+          "title" : "The Secretary of State to the Embassy in Italy",
+          "volume" : "frus1948v03"
+        },
+        {
+          "document" : "d362",
+          "rank" : 8,
+          "title" : "362. Intelligence Memorandum Prepared in the Central Intelligence Agency",
+          "volume" : "frus1964-68v26"
+        },
+        {
+          "document" : "d101",
+          "rank" : 9,
+          "title" : "101. Memorandum From Secretary of Defense Laird to President Nixon",
+          "volume" : "frus1969-76v04"
+        },
+        {
+          "document" : "d378",
+          "rank" : 10,
+          "title" : "The Consul at Geneva ( Gilbert ) to the Secretary of State",
+          "volume" : "frus1931v03"
+        }
+      ],
+      "text" : "Foreign Service reform"
+    },
+    {
+      "query" : 10,
+      "results" : [
+
+      ],
+      "text" : "What convinced U.S. policymakers that the Soviet Union was no long an ally after World War II?"
+    },
+    {
+      "query" : 11,
+      "results" : [
+
+      ],
+      "text" : "At what point did U.S. decision makers determine that the Nationalists couldn't prevail in the Chinese Civil War?"
+    },
+    {
+      "query" : 12,
+      "results" : [
+        {
+          "document" : "d250",
+          "rank" : 1,
+          "title" : "No. 250. Mr. Gibbs to Mr. Evarts .",
+          "volume" : "frus1877"
+        }
+      ],
+      "text" : "Deposing shah"
+    },
+    {
+      "query" : 13,
+      "results" : [
+        {
+          "document" : "d165",
+          "rank" : 1,
+          "title" : "No. 878. Mr. Romero to Mr. Bayard .",
+          "volume" : "frus1888p2"
+        },
+        {
+          "document" : "d229",
+          "rank" : 2,
+          "title" : "229. Backchannel Message Tohak74\/WH40189 From the President’s Deputy Assistant for National Security Affairs ( Scowcroft ) to the President’s Assistant for National Security Affairs ( Kissinger ) in Jerusalem",
+          "volume" : "frus1969-76ve15p2"
+        },
+        {
+          "document" : "d49",
+          "rank" : 3,
+          "title" : "49. Telegram From the Department of State to the Embassy in the United Kingdom",
+          "volume" : "frus1964-68v21"
+        },
+        {
+          "document" : "d98",
+          "rank" : 4,
+          "title" : "98. Telegram 3520 From the Embassy in Sri Lanka to the Department of State and the Mission to the United Nations",
+          "volume" : "frus1969-76ve08"
+        },
+        {
+          "document" : "d148",
+          "rank" : 5,
+          "title" : "148. Record of Meeting",
+          "volume" : "frus1964-68v21"
+        },
+        {
+          "document" : "d106",
+          "rank" : 6,
+          "title" : "106. Memorandum for the Record",
+          "volume" : "frus1977-80v18"
+        },
+        {
+          "document" : "d229",
+          "rank" : 7,
+          "title" : "229. Backchannel Message Tohak74\/WH40189 From the President’s Deputy Assistant for National Security Affairs ( Scowcroft ) to the President’s Assistant for National Security Affairs ( Kissinger ) in Jerusalem",
+          "volume" : "frus1969-76ve15p2Ed2"
+        },
+        {
+          "document" : "d57",
+          "rank" : 8,
+          "title" : "57. Telegram 118250 From the Department of State to the Embassy in the United Kingdom",
+          "volume" : "frus1969-76ve08"
+        },
+        {
+          "document" : "d113",
+          "rank" : 9,
+          "title" : "113. Memorandum From the President’s Assistant for National Security Affairs ( Brzezinski ) to President Carter",
+          "volume" : "frus1977-80v18"
+        },
+        {
+          "document" : "d48",
+          "rank" : 10,
+          "title" : "48. Memorandum From the Deputy Secretary of Defense ( Nitze )",
+          "volume" : "frus1964-68v21"
+        }
+      ],
+      "text" : "Diego Garcia base"
+    },
+    {
+      "query" : 14,
+      "results" : [
+        {
+          "document" : "d282",
+          "rank" : 1,
+          "title" : "The Acting Secretary of State to the Minister in Switzerland ( Harrison )",
+          "volume" : "frus1942v01"
+        },
+        {
+          "document" : "d7",
+          "rank" : 2,
+          "title" : "Mr. Adams to Mr. Seward",
+          "volume" : "frus1868p1"
+        },
+        {
+          "document" : "d1328",
+          "rank" : 3,
+          "title" : "The Consul at Shanghai ( McConaughy ) to the Secretary of State",
+          "volume" : "frus1949v09"
+        },
+        {
+          "document" : "d21",
+          "rank" : 4,
+          "title" : "The Secretary of State to All Diplomatic and Consular Officers",
+          "volume" : "frus1947v01"
+        },
+        {
+          "document" : "d217",
+          "rank" : 5,
+          "title" : "Extract from the Constitution of May 23, 1845.",
+          "volume" : "frus1873p1v2"
+        },
+        {
+          "document" : "d661",
+          "rank" : 6,
+          "title" : "The Ambassador in the United Kingdom ( Kennedy ) to the Secretary of State",
+          "volume" : "frus1939v01"
+        },
+        {
+          "document" : "d909",
+          "rank" : 7,
+          "title" : "The Acting Secretary of State to the Secretary of the Interior ( Ickes )",
+          "volume" : "frus1945v06"
+        },
+        {
+          "document" : "d1324",
+          "rank" : 8,
+          "title" : "The Consul at Shanghai ( McConaughy ) to the Secretary of State",
+          "volume" : "frus1949v09"
+        },
+        {
+          "document" : "d192",
+          "rank" : 9,
+          "title" : "The Secretary of State to the Consul General at Rangoon ( Schnare )",
+          "volume" : "frus1942v01"
+        },
+        {
+          "document" : "d847",
+          "rank" : 10,
+          "title" : "The Ambassador in China ( Stuart ) to the Secretary of State",
+          "volume" : "frus1948v08"
+        }
+      ],
+      "text" : "Space aliens"
+    },
+    {
+      "query" : 15,
+      "results" : [
+        {
+          "document" : "d171",
+          "rank" : 1,
+          "title" : "Mr. Seward to Mr. Adams .",
+          "volume" : "frus1862"
+        },
+        {
+          "document" : "d65",
+          "rank" : 2,
+          "title" : "Mr. Seward to Mr. Adams .",
+          "volume" : "frus1864p1"
+        },
+        {
+          "document" : "d38",
+          "rank" : 3,
+          "title" : "Mr. Seward to Mr. Adams .",
+          "volume" : "frus1864p1"
+        },
+        {
+          "document" : "d467",
+          "rank" : 4,
+          "title" : "Mr. Marsh to Mr. Seward .",
+          "volume" : "frus1862"
+        }
+      ],
+      "text" : "U.S.S. Liberty sinking"
+    },
+    {
+      "query" : 16,
+      "results" : [
+        {
+          "document" : "d33",
+          "rank" : 1,
+          "title" : "33. Memorandum From the Director of the Arms Control and Disarmament Agency ( Iklé ) to the President’s Assistant for National Security Affairs ( Kissinger )",
+          "volume" : "frus1969-76ve14p2"
+        },
+        {
+          "document" : "d77",
+          "rank" : 2,
+          "title" : "77. Backchannel Message From the President’s Assistant for National Security Affairs ( Kissinger ) to the President’s Deputy Assistant for National Security Affairs ( Haig ), Washington, undated",
+          "volume" : "frus1969-76ve13"
+        },
+        {
+          "document" : "d197",
+          "rank" : 3,
+          "title" : "197. Memorandum From the President’s Assistant for National Security Affairs ( Kissinger ) to President Nixon",
+          "volume" : "frus1969-76ve15p2"
+        },
+        {
+          "document" : "d153",
+          "rank" : 4,
+          "title" : "153. Memorandum From Secretary of Defense Laird to the President’s Assistant for National Security Affairs ( Kissinger ), Washington, July 16, 1972",
+          "volume" : "frus1969-76ve13"
+        },
+        {
+          "document" : "d99",
+          "rank" : 5,
+          "title" : "99. Letter From Ambassador Galbraith to Secretary of State Designate Kissinger , Washington, September 5, 1973.",
+          "volume" : "frus1969-76ve12"
+        },
+        {
+          "document" : "d10",
+          "rank" : 6,
+          "title" : "10. Memorandum From the President’s Assistant for National Security Affairs ( Kissinger ) and Secretary of the Treasury Shultz to President Nixon",
+          "volume" : "frus1969-76ve15p2Ed2"
+        },
+        {
+          "document" : "d372",
+          "rank" : 7,
+          "title" : "372. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to the Acting Secretary of Defense and the Director of Central Intelligence (Schlesinger), Washington, June 18, 1973.",
+          "volume" : "frus1969-76ve12"
+        },
+        {
+          "document" : "d134",
+          "rank" : 8,
+          "title" : "134. Memorandum From the President’s Assistant for National Security Affairs ( Kissinger ) to the Chairman of the Under Secretaries Committee ( Ingersoll ), Washington, September 15, 1975.",
+          "volume" : "frus1969-76ve12"
+        },
+        {
+          "document" : "d46",
+          "rank" : 9,
+          "title" : "46. Message From the President’s Deputy Assistant for National Security Affairs ( Haig ) to the President’s Assistant for National Security Affairs ( Kissinger ), Washington, October 22, 1971",
+          "volume" : "frus1969-76ve13"
+        },
+        {
+          "document" : "d28",
+          "rank" : 10,
+          "title" : "28. Memorandum From Secretary of State Kissinger to President Nixon",
+          "volume" : "frus1969-76v22"
+        }
+      ],
+      "text" : "How did Kissinger manage the State Department?"
+    },
+    {
+      "query" : 17,
+      "results" : [
+
+      ],
+      "text" : "What joke did Mao make about Chinese women?"
+    },
+    {
+      "query" : 18,
+      "results" : [
+
+      ],
+      "text" : "What medium- and long-term impacts did U.S. policymakers anticipate the Panama Canal Treaty having? What were they right and wrong about?"
+    },
+    {
+      "query" : 19,
+      "results" : [
+        {
+          "document" : "d113",
+          "rank" : 1,
+          "title" : "113. Memorandum From the Director of the Office of Northeast Asian Affairs ( Parsons ) to the Assistant Secretary of State for Far Eastern Affairs ( Robertson )",
+          "volume" : "frus1955-57v23p1"
+        },
+        {
+          "document" : "d230",
+          "rank" : 2,
+          "title" : "230. Response to National Security Study Memorandum 129",
+          "volume" : "frus1969-76v29"
+        },
+        {
+          "document" : "d95",
+          "rank" : 3,
+          "title" : "95. Memorandum From the President’s Assistant for National Security Affairs ( Brzezinski ) to President Carter",
+          "volume" : "frus1977-80v13"
+        },
+        {
+          "document" : "d91",
+          "rank" : 4,
+          "title" : "91. Defense Intelligence Appraisal Prepared in the Defense Intelligence Agency",
+          "volume" : "frus1981-88v24"
+        },
+        {
+          "document" : "d314",
+          "rank" : 5,
+          "title" : "314. Telegram From the Department of State to the Embassy in Sweden",
+          "volume" : "frus1964-68v04"
+        },
+        {
+          "document" : "d1",
+          "rank" : 6,
+          "title" : "1. Intelligence Note 195 From the Director of the Bureau of Intelligence and Research ( Hughes ) to Secretary of State Rogers",
+          "volume" : "frus1969-76ve05p2"
+        },
+        {
+          "document" : "d166",
+          "rank" : 7,
+          "title" : "166. Memorandum From Admiral Lewis J. Strauss to Former President Eisenhower",
+          "volume" : "frus1964-68v34"
+        },
+        {
+          "document" : "d6",
+          "rank" : 8,
+          "title" : "d6",
+          "volume" : "frus1969-76v01"
+        },
+        {
+          "document" : "d303",
+          "rank" : 9,
+          "title" : "303. Memorandum From the Assistant to the President’s Special Assistant for Health Issues ( Fill ) to the President’s Special Assistant for Health Issues ( Bourne )",
+          "volume" : "frus1977-80v02"
+        },
+        {
+          "document" : "d149",
+          "rank" : 10,
+          "title" : "149. Memorandum From the Chairman of the Interagency Committee on Public Diplomacy and Disarmament ( Bray ) to the President’s Assistant for National Security Affairs ( Brzezinski )",
+          "volume" : "frus1977-80v30"
+        }
+      ],
+      "text" : "Climate diplomacy"
+    },
+    {
+      "query" : 20,
+      "results" : [
+        {
+          "document" : "d94",
+          "rank" : 1,
+          "title" : "94. Paper Prepared in the Department of State",
+          "volume" : "frus1969-76ve08"
+        },
+        {
+          "document" : "d183",
+          "rank" : 2,
+          "title" : "183. Memorandum From Secretary of Defense Brown to President Carter",
+          "volume" : "frus1977-80v04"
+        },
+        {
+          "document" : "d91",
+          "rank" : 3,
+          "title" : "91. Letter From the Science Advisor to the President and Director of the White House Office of Science and Technology Policy ( Keyworth ) to President Reagan",
+          "volume" : "frus1981-88v44p1"
+        },
+        {
+          "document" : "d70",
+          "rank" : 4,
+          "title" : "70. Memorandum From Henry Nau of the National Security Council Staff to Members of the National Security Council Staff",
+          "volume" : "frus1981-88v01"
+        }
+      ],
+      "text" : "Window of vulnerability"
+    },
+    {
+      "query" : 21,
+      "results" : [
+        {
+          "document" : "d95",
+          "rank" : 1,
+          "title" : "The Secretary of State to the Chargé in the United Kingdom ( Atherton )",
+          "volume" : "frus1935v01"
+        },
+        {
+          "document" : "d153",
+          "rank" : 2,
+          "title" : "Memorandum by the Chief of the Division of Far Eastern Affairs ( Hornbeck )",
+          "volume" : "frus1934v03"
+        },
+        {
+          "document" : "d825",
+          "rank" : 3,
+          "title" : "The Ambassador in Japan ( Grew ) to the Secretary of State",
+          "volume" : "frus1935v03"
+        },
+        {
+          "document" : "d203",
+          "rank" : 4,
+          "title" : "The Chargé in Japan ( Neville ) to the Secretary of State",
+          "volume" : "frus1931-41v01"
+        },
+        {
+          "document" : "d13",
+          "rank" : 5,
+          "title" : "Memorandum by the Chief of the Division of Western European Affairs ( Castle )",
+          "volume" : "frus1927v01"
+        },
+        {
+          "document" : "d209",
+          "rank" : 6,
+          "title" : "The Ambassador in Great Britain ( Bingham ) to the Secretary of State",
+          "volume" : "frus1934v01"
+        },
+        {
+          "document" : "d21",
+          "rank" : 7,
+          "title" : "The Ambassador in Japan ( Grew ) to the Secretary of State",
+          "volume" : "frus1934v03"
+        },
+        {
+          "document" : "d308",
+          "rank" : 8,
+          "title" : "The Secretary of State to the Chairman of the American Delegation ( Davis )",
+          "volume" : "frus1934v01"
+        },
+        {
+          "document" : "d353",
+          "rank" : 9,
+          "title" : "The Secretary of State to the American Delegate ( Wilson )",
+          "volume" : "frus1932v01"
+        },
+        {
+          "document" : "d157",
+          "rank" : 10,
+          "title" : "The Secretary of State to the Acting Chairman of the American Delegation ( Gibson )",
+          "volume" : "frus1932v01"
+        }
+      ],
+      "text" : "washington naval conference ratios"
+    },
+    {
+      "query" : 22,
+      "results" : [
+        {
+          "document" : "d656",
+          "rank" : 1,
+          "title" : "The Ambassador in Germany ( Gerard ) to the Secretary of State",
+          "volume" : "frus1914-20v01"
+        },
+        {
+          "document" : "d509",
+          "rank" : 2,
+          "title" : "Draft Instructions to the Ambassador in Germany ( Gerard )",
+          "volume" : "frus1914-20v01"
+        },
+        {
+          "document" : "d536",
+          "rank" : 3,
+          "title" : "The Secretary of State to President Wilson",
+          "volume" : "frus1914-20v01"
+        }
+      ],
+      "text" : "sussex pledge"
+    },
+    {
+      "query" : 23,
+      "results" : [
+
+      ],
+      "text" : "\"trust but verify\""
+    },
+    {
+      "query" : 24,
+      "results" : [
+        {
+          "document" : "d466",
+          "rank" : 1,
+          "title" : "The Secretary of State to the Embassy in Honduras",
+          "volume" : "frus1952-54v04"
+        },
+        {
+          "document" : "d245",
+          "rank" : 2,
+          "title" : "Memorandum by the Secretary of State of a Conversation With the British Chargé ( Osborne )",
+          "volume" : "frus1932v04"
+        },
+        {
+          "document" : "d571",
+          "rank" : 3,
+          "title" : "The Ambassador in the United Kingdom ( Douglas ) to the Secretary of State",
+          "volume" : "frus1948v03"
+        },
+        {
+          "document" : "d560",
+          "rank" : 4,
+          "title" : "The Secretary of State to the Embassy in Poland",
+          "volume" : "frus1950v04"
+        },
+        {
+          "document" : "d355",
+          "rank" : 5,
+          "title" : "355. Memorandum From the Assistant Secretary of State for Near Eastern, South Asian, and African Affairs ( Rountree ) to the Acting Secretary of State",
+          "volume" : "frus1955-57v13"
+        },
+        {
+          "document" : "d257",
+          "rank" : 6,
+          "title" : "The Officer in Chargé at New Delhi ( Merrell ) to the Secretary of State",
+          "volume" : "frus1944v05"
+        },
+        {
+          "document" : "d265",
+          "rank" : 7,
+          "title" : "Memorandum by the Director of the Office of European Affairs ( Hickerson ) to the Under Secretary of State ( Lovett )",
+          "volume" : "frus1948v04"
+        },
+        {
+          "document" : "d532",
+          "rank" : 8,
+          "title" : "The Secretary of State to Minister Russell .",
+          "volume" : "frus1906p2"
+        },
+        {
+          "document" : "d273",
+          "rank" : 9,
+          "title" : "d273",
+          "volume" : "frus1950v04"
+        },
+        {
+          "document" : "d198",
+          "rank" : 10,
+          "title" : "The Secretary of State to the Ambassador in Great Britain ( Harvey )",
+          "volume" : "frus1923v02"
+        }
+      ],
+      "text" : "persona non grata"
+    },
+    {
+      "query" : 25,
+      "results" : [
+        {
+          "document" : "d565",
+          "rank" : 1,
+          "title" : "Mr. Adee to Sir Julian Pauncefote .",
+          "volume" : "frus1894app1"
+        },
+        {
+          "document" : "d804",
+          "rank" : 2,
+          "title" : "The Consul General at Jerusalem ( Pinkerton ) to the Secretary of State",
+          "volume" : "frus1941v03"
+        },
+        {
+          "document" : "d680",
+          "rank" : 3,
+          "title" : "Chargé O’Shaughnessy to the Secretary of State .",
+          "volume" : "frus1914"
+        },
+        {
+          "document" : "d1",
+          "rank" : 4,
+          "title" : "d1",
+          "volume" : "frus1961-63v03"
+        },
+        {
+          "document" : "d316",
+          "rank" : 5,
+          "title" : "The Representative in Rumania ( Berry ) to the Secretary of State",
+          "volume" : "frus1947v04"
+        },
+        {
+          "document" : "d640",
+          "rank" : 6,
+          "title" : "Mr. Terrell to Mr. Olney .",
+          "volume" : "frus1895p2"
+        },
+        {
+          "document" : "d621",
+          "rank" : 7,
+          "title" : "The Minister in Guatemala ( McMillin ) to the Acting Secretary of State",
+          "volume" : "frus1920v02"
+        },
+        {
+          "document" : "d793",
+          "rank" : 8,
+          "title" : "The Minister in the Dominican Republic ( Curtis ) to the Acting Secretary of State",
+          "volume" : "frus1930v02"
+        },
+        {
+          "document" : "d340",
+          "rank" : 9,
+          "title" : "The Ambassador in Costa Rica ( Davis ) to the Secretary of State",
+          "volume" : "frus1948v09"
+        },
+        {
+          "document" : "d633",
+          "rank" : 10,
+          "title" : "The Ambassador in Russia ( Francis ) to the Secretary of State",
+          "volume" : "frus1918Russiav02"
+        }
+      ],
+      "text" : "blood telegram"
+    }
+  ],
+  "route" : "csuserquery",
+  "spotlightSchemaVersion" : 2,
+  "topK" : 10
+}
