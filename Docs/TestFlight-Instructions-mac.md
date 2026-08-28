@@ -1,49 +1,38 @@
 # What's New Since Build 43 (Mac)
 
-The headline: **search by meaning** — ask the corpus a question in your own words, answered by a language model that runs entirely on your Mac. Also new: tracked **archive visit plans** in their own window, a **Similar wording** axis in Related Documents, **classification overrides**, saved-search **freshness badges**, and a fix for the quit crash this cycle's testing caught.
+The headlines: **search by meaning** and **archive visit plans**, in their own window. Also: Similar wording in Related, classification overrides, saved-search freshness, the quit-crash fix.
 
-**Two one-time costs on first launch.** A full re-index of every downloaded volume (one index change since build 43 — footnote citations now inherit through bare *Ibid.*s, enriching the archival channel by ~1,200 references); and a background re-donation of ~317,000 items to Spotlight. The app stays usable meanwhile, but Search and the archival surfaces are incomplete until the re-index finishes.
+**Two one-time costs on first launch**: a full re-index of downloaded volumes (one index change), and a background Spotlight re-donation (~317k items). The app stays usable; Search and archival surfaces are incomplete until the re-index finishes.
 
 ## Search by meaning (experimental)
 
-The Search window has two engines now. **Keywords** is everything you know. **Meaning** — the new control beside the query field — embeds your question on-device and ranks the whole series by what it means, so *"Why did the Marshall Plan happen?"* finds the 1947 policy papers even though no document contains those words.
+Two engines now: **Keywords**, and **Meaning** — a new control beside the query field that ranks the whole series by what your question means, so "Why did the Marshall Plan happen?" finds the 1947 policy papers despite sharing no words with them.
 
-- **The model is a one-time, optional 229 MB download** (Google's EmbeddingGemma, running locally — nothing you search ever leaves the machine). Offered when a keyword search comes up empty or when you switch to Meaning; a consent sheet states the terms, and Settings ▸ Volumes & Storage ▸ Natural-Language Search manages or removes it.
-- **Results reach beyond your library**: matches in volumes you haven't downloaded appear under their volume's title with a **Download Volume** button, each with a "Semantic match · N%" score.
-- **The strip above the results states the terms**: ranked by meaning, filters intersected (and how many matches they removed), what couldn't be scored yet. Scoring **warms up over your first few searches** as small per-volume match files download in the background.
-- **Where keywords stay better**: exact phrases and terms of art. Keyword-only readings (concordance, collocates, facets) and the "Search in" scope chips close in Meaning mode; Saved Searches always run as keyword searches.
-- **The quit crash is fixed**: quitting within a few minutes of a Meaning search previously aborted; please quit freely and tell us if you ever see it again.
+- A one-time, optional **229 MB model download** (Google's EmbeddingGemma, entirely on your Mac). Offered when keywords find nothing or you switch to Meaning; managed under Settings ▸ Volumes & Storage.
+- **Results reach beyond your library**: matches in volumes you lack show the volume title, a score, and a Download Volume button.
+- The strip above the results states the terms: filters intersected, what couldn't be scored yet — scoring **warms up over your first few searches**.
+- Exact phrases stay keywords' job; concordance/collocates/facets and the "Search in" chips close in Meaning mode; Saved Searches always run as keywords.
+- **The quit crash is fixed** — quitting soon after a Meaning search previously aborted.
 
-## Archive visit plans
+## Archive visit plans — now fed from all over the app
 
-The trip packet grows a memory. The **Archive Visits** window (Window menu) keeps persistent, synced visit plans in a Collections-style flat pane: each plan holds **research targets** drawn from your documents' source notes *and* from their footnotes' archival references (labeled apart, never summed), plus hand-entered targets at the archival-unit grain. Packet chapters draw on the plan; unresolvable citations route into the advance inquiry; deletion confirms before cascading.
+Persistent, synced plans for consulting the records behind your documents — the **Archive Visits window** (Window menu, or the sidebar's Research section). Each plan holds **research targets** on two labeled channels — where documents *came from* (source notes) and what their footnotes *point at* (external references) — never summed, plus archival units added at their own grain. A packet generated from a plan draws its chapters from the targets; unresolvable citations route into the advance inquiry; deletion confirms (it cascades).
 
-## Related Documents: Similar wording (experimental)
-
-A new axis beside Semantic similarity, starting at weight 0: raise it and Related also matches documents whose **wording** reads alike — the anchor's most distinctive terms run as a live query over your indexed volumes, with chips naming the shared terms. The archival axis also reaches further back: dotless file numbers, record-group series, consular film segments, and central-file citations now route ~11,000 more documents to archival neighbors.
-
-## Classification overrides
-
-A document whose classification chip is wrong can be corrected from the Research rail's info popover: an **Override** control. Overrides sync, survive re-indexing, and replay onto fresh indexes.
-
-## Saved searches know when they're stale
-
-Each saved search shows **how many new results** have appeared since you last ran it — an exact count, not a guess. Running the search clears the badge on every device.
+**Feeding a plan, from wherever you're working**: Collections (a collection's add menu sends its documents) and Source Explorer (an archival collection's page or the Archival Neighbors sheet sends the documents sharing a unit — or the unit itself). Every add uses one picker with a blue **basis banner** saying which claim the seeds contribute and where the add came from — you approve exactly what gets written.
 
 ## Also
 
-Window discipline continued: Source Explorer joins the value-based windows, the sliced semantic map survives Handoff, and text scaling respects the system setting. The semantic map exports publication-quality figures. Source Explorer's previously-published sources signpost where the document was printed instead of dead-ending; pre-1910 consular and domestic-letters rolls resolve offline. Long titles wrap instead of clipping.
+**Similar wording** (Related, weight 0): raise it and matches share distinctive vocabulary, chips naming the terms; ~11k more documents gain archival neighbors. **Classification overrides**: fix a wrong chip from the rail's info popover; synced, survives re-indexing. **Saved searches** show an exact new-since-last-run count. Source Explorer joins the value-based windows; the sliced map survives Handoff; text scaling respects the system setting; previously-published sources signpost instead of dead-ending; long titles wrap.
 
 ## What to test
 
-1. Let the re-index finish, then: **Meaning search end-to-end** — an empty keyword search should offer the model; accept (229 MB), watch it search automatically after the download.
-2. Ask real research questions in Meaning mode. Do the top matches deserve opening? This is the verdict we most need.
-3. A match in a volume you don't have: **Download Volume** from the result, re-run, the row should gain its title.
-4. **Quit within a couple of minutes of a Meaning search** — this exact sequence crashed before the fix; it must not now.
-5. Filters + Meaning: a volume scope or date range should visibly narrow Meaning results, with the strip saying what was removed.
-6. **Archive Visits** (Window menu): create a plan, add targets from documents and by hand, export the packet — the two evidence channels stay labeled apart.
-7. **Similar wording**: raise the axis in Related on a distinctively-worded document; the chips should name shared terms.
-8. Override a wrong classification chip from the rail popover; re-index and confirm it survives.
-9. Saved searches: run one, add a volume that matches it, and check the badge counts the new results.
+1. Meaning end-to-end: empty keyword search → model offer → accept → it searches by itself.
+2. Ask real research questions in Meaning. Do the top matches deserve opening? **This is the verdict we most need.**
+3. Download Volume from a beyond-library match; re-run — it gains its title.
+4. **Quit within a couple of minutes of a Meaning search** — this exact sequence crashed before; it must not now.
+5. Filters + Meaning: a volume scope or date range narrows results, the strip saying what it removed.
+6. Archive Visits: build one plan from a collection, an Archival Neighbors sheet, and a hand-entered unit. Do the basis banners describe each add right? Channels labeled apart in the exported packet?
+7. Similar wording on a distinctively-worded document — do matches read alike?
+8. Saved searches: run one, add a matching volume, check the badge counts the new results.
 
-Include your macOS version, what you clicked, what you expected, what happened. Thanks for testing!
+Include macOS version, clicks, expected vs. actual. Thanks!
