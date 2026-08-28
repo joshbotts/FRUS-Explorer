@@ -150,10 +150,21 @@ public struct ReportBuilder {
         id lists with overlap counts, so this sitting also settles the prompt question.
         `CSUserQuery` (W-9 step 1) is not built yet and joins this report when it is.
 
-        **How to judge:** for each row mark `relevant` in `verdicts.csv` as 1 (would open it),
-        0 (noise), or leave blank (can't tell from the snippet). Known-item queries are judged
-        on whether the known document surfaces at all. The null control ("Space aliens") is
-        judged the other way: the honest route is the one that does NOT dress noise as an answer.
+        **How to judge — one test for every row:** *would you open this document while pursuing
+        this question?* Mark `relevant` in `verdicts.csv` as **1** (yes — it advances the
+        question, is the item itself, or is proximity you would genuinely follow: an April 1971
+        Dacca telegram IS a 1 for "blood telegram"), **0** (you can already tell it would waste
+        your time — including the confidently wrong), or **blank** (the row's evidence
+        underdetermines it; blank describes the report, not the document, and is excluded from
+        the denominator rather than counted against either route). Don't reserve 1 for a
+        known item — near-misses score by the same test, and the did-it-find-the-thing hit is
+        computed separately from the known documents' identities. The null control
+        ("Space aliens") has no 1 to give; what matters there is which route's junk would have
+        fooled a rushed reader. Try not to look at the score column while judging.
+
+        Snippets are **prose-first**: the body's opening echo of the header, source note,
+        dateline, and despatch serial is stripped, so the quoted text is evidence the row has
+        not already shown you.
 
         """
     }
@@ -216,7 +227,9 @@ public struct ReportBuilder {
             let snippet = fields?.snippet ?? ""
             out += "\(rank + 1). **\(title)**\(dateline)  \n"
             out += "   `\(result.key)` · score \(String(format: "%.4f", result.score))  \n"
-            if !snippet.isEmpty { out += "   > \(snippet)…\n" }
+            // The snippet carries its own ellipsis when it was cut; appending another here
+            // produced "……" on every truncated row of the first prose-first run.
+            if !snippet.isEmpty { out += "   > \(snippet)\n" }
             csvRows.append([
                 String(query.number), route, String(rank + 1),
                 result.volumeId, result.documentId,
