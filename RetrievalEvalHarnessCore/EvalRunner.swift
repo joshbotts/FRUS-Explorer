@@ -115,11 +115,17 @@ public enum EvalRunner {
                 variantRows[variant.name] = try semantic.search(embedding: embedding, limit: topK)
             }
 
+            // PRF (V-5 §4): the centroid of the lexical TOP-5 — the measured-best k — through
+            // the same funnel. The seeds are the ranking's own head, so no second query runs.
+            let seeds = Array(lexicalRows.prefix(5))
+            let prfRows = try semantic.prfSearch(seeds: seeds, limit: topK)
+
             report.add(query: query,
                        lexicalExpression: expression,
                        lexical: lexicalRows,
                        semanticByVariant: variantRows,
                        csUserQuery: csRoute?.rows[query.number],
+                       prf: prfRows, prfSeedCount: seeds.count,
                        display: { lexical.display(volumeId: $0, documentId: $1) })
         }
 
@@ -245,6 +251,8 @@ public struct ReportBuilder {
         lexical: [EvalResult],
         semanticByVariant: [String: [EvalResult]],
         csUserQuery: [EvalResult]? = nil,
+        prf: [EvalResult]? = nil,
+        prfSeedCount: Int? = nil,
         display: (String, String) -> (header: String, dateline: String?, snippet: String)?
     ) {
         let primary = semanticByVariant["query"] ?? []
@@ -259,6 +267,16 @@ public struct ReportBuilder {
             if let csUserQueryProvenance { section += " (\(csUserQueryProvenance))" }
             section += "\n\n"
             section += rows(csUserQuery, route: "csuserquery", query: query, display: display)
+        }
+        if let prf {
+            section += "\n### PRF — centroid of the lexical top-5, no encoder"
+            if let prfSeedCount { section += " (\(prfSeedCount) seed\(prfSeedCount == 1 ? "" : "s"))" }
+            section += "\n\n"
+            if prf.isEmpty, (prfSeedCount ?? 0) == 0 {
+                section += "*(no seeds — PRF amplifies lexical search and cannot rescue a query it returned nothing for)*\n"
+            } else {
+                section += rows(prf, route: "prf", query: query, display: display)
+            }
         }
 
         let lexicalSet = Set(lexical.map(\.key))
@@ -278,6 +296,7 @@ public struct ReportBuilder {
         }
         sections.append(section)
 
+        let prfSet = Set((prf ?? []).map(\.key))
         stats.append([
             "query": query.number,
             "text": query.text,
@@ -287,6 +306,11 @@ public struct ReportBuilder {
             "routeOverlap": lexicalSet.intersection(primarySet).count,
             "variantOverlapDocument": primarySet.intersection(documentVariant).count,
             "variantOverlapBare": primarySet.intersection(bareVariant).count,
+            "prfCount": prfSet.count,
+            "prfSeeds": prfSeedCount ?? 0,
+            // How much of the encoder-grade list PRF recovers — the real-instrument
+            // analogue of §4's "closes X% of the gap".
+            "prfOverlapSemantic": prfSet.intersection(primarySet).count,
         ])
     }
 

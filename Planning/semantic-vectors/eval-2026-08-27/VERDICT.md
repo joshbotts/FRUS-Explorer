@@ -137,3 +137,41 @@ be worth the ten minutes before treating this verdict as final. And 129 of the r
 rows are documents the sitting never judged — a supplementary sitting could refine its
 precision on the keyword register, but cannot change the zero-row facts that decide the
 verdict.
+
+---
+
+# Addendum, 2026-08-28 (2): PRF priced — a booster, not a bridge
+
+W-9 step 3 asked what pseudo-relevance feedback is worth against the real instrument,
+now that the kernel's external-query entry point exists. The harness runs it as the
+fourth route: the L2-normalised centroid of the lexical top-5 seeds' shipped document
+vectors (`SemanticQuantization.centroid` — the artifact's own definition, the vectors
+reconstructed from the int8 shards), through the exact funnel. §4's proxy predicted the
+direction; the instrument prices the thing itself:
+
+| | lexical | **PRF** | semantic (encoder-grade) |
+|---|---|---|---|
+| P over judged rows | 0.40 | **0.57** | 0.65 |
+| MRR floor | 0.418 | **0.361** | 0.771 |
+| research questions (judged) | 0.07 | **0.20** | 0.65 |
+| search-box (judged) | 0.79 | **0.96** | 0.77 |
+
+**The register split repeats, and it decides the question.** On search-box queries PRF is
+outstanding — 26 of 27 judged rows relevant, and it reaches documents the lexical list
+never contained (only 15 of its 250 slots overlap the semantic route; 167 of its 220
+rows are new against the whole sitting). On research questions it inherits its seeds'
+fate exactly as §4 warned: **three queries have zero seeds and are structurally empty**
+(Q4, Q11, Q18 — the lexical zero-result questions), and where the seeds are junk the
+centroid points at junk (judged P 0.20, on an admittedly thin 15-row overlap). Both
+known-items PRF could have reached, it missed.
+
+**The pricing verdict:** PRF is a **complement, not a substitute**. As "find more like
+these results" beside a keyword search that already worked, it is nearly free and
+measured excellent — a plausible small product feature on its own merits. As the bridge
+to natural-language queries — the register W-9 exists for — it cannot serve, for the
+structural reason §4 stated up front: it amplifies lexical search and cannot rescue it.
+With CSUserQuery also measured out, **the on-device encoder (V-5 step 4) is now the only
+remaining route to typed natural-language search**, and the three-way (now four-way)
+comparison is its measured case. Caveat: 167 of PRF's rows are unjudged, so its
+research-register number is low-confidence — but the zero-seed structure is not, and it
+alone bounds that register.

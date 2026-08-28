@@ -2,6 +2,9 @@
   "queries" : [
     {
       "lexicalCount" : 1,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 1,
       "query" : 1,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -12,6 +15,9 @@
     },
     {
       "lexicalCount" : 1,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 1,
       "query" : 2,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -22,6 +28,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 3,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -32,6 +41,9 @@
     },
     {
       "lexicalCount" : 0,
+      "prfCount" : 0,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 0,
       "query" : 4,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -42,6 +54,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 5,
       "routeOverlap" : 1,
       "semanticCount" : 10,
@@ -52,6 +67,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 6,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -62,6 +80,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 7,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -72,6 +93,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 8,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -82,6 +106,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 3,
+      "prfSeeds" : 5,
       "query" : 9,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -92,6 +119,9 @@
     },
     {
       "lexicalCount" : 7,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 10,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -102,6 +132,9 @@
     },
     {
       "lexicalCount" : 0,
+      "prfCount" : 0,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 0,
       "query" : 11,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -112,6 +145,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 12,
       "routeOverlap" : 2,
       "semanticCount" : 10,
@@ -122,6 +158,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 5,
+      "prfSeeds" : 5,
       "query" : 13,
       "routeOverlap" : 5,
       "semanticCount" : 10,
@@ -132,6 +171,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 14,
       "routeOverlap" : 1,
       "semanticCount" : 10,
@@ -142,6 +184,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 15,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -152,6 +197,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 3,
+      "prfSeeds" : 5,
       "query" : 16,
       "routeOverlap" : 1,
       "semanticCount" : 10,
@@ -162,6 +210,9 @@
     },
     {
       "lexicalCount" : 1,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 1,
       "query" : 17,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -172,6 +223,9 @@
     },
     {
       "lexicalCount" : 0,
+      "prfCount" : 0,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 0,
       "query" : 18,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -182,6 +236,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 19,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -192,6 +249,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 20,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -202,6 +262,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 2,
+      "prfSeeds" : 5,
       "query" : 21,
       "routeOverlap" : 3,
       "semanticCount" : 10,
@@ -212,6 +275,9 @@
     },
     {
       "lexicalCount" : 6,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 2,
+      "prfSeeds" : 5,
       "query" : 22,
       "routeOverlap" : 1,
       "semanticCount" : 10,
@@ -222,6 +288,9 @@
     },
     {
       "lexicalCount" : 9,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 23,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -232,6 +301,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 24,
       "routeOverlap" : 0,
       "semanticCount" : 10,
@@ -242,6 +314,9 @@
     },
     {
       "lexicalCount" : 10,
+      "prfCount" : 10,
+      "prfOverlapSemantic" : 0,
+      "prfSeeds" : 5,
       "query" : 25,
       "routeOverlap" : 0,
       "semanticCount" : 10,

@@ -192,6 +192,31 @@ struct RetrievalEvalHarnessTests {
         #expect(builder.verdictsCSV.contains("1,csuserquery,1,v,d,"))
     }
 
+    @Test("The PRF section states the seed count, and zero seeds states the structural reason")
+    func prfSectionShape() {
+        var builder = ReportBuilder(queryCount: 2, model: "m", pinnedSHA: "abc")
+        builder.add(
+            query: .init(number: 1, text: "seeded", tag: nil),
+            lexicalExpression: "\"seeded\"",
+            lexical: [EvalResult(volumeId: "v", documentId: "d1", score: -4)],
+            semanticByVariant: [:],
+            prf: [EvalResult(volumeId: "v", documentId: "d2", score: 0.7)],
+            prfSeedCount: 1,
+            display: { _, _ in ("H", nil, "s") })
+        builder.add(
+            query: .init(number: 2, text: "unseeded", tag: nil),
+            lexicalExpression: nil,
+            lexical: [],
+            semanticByVariant: [:],
+            prf: [], prfSeedCount: 0,
+            display: { _, _ in nil })
+        let markdown = builder.markdown
+        #expect(markdown.contains("### PRF — centroid of the lexical top-5, no encoder (1 seed)"))
+        #expect(markdown.contains("no seeds — PRF amplifies lexical search"),
+                "the zero-seed case is §4's structural limit and the report must say so, not show an unexplained blank")
+        #expect(builder.verdictsCSV.contains("1,prf,1,v,d2,"))
+    }
+
     @Test("An empty route section says so instead of vanishing")
     func emptyRouteIsStated() {
         var builder = ReportBuilder(queryCount: 1, model: "m", pinnedSHA: "abc123")
