@@ -88,13 +88,18 @@ public final class LexicalEvalRoute {
         return (expression, rows)
     }
 
-    /// Display fields for a result key: header, dateline, and a body snippet, from the same
-    /// `document_cache` rows the app renders from.
+    /// Display fields for a result key: header, dateline, and the **prose-first** snippet —
+    /// `EvalSnippet` strips the body's own front-matter echo (header, stored source note,
+    /// dateline, despatch serial) so the judge reads text the row has not already shown.
+    /// The body window is fetched at ~10× the snippet target so stripping has room to work.
     public func display(volumeId: String, documentId: String)
         -> (header: String, dateline: String?, snippet: String)? {
         let sql = """
-            SELECT header, dateline, substr(body_text, 1, 240)
-            FROM document_cache WHERE volume_id = ? AND document_id = ? LIMIT 1
+            SELECT dc.header, dc.dateline, substr(dc.body_text, 1, 3000), ds.raw_text
+            FROM document_cache dc
+            LEFT JOIN document_sources ds
+                ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
+            WHERE dc.volume_id = ? AND dc.document_id = ? LIMIT 1
             """
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else { return nil }
@@ -105,8 +110,11 @@ public final class LexicalEvalRoute {
         guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
         let header = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? documentId
         let dateline = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
-        let snippet = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
-        return (header, dateline, snippet.replacingOccurrences(of: "\n", with: " "))
+        let body = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
+        let note = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
+        let snippet = EvalSnippet.prose(
+            header: header, dateline: dateline, sourceNote: note, body: body)
+        return (header, dateline, snippet)
     }
 }
 
