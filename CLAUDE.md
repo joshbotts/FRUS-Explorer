@@ -258,7 +258,7 @@ Only step 3 is outside the repo, and only step 3 cannot be verified by a test.
 
 ## Planning & Specification
 
-- `Planning/FRUS-Explorer-Specification.md` — the ORIGINAL design spec, 1,222 lines and **unmodified since Session 01** (`63cc5c9b`). Consult it for original intent and for §18/§22's numbered decisions, which other docs still cite; it is not a record of what shipped. What shipped lives in `Planning/DEVELOPMENT-PLAN.md`, and what is planned lives in `Planning/Plan-Of-Record-2026-08-23.md`.
+- `Planning/FRUS-Explorer-Specification.md` — the ORIGINAL design spec, 1,222 lines and **unmodified since Session 01** (`63cc5c9b`). Consult it for original intent and for §18/§22's numbered decisions, which other docs still cite; it is not a record of what shipped. What shipped lives in `Planning/DEVELOPMENT-PLAN.md`, and what is planned lives in `Planning/Plan-Of-Record-2026-08-28.md`.
 - `Planning/DEVELOPMENT-PLAN.md` — session-by-session task log; update after each work session.
 - `Planning/` holds live plans, runbooks, and open designs only; completed or closed plans (including the per-task session files, e.g. `02-Manifest-Generator.md`) are archived in `Planning/Completed/` — see its README for the index.
 
