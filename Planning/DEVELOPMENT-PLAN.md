@@ -9700,3 +9700,24 @@ lessons entered the seam's doc: the macOS sandbox refuses repo paths (stage the 
 file in the app container; the simulator enforces nothing, which is how it slipped
 through), and debug builds put code in FRUS Explorer.debug.dylib (a strings check on the
 stub executable reads empty).
+
+## Session 2026-08-28D — W-9 step 3: PRF priced against the real instrument
+
+The harness gained the fourth route: the L2-normalised centroid of the lexical top-5
+seeds' shipped document vectors (SemanticQuantization.centroid — the artifact's own
+definition; seed vectors reconstructed from the int8 shards) through the exact funnel,
+via the kernel entry point session 3 built for precisely this. §4's proxy predicted the
+direction; the instrument priced the thing: P(judged) 0.57 / MRR floor 0.361 overall —
+between lexical and semantic — but the register split decides it. Search-box: 0.96
+judged precision (26/27), reaching documents the lexical list never contained (only
+15/250 slots overlap the semantic route; 167 of 220 rows new against the whole
+sitting) — a genuinely good "more like these results" affordance. Research questions:
+0.20 on a thin 15-row judged overlap, with THREE queries structurally empty (the
+lexical zero-result questions have no seeds) and both reachable known-items missed —
+§4's stated limit, measured: PRF amplifies lexical search and cannot rescue it.
+
+Verdict recorded in VERDICT.md addendum 2: PRF is a complement, not a substitute; with
+CSUserQuery also measured out, the on-device encoder (V-5 step 4) is the only remaining
+route to typed natural-language search, now carrying a measured four-way comparison as
+its case. The report's PRF sections state seed counts, and the zero-seed case prints
+the structural reason rather than an unexplained blank.

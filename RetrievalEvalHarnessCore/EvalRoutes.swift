@@ -176,6 +176,47 @@ public final class SemanticEvalRoute {
         }
     }
 
+    /// The PRF route (V-5 §4, the middle option): the L2-normalised centroid of the lexical
+    /// seeds' **already-shipped document vectors**, through the exact funnel — no encoder,
+    /// no embedding call, nothing the app does not already carry.
+    ///
+    /// The arithmetic is the artifact's own: `SemanticQuantization.centroid` is the same
+    /// function that built the 659 bundled volume/subseries centroids, and the seed vectors
+    /// are reconstructed from the int8 shards (`codes × scale`, the stored representation).
+    /// §4's measured configuration is the centroid of the **BM25 top-5**; the caller passes
+    /// the seeds so the report can also state how many there were.
+    ///
+    /// What PRF structurally cannot do is stated in §4 and shows here by construction: with
+    /// **zero seeds** (a query the lexical route returns nothing for) there is no centroid
+    /// and the answer is empty — PRF amplifies lexical search, it cannot rescue it.
+    public func prfSearch(seeds: [EvalResult], limit: Int) throws -> [EvalResult] {
+        var seedVectors: [[Float]] = []
+        for seed in seeds {
+            guard let row = index.row(documentID: seed.documentId, volumeID: seed.volumeId),
+                  let located = index.volumeSlot(containing: row),
+                  let shard = shard(for: index.volumes[located.slot].volumeID),
+                  let vector = shard.vector(at: located.localRow) else { continue }
+            seedVectors.append(vector.codes.map { Float($0) * vector.scale })
+        }
+        guard let centre = SemanticQuantization.centroid(
+            of: seedVectors, dims: index.provenance.shippingDims) else { return [] }
+        guard let int8 = SemanticQuantization.quantizeInt8(centre) else { return [] }
+        let bits = SemanticQuantization.packSignBits(centre)
+        let pool = max(limit, index.file.retrieval.rerankPool)
+        let candidates = SemanticRetrievalKernel.hammingCandidates(
+            queryBits: bits, in: corpus, limit: pool)
+        let neighbours = SemanticRetrievalKernel.rerank(candidates: candidates, limit: limit) { row in
+            guard let located = index.volumeSlot(containing: row) else { return nil }
+            guard let shard = shard(for: index.volumes[located.slot].volumeID) else { return nil }
+            return shard.cosine(row: located.localRow, query: int8.codes, queryScale: int8.scale)
+        }
+        return neighbours.compactMap { neighbour in
+            guard let document = index.document(at: neighbour.row) else { return nil }
+            return EvalResult(volumeId: document.volumeID, documentId: document.documentID,
+                              score: neighbour.score)
+        }
+    }
+
     /// Lazily maps a volume's shard; a missing or mismatched shard is recorded as absent, and
     /// its rows are dropped rather than scored — the kernel's own missing-evidence rule.
     private func shard(for volumeID: String) -> SemanticShard? {
