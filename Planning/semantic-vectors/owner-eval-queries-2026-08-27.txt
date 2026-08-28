@@ -1,0 +1,27 @@
+# The owner-written evaluation queries (W-9 step 2 / W-17 session 3), received 2026-08-27.
+# Verbatim as supplied; one query per line. Annotations after # are the harness's, not the owner's.
+How did U.S. diplomats engage with host governments about the Emancipation Proclamation?
+How did immigration affect U.S. diplomacy with China in the 1880s?
+How did U.S. diplomats think about Cuban independence before 1898?
+Which document related to the Anglo-Venezuelan boundary dispute expanded the Monroe Doctrine?   # known-item
+Mexican Revolution
+When did U.S. diplomats realize that Hitler was a serious danger to the United States?
+Intelligence collaboration
+How did the United States collaborate with Great Britain to conduct economic warfare during World War II?
+Foreign Service reform
+What convinced U.S. policymakers that the Soviet Union was no long an ally after World War II?
+At what point did U.S. decision makers determine that the Nationalists couldn't prevail in the Chinese Civil War?
+Deposing shah
+Diego Garcia base
+Space aliens   # null control
+U.S.S. Liberty sinking   # wrong-premise probe (the Liberty was attacked, not sunk)
+How did Kissinger manage the State Department?
+What joke did Mao make about Chinese women?   # known-item
+What medium- and long-term impacts did U.S. policymakers anticipate the Panama Canal Treaty having? What were they right and wrong about?
+Climate diplomacy
+Window of vulnerability
+washington naval conference ratios
+sussex pledge
+"trust but verify"
+persona non grata
+blood telegram   # known-item by nickname (Archer Blood's April 1971 Dacca dissent cable — the documents never call it that)

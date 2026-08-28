@@ -85,17 +85,69 @@ public enum SemanticRetrievalKernel {
         limit: Int,
         isEligible: ((Int) -> Bool)? = nil
     ) -> [Int] {
-        guard queryRow >= 0, queryRow < vectors.documentCount, limit > 0 else { return [] }
-        let quads = vectors.bytesPerRow / 8
-        guard quads > 0 else { return [] }
-        let dims = vectors.dims
-
-        return vectors.withSignBits { base, count in
+        guard queryRow >= 0, queryRow < vectors.documentCount else { return [] }
+        let words = vectors.withSignBits { base, _ -> [UInt64] in
+            let quads = vectors.bytesPerRow / 8
             var query = [UInt64](repeating: 0, count: quads)
             for q in 0..<quads {
                 query[q] = base.loadUnaligned(
                     fromByteOffset: queryRow * vectors.bytesPerRow + q * 8, as: UInt64.self)
             }
+            return query
+        }
+        return hammingCandidates(queryWords: words, in: vectors, limit: limit,
+                                 excludingRow: queryRow, isEligible: isEligible)
+    }
+
+    /// Hamming candidate generation for an **external** query — a vector that is not a corpus row
+    /// (W-17 session 3 / the V-5 assessment §6's shared prerequisite: a typed query, embedded and
+    /// sign-packed, entering the same funnel every recall number describes).
+    ///
+    /// - Parameters:
+    ///   - queryBits: The query's packed sign bits, **exactly as `SemanticQuantization.packSignBits`
+    ///     emits them** — MSB-first within each byte, `>= 0` packing as a set bit — i.e. the same
+    ///     byte layout a stored corpus row has. Must be `vectors.bytesPerRow` bytes.
+    ///   - vectors: The mapped corpus tier.
+    ///   - limit: How many candidates to return.
+    ///   - isEligible: Optional filter, applied while the histogram is built (see the row form).
+    /// - Returns: Candidate rows, nearest first, `limit` at most.
+    ///
+    /// Parity is pinned, not assumed: `SemanticVectorsKitTests` feeds a corpus row's own bytes
+    /// through this overload (excluding the row via `isEligible`) and requires the row form's exact
+    /// candidate list — the tie-breaks ARE the measurement, so a new entry point that merely
+    /// "should" agree would silently invalidate the artifact's stated recall.
+    public static func hammingCandidates(
+        queryBits: [UInt8],
+        in vectors: SemanticCorpusVectors,
+        limit: Int,
+        isEligible: ((Int) -> Bool)? = nil
+    ) -> [Int] {
+        guard queryBits.count == vectors.bytesPerRow else { return [] }
+        let quads = vectors.bytesPerRow / 8
+        let words: [UInt64] = queryBits.withUnsafeBytes { raw in
+            (0..<quads).map { raw.loadUnaligned(fromByteOffset: $0 * 8, as: UInt64.self) }
+        }
+        return hammingCandidates(queryWords: words, in: vectors, limit: limit,
+                                 excludingRow: nil, isEligible: isEligible)
+    }
+
+    /// The shared scan both entry points run. Extracted verbatim from the row form so the shipped
+    /// path stays byte-identical (its 600/600 exact-order gate still applies); the row form differs
+    /// only in loading its words from the row and excluding itself.
+    private static func hammingCandidates(
+        queryWords: [UInt64],
+        in vectors: SemanticCorpusVectors,
+        limit: Int,
+        excludingRow: Int?,
+        isEligible: ((Int) -> Bool)?
+    ) -> [Int] {
+        guard limit > 0 else { return [] }
+        let quads = vectors.bytesPerRow / 8
+        guard quads > 0, queryWords.count == quads else { return [] }
+        let dims = vectors.dims
+
+        return vectors.withSignBits { base, count in
+            let query = queryWords
 
             // `dims + 1` marks a row that is not a candidate at all — the anchor, or one the filter
             // rejected — so the placement pass needs no second predicate.
@@ -104,7 +156,7 @@ public enum SemanticRetrievalKernel {
             var histogram = [Int](repeating: 0, count: dims + 2)
             distances.withUnsafeMutableBufferPointer { distanceBuffer in
                 for row in 0..<count {
-                    if row == queryRow { continue }
+                    if row == excludingRow { continue }
                     if let isEligible, !isEligible(row) { continue }
                     let rowBase = row * vectors.bytesPerRow
                     var distance = 0
