@@ -49,7 +49,7 @@ enum PublishedSourceLinkTable {
     /// address. One date for the whole table, per D12: a partial pass stamps nothing.
     static let confirmed: Date? = DateComponents(
         calendar: .init(identifier: .gregorian), timeZone: TimeZone(secondsFromGMT: 0),
-        year: 2026, month: 8, day: 27).date
+        year: 2026, month: 8, day: 28).date
 
     /// The verified destination for one publication family.
     static func link(for publication: PublishedPublication) -> RepositoryLink {

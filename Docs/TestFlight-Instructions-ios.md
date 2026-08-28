@@ -1,39 +1,54 @@
-# What's New Since Build 42 (iOS)
+# What's New Since Build 43 (iOS)
 
-The headlines: Browse rebuilt around research axes, detected subjects through search and reading, and an archive-visit packet from your documents.
+The headline: **search by meaning** — ask the corpus a question in your own words, answered by a language model that runs entirely on your device. Also new: tracked **archive visit plans**, a **Similar wording** axis in Related Documents, **classification overrides**, saved-search **freshness badges**, and FRUS document text in the system's own Spotlight search.
 
-**First launch re-indexes every downloaded volume, and it is not quick** — six index changes since build 42 force a full clean re-parse. The app stays usable meanwhile, but Search, dates and person analytics are incomplete until it finishes.
+**Two one-time costs on first launch.** A full re-index of every downloaded volume (one index change since build 43 — footnote citations now inherit through bare *Ibid.*s, enriching the archival channel by ~1,200 references); and a background re-donation of ~317,000 items to Spotlight. The app stays usable meanwhile, but Search and the archival surfaces are incomplete until the re-index finishes.
 
-## Browse, rebuilt around axes
+## Search by meaning (experimental)
 
-Browse now opens on doors, not one list: **All Volumes**, one searchable catalog arranged by title, print year, era, or length; **Administrations** (Lincoln on), **Editors**, and **Subjects**, each drilling to its volumes; **Archives**, the series by its printed source notes, in two side-by-side lenses; and **Clusters**, the corpus's 179 computed language groups, the semantic map's regions as a list. Beside them, your sets: **Working Corpora** and **My Scopes** — scopes are created and edited right here, and any volume list saves as one.
+Search has two engines now. **Keywords** is everything you know. **Meaning** — the new segment under the search field — embeds your question on-device and ranks the whole series by what it means, so *"Why did the Marshall Plan happen?"* finds the 1947 policy papers even though no document contains those words.
 
-## Subjects, wired through
+- **The model is a one-time, optional 229 MB download** (Google's EmbeddingGemma, running locally — nothing you search ever leaves the device). You'll be offered it the first time a keyword search comes up empty, or when you switch to Meaning; a consent sheet states the terms, and Settings ▸ Volumes & Storage ▸ Natural-Language Search manages or removes it.
+- **Results reach beyond your library.** Matches in volumes you haven't downloaded appear under their volume's title with a **Download Volume** button — that's the point: discovery across all 552 volumes. Each match carries a "Semantic match · N%" score.
+- **The strip above the results tells you the terms**: ranked by meaning, filters intersected (and how many matches they removed), what couldn't be scored yet. Scoring **warms up over your first few searches** as small per-volume match files download in the background — search again a moment later and the caption's number falls.
+- **Where keywords stay better**: exact phrases and terms of art (*"persona non grata"*). Meaning search dissolves the phrase; that's why keyword search stays the default and the fallback only offers Meaning when keywords found nothing.
+- Keyword-only readings (concordance, collocates, facets) close in Meaning mode rather than describing a different query; Saved Searches always run as keyword searches.
 
-Search results break down by detected topic: a **Subjects** facet shows the topic areas in your matches, and a row narrows the search. The **Topic Index** (Browse, beside People) lists all 491 topics with complete membership, series and your-library figures labeled apart. A document's own topics show in the Research rail; Related's chips name the shared topics, and **Adjust weights** gains a real Reset. Topics are detected from the text, not editorial headings — the screens say so, and some are wrong.
+## Archive visit plans
 
-## Plan an archive visit
+The trip packet grows a memory. **Research ▸ Archive Visits** keeps persistent, synced visit plans: each plan holds **research targets** drawn from your documents' source notes *and* from their footnotes' archival references (the two channels are labeled apart and never summed), plus targets you add by hand at the archival-unit grain. The packet chapters draw on the plan, unresolvable citations route into the advance inquiry, and deleting a plan asks first — it cascades.
 
-Project Home ▸ **Plan a Visit** (or a collection's add menu ▸ **Plan an Archive Visit…**) turns documents into a seven-chapter packet: NARA's lead times, a draft inquiry per facility, a pull worksheet with the RG / entry / NAID lines staff ask you to quote, mandatory substitutes, restriction flags, citation forms, a visit-day card. An unresolvable citation is quoted verbatim under help-me-locate, never dropped; with no visit date, deadlines read relative to arrival.
+## Related Documents: Similar wording (experimental)
 
-## The archives, more visible
+A new axis beside Semantic similarity, starting at weight 0: raise it and Related also matches documents whose **wording** reads alike — the anchor's most distinctive terms run as a live query over your indexed volumes. Chips name the shared terms. Separately, the archival axis reaches further back: dotless file numbers, record-group series, consular film segments, and central-file citations now route ~11,000 more documents to archival neighbors.
 
-The cross-reference graph's teal nodes now include the central files cited by decimal number — the usual practice before 1946 — beside lot files and library collections, and Archival Analytics reads the same channel. Source Explorer shows pre-1906 despatch serials for browsing the rolls. About 500 more source notes now parse.
+## Classification overrides
+
+A document whose classification chip is wrong (OCR damage, a marking the parser misread) can be corrected: the Research rail's info popover gains an **Override** control. Overrides sync, survive re-indexing, and replay onto fresh indexes.
+
+## Saved searches know when they're stale
+
+Each saved search shows **how many new results** have appeared since you last ran it — an exact count against the live index, not a guess. Running the search clears the badge everywhere via sync.
+
+## Spotlight
+
+FRUS document text is donated to the system Spotlight index — search from the home screen and documents open in the app.
 
 ## Also
 
-Every analytics chart now plays as a VoiceOver **Audio Graph**. Collection exports repaired: DOCX keeps the word cloud, PDF its archival rows, the count is right. Footnote labels are the volume's own, and a cross-reference naming a footnote lands on it. Seven dead presidential-library finding aids relinked. Corpus word clouds build on demand — allow minutes. Fixed: the iPad resize crash, a volume scope that saved into nothing, stuck keyboards (every field gains Done, and the banner no longer eats it).
+The Mac quit crash after a Meaning search is fixed (caught in this cycle's testing). Source Explorer's previously-published sources now signpost where the document was printed instead of dead-ending; pre-1910 consular and domestic-letters rolls resolve offline. The semantic map exports publication-quality figures. Two iPad layout fixes from the probe pass; long titles wrap instead of clipping.
 
 ## What to test
 
-1. Let the re-index finish — roughly how long, and how many volumes?
-2. Browse each new axis — do the drill-downs land right? Save an administration's volumes as a scope.
-3. Clusters: skim several, open a few. Coherent research leads, or arbitrary piles? This is the leads-or-noise verdict we most need.
-4. In a cluster: **See on the semantic map** should land zoomed on the region; **Save as Working Corpus** on a big one should say it kept 7,500.
-5. Search something broad ▸ Facets ▸ Subjects: narrow by a row; **Browse all topics** opens the Topic Index.
-6. Trip packet over documents you know: is anything it asserts wrong? The inquiry pastes cleanly into Mail; Share as PDF prints the same text.
-7. No visit date: deadlines relative; an unplaceable citation lands under "help me locate", never dropped.
-8. The graph on a 1930s–40s document: teal central-file nodes, labeled by bare number?
-9. VoiceOver on any analytics chart: the Audio Graph should play.
+1. Let the re-index finish, then: **Meaning search end-to-end** — a keyword search that finds nothing should offer the model; accept on Wi-Fi (229 MB), watch it search automatically after the download.
+2. Ask real research questions in Meaning mode — the kind you'd ask a colleague, not keywords. Do the top matches deserve to be opened? This is the verdict we most need.
+3. A match in a volume you don't have: **Download Volume** from the result, then re-run — the row should gain its title.
+4. Search twice in a row early on: does the "could not be scored yet" number fall as match files land?
+5. Try an exact phrase in Meaning mode (*"trust but verify"*) — keywords should beat it; tell us if the ranking surprises you either way.
+6. Filters + Meaning: set a volume scope or date range, search by meaning — the strip should say what the filters removed.
+7. **Archive Visits** (Research tab): create a plan from documents you know, add a hand-entered target, check the two evidence channels stay labeled apart in the packet.
+8. **Similar wording**: raise the axis in Related's Adjust weights on a document with distinctive vocabulary — do the matches read alike? The chips should name shared terms.
+9. Override a wrong classification chip from the rail's info popover; re-index a volume (Settings) and confirm the override survives.
+10. Spotlight from the home screen: search a phrase you know is in a downloaded document.
 
 Include device + iOS version, what you tapped, what you expected, what happened. Thanks for testing!

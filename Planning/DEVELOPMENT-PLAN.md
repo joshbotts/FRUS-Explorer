@@ -10069,3 +10069,46 @@ the rewiring changed no behavior. Full iOS suite 4,192/559 green; Mac build gree
 
 **Owner residue**: one attended Mac run — Meaning search, then quit inside three minutes —
 confirms the fix in situ; the probe is the mechanism proof.
+
+## Release 2026-08-28 — TestFlight build 44 (v0.2), both platforms — PREPARED
+
+**The bump is in this branch** (`CURRENT_PROJECT_VERSION` 43 → 44, edited directly in
+`project.yml` ×3 and `project.pbxproj` ×9, no xcodegen — the bump rule). Tag **after** this
+PR merges, at the merge commit, so the tag contains the bump:
+`git tag -a build-44 <merge-sha> -m "<the four facts>" && git push origin build-44` — the
+four facts below, per #949's pattern.
+
+**49 commits since `build-43`.** The headline is **search by meaning** (V-5, #1119–#1129):
+the on-device query encoder — llama.cpp vendored at the spiked commit, EmbeddingGemma as a
+consent-gated optional 229 MB download, the Gemma licence surfaces in About/Settings/NOTICE —
+behind two surfaces: the zero-result fallback and the full Keywords | Meaning mode, both
+corpus-wide with #262 undownloaded rows, disclosure strips, and the drop-and-queue shard
+warm-up; the measured case is the owner-judged 25-query sitting (P 0.65 / MRR 0.77) and the
+encoder's parity fixture (min cosine 0.99986). Then **archive visit plans** (#1088–#1096,
+#1104): persistent synced plans, research targets from both evidence channels labeled apart,
+unit-grain entries, the Mac window's UI pass. Then **W-4 classification overrides** (#1094,
+#1097 — the rail's info popover control, replay-on-reindex) and **W-5 saved-search freshness**
+(#1094 — exact new-since-last-run counts). Also in the range: W-17's Similar-wording axis +
+the archival routing arms (~11k documents gain archival neighbors), W-9 step 1's Spotlight
+`textContent` donation (system-wide document-text search; ranked CSUserQuery measured out as
+a route), the W-2 window/scaling/iPad passes, W-8's offline consular tail, W-11's
+previously-published signposts, W-3's map figure export, the Mac quit-crash fix (#1129), and
+the Gemma compliance file set (NOTICE, runbook, the adversarially-reviewed ASC EULA text).
+
+**A full re-index is required on first launch** — `currentDateIndexVersion` 46 → 47, ONE
+index change (W-1b's bare-`Ibid.` inheritance, +1,169 external-citation references).
+`currentPersonRollupVersion` unchanged. **Spotlight re-donates ~317k items** in the
+background (`currentSpotlightSchemaVersion` 2). Both tester-notes files lead with both costs.
+
+**No CloudKit deploy needed.** `identifiersAwaitingDeploy` is empty; Production is deployed
+through build 43 (the eighth promotion, 2026-08-26, 41 identifiers). The entire V-5 wave
+deliberately added no `@Model` — model download state is filesystem-truthed, the search mode
+is per-session, the history record reuses existing fields.
+
+**Release-checklist state**: `Scripts/check_repository_links.py --stamp` run at preparation
+(result recorded in the PR); tester notes rewritten against build 43 in
+`Docs/TestFlight-Instructions-ios.md` and `-mac.md`. **Owner-only steps, unchanged in kind**:
+the VoiceOver pass, the App Store Connect archive-and-upload, and — new this cycle, for the
+App Store submission specifically, NOT TestFlight — the custom EULA
+(`Planning/semantic-vectors/App-Store-Custom-EULA.md`: fill four placeholders, paste into
+App Information ▸ License Agreement) before this build goes to App Store review.
