@@ -523,6 +523,24 @@ The point is reproducibility. A query's results drift as you index more volumes 
 
 Whenever a search returns results, the app offers **Visualize in Corpus Analytics**: your terms and any date filter are handed to Analytics pre-seeded, so you can chart the term's distribution across the corpus (Section 15.1). The relationship runs both ways — tapping a point on an Analytics chart offers **View in Search**, opening the Search tab filtered to that term and period so you can read the documents behind the data point. Moving fluidly between the chart and the documents is the intended rhythm.
 
+### 7.12 Search by Meaning (Experimental)
+
+Keyword search has a structural blind spot: a question phrased in your words — *"Why did the Marshall Plan happen?"* — matches nothing, because the documents never use those words together. When a search returns **no results**, the app offers its experimental answer: **Search by meaning**, which ranks documents by what your question *means*, using a language model that runs entirely on this device.
+
+The first time, the app offers a one-time **229 MB model download** (Google's EmbeddingGemma; the offer sheet links the Gemma Terms of Use it is provided under, and a copy of the terms lives in About ▸ Legal). Downloading is a choice, never automatic — decline and keyword search is unchanged. Once downloaded, semantic matches appear automatically beneath any zero-result search.
+
+What the results are, honestly:
+
+- **Ranked by meaning across the whole series** — including volumes you have not downloaded. A match in a volume you lack shows the volume's title and a **Download Volume** button; its own title appears once you download it.
+- **Your filters are not applied** — the semantic route searches the whole corpus, and the caption says so whenever filters were active.
+- **Match files warm up over a few searches.** Scoring needs a small per-volume file; volumes without one are counted in the caption ("*N possible matches could not be scored yet*") while their files download in the background. Searching again a moment later usually finds more.
+- **Each match carries a score** ("Semantic match · 57%") on the same scale as the Related Documents semantic axis — a measure of closeness in meaning, not a probability.
+- **Experimental**, like every semantic surface: quality on nineteenth-century material is not yet established, and phrases whose exact wording is the point ("persona non grata") are better served by keyword search — which is why this only appears when keywords found nothing.
+
+Manage the model under **Settings → Volumes & Storage → Natural-Language Search** — the same screen shows its size and can remove it any time.
+
+[SCREENSHOT: a zero-result question with the "Search by meaning" offer card; the same search after the model downloaded, showing ranked semantic matches with a Download Volume button on an undownloaded hit.]
+
 ---
 
 ## 8. Reading Documents

@@ -2588,6 +2588,31 @@ the container is a finding or a filing-cabinet coincidence.*
 
 ---
 
+### 7.12 Semantic search fallback (V-5 s3)
+
+> **Compliance note:** the offer card leads to the consent sheet (§1.4c), whose sentence is the
+> Gemma flow-down. The offer copy itself is editable; the consent sheet's is not a copy edit.
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: offerCard | lines: 223-225 | key: search.semantic.offer.body -->
+
+Keyword search found nothing, but the app can also search by what a question means — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
+
+<!-- END SOURCE: search.semantic.offer.body -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 329-331 | key: search.semantic.results.caption -->
+
+Ranked by meaning, not keywords, across the whole series — your exact words may not appear.
+
+<!-- END SOURCE: search.semantic.results.caption -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: emptyCard | lines: 282-284 | key: search.semantic.empty.warming %lld -->
+
+Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more.
+
+<!-- END SOURCE: search.semantic.empty.warming %lld -->
+
+---
+
 ## 8. Repository README
 
 *The public-facing description of the project at `README.md` — the first thing anyone sees on the

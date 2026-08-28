@@ -1319,17 +1319,29 @@ struct SearchView: View {
         } else if vm.hasSearched && vm.results.isEmpty {
             // Q-2: "Try different keywords" is indistinguishable from a typo, a stemming
             // surprise, and a genuine historical absence. Name the conjunct that is empty.
-            QueryZeroResultView(
-                inspection: inspectorController.inspection
-                    ?? QueryInspection(expression: nil, operands: [],
-                                       indexedVolumeCount: appState.indexedVolumeIds.count,
-                                       isFilterOnly: false),
-                emptyConjuncts: inspectorController.emptyConjuncts)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .task(id: vm.executedSearchVersion) {
-                    await inspectorController.decomposeZeroResult(
-                        parameters: vm.searchParameters, service: appState.searchService)
+            // V-5 s3 mounts the semantic fallback BENEATH the decomposition, not instead of
+            // it: the conjunct diagnosis explains the zero, the fallback offers the route the
+            // sitting measured as the only one that answers questions.
+            ScrollView {
+                VStack(spacing: 0) {
+                    QueryZeroResultView(
+                        inspection: inspectorController.inspection
+                            ?? QueryInspection(expression: nil, operands: [],
+                                               indexedVolumeCount: appState.indexedVolumeIds.count,
+                                               isFilterOnly: false),
+                        emptyConjuncts: inspectorController.emptyConjuncts)
+                        .frame(maxWidth: .infinity)
+                    SemanticSearchFallbackView(
+                        query: vm.submittedSearchParameters.keywords ?? "",
+                        searchVersion: vm.executedSearchVersion,
+                        hasActiveFilters: vm.hasActiveFilters,
+                        openEntry: { openResult($0) })
                 }
+            }
+            .task(id: vm.executedSearchVersion) {
+                await inspectorController.decomposeZeroResult(
+                    parameters: vm.searchParameters, service: appState.searchService)
+            }
         } else if !vm.results.isEmpty {
             resultCountHeader
             checklistHiddenBanner

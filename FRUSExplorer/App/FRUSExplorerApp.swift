@@ -1601,6 +1601,26 @@ struct FRUSExplorerApp: App {
                                 + "generation")
                         }
                         #endif
+                        // The typed-query searcher (V-5 s3), built once everything it composes
+                        // exists. The fetch-queue closure hops to the main actor because
+                        // `fetchSemanticShardIfNeeded` owns the consent reasoning there.
+                        if let semanticCorpus = BundledSemanticVectors.corpusVectors {
+                            let searcherStore = appState.semanticShardStore
+                            appState.semanticQuerySearcher = searcherStore.map { shardStore in
+                                SemanticQuerySearcher(
+                                    index: semanticIndex,
+                                    corpus: semanticCorpus,
+                                    modelStore: modelStore,
+                                    shardStore: shardStore,
+                                    queueShardFetch: { [weak appState] volumeID in
+                                        Task { @MainActor in
+                                            appState?.fetchSemanticShardIfNeeded(
+                                                for: volumeID,
+                                                reason: .readerAskedForSemantics)
+                                        }
+                                    })
+                            }
+                        }
                     }
                     // Before anything can edit a synced model. Cheap: one notification observer.
                     modificationStamper.start(observing: modelContainer.mainContext)

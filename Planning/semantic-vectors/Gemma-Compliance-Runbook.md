@@ -30,6 +30,13 @@ The exact sentence, verbatim (already in `NOTICE`): *"Gemma is provided under an
 to the Gemma Terms of Use found at ai.google.dev/gemma/terms"*. Both URLs verified live
 2026-08-28 (`/gemma/terms`, `/gemma/prohibited_use_policy`).
 
+**Status after s3 (2026-08-28): every in-app and in-repo obligation is DONE**, and the
+feature the surfaces describe now exists (the zero-result semantic fallback). The one
+open item in this document is §5 — the App Store Connect custom EULA, owner-only, before
+the build carrying the encoder is submitted for review. The zero-result surface also
+reaches the SAME consent sheet the Settings section uses, so there is no download path
+around the flow-down.
+
 ## 2. Ordering rules — what must precede what
 
 1. **Artifact-repo notices go live BEFORE the GGUF is uploaded anywhere.** Uploading the
