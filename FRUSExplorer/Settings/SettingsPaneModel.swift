@@ -223,7 +223,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
                                        "delete", "start over", "clear", "reset", "recovery"]
         case .about:           return ["version", "build", "license", "credits", "acknowledgements",
                                        "help", "guide", "education", "how to", "learn", "legal",
-                                       "notices", "disclaimer"]
+                                       "notices", "disclaimer", "model", "gemma", "embeddinggemma",
+                                       "terms of use", "on-device model", "llama",
+                                       "natural-language search"]
         }
     }
 

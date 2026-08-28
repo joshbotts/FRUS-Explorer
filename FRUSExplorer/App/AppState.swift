@@ -729,6 +729,135 @@ final class AppState {
         }
     }
 
+    // MARK: - Semantic Query-Encoder Model (V-5 s2)
+
+    /// The store holding the optional 229 MB query-encoder model, once the bundled index has
+    /// loaded — the pin it verifies against is the artifact's `modelFileSHA256`, so it cannot
+    /// exist before `BundledSemanticVectors.prepare()` succeeds. `nil` means the semantic stack
+    /// did not boot, never that the model is absent (the store answers that itself).
+    var semanticModelStore: SemanticModelStore?
+
+    /// Fetches the model file from the app-owned release. `nil` under the same conditions as
+    /// ``semanticModelStore``.
+    var semanticModelFetcher: SemanticModelFetcher?
+
+    /// Progress of the model download, or `nil` when none is running.
+    ///
+    /// **Bytes, not a count** — the opposite of ``semanticShardDownload``, for the reason the
+    /// fetcher's header gives: one 229 MB file is exactly the size class where a silent transfer
+    /// reads as a hang, and a download delegate makes the bytes observable.
+    var semanticModelDownload: SemanticModelDownloadProgress?
+
+    /// A model download in flight.
+    struct SemanticModelDownloadProgress: Equatable, Sendable {
+        /// Bytes received so far.
+        var bytesReceived: Int64
+        /// Bytes the server said to expect (`SemanticModelStore.publishedBytes` until it answers).
+        var bytesExpected: Int64
+
+        /// Fraction done, for a determinate progress view.
+        var fraction: Double {
+            bytesExpected > 0 ? Double(bytesReceived) / Double(bytesExpected) : 0
+        }
+    }
+
+    /// What the storage screen shows about the encoder model — assembled here for the same
+    /// twin-hubs reason as ``semanticStorageReport()``.
+    struct SemanticModelStatus: Equatable, Sendable {
+        /// Whether the semantic stack booted at all; when false the screen says unavailable,
+        /// never "not downloaded".
+        var isAvailable: Bool
+        /// Whether a verified copy is on disk.
+        var isPresent: Bool
+        /// Bytes the stored file occupies (0 when absent).
+        var bytesOnDisk: Int
+        /// The last fetch failure, described for the screen; `nil` when none is remembered.
+        var failure: String?
+
+        /// The stack-not-booted state.
+        static let unavailable = SemanticModelStatus(
+            isAvailable: false, isPresent: false, bytesOnDisk: 0, failure: nil)
+    }
+
+    /// Reads the model's current state for the storage screen.
+    func semanticModelStatus() async -> SemanticModelStatus {
+        guard let store = semanticModelStore else { return .unavailable }
+        let failure: SemanticModelError? = if let fetcher = semanticModelFetcher {
+            await fetcher.lastFailure
+        } else {
+            nil
+        }
+        return SemanticModelStatus(
+            isAvailable: true,
+            isPresent: await store.isModelPresent(),
+            bytesOnDisk: await store.bytesOnDisk(),
+            failure: failure.map { Self.describeModelError($0) })
+    }
+
+    /// Downloads the encoder model, driving ``semanticModelDownload`` as bytes arrive.
+    ///
+    /// The consent surface is the caller's job (the storage screen's sheet carries the Gemma
+    /// notice per the compliance runbook §4); this method owns only the transfer and the progress
+    /// mirror. Failures are remembered by the fetcher and reach the screen through
+    /// ``semanticModelStatus()`` — not thrown past the button that started them.
+    func downloadSemanticModel() async {
+        // Adoption happens inside the fetcher, against the store it was built with — only the
+        // fetcher is needed here, and it exists only when the store does.
+        guard let fetcher = semanticModelFetcher else { return }
+        guard semanticModelDownload == nil else { return }
+        await fetcher.clearFailure()
+        semanticModelDownload = SemanticModelDownloadProgress(
+            bytesReceived: 0, bytesExpected: Int64(SemanticModelStore.publishedBytes))
+        do {
+            try await fetcher.fetchModel { [weak self] received, expected in
+                Task { @MainActor in
+                    guard let self, self.semanticModelDownload != nil else { return }
+                    self.semanticModelDownload = SemanticModelDownloadProgress(
+                        bytesReceived: received,
+                        bytesExpected: expected > 0
+                            ? expected : Int64(SemanticModelStore.publishedBytes))
+                }
+            }
+        } catch {
+            #if DEBUG
+            print("[AppState] semantic model fetch failed: \(error)")
+            #endif
+        }
+        semanticModelDownload = nil
+    }
+
+    /// Cancels a running model download.
+    func cancelSemanticModelDownload() async {
+        await semanticModelFetcher?.cancel()
+    }
+
+    /// Removes the stored model file.
+    func removeSemanticModel() async {
+        await semanticModelStore?.removeModel()
+    }
+
+    /// One place the model-fetch failure vocabulary lives, so both hubs say the same thing.
+    static func describeModelError(_ error: SemanticModelError) -> String {
+        switch error {
+        case .wrongLength(let expected, let found):
+            String(format: String(
+                localized: "settings.model.error.length %lld %lld",
+                defaultValue: "The download was incomplete (%lld of %lld bytes). Try again."),
+                Int64(found), Int64(expected))
+        case .wrongDigest:
+            String(localized: "settings.model.error.digest",
+                   defaultValue: "The downloaded file failed verification and was discarded.")
+        case .httpStatus(let status):
+            String(format: String(
+                localized: "settings.model.error.http %lld",
+                defaultValue: "The server refused the download (HTTP %lld)."),
+                Int64(status))
+        case .transport:
+            String(localized: "settings.model.error.transport",
+                   defaultValue: "The download could not be completed. Check the connection and try again.")
+        }
+    }
+
     // MARK: - Download Queue
 
     /// Volume IDs currently queued for download (active + pending).

@@ -159,6 +159,8 @@ struct VolumesStorageHubView: View {
             // #900: one shared view, mounted by BOTH hubs. These two files are hand-maintained
             // twins, so a section written twice is two places for the same four numbers to drift.
             SemanticStorageSection()
+            // V-5 s2: the query-encoder model section — same shared-view rule as above.
+            SemanticModelSection()
             advancedSection
         }
         .navigationTitle(String(localized: "settings.hub.title", defaultValue: "Volumes & Storage"))

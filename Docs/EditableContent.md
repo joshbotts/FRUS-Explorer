@@ -153,6 +153,51 @@ TEI rendering approaches informed by the TEI Publisher project (teipublisher.com
 
 ---
 
+### 1.4a Open Source — llama.cpp Notice
+
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: openSourceSection | lines: 582–583 | key: about.openSource.llamaCpp.body -->
+
+The natural-language search feature runs its on-device model through llama.cpp (github.com/ggml-org/llama.cpp), © 2023–2026 The ggml authors, licensed under the MIT License.
+
+<!-- END SOURCE: about.openSource.llamaCpp.body -->
+
+---
+
+### 1.4b On-Device Model — EmbeddingGemma Notice
+
+> **Compliance note:** this paragraph and the consent sheet below are licence surfaces (the Gemma
+> Terms use-restriction flow-down — `Planning/semantic-vectors/Gemma-Compliance-Runbook.md` §4).
+> An edit here is a compliance change, not a copy edit: the notice sentence
+> ("Gemma is provided under and subject to…") is required verbatim.
+
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: onDeviceModelSection | lines: 613–614 | key: about.modelLicense.gemma.body -->
+
+When you enable natural-language search, the app downloads Google's EmbeddingGemma model (229 MB) and runs it on this device to convert your search queries into vectors. The model is used unmodified. Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms, including its Prohibited Use Policy.
+
+<!-- END SOURCE: about.modelLicense.gemma.body -->
+
+---
+
+### 1.4c Search Model — Consent Sheet
+
+<!-- SOURCE: FRUSExplorer/Settings/SemanticModelSection.swift | property: SemanticModelConsentSheet | lines: 216–217 | key: settings.model.consent.body -->
+
+This optional 229 MB download is Google's EmbeddingGemma model, provided under and subject to the Gemma Terms of Use, including its Prohibited Use Policy. By downloading it you agree to use it consistently with those terms.
+
+<!-- END SOURCE: settings.model.consent.body -->
+
+---
+
+### 1.4d Search Model — Storage Section Footer
+
+<!-- SOURCE: FRUSExplorer/Settings/SemanticModelSection.swift | property: SemanticModelSection | lines: 67–68 | key: settings.model.footer -->
+
+Lets the app understand searches phrased as questions, using a language model that runs entirely on this device — Google's EmbeddingGemma, an optional 229 MB download. The feature is experimental. The model is provided under the Gemma Terms of Use; see About ▸ Legal for the terms.
+
+<!-- END SOURCE: settings.model.footer -->
+
+---
+
 ### 1.5 NARA Disclaimer
 
 <!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: naraDisclaimerSection | lines: 571–577 | key: about.nara.disclaimer -->

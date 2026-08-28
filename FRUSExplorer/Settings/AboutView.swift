@@ -29,6 +29,13 @@ enum AboutLinks {
     static let iosManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md"
     static let macManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md"
 
+    // The Gemma licence surfaces (V-5 s2, compliance runbook §4). Both URLs are load-bearing:
+    // the notice sentence names the first, and the Prohibited Use Policy is incorporated into
+    // the terms by reference through the second.
+    static let gemmaTerms        = "https://ai.google.dev/gemma/terms"
+    static let gemmaProhibitedUse = "https://ai.google.dev/gemma/prohibited_use_policy"
+    static let llamaCpp          = "https://github.com/ggml-org/llama.cpp"
+
     static let allURLStrings: [String] = [
         officeOfHistorian,
         historyAtState,
@@ -38,6 +45,9 @@ enum AboutLinks {
         frusExplorerRepo,
         iosManual,
         macManual,
+        gemmaTerms,
+        gemmaProhibitedUse,
+        llamaCpp,
     ]
 }
 
@@ -479,9 +489,14 @@ struct FullNoticesView: View {
     /// Links open in the in-app browser, as they did inside About.
     @State private var inAppBrowserURL: URL?
 
+    /// Presents the bundled Gemma Terms on macOS, where this view has no NavigationStack to push
+    /// into (it arrives as a sheet from both hosts) — see `onDeviceModelSection`.
+    @State private var showingGemmaTerms = false
+
     var body: some View {
         List {
             openSourceSection
+            onDeviceModelSection
             naraDisclaimerSection
             dosDisclaimerSection
         }
@@ -557,6 +572,135 @@ struct FullNoticesView: View {
                 }
             }
             .padding(.vertical, 2)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "about.openSource.llamaCpp.title",
+                            defaultValue: "llama.cpp"))
+                    .font(.callout.bold())
+                if let url = URL(string: AboutLinks.llamaCpp) {
+                    Link(destination: url) {
+                        Text(String(localized: "about.openSource.llamaCpp.body",
+                                    defaultValue: "The natural-language search feature runs its on-device model through llama.cpp (github.com/ggml-org/llama.cpp), © 2023–2026 The ggml authors, licensed under the MIT License."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .accessibilityLabel(
+                        String(localized: "about.openSource.llamaCpp.a11y",
+                               defaultValue: "llama.cpp on GitHub — opens in browser")
+                    )
+                    .accessibilityAddTraits(.isLink)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    // MARK: - On-Device Model (V-5 s2)
+
+    /// The Gemma notice section the compliance runbook (§4) specifies: whose model the optional
+    /// download is, the exact notice sentence, and the terms one tap away — both as live links
+    /// and as the bundled copy (`GemmaTermsView`), which is what satisfies the licence's
+    /// copy-of-the-terms-to-every-recipient condition.
+    @ViewBuilder
+    private var onDeviceModelSection: some View {
+        Section(String(localized: "about.modelLicense.header",
+                       defaultValue: "On-Device Model")) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "about.modelLicense.gemma.title",
+                            defaultValue: "EmbeddingGemma (Google)"))
+                    .font(.callout.bold())
+                Text(String(localized: "about.modelLicense.gemma.body",
+                            defaultValue: "When you enable natural-language search, the app downloads Google's EmbeddingGemma model (229 MB) and runs it on this device to convert your search queries into vectors. The model is used unmodified. Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms, including its Prohibited Use Policy."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding(.vertical, 2)
+
+            if let url = URL(string: AboutLinks.gemmaTerms) {
+                Link(destination: url) {
+                    HStack {
+                        Text(String(localized: "about.modelLicense.termsLink",
+                                    defaultValue: "Gemma Terms of Use"))
+                            .font(.caption)
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel(
+                    String(localized: "about.modelLicense.termsLink.a11y",
+                           defaultValue: "Gemma Terms of Use — opens in browser")
+                )
+                .accessibilityAddTraits(.isLink)
+            }
+
+            if let url = URL(string: AboutLinks.gemmaProhibitedUse) {
+                Link(destination: url) {
+                    HStack {
+                        Text(String(localized: "about.modelLicense.pupLink",
+                                    defaultValue: "Gemma Prohibited Use Policy"))
+                            .font(.caption)
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel(
+                    String(localized: "about.modelLicense.pupLink.a11y",
+                           defaultValue: "Gemma Prohibited Use Policy — opens in browser")
+                )
+                .accessibilityAddTraits(.isLink)
+            }
+
+            // The bundled copy. iOS pushes (FullNoticesView lives in the Settings stack);
+            // macOS reaches FullNoticesView as a SHEET with no NavigationStack, where a bare
+            // NavigationLink is inert — so it opens a second sheet, the DataRecoveryView.link
+            // dual-pattern this file's legalSection already follows.
+            #if os(macOS)
+            Button {
+                showingGemmaTerms = true
+            } label: {
+                HStack {
+                    Text(String(localized: "about.modelLicense.bundledTerms",
+                                defaultValue: "Read the Terms (included copy)"))
+                        .font(.caption)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $showingGemmaTerms) {
+                VStack(spacing: 0) {
+                    GemmaTermsView()
+                    Divider()
+                    HStack {
+                        Spacer()
+                        Button(String(localized: "about.modelLicense.done",
+                                      defaultValue: "Done")) {
+                            showingGemmaTerms = false
+                        }
+                        .keyboardShortcut(.cancelAction)
+                        .padding()
+                    }
+                }
+                .frame(minWidth: 520, minHeight: 460)
+            }
+            #else
+            NavigationLink {
+                GemmaTermsView()
+            } label: {
+                Text(String(localized: "about.modelLicense.bundledTerms",
+                            defaultValue: "Read the Terms (included copy)"))
+                    .font(.caption)
+            }
+            #endif
         }
     }
 
@@ -613,5 +757,58 @@ Department of State or the U.S. Government. The FRUS series itself is in the pub
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - GemmaTermsView
+
+/// The bundled copy of the Gemma Terms of Use (V-5 s2) — the surface that satisfies the licence's
+/// "copy of the Terms to every recipient" condition, so it must not degrade silently.
+///
+/// The text is `gemma-terms-of-use.txt`, captured verbatim from the live page (the capture header
+/// inside the file states the date; the page states its own last-modified date). If the resource
+/// ever fails to load, the screen says so and shows the live link instead of rendering empty —
+/// a licence-obligation surface that quietly showed nothing would look wired and be dark.
+struct GemmaTermsView: View {
+
+    /// The bundled text, loaded once. `nil` means the resource is missing from the build.
+    private static let bundledText: String? = {
+        guard let url = Bundle.main.url(forResource: "gemma-terms-of-use", withExtension: "txt"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else {
+            #if DEBUG
+            print("[About] gemma-terms-of-use.txt missing from the bundle")
+            #endif
+            return nil
+        }
+        return text
+    }()
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                if let text = Self.bundledText {
+                    Text(text)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text(String(localized: "about.gemmaTerms.missing",
+                                defaultValue: "The included copy of the terms could not be loaded. The authoritative text is at the link below."))
+                        .font(.callout)
+                    if let url = URL(string: AboutLinks.gemmaTerms) {
+                        // Its own key, not `about.modelLicense.termsLink` — reusing another
+                        // view's key is the silent i18n collision the repo has been burned by.
+                        Link(String(localized: "about.gemmaTerms.liveLink",
+                                    defaultValue: "Gemma Terms of Use"), destination: url)
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle(String(localized: "about.gemmaTerms.title",
+                                defaultValue: "Gemma Terms of Use"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

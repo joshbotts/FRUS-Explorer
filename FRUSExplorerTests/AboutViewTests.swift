@@ -36,6 +36,8 @@ struct AboutViewTests {
         #expect(hosts.contains("github.com"))
         #expect(hosts.contains("www.archives.gov"))
         #expect(hosts.contains("teipublisher.com"))
+        // The Gemma licence surfaces (V-5 s2) — both notice links point at Google's site.
+        #expect(hosts.contains("ai.google.dev"))
     }
 
     // MARK: - EmptyStateTest
