@@ -10034,3 +10034,38 @@ as the third deliberate deviation. The runbook §5 now points at the file as can
 What remains owner-only, unchanged in kind but now trivial in effort: fill the four
 placeholders, paste below the cut line into App Store Connect → App Information →
 License Agreement, before the encoder-carrying build is submitted for review.
+
+## Session 2026-08-28L — the Mac quit crash: diagnosed by probe, fixed by exit guard
+
+The owner hit SIGABRT on quitting the Mac app. No fresh `.ips` exists (a debugger-attached
+crash writes none), so the diagnosis ran OUTSIDE the app — the never-launch-the-Mac-dev-app
+rule held throughout — with a standalone probe binary linking the same
+`Vendor/llama.xcframework` macOS slice through four lifecycle scenarios.
+
+**Reproduced and pinned in three probe runs**: link-only, backend-init, and load-then-free
+all exit clean; **loading a model+context and exiting WITHOUT freeing aborts (exit 134)** —
+`ggml-metal-device.m:954: GGML_ASSERT([rsets->data count] == 0)` in
+`ggml_metal_device_free`, reached from a C++ static's destructor in `__cxa_finalize`. ggml's
+Metal device registry asserts its residency sets are empty at exit; a live llama context
+holds residency sets; so quitting the Mac app any time inside the encoder's 180 s idle
+window after a Meaning search aborted on the main thread. New exposure from s2 by
+construction — the framework is new — but only the resident-context path, not mere linking.
+
+**The fix's ordering assumption was proven before it was relied on**: `exit()` runs
+`__cxa_atexit` handlers in reverse registration order, and ggml's statics register at their
+construction during the first load — so an `atexit` handler registered AFTER a successful
+load runs BEFORE ggml's destructor. A second probe confirmed it: drain ran first, ggml
+deallocated cleanly, exit 0.
+
+**Shipped as `SemanticEncoderExitGuard`**: a lock-protected process-global registry whose
+registered closure is the ONE definition of freeing a live (model, context) pair —
+`unload()` reclaims it via `unregister` and runs it, the exit handler `drain()`s whatever
+remains — so a deliberate unload and the at-exit drain can never double-free or disagree.
+Armed on first registration, which by construction is after the first load. Inert on iOS
+(no `exit()` in normal operation). Tests: the guard's exactly-once bookkeeping (reclaim,
+drain, idempotence) plus a source pin that `unload()` frees only through the reclaimed
+closure. Gated parity suite re-run with the real model: identical (min cosine 0.99986) —
+the rewiring changed no behavior. Full iOS suite 4,192/559 green; Mac build green.
+
+**Owner residue**: one attended Mac run — Meaning search, then quit inside three minutes —
+confirms the fix in situ; the probe is the mechanism proof.

@@ -15,6 +15,79 @@
 import Foundation
 import llama
 
+/// Frees any still-loaded llama allocations at process exit, because ggml aborts if we do not.
+///
+/// ## The crash this exists for (measured, not theorized)
+///
+/// ggml's Metal device registry is a C++ STATIC whose destructor runs in `__cxa_finalize` at
+/// `exit()` and asserts its residency sets are empty — `ggml-metal-device.m:954:
+/// GGML_ASSERT([rsets->data count] == 0)` in `ggml_metal_device_free`. A live llama context
+/// still holds residency sets, so **quitting the Mac app while the encoder is resident** (any
+/// time inside the 180 s idle window after a Meaning search) aborted with SIGABRT on the main
+/// thread. Reproduced outside the app with a probe linking the same framework slice: loading a
+/// model+context and exiting without freeing = exit 134; freeing first = clean exit.
+///
+/// ## Why `atexit`, and why it is registered only AFTER a successful load
+///
+/// `exit()` runs `__cxa_atexit`-registered handlers in REVERSE registration order, and C++
+/// static destructors register at construction. ggml's Metal statics are constructed during the
+/// first model load — so a handler registered AFTER that load runs BEFORE ggml's destructor,
+/// which is exactly the window where freeing the context empties the residency sets and the
+/// assert never fires. Registering earlier (at app launch, say) would invert the order and fix
+/// nothing. The probe verified this ordering empirically before it was relied on.
+///
+/// `atexit` rather than `applicationWillTerminate` because the assert lives in `exit()`'s own
+/// finalization — this handler runs on every path that reaches `__cxa_finalize`, AppKit-mediated
+/// or not. iOS never terminates through `exit()` in normal operation (suspend/jetsam), so this
+/// is inert there — and harmless.
+///
+/// The registered closure is the ONE definition of freeing an encoder's allocations:
+/// `unload()` reclaims it via `unregister` and runs it, so drain-at-exit and deliberate unload
+/// cannot disagree about what freeing means.
+final class SemanticEncoderExitGuard: @unchecked Sendable {
+
+    static let shared = SemanticEncoderExitGuard()
+
+    private let lock = NSLock()
+    private var nextToken = 0
+    private var frees: [Int: () -> Void] = [:]
+    private var armed = false
+
+    /// Registers a free action for a live allocation; arms the exit handler on first use.
+    ///
+    /// - Parameter free: Frees the allocation. Runs at most once — via `unregister` or `drain`.
+    /// - Returns: The token `unregister` takes.
+    func register(_ free: @escaping () -> Void) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        let token = nextToken
+        nextToken += 1
+        frees[token] = free
+        if !armed {
+            armed = true
+            // Non-capturing closure — converts to the C function pointer `atexit` requires.
+            atexit { SemanticEncoderExitGuard.shared.drain() }
+        }
+        return token
+    }
+
+    /// Removes and returns a registered free action, or `nil` if it already ran (or never was).
+    func unregister(_ token: Int) -> (() -> Void)? {
+        lock.lock()
+        defer { lock.unlock() }
+        return frees.removeValue(forKey: token)
+    }
+
+    /// Frees everything still registered. Idempotent; called by the exit handler.
+    func drain() {
+        lock.lock()
+        let pending = frees
+        frees = [:]
+        lock.unlock()
+        for free in pending.values { free() }
+    }
+}
+
 /// The on-device query encoder: the pinned EmbeddingGemma GGUF through llama.cpp, producing the
 /// same 768-d unit vector `llama-embedding` produces for the same text (V-5 s2).
 ///
@@ -45,6 +118,7 @@ import llama
 ///
 /// Version history:
 ///   1.0 — V-5 s2: initial implementation
+///   1.1 — the Mac quit crash: freeing routed through `SemanticEncoderExitGuard`
 actor SemanticQueryEncoder {
 
     /// The trained context length of the pinned model (GGUF `context_length`); tokenized queries
@@ -53,6 +127,9 @@ actor SemanticQueryEncoder {
 
     private var model: OpaquePointer?
     private var context: OpaquePointer?
+    /// The exit guard's token for the live (model, context) pair — see
+    /// `SemanticEncoderExitGuard`; the registered closure is the one definition of freeing.
+    private var exitToken: Int?
 
     /// What can go wrong, in words a caller can show or log.
     enum EncoderError: Error, Equatable {
@@ -118,12 +195,23 @@ actor SemanticQueryEncoder {
         }
         model = loaded
         context = created
+        // Registered AFTER the successful init on purpose — the guard's ordering argument
+        // depends on ggml's Metal statics existing first. The closure owns the freeing.
+        exitToken = SemanticEncoderExitGuard.shared.register {
+            llama_free(created)
+            llama_model_free(loaded)
+        }
     }
 
     /// Releases the context and model. Safe to call when not loaded.
+    ///
+    /// Freeing happens by reclaiming the exit guard's registered closure and running it, so a
+    /// deliberate unload and the at-exit drain can never both free (or disagree about how).
     func unload() {
-        if let context { llama_free(context) }
-        if let model { llama_model_free(model) }
+        if let exitToken, let free = SemanticEncoderExitGuard.shared.unregister(exitToken) {
+            free()
+        }
+        exitToken = nil
         context = nil
         model = nil
     }
