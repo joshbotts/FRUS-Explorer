@@ -10112,3 +10112,25 @@ the VoiceOver pass, the App Store Connect archive-and-upload, and — new this c
 App Store submission specifically, NOT TestFlight — the custom EULA
 (`Planning/semantic-vectors/App-Store-Custom-EULA.md`: fill four placeholders, paste into
 App Information ▸ License Agreement) before this build goes to App Store review.
+
+## Session 2026-08-28M — branches swept, the plan of record rolls over
+
+**Branch cleanup, the squash-repo way**: 42 remote and 43 local `claude/*` branches
+deleted — every remote verified against a MERGED PR whose headRefOid matches the branch
+tip (never `--merged`, which proves nothing here), every local verified tip-in-v2-history
+or tip-identical-to-a-merged-remote; the one flag (`gemma-license-paperwork`, whose remote
+died in the s2 cherry-pick shuffle) was proven TREE-IDENTICAL to the merged #1125 head
+before deletion. No gc, no prune — the reflog-only stash entries stay reachable. The repo
+is back to `v2` plus the working branch.
+
+**`Plan-Of-Record-2026-08-28.md` is the single live plan**; the 2026-08-23 plan is
+archived to `Completed/` with its strikes intact (tiers A/B shipped whole; W-9 completed
+far past its written scope; Tier E's four assessments carry forward). The new wave: Tier A
+is **#234** — the Mac Studio began the Qwen3-14B NER sweep this weekend, so next week runs
+N-0 (the owner's M2a span sitting, the unchanged critical path) → N-1 (score the harvest
+against the NLTagger control and the editors' baseline; the sweep was never the scoring
+gate's input, but with it running anyway the verdict decides whether its OUTPUT is used)
+→ N-2 (either branch ends in a build plan for the people-browser extension). W-7a's
+harness additions fold in as needed-only. Tier B carries W-13/W-14/W-3 §7/the V-5
+supplementary sitting; Tier C the three assessments (W-12, W-15, W-10). Standing gates:
+build-44 tester feedback outranks the order, and the Studio harvest is assumed nothing.

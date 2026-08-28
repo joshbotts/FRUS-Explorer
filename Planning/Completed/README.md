@@ -5,7 +5,7 @@ here 2026-08-05 so `Planning/` holds only live documents. Nothing was edited in 
 files carry status lines that predate their own completion (e.g. `Collections-Authoring-Scope`
 says "no implementation started" — the shipped code says otherwise). Where a completed document
 left residual work, that work is tracked in GitHub issues or in
-the live plan of record (currently `../Plan-Of-Record-2026-08-23.md`), not here.
+the live plan of record (currently `../Plan-Of-Record-2026-08-28.md`), not here.
 
 **What lives here, by cluster:**
 

@@ -1,6 +1,6 @@
 # Plan of Record — 2026-08-23, the next wave
 
-**Status:** the single live plan, superseding `Completed/`-bound `Plan-Of-Record-2026-08-17.md`
+**Status:** SUPERSEDED 2026-08-28 by `../Plan-Of-Record-2026-08-28.md` after build 44 — archived with every strike and per-row evidence intact. Was: the single live plan, superseding `Completed/`-bound `Plan-Of-Record-2026-08-17.md`
 (discharged in full — every session row shipped; its final state and per-row evidence stay in
 that file and in `DEVELOPMENT-PLAN.md`'s 2026-08-23 audit entry). Written from the owner's wave
 decision of 2026-08-23, against tree `75c5d40c` and the audit PR #1076. **Refreshed
