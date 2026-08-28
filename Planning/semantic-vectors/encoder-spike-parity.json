@@ -1,0 +1,18 @@
+{
+ "below_0995": 0,
+ "chunks": 300,
+ "gguf": "embeddinggemma-300m-qat-Q4_0.gguf",
+ "llamaEmbedding": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-pensive-goldberg-236407/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/llama.cpp/build/bin/llama-embedding",
+ "mean": 0.9999998717657697,
+ "min": 0.9999983560458986,
+ "p1": 0.9999997601086132,
+ "p50": 0.9999998824745845,
+ "perVolume": {
+  "frus1861": 50,
+  "frus1895p1": 50,
+  "frus1918Russiav02": 50,
+  "frus1943China": 50,
+  "frus1961-63v06": 50,
+  "frus1981-88v41": 50
+ }
+}

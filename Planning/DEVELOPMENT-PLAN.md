@@ -9744,3 +9744,27 @@ nearly all of §2's breakage budget — with the full hybrid page (+2–3 sessio
 budget itemized) separately deferrable. Two gates, both the owner's: green-lighting the
 one-session spike, and the formal Gemma licence read. No decay pressure: frozen
 artifacts mean the decision keeps indefinitely.
+
+## Session 2026-08-28F — the step-4 spike: go on every measured axis
+
+llama.cpp (commit 8663224, Release+Metal, built with Homebrew cmake — cmake was absent
+from the machine) against the pinned GGUF. Parity first, single chunk, DEFAULT flags:
+cosine 1.0 against the stored corpus vector — the GGUF's own metadata carries the right
+pooling, no tuning needed. Then the committed instrument
+(tools/semantic-harvest/spike_encoder_parity.py): 300 chunks, 50 each from six
+era-stratified volumes, reconstructed PREFIX+text[c0:c1] from the R-0 layer, one
+llama-embedding invocation — min cosine 0.9999984, zero below the 0.995 target,
+artifact at Planning/semantic-vectors/encoder-spike-parity.json. §1a's Core ML
+conversion go/no-go is retired by measurement.
+
+Latency by (100q − 1q) wall-clock slope, best of three: 2.5 ms/query Metal, 6.0 ms
+CPU-8t, 10.5 ms CPU-2t (the crude A-series proxy); cold process+load+first-query
+~350–390 ms. With the funnel's 2.44 ms, warm typed-query search is ~5 ms end-to-end on
+M-class. Memory is the one number demanding design: peak RSS 861 MB / footprint 639 MB
+in the CLI shape, identical with --no-warmup — a ceiling, not an app prediction
+(mmap + no JSON dump + encode-then-release comes at s2), fitting 4 GB devices as-is and
+dictating load-on-demand at the 3 GB floor. Binary cost revised up honestly: ~7 MB
+(libllama 3.1 + ggml 3.8, Metal shaders included) against the assessment's 2–4 MB
+guess. llama-embedding's perf block never printed in this build, hence the slope
+method. Remaining before anything ships: the owner's formal Gemma licence read, and
+s2's in-app memory measurement.
