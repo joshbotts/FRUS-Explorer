@@ -9721,3 +9721,26 @@ CSUserQuery also measured out, the on-device encoder (V-5 step 4) is the only re
 route to typed natural-language search, now carrying a measured four-way comparison as
 its case. The report's PRF sections state seed counts, and the zero-seed case prints
 the structural reason rather than an unexplained blank.
+
+## Session 2026-08-28E — W-9 step 4 assessed: the encoder's costs, priced
+
+Decision document written (V5-Step4-Encoder-Assessment-2026-08-28.md). The week's work
+retired four of §7's unknowns before the assessment began: the weight payload is
+measured (229,093,184 bytes — the pinned GGUF, SHA-verified and proven to reproduce a
+stored vector at cosine 1.0), the query prompt is captured and human-judged (P 0.65 /
+MRR 0.77 under the query template; variants diverge 37–46%), the kernel doorway ships
+with a parity pin, and the 25-query instrument stands as a ready-made acceptance gate
+(≥0.995 per-query cosine against the LM Studio vectors transfers the judged verdict
+without a new sitting).
+
+The assessment's central move: §1a framed the go/no-go as "does a faithful Core ML
+conversion exist" — but embedding llama.cpp and shipping the pinned GGUF as-is is parity
+BY CONSTRUCTION (the corpus went through the same runtime family; this week's cosine-1.0
+reproduction is the proof), dissolving the conversion hazard entirely at the cost of a
+vendored C++ dependency and unmeasured (but arithmetically friendly) device latency.
+Core ML stays as the fallback with its §1a gate already written. Costed: ~4 sessions to
+a shipped narrow surface — the sitting's own zero-lexical-result fallback, which avoids
+nearly all of §2's breakage budget — with the full hybrid page (+2–3 sessions, the
+budget itemized) separately deferrable. Two gates, both the owner's: green-lighting the
+one-session spike, and the formal Gemma licence read. No decay pressure: frozen
+artifacts mean the decision keeps indefinitely.
