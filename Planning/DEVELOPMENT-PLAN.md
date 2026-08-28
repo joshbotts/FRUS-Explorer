@@ -9545,3 +9545,29 @@ intended change. Re-measured per §0.10's instruction, recorded in
 Planning/Lexical-Axis-Addressable-Market-2026-08-27.md: 10,954 documents gain archival
 neighbors only via these arms; the lexical axis's addressable market is 32,956 (12.5%).
 No index bump: every arm is a query-time switch over already-stored columns.
+
+## Session 2026-08-27I — W-17 session 2: the Similar Wording axis
+
+The eighth Related axis: `.lexicalSimilarity`, a generator scoring by the
+bm25(candidate)/bm25(anchor) self-ratio over a body_text-restricted BM25 OR-query of the
+anchor's most distinctive terms (tf/df-selected surface words — never lemmas, which are
+a different vocabulary than the index's stems). Ships experimental at weight 0 with the
+cost disclosure where the slider is; its evaluation is session 3, paired with W-9's
+instrument.
+
+The recorded exclusivity decision: SemanticAxisTests' single-axis pin became a two-axis
+ALLOWLIST. §0.12's argument decided it — the ratio is absolute in [0,1] by construction,
+and max-normalising an absolute score is precisely the #643 defect the pin exists to
+prevent; plain-scoring the axis would have re-created it. skipsGenerationAtZeroWeight is
+also true, on a different argument than the semantic axis's network fetch: an
+experimental generator that ran at weight 0 would add candidates other axes rank,
+changing every existing user's default results.
+
+Reuse over new machinery, three times: the chip is the existing `case sharedTerms` fed
+by the SAME render-time `SemanticSharedTerms` pass (one call now serves both vocabulary
+axes — a second terms machine would be a second vocabulary to drift); the scope fence
+reuses `SemanticSimilarityGenerator.eligibleVolumeIDs`; and #1021's departures-only
+persistence self-extends to the new axis (stored tunings inherit its 0.0 — no amnesty
+row, no CloudKit change, the weights string is the same field). The generator refuses to
+score when its own anchor is absent from the query results — no denominator, no honest
+ratio — rather than inventing a scale.

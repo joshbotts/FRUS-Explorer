@@ -237,6 +237,15 @@ public actor SearchService {
         try await fts5Store.vocabularyEntry(stem: stem)
     }
 
+    /// The W-17 lexical-similarity candidate query — a thin public face on
+    /// `FTS5Store.lexicalCandidates` so the axis queries exactly the store the search
+    /// executes against, not a second connection that could drift.
+    public func lexicalCandidates(
+        terms: [String], dfCeiling: Int, limit: Int
+    ) async throws -> (candidates: [FTS5Store.LexicalCandidate], admittedTerms: [String]) {
+        try await fts5Store.lexicalCandidates(terms: terms, dfCeiling: dfCeiling, limit: limit)
+    }
+
     /// The rendered MATCH expression(s) for `parameters`, for the Query Inspector.
     ///
     /// A thin public face on `makeMatchExpressions` so the inspector displays exactly the

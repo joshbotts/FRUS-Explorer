@@ -49,16 +49,28 @@ struct SemanticAxisTests {
         #expect(SimilarityAxis(rawValue: "semanticSimilarity") == .semanticSimilarity)
     }
 
-    /// Both new properties are opt-in per axis. If a later axis flips one by accident, the behaviour
+    /// Both properties are opt-in per axis. If a later axis flips one by accident, the behaviour
     /// it changes is the ranker's arithmetic for every user of that axis.
-    @Test("Only the semantic axis is self-normalising or skipped at zero weight")
+    ///
+    /// An **allowlist**, not a single-axis pin, since W-17 session 2: the lexical axis's
+    /// `bm25(candidate)/bm25(anchor)` ratio is absolute in `[0, 1]` by construction, so it
+    /// carries the same #643 argument the semantic cosine does — max-normalising either one
+    /// hands a document's only neighbour a 1.0 however weak the evidence. A third axis joins
+    /// this list by argument, not by editing the loop's where-clause quietly (the
+    /// `intendedStratifiedRequests` precedent).
+    @Test("Self-normalising and skip-at-zero are an allowlist of the two absolute-score axes")
     func newAxisPropertiesAreScoped() {
-        for axis in SimilarityAxis.allCases where axis != .semanticSimilarity {
+        let allowlisted: Set<SimilarityAxis> = [.semanticSimilarity, .lexicalSimilarity]
+        for axis in SimilarityAxis.allCases where !allowlisted.contains(axis) {
             #expect(!axis.isSelfNormalising, "\(axis.rawValue) must keep max-normalisation")
             #expect(!axis.skipsGenerationAtZeroWeight, "\(axis.rawValue) must keep generating")
         }
-        #expect(SimilarityAxis.semanticSimilarity.isSelfNormalising)
-        #expect(SimilarityAxis.semanticSimilarity.skipsGenerationAtZeroWeight)
+        for axis in allowlisted {
+            #expect(axis.isSelfNormalising,
+                    "\(axis.rawValue) produces an absolute score; max-normalising it is the #643 defect")
+            #expect(axis.skipsGenerationAtZeroWeight,
+                    "\(axis.rawValue) is experimental at weight 0; generating anyway changes default results")
+        }
     }
 
     // MARK: - The #643 escape

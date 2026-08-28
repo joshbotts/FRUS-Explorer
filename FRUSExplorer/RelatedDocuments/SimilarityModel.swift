@@ -57,6 +57,18 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// automatic gate reaches only 572 pre-1900 queries, because the citation idiom it needs
     /// postdates 1945.
     case semanticSimilarity
+    /// Nearness of wording, computed live from the local FTS5 index (W-17: the approved
+    /// query-time variant of the withdrawn lexical-neighbors artifact). The anchor's most
+    /// distinctive terms run as a `body_text`-restricted BM25 OR-query, and each candidate
+    /// is scored by the `bm25(candidate)/bm25(anchor)` self-ratio — absolute in `[0, 1]`
+    /// by construction. A generator, and the second axis (after semantic) that can reach a
+    /// document with no archival key and no citation; its addressable market is measured
+    /// at 32,956 documents (`Planning/Lexical-Axis-Addressable-Market-2026-08-27.md`).
+    ///
+    /// **Ships experimental and opt-in at weight 0.** Its evaluation pairs with W-9's
+    /// instrument (the PoR's "never ship un-compared" instruction), so until that runs
+    /// this is a slider a researcher may raise, not a graded feature — the V-3 precedent.
+    case lexicalSimilarity
 
     var id: String { rawValue }
 
@@ -64,7 +76,8 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// them. Generators drive the candidate universe; scorers rank it (design §6.2).
     var isGenerator: Bool {
         switch self {
-        case .archivalProvenance, .crossReference, .semanticSimilarity: return true
+        case .archivalProvenance, .crossReference, .semanticSimilarity,
+             .lexicalSimilarity: return true
         case .dateProximity, .subseries, .sharedPersons, .sharedSubjects: return false
         }
     }
@@ -93,6 +106,11 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
             // instrument that replaced it. Saying so where the slider is is the least this owes.
             return String(localized: "related.axis.semantic",
                           defaultValue: "Semantically similar (experimental)")
+        case .lexicalSimilarity:
+            // "Experimental" in the name for the same reason the semantic axis carries it:
+            // the shared evaluation (W-9 step 2 / W-17 session 3) has not run yet.
+            return String(localized: "related.axis.lexical",
+                          defaultValue: "Similar wording (experimental)")
         }
     }
 
@@ -106,6 +124,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .sharedPersons:      return "person.2"
         case .sharedSubjects:     return "tag"
         case .semanticSimilarity: return SemanticGlyph.document
+        case .lexicalSimilarity:  return "text.magnifyingglass"
         }
     }
 
@@ -120,9 +139,15 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// axis, and proposed exactly this escape.
     ///
     /// Scorers already enter the ranker raw and absolute; this gives a generator the same contract.
+    /// The lexical axis joined the semantic one here (W-17 session 2), on the same #643
+    /// argument: its `bm25(candidate)/bm25(anchor)` ratio is already absolute in `[0, 1]`,
+    /// and dividing it by this list's own max would hand a document's only lexical
+    /// neighbour a 1.0 however weak the overlap — normalising destroys exactly the
+    /// information the query paid for. `SemanticAxisTests` pins this as a two-axis
+    /// allowlist, so a third axis has to argue its way in rather than drift in.
     var isSelfNormalising: Bool {
         switch self {
-        case .semanticSimilarity: return true
+        case .semanticSimilarity, .lexicalSimilarity: return true
         case .archivalProvenance, .crossReference, .dateProximity, .subseries,
              .sharedPersons, .sharedSubjects: return false
         }
@@ -136,9 +161,14 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// generation can trigger a **network fetch** of the Tier-2 shards it scores with. Doing that for
     /// a user who has left the axis at its default 0 would spend their bandwidth on a feature they
     /// have not opted into.
+    /// The lexical axis also skips at weight 0, for a different reason than the semantic
+    /// one's network fetch: running its FTS5 query for a user who left the default 0 would
+    /// add candidate rows other axes then rank — CHANGING the default results of every
+    /// existing user for a feature nobody opted into. Byte-identical defaults are the
+    /// experimental-axis contract.
     var skipsGenerationAtZeroWeight: Bool {
         switch self {
-        case .semanticSimilarity: return true
+        case .semanticSimilarity, .lexicalSimilarity: return true
         case .archivalProvenance, .crossReference, .dateProximity, .subseries,
              .sharedPersons, .sharedSubjects: return false
         }
@@ -168,6 +198,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .sharedPersons:      return 0.7
         case .sharedSubjects:     return 0.5
         case .semanticSimilarity: return 0.0
+        case .lexicalSimilarity:  return 0.0
         }
     }
 }
@@ -395,11 +426,15 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
                     // No recognised container name — presence is still the honest reading, and is
                     // never a percentage for the reason #643 established.
                     return (axis, .presence)
-                case .semanticSimilarity:
+                case .semanticSimilarity, .lexicalSimilarity:
                     // The terms are computed at RENDER time for the displayed rows only and written
                     // back into `axisEvidenceLabel`, so this arm is empty on first paint and fills
                     // in when that pass lands. A percentage is the honest interim reading — and the
                     // permanent one where the two documents share no distinctive vocabulary.
+                    // The lexical axis shares the arm AND the render-time pass
+                    // (`SemanticSharedTerms`): its evidence is the same thing — the distinctive
+                    // vocabulary the pair actually shares, in the anchor's own spelling — and a
+                    // second terms machine would be a second vocabulary to drift (W-17 session 2).
                     if let joined = axisEvidenceLabel[axis], !joined.isEmpty {
                         let terms = joined.split(separator: "\u{1F}").map(String.init)
                         if !terms.isEmpty { return (axis, .sharedTerms(terms)) }

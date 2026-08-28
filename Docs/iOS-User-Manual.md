@@ -560,7 +560,7 @@ The app is deliberate about keeping your working context when you follow links; 
 
 ### 8.5 Related Documents
 
-A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Tap the **Related** tile in the Research rail for a ranked list of the indexed documents most related to the one you're reading, scored along seven signals:
+A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Tap the **Related** tile in the Research rail for a ranked list of the indexed documents most related to the one you're reading, scored along eight signals:
 
 | Signal | What it connects |
 |--------|------------------|
@@ -571,6 +571,7 @@ A cross-reference tells you what a document *cites*; **Related Documents** tells
 | **Shared people** | Documents mentioning the same reconciled identities |
 | **Shared topics** | Documents carrying the same detected topics, weighted so a rare topic counts for more than a common one |
 | **Semantic similarity** | *Experimental, and off until you move its slider.* Documents whose language reads alike, whether or not they share words |
+| **Similar wording** | *Experimental, and off until you move its slider.* Documents that reuse this one's distinctive vocabulary, found live in your local index — so results vary with which volumes this device has indexed. Rows name the shared terms they matched on |
 
 Each row shows the document's header, volume, and dateline, plus small **"why related" chips** naming the signals that contributed, strongest first. A chip states only what its signal can honestly report: **cited 3×** for cross-references; for archival provenance, the container and its size — **Lot 54 D 270 · 1 of 1,063** — because sharing a six-document lot file is a finding and sharing one of seven thousand is a filing-cabinet coincidence. (Those two signals *find* candidates rather than scoring them, so no percentage is shown for them; date, corpus proximity, shared people, shared topics, and semantic similarity report percentages, which for them are real measures.) A shared-topics chip names the topics themselves — **topics: Berlin blockade, Economic sanctions** — most distinctive first, because two documents sharing *Berlin blockade* is a finding and two sharing *War* is not.
 
