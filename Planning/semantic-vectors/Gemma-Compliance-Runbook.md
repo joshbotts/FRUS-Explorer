@@ -116,6 +116,14 @@ agreement governing use, plus notice to users."
 
 ## 5. The App Store Connect custom EULA — owner-only checklist
 
+**The paste-ready text now exists**: `App-Store-Custom-EULA.md` beside this file — prepared
+and adversarially reviewed (four-reviewer panel + a closing verification pass) 2026-08-28.
+Its instructions preamble carries the fill-in placeholders (contact details, governing law)
+and the paste procedure; the checklist below stays as the background reasoning. The clause
+in step 3 below is the ancestor of that file's section 3.
+
+
+
 Apple's **standard** EULA does not carry the Gemma use restrictions, so the flow-down
 needs a custom one. One-time metadata change, no binary involved:
 
