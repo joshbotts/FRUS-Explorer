@@ -1068,6 +1068,51 @@ struct ArchivalNeighborsTests {
     }
 }
 
+// MARK: - SpotlightDonationTests
+
+/// The donated Spotlight item shape (W-9 step 1), pinned against the real builder.
+///
+/// `textContent` is the property Apple's semantic search matches against; the V-5
+/// assessment measured that it was never set, which made `CSUserQuery`'s ranked results
+/// structurally empty of meaning while every donation looked complete. These pins are what
+/// keep the field from silently vanishing again.
+///
+/// Version history:
+///   1.0 — W-9 step 1: initial implementation
+@Suite("IndexingPipeline — Spotlight donation shape")
+struct SpotlightDonationTests {
+
+    @Test("The donated item carries textContent, bounded at the corpus chunk size")
+    func textContentIsDonatedAndBounded() {
+        let longBody = String(repeating: "word ", count: 2_000)   // 10,000 chars
+        let item = IndexingPipeline.makeSearchableItem(
+            volumeId: "frus1961-63v06", documentId: "d1",
+            header: "1. Message", bodyText: longBody)
+        let text = item.attributeSet.textContent
+        #expect(text?.isEmpty == false,
+                "no textContent, no semantic search — the exact hole W-9 step 1 closes")
+        #expect(text?.count == 3_200, "the bound is the corpus's own chunk size")
+        #expect(item.attributeSet.contentDescription?.count == 300)
+        #expect(item.uniqueIdentifier == "frus1961-63v06/d1")
+        #expect(item.domainIdentifier == "frus1961-63v06")
+    }
+
+    @Test("A short body donates whole; an empty header falls back to the document id")
+    func shortBodyAndHeaderFallback() {
+        let item = IndexingPipeline.makeSearchableItem(
+            volumeId: "v", documentId: "d9", header: "", bodyText: "brief text")
+        #expect(item.attributeSet.textContent == "brief text")
+        #expect(item.attributeSet.title == "d9")
+    }
+
+    @Test("The schema version stamps the textContent era")
+    func schemaVersionBumped() {
+        // v1 was the pre-textContent shape; a regression to 1 would stop the boot-time
+        // re-donation from ever running for existing users.
+        #expect(IndexingPipeline.currentSpotlightSchemaVersion == 2)
+    }
+}
+
 // MARK: - W17RouteArmsTests
 
 /// The three W-17 session-1 route arms, driven through a real index (the
