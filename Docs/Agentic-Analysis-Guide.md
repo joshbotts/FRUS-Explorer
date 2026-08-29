@@ -35,6 +35,8 @@ item in it is a real property of this schema, not a hypothetical.
 12. [A house-rules block to paste into your agent](#12-a-house-rules-block-to-paste-into-your-agent)
 13. [Recording a run so it can be reproduced](#13-recording-a-run-so-it-can-be-reproduced)
 
+[Appendix A: The semantic vector artifacts](#appendix-a-the-semantic-vector-artifacts)
+
 ---
 
 ## 1. What you are working with
@@ -819,6 +821,253 @@ rather than assuming it held.
 
 ---
 
+## Appendix A: The semantic vector artifacts
+
+The database is not the only structured layer FRUS Explorer ships. The app also carries a set of
+**semantic vector artifacts** — a neural embedding of every document in the corpus, quantized and
+packed for on-device retrieval — and they are just as usable by an outside agent as the SQLite
+index is. Everything in this appendix was verified against the shipped files: the binary headers
+parse as documented, the id encoding round-trips for all 552 volumes, and every worked example
+below was executed as shown.
+
+One structural fact frames all of it: **the app itself never embeds free text.** Every semantic
+surface it ships (Related documents, the map) is anchored on an existing document. So the shipped
+artifacts are *complete* for document-to-document work with no embedding model at all
+([§A.5](#a5-what-an-agent-can-do-with-no-model)), while free-text semantic queries require
+reproducing the harvest embedder ([§A.7](#a7-free-text-queries-require-the-embedder)).
+
+### A.1 What ships, and where
+
+| Artifact | Contents | Where |
+|---|---|---|
+| `semantic-vectors-index.json` (~73 KB) | Identity and provenance: per-volume row offsets, run-length-encoded document ids, the provenance pin, measured retrieval parameters | App bundle `Resources/` |
+| `semantic-vectors-binary.bin` (~19.5 MB) | Tier 1: one 512-bit **sign vector** per document (314,483 of them), then 659 int8 **centroids** (552 volumes + 107 subseries) | App bundle `Resources/` |
+| `<volume>.vec` shards (~150 KB each) | Tier 2: full **int8 512-dim vectors** with a per-document scale, one file per volume | `…/Application Support/FRUSExplorer/SemanticVectors/` |
+| `semantic-map.bin` (~1.9 MB) | One `(int16 x, int16 y, uint16 cluster)` placement per document — a 2-D UMAP layout with HDBSCAN clusters | App bundle `Resources/` |
+| `semantic-map-index.json` (~25 KB) | Per-cluster labels (c-TF-IDF terms), centres, document counts, era histograms | App bundle `Resources/` |
+
+The bundle path on macOS is `/Applications/FRUS Explorer.app/Contents/Resources/`. The Tier-2
+shards live beside the database in Application Support and exist **only for volumes whose vectors
+have been fetched** (by default that tracks volume downloads; Settings ▸ Storage controls it) —
+whereas Tier 1 and the map cover the **entire 552-volume corpus regardless of your library**. That
+asymmetry cuts both ways: semantic neighbors can point at documents you cannot open locally
+(resolve them via the canonical URL), and the semantic tier is the one place in the app's data
+where a claim about the *whole* corpus is actually possible.
+
+### A.2 The provenance pin, and the one family rule
+
+Every artifact carries the same 32-byte SHA-256 **provenance digest**, computed over everything
+that changes the numbers: model id, GGUF weight hash, native and shipping dims, chunking, the
+document prompt (trailing space included), the pooling rule, and the quantization rules. The
+index carries it as `provenanceDigest` (hex); each binary carries it in its header at offset 20.
+
+The family rule is: **no consumer may mix two generations.** A shard from one generation must
+never rescore candidates from another — refuse, re-fetch, or degrade, never blend. For an outside
+agent that means one check before any scoring: read the digest from each file you touch and
+compare. Verified on the shipped set: index, corpus binary, and map all carry the same digest.
+
+### A.3 Document identity: stored, never derived
+
+Rows in the binary tier are keyed by the index's `volumes` table: each volume states its
+`rowOffset` (`r`), its document count (`n`), and its ids as run-length-encoded segments (`seg`).
+**Do not guess ids from ordinals.** The obvious rule — document at ordinal *i* is `d{i+1}` — was
+measured against this corpus and mis-keys 15,097 documents (4.8%), because a single letter-suffixed
+id (`frus1865p1`'s `d373a`) shifts every document behind it. A wrong key here never fails: every
+vector still resolves and every score is plausible; the neighbors shown just belong to different
+documents than the ones named.
+
+The faithful decode (mirroring `SemanticVectorsKit/DocumentIDSegments.swift`): a run only ever
+forms over ids that are exactly `d` + digits with no redundant leading zero; anything else
+(`d373a`, `appA`) is a literal single-document segment.
+
+```python
+def numeric_part(doc_id):
+    if not doc_id.startswith("d"): return None
+    digits = doc_id[1:]
+    if not digits or not digits.isdigit(): return None
+    if len(digits) > 1 and digits[0] == "0": return None
+    return int(digits)
+
+def decode_segments(segments):          # one volume's "seg" array
+    ids = []
+    for seg in segments:
+        assert seg["s"] == len(ids)     # segments are in row order
+        ids.append(seg["i"])
+        if seg["n"] > 1:
+            base = numeric_part(seg["i"])
+            ids.extend(f"d{base + k}" for k in range(1, seg["n"]))
+    return ids
+```
+
+Run the round trip before trusting anything built on it — decoded length must equal `n` for every
+volume (verified: 552 of 552 on the shipped index).
+
+### A.4 Binary layouts
+
+All three binaries share the shape: a 64-byte little-endian header, then flat arrays. Read `dims`
+from the header rather than hard-coding 512 — the shipping width is a regeneration lever.
+
+```
+semantic-vectors-binary.bin                      <volume>.vec (Tier-2 shard)
+0   magic "FRSV"              4 B                0   magic "FRSS"              4 B
+4   version                   4 B  UInt32        4   version                   4 B  UInt32
+8   shipping dims             4 B  UInt32        8   shipping dims             4 B  UInt32
+12  document count            4 B  UInt32        12  document count            4 B  UInt32
+16  centroid count            4 B  UInt32        16  provenance digest        32 B
+20  provenance digest        32 B                48  zero padding             16 B
+52  zero padding             12 B                64  int8 codes      docs × dims B
+64  sign bits      docs × dims/8 B               ..  scales          docs × 4    B  Float32
+..  centroids  centroids × (dims+4) B
+    (int8 codes, then Float32 scale)
+
+semantic-map.bin
+0   magic "FRSM"              4 B
+4   version                   4 B  UInt32
+8   document count            4 B  UInt32
+12  cluster count             4 B  UInt32
+16  grid extent               4 B  UInt32
+20  provenance digest        32 B
+52  zero padding             12 B
+64  placements       docs × 6 B  (int16 x, int16 y, uint16 cluster; 0xFFFF = unclustered)
+```
+
+Sign bits are packed **MSB-first, and a zero component packs as a set bit** (the rule is `>= 0`).
+Centroids follow the sign-bit block in a fixed order: the 552 volumes in index order, then the 107
+subseries in the index's `subseries` order. Dequantize any int8 vector as `code × scale`.
+
+### A.5 What an agent can do with no model
+
+**Nearest neighbors of a document, corpus-wide.** XOR-and-popcount over the sign bits. Executed
+against the shipped binary, the ten nearest neighbors of `frus1861/d111` are:
+
+```
+hamming  87  frus1862/d130        hamming  91  frus1861/d163
+hamming  87  frus1862/d455        hamming  91  frus1861/d212
+hamming  89  frus1861/d39         hamming  91  frus1862/d462
+hamming  90  frus1862/d457        hamming  96  frus1863p2/d165
+hamming  90  frus1865p3/d5        hamming  97  frus1864p4/d212
+```
+
+— all Civil War-era diplomacy, which is what a working index looks like. The core loop, given the
+`row_of`/`doc_of` maps built from §A.3's decode:
+
+```python
+import struct, heapq
+blob = open("semantic-vectors-binary.bin", "rb").read()
+ver, dims, docs, cents = struct.unpack("<IIII", blob[4:20])
+bpr = dims // 8
+
+def sign_row(row):
+    o = 64 + row * bpr
+    return int.from_bytes(blob[o:o+bpr], "big")
+
+anchor = row_of[("frus1861", "d111")]
+q, best = sign_row(anchor), []
+for row in range(docs):
+    if row == anchor: continue
+    d = (q ^ sign_row(row)).bit_count()
+    if len(best) < 10: heapq.heappush(best, (-d, row))
+    elif -best[0][0] > d: heapq.heapreplace(best, (-d, row))
+```
+
+A full scan is milliseconds in a compiled language and a few seconds even in pure Python; no ANN
+index is needed at this scale (the app measured its own full scan at 1.43 ms and decided the same).
+
+**Semantic joins into the database.** This is where an agent goes past the app's own UI: take a
+neighbor set or a cluster's members, then join `(volume_id, document_id)` into `document_dates`,
+`document_sources`, or `person_mentions`. "Documents semantically near this memo but from a
+different decade / a different archive / never citing this person" are one query each — questions
+neither the vectors nor the database can answer alone. Vectors also recover what FTS structurally
+misses: vocabulary drift across 165 years, and the French and Spanish enclosures that porter
+stemming mangles.
+
+**Volume and subseries similarity, and outliers.** The centroid block gives every volume a vector.
+Executed against the shipped file, the volumes nearest `frus1861` by centroid cosine are
+`frus1862` (0.976), `frus1863p2` (0.967), `frus1866p1` (0.957) — the adjacent Civil War annuals,
+as they should be. A document's distance from its own volume's centroid is an off-the-shelf
+outlier detector: "the least typical document in this volume."
+
+**The map.** Six bytes per document give a 2-D position and a cluster; the map index names each
+cluster with sampled c-TF-IDF terms and an era histogram. Verified example: `frus1881/d625` sits
+in cluster 0, whose terms are `shah, iran, iranian, mosadeq` — a nineteenth-century Persia
+despatch landing in the same region as the 1950s Iran crisis, which is exactly the kind of
+long-arc continuity the layout exists to show. 88,207 of 314,483 placements (28.0%) are
+unclustered (`0xFFFF`); that share is a property of the corpus, not an error, and any figure built
+on clusters owes the reader the number.
+
+**Near-duplicate detection.** FRUS reprints some documents across volumes. Very small Hamming
+distances flag reprints — worth running over any sample before counting anything, so a document
+printed twice is not counted twice.
+
+### A.6 Reranking with Tier-2 shards
+
+The bundled sign bits are the recall stage; the shards are precision. The app's measured funnel —
+take the ~800 best Hamming candidates, rerank by int8 cosine — reaches **recall@10 of 0.851**
+against exact float-768 neighbors (the figure is stated in the index's `retrieval` block, with the
+measurement's citation). Scoring against a shard: for documents *a* and *b* with codes and scales,
+
+```
+cosine(a, b) ≈ scale_a · scale_b · dot(codes_a, codes_b)
+```
+
+(vectors are L2-normalized before quantization, so the dot product *is* the cosine up to
+quantization error). Shard rows are in the volume's row order — identity again comes from the
+index's segments, never from the shard, which deliberately carries no ids. Remember shards exist
+only for fetched volumes; a missing shard is *typed-unavailable*, not zero similarity.
+
+### A.7 Free-text queries require the embedder
+
+To ask the corpus a question in words ("naval blockade diplomacy") rather than by anchor document,
+you must produce a query vector in the same space, and the provenance pins exactly what that
+means: model `text-embedding-embeddinggemma-300m-qat` (Google's EmbeddingGemma-300m, publicly
+distributed), the GGUF's SHA-256 (in the index — verify your download against it), document
+prompt `"title: none | text: "` with its trailing space, 3,200-character chunks with 480 overlap,
+char-length-weighted pooling of unit-norm chunk vectors, Matryoshka truncation to the shipping
+width, L2 renormalization — then int8- or sign-quantize by the rules in §A.4 to score.
+
+Two caveats an agent must carry. The artifact records only the *document*-side prompt; the app
+never embeds queries, so there is no in-repo reference for the query-side prompt — EmbeddingGemma's
+own prompt conventions apply, and the choice is yours to make and to state. And the 0.851 recall
+was measured document-to-document; nothing here has measured text-query retrieval, so validate it
+on queries you can check by hand before trusting it in bulk.
+
+### A.8 What the vectors cannot tell you
+
+The database caveats in §7 all still apply — and the semantic layer adds its own:
+
+- **Similarity is a lead, not evidence.** A neighbor is a reading suggestion. Nothing about
+  embedding distance supports "these documents are related" as a historical claim; the claim comes
+  from reading them, with the vector as the finding aid that got you there.
+- **Vectors pool whole documents, footnotes included.** Each document is one vector — a weighted
+  mean over its chunks, editors' annotation and all. Long documents blur; the chunk vectors that
+  could localize a match are not shipped.
+- **The neural layer is not reproducible.** The embedding was produced by an owner-run harvest;
+  you cannot regenerate it, only cite it. Record the provenance digest and the index's `generated`
+  and `harvestGenerated` stamps the way you would cite an edition, and re-record them after any
+  app update — a regeneration changes every neighbor list.
+- **The map is a projection.** Clustering ran on the 2-D embedding, not the 512-dim space; 28% of
+  documents are unclustered; labels are c-TF-IDF over a *sample* of each cluster's members. Use
+  clusters to explore and to sample, not to measure.
+- **Recall 0.851 means misses.** Roughly one to two of any document's ten true nearest neighbors
+  are absent from the shipped funnel's answer. Fine for discovery; fatal for any claim of the form
+  "no similar document exists."
+
+A short addendum for the §12 house-rules block, when a session touches the vectors:
+
+```text
+SEMANTIC VECTORS
+- Identity comes ONLY from semantic-vectors-index.json's id segments. Never derive an id from
+  an ordinal or a rowid.
+- Before scoring, compare the 32-byte provenance digest across every artifact you touch; on any
+  mismatch, stop and say so. Never mix generations.
+- Report semantic neighbors as suggestions with their distances, never as evidence of a
+  relationship. Similarity claims require reading the documents.
+- Tier-1 covers all 552 volumes even when the SQLite index does not: flag any neighbor whose
+  volume is absent from document_cache, and cite it by its canonical URL.
+- Absence of a neighbor is not evidence of absence: the funnel's measured recall@10 is 0.851.
+```
+
+
 ## See also
 
 - [macOS User Manual](macOS-User-Manual.md) — the app's own analytics, search, and Source Explorer
@@ -834,6 +1083,9 @@ rather than assuming it held.
 
 *Version history*
 
+- 1.1 — 2026-08-29: Appendix A, the semantic vector artifacts. Binary layouts, id decoding,
+  and every worked example verified against the shipped files (552/552 id round-trip, digest
+  match across index/binary/map, executed neighbor/centroid/map examples).
 - 1.0 — 2026-08-24: initial guide. Schema documented against `IndexingPipeline` index format
   version 46 and `FTS5Types.frusDocuments`; all example queries executed against a fixture built
   from that schema; the `integrity-check` `rank` semantics and the `VACUUM` rowid risk verified
