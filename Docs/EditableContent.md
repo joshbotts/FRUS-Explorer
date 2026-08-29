@@ -3,10 +3,35 @@
 This file contains the user-facing editorial prose across FRUS Explorer: the About screen, the
 onboarding welcome, the in-app FRUS Research Guide, the Series and Archival analytics dashboards,
 the analytics info popovers and captions, the Source Explorer panels, the methods statements
-stamped on every export, and the explanatory footers in Settings. Edit the text directly. When you
+stamped on every export, the Archive Visit planner and its trip packet, the Browse-axis coverage
+captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44.**
+
+**The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
+tagged. The verification half came back clean: every block's key is live, and the only source
+strings whose wording moved since the last amendment are one interpolation-variable rename with
+identical visible text (`appendix.caveat.zero.many`) and one capitalization fix on a window title
+this file does not carry (`packet.title`). The build-43/44 feature PRs that added long strings
+mostly added their blocks as they went (§1.4a–d, §7.12, §13.5's lexical twin), which is why the
+sweep found no rot — the additions below are the surfaces that DIDN'T bring their blocks:
+
+ - **§15 Archive Visits** — the build-44 flagship (#1086–#1097) shipped ~120 new strings and none
+   had a block: the plan list and Mac manager, the editor's coverage/derivation states, the
+   research-targets info popover (the two-claims definition and both sparsity disclosures), the
+   tier/orphan/substitution prose, and the rescoped packet sheet's empty states and topic captions.
+ - **§16 Browse — the axis captions** — a standing gap, not a new one: the coverage statements on
+   the Clusters, Archives, Administrations and Subjects browse axes were never carried. Each is a
+   numbers-bearing method sentence, exactly this file's material.
+ - New blocks inside existing sections: the Meaning-search caveats the method appendix gained at
+   #1127 (§7.8), the Meaning strip's filters caveat (§7.12), the archival export's grain and
+   pointed-at method sentences (§10.1 — pre-baseline gaps), the map's figure-export caveats from
+   W-3/W-2a (§13.7), the Semantic Match Feedback screen (§13.8 — shipped earlier, never carried),
+   the Flows ⓘ's `Ibid.` disclosure beside its mixed-systems sibling (§14), the classification
+   override's rail warning and Settings corrections list from W-4/#1097 (§14), the exact-word
+   charting refusal (§5), and the storage hubs' remove-volume confirmations with their side-loaded
+   variants (§6).
 
 **The 2026-08-23 amendment** verified every block's prose against the source string it names —
 mechanically, block by block — and repaired the twenty that had drifted since build 42. Most of the
@@ -1227,6 +1252,30 @@ Share of indexed documents per period. Only downloaded, indexed volumes are coun
 
 <!-- END SOURCE: analytics.normalize.caption -->
 
+### Corpus Analytics — Exact-word terms
+
+*The refusal state shown when every entered term is an `=exact` term. It sits ahead of the
+No-Results branch on purpose: this state HAS matches, and a bare "No Results" would read as "this
+word never appears" — the opposite of the truth. The distinction it teaches (Analytics counts by
+stem, Search filters to the exact word) must survive editing.*
+
+#### Title
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1591–1592 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
+
+Exact-Word Charting Isn’t Available
+
+<!-- END SOURCE: analytics.exactUnsupported.title -->
+
+#### Detail
+<!-- Placeholder note: the leading interpolation renders the refused terms as a list ("=containment
+     and =détente"). Keep `\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and)))`
+     intact exactly as written. -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1595–1596 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
+
+\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem, so it cannot tell "containment" from "container". Remove the = to chart the stem, or use Search, which does filter to the exact word.
+
+<!-- END SOURCE: analytics.exactUnsupported.detail -->
+
 ### Person Analytics — Info Popover ("About Person Analytics")
 <!-- Shared static FeatureInfoButton.personAnalytics in FRUSTheme (added in Wave C, Win 7). Source doc comment notes this copy was drafted in Wave C and is pending owner review. Edit once in FRUSTheme.swift to change both platforms. -->
 
@@ -1677,6 +1726,36 @@ These volumes were still being indexed when the app last closed. This section ap
 Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iCloud Backup — it can be re-downloaded at any time.
 
 <!-- END SOURCE: settings.hub.options.footer -->
+
+#### Remove-volume confirmation
+
+*Four variants of one message: each platform names itself ("this device" / "this Mac"), and each
+has a side-loaded form whose bold warning is the load-bearing sentence — a side-loaded volume has
+no download to fall back on, so removal can be final. Keep the `**…**` emphasis intact.*
+
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1371–1372 | key: settings.hub.remove.message.iOS -->
+
+The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
+
+<!-- END SOURCE: settings.hub.remove.message.iOS -->
+
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1368–1369 | key: settings.hub.remove.message.iOS.sideloaded -->
+
+The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
+
+<!-- END SOURCE: settings.hub.remove.message.iOS.sideloaded -->
+
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation | lines: 1346–1347 | key: settings.hub.remove.message -->
+
+The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
+
+<!-- END SOURCE: settings.hub.remove.message -->
+
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation, side-loaded | lines: 1343–1344 | key: settings.hub.remove.message.sideloaded -->
+
+The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
+
+<!-- END SOURCE: settings.hub.remove.message.sideloaded -->
 
 ### Connections (System)
 
@@ -2410,6 +2489,23 @@ One of these searches returned nothing. A zero is a finding: it means the term i
 
 <!-- END SOURCE: appendix.caveat.zero.many %lld -->
 
+<!-- The Meaning route's own caveat (#1127): its counts are a ranked top-K, not a match total, and
+     its zeros are not term absence — different claims than the keyword rows make. Both sentences
+     are the caveat; neither may be dropped for brevity. -->
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | lines: 348–349 | key: appendix.caveat.semantic.one -->
+
+One search ran by meaning (on-device model) rather than by keywords. Its count is the size of a ranked list, not a match total, and a zero there does not mean any term is absent.
+
+<!-- END SOURCE: appendix.caveat.semantic.one -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | lines: 350–351 | key: appendix.caveat.semantic.many %lld -->
+
+*Interpolated with a count — keep `\(semanticRowCount)` intact.*
+
+\(semanticRowCount) searches ran by meaning (on-device model) rather than by keywords. Their counts are sizes of ranked lists, not match totals, and zeros there do not mean any term is absent.
+
+<!-- END SOURCE: appendix.caveat.semantic.many %lld -->
+
 <!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.floor.one -->
 
 One search hit the app's row ceiling. Its count is shown as "at least N" and is a floor, not a total — do not sum it with the others.
@@ -2618,6 +2714,16 @@ Match files for %lld volumes are still downloading in the background. Searching 
 Meaning search (experimental): ranked by what your question means, across the whole series — your exact words may not appear. Front matter and chapter headings are not reachable this way.
 
 <!-- END SOURCE: search.meaning.strip.base -->
+
+<!-- Appended to the strip when matches land in undownloaded volumes while non-volume filters are
+     active (#1127). The claim is precise: the volume scope IS checked for those matches, the other
+     filters are NOT — a rewrite that says "filters are ignored" would claim too much, one that
+     stays silent would claim too little. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 52-54 | key: search.meaning.strip.beyondUnchecked -->
+
+Matches in volumes you have not downloaded are checked against your volume scope only, not your other filters.
+
+<!-- END SOURCE: search.meaning.strip.beyondUnchecked -->
 
 ---
 
@@ -3721,6 +3827,36 @@ A named collection is a body of records with a custodian. A central-file class i
 Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. So they record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.
 
 <!-- END SOURCE: archival.export.caveat.base -->
+
+---
+
+#### The pointers exports' own base sentence
+
+*A separate base, not an appended correction: `archival.export.caveat.base` above describes work a
+pointers (unprinted-references) export did not do — those figures are parsed from editorial
+footnotes, not source notes. Two contradictory methods statements in one file would leave the
+reader trusting the first, so the pointers exports swap the base out entirely.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | pointerBaseCaveat | lines: 328–330 | key: archival.export.caveat.base.pointers -->
+
+These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive's catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.
+
+<!-- END SOURCE: archival.export.caveat.base.pointers -->
+
+---
+
+#### The class lens's grain sentence
+
+*Stamped when the export ranks central-file classes (#826, owner decision D-3): decimal rows stand
+for themselves, subject-numeric rows are folded to category+number. The sentence exists because the
+fold hides the designator a reader writes on a pull slip — it says the fold happened and points at
+the app's leaf listing. The POL 27 example is the explanation; keep a concrete pair.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | grainCaveat | lines: 69–71 | key: archival.export.caveat.grain -->
+
+Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), because at full length half of them carry a single document. A grouped row's own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.
+
+<!-- END SOURCE: archival.export.caveat.grain -->
 
 ---
 
@@ -5089,6 +5225,79 @@ The file did not arrive intact, so the app discarded it. Downloading again usual
 
 ---
 
+### 13.7 The map as an exported figure — frames and slices
+
+*W-3 (#1100–#1101) and W-2a gave the map an offscreen figure-export path. These are the method
+sentences stamped on what leaves the app; like §10, they must stand alone once the file has
+traveled.*
+
+#### The frame sequence's grain sentence
+<!-- The publication animation's per-frame claim. The refusal in the second clause is the point:
+     a frame lights the documents of the volumes published so far — a scope is a SET OF VOLUMES —
+     and a reader will want it to mean "the documents about my subject", which it never does. -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | lines: 84–86 | key: semanticMap.frames.grain -->
+
+Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes' documents sit, never the documents about any particular subject.
+
+<!-- END SOURCE: semanticMap.frames.grain -->
+
+#### The slice figure's caveat
+<!-- Placeholder note: `%1$@` and `%2$@` are the slice's two pole labels. Keep them, positional
+     numbers included. The capitalized SLICE is deliberate emphasis in a plain-text stamp. -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2785–2786 | key: semanticMap.export.caveat.slice %@ %@ -->
+
+This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region's center belongs to the map plane, and in the slice its documents sit somewhere else entirely.
+
+<!-- END SOURCE: semanticMap.export.caveat.slice %@ %@ -->
+
+---
+
+### 13.8 Settings ▸ Data & Recovery ▸ Semantic Match Feedback
+
+*The feedback screen for the "Semantically similar (experimental)" Related Documents axis. Shipped
+before build 44 but never carried here. The `unknown` block is the honest center of the screen —
+the axis is unmeasured exactly where it is meant to help most — and any edit that softens that
+admission is a defect. Short chrome not carried: `settings.semanticFeedback.about.header`,
+`.how.header`, `.recorded.header`, `.total`, `.helpful`, `.share`, `.export`, `.clear`,
+`.clear.confirm`, `.clear.confirmAction`, `.era.unknown`.*
+
+#### Window title
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 135–136 | key: settings.semanticFeedback.title -->
+
+Semantic Match Feedback
+
+<!-- END SOURCE: settings.semanticFeedback.title -->
+
+#### What the axis is
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 40–47 | key: settings.semanticFeedback.what -->
+
+The “Semantically similar (experimental)” axis in Related Documents finds documents by the shape of their language rather than by citations or archival provenance. It is off by default — raise its weight in any Related Documents view to try it.
+
+<!-- END SOURCE: settings.semanticFeedback.what -->
+
+#### What is not known
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 48–56 | key: settings.semanticFeedback.unknown -->
+
+What we do not know is how good it is before 1900. The automatic check we can run relies on the editors’ cross-references, and that citation style only becomes common after 1945 — so it reaches barely 500 early documents out of the whole corpus. Nineteenth-century volumes are exactly where this axis is meant to help most, and exactly where nothing has measured it.
+
+<!-- END SOURCE: settings.semanticFeedback.unknown -->
+
+#### How to give feedback
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 64–70 | key: settings.semanticFeedback.how -->
+
+Long-press (or right-click) any related document that shows the magnifier icon, then choose whether the match was helpful. Nineteenth-century verdicts are worth the most.
+
+<!-- END SOURCE: settings.semanticFeedback.how -->
+
+#### The privacy footer
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 98–104 | key: settings.semanticFeedback.privacy -->
+
+Stored only on this device and never synced to iCloud. Each verdict records the two documents, your judgement, the match score, and which release of the vectors it applies to.
+
+<!-- END SOURCE: settings.semanticFeedback.privacy -->
+
+---
+
 ## 14. Short strings bumped since the build-42 pass
 
 *The strings the §13 header promised blocks for — the storage hubs' reindex controls, the
@@ -5354,6 +5563,17 @@ Some footnotes cross between the two filing systems — a document filed in a lo
 
 <!-- END SOURCE: archival.info.flows.mixed.detail -->
 
+#### Some citations are read through an “Ibid.”
+<!-- The mixed-systems item's sibling in the same Flows ⓘ, never carried here before. The middle
+     sentence is the honest claim — the app follows the editor's back-reference "the way a reader
+     would, but it is a reading, not a quotation" — and the last sentence delegates the size of
+     the effect to the chart rather than fixing a number in prose. Both must survive editing. -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 294–295 | key: archival.info.flows.ibid.detail -->
+
+Some of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation. The share it accounts for is stated on the chart.
+
+<!-- END SOURCE: archival.info.flows.ibid.detail -->
+
 
 ### Cross-Reference Graph — unprinted archival material (#837, #834)
 
@@ -5394,3 +5614,382 @@ Not printed — opens the collection
 Central file, not printed
 
 <!-- END SOURCE: graph.context.centralFile -->
+
+
+### The classification override — the rail warning and the Settings corrections list (W-4, #1097)
+
+*W-4 let a reader reclassify a document the corpus filed oddly; #1097 moved the control into the
+Research rail's classification ⓘ popover by owner decision. The warning is the anomaly disclosure
+#279 requires — what follows the override (body styling, badges, filters, counts, exports, across
+devices) and what cannot (the bundled series-analytics dashboards, computed from the published
+corpus). Softening the "cannot see this change" sentence would turn a disclosed limit into a
+silent inconsistency.*
+
+#### The override confirmation warning
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1126–1127 | key: classification.override.warning.v2 -->
+
+The document's body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS's own classification at any time from here or from Settings ▸ Search.
+
+<!-- END SOURCE: classification.override.warning.v2 -->
+
+#### The corrections list — empty state
+<!-- SOURCE: FRUSExplorer/Settings/ClassificationCorrectionsView.swift | lines: 106–107 | key: classification.corrections.empty.detail -->
+
+Documents you reclassify from the Research panel appear here, where you can restore FRUS's own classification.
+
+<!-- END SOURCE: classification.corrections.empty.detail -->
+
+#### The corrections list — footer
+<!-- SOURCE: FRUSExplorer/Settings/ClassificationCorrectionsView.swift | lines: 136–137 | key: classification.corrections.footer -->
+
+Undoing a correction restores FRUS's own classification and syncs across your devices. A correction for a volume not indexed on this device takes effect when the volume is indexed.
+
+<!-- END SOURCE: classification.corrections.footer -->
+
+---
+
+## 15. Archive Visits — the research-trip planner
+
+*Build 44's flagship (#1086–#1097): an Archive Visit turns documents' source notes and their
+footnotes' citations to unprinted material into a prioritized plan for a research trip. The prose
+below is the feature's entire editorial voice — the two-claims vocabulary (**drawn from** = the
+document's own source note; **pointed at** = a footnote citing something unprinted) and the rule
+that the two counts are NEVER added are stated in the info popover and echoed by every footer.
+Edits must keep that vocabulary consistent across all the blocks in this section, and must keep
+the sparsity disclosure honest: pointed-at references exist on only ~4% of documents corpus-wide,
+so a thin list is expected — sparse data, not a failed scan. The trip-packet sheet (15.6) predates
+the feature but was rescoped by Phase 0 (#1088) and its empty states rewritten.*
+
+### 15.1 The plan list, and the Mac manager window
+
+#### Empty state — title
+<!-- Shared: the same key is used by ArchiveVisitListView (iOS) and MacArchiveVisitManagerView. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 58 | key: archiveVisit.empty.title -->
+
+No Archive Visits
+
+<!-- END SOURCE: archiveVisit.empty.title -->
+
+#### Empty state — detail
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 61–62 | key: archiveVisit.empty.detail -->
+
+An Archive Visit turns documents' source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.
+
+<!-- END SOURCE: archiveVisit.empty.detail -->
+
+#### List footer — what a plan is
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 69–70 | key: archiveVisit.list.footer -->
+
+An Archive Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.
+
+<!-- END SOURCE: archiveVisit.list.footer -->
+
+#### Per-plan coverage line
+<!-- Placeholder note: keep `\(indexed.formatted())` and `\(seeds.count.formatted())` intact. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 148–149 | key: archiveVisit.coverage.v2 -->
+
+\(indexed.formatted()) of \(seeds.count.formatted()) documents indexed on this device
+
+<!-- END SOURCE: archiveVisit.coverage.v2 -->
+
+#### Mac manager — no selection
+<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 60 | key: archiveVisit.mac.noSelection.title -->
+
+No Archive Visit Selected
+
+<!-- END SOURCE: archiveVisit.mac.noSelection.title -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 64–65 | key: archiveVisit.mac.noSelection.detail -->
+
+Choose a plan from the picker in the toolbar, or create a new one. Plans can also be seeded from Source Explorer, Archival Neighbors, a collection, or a project.
+
+<!-- END SOURCE: archiveVisit.mac.noSelection.detail -->
+
+#### Deleting a plan
+<!-- Shared: the same key is used from the editor, the list, and the Mac manager (three call
+     sites, one string each — a change to the defaultValue must be made in all three). The message
+     draws the sync boundary: the plan's own data goes, from every device; documents and volumes
+     are untouched. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 213–214 | key: archiveVisit.delete.message -->
+
+This deletes the plan, its priority tiers, and its per-target notes — from your other devices too, after sync. Documents and volumes are untouched.
+
+<!-- END SOURCE: archiveVisit.delete.message -->
+
+### 15.2 The editor — coverage and derivation states
+
+#### The summary line
+<!-- Placeholder note: keep `\(targets.formatted())` and `\(repositories.formatted())` intact. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 582–583 | key: archiveVisit.editor.summary.v2 -->
+
+\(targets.formatted()) targets across \(repositories.formatted()) repositories.
+
+<!-- END SOURCE: archiveVisit.editor.summary.v2 -->
+
+#### The coverage caveat
+<!-- Phase 4's honesty line: targets derive from the search index, so unindexed seeding documents
+     can silently contribute nothing. Placeholder note: keep both `\(…formatted())` interpolations
+     intact. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 587–588 | key: archiveVisit.editor.coverage.v2 -->
+
+\(derived.indexedDocumentCount.formatted()) of \(derived.seededDocumentCount.formatted()) seeding documents indexed on this device — targets from unindexed documents may be missing below.
+
+<!-- END SOURCE: archiveVisit.editor.coverage.v2 -->
+
+#### Deriving
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 269 | key: archiveVisit.editor.deriving -->
+
+Deriving research targets from the plan's documents…
+
+<!-- END SOURCE: archiveVisit.editor.deriving -->
+
+#### No documents seeded
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 555 | key: archiveVisit.editor.noSeeds.title -->
+
+No documents seeded
+
+<!-- END SOURCE: archiveVisit.editor.noSeeds.title -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 558–559 | key: archiveVisit.editor.noSeeds.detail -->
+
+Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archive Visit.
+
+<!-- END SOURCE: archiveVisit.editor.noSeeds.detail -->
+
+#### Documents seeded, no targets derived
+<!-- Two different empty states, and the difference is the diagnosis: `noTargets` means derivation
+     ran and found nothing placeable; `allOff` means the reader switched every contribution off.
+     Neither may be blurred into a generic "nothing here". -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1059–1060 | key: archiveVisit.editor.noTargets -->
+
+No targets derive from these documents on this device — their volumes may not be indexed yet, or their source notes name nothing the app can place.
+
+<!-- END SOURCE: archiveVisit.editor.noTargets -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1056–1057 | key: archiveVisit.editor.allOff -->
+
+Every document's contributions are switched off — turn a document's archival source or unprinted references back on under Documents.
+
+<!-- END SOURCE: archiveVisit.editor.allOff -->
+
+### 15.3 The info popover ("About research targets")
+
+#### Title
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 485–486 | key: archiveVisit.info.title -->
+
+About research targets
+
+<!-- END SOURCE: archiveVisit.info.title -->
+
+#### Body — the two claims, and the never-summed rule
+<!-- The feature's defining paragraph. "The two counts are never added because they answer
+     different questions" is owner decision 1b's rule stated to the reader; the last sentence
+     explains why a plan stays correct as volumes index (stored rows are only the reader's own
+     tiers/notes/exclusions — everything else re-derives). Both must survive editing. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 488–489 | key: archiveVisit.info.body -->
+
+A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document's footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index.
+
+<!-- END SOURCE: archiveVisit.info.body -->
+
+#### The corpus sparsity disclosure
+<!-- The corpus-wide number is literal in the string (13,750 of 316,839, measured over the full
+     index) — if the index is ever rebuilt over a different corpus it must be re-measured, not
+     assumed. "Sparse data, not a failed scan" is the sentence doing the work. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 491–492 | key: archiveVisit.info.sparsity -->
+
+Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan.
+
+<!-- END SOURCE: archiveVisit.info.sparsity -->
+
+#### The measured local line
+<!-- Phase 4's device-local companion: beside the corpus claim, never replacing it — the two
+     describe different populations. Placeholder note: keep both `\(sparsity.…formatted())`
+     interpolations intact. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1103–1104 | key: archiveVisit.info.sparsity.measured.v2 -->
+
+On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.formatted()) indexed documents carry such references.
+
+<!-- END SOURCE: archiveVisit.info.sparsity.measured.v2 -->
+
+### 15.4 Targets — tiers, orphans, substitution
+
+#### Tiers footer
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1482–1483 | key: archiveVisit.tiers.footer -->
+
+Targets without a tier stay in Unprioritized, always listed last. An unlabeled tier reads “Priority 1”.
+
+<!-- END SOURCE: archiveVisit.tiers.footer -->
+
+#### An orphaned stored target
+<!-- A stored row whose target no longer derives from the current seeds. "It never deletes itself"
+     is the promise: the reader's tier and note survive reseeding until they remove them. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1028–1029 | key: archiveVisit.orphan.caption -->
+
+Stored target — no longer derives from this plan's current seeds. Kept with your tier and notes; it never deletes itself.
+
+<!-- END SOURCE: archiveVisit.orphan.caption -->
+
+#### Removing an orphan
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 180–181 | key: archiveVisit.orphan.remove.message -->
+
+Its tier and note are deleted — from your other devices too, after sync. Nothing else in the plan changes.
+
+<!-- END SOURCE: archiveVisit.orphan.remove.message -->
+
+#### The digitized-substitute hint
+<!-- Shown when part of the target's record group is digitized or microfilmed: read it that way
+     instead of pulling boxes. Keep the leading ⇄ glyph — it is the row's badge. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 801–802 | key: archiveVisit.target.substitute -->
+
+⇄ Part of this record is digitized or filmed — read it that way instead of pulling.
+
+<!-- END SOURCE: archiveVisit.target.substitute -->
+
+#### An inherited (Ibid.) seeding
+<!-- The W-1b rule surfacing in the seeding detail: the citation was inherited from the preceding
+     footnote's citation, and the row says so rather than presenting the reading as a quotation. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 881–882 | key: archiveVisit.seeding.inherited -->
+
+Cited as “Ibid.” — inherited from the preceding footnote's citation.
+
+<!-- END SOURCE: archiveVisit.seeding.inherited -->
+
+### 15.5 The Documents tab
+
+#### Footer — the two switches
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1081–1082 | key: archiveVisit.documents.footer -->
+
+Each document contributes through two switches: its own source note (drawn from) and its footnotes' citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch.
+
+<!-- END SOURCE: archiveVisit.documents.footer -->
+
+### 15.6 The trip-packet sheet
+
+*Phase 0 (#1088) rescoped the packet to the documents the reader has actually engaged with, and
+rewrote its empty states so each names its real cause. The three causes are distinct diagnoses —
+no engaged documents, no search index yet, a smart collection whose saved search cannot run yet —
+and an edit must not collapse them into one generic message.*
+
+#### Empty — no documents to plan over
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 208–209 | key: packet.empty.noDocuments.message -->
+
+There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.
+
+<!-- END SOURCE: packet.empty.noDocuments.message -->
+
+#### Empty — the index is not ready
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 190 | key: packet.empty.noIndex.title -->
+
+The search index isn't ready
+
+<!-- END SOURCE: packet.empty.noIndex.title -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 193–194 | key: packet.empty.noIndex.message -->
+
+The packet reads source notes from the search index, which isn't available yet. Finish indexing and try again.
+
+<!-- END SOURCE: packet.empty.noIndex.message -->
+
+#### Empty — a smart collection's search cannot run
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 198 | key: packet.empty.smart.title -->
+
+This collection's search can't run yet
+
+<!-- END SOURCE: packet.empty.smart.title -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 201–202 | key: packet.empty.smart.message -->
+
+This collection's documents come from its saved search, and search isn't available yet. Finish indexing and try again.
+
+<!-- END SOURCE: packet.empty.smart.message -->
+
+#### The research-topic field captions
+<!-- Two states of one caption. The seeded form's second sentence is a privacy boundary — the
+     drafts send what the reader writes HERE, never the stored project note — and must survive. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 354–355 | key: packet.topic.caption.seeded -->
+
+Seeded from your project's research question — edit freely. The drafts send what you write here, never the stored note.
+
+<!-- END SOURCE: packet.topic.caption.seeded -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 356–357 | key: packet.topic.caption.unseeded -->
+
+The inquiry drafts send what you write here.
+
+<!-- END SOURCE: packet.topic.caption.unseeded -->
+
+---
+
+## 16. Browse — the axis captions
+
+*The coverage statements on the Browse axes: what each axis was computed from, what its counts
+denominate, and what cannot be reached through it. These predate build 44 and were a standing gap
+in this file. Each is a method sentence with numbers or a refusal in it — the same material as
+§10's export statements — so the same editing rule applies: plainer must not mean vaguer, and
+every denominator and every "cannot appear here" must survive.*
+
+### 16.1 Clusters
+
+#### The index caption
+<!-- Placeholder note: keep `\(clusterCount)`, `\(unclusteredCount)` and `\(percentText)` intact.
+     The unclustered disclosure is the load-bearing clause — those documents cannot be reached
+     from this list at all, and hiding that would present the axis as exhaustive. -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 137–142 | key: browser.clusters.caption -->
+
+\(clusterCount) clusters computed from document text. Labels are the most distinctive sampled terms, not subject headings. \(unclusteredCount) documents (\(percentText)%) belong to no cluster and cannot be reached from this list. Era bars reflect each volume's coverage era, not document dates.
+
+<!-- END SOURCE: browser.clusters.caption -->
+
+#### The drill-in footer
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 503–506 | key: browser.clusters.drill.footer -->
+
+A cluster is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its label is the most distinctive words in a sample of those documents, not a subject heading. Era counts reflect each volume's coverage era, not each document's own date.
+
+<!-- END SOURCE: browser.clusters.drill.footer -->
+
+### 16.2 Archives
+
+#### The coverage statement
+<!-- Placeholder note: keep `\(coverage.noteCount)`, `\(coverage.volumesWithNotes)`,
+     `\(coverage.volumesScanned)`, `\(percent)` and `\(noteless)` intact. The last sentence is the
+     refusal — the noteless volumes, mostly the pre-1906 annuals, cannot appear on this axis. -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | lines: 84–89 | key: browser.archives.coverage -->
+
+FRUS's editors printed a source note under \(coverage.noteCount) documents across \(coverage.volumesWithNotes) of \(coverage.volumesScanned) volumes — the archival record this axis browses. About \(percent)% of those notes name an archival collection; most of the rest cite a State Department central-file number. \(noteless) volumes, mostly the pre-1906 annuals, print no notes and cannot appear here.
+
+<!-- END SOURCE: browser.archives.coverage -->
+
+### 16.3 Administrations
+
+#### The index caption
+<!-- Placeholder note: keep `\(membershipSum)` and `\(index.volumeTotals.count)` intact. "Dated to
+     each term, never by where a volume was published" is the coverage-not-production rule the
+     administration profiles are built on; the double-counting disclosure explains why memberships
+     sum past the volume count. -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 179–182 | key: browser.administrations.coverage -->
+
+Volumes filed by the administration their documents cover — dated to each term, never by where a volume was published. A volume spanning two administrations appears under both: memberships sum to \(membershipSum) across \(index.volumeTotals.count) volumes.
+
+<!-- END SOURCE: browser.administrations.coverage -->
+
+#### The drill-in caption
+<!-- Placeholder note: keep `\(profile.volumes.count)`, `\(profile.president)` and
+     `\(termText(start: profile.start, end: profile.end))` intact. -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 105–108 | key: browser.administrations.drill.caption -->
+
+\(profile.volumes.count) volumes with documents covering the \(profile.president) administration (\(termText(start: profile.start, end: profile.end))), largest share first. Membership: any dated document. A volume spanning two administrations appears under both.
+
+<!-- END SOURCE: browser.administrations.drill.caption -->
+
+### 16.4 Subjects
+
+#### The coverage statement
+<!-- The two disclosures are the caption: counts describe all 552 volumes while search reaches
+     only this device's index, and topics are DETECTED, not editorial — "so some are wrong" is a
+     sentence the feature owes the reader and must survive editing. -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 260–261 | key: subjects.index.coverage %lld -->
+
+%lld detected topics across the whole series. Counts describe all 552 volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
+
+<!-- END SOURCE: subjects.index.coverage %lld -->
