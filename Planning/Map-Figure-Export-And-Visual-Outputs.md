@@ -140,8 +140,19 @@ needs `.byteOrder32Little` with `.premultipliedFirst`. Get it wrong and you get 
 image with **red and blue swapped** — the map's palette has enough blues and reds that this reads as
 a different lens rather than as a bug.
 
-Alpha is not a concern: blending is source-over on both RGB and alpha
-(`SemanticMapRenderer.swift:354`–`:360`) and the clear alpha is 1, so the texture is opaque.
+~~Alpha is not a concern: blending is source-over on both RGB and alpha and the clear alpha is 1, so
+the texture is opaque.~~
+
+**CORRECTION (2026-08-30, after W-3 shipped).** That sentence was wrong, and W-3 correctly followed
+the code rather than the design. Source-over on *alpha* requires `sourceAlphaBlendFactor = .one`; the
+pipeline uses `.sourceAlpha` (`SemanticMapRenderer.swift:377`). The readback alpha therefore lands
+around 0.79–0.84 rather than 1, while the RGB channel holds a full over-composite against the dark
+clear colour — and the `CGImage` is declared `premultipliedFirst`. Composited over
+`AnalyticsFigureCanvas`'s forced white ground, the brightest dots **clamp to pure white** instead of
+lightening uniformly. No test reads an alpha channel and the offscreen fixture's palette alpha is 1,
+so the defect is structurally invisible. Tracked as Gap 4 in `Planning/Visual-Marketing-Plan.md` §1;
+the fix is one blend factor plus one assertion, and it touches the shared pipeline, so it must be
+verified on screen as well as in the plate.
 
 ## 4. Anti-aliasing: supersample, do not add MSAA
 
