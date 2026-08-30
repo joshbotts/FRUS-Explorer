@@ -68,6 +68,29 @@ used, not whether to spend the compute.
 | C-2 | **W-15 geographic analytics — ASSESSMENT, historical toponymy first-class** | Unchanged: BigPicture priorities 8/10/11/12 together, with era-correct place names reconciling to stable places as the owner's stated requirement. | none |
 | C-3 | **W-10 OS-27 adoption — assessment against the actual SDK** | Unchanged; first session is assessment-against-the-beta, not a build. | SDK availability |
 
+## 4a. Tier D — the agentic-loop wave, W-19 *(added 2026-08-30)*
+
+One wave, one plan document: `Agentic-Loop-Development-Plan.md` collects the app-side work that
+turns the agentic loop `Docs/Agentic-Analysis-Guide.md` documents — curate in the app, compute
+over the curation, adjudicate in the app — from folklore into affordances. Nine rows, L-0..L-8,
+each anchored to the code it extends; no CloudKit schema change anywhere in the wave; the plan
+argues its own sequencing so this table stays a pointer, not a copy.
+
+| # | Session | Size | Gate |
+|---|---|---|---|
+| L-0 | Guide correction — Appendix A.7 stale since build 44 (the app now embeds queries) | XS | none |
+| L-1 | `.fruscollection` write-minimum: spec + conformance fixture (the inbound keystone) | S | none |
+| L-2 | Export Research Database… (backup + integrity + default-off include-my-notes) | S | none |
+| L-3 | Mirror tag names into `user_tags` beside the existing id sync | S | none |
+| L-4 | Surface the shipped embedder (reveal model path; publish `queryPrefix`, undigested) | S | none |
+| L-5 | `frusexplorer://` document deep links (touches `project.yml` — xcodegen ritual) | M | none |
+| L-6 | Corpus-wide shard fetch as an explicit named-cost button (#926's refusal upheld) | S | none |
+| L-7 | Copy research-state record (build, index versions, volume list, digests) | XS | none |
+| L-8 | Local read-only MCP server — ASSESSMENT, build/no-build | M | L-1..L-4 |
+
+Tier D sits below Tier A and its standing gates, and its rows interleave with Tier B the way
+B-rows interleave with each other; L-0 may ship any time as a published-document correctness fix.
+
 ## 5. The owner lane
 
 | Item | Feeds |
