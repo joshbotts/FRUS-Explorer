@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftData
+import SQLite3
 
 // MARK: - ResearchDataEnvelope
 
@@ -925,5 +926,204 @@ enum ResearchDataExporter {
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
         return "\"\(escaped)\""
+    }
+}
+
+// MARK: - Index database export (W-19 row L-2)
+
+/// Copies the SQLite search index to a destination the reader chooses, optionally without the
+/// reader's own writing.
+///
+/// This is what `Docs/Agentic-Analysis-Guide.md` §2 and §11 teach by hand, made a button. The
+/// guide's audience is a researcher pointing an outside AI agent at the index; getting a *correct*
+/// copy out of a live WAL database, and deciding what of their own goes with it, are the two things
+/// that recipe exists to get right, and both are easy to get wrong by hand.
+///
+/// Three properties are load-bearing and each one is a documented trap:
+///
+/// 1. **`sqlite3_backup`, never a file copy.** The database runs in WAL mode, so recent writes may
+///    live entirely in the `-wal` sidecar. Copying `frus.db` alone yields a stale or torn database.
+///    The backup API reads through an open connection and therefore sees the WAL.
+/// 2. **`VACUUM` only when stripping, and always followed by a rebuild of BOTH FTS tables — as
+///    insurance, not as a demonstrated repair.** `document_cache` declares
+///    `PRIMARY KEY (volume_id, document_id)`, so its rowid is not an `INTEGER PRIMARY KEY` alias
+///    and SQLite reserves the right to renumber it on `VACUUM`, while `frus_documents` and
+///    `user_content` are FTS5 *external-content* tables keyed on that rowid — so a renumbering
+///    would leave every full-text match pointing at the wrong document, at plausible scores, with
+///    nothing failing.
+///
+///    **Measured 2026-08-31, and the measurement is why this comment is hedged:** on this SQLite
+///    build `VACUUM` did *not* renumber, even over a table with deleted rows and a rowid gap, and
+///    an FTS match resolved correctly afterwards without any rebuild. The rebuild is kept because
+///    the guarantee is SQLite's to withdraw and the cost here is one statement on a file the reader
+///    is already waiting on — but no test in this suite can prove it necessary, and none pretends
+///    to. Do not let a green suite be read as evidence that removing it is safe.
+/// 3. **The strip is only an erase because of the `VACUUM`.** Nulling the columns removes the words
+///    from the live rows and the rebuild removes them from the index — but they remain in pages
+///    SQLite has freed and not reused, and a page-level backup copies those faithfully. On the
+///    author's own store 56.2% of the file is freelist. Offering a consent checkbox over a file that
+///    still contains the text would be worse than offering no checkbox at all.
+///
+/// Version history:
+///   1.0 — W-19 L-2: initial implementation
+enum IndexDatabaseExporter {
+
+    /// What an export produced, for the surface to report honestly.
+    struct Report: Sendable, Equatable {
+        /// Size of the written file in bytes.
+        var byteCount: Int64
+        /// Whether the reader's own writing was removed.
+        var strippedWriting: Bool
+        /// Problems the post-export integrity check found. Empty is the expected result; a
+        /// non-empty list means the copy is not trustworthy and the surface must say so rather
+        /// than presenting a file that looks fine.
+        var integrityProblems: [String]
+    }
+
+    /// Why an export could not be produced.
+    enum ExportError: LocalizedError, Equatable {
+        /// The source database could not be opened for reading.
+        case cannotOpenSource(String)
+        /// The destination could not be created or written.
+        case cannotOpenDestination(String)
+        /// `sqlite3_backup` reported a failure part-way through.
+        case backupFailed(String)
+        /// A statement in the strip or verification sequence failed.
+        case sqlFailed(step: String, message: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .cannotOpenSource(let m):
+                return String(localized: "export.database.error.source",
+                              defaultValue: "Could not read the search index: \(m)")
+            case .cannotOpenDestination(let m):
+                return String(localized: "export.database.error.destination",
+                              defaultValue: "Could not write the export: \(m)")
+            case .backupFailed(let m):
+                return String(localized: "export.database.error.backup",
+                              defaultValue: "Copying the index failed: \(m)")
+            case .sqlFailed(let step, let m):
+                return String(localized: "export.database.error.sql",
+                              defaultValue: "The export failed while \(step): \(m)")
+            }
+        }
+    }
+
+    /// Copies `source` to `destination`, optionally stripping the reader's own writing.
+    ///
+    /// Synchronous and potentially long: the author's own store is ~6.3 GiB including freelist.
+    /// Call it off the main actor.
+    ///
+    /// - Parameters:
+    ///   - source: The live index. Read only; never modified.
+    ///   - destination: Written, replacing any existing file.
+    ///   - includeMyWriting: When `false`, summaries, notes and tag names are removed from the copy
+    ///     and the freed pages reclaimed. When `true` the copy is byte-faithful in content.
+    /// - Returns: A `Report` describing what was written.
+    static func export(from source: URL, to destination: URL, includeMyWriting: Bool) throws -> Report {
+        try? FileManager.default.removeItem(at: destination)
+
+        var src: OpaquePointer?
+        guard sqlite3_open_v2(source.path, &src, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let src else {
+            let message = src.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            sqlite3_close(src)
+            throw ExportError.cannotOpenSource(message)
+        }
+        defer { sqlite3_close(src) }
+
+        var dst: OpaquePointer?
+        guard sqlite3_open_v2(destination.path, &dst,
+                              SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK,
+              let dst else {
+            let message = dst.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            sqlite3_close(dst)
+            throw ExportError.cannotOpenDestination(message)
+        }
+        defer { sqlite3_close(dst) }
+
+        // The page copy. `-1` copies every remaining page in one call; the source is read through
+        // its connection, so WAL content is included and no checkpoint of the live database is
+        // needed — this must never write to the file the app is using.
+        guard let backup = sqlite3_backup_init(dst, "main", src, "main") else {
+            throw ExportError.backupFailed(String(cString: sqlite3_errmsg(dst)))
+        }
+        let stepResult = sqlite3_backup_step(backup, -1)
+        let finishResult = sqlite3_backup_finish(backup)
+        guard stepResult == SQLITE_DONE, finishResult == SQLITE_OK else {
+            throw ExportError.backupFailed(String(cString: sqlite3_errmsg(dst)))
+        }
+
+        if !includeMyWriting {
+            try strip(dst)
+        }
+
+        let problems = verify(dst)
+        let size = (try? FileManager.default.attributesOfItem(atPath: destination.path)[.size]) as? Int64
+        return Report(byteCount: size ?? 0,
+                      strippedWriting: !includeMyWriting,
+                      integrityProblems: problems)
+    }
+
+    /// Removes the reader's own writing from an already-copied database.
+    ///
+    /// The order is the whole correctness argument: null the columns, drop the tag names, reclaim
+    /// the freed pages, and only then rebuild both external-content indexes against the rowids
+    /// `VACUUM` may have renumbered.
+    private static func strip(_ db: OpaquePointer) throws {
+        try exec(db, step: "removing your notes and summaries", sql: """
+            UPDATE document_cache SET summary_text = NULL, note_text = NULL, user_tag_ids = NULL
+            """)
+        try exec(db, step: "removing your tag names", sql: "DELETE FROM user_tags")
+        // Reclaims the freed pages. Without this the words survive in the file even though no row
+        // and no index references them any more.
+        try exec(db, step: "reclaiming freed pages", sql: "VACUUM")
+        // Both, and after the VACUUM. See the type's note 2.
+        try exec(db, step: "rebuilding the document index",
+                 sql: "INSERT INTO frus_documents(frus_documents) VALUES('rebuild')")
+        try exec(db, step: "rebuilding your-content index",
+                 sql: "INSERT INTO user_content(user_content) VALUES('rebuild')")
+    }
+
+    /// Runs the same checks the app's own Index Health screen runs, against the copy.
+    ///
+    /// The `rank` argument on `integrity-check` is `1` deliberately: with the default the check
+    /// tests only the FTS index's internal consistency and passes on an index that has drifted from
+    /// its content table. Form `1` is the one that cross-checks against `document_cache`.
+    ///
+    /// - Returns: Human-readable problems; empty means the copy verified.
+    private static func verify(_ db: OpaquePointer) -> [String] {
+        var problems: [String] = []
+        var stmt: OpaquePointer?
+        if sqlite3_prepare_v2(db, "PRAGMA quick_check", -1, &stmt, nil) == SQLITE_OK {
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let row = String(cString: sqlite3_column_text(stmt, 0))
+                if row != "ok" { problems.append("quick_check: \(row)") }
+            }
+        } else {
+            problems.append("quick_check could not run")
+        }
+        sqlite3_finalize(stmt)
+
+        for table in ["frus_documents", "user_content"] {
+            do {
+                try exec(db, step: "verifying \(table)",
+                         sql: "INSERT INTO \(table)(\(table), rank) VALUES('integrity-check', 1)")
+            } catch let ExportError.sqlFailed(_, message) {
+                problems.append("\(table): \(message)")
+            } catch {
+                problems.append("\(table): \(error.localizedDescription)")
+            }
+        }
+        return problems
+    }
+
+    private static func exec(_ db: OpaquePointer, step: String, sql: String) throws {
+        var errmsg: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(db, sql, nil, nil, &errmsg)
+        guard rc == SQLITE_OK else {
+            let message = errmsg.map { String(cString: $0) } ?? "unknown"
+            sqlite3_free(errmsg)
+            throw ExportError.sqlFailed(step: step, message: message)
+        }
     }
 }

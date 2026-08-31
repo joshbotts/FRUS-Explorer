@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 import SwiftData
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - ResearchDataExporterTests
@@ -388,5 +389,152 @@ struct ResearchDataExporterTests {
         #expect(export.content.contains("tags: [\"Primary Source\"]"))
         #expect(export.content.contains("Key turning point in the negotiations."))
         #expect(!export.content.contains("citation:"))
+    }
+}
+
+// MARK: - Index database export (W-19 row L-2)
+
+/// The SQLite index export: a correct copy of a live WAL database, and the consent strip.
+///
+/// Every test here works on a real temp-file database built through the real pipeline, because the
+/// three things that can go wrong — a torn copy, a strip that does not erase, and an index whose
+/// rowids no longer match its content table — are all invisible to a mock.
+///
+/// Version history:
+///   1.0 — W-19 L-2: initial implementation
+@Suite("Index database export")
+struct IndexDatabaseExporterTests {
+
+    private let noteText = "Zebrafish marginalia — a phrase that occurs nowhere in the corpus."
+    private let summaryText = "Kumquat synopsis, likewise unique."
+
+    /// One indexed volume, with a note, a summary and a tag name attached — the three things the
+    /// strip has to remove.
+    private func makeIndexed() async throws -> (dir: URL, db: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDbExport-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("live.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        func write(_ name: String, prefix: String) throws {
+            var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+            for index in 0..<8 {
+                xml += """
+                <div type="document" xml:id="d\(index)">
+                  <head>\(index + 1). Item</head>
+                  <p>\(prefix) number \(index) discusses containment and the marshall plan.</p>
+                </div>
+
+                """
+            }
+            xml += "</body></text></TEI>"
+            try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("\(name).xml"))
+        }
+        try write("vol0", prefix: "Discarded")
+        try write("vol1", prefix: "Document")
+
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        // Index two volumes and drop the first. THE GAP IS THE POINT: `VACUUM` renumbers rowids
+        // only where they are not already contiguous, so a fixture indexed once in order cannot
+        // exercise the hazard the rebuild exists for. A real store has had volumes removed.
+        try await pipeline.indexVolume("vol0")
+        try await pipeline.indexVolume("vol1")
+        try await pipeline.removeVolume("vol0")
+
+        let tagId = "DDDDDDDD-0000-0000-0000-00000000000D"
+        try await pipeline.updateNoteText(volumeId: "vol1", documentId: "d3", bodyText: noteText)
+        try await pipeline.updateSummaryText(volumeId: "vol1", documentId: "d4",
+                                             responseText: summaryText)
+        try await pipeline.updateUserTagIds(volumeId: "vol1", documentId: "d5", userTagIds: tagId)
+        try await pipeline.replaceUserTagNames([(id: tagId, name: "escalation-rhetoric")])
+        return (dir, dbURL, pipeline)
+    }
+
+    /// Queries the exported copy the way the guide teaches — a plain read-only connection.
+    private func query(_ url: URL, _ sql: String) -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_close(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return rows
+    }
+
+    @Test("Including my writing copies it verbatim, and the copy verifies")
+    func exportWithWritingIsFaithful() async throws {
+        let (dir, live, _) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("with.sqlite")
+
+        let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true)
+        #expect(report.strippedWriting == false)
+        #expect(report.byteCount > 0)
+        #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
+
+        #expect(query(out, "SELECT note_text FROM document_cache WHERE document_id='d3'")
+                    .first == noteText)
+        #expect(query(out, "SELECT name FROM user_tags").first == "escalation-rhetoric")
+    }
+
+    @Test("Stripping removes notes, summaries and tag names from the rows AND the index")
+    func stripRemovesWritingEverywhere() async throws {
+        let (dir, live, _) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("stripped.sqlite")
+
+        let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false)
+        #expect(report.strippedWriting)
+        #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
+
+        #expect(query(out, "SELECT note_text FROM document_cache WHERE note_text IS NOT NULL").isEmpty)
+        #expect(query(out, "SELECT summary_text FROM document_cache WHERE summary_text IS NOT NULL").isEmpty)
+        #expect(query(out, "SELECT user_tag_ids FROM document_cache WHERE user_tag_ids IS NOT NULL").isEmpty)
+        #expect(query(out, "SELECT name FROM user_tags").isEmpty,
+                "tag NAMES are the most legible writing in the file; nulling the ids is not enough")
+
+        // Removed from the search index too, not merely from the rows: the user_content rebuild is
+        // what makes the strip real rather than cosmetic.
+        let hits = query(out, "SELECT document_id FROM user_content WHERE user_content MATCH 'zebrafish'")
+        #expect(hits.isEmpty, "the note text must not survive in the index")
+    }
+
+    /// An end-to-end check that the exported copy is usable: matches resolve to the documents whose
+    /// text they matched, across a strip, a `VACUUM` and two index rebuilds.
+    ///
+    /// **What this does NOT do, stated because the obvious reading is wrong.** It does not prove the
+    /// post-`VACUUM` rebuild is necessary. Measured on this SQLite build, `VACUUM` does not renumber
+    /// `document_cache`'s rowids — verified directly, including over a table with a rowid gap left
+    /// by a removed volume — so this test passes with the `frus_documents` rebuild removed. It was
+    /// written believing otherwise and mutation-testing caught it. The fixture keeps the gap anyway,
+    /// because it is the shape a real store has and the closest this suite can get to the hazard.
+    @Test("An exported copy's full-text matches resolve to the right documents")
+    func exportedMatchesResolveCorrectly() async throws {
+        let (dir, live, _) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("aligned.sqlite")
+
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false)
+
+        // Each body says "Document number N", so the match's own text names the document it must
+        // resolve to. A misaligned index returns a row whose header disagrees with its body.
+        for index in 0..<8 {
+            let sql = """
+                SELECT dc.document_id FROM frus_documents
+                JOIN document_cache dc ON dc.rowid = frus_documents.rowid
+                WHERE frus_documents MATCH 'body_text : "document number \(index)"'
+                """
+            let hits = query(out, sql)
+            #expect(hits == ["d\(index)"],
+                    "match for document \(index) resolved to \(hits)")
+        }
     }
 }

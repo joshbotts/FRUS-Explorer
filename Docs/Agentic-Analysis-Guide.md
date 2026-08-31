@@ -87,6 +87,19 @@ On iOS and iPadOS there is no supported route to the file. The app does not enab
 file sharing, so the index is not reachable without a full device backup extraction. Do this work
 on a Mac.
 
+### Or let the app do it
+
+On macOS, **Settings ▸ Data & Recovery ▸ Export Research Database…** runs everything this section
+and [§11](#11-safety-privacy-and-what-leaves-your-machine) describe, in the right order: the backup
+API rather than a file copy, the optional strip of your own writing (with the `VACUUM` that makes it
+an erase rather than an unlinking), and the `rank`-1 integrity check afterwards — reporting any
+problem instead of handing you a file that looks fine. The switch is **off** by default, so the
+export excludes your notes, summaries and tag names unless you say otherwise.
+
+It is disabled while indexing is running, for the reason the next paragraph gives. The rest of this
+section is what to do by hand — on iOS, where there is no route to the file, or when you want the
+copy somewhere the panel cannot reach.
+
 ### Copy it properly
 
 Quit FRUS Explorer first. Then use SQLite's backup API, which produces a byte-faithful copy with
@@ -1627,6 +1640,10 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.6 — 2026-08-31: §2 gains **"Or let the app do it"** — macOS Settings ▸ Data & Recovery now runs
+  this section's recipe and §11's strip as one action, with the integrity check reported rather than
+  assumed. The by-hand instructions stay, because iOS has no route to the file. *(Wave W-19, row
+  L-2.)*
 - 1.5 — 2026-08-31: **§15, writing a collection the app can open** — the first section in this guide
   where the traffic runs toward the app rather than away from it. Publishes the `.fruscollection`
   write-minimum (five top-level keys, six composition keys, one required key per entry), the

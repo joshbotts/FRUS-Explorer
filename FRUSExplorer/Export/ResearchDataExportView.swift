@@ -8,6 +8,9 @@
 
 import SwiftUI
 import SwiftData
+#if os(macOS)
+import AppKit
+#endif
 
 // MARK: - ResearchDataExportView
 
@@ -75,6 +78,14 @@ struct DataExportSections: View {
     @State private var appendixExportURLs: [URL] = []
     @State private var isPreparingMarkdown = true
 
+    // MARK: Index database export (W-19 row L-2), macOS only
+    /// Per-export consent, deliberately `@State` and OFF on every entry rather than `@AppStorage`:
+    /// what leaves the machine is a decision each time, not a remembered preference.
+    @State private var includeMyWritingInDatabase = false
+    @State private var databaseExportRunning = false
+    @State private var databaseExportResult: String?
+    @State private var databaseExportProblem: String?
+
     private var userPromptCount: Int {
         prompts.filter { !$0.isStandard }.count
     }
@@ -130,6 +141,10 @@ struct DataExportSections: View {
                 ))
             }
 
+            #if os(macOS)
+            databaseExportSection
+            #endif
+
             Section {
                 markdownExportRow
             } footer: {
@@ -157,6 +172,106 @@ struct DataExportSections: View {
             await prepareMarkdownExports()
         }
     }
+
+    // MARK: - Index Database Export (macOS)
+
+    #if os(macOS)
+    /// Copies the whole search index to a file the reader chooses — what
+    /// `Docs/Agentic-Analysis-Guide.md` §2 teaches by hand, so that pointing an outside AI agent at
+    /// the index does not start with getting a WAL-mode copy right from a terminal.
+    ///
+    /// macOS only, and that is the honest shape rather than a shortfall: the app declares no
+    /// iTunes/Finder file sharing, the guide already tells readers to do this work on a Mac, and a
+    /// multi-gigabyte share sheet on an iPhone would be a worse answer than saying so.
+    @ViewBuilder
+    private var databaseExportSection: some View {
+        Section {
+            Toggle(
+                String(localized: "settings.export.database.includeWriting",
+                       defaultValue: "Include My Notes, Summaries, and Tags"),
+                isOn: $includeMyWritingInDatabase
+            )
+            .disabled(databaseExportRunning)
+
+            Button {
+                exportIndexDatabase()
+            } label: {
+                if databaseExportRunning {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text(String(localized: "settings.export.database.running",
+                                    defaultValue: "Copying the index…"))
+                    }
+                } else {
+                    Label(String(localized: "settings.export.database.action",
+                                 defaultValue: "Export Research Database…"),
+                          systemImage: "cylinder.split.1x2")
+                }
+            }
+            // The same interlock Index Health applies to its integrity button: a copy taken
+            // mid-index is a copy of a half-written index.
+            .disabled(databaseExportRunning
+                      || appState.indexingBatch != nil
+                      || appState.databaseURL == nil)
+
+            if let databaseExportResult {
+                Label(databaseExportResult, systemImage: "checkmark.circle")
+                    .foregroundStyle(.secondary)
+            }
+            if let databaseExportProblem {
+                Label(databaseExportProblem, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+            }
+        } footer: {
+            Text(String(
+                localized: "settings.export.database.footer",
+                defaultValue: "A complete copy of the search index, for analysis with your own tools. With the switch off, your notes, summaries and tag names are removed from the copy and the freed space reclaimed, so the words are gone rather than merely unlinked. The copy is verified before it is handed over. It is roughly the size of the index on disk."
+            ))
+        }
+    }
+
+    /// Runs the export off the main actor and reports what actually happened.
+    private func exportIndexDatabase() {
+        guard let source = appState.databaseURL else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "frus-index.sqlite"
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+
+        databaseExportResult = nil
+        databaseExportProblem = nil
+        databaseExportRunning = true
+        let includeWriting = includeMyWritingInDatabase
+
+        Task.detached(priority: .userInitiated) {
+            do {
+                let report = try IndexDatabaseExporter.export(
+                    from: source, to: destination, includeMyWriting: includeWriting)
+                let size = ByteCountFormatter.string(fromByteCount: report.byteCount,
+                                                     countStyle: .file)
+                await MainActor.run {
+                    databaseExportRunning = false
+                    if report.integrityProblems.isEmpty {
+                        databaseExportResult = String(
+                            localized: "settings.export.database.done",
+                            defaultValue: "Exported \(size).")
+                    } else {
+                        // A file that looks fine and is not is the one outcome worth shouting
+                        // about, so the problems are surfaced rather than folded into success.
+                        databaseExportProblem = String(
+                            localized: "settings.export.database.integrity",
+                            defaultValue: "Exported \(size), but the copy did not verify: \(report.integrityProblems.joined(separator: "; "))")
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    databaseExportRunning = false
+                    databaseExportProblem = error.localizedDescription
+                }
+            }
+        }
+    }
+    #endif
 
     // MARK: - JSON Export Row
 
