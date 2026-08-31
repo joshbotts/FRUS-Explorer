@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 // MARK: - SemanticModelSection
 
@@ -52,7 +55,10 @@ struct SemanticModelSection: View {
                 if let failure = status.failure {
                     failureRow(failure)
                 }
-                if status.isPresent { removeButton }
+                if status.isPresent {
+                    modelPathRow
+                    removeButton
+                }
             } else {
                 unavailableRow
             }
@@ -143,6 +149,54 @@ struct SemanticModelSection: View {
             detail: failure,
             state: .warning
         )
+    }
+
+    /// Where the validated weights are, so they can be reused rather than re-downloaded.
+    ///
+    /// The app has already fetched this GGUF and checked it against the pinned length and SHA-256.
+    /// A researcher pointing their own tooling at the corpus — the audience
+    /// `Docs/Agentic-Analysis-Guide.md` §A.7 is written for — otherwise fetches 229 MB again and
+    /// trusts a URL, when the copy on this disk is the one the app itself validated. Shown only
+    /// when a verified copy is present, because a path to a file that failed its check is worse
+    /// than no path.
+    ///
+    /// macOS gets Finder and the pasteboard; iOS gets the path read-only, since there is no route
+    /// to the container from another process anyway.
+    @ViewBuilder
+    private var modelPathRow: some View {
+        if let url = appState.semanticModelStore?.verifiedModelURL() {
+            #if os(macOS)
+            HStack {
+                Text(String(localized: "settings.model.path.label", defaultValue: "Model File"))
+                Spacer()
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                } label: {
+                    Label(String(localized: "settings.model.path.reveal",
+                                 defaultValue: "Show in Finder"),
+                          systemImage: "folder")
+                }
+                .buttonStyle(.link)
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.path, forType: .string)
+                } label: {
+                    Label(String(localized: "settings.model.path.copy",
+                                 defaultValue: "Copy Path"),
+                          systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.link)
+            }
+            #else
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "settings.model.path.label", defaultValue: "Model File"))
+                Text(url.path)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            #endif
+        }
     }
 
     /// Removes the model file. Non-destructive to everything else, and the copy says so.

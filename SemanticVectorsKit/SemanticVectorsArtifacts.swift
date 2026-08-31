@@ -62,6 +62,21 @@ public enum SemanticVectorsArtifacts {
         /// The quantization rules, spelled out.
         public let quantization: String
 
+        /// The query-side prompt the app embeds free text under, trailing space included.
+        ///
+        /// **Published but deliberately NOT digested**, the same treatment `harvestScriptSHA256`
+        /// gets. `digest` builds from a closed, order-fixed list of nine fields; this is not one of
+        /// them, so adding it changes no artifact's identity and every shipped generation — every
+        /// downloaded shard — stays valid. Widening the digest instead would have invalidated the
+        /// whole corpus over a field that describes how to *use* the artifact rather than how it
+        /// was made.
+        ///
+        /// Optional because artifacts generated before this field existed simply do not carry it;
+        /// a `nil` here means "this artifact predates the app embedding queries", not "no prompt".
+        /// The asymmetry with `prefix` (the document-side prompt) is EmbeddingGemma's convention,
+        /// not an oversight — see `SemanticQueryPrompt`.
+        public let queryPrefix: String?
+
         /// Creates a provenance pin.
         /// - Parameters:
         ///   - model: LM Studio model id.
@@ -73,11 +88,14 @@ public enum SemanticVectorsArtifacts {
         ///   - prefix: Document-side prompt.
         ///   - pooling: The pooling rule in words.
         ///   - quantization: The quantization rules in words.
+        ///   - queryPrefix: The query-side prompt; published, never digested. Defaults to `nil`
+        ///     so a caller reconstructing an older artifact's pin gets that artifact's digest.
         public init(
             model: String, modelFileSHA256: String, nativeDims: Int, shippingDims: Int,
             chunkChars: Int, overlapChars: Int, prefix: String, pooling: String,
-            quantization: String
+            quantization: String, queryPrefix: String? = nil
         ) {
+            self.queryPrefix = queryPrefix
             self.model = model
             self.modelFileSHA256 = modelFileSHA256
             self.nativeDims = nativeDims

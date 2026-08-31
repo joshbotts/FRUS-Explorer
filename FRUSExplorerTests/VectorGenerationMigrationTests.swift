@@ -221,4 +221,38 @@ struct VectorGenerationMigrationTests {
                     "\(name)'s header pin disagrees with the bundled index")
         }
     }
+
+    // MARK: - The query prompt is published, and deliberately not digested (W-19 row L-4)
+
+    @Test("The shipped artifact names the query prompt the encoder actually sends")
+    func artifactPublishesTheQueryPrefix() throws {
+        let url = try #require(Bundle.main.url(forResource: "semantic-vectors-index",
+                                               withExtension: "json"))
+        let json = try #require(try JSONSerialization.jsonObject(
+            with: Data(contentsOf: url)) as? [String: Any])
+        let provenance = try #require(json["provenance"] as? [String: Any])
+        let published = try #require(provenance["queryPrefix"] as? String,
+                                     "the artifact must be self-describing on the query side")
+        // Not a copy of the string: the assertion is that the artifact and the encoder agree, so
+        // changing the prompt without re-emitting the index fails here rather than in retrieval,
+        // where it would show as merely worse neighbours.
+        #expect(published == SemanticQueryPrompt.queryPrefix)
+    }
+
+    @Test("queryPrefix changes no artifact's identity")
+    func queryPrefixIsNotDigested() {
+        // The whole reason this field could be added at all. The digest is built from a closed,
+        // order-fixed list of nine fields; if queryPrefix ever joined it, every shipped generation
+        // and every shard a reader has already downloaded would be invalidated at once.
+        func pin(queryPrefix: String?) -> SemanticVectorsArtifacts.Provenance {
+            SemanticVectorsArtifacts.Provenance(
+                model: "m", modelFileSHA256: String(repeating: "a", count: 64),
+                nativeDims: 768, shippingDims: 512, chunkChars: 3200, overlapChars: 480,
+                prefix: "title: none | text: ", pooling: "p", quantization: "q",
+                queryPrefix: queryPrefix)
+        }
+        let absent = pin(queryPrefix: nil).digestHex
+        #expect(pin(queryPrefix: "task: search result | query: ").digestHex == absent)
+        #expect(pin(queryPrefix: "something else entirely").digestHex == absent)
+    }
 }
