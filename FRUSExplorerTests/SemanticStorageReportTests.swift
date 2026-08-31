@@ -324,4 +324,52 @@ struct SemanticStorageSectionParityTests {
                 """)
         }
     }
+
+    // MARK: - #926's refusal survives the corpus-wide button (W-19 row L-6)
+
+    private static func appSource(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+    }
+
+    @Test("Only the manual settings button reaches the whole corpus")
+    func entireCorpusScopeIsManualOnly() throws {
+        // L-6 added a corpus-wide sweep. #926 refused to let a corpus-wide NUMBER reach any
+        // automatic path or default count, because "published − onDisk" tells a twelve-volume
+        // library it is missing 544. A default parameter is easy to widen later by accident, so the
+        // guarantee is pinned by location: `.entireCorpus` may appear in exactly one file, the
+        // settings section where a button states its own cost before it runs.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?
+            .compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "swift" } ?? []
+        #expect(files.count > 100, "the sweep found almost nothing — it is not scanning the app")
+
+        var offenders: [String] = []
+        for file in files {
+            // The CALL form, not the declaration: `AppState` necessarily declares the case and
+            // documents it, which is not a use.
+            guard let source = try? String(contentsOf: file, encoding: .utf8),
+                  source.contains("scope: .entireCorpus") else { continue }
+            if file.lastPathComponent != "SemanticStorageSection.swift" {
+                offenders.append(file.lastPathComponent)
+            }
+        }
+        #expect(offenders.isEmpty,
+                "corpus-wide shard fetching leaked out of the manual button into: \(offenders)")
+    }
+
+    @Test("The scope defaults to downloaded volumes, so every existing caller is unchanged")
+    func scopeDefaultsToDownloadedVolumesOnly() throws {
+        let source = try Self.appSource("FRUSExplorer/App/AppState.swift")
+        // Both entry points must carry the default. Without it, adding the parameter would have
+        // silently changed what the automatic paths and the shipped count mean.
+        #expect(source.contains("scope: SemanticShardScope = .downloadedVolumesOnly"),
+                "semanticShardsAwaitingDownload must default to the shipped scope")
+        #expect(source.contains("downloadAllSemanticShards(scope: SemanticShardScope = .downloadedVolumesOnly)"),
+                "downloadAllSemanticShards must default to the shipped scope")
+    }
 }

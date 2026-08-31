@@ -567,13 +567,30 @@ final class AppState {
     /// hold would still score in the funnel — the vectors are independent of the XML — but the
     /// neighbour it produced could not be opened, so fetching it spends bytes on a result the app
     /// would have to withhold.
-    func semanticShardsAwaitingDownload() async -> [String] {
+    /// Which volumes a shard sweep should consider.
+    ///
+    /// The default is the whole of #926's refusal expressed as a type: a count over volumes the
+    /// reader does not have would tell a twelve-volume library it was missing 544, which is a
+    /// number about the corpus rather than about them. `entireCorpus` exists only for the explicit
+    /// button that names its own cost before it runs (W-19 row L-6) — never for an automatic path,
+    /// and never for the count the section shows by default.
+    enum SemanticShardScope: Sendable {
+        /// Volumes already downloaded — the shipped behaviour, and every automatic path.
+        case downloadedVolumesOnly
+        /// Every volume the manifest knows, whether or not its text is on this device.
+        case entireCorpus
+    }
+
+    func semanticShardsAwaitingDownload(
+        scope: SemanticShardScope = .downloadedVolumesOnly
+    ) async -> [String] {
         guard let store = semanticShardStore, let fetcher = semanticShardFetcher,
               let downloads = downloadManager else { return [] }
         let onDisk = Set(await store.volumeIDsOnDisk())
         let known = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
         var awaiting: [String] = []
-        for entry in known where downloads.isVolumeDownloaded(entry.volumeId) {
+        for entry in known where scope == .entireCorpus
+                                 || downloads.isVolumeDownloaded(entry.volumeId) {
             guard !onDisk.contains(entry.volumeId) else { continue }
             guard await fetcher.hasShard(for: entry.volumeId) else { continue }
             awaiting.append(entry.volumeId)
@@ -589,13 +606,13 @@ final class AppState {
     /// contend with the downloads this feature exists to accompany.
     ///
     /// Ignores ``automaticSemanticShardDownloads`` — see its note.
-    func downloadAllSemanticShards() async {
+    func downloadAllSemanticShards(scope: SemanticShardScope = .downloadedVolumesOnly) async {
         guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
         // A remembered failure blocks a re-request for the session, which is right for the lazy
         // path and wrong for someone who just pressed a button.
         await fetcher.clearFailures()
 
-        let awaiting = await semanticShardsAwaitingDownload()
+        let awaiting = await semanticShardsAwaitingDownload(scope: scope)
         guard !awaiting.isEmpty else { return }
         semanticShardDownload = SemanticShardDownloadProgress(
             completed: 0, total: awaiting.count, failed: 0)
