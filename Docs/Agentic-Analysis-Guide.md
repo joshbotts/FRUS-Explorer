@@ -937,6 +937,22 @@ self-describe, so capture these alongside your results:
 | Subject vocabulary digest | `SELECT DISTINCT digest FROM document_subject_volumes;` if you used subjects. |
 | The queries themselves | Verbatim, in a file, with their result counts. |
 
+**The app can now hand you most of this.** Settings ▸ Storage ▸ Index Health ▸ **Copy Research-State
+Record** puts a small JSON on the clipboard carrying the date, the app build and version, *both*
+index-version pairs (installed and current, for the date index and the FTS schema), the sorted
+indexed-volume list, the subject-vocabulary digests, and the semantic provenance digest. Paste it
+beside your results.
+
+Two rows it deliberately does not carry. **The queries** stay yours — the app already exports them
+with their hit counts, including the recorded zeros a claim of absence rests on, through the method
+appendix on a collection export; a thinner second copy here would be worse. And the **date of the
+copy** in the table above means when *you* ran `.backup`, which the app cannot know; the record
+stamps when the record was taken, which is the honest thing it can say.
+
+It also carries one row this table does not ask for, because the table predates it: the **FTS schema
+version**, a second stamp that independently triggers a rebuild. A record showing a matched date-index
+pair while that one disagrees is an index mid-migration.
+
 Two of these change under your feet in normal use. Downloading more volumes changes every count.
 An app update can raise the index format version and trigger a background re-index, which changes
 extraction output for rows you already had. If a number matters, re-derive it after any update
@@ -1651,6 +1667,13 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.8 — 2026-08-31: §13 gains **Copy Research-State Record** — the reproducibility record this
+  section asks for, as one paste from Settings ▸ Storage ▸ Index Health. Notes the two rows it
+  deliberately does not carry (the queries, already exported better by the method appendix; and the
+  date of *your* `.backup`, which the app cannot know) and the one it adds that the table predates
+  (the FTS schema version, a second stamp that independently triggers a rebuild). *(Wave W-19,
+  row L-7.)*
 
 - 1.7 — 2026-08-31: §A.7 gains the two things that stop an agent re-fetching and guessing: the app's
   validated GGUF is reachable from Settings (Volumes & Storage ▸ Natural-Language Search), and the

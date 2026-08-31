@@ -60,6 +60,9 @@ struct IndexHealthView: View {
         case upToDate
     }
 
+    /// Flips the copy button's label for two seconds, so the press is acknowledged.
+    @State private var copiedRecord = false
+
     /// Installed date-index version from UserDefaults (0 before the first index).
     private var installedVersion: Int {
         UserDefaults.standard.integer(forKey: IndexingPipeline.dateIndexVersionKey)
@@ -96,6 +99,7 @@ struct IndexHealthView: View {
                 }
                 Spacer(minLength: 8)
                 integrityButton
+                researchStateButton
             }
             .accessibilityElement(children: .combine)
 
@@ -154,6 +158,61 @@ struct IndexHealthView: View {
                                defaultValue: "Format version %lld"),
                 Int64(currentVersion)
             )
+        }
+    }
+
+    // MARK: - Research-state record (W-19 row L-7)
+
+    /// Puts the guide's §13 reproducibility record on the clipboard as one small JSON.
+    ///
+    /// Beside the integrity button because it answers the same question from the other side: that
+    /// one asks whether the index is sound now, this one records what the index *was* when a
+    /// finding was taken. A machine-assisted claim nobody can re-derive is a claim nobody can
+    /// publish, and until now every field here needed either a SQL client or a walk through three
+    /// screens.
+    ///
+    /// Deliberately NOT sharing the integrity button's `.disabled` interlock. That one guards a
+    /// long read of the whole index; this is a metadata snapshot, and refusing to record state
+    /// *during* a re-index would withhold the record exactly when the two version numbers disagree
+    /// — which is the most interesting thing it can report.
+    private var researchStateButton: some View {
+        Button {
+            let record = ResearchStateRecord.make(
+                pipeline: appState.indexingPipeline,
+                semanticDigest: BundledSemanticVectors.provenance?.digestHex)
+            copyToClipboard(record.jsonText())
+        } label: {
+            Label(
+                copiedRecord
+                    ? String(localized: "indexHealth.researchState.copied", defaultValue: "Copied")
+                    : String(localized: "indexHealth.researchState.button",
+                             defaultValue: "Copy Research-State Record"),
+                systemImage: copiedRecord ? "checkmark" : "doc.on.clipboard"
+            )
+            .font(.callout)
+        }
+        .buttonStyle(.bordered)
+        .controlHelp(
+            String(localized: "indexHealth.researchState.a11y",
+                   defaultValue: "Copy a record of this index's state"),
+            detail: String(localized: "indexHealth.researchState.help",
+                           defaultValue: "Copies app build, index versions, the indexed volume list and the vector provenance as JSON — what a reproducible research claim needs to cite"),
+            systemImage: "doc.on.clipboard"
+        )
+    }
+
+    /// Platform clipboard, with the two-second label flip `DataRecoveryView` established.
+    private func copyToClipboard(_ text: String) {
+        #if os(iOS)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
+        copiedRecord = true
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            copiedRecord = false
         }
     }
 

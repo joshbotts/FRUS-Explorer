@@ -538,3 +538,88 @@ struct IndexDatabaseExporterTests {
         }
     }
 }
+
+// MARK: - Research-state record (W-19 row L-7)
+
+/// The §13 reproducibility record: what makes a machine-assisted run citable.
+///
+/// Version history:
+///   1.0 — W-19 L-7: initial implementation
+@Suite("Research-state record")
+struct ResearchStateRecordTests {
+
+    /// One indexed volume through the real pipeline, so the two SQLite reads answer for real.
+    private func makeIndexed() async throws -> (dir: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSState-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        // Two volumes, written in an order that is NOT the sorted order, so a record that forgot
+        // to sort would still look plausible.
+        for name in ["vol9", "vol2"] {
+            let xml = """
+            <?xml version="1.0"?>
+            <TEI><text><body>
+            <div type="document" xml:id="d0"><head>1. Item</head><p>containment</p></div>
+            </body></text></TEI>
+            """
+            try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("\(name).xml"))
+        }
+        let dbURL = dir.appendingPathComponent("state.sqlite")
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol9")
+        try await pipeline.indexVolume("vol2")
+        return (dir, pipeline)
+    }
+
+    @Test("The record carries §13's facts, and the volume list is sorted")
+    func recordIsCompleteAndSorted() async throws {
+        let (dir, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let record = ResearchStateRecord.make(
+            pipeline: pipeline, semanticDigest: "deadbeef",
+            now: Date(timeIntervalSince1970: 1_700_000_000))
+
+        // §13 says to save the LIST, not the count — and sorted, because the in-memory form is a
+        // Set whose order varies per process. Unsorted, two records of an unchanged library would
+        // diff against each other.
+        #expect(record.indexedVolumeIds == ["vol2", "vol9"])
+        #expect(record.currentIndexVersion == IndexingPipeline.currentDateIndexVersion)
+        #expect(record.currentFTSSchemaVersion == IndexingPipeline.currentFTSSchemaVersion)
+        #expect(record.semanticProvenanceDigest == "deadbeef")
+        #expect(record.recordedAt.hasPrefix("2023-11-14"), "the stamp is §13's first row")
+        #expect(!record.appBuild.isEmpty)
+    }
+
+    @Test("The JSON is stable, so two records of one state are diffable")
+    func jsonIsStableAndSorted() async throws {
+        let (dir, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+
+        let a = ResearchStateRecord.make(pipeline: pipeline, semanticDigest: nil, now: now).jsonText()
+        let b = ResearchStateRecord.make(pipeline: pipeline, semanticDigest: nil, now: now).jsonText()
+        #expect(a == b, "a record that re-orders itself between takes cannot be cited")
+
+        // Keys sorted, and the JSON round-trips — a wire format a tool has to parse.
+        let decoded = try JSONDecoder().decode(ResearchStateRecord.self, from: Data(a.utf8))
+        #expect(decoded.indexedVolumeIds == ["vol2", "vol9"])
+        #expect(a.range(of: "\"appBuild\"")!.lowerBound < a.range(of: "\"appVersion\"")!.lowerBound,
+                "keys must be sorted so two records diff cleanly")
+    }
+
+    @Test("A record with no pipeline still records what it can")
+    func degradesWithoutAPipeline() {
+        // The two SQLite reads degrade to empty rather than throwing: a record missing one field
+        // is worth more than no record, and an empty array is visibly not an answer.
+        let record = ResearchStateRecord.make(pipeline: nil, semanticDigest: nil)
+        #expect(record.indexedVolumeIds.isEmpty)
+        #expect(record.subjectVocabularyDigests.isEmpty)
+        #expect(record.currentIndexVersion == IndexingPipeline.currentDateIndexVersion)
+        #expect(!record.recordedAt.isEmpty)
+    }
+}
