@@ -1127,3 +1127,106 @@ enum IndexDatabaseExporter {
         }
     }
 }
+
+// MARK: - Research-state record (W-19 row L-7)
+
+/// The facts that make a machine-assisted run reproducible, as one small JSON.
+///
+/// `Docs/Agentic-Analysis-Guide.md` §13 lists what to capture beside a finding, because the
+/// database does not fully self-describe: two of its entries change under the reader's feet in
+/// normal use, and a number that mattered has to be re-derivable afterwards. Until now every entry
+/// needed either a SQL client or a hunt through three screens. This is one paste.
+///
+/// **It answers §13's table, not the row that scheduled it**, and the difference is deliberate:
+///
+/// - §13 asks for the **date**, which the scheduling row omitted. Stamped here, because the whole
+///   record is a claim about a moment.
+/// - §13 asks for **the queries**. Not included, and that is not an omission: the app already
+///   exports them with their hit counts through `QueryMethodAppendix`, which carries the recorded
+///   zeros a claim of absence rests on. Duplicating them here would produce a second, thinner copy
+///   of the better artifact.
+/// - The record adds the **FTS schema version**, which §13 does not name and the row did not
+///   mention. It is a second stamp that independently triggers a rebuild, so a record carrying only
+///   the date-index version could report a matched pair while the index was mid-migration.
+/// - The record adds the **semantic provenance digest**, per the row — the pin every vector
+///   artifact agrees on, and the thing that decides whether two runs' neighbours are comparable.
+///
+/// Every JSON key is a literal, never `String(localized:)`: this is a wire format read by tools,
+/// and translating its keys would break the readers it exists for.
+///
+/// Version history:
+///   1.0 — W-19 L-7: initial implementation
+struct ResearchStateRecord: Codable, Equatable, Sendable {
+
+    /// When the record was taken. §13's first row.
+    var recordedAt: String
+    /// `CFBundleShortVersionString`.
+    var appVersion: String
+    /// `CFBundleVersion` — the build.
+    var appBuild: String
+    /// The date-index generation the installed rows were written by, from `UserDefaults`.
+    var installedIndexVersion: Int
+    /// The generation this build would write. Unequal to the installed one means a re-index is
+    /// pending or running, and extraction may differ across rows.
+    var currentIndexVersion: Int
+    /// The installed FTS5 schema version — the second stamp that can force a rebuild.
+    var installedFTSSchemaVersion: Int
+    /// The FTS5 schema version this build expects.
+    var currentFTSSchemaVersion: Int
+    /// Every indexed volume, sorted. §13 says to save the list and not the count, so this is the
+    /// list; the count is derivable and the list is not.
+    var indexedVolumeIds: [String]
+    /// Distinct subject-vocabulary digests across indexed volumes, sorted. More than one means
+    /// volumes were indexed either side of a vocabulary change.
+    var subjectVocabularyDigests: [String]
+    /// The semantic artifacts' provenance digest, or `nil` when the vectors are not loaded.
+    var semanticProvenanceDigest: String?
+
+    /// Builds the record from the app's live state.
+    ///
+    /// - Parameters:
+    ///   - pipeline: The index, for the two queries only this can answer.
+    ///   - semanticDigest: The bundled vectors' digest, or `nil` if unloaded.
+    ///   - now: The stamp, injectable so a test is not a clock.
+    /// - Returns: The record, with both SQLite reads degrading to empty rather than throwing — a
+    ///   record missing one field is worth more than no record, and an empty array is visibly not
+    ///   an answer.
+    static func make(
+        pipeline: IndexingPipeline?,
+        semanticDigest: String?,
+        now: Date = Date()
+    ) -> ResearchStateRecord {
+        let volumes = (try? pipeline?.allIndexedVolumeIds()) ?? []
+        let digests = (try? pipeline?.documentSubjectDigests()) ?? []
+        return ResearchStateRecord(
+            recordedAt: ISO8601DateFormatter().string(from: now),
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
+                as? String ?? "?",
+            appBuild: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")
+                as? String ?? "?",
+            installedIndexVersion: UserDefaults.standard.integer(
+                forKey: IndexingPipeline.dateIndexVersionKey),
+            currentIndexVersion: IndexingPipeline.currentDateIndexVersion,
+            installedFTSSchemaVersion: UserDefaults.standard.integer(
+                forKey: IndexingPipeline.ftsSchemaVersionKey),
+            currentFTSSchemaVersion: IndexingPipeline.currentFTSSchemaVersion,
+            // SORTED, and this is not cosmetic: the in-memory form is a Set, whose iteration order
+            // varies per process, so an unsorted list would make two records of an unchanged
+            // library diff against each other. §13 prescribes `ORDER BY 1` for the same reason.
+            indexedVolumeIds: volumes.sorted(),
+            subjectVocabularyDigests: digests,
+            semanticProvenanceDigest: semanticDigest)
+    }
+
+    /// The record as pretty-printed JSON with sorted keys, ready for the clipboard.
+    ///
+    /// Sorted keys so two records of the same state are textually identical and can be diffed;
+    /// pretty-printed because a human pastes this into notes as often as a tool parses it.
+    func jsonText() -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        guard let data = try? encoder.encode(self),
+              let text = String(data: data, encoding: .utf8) else { return "{}" }
+        return text
+    }
+}

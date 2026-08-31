@@ -2224,6 +2224,34 @@ public actor IndexingPipeline {
         return sqlite3_step(s) == SQLITE_ROW
     }
 
+    /// The distinct subject-vocabulary digests the indexed rows were written against.
+    ///
+    /// The guide's §13 reproducibility record asks for this, and until now it needed a SQL client:
+    /// the column is written per volume and read only by an internal freshness probe, so nothing
+    /// exposed it. Returned SORTED and as an ARRAY rather than a scalar, because more than one is
+    /// a real state — volumes indexed either side of a vocabulary change carry different stamps,
+    /// and collapsing that to "the digest" would hide exactly the drift the record exists to catch.
+    /// An empty array means no volume carries a subject stamp, not that they agree.
+    ///
+    /// nonisolated: accesses `auxDb` directly — safe as a read-only query.
+    public nonisolated func documentSubjectDigests() throws -> [String] {
+        let sql = "SELECT DISTINCT digest FROM document_subject_volumes ORDER BY 1"
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        var digests: [String] = []
+        while sqlite3_step(s) == SQLITE_ROW {
+            if let cStr = sqlite3_column_text(s, 0) {
+                digests.append(String(cString: cStr))
+            }
+        }
+        return digests
+    }
+
     /// Returns the set of all volume IDs that have at least one row in `document_cache`.
     ///
     /// Used by `AppState` to seed `indexedVolumeIds` at boot so subsequent per-volume
