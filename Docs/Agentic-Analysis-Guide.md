@@ -1205,11 +1205,16 @@ index is. Everything in this appendix was verified against the shipped files: th
 parse as documented, the id encoding round-trips for all 552 volumes, and every worked example
 below was executed as shown.
 
-One structural fact frames all of it: **the app itself never embeds free text.** Every semantic
-surface it ships (Related documents, the map) is anchored on an existing document. So the shipped
-artifacts are *complete* for document-to-document work with no embedding model at all
-([§A.5](#a5-what-an-agent-can-do-with-no-model)), while free-text semantic queries require
-reproducing the harvest embedder ([§A.7](#a7-free-text-queries-require-the-embedder)).
+One structural fact frames all of it: **the shipped artifacts are complete for document-to-document
+work with no embedding model at all** ([§A.5](#a5-what-an-agent-can-do-with-no-model)). Related
+documents and the map are anchored on an existing document, so an outside agent can reproduce every
+one of them from the bundled files alone.
+
+Free-text queries are the exception, and they need the embedder
+([§A.7](#a7-free-text-queries-require-the-embedder)). *(Corrected 2026-08-31: this paragraph used to
+say "the app itself never embeds free text." Build 44's Search by Meaning falsified that — the app
+now embeds queries on-device — and the query-side prompt it uses is named in §A.7 rather than left
+to you.)*
 
 ### A.1 What ships, and where
 
@@ -1400,11 +1405,25 @@ prompt `"title: none | text: "` with its trailing space, 3,200-character chunks 
 char-length-weighted pooling of unit-norm chunk vectors, Matryoshka truncation to the shipping
 width, L2 renormalization — then int8- or sign-quantize by the rules in §A.4 to score.
 
-Two caveats an agent must carry. The artifact records only the *document*-side prompt; the app
-never embeds queries, so there is no in-repo reference for the query-side prompt — EmbeddingGemma's
-own prompt conventions apply, and the choice is yours to make and to state. And the 0.851 recall
-was measured document-to-document; nothing here has measured text-query retrieval, so validate it
-on queries you can check by hand before trusting it in bulk.
+**The query-side prompt is now in the repo, and public** *(corrected 2026-08-31; this appendix
+previously said the app never embeds queries, which was true when it was written and stopped being
+true at build 44)*. The app ships on-device query embedding: it fetches the pinned EmbeddingGemma
+GGUF and encodes through `SemanticQueryEncoder.encodeQuery`
+(`FRUSExplorer/Semantic/SemanticQueryEncoder.swift:225`) under
+
+```
+SemanticQueryPrompt.queryPrefix = "task: search result | query: "
+```
+
+(`SemanticVectorsKit/SemanticQueryPrompt.swift:30`). Use it verbatim, trailing space included. It is
+asymmetric with the document prompt on purpose — that is EmbeddingGemma's convention, not an
+oversight — and a query embedded under a different prefix lands in a different region of the space,
+which does not fail so much as quietly return worse neighbours.
+
+**The caveat that stands:** the 0.851 recall was measured **document-to-document**. Nothing has
+measured text-query retrieval, so validate on queries you can check by hand before trusting it in
+bulk. The prompt being pinned removes a source of variance; it does not supply the missing
+measurement.
 
 ### A.8 What the vectors cannot tell you
 
@@ -1458,6 +1477,17 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.3 — 2026-08-31: **§A.7 corrected, and Appendix A's opening frame with it.** §A.7 said the app
+  "never embeds queries, so there is no in-repo reference for the query-side prompt", and the
+  appendix opened on the same claim in stronger form ("the app itself never embeds free text").
+  True when written; falsified by build 44's Search by Meaning, which embeds on-device under a
+  pinned prefix now named in the text. **Two sites, not one** — the wave row that scheduled this
+  correction named only §A.7, and an agent reading the appendix top-down would have hit the stale
+  framing first. The document-to-document recall caveat is unchanged and restated so it is not read
+  as also repaired.
+  Note for readers of §13: this guide was documented against index format version **46** and the
+  tree is now at **47** (`IndexingPipeline.currentDateIndexVersion`) — record the version your own
+  copy reports rather than either number here. *(Wave W-19, row L-0.)*
 - 1.2 — 2026-08-31: §14, scoping a question before you answer it — the measured record of three
   scoping runs (U.S.–Cuba contacts after 1961; State and wartime critical materials; Foreign
   Service reform), each run with positive and negative controls and each adversarially

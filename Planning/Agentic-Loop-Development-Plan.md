@@ -45,7 +45,7 @@ No network service: the app stays local-first; even L-8 is an assessment of a *l
 
 | # | Session | Hand-off | Size | Gate |
 |---|---|---|---|---|
-| L-0 | Guide correction: A.7 is stale since build 44 | — | XS | none |
+| ~~L-0~~ | ~~Guide correction: A.7 is stale since build 44~~ — **SHIPPED**, two sites not one | — | XS | — |
 | L-1 | The `.fruscollection` write-minimum: spec + conformance fixture | inbound | S | none |
 | L-2 | Export Research Database… | outbound | S | none |
 | L-3 | Mirror tag *names* beside the tag ids | outbound | S | none |
@@ -200,6 +200,16 @@ wave's core and can ship as one session or three, in any order — together they
 a session with any vectors-index re-emit). L-5 stands alone because of the xcodegen ritual. L-6
 is independent. L-8 waits for the rest by design.
 
-Nothing here jumps the Plan of Record's queue: Tier A (#234) and the standing gates are
-untouched, and every L-row is sized to interleave with Tier B the way B-rows already interleave
-with each other. The wave's one external dependency is the guide itself, which this repo owns.
+*(Sequencing note corrected 2026-08-31: this paragraph used to say "nothing here jumps the Plan of
+Record's queue: Tier A (#234)…". The wave **is** Tier A now — §2b — after #234's scoring lane was
+deferred when the NER harvest did not finish its week. The standing gates are still untouched and
+every L-row is still sized to interleave with Tier B.)* The wave's one external dependency is the
+guide itself, which this repo owns.
+
+**L-0 SHIPPED 2026-08-31.** `Docs/Agentic-Analysis-Guide.md` is at v1.3. The correction was
+**two sites, not the one this plan named**: §A.7's caveat, and Appendix A's opening frame, which
+stated the same claim in stronger form ("the app itself never embeds free text") and which an agent
+reading top-down would have hit first. Both now name
+`SemanticQueryPrompt.queryPrefix = "task: search result | query: "` and keep the
+document-to-document recall caveat explicitly unrepaired. The index-format note landed in the
+version history as this row prescribed: written against 46, tree now at 47, record your own.
