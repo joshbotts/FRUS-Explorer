@@ -15,7 +15,9 @@ provenance intact, how to verify what the agent tells you, and which questions t
 answer no matter how the query is phrased).
 
 **Read [§7](#7-eight-ways-this-database-will-quietly-mislead-you) before you trust a number.** Every
-item in it is a real property of this schema, not a hypothetical.
+item in it is a real property of this schema, not a hypothetical. And read
+[§14](#14-scoping-a-question-before-you-answer-it) before you write your first query: most of the
+errors in machine-assisted work here happen while deciding *what to search for*, not while searching.
 
 ---
 
@@ -34,6 +36,7 @@ item in it is a real property of this schema, not a hypothetical.
 11. [Safety, privacy, and what leaves your machine](#11-safety-privacy-and-what-leaves-your-machine)
 12. [A house-rules block to paste into your agent](#12-a-house-rules-block-to-paste-into-your-agent)
 13. [Recording a run so it can be reproduced](#13-recording-a-run-so-it-can-be-reproduced)
+14. [Scoping a question before you answer it](#14-scoping-a-question-before-you-answer-it)
 
 [Appendix A: The semantic vector artifacts](#appendix-a-the-semantic-vector-artifacts)
 
@@ -674,6 +677,13 @@ A protocol that catches most of it:
 
 Do not ask the model to double-check its own arithmetic in prose. Ask it to re-run the query.
 
+Two additions from [§14](#14-scoping-a-question-before-you-answer-it), which are cheap and caught
+real errors: require the agent to state its **counting surface** with every corpus-scan number
+(raw XML, tag-stripped text, or word-bounded tokens differ by up to 14% here), and where a result
+matters, run a second agent adversarially over the first's output with the instruction to find the
+wrong number. In three scoping runs that pass found a hyphen fold that had two agents publishing
+214 and 142 for the same string, and on one question corrected the headline figure by 47%.
+
 ---
 
 ## 10. What FRUS is, as evidence
@@ -796,6 +806,52 @@ REPORTING
   before drawing any conclusion from the emptiness.
 - Do not quote text you have not retrieved in a result set in this session.
 - Flag when a result is thin enough that it may reflect my partial library rather than the corpus.
+
+SCOPING — applies whenever you are scanning the corpus to decide what to search for
+- Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
+  control ("ZZZ_IMPOSSIBLE_ZZZ", expect 0) in the SAME pass. Report both. An absence is not a
+  finding until the controls prove the scan works.
+- State your COUNTING SURFACE with every number: raw TEI, tag-stripped, or word-bounded. They
+  disagree by up to 14% on this corpus. Prefer tag-stripped + whitespace-collapsed.
+- Never query a single literal. Count every spelling, hyphenation, plural and acronym variant
+  and report the split. Acronyms often outnumber spelled forms.
+- FALSE-FRIEND TEST: for any term the question itself supplied, compute its share in the
+  on-topic volumes and compare that to a control phrase's share. A term matching the baseline
+  is measuring the corpus, not the question — say so and stop using it.
+- Never scan a bare surname. Full-name and inverted-index forms only; <persName> markup covers
+  only 4-10% of mentions and cannot disambiguate.
+- Periodise on frus:doc-dateTime-min, NOT on the volume's series year. Say which you used.
+- Separate document text from apparatus (front matter, abbreviation lists, footnotes, index)
+  before publishing any density, or say explicitly that you have not.
+- Read the editors' chapter headings before writing queries. My modern phrasing for a subject
+  is usually absent from the corpus; theirs is a repeating formula.
+- A negative built from vocabulary postdating the period is circular. Before claiming the
+  corpus lacks pre-YEAR coverage, scan terms contemporaries would have used.
+- Suppress Ed2 twins where a first edition is also present (frus1951-54Iran,
+  frus1969-76ve15p2) — 718 documents are otherwise double-counted.
+
+ARCHIVAL SCOPE — do not stop at what FRUS printed
+- FRUS is a SELECTION. Scoping is not finished when you know which volumes hold the question.
+  Also establish which archival units those documents came out of, and which units their
+  footnotes point at. Report both, always labelled by channel, and NEVER summed.
+- Resolve as far as the bundled indexes reach, and report what you got:
+    collection-usage-index.json  -> ranked archival targets for any volume scope
+    external-citation-index.json -> what the editors cited and did NOT print
+    central-files-index.json     -> lot number -> record group + series NAID + entry number
+    collection-authority.json    -> collection identity across spellings
+    series-facts-index.json      -> creator, extent, date span, access status, facility
+    lot-claimants-index.json     -> lots NARA divides across several series
+    presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
+    curated-lot-resolutions.json, digitized-ranges-index.json
+- A CORPUS-SCOPING NEGATIVE IS NOT A RESEARCH NEGATIVE. "FRUS does not print this" is an
+  invitation to answer "and here is the series that does". Never publish the first without
+  having attempted the second.
+- Label every archival count with its CHANNEL (came-from / pointed-at / union) and its volume
+  set. Two channels over one scope are two different numbers.
+- NARA's creator attribution is a decoy surface like any other — measured at 56% precision on
+  one route. Verify a series' creator heading before calling it on-topic.
+- The offline stack barely reaches before 1940 (11 of 695 bundled series). Say so rather than
+  reporting an empty pre-war roadmap as an archival absence.
 ```
 
 ---
@@ -818,6 +874,325 @@ Two of these change under your feet in normal use. Downloading more volumes chan
 An app update can raise the index format version and trigger a background re-index, which changes
 extraction output for rows you already had. If a number matters, re-derive it after any update
 rather than assuming it held.
+
+---
+
+## 14. Scoping a question before you answer it
+
+Everything above assumes you already know what to search for. That assumption is where
+machine-assisted work here actually fails. This section is the record of three scoping runs — on
+U.S.–Cuba contacts after 1961, on the State Department and wartime critical-materials supply, and on
+Foreign Service reform — each measured over the local TEI corpus with controls, and each
+adversarially re-measured afterwards. In all three the errors clustered *before* the first
+substantive query. Every figure below was measured; none is illustrative.
+
+Note the scope shift: §§1–13 are about the SQLite index. This section is mostly about scanning the
+TEI corpus directly, which is what scoping requires — you are deciding which volumes to index-search
+at all, and the manifest plus the raw XML answer that faster than SQL does.
+
+**Scoping has two halves, and §§14.1–14.9 are only the first.** Establishing which volumes hold your
+question is necessary and not sufficient: FRUS is a published selection, so the second half is
+establishing which archival units those documents came out of and which units their footnotes point
+at. [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at) is that
+half. All three runs recorded here skipped it, which is why it is stated as a rule rather than an
+option — the omission was invisible from inside the work and had to be found by someone asking.
+
+### 14.1 The scoping pass is most of the work
+
+A research question rarely maps onto the corpus the way its prose suggests. Measured:
+
+- A question about U.S.–Cuba contacts "after 1961" has a hard ceiling at **January 1981** — the
+  1981–1988 subseries has twelve volumes and none on Cuba, the Caribbean, or the American Republics.
+- A question about wartime supply chains touches **99 volumes and 84,664 documents**.
+- A question about Foreign Service reform is served by roughly **five volumes and 1,850 documents**,
+  0.59% of the corpus.
+
+Two orders of magnitude separate those three, and nothing in the questions themselves predicts it.
+Budget the scoping pass accordingly, and finish it before curating anything.
+
+### 14.2 Run a positive and a negative control in the same pass
+
+An absence is not a finding until a control proves the scan could have found something. Use a term
+you are confident appears (`Department of State` returns **178,311** occurrences in 552 of 552
+volumes) and a string you are confident does not (`ZZZ_IMPOSSIBLE_ZZZ`, 0). Both in the same read,
+over the same files, reported with the result.
+
+This is not ceremony. A first probe in one of these runs returned zero for all fifteen terms because
+the shell's working directory reset between commands and the glob matched nothing; the scan was
+silently searching an empty file list. A control would have caught it in one line. Related: an
+unquoted shell variable holding many space-containing paths fails as `File name too long` — prefer a
+`python3` heredoc with absolute paths over shell globbing.
+
+### 14.3 Say which text surface you counted
+
+Raw TEI, tag-stripped text, and word-bounded tokens are three different measurements of the same
+corpus, and on FRUS they disagree materially, because the XML hard-wraps prose and inline markup
+interrupts phrases. Measured on one control phrase across 99 volumes:
+
+| Surface | Count | Relative |
+|---|---|---|
+| Tag-stripped + whitespace-collapsed | 16,696 | baseline |
+| Raw TEI with whitespace collapsed | 16,670 | −0.2% |
+| Raw TEI, uncollapsed | 14,362 | **−14.0%** |
+
+In the densest single volume the naive surface was 19% low. Prefer tag-stripped and
+whitespace-collapsed, and state it. The inverse case exists too: a term appearing inside markup
+reads *high* on raw TEI — `Safehaven` returns 266 raw against 251 in text, because 15 occurrences
+live in attribute values.
+
+### 14.4 One literal is never enough
+
+Every scoping run found the same class of defect, and in one case two agents published **214** and
+**142** for the same string without either noticing — a hyphen fold (`ball bearing` 142 +
+`ball-bearing` 72). Query every form and report the split.
+
+| Split | Counts | Why it matters |
+|---|---|---|
+| `wolfram` / `tungsten` | 1,083 / 475 | Same ore, **different top volumes** — 81% Europe vs 45% Far East. Either alone loses a whole theatre. |
+| `Proclaimed List` / blacklist family | 2,327 / 354 | The official name outnumbers all four colloquial spellings 6.6 : 1. |
+| `chief of mission` / `chiefs of mission` / `chiefs of missions` | 1,687 / 1,651 / 170 | The obvious plural is the *wrong* one; a singular-only query loses half. |
+| `Lend-Lease` / `Lend Lease` | 7,509 / 585 | |
+| `chrome` / `chromium` / `chromite` | 850 / 51 / 26 | The diplomatic files say *chrome*. |
+| `\bFSS\b` vs `FSSO`, `\bFSR\b` vs `FSRU` | — | Word boundaries dropped **441 occurrences** of the purest vocabulary in that question, 88.7% of it in the target volumes. |
+
+Two corollaries. **Acronyms frequently outnumber spelled forms** — `FEA` 1,048 > *Foreign Economic
+Administration* 841; `MEW` 451 > *Ministry of Economic Warfare* 322; `UKCC` is **4.6×** its spelled
+form; `EEO` 198 > *equal employment* 140. A term list built from spelled forms alone can be 40–460%
+low. And **not every suspected split is real**: `aluminium` returns 3 against `aluminum` 207. Measure
+rather than assume in both directions.
+
+### 14.5 The false-friend test: compare a term's concentration to the corpus baseline
+
+The most dangerous terms are the ones the research question supplies. A cheap, decisive test: compute
+what share of a term's occurrences fall in the volumes you believe are on-topic, and compare that
+share to the same figure for an ordinary control phrase. **A term whose concentration matches the
+baseline is measuring the corpus, not your question.**
+
+Worked: for the Foreign Service question the control's target-volume share was 2.8%. `reform` —
+20,519 occurrences in 514 of 552 volumes — came in at **2.96%**. A uniform random sample of 40
+occurrences contained **zero** about the U.S. Foreign Service; 38 were about foreign countries' land,
+currency and constitutional reforms.
+
+Others found the same way, each stated as *raw count → share actually on topic*:
+
+- `Herter` 8,655 → **0.13%** the Herter Committee; the rest is Christian Herter as Secretary of State.
+- `Director General` 3,442 in 440 volumes → **3.3%** the Foreign Service office; the rest are
+  Directors General of the Imperial Railway, of Telegraphs, of Military Education.
+- `examination` 16,868 → target share **1.9%, below the 2.8% baseline** — actively anti-correlated.
+- `equal opportunity` 628 → essentially none; it is the **Open Door** formula.
+- `minority` 8,977 → peaks in the 1910s; the Paris Peace Conference minorities treaties.
+- `Inspector General` 1,243 → peaks in 1930s China volumes: the Chinese Maritime Customs.
+- `cone` 440 → 157 the career track, 176 the *Southern* Cone, ~108 volcanic and pine.
+- `Macomber` 689 → ~14% the management reformer; the rest a serving ambassador.
+
+Substring matching adds its own: a scan for `Herter Report` returned 21 where the truth is 3, because
+it was matching **"Herter reported"**.
+
+Personal names are the worst case and cannot be repaired by first name or by markup. `Davies` 2,807
+→ at most 27 John Paton (**0.96%**). `Vincent` 2,101 → 164 John Carter, against 421 *President
+Vincent* of Haiti. And `<persName>` does not rescue you: only 4–10% of these mentions sit inside one,
+so filtering on entity tags discards 90–96% of the real mentions rather than disambiguating them
+(compare [§7.5](#75-person-identity-is-clustered-with-a-deliberate-under-merge-bias)).
+
+### 14.6 A negative built from anachronistic vocabulary is circular
+
+This is the subtlest error the three runs produced, and it nearly shipped.
+
+A scoping pass reported a clean **12× density step at 1960** for Foreign Service reform vocabulary
+and offered it as evidence about FRUS's coverage. The adversarial pass found that **at least eleven
+of its twenty markers name institutions, statutes or people that did not exist before 1946** — the
+Foreign Service Institute (1947), the Director General (1946), AFSA, the Herter Committee, Macomber.
+The step partly measured *when those institutions were founded*, not what FRUS printed.
+
+The correction was immediate: the one era-appropriate term anyone scanned, `civil service reform`,
+turned up a real **1871–1897 cluster** the scoping pass had reduced to "1 hit each".
+
+**Rule: a negative measured with the target period's own vocabulary is evidence; a negative measured
+with a later period's vocabulary is a tautology.** Before asserting the corpus lacks coverage of
+something before year Y, scan terms contemporaries would have used. This generalises well past that
+question — it applies to any long-run corpus and to every "the record is silent on X" claim.
+
+### 14.7 Two things that quietly turn a claim into a claim about something else
+
+**Volume year is not document date.** Every periodisation in the first pass of two runs bucketed by
+the *volume's* series year. Each `<div type="document">` carries `frus:doc-dateTime-min`/`-max` — the
+same editorial dates [§4.3](#43-derived-structure) exposes as `document_dates` — and reading them
+costs nothing extra in the same pass. Until you do, a claim like "the Board of Economic Warfare
+appears in 1942–43" is a claim about how FRUS was assembled as much as about the agency. State which
+you measured.
+
+**Apparatus is not document text.** Front matter, abbreviation lists, editorial footnotes and the
+back-of-book index are all inside the file, and no keyword scan separates them by default.
+`type="index"` divs are present in 98 of 99 volumes in one run's scope. Measured effects: index and
+front matter hold 5.9% of the corpus's text but carry **18.6%** of `Foreign Service`, 20.0% of bare
+capital `Service`, 16.0% of `FSO` — and *the enrichment worsens inside the on-topic volumes*, because
+those carry the longest persons lists. In the anchor volume of one question, **335 of 984 marker hits
+were bare grade acronyms**, and an agent discovered three of those acronyms by reading that volume's
+abbreviation list. All four `Rogers Act` hits in the entire corpus are footnote glosses or index
+entries.
+
+Until you scope hits to their enclosing `<div type="document">`, *"this volume is about X"* and
+*"this volume indexes X"* are indistinguishable in every number you publish. This project has already
+measured the analogous ratio for cross-references at **95.3% editorial footnote** — see
+[§7.3](#73-reference_type-defaults-body-references-to-footnote) — so the skew is the expectation, not
+the exception.
+
+### 14.8 The editors' own headings are the highest-precision handle
+
+FRUS volumes carry chapter and section headings — `<head>` inside non-`type="document"` divs — and
+the editors reused boilerplate. Where a formula exists it beats term retrieval outright.
+
+For wartime materials, `procure for the United States strategic materials from <country>` returns
+**16 headings at ~100% precision**, enumerating the country chapters; three parent headings
+(`frus1939v01` "Measures to secure adequate supplies of raw materials:", and its 1940 and 1941
+siblings) organise the whole 1939–41 material into subchapter trees. For the Department itself,
+`Managing the Department of State` is a verbatim repeated chapter title in exactly two volumes —
+corpus-wide only three headings begin `Managing`.
+
+The corollary is a warning about your own vocabulary. **`supply chain` occurs once in all 552
+volumes.** The editors' umbrella term is `strategic materials` (24 headings, and only 1937–1945).
+Likewise `reform of the Foreign Service`, `reform the Foreign Service` and `modernization of the
+Foreign Service` are all **zero**; what FRUS writes is `Foreign Service reform` (8 occurrences, 2
+volumes). And the editors head institutions but not abstractions: `economic warfare` returns **0
+headings against 1,358 body occurrences**, while `Rubber Reserve Company` gets 12. Read the headings
+before writing queries; they are cheap (24,996 non-document headings corpus-wide) and they tell you
+the corpus's own words for your subject.
+
+### 14.9 Where the corpus double-counts itself
+
+The 552 bundled volumes include **three second editions** — `frus1951-54IranEd2`,
+`frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2` — and for two of them the first edition ships as well
+(`frus1951-54Iran`, 375 documents, beside its Ed2 at 375; `frus1969-76ve15p2`, 343, beside its Ed2 at
+382). So a naive corpus-wide scan double-counts **718 documents**. Both editions appear in
+`manifest.json` and in `semantic-vectors-index.json`; this is deliberate publishing, not a defect —
+but suppress the Ed2 twin where a first edition is present before computing any share.
+
+Related, and worth stating once: the semantic artifacts count **314,483** documents, while this
+project's own settled corpus figure from its query work is **316,839**. The two count different
+surfaces. Whichever you use, name it — a run that publishes densities to two decimals owes the reader
+its denominator.
+
+### 14.10 Two bundled artifacts that scope the corpus
+
+The app ships 34 bundled JSON resources. Two of them scope a question against the *corpus*, and
+neither is obvious from the schema; the fifteen that scope it against the *archives* are
+[§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at).
+
+**`volume-subject-profiles-index.json`** carries the Office of the Historian's own subject
+vocabulary — 380 subjects in 13 categories, with a per-volume weighted profile. It includes a
+`Department of State` category with a `Personnel: Foreign Service` subcategory, and ranking all 552
+volumes by that subject's weight recovered the entire relevant volume family unprompted, in agreement
+with an independent title scan and an independent density scan. Three routes agreeing is worth more
+than any one of them.
+
+**`semantic-map-index.json`** carries 179 unsupervised cluster labels. It is a fast test of whether
+your subject forms a region of the corpus at all — and the answer differs sharply by question shape:
+
+| Question | Clusters found | Reading |
+|---|---|---|
+| Wartime critical materials | **4** clusters, 2,405 documents — `jordana, wolfram, hayes, wendelin`; `chrome, turkish, numan, turk`; `salazar, lagen, portuguese, azore`; `rubber, tin, vile, gwatkin` | Sustained named negotiations cluster hard. The vector layer is the right instrument. |
+| Foreign Service reform | **0** of 179 (controls pass: 15 match `soviet`, 5 match `nuclear`) | An institution is not a region of the semantic space. Vectors will not rescue the question. |
+
+The map's twenty largest clusters are, without exception, places and crises. That is what it is
+organised around, and it constrains what it can find for you. Note also the asymmetry *within* a
+question: the wartime *denial* operations clustered; the hemispheric *acquisition* program did not,
+because it is distributed across many country files rather than concentrated in a few negotiations.
+
+### 14.11 The second half of scoping: where the documents came from, and point at
+
+**This section exists because all three runs failed it.** Each treated the printed document as the
+only target. Between them they resolved zero record groups, zero NAIDs, zero series titles, zero
+entry numbers — and of the fifteen bundled archival-resolution artifacts (11.83 MB of the 24.79 MB
+the app ships), exactly one was ever opened, as a dictionary for glossing a filing code. The
+omission was invisible from inside the work; it took someone asking whether the runs had used the
+archival layer at all.
+
+The stack, and the question each artifact answers:
+
+| Artifact | Answers | Scale |
+|---|---|---|
+| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,464 notes; 1,839 collections reached; 10,446 class keys |
+| `external-citation-index.json` | what the editors cited and did **not** print | 19,800 lot/library refs + 29,890 class refs, 440 volumes |
+| `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number | 1,065 lot files, all carrying a NAID |
+| `collection-authority.json` | which collection is this note naming, under every spelling | 4,429 collections, 1,018 with a NAID |
+| `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility | 695 series, 397 creator headings |
+| `lot-claimants-index.json` | when a lot has several correct NARA answers, which | 123 divided lots, up to 13 claimants |
+| `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
+| `volume-sources-index.json` | what the editors say they consulted, per volume | 3,412 rows, 251 volumes |
+| `decimal-class-labels.json` | what `812.6363` means, compositionally | 1910–49 schedule; 9 classes, 198 countries, 693 suffixes |
+| `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
+| `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
+
+Two rules govern using them, and the second is easy to get backwards.
+
+**Report the two archival relations separately, each resolved as far as the indexes reach, and never
+sum them.** [§8](#8-provenance-the-citation-chain) already forbids combining `document_sources` with
+`external_citations`; the productive form of that rule is that both are worth resolving, because they
+answer different questions. Where a document *came from* is a claim about the printed record. What a
+footnote *points at* is a lead into what was withheld — and for a question about why something did
+**not** happen, that is usually the more valuable channel. Measured on the Cuba scope: 2,823
+source-note attributions across 188 units, plus 676 footnote pointers that reach **15 units the
+source notes never name**.
+
+**Label the channel and the volume set on every archival count.** This is §14.3's counting-surface
+rule on the archival axis, and skipping it produced four unreconciled numbers in this very audit —
+the same scope reported as 188 units and 203 units (source-note channel versus the union of both),
+and one run's scope appearing as 5, 7 and 8 volumes in three passes. All were correct; none was
+labelled.
+
+Three measured illustrations of what the second half yields, each from a run that published without
+it:
+
+- **Cuba.** 203 archival units, 86 with a NAID. The heaviest single target is not in FRUS at all: 272
+  footnote pointers into the Carter Library's National Security Affairs (Brzezinski and Staff
+  Material). The Nixon NSC Files, 370 documents, carry a sub-series literally titled *Backchannel
+  Messages* — that run's question by name.
+- **Wartime materials.** 76,764 documents resolve to one target, RG 59 Central Decimal Files
+  1910–1963 (NAID 302021), pullable by 89 measured commodity class keys. The run's published
+  disclosure — that the BEW, FEA and RFC "contribute zero source notes", so the question is put to a
+  corpus where they are structurally invisible — is true of FRUS and **false of the archives**: those
+  agencies are separate record groups, and the project's own harvest already covers RG 169 and
+  RG 182.
+- **Foreign Service reform.** The corpus prints almost nothing citeable — `Wriston` appears in 0
+  source notes against 38 full-text occurrences. But the office that produced the record resolves to
+  nine RG 59 series, **104.1 linear feet, 1955–1980**, all created by the (Deputy) Under Secretary
+  for Management, each with a NAID and an entry number, three of them Restricted-Fully. A verdict of
+  "the corpus does not hold this" was one lookup away from a bounded research plan.
+
+That last case is the general lesson: **a corpus-scoping negative is not a research negative.** The
+answer to "FRUS does not print this" is frequently "and here is the shelf that does" — but only if
+the second half of scoping ran.
+
+Two cautions, both measured. NARA's creator attribution is itself a decoy surface in the sense of
+[§14.5](#145-the-false-friend-test-compare-a-terms-concentration-to-the-corpus-baseline) — it ran at
+56% precision on one route here, and the adversarial pass that caught this whole omission
+nevertheless mis-filed NAID 27022913 (Bureau of International Organization Affairs) as a Foreign
+Service management series. And the offline stack has a hard reach: 11 of 695 bundled series begin
+before 1940, so a pre-war archival roadmap is largely unavailable regardless of how well the corpus
+covers the period.
+
+### 14.12 Contest your own agent
+
+In all three runs an adversarial pass — a second agent given the first's results and told to find the
+wrong number — earned its place. It caught the `ball bearing` hyphen fold; it found one probe had
+counted decoded characters and labelled them bytes; it found a term where the *larger* context window
+produced the *smaller* count, proving two passes had used different and undisclosed marker sets; and
+on one question it corrected the headline figure by **47%**, having noticed that half the "reform
+vocabulary" was a job title the pass had itself elsewhere called "the phrase, not the subject".
+
+Cheap practices that make contesting possible:
+
+1. **Every number carries its counting surface** (§14.3) and its denominator.
+2. **Every pass reports its controls** (§14.2), so a disagreement can be localised.
+3. **Watch for circular context markers.** One probe measured whether `Office of Personnel` occurred
+   near personnel vocabulary using a marker set that contained the word *personnel* — scoring a
+   circular 100%. Re-run with a non-circular set, the true value was 7.8%. It caught this itself and
+   said so; require that.
+4. **Give each parallel agent its own scratch directory.** In one run a concurrent session overwrote
+   another agent's scan script on disk mid-run.
+
+None of this makes an agent trustworthy. It makes an agent *checkable*, which is the property this
+whole guide is about.
 
 ---
 
@@ -1083,6 +1458,22 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.2 — 2026-08-31: §14, scoping a question before you answer it — the measured record of three
+  scoping runs (U.S.–Cuba contacts after 1961; State and wartime critical materials; Foreign
+  Service reform), each run with positive and negative controls and each adversarially
+  re-measured. Adds the counting-surface spread (14%), the variant rule, the false-friend
+  concentration test, the anachronistic-vocabulary circularity, the apparatus/document split, the
+  editors'-headings handle, the 718-document Ed2 double-count, and which bundled artifact suits
+  which shape of question. §9 and §12's house-rules block extended to match.
+  **Revised the same day after a second adversarial pass**, which found that all three runs had
+  treated the printed document as the only target: between them zero record groups, zero NAIDs and
+  zero series titles, and one of fifteen bundled archival-resolution artifacts ever opened. Adds
+  §14.11, the second half of scoping — the archival stack, the two-channel rule, and the measured
+  demonstration that a corpus-scoping negative is not a research negative (the Foreign Service
+  question resolves to nine RG 59 series, 104.1 linear feet). Retitles §14.10, which had promised
+  coverage it did not have. §§14.2–14.9 are unchanged: the method transferred to the archival axis
+  intact, and §14.5's decoy warning proved out there too — the audit itself mis-filed a Bureau of
+  International Organization Affairs series as a management record.
 - 1.1 — 2026-08-29: Appendix A, the semantic vector artifacts. Binary layouts, id decoding,
   and every worked example verified against the shipped files (552/552 id round-trip, digest
   match across index/binary/map, executed neighbor/centroid/map examples).
