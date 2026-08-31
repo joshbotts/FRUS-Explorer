@@ -215,6 +215,17 @@ targets:
         # in-place read-only is correct — and it avoids the Documents/Inbox copies a NO
         # value would leave behind uncleaned. macOS doesn't use this key (NSDocument model).
         LSSupportsOpeningDocumentsInPlace: YES
+        # W-19 L-5: the `frusexplorer://` deep link, so an outside tool's citation is one click
+        # from the rendered document. NOTE the scheme was ALREADY in use inside the app — the TEI
+        # renderer registers it with WebKit for person/gloss/doc/brokenref links, which are also
+        # serialized into exported collection HTML. Registering it here makes those exported files
+        # clickable from a browser, so `DeepLinkRoute` recognises all five hosts and refuses the
+        # four in-document ones by name rather than launching the app to do nothing.
+        CFBundleURLTypes:
+          - CFBundleURLName: bottsywattsy.FRUS-Explorer.deeplink
+            CFBundleTypeRole: Viewer
+            CFBundleURLSchemes:
+              - frusexplorer
     dependencies:
       # Embed the widget extension so it is installed alongside the app.
       - target: FRUSExplorerWidgets
@@ -330,6 +341,17 @@ targets:
             LSHandlerRank: Owner
             LSItemContentTypes:
               - bottsywattsy.FRUS-Explorer.fruscollection
+        # W-19 L-5: the `frusexplorer://` deep link, so an outside tool's citation is one click
+        # from the rendered document. NOTE the scheme was ALREADY in use inside the app — the TEI
+        # renderer registers it with WebKit for person/gloss/doc/brokenref links, which are also
+        # serialized into exported collection HTML. Registering it here makes those exported files
+        # clickable from a browser, so `DeepLinkRoute` recognises all five hosts and refuses the
+        # four in-document ones by name rather than launching the app to do nothing.
+        CFBundleURLTypes:
+          - CFBundleURLName: bottsywattsy.FRUS-Explorer.deeplink
+            CFBundleTypeRole: Viewer
+            CFBundleURLSchemes:
+              - frusexplorer
     dependencies:
       # llama.cpp as a binary xcframework (V-5 s2) — see the iOS target's entry.
       - framework: Vendor/llama.xcframework

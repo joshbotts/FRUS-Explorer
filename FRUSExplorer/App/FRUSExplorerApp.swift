@@ -279,6 +279,9 @@ struct FRUSExplorerApp: App {
     /// a malformed file failed with only a DEBUG print, so the double-click looked
     /// like the app silently ignored it.
     @State private var collectionOpenError: String? = nil
+    /// A deep link the app declined to act on, and why (W-19 row L-5). Presented as an alert on
+    /// the main window, which is what the OS activates when a URL opens the app.
+    @State private var deepLinkMessage: String? = nil
 
     /// Session-scoped memory of open-with collection imports: SHA-256 digest of the
     /// file's bytes → the id of the `Collection` it created. Re-opening a byte-identical
@@ -1657,7 +1660,14 @@ struct FRUSExplorerApp: App {
                         continueSemanticMapActivity(activity, from: sceneID)
                     },
                     onOpenURL: { url, sceneID in
-                        importOpenedCollection(url, from: sceneID)
+                        // Deep links first: registering `frusexplorer://` routes every such URL
+                        // into this same closure, and `importOpenedCollection`'s filter is an
+                        // extension test that a crafted scheme URL can satisfy.
+                        if let route = DeepLinkRoute.from(url: url) {
+                            handleDeepLink(route, from: sceneID)
+                        } else {
+                            importOpenedCollection(url, from: sceneID)
+                        }
                     }))
                 #else
                 // Handoff: a FRUS document viewed on another device
@@ -1674,12 +1684,32 @@ struct FRUSExplorerApp: App {
                 }
                 // A shared native collection opened from Files / Finder / AirDrop (Phase 4 / D9).
                 .onOpenURL { url in
-                    importOpenedCollection(url, from: nil)
+                    if let route = DeepLinkRoute.from(url: url) {
+                        handleDeepLink(route, from: nil)
+                    } else {
+                        importOpenedCollection(url, from: nil)
+                    }
                 }
                 #endif
                 // Failed open-with import → user-visible alert (both platforms). The main
                 // window is what the OS activates on an open-with, so it is where the user
                 // is looking when the import fails.
+                .alert(String(localized: "collections.open.error.title",
+                              defaultValue: "Couldn’t Open Collection"),
+                       isPresented: Binding(get: { collectionOpenError != nil },
+                                            set: { if !$0 { collectionOpenError = nil } })) {
+                    Button(String(localized: "collections.import.error.ok", defaultValue: "OK"),
+                           role: .cancel) { collectionOpenError = nil }
+                }
+                .alert(String(localized: "deepLink.error.title",
+                              defaultValue: "Can’t Open That Link"),
+                       isPresented: Binding(get: { deepLinkMessage != nil },
+                                            set: { if !$0 { deepLinkMessage = nil } })) {
+                    Button(String(localized: "deepLink.error.ok", defaultValue: "OK"),
+                           role: .cancel) { deepLinkMessage = nil }
+                } message: {
+                    Text(deepLinkMessage ?? "")
+                }
                 .alert(String(localized: "collections.open.error.title",
                               defaultValue: "Couldn’t Open Collection"),
                        isPresented: Binding(get: { collectionOpenError != nil },
@@ -1868,6 +1898,10 @@ struct FRUSExplorerApp: App {
     /// a duplicate. Failures present the `collectionOpenError` alert on the main window.
     @MainActor
     private func importOpenedCollection(_ url: URL, from sceneID: SceneID?) {
+        // A file, and only a file. Before the `frusexplorer://` scheme was registered this was
+        // unreachable by anything but a file open; now any web page can hand this closure a URL,
+        // and `frusexplorer://x/y.fruscollection` satisfies the extension test below.
+        guard url.isFileURL else { return }
         guard url.pathExtension.lowercased() == NativeCollectionSerializer.fileExtension else { return }
         // #752 / M-25. The content-hash guard below already stops a second *import*, but not a
         // second surfacing, and with the surfacing now addressed to a scene two windows acting on
@@ -2690,6 +2724,48 @@ struct FRUSExplorerApp: App {
     /// straight through the fallback chain (owner decision D3), minting a standalone
     /// document window when no host is live.
     @MainActor
+    /// Acts on a `frusexplorer://` URL arriving from outside the app (W-19 row L-5).
+    ///
+    /// The volume is checked against the manifest FIRST. That single lookup is doing three jobs at
+    /// once: it is the allow-list for volume ids, the last defence against a crafted id reaching
+    /// the filesystem (`DeepLinkRoute` has already refused separators and dots, and this refuses
+    /// anything the series does not contain), and the source of the title the refusal needs.
+    ///
+    /// The document id is deliberately NOT checked. It cannot be, without the volume on disk — and
+    /// that is the same contract Spotlight and Handoff already work under: pass it through as an
+    /// opaque TEI `xml:id` and let the document surface say it could not find it.
+    ///
+    /// - Parameters:
+    ///   - route: The parsed link.
+    ///   - sceneID: The window the URL was delivered to, on iPad.
+    private func handleDeepLink(_ route: DeepLinkRoute, from sceneID: SceneID?) {
+        switch route {
+        case .inAppOnly(let host):
+            // An in-document link that escaped a rendered page — almost always a person, glossary
+            // or cross-reference link inside an EXPORTED collection HTML file, which has carried
+            // these hrefs since long before the scheme was registered. Naming what it was beats
+            // launching and doing nothing.
+            deepLinkMessage = String(
+                format: String(localized: "deepLink.inAppOnly %@",
+                               defaultValue: "This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own."),
+                host)
+
+        case .document(let volumeID, let documentID):
+            guard let entry = appState.manifestStore.entry(forVolumeId: volumeID) else {
+                deepLinkMessage = String(
+                    format: String(localized: "deepLink.unknownVolume %@",
+                                   defaultValue: "“%@” is not a volume in this series."),
+                    volumeID)
+                return
+            }
+            // A volume the reader does not have still opens: the document surface already has a
+            // "Volume Not Downloaded" state naming the volume, which is a better landing than an
+            // alert that ends the journey.
+            navigateToDocument(volumeId: volumeID, documentId: documentID,
+                               title: entry.title, from: sceneID)
+        }
+    }
+
     private func navigateToDocument(volumeId: String, documentId: String, title: String?,
                                     from sceneID: SceneID?) {
         let entry = DocumentBrowserEntry(
@@ -3903,9 +3979,14 @@ private struct ContinuationHost: ViewModifier {
     let onSpotlight: (NSUserActivity, SceneID) -> Void
     /// Handoff from another device: the semantic map (UI review F-28).
     let onSemanticMapActivity: (NSUserActivity, SceneID) -> Void
-    /// A `.fruscollection` opened from Files / AirDrop. There is no custom URL scheme in this app;
-    /// the `frusexplorer://` links in rendered documents are intercepted inside the web view and
-    /// never reach the OS.
+    /// Every URL the OS hands this app: a `.fruscollection` opened from Files / AirDrop, and —
+    /// since W-19 L-5 — a `frusexplorer://` deep link. The handler routes the scheme first and
+    /// falls through to the collection import, because the import's filter is an extension test a
+    /// crafted scheme URL can satisfy.
+    ///
+    /// The `frusexplorer://` links *inside* rendered documents still never reach the OS: the web
+    /// view intercepts and cancels them. What reaches here is the same grammar escaping an
+    /// EXPORTED HTML file, which `DeepLinkRoute` refuses by name.
     let onOpenURL: (URL, SceneID) -> Void
 
     func body(content: Content) -> some View {
