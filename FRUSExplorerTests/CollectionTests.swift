@@ -2841,6 +2841,124 @@ struct CollectionTests {
         }
     }
 
+    // MARK: - The published write-minimum (W-19 row L-1)
+
+    /// The exact bytes published as the write-minimum in `Docs/Agentic-Analysis-Guide.md` §15.
+    ///
+    /// Kept verbatim rather than built from the DTO on purpose: the point of the spec is that an
+    /// outside writer with no Swift can produce a file this app opens, so the test has to start
+    /// from text, the way that writer does. If the guide's example and this literal ever diverge,
+    /// the promise the guide makes is no longer the promise the app keeps.
+    private static let publishedWriteMinimum = Data("""
+    {
+      "format": "fruscollection",
+      "formatVersion": 1,
+      "name": "Escalation rhetoric — round 1",
+      "composition": {
+        "defaultBodyDepth": "full",
+        "footnoteStyle": "all",
+        "tocStyle": "citation",
+        "applyHighlights": false,
+        "includeNotes": true,
+        "includeWordCloud": false
+      },
+      "entries": [
+        { "kind": "heading", "text": "Strong candidates" },
+        { "kind": "document", "volumeId": "frus1961-63v11", "documentId": "d1" },
+        { "kind": "document", "volumeId": "frus1964-68v32", "documentId": "d17" }
+      ]
+    }
+    """.utf8)
+
+    @Test("The guide's published write-minimum decodes and imports, with no key the spec omits")
+    func publishedWriteMinimumConforms() throws {
+        let file = try NativeCollectionSerializer.decode(Self.publishedWriteMinimum)
+        #expect(file.name == "Escalation rhetoric — round 1")
+        #expect(file.minimumReaderVersion == nil, "the minimum carries no floor; formatVersion is the gate")
+
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let imported = NativeCollectionSerializer.apply(file, into: ctx)
+        try ctx.save()
+
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(entries.count == 3)
+        #expect(entries[0].entryKind == .heading)
+        #expect(entries[1].documentId == "d1")
+        #expect(entries[2].volumeId == "frus1964-68v32")
+    }
+
+    @Test("The guide's §15 example and this fixture are the same file")
+    func publishedExampleMatchesTheGuide() throws {
+        // The doc comment above promises the literal and the guide agree. Discipline is not a
+        // mechanism, so this checks it: pull the first JSON block out of §15 and require it to
+        // decode to the same value. An editor improving the guide's prose cannot silently move
+        // the spec away from what the app accepts.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let guideURL = root.appendingPathComponent("Docs/Agentic-Analysis-Guide.md")
+        let guide = try String(contentsOf: guideURL, encoding: .utf8)
+
+        let section = try #require(guide.range(of: "### 15.1 The write-minimum"),
+                                   "the guide lost §15.1")
+        let after = guide[section.upperBound...]
+        let open = try #require(after.range(of: "```json\n"), "§15.1 lost its JSON block")
+        let rest = after[open.upperBound...]
+        let close = try #require(rest.range(of: "\n```"), "§15.1's JSON block is unterminated")
+        let published = Data(rest[..<close.lowerBound].utf8)
+
+        let fromGuide = try NativeCollectionSerializer.decode(published)
+        let fromFixture = try NativeCollectionSerializer.decode(Self.publishedWriteMinimum)
+        #expect(fromGuide == fromFixture,
+                "the guide publishes a different file from the one this suite proves opens")
+    }
+
+    @Test("An agent may add a generator key: unknown top-level keys are free, and the app does not preserve them")
+    func generatorKeyIsFreeAndNotPreserved() throws {
+        // §15 tells agents they may stamp provenance with a `generator` key. That costs no format
+        // change — the DTO has no such property and synthesized decoding never enumerates the
+        // container — so this pins the tolerance the guide relies on.
+        let stamped = Data("""
+        {"format":"fruscollection","formatVersion":1,"name":"Stamped",
+         "generator":"some-agent/1.0",
+         "composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation",
+                        "applyHighlights":false,"includeNotes":true,"includeWordCloud":false},
+         "entries":[{"kind":"document","volumeId":"v1","documentId":"d1"}]}
+        """.utf8)
+        let file = try NativeCollectionSerializer.decode(stamped)
+        #expect(file.name == "Stamped")
+
+        // And it is dropped on re-export, which the guide states rather than hides: a file the app
+        // wrote was not written by that agent, so carrying the stamp forward would be a false claim.
+        let reEncoded = try NativeCollectionSerializer.encode(file)
+        let text = String(decoding: reEncoded, as: UTF8.self)
+        #expect(!text.contains("generator"), "a re-export must not claim agent provenance it lacks")
+    }
+
+    @Test("The write-minimum's one unenforced constraint: a document entry missing its ids imports and then resolves to nothing")
+    func documentEntryWithoutIdsIsAcceptedThenIgnored() throws {
+        // §15 states this as a MUST because the app does not enforce it. The file opens, the
+        // editor shows a populated collection, and every export is empty — the worst shape of
+        // failure for an agent-written file, so the spec has to name it and the test has to prove
+        // the app really is silent.
+        let missingIds = Data("""
+        {"format":"fruscollection","formatVersion":1,"name":"Broken",
+         "composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation",
+                        "applyHighlights":false,"includeNotes":true,"includeWordCloud":false},
+         "entries":[{"kind":"document"},{"kind":"document","volumeId":"v1"}]}
+        """.utf8)
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(missingIds), into: ctx)
+        try ctx.save()
+
+        let entries = (imported.documentEntries ?? [])
+        #expect(entries.count == 2, "both entries import — nothing rejects them")
+        #expect(entries.allSatisfy { $0.documentId.isEmpty || $0.volumeId.isEmpty },
+                "and both carry an empty id, which every resolver filters out downstream")
+    }
+
     @Test("Front matter defaults: a new collection carries no front matter and no colophon (pre-Phase-4 behavior)")
     func frontMatterDefaults() {
         let collection = Collection(name: "Defaults")

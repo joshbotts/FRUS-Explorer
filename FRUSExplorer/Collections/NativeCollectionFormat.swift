@@ -96,7 +96,12 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// accepts any newer file whose features are merely degradable (tolerant-reader rule).
     var formatVersion: Int
     /// The oldest reader version that can open this file without corrupting meaning.
-    /// Carried by v2+ files; `nil` (v1 files) defaults to 1 on decode. Writers raise it
+    /// Carried by v2+ files. When absent the gate falls back to **`formatVersion`**, not to 1 —
+    /// so a `formatVersion 3` file with no floor is *rejected* by a v2 reader, while the same
+    /// file declaring `minimumReaderVersion: 1` is accepted. (An earlier version of this comment
+    /// said "defaults to 1 on decode", which is true only because a v1 file's `formatVersion`
+    /// is 1; `decode` is the authority and `nativeV2MinimumReaderVersion` pins both cases.)
+    /// Writers raise it
     /// only when *ignoring* a field would corrupt meaning, never for degradable features
     /// (ignored `level` → flat headings and ignored front matter are degraded, not raised).
     var minimumReaderVersion: Int?

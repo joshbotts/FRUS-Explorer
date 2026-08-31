@@ -37,6 +37,7 @@ errors in machine-assisted work here happen while deciding *what to search for*,
 12. [A house-rules block to paste into your agent](#12-a-house-rules-block-to-paste-into-your-agent)
 13. [Recording a run so it can be reproduced](#13-recording-a-run-so-it-can-be-reproduced)
 14. [Scoping a question before you answer it](#14-scoping-a-question-before-you-answer-it)
+15. [Writing a collection the app can open](#15-writing-a-collection-the-app-can-open)
 
 [Appendix A: The semantic vector artifacts](#appendix-a-the-semantic-vector-artifacts)
 
@@ -1249,6 +1250,102 @@ whole guide is about.
 
 ---
 
+## 15. Writing a collection the app can open
+
+Everything above is read-only. This section is the one place the traffic runs the other way: an
+agent's candidate list can be written as a `.fruscollection` file, which the researcher opens and
+edits in the app like any other collection. That closes the loop — the shortlist stops being text
+in a chat window and becomes an object with documents in it.
+
+The format is a plain JSON file with a versioned, **tolerant reader**: unknown keys are ignored,
+unknown entry kinds are skipped rather than misdecoded, and the compatibility gate is explicit. You
+do not need the app's source to write one.
+
+### 15.1 The write-minimum
+
+Every key below is required. There are no others you must supply.
+
+```json
+{
+  "format": "fruscollection",
+  "formatVersion": 1,
+  "name": "Escalation rhetoric — round 1",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    { "kind": "heading", "text": "Strong candidates" },
+    { "kind": "document", "volumeId": "frus1961-63v11", "documentId": "d1" },
+    { "kind": "document", "volumeId": "frus1964-68v32", "documentId": "d17" }
+  ]
+}
+```
+
+Those bytes are a test fixture in this repo, not an illustration. If they stop opening, the suite
+fails.
+
+| Key | Notes |
+|---|---|
+| `format` | Must be exactly `"fruscollection"`. Anything else is rejected outright rather than imported as empty. |
+| `formatVersion` | `1` is right for a hand-written file. See §15.3 before raising it. |
+| `name` | The collection title. |
+| `composition` | All six keys above are required; the values shown are the app's own defaults for a new collection. |
+| `entries` | Array order **is** collection order. May be `[]`. |
+
+Each entry needs only `kind`. The kinds are `document`, `heading`, `prose`, `excerpt` and
+`generated`; for writing a candidate list you want the first two. A `heading` carries its title in
+`text`; a `document` carries `volumeId` and `documentId` — the same pair everything else in this
+guide is keyed by.
+
+Save with a `.fruscollection` extension. The file pickers match on the extension, so a `.json` file
+with perfect contents will not be offered.
+
+### 15.2 One constraint the app does not enforce
+
+**A `document` entry MUST carry both `volumeId` and `documentId`.** Omit either and the file still
+opens, the collection still lists the entry, and every export of it is silently empty — the ids are
+coerced to empty strings on import and filtered out by every downstream resolver, with no error at
+any point.
+
+This is the worst failure shape available to an agent-written file, so treat it as a hard rule on
+your side. Nothing will tell you.
+
+### 15.3 Versions, and stamping your own provenance
+
+The reader's gate is `minimumReaderVersion` when present, and **`formatVersion` when it is absent** —
+not 1, which is a distinction worth knowing if you are tempted to write a higher `formatVersion`. A
+file declaring `formatVersion: 3` with no floor is *rejected* by a version-2 reader; the same file
+declaring `"minimumReaderVersion": 1` is accepted and its unknown features ignored. Write
+`formatVersion: 1` and no floor unless you have a reason.
+
+**Unknown top-level keys are free.** You may stamp provenance without any format change:
+
+```json
+"generator": "my-agent/1.0, 2026-08-31, query: escalation rhetoric"
+```
+
+The app ignores it. It also does not preserve it: a collection re-exported from the app drops the
+key, deliberately — that file was written by the app, not by you, and carrying your stamp forward
+would be a claim the file cannot support.
+
+### 15.4 What this is good for, and what it is not
+
+Good for: handing back a ranked candidate list as something the researcher adjudicates by reading;
+grouping it with headings so your reasoning survives the hand-off; round-tripping, since a
+collection exported *out* of the app is the same format and you can read the researcher's curation
+back.
+
+Not good for: asserting anything. A collection is a reading list. It carries no claim that the
+documents are related, and the researcher's judgement is applied after they open it — which is the
+division of labour [§10](#10-what-frus-is-as-evidence) argues for throughout.
+
+---
+
 ## Appendix A: The semantic vector artifacts
 
 The database is not the only structured layer FRUS Explorer ships. The app also carries a set of
@@ -1530,6 +1627,14 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.5 — 2026-08-31: **§15, writing a collection the app can open** — the first section in this guide
+  where the traffic runs toward the app rather than away from it. Publishes the `.fruscollection`
+  write-minimum (five top-level keys, six composition keys, one required key per entry), the
+  version gate's actual rule (absent `minimumReaderVersion` falls back to `formatVersion`, **not**
+  to 1), and the free `generator` stamp with the reason the app drops it on re-export. §15.2 states
+  the one constraint the app does not enforce: a `document` entry missing either id imports, looks
+  populated, and exports nothing, silently. The published example is a test fixture — if it stops
+  opening, the suite fails. *(Wave W-19, row L-1.)*
 - 1.4 — 2026-08-31: **§4.6, "Your own data"** — §4's opening had promised four groups and delivered
   three. Documents the new `user_tags(tag_id, name)` mirror, which resolves the opaque UUIDs in
   `document_cache.user_tag_ids` into the names the researcher chose, with the app's own
