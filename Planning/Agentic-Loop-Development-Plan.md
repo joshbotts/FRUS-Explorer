@@ -1,9 +1,19 @@
 # The agentic loop — closing the two hand-offs between the app and an outside agent
 
 **Status:** proposed, 2026-08-30. Written against the tree at `9760d2b` (build 44 on TestFlight,
-index format version 47). This is **wave W-19**; its Plan-of-Record placement is Tier D of
-`Plan-Of-Record-2026-08-28.md`. Every code claim below was verified against the tree at the
-stated anchors, not taken from a doc comment.
+index format version 47). This is **wave W-19**; its Plan-of-Record placement is **Tier A §2b of
+`Plan-Of-Record-2026-08-28.md`** — *promoted 2026-08-31 from Tier D, which that document then
+vacated, when #234's scoring lane was deferred.* Every code claim below was verified against the
+tree at the stated anchors, not taken from a doc comment.
+
+**One row has moved since writing.** L-0 called `Docs/Agentic-Analysis-Guide.md` v1.1; the guide
+is now **v1.2** (PR #1137, 2026-08-31), which added §14 — the scoping method drawn from three
+measured runs — and §14.11, the archival half, after an audit found all three runs had resolved
+zero record groups and zero NAIDs. A.7's staleness is unaffected and still owed. But **§14.11
+strengthens the case for L-8**: the rules a local read-only MCP server would enforce are now
+written down and measured (controls on every scan, a declared counting surface, variant
+expansion, both archival channels resolved and never summed), so that assessment now has a
+concrete tool surface to weigh rather than a sketch.
 
 **Why this document exists.** `Docs/Agentic-Analysis-Guide.md` (v1.1, with its Appendix A on the
 semantic artifacts) documents how an outside AI agent reads `frus.db` and the vector layer. What

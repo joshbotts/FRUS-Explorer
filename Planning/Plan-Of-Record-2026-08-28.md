@@ -1,15 +1,16 @@
 # Plan of Record — 2026-08-28, after build 44
 
-**Status:** the single live plan — **reviewed and revised 2026-08-29, §7** (every checkable
-claim verified against the tree, the tags, the tester notes, and the issue tracker; two
-corrections, two recovered residues) — superseding `Completed/Plan-Of-Record-2026-08-23.md`
+**Status:** the single live plan — **reviewed and revised 2026-08-29 (§7), re-prioritised
+2026-08-31 (§8)** — superseding `Completed/Plan-Of-Record-2026-08-23.md`
 (discharged in bulk: tiers A and B shipped whole, Tier C's harvest lane closed except the
 #234 scoring path, Tier D's W-9 completed FAR past its written scope — the encoder, the
 licence surfaces, the zero-result fallback, and the full hybrid page all shipped — and
 Tier E shipped W-11/W-16/W-17 leaving its four assessments/features). Written the day
 **build 44 was tagged** (`build-44` at `c47a9d48`: search by meaning, archive visit plans,
 Similar wording, overrides, freshness, Spotlight text, the quit fix) and the day the owner's
-**Mac Studio began the Qwen3-14B NER harvest** — which is why Tier A is #234.
+**Mac Studio began the Qwen3-14B NER harvest** — which is why Tier A *was* #234. It no longer
+is: the harvest did not finish in the week, and §8 records the re-prioritisation. Read §2 for the
+current tier, not this paragraph, which stands as the document's origin note.
 
 **How to keep this current:** when a session ships, strike its row. When this document's
 sequencing is overtaken, replace it the way it replaced its predecessor.
@@ -31,24 +32,73 @@ sequencing is overtaken, replace it the way it replaced its predecessor.
    V-5 residues, not the shipped surfaces.
 2. **The Studio harvest is the owner's machine and stays untouched from here.** Nothing in
    this plan may assume its completion date; scoring rows activate when the owner says the
-   stores exist.
+   stores exist. *(Updated 2026-08-31: the owner reports the harvest **will not finish this
+   week**, so #234's scoring lane is DEFERRED — §4b — and Tier A is now the two programs in
+   §2. The one #234 item that stays live is the owner-gated seeding annotation, N-0, because
+   it is owner work that does not wait on the machine and because every scoring row is
+   refused without it.)*
 
-## 2. Tier A — #234, the priority lane (next week)
+## 2. Tier A — the two programs *(re-prioritised 2026-08-31)*
 
-The Mac Studio is running the **Qwen3-14B no-think NER sweep** over the weekend (launched
-by the owner; `tools/semantic-harvest/harvest_ner.py` in the tree still lacks the W-7a
-`ONLY_DOCUMENTS`/`WORKERS` additions, so this is the full-sweep route — whose store, being
-per-volume and unsampled, is scoreable over any gold documents inside the volumes it
-covers). The old plan's framing survives re-checking: the sweep was never the scoring
-gate's input — but with it running anyway, the verdict now decides whether its OUTPUT is
-used, not whether to spend the compute.
+#234 held this tier because the Studio was mid-harvest. It is not finishing this week, so the
+tier goes to the two programs that were already written, already verified against the tree, and
+gated on nothing: **the visual and marketing plan** and **the agentic-loop wave**. Both have
+their own plan documents; the tables below stay pointers, not copies.
+
+### 2a. The visual and marketing plan — `Visual-Marketing-Plan.md`
+
+Proposed 2026-08-30 against the tree at `30b105e`; eight verified probes, three independent
+drafts scored adversarially, and a completeness critic that **overturned the winning draft's
+flagship claim and corrected six motion items**. It reconciles against
+`Map-Figure-Export-And-Visual-Outputs.md` §7–§9 rather than sitting beside it — which is why
+Tier B's old B-3 row is struck below and folded here.
+
+Its own §7 sequences the work. The two things a reader of *this* document needs:
+
+| # | Lane | Scope | Gate |
+|---|---|---|---|
+| M-1 | **The store listing — the critical path** | Plan §4.1. This is the row that gates an App Store submission, and it is separated from research figures on purpose: `AnalyticsFigureCanvas` paints white, pins `.colorScheme(.light)` and prints a mandatory methods band with no width parameter reaching any caller — right for a figure, wrong for a screenshot. The two asset families obey different rules and §3/§4 keep them apart. | none |
+| M-2 | **The five residual gaps in the shipped map export** | Plan §1. Three block publication — the caption band carries no caveats and credits "FRUS Explorer 0.2" rather than the Office of the Historian; the plate unconditionally prints a sentence a standalone PNG makes false; the map's mandatory lens caveat reaches neither export half. Plus one print defect (`sourceAlphaBlendFactor = .sourceAlpha` washes the plate and clamps bright dots) and one methods gap (the plate cannot state what was in frame). **Gap 4 is a plan-author error the critic caught**, and fixing it touches the single shared pipeline — verify on screen as well as in the plate. | none |
+| M-3 | **In-app motion** | Plan §3, corrected: §3.1 is *film what already ships*, §3.2 is the new motion the critic re-scoped. Note plan §2(a): the splash and a corpus-bearing device are mutually exclusive by construction, so a capture plan that assumes both is wrong. | none |
+
+Plan §6 names its own largest structural gap (operations) and §8 records what it refuses.
+Read those two before scoping a session out of it.
+
+### 2b. The agentic-loop wave, W-19 — `Agentic-Loop-Development-Plan.md`
+
+*(Was Tier D, added 2026-08-30; promoted 2026-08-31.)* One wave, one plan document: the app-side
+work that turns the loop `Docs/Agentic-Analysis-Guide.md` documents — curate in the app, compute
+over the curation, adjudicate in the app — from folklore into affordances. Nine rows, each
+anchored to the code it extends. **No CloudKit schema change anywhere in the wave** (every row
+checked against the #488 gate; L-3 writes a plain SQLite table on the indexing side). The plan
+argues its own sequencing.
+
+| # | Session | Hand-off | Size | Gate |
+|---|---|---|---|---|
+| L-0 | Guide correction — Appendix A.7 stale since build 44 (the app now embeds queries) | — | XS | none |
+| L-1 | `.fruscollection` write-minimum: spec + conformance fixture (the inbound keystone) | inbound | S | none |
+| L-2 | Export Research Database… (backup + integrity + default-off include-my-notes) | outbound | S | none |
+| L-3 | Mirror tag names into `user_tags` beside the existing id sync | outbound | S | none |
+| L-4 | Surface the shipped embedder (reveal model path; publish `queryPrefix`, undigested) | both | S | none |
+| L-5 | `frusexplorer://` document deep links (touches `project.yml` — xcodegen ritual) | inbound | M | none |
+| L-6 | Corpus-wide shard fetch as an explicit named-cost button (#926's refusal upheld) | both | S | none |
+| L-7 | Copy research-state record (build, index versions, volume list, digests) | outbound | XS | none |
+| L-8 | Local read-only MCP server — ASSESSMENT, build/no-build | both | M | L-1..L-4 |
+
+**L-0 is larger than its row implies as of 2026-08-31.** `Docs/Agentic-Analysis-Guide.md` is now
+at **v1.2** (PR #1137): §14 added the scoping method from three measured runs, and §14.11 added
+the archival half after an audit found all three runs had resolved zero record groups and zero
+NAIDs. Two consequences for this wave. First, A.7's staleness is unchanged and still owed.
+Second, **§14.11 is the strongest argument yet for L-8**: the rules a local MCP server would
+enforce are now written down and measured — controls on every scan, a declared counting surface,
+variant expansion, and both archival channels resolved and never summed — so the assessment has
+a concrete tool surface to assess rather than a sketch.
+
+### 2c. One small UI item
 
 | # | Session | Scope | Gate |
 |---|---|---|---|
-| N-0 *(owner)* | **The M2a span sitting** | THE critical-path item, unchanged from the old plan's owner lane: key the 72 staged gold documents (`~/frus-m2a` on the Studio; `stage_m2a.py` is SEED-pinned, so a local re-stage is deterministic). The scorer refuses everything without it. The M1a identity CSV (0/300) rides the same sitting if convenient but does not gate scoring. | owner sitting |
-| N-1 | **Score the weekend harvest** | When the stores exist: run `score_detections.py` over the Qwen3-14B store, the `EarlyEraNERControl` (NLTagger) store, and the editors'-markup baseline, against the keyed gold — same scorer, same documents, maximum-cardinality matching. Deliverable: the three-way table and the verdict on the question the scorer was designed for (`NER-RUNBOOK.md` §6–7) — *does the model beat the free option by enough to justify its cost?* — under `People-Early-Era-Program.md` §5's own binding constraint, which is prior: eval set first, nothing ships until M2a is keyed *(citation repointed 2026-08-29, §7 — §5 states the keying gate, not the comparison question)*. Record whatever the answer is; a control win is a finding, not a failure. Guard rails already in the tools: a store that sampled without `sampled_doc_ids` is refused; gold re-verified against the text layer before any detector is read. | N-0 + the harvest's stores |
-| N-2 | **The verdict's consequences** | Branches on N-1, both pre-scoped: **detector wins** → design the ingestion (how detected early-era mentions reach the people browser #234 asks to extend — index shape, confidence display, the "detected, not editorial" disclosure the program mandates); **control/baseline wins** → the same browser extension built on the editors' markup + NLTagger at zero model cost, and the Studio's sweep output archived as a measured negative. Either branch ends with a build plan for the browser extension itself. | N-1 |
-| N-3 | **W-7a, if a re-run is ever wanted** | The harness additions (`ONLY_DOCUMENTS` + `WORKERS`, both shapes settled by the Swift control and the #1083 probe) — folded here from the old plan, needed only if N-1's verdict demands scoped re-runs of other models. Do not build ahead of that need. | an N-1 outcome that wants more models |
+| A-1 | **Meaning-mode search placeholder** | The search field's prompt still says "Keywords…" after the user switches to Meaning, where the right input is a question. Make the prompt follow `SearchMode` (`FRUSExplorer/Search/SearchModels.swift:45`) — "Keywords…" for `.keywords`, a natural-language-question prompt for `.meaning`. **Two surfaces, and the second is worse than the first.** iOS: `SearchView.swift:404` uses `String(localized: "search.keywords.placeholder", defaultValue: "Keywords…")` — localized but static. macOS: `SearchSheet.swift:629` is `TextField("Search documents, notes, summaries…", …)` — a **raw string literal**, which also violates the project's no-literals-in-views convention, so the fix closes a standards gap on the way past. Needs one new localized key; no schema change, no new file, no xcodegen. XS. | none |
 
 ## 3. Tier B — carried engineering (unblocked today)
 
@@ -56,7 +106,7 @@ used, not whether to spend the compute.
 |---|---|---|---|
 | B-1 | **W-13 coverage map / systematic-review mode** | Unchanged from the old plan: "opened 43 of 267 in this corpus — 12 annotated, 224 unread," from `ExportHistoryEntry` + `ProjectEngagedDocuments`, plus the exportable coverage statement completing the method appendix (searched → examined). No schema change. | none |
 | B-2 | **W-14 read-aloud** | Unchanged: `AVSpeechSynthesizer` over the render tree — skip footnotes, track position, honor the read-vs-research split. Purely additive. | none |
-| B-3 | **W-3 §7 remainders** | The visual-outputs backlog `Map-Figure-Export-And-Visual-Outputs.md` §7.1–7.4 still lists: the word-cloud drift harness, the splash lens, marketing plates, extra lenses. One session, or split when scoped. | none |
+| ~~B-3~~ | ~~**W-3 §7 remainders**~~ | **Struck 2026-08-31 — folded into Tier A §2a.** `Visual-Marketing-Plan.md` reconciles against `Map-Figure-Export-And-Visual-Outputs.md` §7–§9 and supersedes this row's scope. The four items it named (word-cloud drift harness, splash lens, marketing plates, extra lenses) are governed there now; scope sessions out of that plan's §7, not out of this row. | — |
 | B-4 | **V-5 residue: the supplementary sitting** | The shipped Meaning surfaces have never been judged the way the first 25 queries were: a second owner sitting over the SHIPPED pipeline (hybrid page + fallback), reusing the standing harness and rubric — sharpened by whatever build-44 testers report. Also the small unmeasured number: the encoder's Metal in-app footprint on a device/attended Mac run (the CPU shape measured 141→349→393→140 MB; the CLI ceiling 639–861 MB bounds Metal). | owner appetite; tester feedback helps |
 | B-5 | **W-8 residue: the two June leftovers** *(recovered 2026-08-29, §7)* | Recorded in the old plan's struck W-8 row ("Left of this row") and carried nowhere until now: **enclosure dual-home rendering** (the printed text lives in its originating despatch; the classifier surfaces should say so — Finding 4 of the June pass), and the **live UI walkthrough of the pre-1910 classifier surfaces** on both platforms. Small; one sitting; no open issue tracks them, so this row is the only record. | none |
 
@@ -68,35 +118,35 @@ used, not whether to spend the compute.
 | C-2 | **W-15 geographic analytics — ASSESSMENT, historical toponymy first-class** | Unchanged: BigPicture priorities 8/10/11/12 together, with era-correct place names reconciling to stable places as the owner's stated requirement. | none |
 | C-3 | **W-10 OS-27 adoption — assessment against the actual SDK** | Unchanged; first session is assessment-against-the-beta, not a build. | SDK availability |
 
-## 4a. Tier D — the agentic-loop wave, W-19 *(added 2026-08-30)*
+## 4a. Tier D — vacated *(2026-08-31)*
 
-One wave, one plan document: `Agentic-Loop-Development-Plan.md` collects the app-side work that
-turns the agentic loop `Docs/Agentic-Analysis-Guide.md` documents — curate in the app, compute
-over the curation, adjudicate in the app — from folklore into affordances. Nine rows, L-0..L-8,
-each anchored to the code it extends; no CloudKit schema change anywhere in the wave; the plan
-argues its own sequencing so this table stays a pointer, not a copy.
+The agentic-loop wave W-19 that sat here was **promoted to Tier A, §2b**. Nothing else was ever
+filed under Tier D, so the tier is vacated rather than emptied. `Agentic-Loop-Development-Plan.md`'s
+own status line said "Tier D" and was repointed to Tier A §2b in the same commit as this revision.
 
-| # | Session | Size | Gate |
+## 4b. Deferred — #234, the NER scoring lane *(deferred 2026-08-31)*
+
+Deferred because the harvest will not finish this week, **not** because the question changed. The
+framing survives intact: the sweep was never the scoring gate's input, so the verdict decides
+whether its output is used, not whether to spend the compute. Reactivate the whole block when the
+owner says the stores exist — the rows below are unedited apart from this note, so reactivation is
+a move, not a rewrite.
+
+**N-0 does not sit here.** The M2a span sitting is owner work that does not wait on the machine,
+it is the gate every row below is refused without, and it stays live in the owner lane (§5).
+
+| # | Session | Scope | Gate |
 |---|---|---|---|
-| L-0 | Guide correction — Appendix A.7 stale since build 44 (the app now embeds queries) | XS | none |
-| L-1 | `.fruscollection` write-minimum: spec + conformance fixture (the inbound keystone) | S | none |
-| L-2 | Export Research Database… (backup + integrity + default-off include-my-notes) | S | none |
-| L-3 | Mirror tag names into `user_tags` beside the existing id sync | S | none |
-| L-4 | Surface the shipped embedder (reveal model path; publish `queryPrefix`, undigested) | S | none |
-| L-5 | `frusexplorer://` document deep links (touches `project.yml` — xcodegen ritual) | M | none |
-| L-6 | Corpus-wide shard fetch as an explicit named-cost button (#926's refusal upheld) | S | none |
-| L-7 | Copy research-state record (build, index versions, volume list, digests) | XS | none |
-| L-8 | Local read-only MCP server — ASSESSMENT, build/no-build | M | L-1..L-4 |
-
-Tier D sits below Tier A and its standing gates, and its rows interleave with Tier B the way
-B-rows interleave with each other; L-0 may ship any time as a published-document correctness fix.
+| N-1 | **Score the harvest** | When the stores exist: run `score_detections.py` over the Qwen3-14B store, the `EarlyEraNERControl` (NLTagger) store, and the editors'-markup baseline, against the keyed gold — same scorer, same documents, maximum-cardinality matching. Deliverable: the three-way table and the verdict on the question the scorer was designed for (`NER-RUNBOOK.md` §6–7) — *does the model beat the free option by enough to justify its cost?* — under `People-Early-Era-Program.md` §5's own binding constraint, which is prior: eval set first, nothing ships until M2a is keyed *(citation repointed 2026-08-29, §7 — §5 states the keying gate, not the comparison question)*. Record whatever the answer is; a control win is a finding, not a failure. Guard rails already in the tools: a store that sampled without `sampled_doc_ids` is refused; gold re-verified against the text layer before any detector is read. | N-0 + the stores |
+| N-2 | **The verdict's consequences** | Branches on N-1, both pre-scoped: **detector wins** → design the ingestion (how detected early-era mentions reach the people browser #234 asks to extend — index shape, confidence display, the "detected, not editorial" disclosure the program mandates); **control/baseline wins** → the same browser extension built on the editors' markup + NLTagger at zero model cost, and the sweep output archived as a measured negative. Either branch ends with a build plan for the browser extension itself. | N-1 |
+| N-3 | **W-7a, if a re-run is ever wanted** | The harness additions (`ONLY_DOCUMENTS` + `WORKERS`, both shapes settled by the Swift control and the #1083 probe). Needed only if N-1's verdict demands scoped re-runs of other models. Do not build ahead of that need. | an N-1 outcome that wants more models |
 
 ## 5. The owner lane
 
 | Item | Feeds |
 |---|---|
 | **Build 44**: the VoiceOver pass and the App Store Connect archive-and-upload (tag `build-44` is set; What-to-Test texts are paste-ready and under the 4,000-character limit) | release |
-| **The M2a span sitting** (N-0) — the one thing on #234's critical path | Tier A |
+| **The M2a span sitting** (N-0) — the one thing on #234's critical path, and *(2026-08-31)* **the only #234 item still live** now that the scoring lane is deferred to §4b. Key the 72 staged gold documents (`~/frus-m2a` on the Studio; `stage_m2a.py` is SEED-pinned at 234, so a local re-stage is deterministic). The scorer refuses every detector without it, so doing it now is what makes reactivation cheap rather than blocking. The M1a identity CSV (0/300) rides the same sitting if convenient but does not gate scoring. | unblocks §4b |
 | **The custom EULA paste** before any App Store (not TestFlight) submission of build 44+: fill four placeholders in `semantic-vectors/App-Store-Custom-EULA.md`, paste into App Information ▸ License Agreement | App Store review |
 | Screenshot captures — #1081's 13 live placeholders, via the staged four-sitting shot list (`Docs/screenshots/SHOT-LIST-2026-08.md`, W-2e). *Refined 2026-08-29, §7:* the list already covers the visit-plan packet (shot A10, the two claim lists); what build 44 staled is **Meaning search, which has no shot at all** — add its shots to the sweep (the mode strip, the beyond-library row, the model offer) or log the gap on #1081 before capturing | #1081 |
 | Release habits: `check_repository_links.py --stamp` each release; eyeball the 3 owner-asserted URLs (JFK ×2, LBJ) | each release |
@@ -105,8 +155,8 @@ B-rows interleave with each other; L-0 may ship any time as a published-document
 
 ## 6. Standing records
 
-Open issues: **#234** (Tier A), **#1081** (owner screenshots) — verified 2026-08-29 as the
-only two open. Everything else the 2026-08-23 plan scheduled is shipped and struck in that
+Open issues: **#234** (deferred, §4b — its owner gate N-0 stays live in §5), **#1081** (owner
+screenshots) — verified 2026-08-29 as the only two open. Everything else the 2026-08-23 plan scheduled is shipped and struck in that
 document, which carries the per-row evidence — except two residues its struck rows still
 name, now carried here rather than lost (B-5; the owner-lane CSUserQuery re-run).
 The Gemma compliance state lives in `semantic-vectors/Gemma-Compliance-Runbook.md` (all
@@ -208,3 +258,43 @@ completion), and no row was promoted on the strength of this review — a verifi
 not a verdict. The Tier C assessments stay assessments. The owner-lane items stay
 owner-only. And the review adds no new work beyond the two recovered residues, which were
 already commitments — recorded once, in rows that were struck around them.
+
+## 8. Re-prioritisation — 2026-08-31
+
+**Cause:** the owner reports the Qwen3-14B NER harvest will not finish this week. Tier A was
+#234 solely because the Studio was mid-sweep, so the tier had to move.
+
+**What changed, and nothing more:**
+
+1. **#234's scoring lane deferred** to §4b — N-1, N-2, N-3 moved *unedited*, so reactivation is
+   a move rather than a rewrite. The framing was re-checked and survives: the sweep was never
+   the gate's input.
+2. **N-0 stays live** in the owner lane, per the owner's instruction to defer everything except
+   the seeding annotation. It is owner work that does not wait on the machine, and it is the
+   gate every deferred row is refused without — so doing it now is what makes §4b cheap to
+   restart.
+3. **Tier A is now two programs**, both already written and verified, both gated on nothing:
+   `Visual-Marketing-Plan.md` (§2a) and the agentic-loop wave W-19 (§2b, promoted from Tier D).
+4. **B-3 struck**, folded into §2a — `Visual-Marketing-Plan.md` reconciles against
+   `Map-Figure-Export-And-Visual-Outputs.md` §7–§9 and supersedes that row's scope. Two plan
+   documents pointing at the same four items is how a backlog gets done twice or not at all.
+5. **Tier D vacated** (§4a), and the stale "Tier D" placement line in
+   `Agentic-Loop-Development-Plan.md` repointed in the same commit.
+6. **One new row, A-1** (§2c): the Meaning-mode search placeholder.
+
+**Verified against the tree while writing this, not taken from the plans:**
+
+- `SearchMode` is `FRUSExplorer/Search/SearchModels.swift:45`, cases `.keywords` / `.meaning`,
+  already carrying a localized `label`. Per-session and deliberately not persisted.
+- The iOS prompt is `SearchView.swift:404` — `String(localized: "search.keywords.placeholder",
+  defaultValue: "Keywords…")`, static, the file's only use of that key.
+- The macOS prompt is `SearchSheet.swift:629` — `TextField("Search documents, notes,
+  summaries…", …)`, a **raw string literal**. A-1 therefore also closes a localization-convention
+  violation, which is worth knowing before someone scopes it as a one-line change.
+- Both plans promoted into Tier A exist and are current: `Visual-Marketing-Plan.md` (452 lines,
+  §§1–9) and `Agentic-Loop-Development-Plan.md` (195 lines, rows L-0..L-8).
+
+**What this revision deliberately did not change:** every gate, the Tier B and Tier C rows, the
+owner lane apart from N-0's note, and §7 — left untouched so its inline *(…2026-08-29, §7)*
+markers stay valid. Deferring #234 is a scheduling decision and not a verdict on it; no row was
+promoted on the strength of the deferral beyond the two programs the owner named.
