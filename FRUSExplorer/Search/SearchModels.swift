@@ -82,6 +82,40 @@ enum SearchMode: String, CaseIterable {
                           defaultValue: "A question in your own words…")
         }
     }
+
+    /// The prompt shown before any query has been run.
+    ///
+    /// Mode-dependent for the same reason `fieldPrompt(keywordPrompt:)` is: once the reader
+    /// switches to Meaning, "Enter keywords" names the wrong input — and it sat directly beneath
+    /// a field that had already stopped saying it.
+    ///
+    /// Unlike the field prompt, all four strings live here rather than being supplied by the
+    /// caller. This surface is iOS-only — it is the final `else` of `SearchView`'s results area,
+    /// and `MacSearchViewModel` has no `hasSearched` to reach an equivalent — so there is no
+    /// second surface with its own wording to preserve.
+    ///
+    /// Not to be confused with `SemanticMeaningEmptyState`, which is the *post*-search zero
+    /// surface (`hasSearched && results.isEmpty`). This one fires before any search at all.
+    ///
+    /// - Parameter scoped: whether a volume scope is active. The prompt names it, so a reader
+    ///   who arrived via "Search this volume" knows the next query will not reach the corpus.
+    /// - Returns: the prompt for this mode and scope.
+    func initialPrompt(scoped: Bool) -> String {
+        switch (self, scoped) {
+        case (.keywords, false):
+            return String(localized: "search.prompt",
+                          defaultValue: "Enter keywords to search the FRUS corpus.")
+        case (.keywords, true):
+            return String(localized: "search.prompt.scoped",
+                          defaultValue: "Enter keywords to search within the selected volumes.")
+        case (.meaning, false):
+            return String(localized: "search.prompt.meaning",
+                          defaultValue: "Ask a question to search the FRUS corpus by meaning.")
+        case (.meaning, true):
+            return String(localized: "search.prompt.meaning.scoped",
+                          defaultValue: "Ask a question to search within the selected volumes.")
+        }
+    }
 }
 
 enum SearchSortOrder: CaseIterable {

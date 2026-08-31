@@ -255,6 +255,39 @@ struct HybridSearchModeTests {
         #expect(SearchMode.meaning.fieldPrompt(keywordPrompt: "something else") == meaning)
     }
 
+    @Test("The pre-search prompt varies on both mode and scope, with no repeats")
+    func initialPromptVariesOnModeAndScope() {
+        // Four distinct strings across the two axes. Structural, not a copy of the string
+        // table: the failure this catches is a missed switch arm returning a neighbour's
+        // string, which reads plausibly and would ship.
+        let all = SearchMode.allCases.flatMap { mode in
+            [mode.initialPrompt(scoped: false), mode.initialPrompt(scoped: true)]
+        }
+        #expect(all.count == 4)
+        #expect(Set(all).count == 4, "each mode/scope pair needs its own wording")
+        #expect(all.allSatisfy { !$0.isEmpty })
+
+        // The mode axis must actually move, in both scope states — the defect being fixed is a
+        // prompt that stayed on the keyword wording after the reader switched engines.
+        #expect(SearchMode.keywords.initialPrompt(scoped: false)
+                != SearchMode.meaning.initialPrompt(scoped: false))
+        #expect(SearchMode.keywords.initialPrompt(scoped: true)
+                != SearchMode.meaning.initialPrompt(scoped: true))
+    }
+
+    @Test("The pre-search prompt is wired to the mode, and the scope polarity is not inverted")
+    func initialPromptIsWiredWithCorrectPolarity() throws {
+        // `effectiveVolumeIds.isEmpty` means UNSCOPED, so the call must negate it. Passing the
+        // flag straight through inverts the two strings — a swap no unit test on the enum can
+        // see, and one that reads plausibly on screen until you notice the corpus prompt only
+        // appears inside a volume.
+        let source = try Self.searchSurfaceSource("FRUSExplorer/Search/SearchView.swift")
+        #expect(source.contains("vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty)"),
+                "the pre-search prompt must come from the mode, with isEmpty negated into scoped")
+        #expect(!source.contains("defaultValue: \"Enter keywords to search the FRUS corpus.\""),
+                "the mode-blind literal is gone from the view; it now lives on SearchMode")
+    }
+
     @Test("Both surfaces route their field prompt through SearchMode")
     func bothSurfacesRoutePromptThroughMode() throws {
         // A unit test can reach the enum but not a `.searchable(prompt:)` argument inside a

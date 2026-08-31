@@ -1487,19 +1487,17 @@ struct SearchView: View {
                 resultsList
             }
         } else {
-            // Initial prompt — no search has been performed yet. When a volume
-            // scope is active (e.g. just arrived via "Search this volume"), the
-            // prompt reflects that the next query will be scoped to that volume.
+            // Initial prompt — no search has been performed yet. It varies on two axes.
+            // When a volume scope is active (e.g. just arrived via "Search this volume"),
+            // the prompt reflects that the next query will be scoped to that volume; and it
+            // follows the engine, so Meaning mode stops asking for keywords directly beneath
+            // a field that has already stopped asking for them.
             VStack(spacing: 8) {
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: FRUSTheme.cappedGlyphSize(promptGlyphSize, base: 48)))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
-                Text(vm.effectiveVolumeIds.isEmpty
-                     ? String(localized: "search.prompt",
-                              defaultValue: "Enter keywords to search the FRUS corpus.")
-                     : String(localized: "search.prompt.scoped",
-                              defaultValue: "Enter keywords to search within the selected volumes."))
+                Text(vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
