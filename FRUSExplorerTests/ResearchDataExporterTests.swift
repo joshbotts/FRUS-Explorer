@@ -454,6 +454,31 @@ struct IndexDatabaseExporterTests {
         return (dir, dbURL, pipeline)
     }
 
+    /// The stamp every export writes, built by the production factory rather than by hand, so a
+    /// field the factory stops populating fails here too.
+    private func stamp(_ pipeline: IndexingPipeline?,
+                       semanticDigest: String? = "0123456789abcdef") -> ResearchStateRecord {
+        ResearchStateRecord.make(pipeline: pipeline, semanticDigest: semanticDigest)
+    }
+
+    /// Whether SQLite REFUSES to prepare the statement.
+    ///
+    /// This exists because `query` returns `[]` both for "no rows" and for "that column does not
+    /// exist", so an absence test written on `query` would pass against a view that still exposed
+    /// the column it was meant to hide. The point of the views is that the column is *gone*, and
+    /// only a refused prepare shows that.
+    private func rejects(_ url: URL, _ sql: String) -> Bool {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+            return false
+        }
+        defer { sqlite3_close(db) }
+        var stmt: OpaquePointer?
+        let prepared = sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK
+        sqlite3_finalize(stmt)
+        return !prepared
+    }
+
     /// Queries the exported copy the way the guide teaches — a plain read-only connection.
     private func query(_ url: URL, _ sql: String) -> [String] {
         var db: OpaquePointer?
@@ -471,11 +496,12 @@ struct IndexDatabaseExporterTests {
 
     @Test("Including my writing copies it verbatim, and the copy verifies")
     func exportWithWritingIsFaithful() async throws {
-        let (dir, live, _) = try await makeIndexed()
+        let (dir, live, pipeline) = try await makeIndexed()
         defer { try? FileManager.default.removeItem(at: dir) }
         let out = dir.appendingPathComponent("with.sqlite")
 
-        let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true)
+        let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true,
+                                                      stamp: stamp(pipeline))
         #expect(report.strippedWriting == false)
         #expect(report.byteCount > 0)
         #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
@@ -487,11 +513,12 @@ struct IndexDatabaseExporterTests {
 
     @Test("Stripping removes notes, summaries and tag names from the rows AND the index")
     func stripRemovesWritingEverywhere() async throws {
-        let (dir, live, _) = try await makeIndexed()
+        let (dir, live, pipeline) = try await makeIndexed()
         defer { try? FileManager.default.removeItem(at: dir) }
         let out = dir.appendingPathComponent("stripped.sqlite")
 
-        let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false)
+        let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false,
+                                                      stamp: stamp(pipeline))
         #expect(report.strippedWriting)
         #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
 
@@ -518,11 +545,12 @@ struct IndexDatabaseExporterTests {
     /// because it is the shape a real store has and the closest this suite can get to the hazard.
     @Test("An exported copy's full-text matches resolve to the right documents")
     func exportedMatchesResolveCorrectly() async throws {
-        let (dir, live, _) = try await makeIndexed()
+        let (dir, live, pipeline) = try await makeIndexed()
         defer { try? FileManager.default.removeItem(at: dir) }
         let out = dir.appendingPathComponent("aligned.sqlite")
 
-        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false)
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false,
+                                             stamp: stamp(pipeline))
 
         // Each body says "Document number N", so the match's own text names the document it must
         // resolve to. A misaligned index returns a row whose header disagrees with its body.
@@ -536,6 +564,203 @@ struct IndexDatabaseExporterTests {
             #expect(hits == ["d\(index)"],
                     "match for document \(index) resolved to \(hits)")
         }
+    }
+
+    // MARK: - Provenance stamp and research views (W-19 L-8 residue)
+
+    /// A fixture shaped like the places the views have to make a decision: a second edition whose
+    /// first edition is present, a second edition whose first edition is NOT (the corpus ships one
+    /// of those, `frus1977-80v09Ed2`), a promoted front-matter section, an editorial note, and a
+    /// cross-reference.
+    private func makeCorpusShaped() async throws -> (dir: URL, db: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDbViews-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("live.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        func write(_ name: String, apparatus: Bool) throws {
+            var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+            for index in 0..<3 {
+                xml += """
+                <div type="document" xml:id="d\(index)">
+                  <head>\(index + 1). Item</head>
+                  <p>Telegram number \(index) from the embassy.
+                     <ref target="d0">See document 1.</ref></p>
+                </div>
+
+                """
+            }
+            if apparatus {
+                xml += """
+                <div type="document" subtype="editorial-note" xml:id="dNote">
+                  <head>Editorial Note</head>
+                  <p>The editors record a gap in the file.</p>
+                </div>
+                <div type="preface" xml:id="preface">
+                  <head>Preface</head>
+                  <p>About this volume and how it was compiled.</p>
+                </div>
+
+                """
+            }
+            xml += "</body></text></TEI>"
+            try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("\(name).xml"))
+        }
+        try write("frus1951-54Iran", apparatus: true)
+        try write("frus1951-54IranEd2", apparatus: false)
+        try write("frus1977-80v09Ed2", apparatus: false)
+
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        for volume in ["frus1951-54Iran", "frus1951-54IranEd2", "frus1977-80v09Ed2"] {
+            try await pipeline.indexVolume(volume)
+        }
+        return (dir, dbURL, pipeline)
+    }
+
+    /// Runs one statement against a database file.
+    ///
+    /// Used only to put a fixture into a state its own XML cannot reach: `is_broken` is written
+    /// from the bundled exclusion index, not derived from the volume being parsed, so a fixture
+    /// volume has no way to produce a broken reference.
+    @discardableResult
+    private func exec(_ url: URL, _ sql: String) -> Bool {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK else {
+            return false
+        }
+        defer { sqlite3_close(db) }
+        return sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK
+    }
+
+    @Test("The copy carries a provenance stamp, and it records the strip decision")
+    func provenanceStampRecordsWhatTheCopyIs() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let stripped = dir.appendingPathComponent("stamped-stripped.sqlite")
+        let kept = dir.appendingPathComponent("stamped-kept.sqlite")
+        _ = try IndexDatabaseExporter.export(from: live, to: stripped, includeMyWriting: false,
+                                             stamp: stamp(pipeline))
+        _ = try IndexDatabaseExporter.export(from: live, to: kept, includeMyWriting: true,
+                                             stamp: stamp(pipeline))
+
+        func value(_ url: URL, _ key: String) -> String? {
+            query(url, "SELECT value FROM research_provenance WHERE key='\(key)'").first
+        }
+
+        // The row the table exists for: nothing else in the file distinguishes these two copies,
+        // because a stripped column and an un-annotated document both read NULL.
+        #expect(value(stripped, "my_writing_included") == "0")
+        #expect(value(kept, "my_writing_included") == "1")
+
+        // The versions that decide whether a number from this copy is still comparable.
+        #expect(value(stripped, "current_index_version")
+                    == String(IndexingPipeline.currentDateIndexVersion))
+        #expect(value(stripped, "current_fts_schema_version")
+                    == String(IndexingPipeline.currentFTSSchemaVersion))
+        #expect(value(stripped, "semantic_provenance_digest") == "0123456789abcdef")
+        #expect(value(stripped, "exported_at")?.isEmpty == false)
+        #expect(value(stripped, "documentation")?.contains("Agentic-Analysis-Guide") == true)
+
+        // The two ARRAYS the clipboard record carries are deliberately absent: both are answerable
+        // from the rows beside them, and a stored second copy is a second place to be wrong.
+        #expect(query(stripped, "SELECT key FROM research_provenance WHERE key LIKE '%volume%'")
+                    .isEmpty)
+    }
+
+    @Test("Unloaded vectors are stamped as NULL, not as a missing key")
+    func provenanceStampDistinguishesUnloadedVectors() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("nodigest.sqlite")
+
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false,
+                                             stamp: stamp(pipeline, semanticDigest: nil))
+
+        // The KEY is present — an absent key would be ambiguous between an export taken before the
+        // stamp existed and one taken with the vectors unloaded.
+        #expect(query(out, "SELECT key FROM research_provenance WHERE key='semantic_provenance_digest'")
+                    == ["semantic_provenance_digest"])
+        #expect(query(out, """
+            SELECT 'nonnull' FROM research_provenance
+            WHERE key='semantic_provenance_digest' AND value IS NOT NULL
+            """).isEmpty)
+    }
+
+    @Test("research_documents drops the apparatus and the Ed2 twin that has a first edition")
+    func researchViewsApplyTheExclusions() async throws {
+        let (dir, live, pipeline) = try await makeCorpusShaped()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("views.sqlite")
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true,
+                                             stamp: stamp(pipeline))
+
+        // Fixture preconditions, asserted so a failure below localises to the view rather than to
+        // the parser having stopped flagging apparatus.
+        #expect(query(out, "SELECT COUNT(*) FROM document_cache WHERE is_editorial_note=1").first == "1")
+        #expect(query(out, "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=1").first == "1")
+
+        // The fold names exactly the twin whose first edition is here. `frus1977-80v09Ed2` has no
+        // first edition — in this fixture as in the shipped corpus — and must survive, or the view
+        // would be deleting documents that are not duplicates.
+        #expect(query(out, "SELECT volume_id FROM research_suppressed_volumes")
+                    == ["frus1951-54IranEd2"])
+
+        let volumes = query(out, "SELECT DISTINCT volume_id FROM research_documents ORDER BY 1")
+        #expect(volumes == ["frus1951-54Iran", "frus1977-80v09Ed2"])
+
+        // 3 documents in each surviving volume; the editorial note and the preface are gone.
+        #expect(query(out, "SELECT COUNT(*) FROM research_documents").first == "6")
+        #expect(query(out, "SELECT COUNT(*) FROM document_cache").first == "11")
+        #expect(query(out, "SELECT document_id FROM research_documents WHERE document_id='dNote'")
+                    .isEmpty)
+    }
+
+    @Test("research_documents cannot reach the reader's writing, or a rowid")
+    func researchDocumentsRemovesTheColumnsRatherThanForbiddingThem() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("shape.sqlite")
+
+        // includeMyWriting: TRUE — the point is that the view hides the writing even in the copy
+        // that still contains it. In a stripped copy every one of these would be NULL anyway, and
+        // the test would pass against a view that offered the column.
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true,
+                                             stamp: stamp(pipeline))
+        #expect(query(out, "SELECT note_text FROM document_cache WHERE document_id='d3'").first
+                    == noteText,
+                "precondition: the copy still holds the writing the view has to hide")
+
+        for column in ["summary_text", "note_text", "subject_tag_ids", "rowid"] {
+            #expect(rejects(out, "SELECT \(column) FROM research_documents"),
+                    "research_documents must not offer \(column)")
+        }
+        // The surfaces §4.6 does offer are still there.
+        #expect(!rejects(out, "SELECT user_tag_ids, body_text, despatch_serial FROM research_documents"))
+    }
+
+    @Test("research_cross_references drops broken edges")
+    func researchCrossReferencesDropsBrokenEdges() async throws {
+        let (dir, live, pipeline) = try await makeCorpusShaped()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let before = query(live, "SELECT COUNT(*) FROM cross_references").first
+        #expect(before != "0", "precondition: the fixture produced cross-references")
+        #expect(exec(live, "UPDATE cross_references SET is_broken = 1 WHERE source_document_id = 'd1'"))
+
+        let out = dir.appendingPathComponent("refs.sqlite")
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true,
+                                             stamp: stamp(pipeline))
+
+        #expect(query(out, "SELECT COUNT(*) FROM cross_references WHERE is_broken=1").first != "0",
+                "precondition: broken edges are in the copy")
+        #expect(query(out, "SELECT source_document_id FROM research_cross_references WHERE source_document_id='d1'")
+                    .isEmpty)
+        #expect(rejects(out, "SELECT is_broken FROM research_cross_references"))
     }
 }
 
