@@ -242,11 +242,16 @@ struct DataExportSections: View {
         databaseExportProblem = nil
         databaseExportRunning = true
         let includeWriting = includeMyWritingInDatabase
+        // Taken here, on the main actor and before the copy starts, so the stamp inside the file
+        // describes the index at the moment it was read rather than whenever the copy finished.
+        let stamp = ResearchStateRecord.make(
+            pipeline: appState.indexingPipeline,
+            semanticDigest: BundledSemanticVectors.provenance?.digestHex)
 
         Task.detached(priority: .userInitiated) {
             do {
                 let report = try IndexDatabaseExporter.export(
-                    from: source, to: destination, includeMyWriting: includeWriting)
+                    from: source, to: destination, includeMyWriting: includeWriting, stamp: stamp)
                 let size = ByteCountFormatter.string(fromByteCount: report.byteCount,
                                                      countStyle: .file)
                 await MainActor.run {

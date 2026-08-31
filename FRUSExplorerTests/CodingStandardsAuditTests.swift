@@ -43,6 +43,56 @@ struct CodingStandardsAuditTests {
     private static let openAPIURL: URL =
         projectRoot.appendingPathComponent("FRUS-API.openapi.yaml")
 
+    // MARK: - Release Surfaces
+
+    /// `README.md`'s stated build and version match `project.yml`.
+    ///
+    /// The README is the project's public front door and the only page linking the agentic-analysis
+    /// guide, and it sat at build 37 while the tree was at 44. Seven builds, because nothing
+    /// checked: `CLAUDE.md`'s bump procedure names two files — `project.yml` and `project.pbxproj`
+    /// — and the README is a third place the number lives. A step nothing enforces is a step that
+    /// gets skipped, so this is the enforcement rather than a fourth line of procedure.
+    @Test("CodingStandardsAudit: README states the current build and version")
+    func readmeStatesCurrentBuild() throws {
+        let project = try String(
+            contentsOf: Self.projectRoot.appendingPathComponent("project.yml"), encoding: .utf8)
+        let readme = try String(
+            contentsOf: Self.projectRoot.appendingPathComponent("README.md"), encoding: .utf8)
+
+        func firstMatch(_ pattern: String, in text: String) throws -> [String] {
+            let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
+            let range = NSRange(text.startIndex..., in: text)
+            guard let match = regex.firstMatch(in: text, range: range) else { return [] }
+            return (1..<match.numberOfRanges).compactMap {
+                Range(match.range(at: $0), in: text).map { r in String(text[r]) }
+            }
+        }
+
+        let build = try firstMatch(#"CURRENT_PROJECT_VERSION:\s*(\d+)"#, in: project)
+        let marketing = try firstMatch(#"MARKETING_VERSION:\s*"([^"]+)""#, in: project)
+        #expect(build.count == 1, "project.yml must state CURRENT_PROJECT_VERSION")
+        #expect(marketing.count == 1, "project.yml must state MARKETING_VERSION")
+
+        let stated = try firstMatch(#"Current build:\s*\*\*(\d+)\*\*\s*\(version ([0-9.]+)\)"#,
+                                    in: readme)
+        #expect(stated.count == 2,
+                "README.md must carry a line of the form: Current build: **N** (version X.Y).")
+        guard stated.count == 2, let expectedBuild = build.first,
+              let expectedVersion = marketing.first else { return }
+
+        #expect(stated[0] == expectedBuild,
+                """
+                README.md says build \(stated[0]) but project.yml says \(expectedBuild). \
+                Update the "Current build:" line in README.md to **\(expectedBuild)** \
+                (version \(expectedVersion)).
+                """)
+        #expect(stated[1] == expectedVersion,
+                """
+                README.md says version \(stated[1]) but project.yml says \(expectedVersion). \
+                Update the "Current build:" line in README.md.
+                """)
+    }
+
     // MARK: - OpenAPI Compliance
 
     @Test("CodingStandardsAudit: FRUS-API.openapi.yaml declares OpenAPI 3.1.0")

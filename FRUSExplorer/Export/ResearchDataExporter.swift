@@ -963,9 +963,19 @@ enum ResearchDataExporter {
 ///    SQLite has freed and not reused, and a page-level backup copies those faithfully. On the
 ///    author's own store 56.2% of the file is freelist. Offering a consent checkbox over a file that
 ///    still contains the text would be worse than offering no checkbox at all.
+/// 4. **The copy says what it is.** A bare `.sqlite` cannot be told from any other, and the two
+///    facts that decide whether a number from it is usable — which index generation wrote the rows,
+///    and whether the reader's own writing is in there — are invisible from inside the file. So the
+///    export stamps `research_provenance` with the same facts `ResearchStateRecord` puts on the
+///    clipboard. Pairing that clipboard record with the right file was previously the reader's own
+///    discipline, which is exactly the kind of step §13 exists to remove.
+/// 5. **Four rules stop being remembered and start being structural.** `research_documents`,
+///    `research_cross_references` and `research_suppressed_volumes` pre-apply the guide's
+///    EXCLUSIONS block and its Ed2 fold. See `installResearchViews`.
 ///
 /// Version history:
 ///   1.0 — W-19 L-2: initial implementation
+///   1.1 — W-19 L-8 residue: `research_provenance` stamp and the three `research_*` views
 enum IndexDatabaseExporter {
 
     /// What an export produced, for the surface to report honestly.
@@ -1019,8 +1029,12 @@ enum IndexDatabaseExporter {
     ///   - destination: Written, replacing any existing file.
     ///   - includeMyWriting: When `false`, summaries, notes and tag names are removed from the copy
     ///     and the freed pages reclaimed. When `true` the copy is byte-faithful in content.
+    ///   - stamp: The state to record inside the copy. Deliberately not optional: a copy that
+    ///     cannot say which index generation wrote it is the failure this parameter exists to
+    ///     prevent, and a default would let a call site skip it silently.
     /// - Returns: A `Report` describing what was written.
-    static func export(from source: URL, to destination: URL, includeMyWriting: Bool) throws -> Report {
+    static func export(from source: URL, to destination: URL, includeMyWriting: Bool,
+                       stamp: ResearchStateRecord) throws -> Report {
         try? FileManager.default.removeItem(at: destination)
 
         var src: OpaquePointer?
@@ -1057,6 +1071,12 @@ enum IndexDatabaseExporter {
             try strip(dst)
         }
 
+        // After the strip, so the views are built over the rows the reader will actually get, and
+        // before the verification, so a copy that failed to take either one fails the export
+        // rather than arriving quietly incomplete.
+        try installResearchViews(dst)
+        try writeProvenance(dst, stamp: stamp, includeMyWriting: includeMyWriting)
+
         let problems = verify(dst)
         let size = (try? FileManager.default.attributesOfItem(atPath: destination.path)[.size]) as? Int64
         return Report(byteCount: size ?? 0,
@@ -1082,6 +1102,141 @@ enum IndexDatabaseExporter {
                  sql: "INSERT INTO frus_documents(frus_documents) VALUES('rebuild')")
         try exec(db, step: "rebuilding your-content index",
                  sql: "INSERT INTO user_content(user_content) VALUES('rebuild')")
+    }
+
+    /// Creates the views that turn four of the guide's house rules from prose into structure.
+    ///
+    /// `Docs/Agentic-Analysis-Guide.md` §12 hands an agent about forty rules as a block of text,
+    /// and a block of text binds nothing: an agent that skips one produces a plausible number, not
+    /// an error. A view binds. A column absent from `research_documents` cannot be selected from
+    /// it, and a row its `WHERE` removes cannot be counted. These are the rules a view can carry,
+    /// and deliberately no more:
+    ///
+    /// - **EXCLUSIONS.** `research_documents` drops front matter and editorial notes, and does not
+    ///   offer `summary_text` or `note_text` — so the reader's own writing is *unreachable* through
+    ///   the view rather than merely forbidden, in an unstripped copy exactly as in a stripped one.
+    ///   `research_cross_references` drops `is_broken = 1`.
+    /// - **IDENTITY.** A view has no `rowid`, so `SELECT rowid FROM research_documents` is an error
+    ///   rather than a plausible identifier. That is the whole of §12's third identity rule.
+    /// - **KNOWN TRAPS.** `subject_tag_ids` is always NULL and the block says to ignore it, so the
+    ///   view does not offer it either.
+    /// - **SCOPING.** `research_suppressed_volumes` folds the second-edition twins.
+    ///
+    /// **The fold is computed, never hard-coded, and it is conditional on this copy.** A second
+    /// edition is suppressed only where its first edition is also present *in this database*. The
+    /// series ships three second editions and only two have a first edition to duplicate
+    /// (`frus1977-80v09Ed2` has none), and a reader's library may hold either, both or neither.
+    /// Hard-coding the two known pairs would delete documents that are not duplicates — a worse
+    /// error than the double-count it set out to fix.
+    ///
+    /// **The fold is a view of its own rather than an inlined clause, because an agent that cannot
+    /// see what was suppressed cannot report it.** `SELECT * FROM research_suppressed_volumes`
+    /// names the volumes; nothing has to be taken on trust. Nothing else here is hidden either:
+    /// `sqlite_master` carries every definition verbatim, so a reader can read the exact clause
+    /// they are working under.
+    ///
+    /// **Two limits, both measured, both worth knowing before trusting the fold.** It keeps the
+    /// first edition, which is the EARLIER text — in `manifest.json` both `Ed2` volumes were
+    /// published after their twins, 2018 over 2017 and 2021 over 2014 — and the two editions are
+    /// not interchangeable: over the author's full 552-volume index the Iran pair shares 377
+    /// document ids and only 277 of them carry identical text. A claim resting on the wording of a
+    /// re-edited document belongs to the volume, not to this view. And `research_cross_references`
+    /// folds nothing: it removes broken edges, which is the rule §12 states, and inventing an
+    /// edition policy for edges that no rule asks for would be this artifact making history rather
+    /// than serving it.
+    private static func installResearchViews(_ db: OpaquePointer) throws {
+        try exec(db, step: "preparing the research views", sql: """
+            DROP VIEW IF EXISTS research_documents;
+            DROP VIEW IF EXISTS research_cross_references;
+            DROP VIEW IF EXISTS research_suppressed_volumes;
+
+            CREATE VIEW research_suppressed_volumes AS
+            SELECT DISTINCT later.volume_id AS volume_id
+            FROM document_cache AS later
+            WHERE later.volume_id GLOB '*Ed[0-9]'
+              AND EXISTS (SELECT 1 FROM document_cache AS first_edition
+                          WHERE first_edition.volume_id =
+                                substr(later.volume_id, 1, length(later.volume_id) - 3));
+
+            CREATE VIEW research_documents AS
+            SELECT volume_id, document_id, document_number, header, dateline,
+                   source_note, despatch_serial, body_text, user_tag_ids
+            FROM document_cache
+            WHERE is_front_matter = 0
+              AND is_editorial_note = 0
+              AND volume_id NOT IN (SELECT volume_id FROM research_suppressed_volumes);
+
+            CREATE VIEW research_cross_references AS
+            SELECT source_volume_id, source_document_id, target_volume_id, target_document_id,
+                   reference_type, context
+            FROM cross_references
+            WHERE is_broken = 0;
+            """)
+    }
+
+    /// Stamps the copy with what it is, so a number taken from it can be re-derived later.
+    ///
+    /// The same facts `ResearchStateRecord` puts on the clipboard, taken from that same type,
+    /// because two definitions of "the state of this index" would be two things to keep in step.
+    ///
+    /// What the table does NOT carry is the record's two arrays — the indexed volume list and the
+    /// subject-vocabulary digests — and that is the one deliberate difference between the two
+    /// surfaces. Both are answerable from the copy itself (`SELECT DISTINCT volume_id FROM
+    /// document_cache`, `SELECT DISTINCT digest FROM document_subject_volumes`), and a stored
+    /// second copy is a second place for them to be wrong. The clipboard record carries them
+    /// because a clipboard has no rows to be asked.
+    ///
+    /// `my_writing_included` is the row that motivated the table: nothing else in the file
+    /// distinguishes a stripped copy from an unstripped one, because a stripped column is NULL and
+    /// so is a column for a document the reader never annotated.
+    ///
+    /// `semantic_provenance_digest` is written even when the vectors were not loaded, as SQL NULL.
+    /// A missing KEY would be ambiguous between an export taken before this stamp existed and one
+    /// taken with the vectors unloaded; a NULL value says only the second.
+    private static func writeProvenance(_ db: OpaquePointer,
+                                        stamp: ResearchStateRecord,
+                                        includeMyWriting: Bool) throws {
+        try exec(db, step: "preparing the provenance stamp", sql: """
+            DROP TABLE IF EXISTS research_provenance;
+            CREATE TABLE research_provenance (key TEXT PRIMARY KEY, value TEXT);
+            """)
+
+        let rows: [(String, String?)] = [
+            ("exported_at", stamp.recordedAt),
+            ("my_writing_included", includeMyWriting ? "1" : "0"),
+            ("app_version", stamp.appVersion),
+            ("app_build", stamp.appBuild),
+            ("installed_index_version", String(stamp.installedIndexVersion)),
+            ("current_index_version", String(stamp.currentIndexVersion)),
+            ("installed_fts_schema_version", String(stamp.installedFTSSchemaVersion)),
+            ("current_fts_schema_version", String(stamp.currentFTSSchemaVersion)),
+            ("semantic_provenance_digest", stamp.semanticProvenanceDigest),
+            ("documentation",
+             "https://github.com/joshbotts/FRUS-Explorer/blob/v2/Docs/Agentic-Analysis-Guide.md")
+        ]
+
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "INSERT INTO research_provenance (key, value) VALUES (?, ?)",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw ExportError.sqlFailed(step: "writing the provenance stamp",
+                                        message: String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        for (key, value) in rows {
+            sqlite3_reset(stmt)
+            sqlite3_clear_bindings(stmt)
+            sqlite3_bind_text(stmt, 1, key, -1, SQLITE_TRANSIENT_RE)
+            if let value {
+                sqlite3_bind_text(stmt, 2, value, -1, SQLITE_TRANSIENT_RE)
+            } else {
+                sqlite3_bind_null(stmt, 2)
+            }
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw ExportError.sqlFailed(step: "writing the provenance stamp",
+                                            message: String(cString: sqlite3_errmsg(db)))
+            }
+        }
     }
 
     /// Runs the same checks the app's own Index Health screen runs, against the copy.
@@ -1230,3 +1385,8 @@ struct ResearchStateRecord: Codable, Equatable, Sendable {
         return text
     }
 }
+
+// `SQLITE_TRANSIENT` is a macro the Swift importer does not surface; every SQLite call site in this
+// project declares its own, suffixed by file. Tells SQLite to copy the bound bytes, which the
+// provenance stamp needs because its values are Swift `String`s that go out of scope before `step`.
+private let SQLITE_TRANSIENT_RE = unsafeBitCast(-1, to: sqlite3_destructor_type.self)

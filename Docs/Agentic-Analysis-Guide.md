@@ -96,9 +96,15 @@ an erase rather than an unlinking), and the `rank`-1 integrity check afterwards 
 problem instead of handing you a file that looks fine. The switch is **off** by default, so the
 export excludes your notes, summaries and tag names unless you say otherwise.
 
+The exported copy also carries two things the live index does not: a `research_provenance` table
+saying what the copy *is*, and three `research_*` views that pre-apply the exclusion rules
+[§12](#12-a-house-rules-block-to-paste-into-your-agent) otherwise asks an agent to remember. Both are
+documented in [§4.7](#47-what-the-apps-export-adds).
+
 It is disabled while indexing is running, for the reason the next paragraph gives. The rest of this
 section is what to do by hand — on iOS, where there is no route to the file, or when you want the
-copy somewhere the panel cannot reach.
+copy somewhere the panel cannot reach. A hand-made copy is the same database **without** the stamp
+and the views: `.backup` copies what is in the file, and neither exists in the live index.
 
 ### Copy it properly
 
@@ -362,6 +368,46 @@ Three properties worth knowing before you build on it:
 - **It is your writing, not the corpus.** Everything [§7.6](#76-summaries-are-not-sources) says about
   summaries applies: exclude it from anything whose output becomes evidence, and see
   [§11](#11-safety-privacy-and-what-leaves-your-machine) for stripping it from a copy.
+
+### 4.7 What the app's export adds
+
+Four objects exist only in a copy made by **Settings ▸ Data & Recovery ▸ Export Research Database…**
+([§2](#or-let-the-app-do-it)). They are not in the live index and not in a copy you made with
+`.backup`, so a query written against them is a query that will not run on a hand-made file.
+
+**`research_provenance`** — `(key TEXT PRIMARY KEY, value TEXT)`. What this copy is:
+
+| Key | |
+|---|---|
+| `exported_at` | When the copy was taken. |
+| `my_writing_included` | `1` or `0`. **The row the table exists for**: nothing else distinguishes a stripped copy from an unstripped one, because a stripped column reads NULL and so does a document you never annotated. |
+| `app_version`, `app_build` | |
+| `installed_index_version`, `current_index_version` | [§13](#13-recording-a-run-so-it-can-be-reproduced)'s pair. Unequal means a re-index was pending, so extraction may differ between rows. |
+| `installed_fts_schema_version`, `current_fts_schema_version` | The second stamp, which independently triggers a rebuild. |
+| `semantic_provenance_digest` | The vectors' pin, or SQL `NULL` if they were not loaded. The key is always present, so NULL means *unloaded* rather than *older export*. |
+| `documentation` | A URL to this guide. |
+
+It deliberately does **not** carry §13's two lists — the indexed volumes and the subject-vocabulary
+digests. Both are answerable from the rows beside them (`SELECT DISTINCT volume_id FROM
+document_cache`; `SELECT DISTINCT digest FROM document_subject_volumes`), and a stored second copy is
+a second place for them to disagree. The clipboard record carries them because a clipboard has no
+rows to ask.
+
+**Three views** turn four house rules from things to remember into things that are true:
+
+| View | What it is |
+|---|---|
+| `research_documents` | `document_cache` minus front matter, editorial notes and suppressed volumes — and **without** `summary_text`, `note_text` or `subject_tag_ids`. A view has no `rowid`, so `SELECT rowid FROM research_documents` is an error rather than a plausible identifier. |
+| `research_cross_references` | `cross_references` minus `is_broken = 1`. Only that: it does not apply the edition fold, because no rule asks it to. |
+| `research_suppressed_volumes` | The second editions this copy is folding, and nothing else. |
+
+The fold is **computed against this copy**, not hard-coded: a second edition is suppressed only where
+its first edition is also present here. `frus1977-80v09Ed2` ships with no first edition and survives;
+so does an `Ed2` you downloaded on its own. Read `research_suppressed_volumes` and report it —
+[§14.9](#149-where-the-corpus-double-counts-itself) explains why the choice is not neutral.
+
+Nothing here is hidden. `SELECT sql FROM sqlite_master WHERE type='view'` prints the exact exclusion
+clause you are working under, which is the only reason it is safe to work under one.
 
 ---
 
@@ -838,6 +884,17 @@ Adapt and paste at the start of a session. It encodes the constraints most likel
 You have read-only SQL access to a SQLite copy of the FRUS Explorer index — a full-text index of
 the Foreign Relations of the United States series. Follow these rules.
 
+SURFACES — there are three, and most rules below belong to exactly one
+- THIS DATABASE answers coverage, identity, exclusions, the citation graph, and every count of
+  documents.
+- THE TEI XML is the only surface that can answer a counting-surface question, a spelling-variant
+  scan, or an apparatus/document split. This index stores porter STEMS and a flattened text, so a
+  variant count run here silently answers a different question. Marked [TEI] below.
+- THE BUNDLED JSON resolves subjects, volume metadata, and EVERY archival question. Nothing in this
+  database turns a lot number or a collection name into a shelf. Marked [JSON] below.
+If a rule is marked [TEI] or [JSON] and you have not been given that surface, say so and stop —
+do not answer it in SQL. An approximation here is indistinguishable from an answer.
+
 COVERAGE
 - Before anything else, run the coverage query and report it:
   SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note)
@@ -885,30 +942,38 @@ SCOPING — applies whenever you are scanning the corpus to decide what to searc
 - Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
   control ("ZZZ_IMPOSSIBLE_ZZZ", expect 0) in the SAME pass. Report both. An absence is not a
   finding until the controls prove the scan works.
-- State your COUNTING SURFACE with every number: raw TEI, tag-stripped, or word-bounded. They
-  disagree by up to 14% on this corpus. Prefer tag-stripped + whitespace-collapsed.
-- Never query a single literal. Count every spelling, hyphenation, plural and acronym variant
-  and report the split. Acronyms often outnumber spelled forms.
+- [TEI] State your COUNTING SURFACE with every number: raw TEI, tag-stripped, or word-bounded.
+  They disagree by up to 14% on this corpus. Prefer tag-stripped + whitespace-collapsed.
+- [TEI] Never query a single literal. Count every spelling, hyphenation, plural and acronym
+  variant and report the split. Acronyms often outnumber spelled forms. The index CANNOT do this:
+  porter stemming folds `chiefs of mission` and `chiefs of missions` to one stem.
 - FALSE-FRIEND TEST: for any term the question itself supplied, compute its share in the
   on-topic volumes and compare that to a control phrase's share. A term matching the baseline
   is measuring the corpus, not the question — say so and stop using it.
 - Never scan a bare surname. Full-name and inverted-index forms only; <persName> markup covers
   only 4-10% of mentions and cannot disambiguate.
 - Periodise on frus:doc-dateTime-min, NOT on the volume's series year. Say which you used.
-- Separate document text from apparatus (front matter, abbreviation lists, footnotes, index)
-  before publishing any density, or say explicitly that you have not.
+- [TEI] Separate document text from apparatus (front matter, abbreviation lists, footnotes,
+  index) before publishing any density, or say explicitly that you have not. This database can
+  drop front matter and editorial notes by column; it cannot separate a footnote from a body,
+  because body_text contains both.
 - Read the editors' chapter headings before writing queries. My modern phrasing for a subject
   is usually absent from the corpus; theirs is a repeating formula.
 - A negative built from vocabulary postdating the period is circular. Before claiming the
   corpus lacks pre-YEAR coverage, scan terms contemporaries would have used.
-- Suppress Ed2 twins where a first edition is also present (frus1951-54Iran,
-  frus1969-76ve15p2) — 718 documents are otherwise double-counted.
+- Suppress the SECOND edition where its first edition is also present: drop
+  frus1951-54IranEd2 and frus1969-76ve15p2Ed2, never the first editions their ids are built from,
+  and never frus1977-80v09Ed2, which has no first edition to duplicate. Say which surface you
+  counted: the overlap is 718 documents in the vector artifacts and 701 in this index with
+  apparatus excluded.
 
 ARCHIVAL SCOPE — do not stop at what FRUS printed
 - FRUS is a SELECTION. Scoping is not finished when you know which volumes hold the question.
   Also establish which archival units those documents came out of, and which units their
   footnotes point at. Report both, always labelled by channel, and NEVER summed.
-- Resolve as far as the bundled indexes reach, and report what you got:
+- [JSON] Resolve as far as the bundled indexes reach, and report what you got. They are in the
+  app bundle at /Applications/FRUS Explorer.app/Contents/Resources/ and in the public repository
+  at FRUSExplorer/Resources/:
     collection-usage-index.json  -> ranked archival targets for any volume scope
     external-citation-index.json -> what the editors cited and did NOT print
     central-files-index.json     -> lot number -> record group + series NAID + entry number
@@ -927,6 +992,23 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
 - The offline stack barely reaches before 1940 (11 of 695 bundled series). Say so rather than
   reporting an empty pre-war roadmap as an archival absence.
 ```
+
+### Which surface answers which block
+
+The block above is longer than any agent reliably holds, and its blocks are not equally reachable.
+This is what an agent handed only the database can and cannot do:
+
+| Block | Surface | If the surface is missing |
+|---|---|---|
+| COVERAGE, IDENTITY, REPORTING | This database | — |
+| EXCLUSIONS | This database — and **already applied** in the app's export, see [§4.7](#47-what-the-apps-export-adds) | — |
+| KNOWN TRAPS | This database, except the stemming trap, which is a *warning about* the database | — |
+| SCOPING: controls, false-friend test, surnames, periodisation, editors' headings, Ed2 fold | This database | — |
+| SCOPING: counting surface, variant expansion, apparatus split | **The TEI XML** | Say the number is unavailable. A stem count is not a variant count. |
+| ARCHIVAL SCOPE, and §5's subject and volume-metadata joins | **The bundled JSON** | Say the archival half did not run. Do not report it as an archival absence — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
+
+Four of these stop depending on the agent's memory when the copy comes from the app's own export,
+because a view enforces them. The rest do not, and no wording of the block changes that.
 
 ---
 
@@ -1151,11 +1233,25 @@ the corpus's own words for your subject.
 ### 14.9 Where the corpus double-counts itself
 
 The 552 bundled volumes include **three second editions** — `frus1951-54IranEd2`,
-`frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2` — and for two of them the first edition ships as well
-(`frus1951-54Iran`, 375 documents, beside its Ed2 at 375; `frus1969-76ve15p2`, 343, beside its Ed2 at
-382). So a naive corpus-wide scan double-counts **718 documents**. Both editions appear in
-`manifest.json` and in `semantic-vectors-index.json`; this is deliberate publishing, not a defect —
-but suppress the Ed2 twin where a first edition is present before computing any share.
+`frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2` — and for two of them the first edition ships as well.
+Both editions appear in `manifest.json` and in `semantic-vectors-index.json`; this is deliberate
+publishing, not a defect — but suppress the second edition where a first edition is present before
+computing any share.
+
+**And name your surface when you state the size of the overlap**, because §14.3 applies to this
+number too and the two available surfaces disagree:
+
+| Surface | Iran pair | ve15p2 pair | Overlap |
+|---|---|---|---|
+| `semantic-vectors-index.json` | 375 / 375 | 343 / 382 | **718** |
+| `document_cache`, apparatus excluded | 358 / 358 | 343 / 382 | **701** |
+
+**The two editions are not interchangeable, which is why the choice of which to drop is not
+neutral.** Measured over a full 552-volume index: the Iran pair shares **377 document ids** but only
+**277** of them carry identical text, and the `ve15p2` pair shares 345 ids with 335 identical. In
+both pairs the `Ed2` is the *later* publication (2018 over 2017; 2021 over 2014). So the conventional
+fold — suppress the `Ed2` — keeps the earlier text, which is right for a count and wrong for a quote.
+If a claim turns on the wording of a document in either pair, read the volume.
 
 Related, and worth stating once: the semantic artifacts count **314,483** documents, while this
 project's own settled corpus figure from its query work is **316,839**. The two count different
@@ -1197,6 +1293,13 @@ the app ships), exactly one was ever opened, as a dictionary for glossing a fili
 omission was invisible from inside the work; it took someone asking whether the runs had used the
 archival layer at all.
 
+**Where they are, since the runs that skipped them were never told.** Every one is in the app
+bundle at `/Applications/FRUS Explorer.app/Contents/Resources/` — the directory
+[§5](#5-resolving-the-coded-columns) already takes `document-subject-index.json` and `manifest.json`
+from — and every one is also committed to the public repository under `FRUSExplorer/Resources/`, so
+an agent on a machine with no app installed can still read them. Take them from the build that wrote
+your index, for §5's versioning reason.
+
 The stack, and the question each artifact answers:
 
 | Artifact | Answers | Scale |
@@ -1212,6 +1315,8 @@ The stack, and the question each artifact answers:
 | `decimal-class-labels.json` | what `812.6363` means, compositionally | 1910–49 schedule; 9 classes, 198 countries, 693 suffixes |
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
+| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,792 edges, 4,907 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
+| `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, a lot file, a library — per decade and per volume | 268,757 notes, 522 volumes, 16 decades |
 
 Two rules govern using them, and the second is easy to get backwards.
 
@@ -1674,6 +1779,22 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.10 — 2026-08-31: the four documentation defects the L-8 assessment named or its implementation
+  exposed. **§4.7** documents the two things the app's export now adds and a hand-made copy does not
+  — a `research_provenance` stamp (with `my_writing_included`, the one fact that told a stripped copy
+  from an unstripped one, and nothing did before) and three `research_*` views that make four of §12's
+  rules structural. **§12 gains a SURFACES preamble, per-rule `[TEI]`/`[JSON]` tags and a
+  surface-routing table**: three of its scoping rules cannot be executed against the database at all,
+  and an agent handed only the index was previously left to discover that or, worse, not to.
+  **§12's Ed2 rule is rewritten** — its parenthetical named the first editions while the sentence
+  said to suppress the twins, which reads as an instruction to delete the wrong volumes. **§14.9
+  names its surface**: the 718-document overlap is the vector artifacts' figure and the index's is
+  701, and the two editions turn out not to be interchangeable (377 shared ids in the Iran pair, 277
+  with identical text; the `Ed2` is the later publication in both pairs). **§14.11 states where the
+  artifacts are** — the same bundle directory §5 already names, and the public repository — and gains
+  the two rows that were counted in its own "fifteen" but missing from its table. *(Wave W-19, row
+  L-8 residue.)*
 
 - 1.9 — 2026-08-31: §8 gains the `frusexplorer://document/{volume_id}/{document_id}` deep link, so a
   citation in an agent's output is one click from the rendered document. *(Wave W-19, row L-5.)*
