@@ -85,12 +85,20 @@ continuously would silently undo the `isPaused` decision and nothing in the buil
 
 ### 3.1 Already shipping — film it, do not build it
 
-| Item | Data | Motion | Path |
-|---|---|---|---|
-| Launch splash cloud + shimmer | pre-bundled | continuous | `LaunchSplashView.swift:50-51`, `:97` |
-| **Onboarding scope-tracking cloud** — the best 8-second demo in the app | pre-bundled | continuous | `OnboardingView.swift:99-112`, `:123`; its doc calls this "the reason the vectors are bundled at all" |
-| Indexing drift cloud — the app's **only** continuous particle animation | pre-bundled | continuous, closed-form | `drift: true` appears at exactly two sites: `IndexingCloudStrip.swift:61`, `PendingCloudBackdrop.swift:92` |
-| Live Activity / Dynamic Island | index-fed | system | `FRUSExplorerWidgets/IndexingLiveActivity.swift` |
+| Item | Data | Motion | Renderer | Path |
+|---|---|---|---|---|
+| Launch splash cloud + shimmer | pre-bundled | continuous | **Text (static words); the shimmer is the only motion** | `LaunchSplashView.swift:50-51`, `:97` |
+| **Onboarding scope-tracking cloud** — the best 8-second demo in the app | pre-bundled | continuous | **Text (static)** | `OnboardingView.swift:99-112`, `:123`; its doc calls this "the reason the vectors are bundled at all" |
+| Indexing drift cloud — the app's **only** continuous particle animation | pre-bundled | continuous, closed-form | **Drift (Canvas)** | `drift: true` appears at exactly two sites: `IndexingCloudStrip.swift:61`, `PendingCloudBackdrop.swift:92` |
+| Live Activity / Dynamic Island | index-fed | system | out of process (ActivityKit) | `FRUSExplorerWidgets/IndexingLiveActivity.swift` |
+
+**The Renderer column is load-bearing** *(added 2026-08-31, §10)*. `WordCloudBackdropView.drift`
+defaults to `false` (`WordCloudBackdropView.swift:71`) and is opt-in per surface; only the two sites
+two rows below pass it. **The splash and the onboarding cloud have never run the particle canvas.**
+A row that proposes changing "the splash's drift" is proposing to *enable a renderer*, not to tune a
+constant — see M-4. Note also that the splash's `continuous` Motion cell describes its shimmer
+(`LaunchSplashView.swift:98`), not its words: the static resolver never touches `fillFactor` or
+`WordCloudDriftField.expansion`, so today's splash is 50 spiral-packed words, not a full-bleed field.
 
 **Capture note.** The Live Activity is the one asset here **no simulator route can produce** — it
 needs a physical iPhone with an active download (`Docs/screenshots/README.md:88-89`). Discover that
@@ -125,9 +133,33 @@ Build the interpolator as a named type with its own test; interpolate `halfExten
 
 **M-2 · The Reduce Motion / Reduce Transparency contract for the map — S, and a prerequisite.**
 A grep across `FRUSExplorer/Semantic/` returns **zero** references to `reduceMotion` or
-`reduceTransparency`, while nine other files read them. It is cheap precisely because **today's
-shipped jump *is* the Reduce Motion path** — the cheapest accessibility story available anywhere in
-this repo, and the reason M-1 is authorizable at all.
+`reduceTransparency` (re-measured 2026-08-31 across all 20 files: still zero), while eight other
+files read them. It is cheap precisely because **today's shipped jump *is* the Reduce Motion path** —
+the cheapest accessibility story available anywhere in this repo, and the reason M-1 is authorizable
+at all.
+
+*Widened 2026-08-31, §10.* **Write the contract once, in words, and apply it: pin the value, not the
+schedule; simplify the transition, never remove it.** (Near-verbatim from
+`WordCloudDriftCanvas.swift:127`; the first half paraphrases `:210`/`:217`.) Three things ride with
+it, and the first is not the fix the review proposed:
+
+- **`LaunchSplashView.swift:98` uses `paused: reduceMotion`** where the drift canvas *slows the
+  interval and pins the clock inside the renderer* (`TimelineView(.animation(minimumInterval:
+  reduceMotion ? 1.0 / 6.0 : nil))`, `:133-135`). It is harmless today because the phase is also
+  substituted (`:99-101`, a deterministic date-independent pose), and **the remedy is the interval
+  substitution, not dropping `paused:`** — dropping it while keeping a 30 Hz schedule buys a
+  body re-evaluation and Canvas re-composite producing a byte-identical frame, on a
+  `.cloudKitImport` splash that is by definition a main-thread-contended wait. Match the drift
+  canvas's shape or leave it; do not half-apply the rule.
+- **`WordCloudView.swift:97` declares `@Environment(\.accessibilityReduceMotion)` and never uses
+  it** — the only occurrence in that 2,024-line file. A dead read in the app's flagship word cloud
+  is a larger inconsistency than the splash shimmer. One-line deletion or two-line implementation.
+- **State the Reduce Transparency behaviour rather than implying one**, given a dark full-bleed
+  field with dots at alpha 0.72 — including "no change, and why," if that is the answer. And note
+  what is missing beside it: **`accessibilityDifferentiateWithoutColor` appears nowhere under
+  `Semantic/`**, though it is honoured with a documented rationale at `WordCloudView.swift:101`
+  (consumed `:609`/`:612`/`:640`) on a surface far *less* colour-dependent than a map whose cluster
+  lens is an even hue sweep and whose provenance lens is a ten-hue legend.
 
 **M-3 · Lens dip — M.** The fade lever exists end to end and is unused: `Uniforms.alpha` is declared,
 consumed by the shader, and **hardcoded to 1.0 at both call sites**. Drive 1.0 → ~0.25 → 1.0 across
@@ -137,20 +169,88 @@ leaves the flags byte untouched, so a lens dip composes correctly with a live sc
 *Do not forget:* if `alpha` becomes a stored property, the offscreen path must keep passing 1.0
 explicitly, or a figure exported mid-dip is a faded plate.
 
-**M-4 / M-5 · Splash drift and seeded lens — S each, but both are near-moot where proposed.**
-The fresh-install splash lives exactly 1.6 s. The drift period is ~18.5 s, so a word traverses at
-most half its 14 pt excursion; and the lens cadence is 4.2 s, so the splash **never advances past
-lens 0 regardless of seeding**. Both effects are real on the **`.cloudKitImport` splash**, which the
-code itself calls *"a real wait, of real duration"* — that is where to spend them. Ship the lens
-**seeded, never randomised**, before 1.0: the splash is simultaneously the App Preview's opening
-frame, a store screenshot and the README hero, and randomising it makes the one beat you most need
-to reproduce non-reproducible.
+*Duration named 2026-08-31, §10.* Use **`FRUSTheme.cloudTransformDuration` (1.15 s,
+`FRUSTheme.swift:621`)** — the app's one constant for "this surface is changing what it is showing
+you," already shared across both cloud renderers by explicit design (`WordCloudBackdropView.swift:397`,
+`:404`; `WordCloudDriftCanvas.swift:278`, whose comment says the crossfade is matched to it "so the
+two surfaces feel like one animation"). **Do not introduce a second figure.**
+
+The review that proposed this argued it as "two lens pickers running at different speeds"; that
+comparison does not exist and should not be repeated. `WordCloudView`, the app's only *user-facing*
+lens picker, consumes no timing constant at all — `lens = option` (`WordCloudView.swift:328`), with
+no `withAnimation` and no `.animation(` in 2,024 lines. The real argument is the simpler one above.
+That absence is also the missing half of M-2's case: the flagship picker has neither a motion
+contract nor a timing constant.
+
+*While in the file:* `FRUSTheme.swift:574` still reads `// MARK: - Onboarding cloud backdrop (O-2)`
+for constants now serving five surfaces across four host features in three directories. Rename it —
+and fold in the dangling `// MARK: Chrome` two lines above at `:572`, which has no body, rather than
+leaving a second wrong header behind the renamed one. Alias or rename the constant so a `Semantic/`
+file can reference it without reading as a borrow.
+
+*Pair with §1 Gap 4 — with one scheduling conflict to resolve first.* Both are "one shared pipeline,
+two consumers, one of which is a published figure" (the blend factor at `SemanticMapRenderer.swift:377`
+and the `Uniforms.alpha` field at `:94`). But **§7 schedules Gap 4 at step 2** while M-3 is step 8.
+Either pull M-3's shared assertion forward to step 2 or accept that Gap 4 ships first and M-3 adds
+its assertion later; do not leave the plan asserting both a pairing and a six-step gap.
+
+**M-4 / M-5 · Splash drift and seeded lens — re-priced 2026-08-31 to `S in code, M in risk`.**
+The fresh-install splash lives exactly 1.6 s (verified, `ContentView.swift:171-176`). The drift
+period is ~18.5 s, so a word traverses at most **53.7%** of its 14 pt excursion in the worst case.
+Both effects are real on the **`.cloudKitImport` splash**, which the code itself calls *"a real wait,
+of real duration"* — that is where to spend them. Ship the lens **seeded, never randomised**, before
+1.0: the splash is simultaneously the App Preview's opening frame, a store screenshot and the README
+hero, and randomising it makes the one beat you most need to reproduce non-reproducible.
+
+*Corrected 2026-08-31, §10 — three sentences in the original row were wrong, and the conclusion is
+unchanged.*
+
+1. **"The splash never advances past lens 0 regardless of seeding" is REFUTED.** The phase is
+   wall-clock-derived (`WordCloudBackdropView.swift:149-151`) and `lensIndex` takes the absolute
+   phase integer, so roughly 38% of 1.6 s splashes cross a 4.2 s boundary and land on an arbitrary
+   lens. This *strengthens* M-5 — the beat is non-reproducible today — but the sentence is false and
+   must not be quoted forward.
+2. **The row is priced as if it adjusts an existing effect. It does not.** The splash is on the
+   static `Text` renderer (§3.1); M-4 **enables the particle Canvas on a first-run composition**,
+   which is the blast radius `WordCloudBackdropView.drift`'s own doc comment (`:63-70`) exists to
+   contain. Hence `S in code, M in risk`. It requires a `WordCloudDriftField` test covering
+   `identityZone` at phone width — the `push` path has never run in production, because no drifting
+   surface passes a zone — and an on-device composition review at phone and Mac widths before it
+   reaches `.freshInstall`. **It is not gated on anything else**; an earlier draft of this
+   correction made it a prerequisite of a defect that does not exist (§10).
+3. **A real bug sits directly on this path and must be fixed with M-4, not after it.**
+   `WordCloudDriftField.state(of:)` clamps with the surface's bleed (`:264`) while `push`'s
+   acceptance test re-clamps with the default `bleed: 0` (`:302` against the signature at `:319-320`).
+   On any surface with fill > 1 — every host taller than 160 pt, i.e. **exactly the full-bleed
+   splash M-4 proposes** — a valid nudge is rejected and the word is left inside the identity zone.
+
+*The affirmative argument, which the row lacked and which is stronger than the review stated.*
+`WordCloudDriftField` v1.2 spreads the composition to fill 1.12 with bleed above `bandHeight` 160,
+at up to 50 words per lens (100 particles mid-crossfade, ~2.6 ms, `WordCloudBackdropView.swift:321-324`).
+The static path gets **no expansion and no bleed at all**, so today's splash is the "clump stranded
+in an empty expanse" v1.2 was written to fix (`WordCloudDriftField.swift:111-117`). A full-bleed
+splash is the only surface that would hold the field the code was written for, long enough to see.
+*(One review claim about this is REFUTED: "the indexing strip cannot reach that state — its
+`minimumHeight` is 96." 96 is a `minHeight` FLOOR, not a cap (`IndexingCloudStrip.swift:48`, `:52`),
+and the queue banner expands to six Dynamic-Type-scalable rows. The strip can reach it; the argument
+for the splash rests on duration and composition, not on the strip's ceiling.)*
 
 **M-6 · In-app decade accumulation — DEFERRED pending measurement.** The ordering function is
 app-side and GPU-free and each step is one dirty mark, but the only cost figure in the repo
 (103.8 ms/frame) **includes readback and PNG encode the on-screen path does not pay**. Measure the
 live per-step cost before scoping. Recording an assumption as a measurement is how a wrong number
 gets into a plan.
+
+*The rig named 2026-08-31, §10 — the deferral stands, and it is now cheap to lift.* Use
+**`SemanticMapRenderer.Stats`** (`SemanticMapRenderer.swift:117-136`): DEBUG-gated, carrying
+`frameMilliseconds` / `worstMilliseconds` / `presentedFrames`, fed by a GPU completion handler
+through `onStats` (`:138-142`) into `SemanticMapModel.stats` (`SemanticMapSpikeView.swift:77-80`).
+It measures the on-screen map directly and needs no `TimelineView`. **Do not use `FrameTimeProbe`**:
+a review proposed it, but it measures frame intervals from `TimelineView(.animation)` and
+`DrawCostMeter`, whose only recorder is `WordCloudDriftCanvas.swift:170` and whose only mount is
+`WordCloudBackdropView.swift:126`. M-6 is a semantic-map item and the map is `isPaused = true`;
+following that pointer literally would hang a free-running SwiftUI clock beside a view whose whole
+design is that it has none — refusal 5.
 
 ---
 
@@ -345,7 +445,17 @@ first sitting:
   the *map's* geometry — the Series plates default to `chartHeight: 300`, where 60 pt is a fifth of
   the chart. Reword the false CSV sentence in the same change. **Highest-leverage item in the plan.**
 
-Then, in order:
+Then, in order. *(Re-sequenced 2026-08-31, §10: a step 0 added, and the three motion items moved
+ahead of the capture sessions. Old numbers in brackets.)*
+
+0. **Withdraw the pending cloud when indexing begins (XS).** `PendingCloudBackdrop.canShow` is
+   sampled **once**, inside `.task(id: isPending)` (`PendingCloudBackdrop.swift:99-104`), and
+   `isShowing` is `@State` that is never re-tested. So a search cloud already up when a batch starts
+   keeps drifting *above* the newly-mounted banner strip — genuinely two drifting Canvases, the state
+   `PendingCloudRule`'s own comment forbids. Make the predicate live: carry the surface in the task
+   id, or add `.onChange(of: appState.indexingBatch != nil) { if $1 { isShowing = false } }`.
+   **Not** the predicate swap a review proposed — see §10 for why that fixes nothing and costs the
+   search backdrop the whole pre-indexing download phase.
 
 1. **Route `lens.caption` into both export halves (S)**; fix the two wording imprecisions while there.
 2. **Fix the two print defects (S each)** — blend factor and colour space. Add one assertion apiece;
@@ -358,22 +468,39 @@ Then, in order:
 5. **Ship the publication-lag plate**, then Plate A under §4.2's four conditions. Plate A rides the
    *fresh-install* device (State A), not Gate B — and it already has a scheduled capture sitting.
 6. **Build the three device states** and confirm State A still shows the splash before shooting.
-7. **Run the capture sessions.** The shot list stages ~41 rows ≈ **44–48 files**, not the 31 stale
-   committed PNGs that circulated as a work estimate. Shoot store frames as a separate pass.
-8. **Finish the film (M, mostly assembly).** **Pre-flight `ls | wc -l == records.count` before
-   assembling**: a nil frame is skipped with `continue`, leaving a hole that stops `ffmpeg`, and the
-   closing frame's index is `records.count`, which after one skip **overwrites a real frame**. Crop
-   the ~44% dead width and put the grain sentence in the reclaimed margin; generate subtitles from
-   `framesCSV`, whose fields are already exactly a subtitle track's; fix the `provenance.txt`
-   `indexedVolumeCount: 0` and the hardcoded lens label. Not "zero Swift" — those two literals are in
-   the test target.
-9. **Record the App Preview in two passes and cut (L).**
-10. **M-1 + M-2 as one change (M).** The accessibility contract ships with the motion.
-11. **Plate B (S after step 1).**
-12. **M-3, M-4, M-5** — all three already ride Plan-of-Record row B-3.
-13. **Compose hero and captioned frames outside the repo.** No device-frame tooling, no fastlane, no
-    metadata directory. Design-tool work, not engineering.
-14. **Post-launch, follow the design's own §9 order.**
+7. *(was 10)* **Plan §3.2's M-1 + M-2 as one change (M).** The accessibility contract ships with the
+   motion.
+8. *(was part of 12)* **Plan §3.2's M-3, the lens dip (M).** See its Gap 4 scheduling note — Gap 4 is
+   step 2, so either pull the shared assertion forward or accept the gap deliberately.
+9. *(was part of 12)* **Plan §3.2's M-5 alone — seed the splash lens, never randomise (one line).**
+   It moves ahead of capture because the splash is the App Preview's opening frame *and* a store
+   screenshot: capturing before seeding is capturing a beat that cannot be reproduced. **M-4 does
+   not move with it** — it is `M in risk`, enables a renderer, and needs an on-device composition
+   review, none of which should gate a capture program.
+10. *(was 7)* **Run the capture sessions.** The shot list stages ~41 rows ≈ **44–48 files**, not the
+    31 stale committed PNGs that circulated as a work estimate. Shoot store frames as a separate pass.
+11. *(was 8)* **Finish the film (M, mostly assembly).** **Pre-flight `ls | wc -l == records.count`
+    before assembling**: a nil frame is skipped with `continue`, leaving a hole that stops `ffmpeg`,
+    and the closing frame's index is `records.count`, which after one skip **overwrites a real
+    frame**. Crop the ~44% dead width and put the grain sentence in the reclaimed margin; generate
+    subtitles from `framesCSV`, whose fields are already exactly a subtitle track's; fix the
+    `provenance.txt` `indexedVolumeCount: 0` and the hardcoded lens label. Not "zero Swift" — those
+    two literals are in the test target.
+12. *(was 9)* **Record the App Preview in two passes and cut (L).**
+13. *(was 11)* **Plate B (S after step 1).**
+14. **Plan §3.2's M-4 — splash drift, with the `push` re-clamp fix.** After capture, deliberately.
+15. *(was 13)* **Compose hero and captioned frames outside the repo.** No device-frame tooling, no
+    fastlane, no metadata directory. Design-tool work, not engineering.
+16. *(was 14)* **Post-launch, follow the design's own §9 order.**
+
+**Why the motion moved ahead of the capture** *(2026-08-31)*. Old steps 7 and 9 capture the very
+surfaces old steps 10 and 12 change, so the original order shipped every store screenshot and both
+App Preview passes against the behaviour M-1 replaces — straight into §6's regeneration problem, for
+the assets hardest to re-shoot. Step 4's teleport recording still happens; it is the before-shot.
+**The moved work is index-independent, so it does not wait on Gate B** — which is the honest form of
+the claim. *(A review asserted "net effect on the critical path: nothing"; that is a scheduling claim
+neither this document nor the Plan of Record licenses, since neither bounds Gate B's duration nor the
+moved work's. Index-independence is true, checkable, and sufficient.)*
 
 **One tension recorded rather than resolved.** §7.4 (word-cloud animation) is last on engineering
 risk, but it is the **only** item producing posts indefinitely — 552 volumes × 4 lenses of bundled,
@@ -426,7 +553,19 @@ engineering risk this cycle, promote it. That is an owner call.
     it needs ScreenCaptureKit, which nothing here uses.
 16. **Do not cite `FrameTimeProbe` for a shipping build.** It is file-level `#if DEBUG` and returns
     `self` in release, while its own doc comment still argues it is *not* DEBUG-gated. That comment
-    is stale.
+    is stale. *(Sharpened 2026-08-31: the stale block is `FrameTimeProbe.swift:180-187`, with the
+    purpose statement at `:172-173` — **not** `:27`, which a review cited. And the gating is
+    test-enforced: `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` pins three properties of
+    that file by region and strips comments before matching. So this is a **documentation** defect,
+    not a code one — and anyone who reads the stale comment and "fixes" it by un-gating the probe
+    fails the suite. Fix the comment; leave the gate.)*
+17. **Do not introduce a second duration for "this surface is changing what it is showing you."**
+    *(Added 2026-08-31, §10 — refusal 14's rule applied to timing rather than to API.)* The app has
+    one such constant, `FRUSTheme.cloudTransformDuration` (1.15 s), already shared across both cloud
+    renderers by explicit design so the two "feel like one animation". Refusal 14 is about API
+    surface and names no duration, so this is new by analogy rather than a restatement — recorded
+    here rather than inside a work row, because a rule that lives only in an M-row is a rule that
+    ships once and is then forgotten.
 
 ---
 
@@ -450,3 +589,85 @@ produces a visible hue shift in print; whether the blend-factor fix is visible o
 in the plate; whether the word-cloud plate's `.secondary` credit resolves dark under a dark-appearance
 renderer. All three need a device. None blocks the plan; all three belong on the same on-device check
 step 2 already schedules.
+
+---
+
+## 10. External review — 2026-08-31, `Animation-Surfaces-Review`
+
+An outside design handoff (`Animation-Surfaces-Review` + `PLAN-REVISIONS.md`, findings A-1..A-8,
+six proposed revisions R-1..R-6) reviewed §3's motion items against the shipped animation code. It
+was verified claim by claim against the tree before anything was applied. **Its reading of the code
+is good and several §3 rows were genuinely wrong. Its reading of the plan documents is where it
+drifts — which is the reverse of what one would expect.** What survived is edited in place above,
+each marked *(…2026-08-31, §10)*.
+
+### The headline finding is REFUTED, and no document should acquire its sentence
+
+The handoff's only claimed defect — "two drifting Canvases run at once in the download-queued
+window" — does not exist. Its two quoted predicates are accurate, but the inference is not: the
+drifting strip is **not raised by the arbiter**. It is raised by its host,
+`MainTabView.indexingBanner` at `MainTabView.swift:452` — `} else if let batch = appState.indexingBatch {` —
+and the arbiter's `.indexingBackdrop` only decides whether the *already-mounted* strip draws its
+cloud. In the queue-only window the host is absent, so exactly one canvas is on screen. The two
+predicates disagree only in the direction that produces **one** cloud.
+
+The supporting quotation is an elision. The comment reads *"Never two drifting clouds at once.
+**During an indexing run** the banner strip already carries one…"* (`PendingCloudBackdrop.swift:136-139`);
+the handoff's `…` removes the qualifier that scopes it to `indexingBatch != nil` — the very predicate
+the finding calls wrong. Code and comment agree.
+
+**The proposed fix is wrong twice over.** It does not fix what it is sold as fixing; and because
+`resolve` returns `.indexingBackdrop` on `!downloadQueue.isEmpty` alone, routing `shouldShow`
+through it would **suppress the search backdrop for the entire pre-indexing download phase** — on a
+fresh library, the whole first volume download — justified by a comment about a strip that is not on
+screen. It also breaks five test call sites (`PendingCloudBackdropTests.swift:37,:44,:45,:52,:61`).
+
+### Two real defects it missed, in the file it opened
+
+- **The genuine double-cloud, by staleness rather than predicate.** Now §7 step 0.
+- **The opposite defect, and it is the one that lives in the queue-only window:**
+  `.indexingBackdrop` is a suppression verdict that **nothing renders**. `ContentView.swift:178-181`
+  reads it as "(c) owns the screen" and refuses the splash, while `MainTabView.swift:452` declines to
+  mount the only thing that draws (c); `resolveSplash()` runs once (`:166-168`). So a relaunch
+  mid-download-before-first-index shows **no cloud at all**. `CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing`
+  exists for exactly this state and **passes while the screen is blank**, because it asserts the
+  arbiter's value rather than what renders. Unclaimed by the handoff, and the same bug class
+  `PendingCloudRule`'s doc comment catalogues. **Worth its own row when someone next opens these files.**
+
+### Also corrected, applied above
+
+`minimumHeight` 96 is a floor, not a cap. "50 particles" is 100 mid-crossfade. "The splash never
+advances past lens 0" is false — the phase is wall-clock-derived, so ~38% of splashes land on an
+arbitrary lens. "Drop `paused:`" is not the house rule's remedy. "The word cloud's lens swap runs on
+`cloudTransformDuration`" describes a comparison that does not exist. `FrameTimeProbe` is not M-6's
+rig. And the handoff's own claim of "no new file except one test case" is wrong for its largest
+item: M-1's interpolator is mandated as "a named type with its own test" — two new files against
+`project.yml`'s generate-time glob, so **`xcodegen generate` plus the scheme restore**.
+
+### Not applied
+
+- **R-2's condition (a)**, which gated splash drift on the refuted defect. Refused outright: it
+  converts a nonexistent problem into a gate on other people's work.
+- **R-6 as written.** It misquotes what the Plan of Record's cell says, and applied literally would
+  delete that cell's one operational warning. Its content is applied to the Plan of Record as an
+  *append*, in that document's §9.
+- **"Net effect on the critical path: nothing."** Restated above as index-independence, which is
+  what is actually checkable.
+
+### The M-number collision — for anyone editing either document
+
+**`Plan-Of-Record-2026-08-28.md` §2a and this document's §3.2 both use M-numbers, for different
+rows.** §2a's M-1/M-2/M-3 are *the store listing / the five export gaps / in-app motion*; §3.2's
+M-1..M-6 are *camera transit / reduce-motion contract / lens dip / splash drift / seeded lens /
+decade accumulation*. Always write "plan §3.2's M-1" when crossing between them. The handoff did not
+notice, and wrote §3.2's vocabulary into a §2a cell.
+
+### Whether to commit the review document
+
+The precedent is real — `Planning/Cross-Platform-UI-Adversarial-Review/` and
+`Planning/Archive-Visit-Design-Handoff/` both track their `.dc.html` with a byte-identical
+`support.js`. **Recommendation: do not commit this one.** Its citation-grade claim does not survive
+verification (a refuted headline, a wrong line cite, an elided quotation), and its one piece of
+content that reaches neither plan — A-8's rig pointer — was wrong and has been replaced above with
+the right one. Everything worth keeping is now in this document and the Plan of Record. Committing
+a third 69 KB `support.js` to preserve a superseded argument is the wrong trade.
