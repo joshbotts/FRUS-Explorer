@@ -236,6 +236,47 @@ struct HybridSearchModeTests {
         #expect(source.contains("semanticScore: hit.score"))
     }
 
+    @Test("The field prompt changes with the engine, and the surface keeps its keyword wording")
+    func fieldPromptFollowsMode() {
+        // Structural assertions only. Pinning the literal copy would be a second copy of the
+        // string table: red on a harmless wording edit, and green if the wiring were broken.
+        let keywordWording = "«surface's own wording»"
+
+        #expect(SearchMode.keywords.fieldPrompt(keywordPrompt: keywordWording) == keywordWording,
+                "Keywords mode must return the surface's wording untouched: the two search fields differ deliberately")
+
+        let meaning = SearchMode.meaning.fieldPrompt(keywordPrompt: keywordWording)
+        #expect(!meaning.isEmpty)
+        #expect(meaning != keywordWording,
+                "Meaning mode must supply its own prompt; returning the keyword wording is the defect A-1 exists to fix")
+
+        // The Meaning prompt is a property of the engine, not of the caller, so it must not vary
+        // with what the surface passed in.
+        #expect(SearchMode.meaning.fieldPrompt(keywordPrompt: "something else") == meaning)
+    }
+
+    @Test("Both surfaces route their field prompt through SearchMode")
+    func bothSurfacesRoutePromptThroughMode() throws {
+        // A unit test can reach the enum but not a `.searchable(prompt:)` argument inside a
+        // private view body, so the wiring is pinned at the source. Two-sided on purpose: the
+        // positive half alone would survive someone leaving the old static prompt in place.
+        // What this CANNOT check: that the placeholder visibly changes when the reader taps
+        // Meaning. That is an on-device check on both platforms.
+        let ios = try Self.searchSurfaceSource("FRUSExplorer/Search/SearchView.swift")
+        #expect(ios.contains("prompt: vm.searchMode.fieldPrompt("),
+                "SearchView must derive its prompt from the mode")
+        #expect(ios.contains("search.keywords.placeholder"),
+                "iOS keeps its own compact keyword wording")
+
+        let mac = try Self.searchSurfaceSource("FRUSExplorer/App/SearchSheet.swift")
+        #expect(mac.contains("searchVM.searchMode.fieldPrompt("),
+                "SearchSheet must derive its prompt from the mode")
+        #expect(!mac.contains("TextField(\"Search documents, notes, summaries…\""),
+                "the raw literal is gone; this line is the only mechanical guard against its return")
+        #expect(mac.contains("search.query.placeholder.mac"),
+                "the Mac keyword wording survives as a localized string, naming the three scopes")
+    }
+
     @Test("Both surfaces force Keywords mode when running a SavedSearch")
     func savedSearchForcesKeywords() throws {
         for path in ["FRUSExplorer/Search/SearchView.swift", "FRUSExplorer/App/SearchSheet.swift"] {

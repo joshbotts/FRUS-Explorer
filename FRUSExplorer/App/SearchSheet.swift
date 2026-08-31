@@ -626,7 +626,15 @@ struct MacSearchWindowView: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
 
-                TextField("Search documents, notes, summaries…", text: $searchVM.queryText)
+                // The prompt follows the engine (Meaning mode asks for a question), and the
+                // keyword wording keeps naming this window's three searchable scopes — their
+                // chips are far below the field, so this is where a reader learns notes and
+                // summaries are in play.
+                TextField(
+                    searchVM.searchMode.fieldPrompt(
+                        keywordPrompt: String(localized: "search.query.placeholder.mac",
+                                              defaultValue: "Search documents, notes, summaries…")),
+                    text: $searchVM.queryText)
                     .textFieldStyle(.plain)
                     .font(.title3)
                     .focused($queryFieldFocused)

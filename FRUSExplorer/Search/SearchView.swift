@@ -398,11 +398,15 @@ struct SearchView: View {
                 // (filters, timeline, the Save/Saved/Citation overflow menu) on the
                 // compact-width results screen. With the default placement + inline
                 // title those buttons were unreachable on iPhone (Session 162).
+                // The prompt follows the engine: Meaning mode asks for a question, not for
+                // keywords. `searchMode` is a stored property on an @Observable view model, so
+                // flipping the mode picker re-evaluates this argument.
                 .searchable(
                     text: $vm.keywords,
                     placement: searchFieldPlacement,
-                    prompt: String(localized: "search.keywords.placeholder",
-                                   defaultValue: "Keywords…")
+                    prompt: vm.searchMode.fieldPrompt(
+                        keywordPrompt: String(localized: "search.keywords.placeholder",
+                                              defaultValue: "Keywords…"))
                 )
                 // Fire search on keyboard Return / iOS "Search" button.
                 .onSubmit(of: .search) {
