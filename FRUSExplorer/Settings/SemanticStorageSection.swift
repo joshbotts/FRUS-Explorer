@@ -43,6 +43,10 @@ struct SemanticStorageSection: View {
     private var autoDownload: Bool = true
     /// Bumped to re-run the loader after an action.
     @State private var reloadToken = 0
+    /// Volumes with a shard the reader does not have, counting the WHOLE corpus rather than only
+    /// downloaded volumes (W-19 row L-6). Kept separate from `awaiting` so #926's default count is
+    /// untouched: this number is only ever read by the button that states its own size.
+    @State private var awaitingCorpusWide: [String] = []
 
     var body: some View {
         Section {
@@ -52,6 +56,9 @@ struct SemanticStorageSection: View {
                     downloadProgressRow(progress)
                 } else if !awaiting.isEmpty {
                     downloadButton
+                }
+                if appState.semanticShardDownload == nil, !awaitingCorpusWide.isEmpty {
+                    corpusWideDownloadButton
                 }
                 autoDownloadToggle
                 problemsRow
@@ -165,6 +172,42 @@ struct SemanticStorageSection: View {
                     format: String(localized: "settings.vectors.download.detail.v3 %lld %@",
                                    defaultValue: "%lld volumes on this device are missing this file. About %@ to download, and Related Documents gets better for those volumes."),
                     Int64(awaiting.count), Self.bytes(awaiting.count * report.perVolumeEstimate))
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(busy || !appState.isOnline)
+    }
+
+    /// Fetches every remaining shard, including for volumes whose text is not on this device.
+    ///
+    /// Tier-2 shards exist only where the library reaches, so an outside agent working the vectors
+    /// gets exact int8 rerank for downloaded volumes and Tier-1 Hamming everywhere else. This makes
+    /// the whole corpus rerankable in one action.
+    ///
+    /// **It does not relitigate #926.** That refusal was about a *count shown by default* — a
+    /// corpus-wide missing figure would tell a twelve-volume library it was missing 544, which is a
+    /// fact about the corpus dressed as a fact about them. Everything automatic, and the count in
+    /// the row above, are exactly as shipped. This is the manual path, where #926's own design
+    /// already treats pressing a button as the consent the switch withholds — so the one obligation
+    /// is that the button names its cost *before* it is pressed, which the detail line does.
+    private var corpusWideDownloadButton: some View {
+        Button {
+            busy = true
+            Task {
+                await appState.downloadAllSemanticShards(scope: .entireCorpus)
+                busy = false
+                reloadToken += 1
+            }
+        } label: {
+            SettingsNavRow(
+                label: String(localized: "settings.vectors.downloadAll.label",
+                              defaultValue: "Download Vectors for Every Volume"),
+                systemImage: "square.and.arrow.down.on.square",
+                detail: String(
+                    format: String(localized: "settings.vectors.downloadAll.detail %lld %@",
+                                   defaultValue: "%lld volumes, about %@. Includes volumes you have not downloaded, so the whole series can be searched by meaning at full precision."),
+                    Int64(awaitingCorpusWide.count),
+                    Self.bytes(awaitingCorpusWide.count * report.perVolumeEstimate))
             )
         }
         .buttonStyle(.plain)
@@ -291,6 +334,7 @@ struct SemanticStorageSection: View {
     private func reload() async {
         report = await appState.semanticStorageReport()
         awaiting = await appState.semanticShardsAwaitingDownload()
+        awaitingCorpusWide = await appState.semanticShardsAwaitingDownload(scope: .entireCorpus)
     }
 
     /// Human byte sizes, one formatter for every figure in this section.
