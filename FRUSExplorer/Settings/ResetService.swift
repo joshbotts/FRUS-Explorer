@@ -163,6 +163,12 @@ struct ResetService {
         if let pipeline = appState.indexingPipeline {
             do {
                 try await pipeline.removeAllVolumesFromIndex()
+                // The tag-name mirror is cleared HERE and deliberately not by adding `user_tags`
+                // to `removeAllVolumesFromIndex`'s table list: that same call is also the
+                // "Rebuild Index" wipe, which promises tags are unaffected and does not re-run
+                // the boot sync that would repopulate the names. Erasing everything must take
+                // the names; rebuilding the corpus must not (W-19 row L-3).
+                try await pipeline.replaceUserTagNames([])
                 appState.indexedVolumeIds = []
                 appState.indexGeneration += 1
                 // Flush cached word-cloud results computed against the now-empty

@@ -2836,10 +2836,23 @@ struct FRUSExplorerApp: App {
                 userTagIds: tagString.isEmpty ? nil : tagString
             )
         }
+        // MARK: Mirror tag NAMES into user_tags (W-19 row L-3)
+        // The assignments above carry opaque UUIDs; the names live only in the CloudKit-synced
+        // `UserTag` model and were invisible to anything reading the index directly. Mirrored
+        // wholesale from the same context, so a rename or delete cannot leave a stale row.
+        //
+        // EVERY tag, not only assigned ones: the first question an outside reader asks of this
+        // table is what vocabulary the researcher uses, which unused tags answer — and "all rows
+        // in the model" is a rule that cannot drift as the assignment set moves.
+        let allTags = (try? context.fetch(FetchDescriptor<UserTag>())) ?? []
+        let namePairs = allTags.map { (id: $0.id.uuidString, name: $0.name) }
+        try? await pipeline.replaceUserTagNames(namePairs)
+
         #if DEBUG
         if !byDocument.isEmpty {
             print("[FRUSExplorer] Boot sync: pushed \(byDocument.count) document tag assignment(s) to FTS5")
         }
+        print("[FRUSExplorer] Boot sync: mirrored \(namePairs.count) tag name(s) into user_tags")
         #endif
     }
 

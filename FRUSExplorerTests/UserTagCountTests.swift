@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 /// Per-tag counts over a result set, and the R-1 follow-up fixes.
@@ -202,6 +203,101 @@ struct UserTagCountTests {
                 "must reach document_cache by rowid. Plan: \(plan)")
         #expect(!plan.contains("SCAN dc |") && !plan.hasSuffix("SCAN dc"),
                 "must not scan document_cache. Plan: \(plan)")
+    }
+
+    // MARK: - The user_tags name mirror (W-19 row L-3)
+
+    /// Reads `user_tags` the way an outside agent does — a plain SQL connection to the file, not
+    /// an app API. That is the point of the row: the app itself never queries this table.
+    private func readUserTags(at dbURL: URL) -> [String: String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+            return [:]
+        }
+        defer { sqlite3_close(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT tag_id, name FROM user_tags", -1, &stmt, nil) == SQLITE_OK
+        else { return [:] }
+        defer { sqlite3_finalize(stmt) }
+        var out: [String: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = String(cString: sqlite3_column_text(stmt, 0))
+            let name = String(cString: sqlite3_column_text(stmt, 1))
+            out[id] = name
+        }
+        return out
+    }
+
+    @Test("The tag-name mirror is readable by plain SQL, and replacement is wholesale")
+    func userTagNamesMirrorIsWholesale() async throws {
+        let (dir, _, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+
+        // Every tag, including C, which is assigned to no document — an outside reader asking
+        // "what vocabulary does this researcher use" needs the unused ones.
+        try await pipeline.replaceUserTagNames([
+            (id: tagA, name: "escalation-rhetoric"),
+            (id: tagB, name: "economic reasoning"),
+            (id: tagC, name: "unused"),
+        ])
+        var rows = readUserTags(at: dbURL)
+        #expect(rows.count == 3, "unassigned tags belong in the mirror too")
+        #expect(rows[tagA] == "escalation-rhetoric")
+        #expect(rows[tagC] == "unused")
+
+        // A rename must REPLACE, not accumulate, and a deleted tag must stop resolving. Upsert
+        // semantics would leave the old name behind and the dropped row present.
+        try await pipeline.replaceUserTagNames([
+            (id: tagA, name: "escalation rhetoric (renamed)"),
+        ])
+        rows = readUserTags(at: dbURL)
+        #expect(rows.count == 1, "replacement is wholesale: B and C must be gone")
+        #expect(rows[tagA] == "escalation rhetoric (renamed)")
+        #expect(rows[tagB] == nil)
+
+        // The Erase Everything path passes an empty array; it must clear rather than no-op.
+        try await pipeline.replaceUserTagNames([])
+        #expect(readUserTags(at: dbURL).isEmpty, "an empty mirror is what ResetService asks for")
+    }
+
+    @Test("The mirror joins to document_cache, which is the query the guide publishes")
+    func userTagNamesJoinToDocuments() async throws {
+        let (dir, _, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+
+        try await pipeline.replaceUserTagNames([
+            (id: tagA, name: "escalation-rhetoric"),
+            (id: tagB, name: "economic reasoning"),
+        ])
+
+        // The app's own join form (IndexingPipeline's tag-count query), which the guide's §4.6
+        // publishes: ids are space-joined inside one column, so the match is space-delimited
+        // containment rather than equality. Asserting it here means the documented query is the
+        // tested query.
+        var db: OpaquePointer?
+        #expect(sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        let sql = """
+            SELECT ut.name, COUNT(DISTINCT dc.volume_id || '/' || dc.document_id)
+            FROM user_tags ut
+            JOIN document_cache dc
+              ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || ut.tag_id || ' %')
+            WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
+            GROUP BY ut.tag_id
+            """
+        var stmt: OpaquePointer?
+        #expect(sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK)
+        defer { sqlite3_finalize(stmt) }
+        var byName: [String: Int] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            byName[String(cString: sqlite3_column_text(stmt, 0))] = Int(sqlite3_column_int(stmt, 1))
+        }
+        // d0, d1, d2 carry A — and d2 repeats it three times, which is exactly why the count is
+        // DISTINCT over documents rather than COUNT(*).
+        #expect(byName["escalation-rhetoric"] == 3)
+        #expect(byName["economic reasoning"] == 1)
     }
 }
 

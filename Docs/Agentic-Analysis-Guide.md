@@ -196,7 +196,7 @@ everything.
 | `is_front_matter` | 1 for front matter (preface, sources section, abbreviations, persons list). |
 | `despatch_serial` | The pre-1906 despatch/instruction serial number, where one exists. |
 | `summary_text`, `note_text` | **Yours**, not the corpus. See [§7.6](#76-summaries-are-not-sources). |
-| `user_tag_ids` | Your tags, mirrored from SwiftData. |
+| `user_tag_ids` | Your tags, as space-joined opaque UUIDs. Resolve them to names through `user_tags` — see [§4.6](#46-your-own-data). |
 | `subject_tag_ids` | **Always `NULL`.** Retired feature; the column survives for schema compatibility. |
 
 **`frus_documents`** — the FTS5 index over `document_cache`, tokenizer `porter unicode61`.
@@ -308,6 +308,46 @@ vocabularies and are not interchangeable**: `subject` is a position in the subje
 through `DocumentSubjectStore`'s separate `bucketVocabulary`. Neither is interpretable in SQL alone;
 [§5](#5-resolving-the-coded-columns) shows how to resolve them, and
 [§7.7](#77-subject-tags-are-recall-oriented-candidates) explains what they are worth.
+
+### 4.6 Your own data
+
+§4's opening names four groups and this is the fourth. Two columns on `document_cache` hold your
+writing — `summary_text` and `note_text`, both covered by [§7.6](#76-summaries-are-not-sources) —
+and one small table resolves your tags.
+
+**`user_tags`** — `(tag_id TEXT PRIMARY KEY, name TEXT NOT NULL)`. `document_cache.user_tag_ids`
+holds space-joined SwiftData UUIDs; this table gives them the names you chose. Ids are written as
+uppercase `UUID` strings by both producers, so they join without normalization. The app itself never
+queries this table — it exists so that something reading the index directly can.
+
+The join is space-delimited containment, not equality, because the ids share one column. This is the
+app's own form:
+
+```sql
+SELECT ut.name,
+       COUNT(DISTINCT dc.volume_id || '/' || dc.document_id) AS docs
+FROM user_tags ut
+JOIN document_cache dc
+  ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || ut.tag_id || ' %')
+WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
+GROUP BY ut.tag_id
+ORDER BY docs DESC;
+```
+
+`COUNT(DISTINCT …)` rather than `COUNT(*)` is load-bearing: a document's tag string can repeat an id,
+and on the author's own store 14 of 67 tagged rows do.
+
+Three properties worth knowing before you build on it:
+
+- **It is a mirror, refreshed at app launch.** The authority is the app's synced tag model. A tag you
+  rename during a session reads under its old name until the app restarts, so a name from this table
+  is as fresh as your last launch, not as fresh as your last edit.
+- **It carries every tag, including ones assigned to no document.** That is deliberate — "what
+  vocabulary does this researcher use" is a question unused tags answer — so a row here is not
+  evidence that anything is tagged with it.
+- **It is your writing, not the corpus.** Everything [§7.6](#76-summaries-are-not-sources) says about
+  summaries applies: exclude it from anything whose output becomes evidence, and see
+  [§11](#11-safety-privacy-and-what-leaves-your-machine) for stripping it from a copy.
 
 ---
 
@@ -739,8 +779,21 @@ the working copy before you connect anything:
 ```sql
 -- on the COPY, never the live index
 UPDATE document_cache SET summary_text = NULL, note_text = NULL, user_tag_ids = NULL;
+DELETE FROM user_tags;
 INSERT INTO user_content(user_content) VALUES('rebuild');
 ```
+
+`DELETE FROM user_tags` is not optional if you are stripping. That table holds the *names* you gave
+your tags — `escalation-rhetoric`, not a UUID — which is the most legible piece of your own writing
+in the file, and nulling `user_tag_ids` alone leaves it intact.
+
+One caveat about what this recipe does and does not do. It removes the text from the live rows and
+from the search index, but the words remain in pages SQLite has freed and not yet reused, and a
+page-level copy carries those pages along. If the export must be free of your writing rather than
+merely tidy, `VACUUM` the copy afterwards — and then re-run the `'rebuild'` above, because
+`document_cache` declares `PRIMARY KEY (volume_id, document_id)` so its rowid is not an
+`INTEGER PRIMARY KEY` alias, and `VACUUM` may renumber it out from under both external-content FTS
+tables ([§2](#2-getting-a-copy-of-the-database)).
 
 Also worth thinking about before you send: unpublished research in progress, an unpublished argument
 visible in the shape of your queries, and any confidential material in your notes about living
@@ -1477,6 +1530,14 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.4 — 2026-08-31: **§4.6, "Your own data"** — §4's opening had promised four groups and delivered
+  three. Documents the new `user_tags(tag_id, name)` mirror, which resolves the opaque UUIDs in
+  `document_cache.user_tag_ids` into the names the researcher chose, with the app's own
+  space-delimited join and its three caveats (launch-refreshed, carries unassigned tags, is your
+  writing rather than the corpus). §11's strip gains `DELETE FROM user_tags` — nulling
+  `user_tag_ids` alone left the most legible piece of the researcher's own writing in the file — and
+  a note that the strip removes text from rows and the index but not from freed pages, with the
+  `VACUUM`-then-`rebuild` sequence for when that matters. *(Wave W-19, row L-3.)*
 - 1.3 — 2026-08-31: **§A.7 corrected, and Appendix A's opening frame with it.** §A.7 said the app
   "never embeds queries, so there is no in-repo reference for the query-side prompt", and the
   appendix opened on the same claim in stronger form ("the app itself never embeds free text").

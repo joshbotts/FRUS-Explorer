@@ -1866,6 +1866,41 @@ public actor IndexingPipeline {
         )
     }
 
+    /// Replaces the whole `user_tags` name mirror in one transaction.
+    ///
+    /// Wholesale replacement rather than upsert, deliberately: a rename must not leave the old name
+    /// behind, and a deleted tag must not keep resolving. `UserTag` is the authority; this table is
+    /// a read-only projection for anything querying the index directly — see the guide's §4.6.
+    ///
+    /// Pass every tag, including ones assigned to no document: the first useful question an outside
+    /// reader asks of this table is "what vocabulary does this researcher use", which unused tags
+    /// answer. Passing an empty array is therefore meaningful — it clears the mirror, which is what
+    /// `ResetService` wants on Erase Everything.
+    ///
+    /// - Parameter tags: `(id, name)` pairs; `id` is `UUID.uuidString`, matching how both producers
+    ///   write into `document_cache.user_tag_ids` so the two join without normalisation.
+    public func replaceUserTagNames(_ tags: [(id: String, name: String)]) async throws {
+        try auxExec("BEGIN IMMEDIATE")
+        do {
+            try auxExec("DELETE FROM user_tags")
+            if !tags.isEmpty {
+                let stmt = try auxPrepare("INSERT INTO user_tags (tag_id, name) VALUES (?, ?)")
+                defer { sqlite3_finalize(stmt) }
+                for tag in tags {
+                    sqlite3_reset(stmt)
+                    sqlite3_clear_bindings(stmt)
+                    sqlite3_bind_text(stmt, 1, tag.id, -1, SQLITE_TRANSIENT_IP)
+                    sqlite3_bind_text(stmt, 2, tag.name, -1, SQLITE_TRANSIENT_IP)
+                    try auxStep(stmt)
+                }
+            }
+            try auxExec("COMMIT")
+        } catch {
+            try? auxExec("ROLLBACK")
+            throw error
+        }
+    }
+
     /// Returns the current user-tag IDs stored for a document as an array of UUID strings.
     ///
     /// Reads `document_cache`. Returns an empty array if the document is not indexed
@@ -5417,6 +5452,21 @@ public actor IndexingPipeline {
                 is_front_matter   INTEGER NOT NULL DEFAULT 0,
                 despatch_serial   TEXT,
                 PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+        // Resolves `document_cache.user_tag_ids`, which holds opaque SwiftData UUIDs, into the
+        // names the researcher actually chose (W-19 row L-3). The names live in the CloudKit-synced
+        // `UserTag` model and were invisible to anything reading this database — so "documents I
+        // tagged *escalation-rhetoric*" needed a bridge the researcher kept in their head.
+        //
+        // Mirror only: `UserTag` is the authority and nothing here writes back. Replaced wholesale
+        // at each launch by `replaceUserTagNames`, which is why a rename made in this session reads
+        // under its old name until the next one — the same deferral `UserTagAdmin` documents for the
+        // assignment mirror beside it.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS user_tags (
+                tag_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL
             )
             """)
         // Idempotent migration for databases that predate Session 38.
