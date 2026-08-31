@@ -56,6 +56,32 @@ enum SearchMode: String, CaseIterable {
         case .meaning:  return String(localized: "search.mode.meaning", defaultValue: "Meaning")
         }
     }
+
+    /// Placeholder for the query field under this engine.
+    ///
+    /// Keyword search wants terms; meaning search wants a question in the reader's own words.
+    /// A field still reading "Keywords…" after the reader switches to Meaning is asking for the
+    /// wrong input, which is the whole reason this exists.
+    ///
+    /// The keyword-mode wording is supplied by the caller rather than owned here, because the two
+    /// search surfaces differ *deliberately*: the iOS field is a compact `.searchable` bar, while
+    /// the Mac window's wide field names the three scopes it can search. Those scopes' chips sit
+    /// roughly two hundred lines below the field in `SearchSheet`, so the prompt is where a Mac
+    /// reader learns that notes and summaries are in play — folding both surfaces onto one string
+    /// would silently drop that. Only the Meaning prompt is shared, because only it is a property
+    /// of the engine rather than of the surface.
+    ///
+    /// - Parameter keywordPrompt: the surface's own wording for `.keywords`.
+    /// - Returns: the placeholder this mode should show.
+    func fieldPrompt(keywordPrompt: String) -> String {
+        switch self {
+        case .keywords:
+            return keywordPrompt
+        case .meaning:
+            return String(localized: "search.meaning.placeholder",
+                          defaultValue: "A question in your own words…")
+        }
+    }
 }
 
 enum SearchSortOrder: CaseIterable {
