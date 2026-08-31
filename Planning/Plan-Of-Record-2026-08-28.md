@@ -86,7 +86,20 @@ argues its own sequencing.
 | L-7 | Copy research-state record (build, index versions, volume list, digests) | outbound | XS | none |
 | L-8 | Local read-only MCP server — ASSESSMENT, build/no-build | both | M | L-1..L-4 |
 
-**L-0 is larger than its row implies as of 2026-08-31.** `Docs/Agentic-Analysis-Guide.md` is now
+**THE WAVE IS COMPLETE AS OF 2026-08-31 — every row struck.** L-0..L-7 shipped as PRs #1142–#1149,
+and **L-8 was assessed and refused**: `MCP-Server-Assessment-2026-08-31.md` records a NO-BUILD on the
+MCP server, superseded by a read-only CLI (C-1) that is itself gated on running a falsifier first
+(C-0). The gate in L-8's own text did its work — measured against the baseline the other seven rows
+built, an MCP server would have been the first artifact in the wave that works only for users of
+MCP-capable clients, narrowing the audience for no guarantee a fixed-subcommand binary does not
+already give. Two of the row's premises did not survive; the assessment names both.
+
+The residue the assessment exposed is small, ungated, and listed at the foot of the wave's plan:
+two documentation defects in the guide (§14.11's unpathed artifact table, and a missing
+surface-routing table in §12), SQL views on the L-2 export, stamping the export with its own
+provenance, and a seven-build-stale number in `README.md`.
+
+**L-0 was larger than its row implied.** `Docs/Agentic-Analysis-Guide.md` is now
 at **v1.2** (PR #1137): §14 added the scoping method from three measured runs, and §14.11 added
 the archival half after an audit found all three runs had resolved zero record groups and zero
 NAIDs. Two consequences for this wave. First, A.7's staleness is unchanged and still owed.

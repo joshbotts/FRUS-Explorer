@@ -46,14 +46,14 @@ No network service: the app stays local-first; even L-8 is an assessment of a *l
 | # | Session | Hand-off | Size | Gate |
 |---|---|---|---|---|
 | ~~L-0~~ | ~~Guide correction: A.7 is stale since build 44~~ — **SHIPPED**, two sites not one | — | XS | — |
-| L-1 | The `.fruscollection` write-minimum: spec + conformance fixture | inbound | S | none |
-| L-2 | Export Research Database… | outbound | S | none |
-| L-3 | Mirror tag *names* beside the tag ids | outbound | S | none |
-| L-4 | Surface the embedder the app now ships | both | S | none |
-| L-5 | `frusexplorer://` deep links | inbound | M | none |
-| L-6 | Corpus-wide shard fetch (explicit opt-in) | both | S | none |
-| L-7 | Copy research-state record | outbound | XS | none |
-| L-8 | Local read-only MCP server — ASSESSMENT | both | M | L-1..L-4 shipped |
+| ~~L-1~~ | ~~The `.fruscollection` write-minimum~~ — **SHIPPED** #1144; the guide's example is a test fixture | inbound | S | — |
+| ~~L-2~~ | ~~Export Research Database…~~ — **SHIPPED** #1145; the strip needed a `VACUUM`, it was not an erase | outbound | S | — |
+| ~~L-3~~ | ~~Mirror tag *names* beside the tag ids~~ — **SHIPPED** #1143; no index-version bump, and why | outbound | S | — |
+| ~~L-4~~ | ~~Surface the embedder the app now ships~~ — **SHIPPED** #1146; digest unchanged, binary byte-identical | both | S | — |
+| ~~L-5~~ | ~~`frusexplorer://` deep links~~ — **SHIPPED** #1149; the scheme was already live in-app | inbound | M | — |
+| ~~L-6~~ | ~~Corpus-wide shard fetch (explicit opt-in)~~ — **SHIPPED** #1147; #926's refusal intact | both | S | — |
+| ~~L-7~~ | ~~Copy research-state record~~ — **SHIPPED** #1148; answers §13's table, not the row's list | outbound | XS | — |
+| ~~L-8~~ | ~~Local read-only MCP server — ASSESSMENT~~ — **ASSESSED 2026-08-31: NO-BUILD (MCP)**; superseded by C-0/C-1 below | both | M | — |
 
 ### L-0 — Guide correction: Appendix A.7 is stale since build 44
 
@@ -213,3 +213,55 @@ reading top-down would have hit first. Both now name
 `SemanticQueryPrompt.queryPrefix = "task: search result | query: "` and keep the
 document-to-document recall caveat explicitly unrepaired. The index-format note landed in the
 version history as this row prescribed: written against 46, tree now at 47, record your own.
+
+
+---
+
+## The wave is complete — and what replaced its last row
+
+**L-0 through L-7 shipped** (PRs #1142–#1149). The loop the guide describes now runs on affordances
+rather than folklore: an agent can write a collection the researcher opens, read tag names instead
+of UUIDs, be handed a verified and consentfully-stripped database in one action, reuse the model
+weights the app validated under the prompt the artifact publishes, rerank the whole series, cite a
+run reproducibly, and emit a link that opens the rendered document.
+
+**L-8 was assessed and refused.** `MCP-Server-Assessment-2026-08-31.md` carries the reasoning; the
+short form is that the gate did its job. Measured against the baseline the other seven rows built —
+rather than against the folklore L-8 was scoped in — an MCP server would have been **the first
+artifact in this wave that works only for users of MCP-capable clients**, narrowing the audience
+while adding the package's first external dependency across 94 targets. Everything MCP would have
+carried, a fixed-subcommand binary carries too; an MCP stdio server *is* a subprocess speaking
+JSON-RPC on stdin.
+
+Two of the row's own premises did not survive: its stated scope (`FTS5Store` + `SemanticVectorsKit`)
+cannot execute three of the four rules the Plan of Record cites as its strongest argument — those run
+over the TEI corpus — and the fourth is inexpressible on a porter-stemmed index. And "house rules
+built into the tool descriptions" overstates what descriptions do: a description is prose with
+exactly the authority of §12's prose. Only implementations bind.
+
+### C-1 — the read-only CLI, gated on a measurement
+
+| # | Session | Size | Gate |
+|---|---|---|---|
+| C-0 | **Run the falsifier**: re-run §14's scoping protocol with the §12 block pasted and count which rules are violated anyway, by block | S | none |
+| C-1 | The read-only CLI, `archival_units` subcommand first — the only tool answering a *measured* failure | M | C-0 |
+
+**C-0 is not ceremony and must not be skipped.** §14.11's zero — three careful runs resolving no
+record groups and no NAIDs — was recorded *before* §12 carried an ARCHIVAL SCOPE block at all. If the
+block alone fixes the failure it was written to fix, the honest answer is a docs pass and SQL views,
+not a binary. The rules that survive a paste need no tool; the rules that do not **are** the
+subcommand specification.
+
+### Residue this assessment exposed, none of it gated on C-1
+
+- §14.11's artifact table names fifteen files with **no path**; the bundle path is stated only in §5
+  and §A.1. Put it in §14.11 and note the files are committed in the public repo. *(Doc, XS.)*
+- Add a **surface-routing table** to §12: which rules the database can answer, and which need the TEI
+  or the bundled JSON. *(Doc, S.)*
+- **SQL views on the L-2 export** pre-applying the EXCLUSIONS block and the Ed2 twin fold — ~4 of 40
+  rules, reaching `sqlite3`, Python and the generic SQLite MCP server the guide already recommends.
+  *(S.)*
+- **Stamp the export.** It carries no provenance of its own, so a stripped copy is indistinguishable
+  from an unstripped one. *(XS, and it removes the failure §13 exists to prevent.)*
+- `README.md` states build 37 against `project.yml`'s 44 — seven builds stale on the public front
+  door, on the page carrying the only link to the guide this wave serves. *(XS.)*
