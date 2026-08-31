@@ -296,9 +296,10 @@ struct SceneAddressingTests {
 
     @Test("Every continuation entry point takes a claim")
     func everyContinuationClaims() throws {
-        // Three entry points, no more: Handoff, Spotlight, and the `.fruscollection` open-with.
-        // There is no custom URL scheme — the `frusexplorer://` links in rendered documents are
-        // intercepted inside the web view and never reach the OS.
+        // Handoff, Spotlight, and the URL entry point — which since W-19 L-5 carries both the
+        // `.fruscollection` open-with AND the `frusexplorer://` deep link, routed ahead of it.
+        // The scheme's links INSIDE rendered documents still never reach the OS; the web view
+        // intercepts them.
         let source = try Self.source("App/FRUSExplorerApp.swift")
         for claim in ["appState.claimContinuation(\"handoff|",
                       "appState.claimContinuation(\"spotlight|",
@@ -360,5 +361,114 @@ struct SceneAddressingTests {
             SettingsView must no longer present the guide, or both presenters fire and the second \
             one's sheet is the one that shows.
             """)
+    }
+}
+
+// MARK: - Deep links (W-19 row L-5)
+
+/// The `frusexplorer://` route: what it accepts, what it refuses, and that the OS knows about it.
+///
+/// Version history:
+///   1.0 — W-19 L-5: initial implementation
+@Suite("Deep link route")
+struct DeepLinkRouteTests {
+
+    private static func repoFile(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+    }
+
+    @Test("A document link parses into its two ids")
+    func documentLinkParses() throws {
+        let url = try #require(URL(string: "frusexplorer://document/frus1961-63v11/d1"))
+        #expect(DeepLinkRoute.from(url: url)
+                == .document(volumeID: "frus1961-63v11", documentID: "d1"))
+        // Scheme match is case-insensitive; the OS does not promise a case.
+        let upper = try #require(URL(string: "FRUSEXPLORER://DOCUMENT/frus1861/d373a"))
+        #expect(DeepLinkRoute.from(url: upper)
+                == .document(volumeID: "frus1861", documentID: "d373a"))
+    }
+
+    @Test("The renderer's own hosts are recognised and refused by name")
+    func inDocumentHostsAreNamed() throws {
+        // These four have been serialized into exported collection HTML since long before the
+        // scheme was registered. Recognising them is what stops those files launching the app to
+        // do nothing.
+        for host in ["person", "gloss", "doc", "brokenref"] {
+            let url = try #require(URL(string: "frusexplorer://\(host)/whatever/else"))
+            #expect(DeepLinkRoute.from(url: url) == .inAppOnly(host: host))
+        }
+    }
+
+    @Test("Traversal and malformed shapes are refused before anything reaches the filesystem")
+    func unsafeInputIsRefused() throws {
+        // `DownloadManager.volumeURL(for:)` interpolates the volume id into a path with
+        // `appendingPathComponent`, which does NOT resolve `..`. The parser is what makes that
+        // safe, so these are the assertions standing between a web page and the container.
+        //
+        // Foundation does NOT normalise these away — measured: `document/../../etc/d1` yields
+        // pathComponents ["/", "..", "..", "etc", "d1"] and the encoded form yields
+        // ["/", "../../etc", "d1"]. So each of these is refused by a DIFFERENT rule, and the
+        // bare-`..` case is the one that isolates the character set: it arrives as exactly two
+        // components, so nothing but `isSafeIdentifier` stands between it and the container.
+        let refusals = [
+            "frusexplorer://document/../d1",             // ISOLATES the dot rule: two components
+            "frusexplorer://document/../../etc/d1",      // refused on component count
+            "frusexplorer://document/..%2F..%2Fetc/d1",  // refused on the embedded separator
+            "frusexplorer://document/frus1861",          // one component
+            "frusexplorer://document/a/b/c",             // three
+            "frusexplorer://document//d1",               // empty volume
+            "frusexplorer://elsewhere/a/b",              // unknown host
+            "https://example.com/document/a/b",          // not our scheme
+        ]
+        for raw in refusals {
+            guard let url = URL(string: raw) else { continue }
+            #expect(DeepLinkRoute.from(url: url) == nil, "must refuse \(raw)")
+        }
+        // And the rule underneath, directly: a dot is not admissible, which is what makes ".."
+        // unspellable rather than merely unlikely.
+        #expect(!DeepLinkRoute.isSafeIdentifier(".."))
+        #expect(!DeepLinkRoute.isSafeIdentifier("a/b"))
+        #expect(!DeepLinkRoute.isSafeIdentifier(""))
+        #expect(DeepLinkRoute.isSafeIdentifier("frus1969-76ve11p1"))
+    }
+
+    @Test("The in-app host list matches the renderer's own switch")
+    func inAppHostsMatchTheRenderer() throws {
+        // Two lists of the same four strings in different files is a drift waiting to happen: add
+        // a host to the renderer and exported HTML gains a link this router silently ignores.
+        let handler = try Self.repoFile("FRUSExplorer/TEI/FRUSURLSchemeHandler.swift")
+        for host in DeepLinkRoute.inAppHosts {
+            #expect(handler.contains("case \"\(host)\""),
+                    "\(host) is routed here but absent from FRUSURLSchemeHandler's switch")
+        }
+    }
+
+    @Test("The scheme is registered with the OS on both platforms")
+    func schemeIsRegisteredInBothPlists() throws {
+        // The wiring can be perfect and the feature inert because a plist key is missing — the
+        // failure Handoff shipped with once. Both plists are GENERATED from project.yml, so a
+        // future xcodegen run against an edited-back spec would silently unregister it.
+        for plist in ["FRUSExplorer/Info.plist", "FRUSExplorer/Info-macOS.plist"] {
+            let source = try Self.repoFile(plist)
+            #expect(source.contains("CFBundleURLTypes"), "\(plist) lost the URL types block")
+            #expect(source.contains("frusexplorer"), "\(plist) lost the scheme")
+        }
+        // And the source of truth, so the spec and the generated files cannot disagree.
+        let spec = try Self.repoFile("project.yml")
+        #expect(spec.components(separatedBy: "CFBundleURLTypes:").count == 3,
+                "project.yml must declare the URL types on exactly the two app targets")
+    }
+
+    @Test("The URL entry point routes deep links ahead of the collection import")
+    func deepLinksRouteBeforeTheCollectionImport() throws {
+        let source = try Self.repoFile("FRUSExplorer/App/FRUSExplorerApp.swift")
+        // Order matters: the import's only filter is a path-extension test, which
+        // `frusexplorer://x/y.fruscollection` satisfies.
+        #expect(source.contains("if let route = DeepLinkRoute.from(url: url)"))
+        // And the import now refuses anything that is not a file, which is the guard that makes
+        // the ordering a defence in depth rather than the only defence.
+        #expect(source.contains("guard url.isFileURL else { return }"))
     }
 }

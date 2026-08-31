@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
 /// Handoff / NSUserActivity type identifiers.
 ///
 /// The activity type strings must be registered in each target's `Info.plist`
@@ -190,5 +191,85 @@ struct SemanticMapRequest: Codable, Equatable, Hashable, Sendable {
             lensRawValue: lens,
             axisNegativeVolumeID: userInfo?[Key.axisNegative] as? String,
             axisPositiveVolumeID: userInfo?[Key.axisPositive] as? String)
+    }
+}
+
+// MARK: - Deep links (W-19 row L-5)
+
+/// A `frusexplorer://` URL arriving from outside the app.
+///
+/// ## The scheme was already in use, and that shapes everything here
+///
+/// `frusexplorer://` is not new. It has been registered *with WebKit* since the TEI renderer
+/// shipped (`FRUSWebViewConfiguration.setURLSchemeHandler`), carrying four hosts —
+/// `person`, `gloss`, `doc`, `brokenref` — that `FRUSDocumentWebView` intercepts and cancels
+/// before the OS ever sees them. Those links are also serialized into **exported collection HTML**,
+/// where they have always been inert.
+///
+/// Registering the scheme with LaunchServices makes every one of those already-exported files
+/// clickable from a browser. So this type deliberately knows about all five hosts rather than only
+/// the new one: an in-document link that reaches the OS gets a stated refusal naming why, instead
+/// of launching the app to do nothing. A router that recognised only `document` would have made
+/// those files *worse* than inert.
+///
+/// The new host is `document`, spelled out, and NOT the existing `doc`: `doc` takes its target
+/// first and its volume second, and its target is frequently not a document id at all (`d42fn3`,
+/// `pg_313`). Reusing it would have meant one host with two argument orders.
+///
+/// ## Every id is validated here, before anything reaches the filesystem
+///
+/// A custom scheme is reachable from any web page. `DownloadManager.volumeURL(for:)` interpolates a
+/// volume id into a path with `appendingPathComponent`, which does not resolve `..`, so the parser
+/// admits only `[A-Za-z0-9_-]` — no dots, no separators, no traversal. The router then checks the
+/// volume against the manifest, which is the app's own allow-list.
+///
+/// Version history:
+///   1.0 — W-19 L-5: initial implementation
+enum DeepLinkRoute: Equatable, Sendable {
+
+    /// `frusexplorer://document/<volumeId>/<documentId>` — open a document.
+    case document(volumeID: String, documentID: String)
+
+    /// One of the renderer's in-document hosts, reaching the OS from an exported file. Carries the
+    /// host so the refusal can name what the link was.
+    case inAppOnly(host: String)
+
+    /// The scheme this app answers for.
+    static let scheme = "frusexplorer"
+
+    /// The renderer's own hosts — links that only mean something inside a rendered document.
+    /// Kept in sync with `FRUSURLSchemeHandler`'s switch by a test, not by hope.
+    static let inAppHosts: Set<String> = ["person", "gloss", "doc", "brokenref"]
+
+    /// Ids may contain only these. Deliberately excludes `.`, which is what makes `..` unspellable.
+    private static let allowed = CharacterSet(
+        charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+
+    /// Parses a URL, or returns `nil` for anything this app should not act on.
+    ///
+    /// - Parameter url: The incoming URL.
+    /// - Returns: The route, or `nil` if the scheme is not ours, the host is unknown, the shape is
+    ///   wrong, or either id contains a character an id may not contain.
+    static func from(url: URL) -> DeepLinkRoute? {
+        guard url.scheme?.lowercased() == scheme else { return nil }
+        guard let host = url.host?.lowercased() else { return nil }
+
+        if inAppHosts.contains(host) { return .inAppOnly(host: host) }
+        guard host == "document" else { return nil }
+
+        // `pathComponents` on `frusexplorer://document/a/b` is ["/", "a", "b"].
+        let parts = url.pathComponents.filter { $0 != "/" }
+        guard parts.count == 2 else { return nil }
+        let volumeID = parts[0]
+        let documentID = parts[1]
+        guard isSafeIdentifier(volumeID), isSafeIdentifier(documentID) else { return nil }
+        return .document(volumeID: volumeID, documentID: documentID)
+    }
+
+    /// Whether a path component is admissible as an identifier.
+    /// - Parameter value: The component.
+    /// - Returns: `true` when non-empty and drawn only from the allowed set.
+    static func isSafeIdentifier(_ value: String) -> Bool {
+        !value.isEmpty && value.unicodeScalars.allSatisfy { allowed.contains($0) }
     }
 }

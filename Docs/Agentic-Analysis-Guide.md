@@ -673,6 +673,13 @@ what it remembers about FRUS.
 alone. The pair is the only durable identity in this system, and it resolves to a URL:
 `https://history.state.gov/historicaldocuments/{volume_id}/{document_id}`.
 
+The same pair also opens the reader's own copy. `frusexplorer://document/{volume_id}/{document_id}`
+is registered by the app on both platforms, so a line in your output can be one click from the
+rendered document — footnotes, apparatus and all. That is what makes an agent's claim cheap to
+check rather than expensive, so prefer emitting both: the canonical URL for anyone, the scheme link
+for the person who has the app. A volume the reader has not downloaded still opens, landing on a
+state that names the volume; a volume that is not in the series is refused by name.
+
 **Quotations come from a retrieved row, never from the model.** If a quotation appears in the
 agent's prose, it must have appeared in a result set first. A useful discipline: require the agent
 to output the `SELECT` that returned any quoted text alongside the quotation.
@@ -1667,6 +1674,9 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.9 — 2026-08-31: §8 gains the `frusexplorer://document/{volume_id}/{document_id}` deep link, so a
+  citation in an agent's output is one click from the rendered document. *(Wave W-19, row L-5.)*
 
 - 1.8 — 2026-08-31: §13 gains **Copy Research-State Record** — the reproducibility record this
   section asks for, as one paste from Settings ▸ Storage ▸ Index Health. Notes the two rows it
