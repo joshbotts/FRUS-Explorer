@@ -1,7 +1,8 @@
 # Plan of Record — 2026-08-28, after build 44
 
 **Status:** the single live plan — **reviewed and revised 2026-08-29 (§7), re-prioritised
-2026-08-31 (§8)** — superseding `Completed/Plan-Of-Record-2026-08-23.md`
+2026-08-31 (§8), external animation handoff assessed 2026-08-31 (§9)** — superseding
+`Completed/Plan-Of-Record-2026-08-23.md`
 (discharged in bulk: tiers A and B shipped whole, Tier C's harvest lane closed except the
 #234 scoring path, Tier D's W-9 completed FAR past its written scope — the encoder, the
 licence surfaces, the zero-result fallback, and the full hybrid page all shipped — and
@@ -58,8 +59,8 @@ Its own §7 sequences the work. The two things a reader of *this* document needs
 | # | Lane | Scope | Gate |
 |---|---|---|---|
 | M-1 | **The store listing — the critical path** | Plan §4.1. This is the row that gates an App Store submission, and it is separated from research figures on purpose: `AnalyticsFigureCanvas` paints white, pins `.colorScheme(.light)` and prints a mandatory methods band with no width parameter reaching any caller — right for a figure, wrong for a screenshot. The two asset families obey different rules and §3/§4 keep them apart. | none |
-| M-2 | **The five residual gaps in the shipped map export** | Plan §1. Three block publication — the caption band carries no caveats and credits "FRUS Explorer 0.2" rather than the Office of the Historian; the plate unconditionally prints a sentence a standalone PNG makes false; the map's mandatory lens caveat reaches neither export half. Plus one print defect (`sourceAlphaBlendFactor = .sourceAlpha` washes the plate and clamps bright dots) and one methods gap (the plate cannot state what was in frame). **Gap 4 is a plan-author error the critic caught**, and fixing it touches the single shared pipeline — verify on screen as well as in the plate. | none |
-| M-3 | **In-app motion** | Plan §3, corrected: §3.1 is *film what already ships*, §3.2 is the new motion the critic re-scoped. Note plan §2(a): the splash and a corpus-bearing device are mutually exclusive by construction, so a capture plan that assumes both is wrong. | none |
+| M-2 | **The five residual gaps in the shipped map export** | *(2026-08-31, §9: Gap 4 and plan §3.2's M-3 lens dip are the same shape — one shared pipeline, two consumers, one of which is a published figure. Plan §7 schedules Gap 4 at step 2 and M-3 at step 8; either pull the shared assertion forward or accept the gap deliberately.)* Plan §1. Three block publication — the caption band carries no caveats and credits "FRUS Explorer 0.2" rather than the Office of the Historian; the plate unconditionally prints a sentence a standalone PNG makes false; the map's mandatory lens caveat reaches neither export half. Plus one print defect (`sourceAlphaBlendFactor = .sourceAlpha` washes the plate and clamps bright dots) and one methods gap (the plate cannot state what was in frame). **Gap 4 is a plan-author error the critic caught**, and fixing it touches the single shared pipeline — verify on screen as well as in the plate. | none |
+| M-3 | **In-app motion** | Plan §3, corrected: §3.1 is *film what already ships*, §3.2 is the new motion the critic re-scoped. Note plan §2(a): the splash and a corpus-bearing device are mutually exclusive by construction, so a capture plan that assumes both is wrong. **Re-reviewed 2026-08-31 (§9)** against the shipped animation code: read plan §3.1's new **Renderer column** before scoping anything that mentions "the splash's drift" — the splash has never run the particle canvas, and plan §3.2's M-4 therefore *enables a renderer* rather than tuning a constant (re-priced **S in code, M in risk**). Plan §3.2's M-1/M-2, M-3 and M-5 moved **ahead of the capture sessions**; M-4 deliberately stays after them. A new plan §7 **step 0** fixes a real double-cloud defect — a search cloud already up when indexing begins is never withdrawn. **Beware the M-number collision: this table's M-numbers are not plan §3.2's.** | none |
 
 Plan §6 names its own largest structural gap (operations) and §8 records what it refuses.
 Read those two before scoping a session out of it.
@@ -298,3 +299,49 @@ already commitments — recorded once, in rows that were struck around them.
 owner lane apart from N-0's note, and §7 — left untouched so its inline *(…2026-08-29, §7)*
 markers stay valid. Deferring #234 is a scheduling decision and not a verdict on it; no row was
 promoted on the strength of the deferral beyond the two programs the owner named.
+
+## 9. External design handoff assessed — 2026-08-31
+
+An outside handoff (`Animation-Surfaces-Review`, findings A-1..A-8, six proposed revisions R-1..R-6)
+reviewed Tier A §2a's motion items against the shipped animation code and proposed edits to both
+Tier A planning documents. **Every claim was verified against the tree before anything was applied.**
+
+**Verdict: partially applied, with amendments.** The handoff's reading of the *code* is good — the
+`drift` default and its two call sites, the whole constant table, the house rule, both cloud
+predicates, `sourceAlphaBlendFactor`, `Uniforms.alpha` at both sites, and every §7 step number it
+cites all check out, and several `Visual-Marketing-Plan.md` §3.2 rows were genuinely wrong. Its
+reading of the *plan documents* is where it drifts, which is the reverse of the usual failure.
+
+**Its only claimed defect is REFUTED and no document should acquire its sentence.** "Two drifting
+Canvases run at once in the download-queued window" is not reachable: the drifting strip is raised by
+its host, `MainTabView.swift:452`'s `} else if let batch = appState.indexingBatch {`, not by
+`CloudSurfaceArbiter`, which only decides whether an already-mounted strip draws. In that window the
+host is absent and exactly one canvas is on screen. The supporting quotation elides *"During an
+indexing run"*, the clause that makes code and comment agree. The proposed fix would instead suppress
+the search backdrop for the whole pre-indexing download phase and breaks five test call sites. Full
+record in `Visual-Marketing-Plan.md` §10.
+
+**Two real defects it missed, both now recorded.** A genuine double-cloud by *staleness* —
+`PendingCloudBackdrop.canShow` is sampled once inside `.task(id: isPending)` and never re-tested, so a
+search cloud already up when a batch begins keeps drifting above the strip — is now plan §7 **step 0**.
+And its inverse, unclaimed and unrowed: in the queue-only window `.indexingBackdrop` is a suppression
+verdict that *nothing renders*, so a relaunch mid-download-before-first-index shows **no cloud at
+all** — with a test (`CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing`) that passes while
+the screen is blank, because it asserts the arbiter's value rather than what renders.
+
+**What was applied to this document.** The §2a M-3 row's Scope cell **appended to, not replaced** —
+the handoff supplied replacement text that would have deleted the cell's §2(a) mutual-exclusion
+warning, its one operational fact. A note added to §2a's M-2 row about the Gap 4 / lens-dip
+scheduling collision, which the handoff's own scope boundary excluded. Both standing gates, the tier
+order, §7 and §8 untouched.
+
+**One hazard for anyone editing either document.** `Visual-Marketing-Plan.md` §3.2 and this
+document's §2a **both use M-numbers, for different rows** — §2a's M-1/M-2/M-3 are the store listing /
+the export gaps / in-app motion; §3.2's M-1..M-6 are camera transit / reduce-motion / lens dip /
+splash drift / seeded lens / decade accumulation. Always qualify as "plan §3.2's M-*n*". The handoff
+did not notice and wrote one vocabulary into the other's table.
+
+**The review document is not committed.** The precedent for committing it exists
+(`Planning/Cross-Platform-UI-Adversarial-Review/`), but its citation-grade claim does not survive
+verification — a refuted headline, an elided quotation, a wrong line cite — and its one piece of
+content reaching neither plan was itself wrong. Everything worth keeping now lives in the two plans.
