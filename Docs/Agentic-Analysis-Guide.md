@@ -1583,6 +1583,18 @@ asymmetric with the document prompt on purpose — that is EmbeddingGemma's conv
 oversight — and a query embedded under a different prefix lands in a different region of the space,
 which does not fail so much as quietly return worse neighbours.
 
+**You probably already have the weights.** If you have used Search by Meaning, the app fetched the
+pinned GGUF and checked it against the published length and SHA-256 before keeping it. Rather than
+downloading 229 MB again and trusting a URL, reuse the copy the app validated:
+**Settings ▸ Volumes & Storage ▸ Natural-Language Search** shows the file's location, with *Show in
+Finder* and *Copy Path* on macOS. The path appears only while a verified copy is present, so a path
+you can see is a file that passed its check.
+
+The prompt itself is in the artifact too: `semantic-vectors-index.json`'s `provenance.queryPrefix`,
+so the index is self-describing on both sides. It is published but deliberately **not** part of the
+provenance digest — adding it changed no artifact's identity, and every previously downloaded shard
+stayed valid. An artifact generated before this field existed simply omits the key.
+
 **The caveat that stands:** the 0.851 recall was measured **document-to-document**. Nothing has
 measured text-query retrieval, so validate on queries you can check by hand before trusting it in
 bulk. The prompt being pinned removes a source of variance; it does not supply the missing
@@ -1639,6 +1651,13 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.7 — 2026-08-31: §A.7 gains the two things that stop an agent re-fetching and guessing: the app's
+  validated GGUF is reachable from Settings (Volumes & Storage ▸ Natural-Language Search), and the
+  query-side prompt is now IN the artifact as `provenance.queryPrefix`. Published but not digested,
+  so adding it changed no artifact's identity and every downloaded shard stayed valid — verified by
+  regenerating: the digest and the 19.5 MB binary are byte-identical, and all 552 shard hashes are
+  unchanged. *(Wave W-19, row L-4.)*
 
 - 1.6 — 2026-08-31: §2 gains **"Or let the app do it"** — macOS Settings ▸ Data & Recovery now runs
   this section's recipe and §11's strip as one action, with the integrity check reported rather than

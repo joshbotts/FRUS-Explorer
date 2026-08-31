@@ -137,7 +137,11 @@ public enum SemanticVectorsRunner {
             pooling: "char-length-weighted mean of unit-norm chunk vectors, L2-renormalized",
             quantization: "Matryoshka cut then L2-renormalize; int8 per-vector symmetric "
                 + "(scale = max|x|/127, rint half-to-even, clip ±127); binary = sign bit, "
-                + "MSB-first, zero packs as 1")
+                + "MSB-first, zero packs as 1",
+            // Read from the shared declaration the app and the parity-fixture generator both use,
+            // so the artifact cannot describe a prompt the encoder does not send. Published,
+            // never digested — see `Provenance.queryPrefix`.
+            queryPrefix: SemanticQueryPrompt.queryPrefix)
 
         let volumes = try loadManifestVolumes(manifestPath)
         guard !volumes.isEmpty else { throw RunError.emptyManifest(manifestPath) }
