@@ -45,12 +45,37 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — CW-7a (UI review M-20 / F-28): regions CSV + provenance
+///   1.3 — Visual-marketing gap 5: `FigureFrame` — a figure states what was in frame and how many
+///         regions it names, neither of which was recoverable from the plate
 ///   1.2 — Visual-marketing step 1: `lens` replaces `lensLabel`, so the lens's own caveat reaches
 ///         both export halves; four table-only phrasings reworded to stay true on a figure
 ///   1.1 — W-3 (#1007): the figure — `figureTitle`/`sliceDescription` parameters on
 ///         ``provenance(index:scopeLabel:scopedDocumentCount:lens:indexedVolumeCount:figureTitle:sliceDescription:)``,
 ///         and the refusal section above rewritten as the assembly description
 enum SemanticMapExport {
+
+    // MARK: - The figure's frame
+
+    /// What was in frame when a FIGURE was rendered — the facts a plate cannot otherwise state.
+    ///
+    /// A figure is a photograph of a view, and the view is not the reader's. The export builds its
+    /// uniforms from its own plate rectangle, so its field of view differs from a wide Mac window's;
+    /// and `SemanticMapLabelLayout` re-runs its spacing rule against that rectangle, so **the figure
+    /// can name regions the on-screen reader never saw named, and omit ones they did**. Neither
+    /// fact was recoverable from the plate.
+    ///
+    /// Figure-only, and `nil` everywhere else on purpose. The regions CSV lists every region
+    /// regardless of what was on screen, so a frame sentence there would describe a framing the
+    /// table does not depend on. The frame sequence is a moving camera; one frame's numbers would
+    /// be false of the other 552.
+    struct FigureFrame: Equatable, Sendable {
+        /// The camera the plate was rendered through.
+        let camera: SemanticMapCamera
+        /// The plate rectangle, in points.
+        let size: CGSize
+        /// How many regions this figure actually names.
+        let labelledRegionCount: Int
+    }
 
     // MARK: - Provenance
 
@@ -79,13 +104,16 @@ enum SemanticMapExport {
     ///   - sliceDescription: Non-nil when the export shows a SLICE. It leads the caveats,
     ///     because a slice figure omits its region labels (a region's centre belongs to the map
     ///     plane, not the slice) and without this sentence the reader has no way to know why.
+    ///   - frame: Non-nil for a FIGURE. Adds the frame and label-selection caveats — see
+    ///     ``FigureFrame``.
     static func provenance(index: SemanticMapArtifacts.MapIndex,
                            scopeLabel: String?,
                            scopedDocumentCount: Int?,
                            lens: SemanticMapLens,
                            indexedVolumeCount: Int,
                            figureTitle: String? = nil,
-                           sliceDescription: String? = nil) -> AnalyticsProvenance {
+                           sliceDescription: String? = nil,
+                           frame: FigureFrame? = nil) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: figureTitle ?? String(localized: "semanticMap.export.title",
                                 defaultValue: "Semantic map regions"),
@@ -102,7 +130,8 @@ enum SemanticMapExport {
                                              scopedDocumentCount: scopedDocumentCount,
                                              indexedVolumeCount: indexedVolumeCount),
             extraCaveats: (sliceDescription.map { [$0] } ?? [])
-                + caveats(index: index, lens: lens))
+                + caveats(index: index, lens: lens)
+                + frameCaveats(index: index, frame: frame))
     }
 
     /// The corpus sentence, which has to say two different numbers that are easy to conflate: what
@@ -161,6 +190,45 @@ enum SemanticMapExport {
         // an export without it is an export that overstates. Appended last, beside the lens line
         // it qualifies.
         if let caption = lens.caption { lines.append(caption) }
+        return lines
+    }
+
+    /// What a figure can say about its own framing, and nothing when there is no figure.
+    ///
+    /// Two sentences, because they answer two different questions a reader of a published plate
+    /// will have: *what am I looking at*, and *why are these the names on it*.
+    ///
+    /// The coordinates are stated even though the projection has no axis, scale or origin — and the
+    /// sentence says both things at once. They are not a measurement and must not be read as one;
+    /// they are the parameters that restore this exact view in the app, which is what a methods
+    /// statement is for. Suppressing them because they could be misread would leave a figure whose
+    /// framing is unreproducible.
+    private static func frameCaveats(index: SemanticMapArtifacts.MapIndex,
+                                     frame: FigureFrame?) -> [String] {
+        guard let frame else { return [] }
+        let aspect = frame.size.height > 0 ? Float(frame.size.width / frame.size.height) : 1
+        let visible = frame.camera.scale(aspect: aspect)
+        // The artifact's grid is int16, so ±32,768 on each axis is the whole plane.
+        let containsWholeMap = visible.x >= 32_768 && visible.y >= 32_768
+        let span = containsWholeMap
+            ? String(localized: "semanticMap.export.caveat.frame.whole",
+                     defaultValue: "the entire map is in frame")
+            : String(format: String(localized: "semanticMap.export.caveat.frame.span %lld %lld",
+                                    defaultValue: "%1$lld × %2$lld grid units in view"),
+                     Int64(visible.x * 2), Int64(visible.y * 2))
+        var lines = [String(format: String(
+            localized: "semanticMap.export.caveat.frame %lld %lld %lld %lld %@",
+            defaultValue: "Frame: rendered at %1$lld × %2$lld points, centered on grid (%3$lld, %4$lld) — %5$@. Those coordinates are the artifact's own grid, recorded so this exact view can be restored; they are not a measurement, and the projection has no axis, no scale and no origin."),
+            Int64(frame.size.width), Int64(frame.size.height),
+            Int64(frame.camera.centre.x), Int64(frame.camera.centre.y), span)]
+        // Only when the figure carries names at all — a slice figure has none, and says so through
+        // `sliceDescription` instead.
+        if frame.labelledRegionCount > 0 {
+            lines.append(String(format: String(
+                localized: "semanticMap.export.caveat.frame.labels %lld %lld",
+                defaultValue: "Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app's window is a different shape and re-runs the same rule against it, so a reader at the screen sees a different set of names — a region named here can be unnamed there, and the reverse."),
+                Int64(frame.labelledRegionCount), Int64(index.clusters.count)))
+        }
         return lines
     }
 

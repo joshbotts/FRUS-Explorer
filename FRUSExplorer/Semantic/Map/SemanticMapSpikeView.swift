@@ -2795,7 +2795,13 @@ struct SemanticMapSpikeView: View {
             indexedVolumeCount: appState.indexedVolumeIds.count,
             figureTitle: String(localized: "semanticMap.export.figureTitle",
                                 defaultValue: "Semantic map"),
-            sliceDescription: sliceDescription)
+            sliceDescription: sliceDescription,
+            // The figure's own framing, which the plate cannot otherwise state. `labels` is the
+            // list actually drawn, so the count is what the reader sees rather than what was
+            // offered — and it is 0 for a slice, which suppresses the label sentence.
+            frame: SemanticMapExport.FigureFrame(camera: model.camera,
+                                                 size: mapPoints,
+                                                 labelledRegionCount: labels.count))
         exportBox.deliverFigure(format, provenance: provenance, chartHeight: mapPoints.height) {
             SemanticMapFigureContent(plate: plate, plateScale: scale,
                                      size: mapPoints, labels: labels)
