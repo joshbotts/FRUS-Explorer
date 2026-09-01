@@ -12,9 +12,16 @@ frames are manual on an erased device, in a window that occurs once per install.
 ```bash
 TEST_RUNNER_RENDER_MAP_FRAMES_DIR=/tmp/map-frames xcodebuild test \
   -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,id=<UDID>" \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
   -only-testing FRUSExplorerTests/SemanticMapFrameSequenceTests
 ```
+
+**Copy that as it stands — it is the whole command.** `name=` is the house idiom (`CLAUDE.md` uses
+it for every documented test run) and it resolves even with several iOS runtimes installed, so
+there is nothing to substitute. An earlier draft wrote `id=<UDID>`, which is not a command but a
+fill-in-the-blank: pasted verbatim it fails with *"Unable to find a device matching the provided
+destination specifier"* and forty lines of devices. Where a UDID is genuinely needed — `simctl`,
+below — this document resolves it for you.
 
 Two things about that command are load-bearing and both are in the harness's own doc comment: the
 env var **must** wear xcodebuild's `TEST_RUNNER_` prefix (a trailing `KEY=VALUE` is a build setting
@@ -28,6 +35,11 @@ and never reaches the test process), and the filter **must** stop at the suite (
 | Worst | **122.8 ms** | 123.9 ms |
 | Wall clock | ~56 s | 57.6 s |
 | Output | **392 MB**, 1920×1080 PNG | — |
+
+Re-run 2026-08-31 on **iPhone 17**, the device this runbook now names: 553 frames, mean 104.9 ms,
+worst 201.6 ms, same 553 files. The worst-frame figure is well above the 16e's 122.8 ms while the
+mean barely moves — the shape of a warm-up outlier, not a slower device. The output is identical
+either way: the sequence is deterministic in the artifact, not in the host.
 
 Files `frame-0000.png` … `frame-0552.png`, **no gaps**, plus `frames.csv` (554 lines: header + 553)
 and `provenance.txt`. Assemble with:
@@ -136,6 +148,27 @@ would have been. Film both takes back to back.
 
 ---
 
+## 8. Which device class to shoot on
+
+§6 flags this and could not settle it: *"Device classes are asserted, not verified. The documented
+capture program is iPhone 17 + iPad Pro 11″; store requirements (6.9″, 13″) are external facts."*
+Still true — App Store Connect is the authority and it is outside this repo. But the two required
+classes map onto simulators already installed here, and they are **not** the two the capture
+program names:
+
+| Purpose | Class | Simulator |
+|---|---|---|
+| Store screenshots — iPhone | 6.9″ | **iPhone 17 Pro Max** |
+| Store screenshots — iPad | 13″ | **iPad Pro 13-inch (M5)** |
+| Figures, film, frame sequence | any | iPhone 17 — what this runbook's commands name |
+
+So do not shoot store assets on the device you render figures on without checking: `iPhone 17` is
+the 6.3″ class, and the plan's `iPad Pro 11″` is not the 13″ one. **Confirm against App Store
+Connect before a submission pass** — that instruction stands unchanged. What is new is that the
+substitute devices are named and present.
+
+---
+
 ## 7. The three device states (step 6)
 
 | State | What it is | How to reach it |
@@ -153,8 +186,34 @@ screens a research app most needs to show.
 idempotent by project name, mirroring the two seeders already on that boot path.
 
 ```bash
-xcrun simctl launch --console <UDID> bottsywattsy.FRUS-Explorer   --setenv FRUS_CAPTURE_SEED 1
+# Resolve the capture device once — newest installed runtime that has it.
+UDID=$(xcrun simctl list devices available -j | python3 -c '
+import json, sys
+devices = json.load(sys.stdin)["devices"]
+match = ""
+for runtime in sorted(devices):
+    for device in devices[runtime]:
+        if device["name"] == "iPhone 17":
+            match = device["udid"]
+print(match)')
+echo "$UDID"
+
+xcrun simctl boot "$UDID" 2>/dev/null || true
+xcrun simctl launch "$UDID" bottsywattsy.FRUS-Explorer --setenv FRUS_CAPTURE_SEED 1
 ```
+
+Change the device name in that snippet to whichever class you are shooting — see §8.
+
+Three things that will otherwise cost you an afternoon:
+
+- **The app must already be installed on that simulator.** `simctl launch` does not build. Run the
+  app to the device once from Xcode (or `simctl install`) first; otherwise this returns
+  *"Unable to find application"*.
+- **Do not add `--console`.** It attaches to the process and does not return until the app exits, so
+  the terminal appears to hang. Add it only when you want to read the seeder's confirmation line,
+  and expect to quit the app to get your prompt back.
+- **Shut the simulator down when you are finished.** A simulator left booted competes with the test
+  suite for the machine and is a known source of wall-clock flakes.
 
 **It seeds the structure and not the words.** Every body reads *"Replace before capture."* Edit
 `CaptureStateSeeder.Content` — one enum of plain data, no code — and re-run. That division is
